@@ -20,7 +20,9 @@
 #ifndef RIPPLE_ORDERBOOKDB_H_INCLUDED
 #define RIPPLE_ORDERBOOKDB_H_INCLUDED
 
+#include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/app/ledger/BookListeners.h>
+#include <ripple/app/misc/OrderBook.h>
 
 namespace ripple {
 

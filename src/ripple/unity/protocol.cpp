@@ -29,14 +29,25 @@
 #include <ripple/protocol/impl/Indexes.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
-#include <ripple/protocol/impl/STInteger.cpp>
-#include <ripple/protocol/impl/SerializedTypes.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
-#include <ripple/protocol/impl/SerializedObjectTemplate.cpp>
-#include <ripple/protocol/impl/STObject.cpp>
-#include <ripple/protocol/impl/STArray.cpp>
+#include <ripple/protocol/impl/SOTemplate.cpp>
 #include <ripple/protocol/impl/TER.cpp>
 #include <ripple/protocol/impl/TxFormats.cpp>
+#include <ripple/protocol/impl/UintTypes.cpp>
+
+#include <ripple/protocol/impl/STAccount.cpp>
+#include <ripple/protocol/impl/STArray.cpp>
 #include <ripple/protocol/impl/STAmount.cpp>
-#include <ripple/protocol/impl/STAmount.test.cpp>
+#include <ripple/protocol/impl/STBase.cpp>
+#include <ripple/protocol/impl/STBlob.cpp>
+#include <ripple/protocol/impl/STInteger.cpp>
+#include <ripple/protocol/impl/STLedgerEntry.cpp>
+#include <ripple/protocol/impl/STObject.cpp>
 #include <ripple/protocol/impl/STParsedJSON.cpp>
+#include <ripple/protocol/impl/STPathSet.cpp>
+#include <ripple/protocol/impl/STTx.cpp>
+#include <ripple/protocol/impl/STValidation.cpp>
+#include <ripple/protocol/impl/STVector256.cpp>
+
+// VFALCO Should be in a tests dir
+#include <ripple/protocol/impl/STAmount.test.cpp>

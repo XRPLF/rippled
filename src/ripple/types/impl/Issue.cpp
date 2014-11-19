@@ -18,9 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/UnorderedContainers.h>
-
+#include <ripple/types/Book.h>
+#include <ripple/types/Issue.h>
 #include <beast/unit_test/suite.h>
-
+#include <map>
 #include <set>
 #include <typeinfo>
 #include <unordered_set>

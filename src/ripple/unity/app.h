@@ -24,27 +24,6 @@
 #include <sys/resource.h>
 #endif
 
-// VFALCO TODO Reduce these boost dependencies. Make more interfaces
-//             purely abstract and move implementation into .cpp files.
-//
-
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/array.hpp>
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/mem_fn.hpp>
-#include <boost/pointer_cast.hpp>
-#include <boost/program_options.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
-
-//------------------------------------------------------------------------------
-
-#include <ripple/unity/types.h>
-
 #include <ripple/basics/ResolverAsio.h>
 
 // VFALCO TODO Remove this include
@@ -62,20 +41,12 @@
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/app/data/DBInit.h>
-#include <ripple/app/shamap/SHAMapItem.h>
-#include <ripple/app/shamap/SHAMapNodeID.h>
-#include <ripple/app/shamap/SHAMapTreeNode.h>
-#include <ripple/app/shamap/SHAMapMissingNode.h>
-#include <ripple/app/shamap/SHAMapSyncFilter.h>
-#include <ripple/app/shamap/SHAMapAddNode.h>
-#include <ripple/app/shamap/SHAMap.h>
-#include <ripple/app/misc/SerializedTransaction.h>
-#include <ripple/app/misc/SerializedLedger.h>
+#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/misc/AccountState.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/SerializedValidation.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/OrderBook.h>
 #include <ripple/app/shamap/SHAMapSyncFilters.h>

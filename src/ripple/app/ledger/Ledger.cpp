@@ -483,25 +483,25 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
     return txn;
 }
 
-SerializedTransaction::pointer Ledger::getSTransaction (
+STTx::pointer Ledger::getSTransaction (
     SHAMapItem::ref item, SHAMapTreeNode::TNType type)
 {
     SerializerIterator sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        return std::make_shared<SerializedTransaction> (sit);
+        return std::make_shared<STTx> (sit);
 
     if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
         SerializerIterator tSit (sTxn);
-        return std::make_shared<SerializedTransaction> (tSit);
+        return std::make_shared<STTx> (tSit);
     }
 
-    return SerializedTransaction::pointer ();
+    return STTx::pointer ();
 }
 
-SerializedTransaction::pointer Ledger::getSMTransaction (
+STTx::pointer Ledger::getSMTransaction (
     SHAMapItem::ref item, SHAMapTreeNode::TNType type,
     TransactionMetaSet::pointer& txMeta) const
 {
@@ -510,7 +510,7 @@ SerializedTransaction::pointer Ledger::getSMTransaction (
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
         txMeta.reset ();
-        return std::make_shared<SerializedTransaction> (sit);
+        return std::make_shared<STTx> (sit);
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
@@ -519,11 +519,11 @@ SerializedTransaction::pointer Ledger::getSMTransaction (
 
         txMeta = std::make_shared<TransactionMetaSet> (
             item->getTag (), mLedgerSeq, sit.getVL ());
-        return std::make_shared<SerializedTransaction> (tSit);
+        return std::make_shared<STTx> (tSit);
     }
 
     txMeta.reset ();
-    return SerializedTransaction::pointer ();
+    return STTx::pointer ();
 }
 
 bool Ledger::getTransaction (
@@ -758,7 +758,7 @@ bool Ledger::saveValidatedLedger (bool current)
                     << " affects no accounts";
 
             db->executeSQL (
-                SerializedTransaction::getMetaSQLInsertReplaceHeader () +
+                STTx::getMetaSQLInsertReplaceHeader () +
                 vt.second->getTxn ()->getMetaSQL (
                     getLedgerSeq (), vt.second->getEscMeta ()) + ";");
         }
@@ -1196,7 +1196,7 @@ Json::Value Ledger::getJson (int options) const
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
                 {
                     SerializerIterator sit (item->peekSerializer ());
-                    SerializedTransaction txn (sit);
+                    STTx txn (sit);
                     txns.append (txn.getJson (0));
                 }
                 else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
@@ -1205,7 +1205,7 @@ Json::Value Ledger::getJson (int options) const
                     Serializer sTxn (sit.getVL ());
 
                     SerializerIterator tsit (sTxn);
-                    SerializedTransaction txn (tsit);
+                    STTx txn (tsit);
 
                     TransactionMetaSet meta (
                         item->getTag (), mLedgerSeq, sit.getVL ());

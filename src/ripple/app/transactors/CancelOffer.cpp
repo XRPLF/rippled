@@ -24,7 +24,7 @@ class CancelOffer
 {
 public:
     CancelOffer (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -86,7 +86,7 @@ public:
 
 TER
 transact_CancelOffer (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

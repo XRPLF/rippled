@@ -23,7 +23,7 @@
 #include <ripple/crypto/Base58Data.h>
 #include <ripple/crypto/ECDSACanonical.h>
 #include <ripple/types/UInt160.h>
-#include <ripple/types/UintTypes.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/types/RippleAccountID.h>
 #include <ripple/types/RippleAccountPrivateKey.h>
 #include <ripple/types/RippleAccountPublicKey.h>

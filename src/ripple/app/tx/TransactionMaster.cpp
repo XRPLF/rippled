@@ -55,11 +55,11 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
     return txn;
 }
 
-SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
+STTx::pointer TransactionMaster::fetch (SHAMapItem::ref item,
         SHAMapTreeNode::TNType type,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
-    SerializedTransaction::pointer  txn;
+    STTx::pointer  txn;
     Transaction::pointer            iTx = getApp().getMasterTransaction ().fetch (item->getTag (), false);
 
     if (!iTx)
@@ -68,7 +68,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
         if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         {
             SerializerIterator sit (item->peekSerializer ());
-            txn = std::make_shared<SerializedTransaction> (std::ref (sit));
+            txn = std::make_shared<STTx> (std::ref (sit));
         }
         else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
         {
@@ -77,7 +77,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
             item->peekSerializer ().getVL (s.modData (), 0, length);
             SerializerIterator sit (s);
 
-            txn = std::make_shared<SerializedTransaction> (std::ref (sit));
+            txn = std::make_shared<STTx> (std::ref (sit));
         }
     }
     else

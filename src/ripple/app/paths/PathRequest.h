@@ -20,6 +20,9 @@
 #ifndef RIPPLE_PATHREQUEST_H
 #define RIPPLE_PATHREQUEST_H
 
+#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/json/json_value.h>
+
 namespace ripple {
 
 // A pathfinding request submitted by a client

@@ -17,44 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERIALIZEDLEDGER_H
-#define RIPPLE_SERIALIZEDLEDGER_H
+#ifndef RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
+#define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
 
-// VFALCO NOTE
-//
-//      This looks like a central class for Ripple. Almost everything that
-//      does anything of interest deals with SLE objects. Any documentation
-//      effort should start with a complete description of this object and
-//      all of its operations.
-//
-//      It is derived from STObject so it inherits a lot of behavior from that.
-//
-// VFALCO TODO Rename the source file to match the class
-//
-// VFALCO TODO Can we rename this class to something shorter and more concise?
-//
-//             Can we just call this LedgerEntry?
-//
-class SerializedLedgerEntry
+class STLedgerEntry
     : public STObject
-    , public CountedObject <SerializedLedgerEntry>
+    , public CountedObject <STLedgerEntry>
 {
 public:
-    static char const* getCountedObjectName () { return "SerializedLedgerEntry"; }
+    static char const* getCountedObjectName () { return "STLedgerEntry"; }
 
-    typedef std::shared_ptr<SerializedLedgerEntry>        pointer;
-    typedef const std::shared_ptr<SerializedLedgerEntry>& ref;
+    typedef std::shared_ptr<STLedgerEntry>        pointer;
+    typedef const std::shared_ptr<STLedgerEntry>& ref;
 
 public:
-    SerializedLedgerEntry (const Serializer & s, uint256 const& index);
-    SerializedLedgerEntry (SerializerIterator & sit, uint256 const& index);
-    SerializedLedgerEntry (LedgerEntryType type, uint256 const& index);
-    SerializedLedgerEntry (const STObject & object, uint256 const& index);
+    STLedgerEntry (const Serializer & s, uint256 const& index);
+    STLedgerEntry (SerializerIterator & sit, uint256 const& index);
+    STLedgerEntry (LedgerEntryType type, uint256 const& index);
+    STLedgerEntry (const STObject & object, uint256 const& index);
 
     SerializedTypeID getSType () const
     {
@@ -81,7 +66,7 @@ public:
     {
         return mMutable;
     }
-    SerializedLedgerEntry::pointer getMutable () const;
+    STLedgerEntry::pointer getMutable () const;
 
     LedgerEntryType getType () const
     {
@@ -110,9 +95,9 @@ public:
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
 private:
-    SerializedLedgerEntry* duplicate () const
+    STLedgerEntry* duplicate () const
     {
-        return new SerializedLedgerEntry (*this);
+        return new STLedgerEntry (*this);
     }
 
     /** Make STObject comply with the template for this SLE type
@@ -127,7 +112,7 @@ private:
     bool                        mMutable;
 };
 
-typedef SerializedLedgerEntry SLE;
+using SLE = STLedgerEntry;
 
 } // ripple
 

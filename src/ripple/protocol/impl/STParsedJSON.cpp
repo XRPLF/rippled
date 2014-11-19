@@ -128,14 +128,14 @@ static Json::Value singleton_expected (std::string const& object,
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
-static std::unique_ptr <SerializedType> parseLeaf (
+static std::unique_ptr <STBase> parseLeaf (
     std::string const& json_name,
     std::string const& fieldName,
     SField::ptr name,
     Json::Value const& value,
     Json::Value& error)
 {
-    std::unique_ptr <SerializedType> ret;
+    std::unique_ptr <STBase> ret;
 
     SField::ref field = SField::getField (fieldName);
 
@@ -406,7 +406,7 @@ static std::unique_ptr <SerializedType> parseLeaf (
             if (!vBlob.second)
                 throw std::invalid_argument ("invalid data");
 
-            ret = std::make_unique <STVariableLength> (field, vBlob.first);
+            ret = std::make_unique <STBlob> (field, vBlob.first);
         }
         catch (...)
         {
@@ -680,7 +680,7 @@ static bool parseObject (
 
     SField::ptr name (&inName);
 
-    boost::ptr_vector<SerializedType> data;
+    boost::ptr_vector<STBase> data;
     Json::Value::Members members (json.getMemberNames ());
 
     for (Json::Value::Members::iterator it (members.begin ());
@@ -750,7 +750,7 @@ static bool parseObject (
         // Everything else (types that don't recurse).
         default:
             {
-                std::unique_ptr <SerializedType> serTyp =
+                std::unique_ptr <STBase> serTyp =
                     parseLeaf (json_name, fieldName, name, value, error);
 
                 if (!serTyp)

@@ -17,6 +17,18 @@
 */
 //==============================================================================
 
+#include <ripple/app/consensus/DisputedTx.h>
+#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/Validations.h>
+#include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -24,7 +36,9 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/types/UintTypes.h>
+#include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/UintTypes.h>
+
 
 namespace ripple {
 
@@ -1071,8 +1085,8 @@ private:
             {
                 // Build validation
                 uint256 signingHash;
-                SerializedValidation::pointer v =
-                    std::make_shared<SerializedValidation>
+                STValidation::pointer v =
+                    std::make_shared<STValidation>
                     (newLCLHash, getApp().getOPs ().getValidationTimeNC ()
                     , mValPublic, mProposing);
                 v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
@@ -1129,8 +1143,8 @@ private:
                             << "Test applying disputed transaction that did"
                             << " not get in";
                         SerializerIterator sit (it.second->peekTransaction ());
-                        SerializedTransaction::pointer txn
-                            = std::make_shared<SerializedTransaction>(sit);
+                        STTx::pointer txn
+                            = std::make_shared<STTx>(sit);
 
                         retriableTransactions.push_back (txn);
                         anyDisputes = true;
@@ -1467,8 +1481,8 @@ private:
                     try
                     {
                         SerializerIterator sit (item->peekSerializer ());
-                        SerializedTransaction::pointer txn
-                            = std::make_shared<SerializedTransaction>(sit);
+                        STTx::pointer txn
+                            = std::make_shared<STTx>(sit);
                         if (applyTransaction (engine, txn,
                                               openLgr, true) == resultRetry)
                         {
@@ -1551,7 +1565,7 @@ private:
       @return             One of resultSuccess, resultFail or resultRetry.
     */
     int applyTransaction (TransactionEngine& engine
-        , SerializedTransaction::ref txn, bool openLedger, bool retryAssured)
+        , STTx::ref txn, bool openLedger, bool retryAssured)
     {
         // Returns false if the transaction has need not be retried.
         TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
@@ -2002,7 +2016,7 @@ private:
             return;
         }
 
-        SerializedValidation::pointer lastVal
+        STValidation::pointer lastVal
             = getApp().getOPs ().getLastValidation ();
 
         if (lastVal)
@@ -2017,8 +2031,8 @@ private:
         }
 
         uint256 signingHash;
-        SerializedValidation::pointer v
-            = std::make_shared<SerializedValidation>
+        STValidation::pointer v
+            = std::make_shared<STValidation>
             (mPreviousLedger->getHash ()
             , getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
         addLoad(v);
@@ -2073,7 +2087,7 @@ private:
 
     /** Add our load fee to our validation
     */
-    void addLoad(SerializedValidation::ref val)
+    void addLoad(STValidation::ref val)
     {
         std::uint32_t fee = std::max(
             getApp().getFeeTrack().getLocalFee(),

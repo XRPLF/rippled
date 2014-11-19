@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {

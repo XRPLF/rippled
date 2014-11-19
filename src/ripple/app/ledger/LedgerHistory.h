@@ -20,6 +20,7 @@
 #ifndef RIPPLE_LEDGERHISTORY_H
 #define RIPPLE_LEDGERHISTORY_H
 
+#include <ripple/types/RippleLedgerHash.h>
 #include <beast/insight/Event.h>
 
 namespace ripple {

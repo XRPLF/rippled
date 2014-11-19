@@ -192,7 +192,7 @@ message TMHaveTransactionSet
 // Used to sign a final closed ledger after reprocessing
 message TMValidation
 {
-    required bytes validation       = 1;        // in SerializedValidation signed form
+    required bytes validation       = 1;        // in STValidation signed form
     optional bool checkedSignature  = 2;        // node vouches signature is correct
 }
 

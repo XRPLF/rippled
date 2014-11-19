@@ -1075,7 +1075,7 @@ bool ApplicationImp::loadOldLedger (
 
                              if (stp.object && (uIndex.isNonZero()))
                              {
-                                 SerializedLedgerEntry sle (*stp.object, uIndex);
+                                 STLedgerEntry sle (*stp.object, uIndex);
                                  bool ok = loadLedger->addSLE (sle);
                                  if (!ok)
                                      m_journal.warning << "Couldn't add serialized ledger: " << uIndex;

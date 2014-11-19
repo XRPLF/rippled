@@ -126,7 +126,7 @@ private:
 public:
     CreateOffer (
             bool autobridging,
-            SerializedTransaction const& txn,
+            STTx const& txn,
             TransactionEngineParams params,
             TransactionEngine* engine)
         : Transactor (
@@ -582,7 +582,7 @@ public:
 
 TER
 transact_CreateOffer (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

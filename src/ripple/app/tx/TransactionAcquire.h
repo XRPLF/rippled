@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTIONACQUIRE_H
 #define RIPPLE_TRANSACTIONACQUIRE_H
 
+#include <ripple/app/peers/PeerSet.h>
+
 namespace ripple {
 
 // VFALCO TODO rename to PeerTxRequest

@@ -24,7 +24,7 @@ class SetTrust
 {
 public:
     SetTrust (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -421,7 +421,7 @@ public:
 
 TER
 transact_SetTrust (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

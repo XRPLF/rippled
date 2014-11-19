@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
 

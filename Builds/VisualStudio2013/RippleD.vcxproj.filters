@@ -774,9 +774,6 @@
     <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
       <Filter>beast\container\tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Crypto.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
@@ -2643,12 +2640,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\SerializedValidation.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\SerializedValidation.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
@@ -2755,18 +2746,6 @@
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\SerializedLedger.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\SerializedLedger.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\SerializedTransaction.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\SerializedTransaction.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
@@ -3714,16 +3693,16 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\SerializedObjectTemplate.cpp">
-      <Filter>ripple\protocol\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\SerializedTypes.cpp">
-      <Filter>ripple\protocol\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Serializer.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\SField.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\SOTemplate.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STAccount.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STAmount.cpp">
@@ -3735,7 +3714,16 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\STArray.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STBase.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STBlob.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STInteger.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STLedgerEntry.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STObject.cpp">
@@ -3744,10 +3732,25 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\STParsedJSON.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STPathSet.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STTx.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STValidation.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STVector256.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\TER.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\TxFormats.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\UintTypes.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\Indexes.h">
@@ -3771,19 +3774,16 @@
     <ClInclude Include="..\..\src\ripple\protocol\RippleAddress.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedObjectTemplate.h">
-      <Filter>ripple\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedType.h">
-      <Filter>ripple\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedTypes.h">
-      <Filter>ripple\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\SField.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\SOTemplate.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STAccount.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STAmount.h">
@@ -3792,16 +3792,37 @@
     <ClInclude Include="..\..\src\ripple\protocol\STArray.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STBase.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STBitString.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STBlob.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STInteger.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STLedgerEntry.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STObject.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STParsedJSON.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STPathSet.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STTx.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STValidation.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STVector256.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TER.h">
@@ -3811,6 +3832,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TxFormats.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\UintTypes.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
@@ -4260,9 +4284,6 @@
     <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
       <Filter>ripple\sitefiles</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\AgedHistory.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\Base58.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
@@ -4302,9 +4323,6 @@
     <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
-      <Filter>ripple\types\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\Issue.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
@@ -4336,9 +4354,6 @@
       <Filter>ripple\types</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\UInt160.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\UintTypes.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
@@ -4455,9 +4470,6 @@
     <ClCompile Include="..\..\src\ripple\unity\types.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\types.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

@@ -22,7 +22,7 @@
 
 #include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/paths/Types.h>
-#include <ripple/types/UintTypes.h>
+#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 namespace path {

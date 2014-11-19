@@ -20,39 +20,39 @@
 #ifndef RIPPLE_PROTOCOL_STBITS_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBITS_H_INCLUDED
 
-#include <ripple/protocol/SerializedType.h>
+#include <ripple/protocol/STBase.h>
 
 namespace ripple {
 
 template <std::size_t Bits>
-class STBitString : public SerializedType
+class STBitString : public STBase
 {
 public:
     typedef base_uint<Bits> BitString;
 
     STBitString ()                                    {}
-    STBitString (SField::ref n) : SerializedType (n)  {}
+    STBitString (SField::ref n) : STBase (n)  {}
     STBitString (const BitString& v) : bitString_ (v) {}
 
     STBitString (SField::ref n, const BitString& v)
-            : SerializedType (n), bitString_ (v)
+            : STBase (n), bitString_ (v)
     {
     }
 
-    STBitString (SField::ref n, const char* v) : SerializedType (n)
-    {
-        bitString_.SetHex (v);
-    }
-
-    STBitString (SField::ref n, std::string const& v) : SerializedType (n)
+    STBitString (SField::ref n, const char* v) : STBase (n)
     {
         bitString_.SetHex (v);
     }
 
-    static std::unique_ptr<SerializedType> deserialize (
+    STBitString (SField::ref n, std::string const& v) : STBase (n)
+    {
+        bitString_.SetHex (v);
+    }
+
+    static std::unique_ptr<STBase> deserialize (
         SerializerIterator& sit, SField::ref name)
     {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
+        return std::unique_ptr<STBase> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const;
@@ -62,7 +62,7 @@ public:
         return to_string (bitString_);
     }
 
-    bool isEquivalent (const SerializedType& t) const
+    bool isEquivalent (const STBase& t) const
     {
         const STBitString* v = dynamic_cast<const STBitString*> (&t);
         return v && (bitString_ == v->bitString_);

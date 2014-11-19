@@ -22,7 +22,7 @@
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/core/SystemParameters.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/types/UintTypes.h>
+#include <ripple/protocol/UintTypes.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -39,7 +39,7 @@ static const std::uint64_t tenTo17 = tenTo14 * 1000;
 STAmount::STAmount (SField::ref name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative)
-    : SerializedType (name)
+    : STBase (name)
     , mIssue (issue)
     , mValue (mantissa)
     , mOffset (exponent)
@@ -52,7 +52,7 @@ STAmount::STAmount (SField::ref name, Issue const& issue,
 STAmount::STAmount (SField::ref name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative, unchecked)
-    : SerializedType (name)
+    : STBase (name)
     , mIssue (issue)
     , mValue (mantissa)
     , mOffset (exponent)
@@ -62,7 +62,7 @@ STAmount::STAmount (SField::ref name, Issue const& issue,
 }
 
 STAmount::STAmount (SField::ref name, std::int64_t mantissa)
-    : SerializedType (name)
+    : STBase (name)
     , mOffset (0)
     , mIsNative (true)
 {
@@ -71,7 +71,7 @@ STAmount::STAmount (SField::ref name, std::int64_t mantissa)
 
 STAmount::STAmount (SField::ref name,
         std::uint64_t mantissa, bool negative)
-    : SerializedType (name)
+    : STBase (name)
     , mValue (mantissa)
     , mOffset (0)
     , mIsNative (true)
@@ -81,7 +81,7 @@ STAmount::STAmount (SField::ref name,
 
 STAmount::STAmount (SField::ref name, Issue const& issue,
         std::uint64_t mantissa, int exponent, bool negative)
-    : SerializedType (name)
+    : STBase (name)
     , mIssue (issue)
     , mValue (mantissa)
     , mOffset (exponent)
@@ -593,7 +593,7 @@ void STAmount::roundSelf ()
 
 //------------------------------------------------------------------------------
 //
-// SerializedType
+// STBase
 //
 //------------------------------------------------------------------------------
 
@@ -745,7 +745,7 @@ STAmount::add (Serializer& s) const
 }
 
 bool
-STAmount::isEquivalent (const SerializedType& t) const
+STAmount::isEquivalent (const STBase& t) const
 {
     const STAmount* v = dynamic_cast<const STAmount*> (&t);
     return v && (*v == *this);

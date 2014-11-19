@@ -17,38 +17,50 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOCALTRANSACTIONS_H
-#define RIPPLE_LOCALTRANSACTIONS_H
-
-#include <ripple/app/tx/TransactionEngine.h>
-#include <ripple/app/ledger/Ledger.h>
+#include <ripple/protocol/SOTemplate.h>
 
 namespace ripple {
 
-// Track transactions issued by local clients
-// Ensure we always apply them to our open ledger
-// Hold them until we see them in a fully-validated ledger
-
-class LocalTxs
+SOTemplate::SOTemplate ()
 {
-public:
+}
 
-    virtual ~LocalTxs () = default;
+void SOTemplate::push_back (SOElement const& r)
+{
+    // Ensure there is the enough space in the index mapping
+    // table for all possible fields.
+    //
+    if (mIndex.empty ())
+    {
+        // Unmapped indices will be set to -1
+        //
+        mIndex.resize (SField::getNumFields () + 1, -1);
+    }
 
-    static std::unique_ptr<LocalTxs> New ();
+    // Make sure the field's index is in range
+    //
+    assert (r.e_field.getNum () < mIndex.size ());
 
-    // Add a new local transaction
-    virtual void push_back (LedgerIndex index, STTx::ref txn) = 0;
+    // Make sure that this field hasn't already been assigned
+    //
+    assert (getIndex (r.e_field) == -1);
 
-    // Apply local transactions to a new open ledger
-    virtual void apply (TransactionEngine&) = 0;
+    // Add the field to the index mapping table
+    //
+    mIndex [r.e_field.getNum ()] = mTypes.size ();
 
-    // Remove obsolete transactions based on a new fully-valid ledger
-    virtual void sweep (Ledger::ref validLedger) = 0;
+    // Append the new element.
+    //
+    mTypes.push_back (value_type (new SOElement (r)));
+}
 
-    virtual std::size_t size () = 0;
-};
+int SOTemplate::getIndex (SField::ref f) const
+{
+    // The mapping table should be large enough for any possible field
+    //
+    assert (f.getNum () < mIndex.size ());
+
+    return mIndex[f.getNum ()];
+}
 
 } // ripple
-
-#endif

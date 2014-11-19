@@ -17,6 +17,17 @@
 */
 //==============================================================================
 
+#ifdef BEAST_WIN32
+#include <Winsock2.h>
+// <Winsock2.h> defines min, max and does other stupid things
+# ifdef max
+# undef max
+# endif
+# ifdef min
+# undef min
+# endif
+#endif
+
 namespace ripple {
 
 #if BEAST_WIN32

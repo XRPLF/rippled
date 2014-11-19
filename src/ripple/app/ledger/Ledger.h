@@ -24,10 +24,11 @@
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/app/misc/AccountState.h>
-#include <ripple/app/misc/SerializedLedger.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/types/Book.h>
+#include <set>
 
 namespace ripple {
 
@@ -274,9 +275,9 @@ public:
         uint256 const& transID, TransactionMetaSet::pointer & txMeta) const;
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
-    static SerializedTransaction::pointer getSTransaction (
+    static STTx::pointer getSTransaction (
         SHAMapItem::ref, SHAMapTreeNode::TNType);
-    SerializedTransaction::pointer getSMTransaction (
+    STTx::pointer getSMTransaction (
         SHAMapItem::ref, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 

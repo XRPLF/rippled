@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/shamap/SHAMapSyncFilters.h>
+#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
 
@@ -43,7 +46,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
         {
             Serializer s (nodeData.begin () + 4, nodeData.end ()); // skip prefix
             SerializerIterator sit (s);
-            SerializedTransaction::pointer stx = std::make_shared<SerializedTransaction> (std::ref (sit));
+            STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
             getApp().getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",

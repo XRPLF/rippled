@@ -19,25 +19,8 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/types.h>
-
-#ifdef BEAST_WIN32
-#include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines min, max and does other stupid things
-# ifdef max
-# undef max
-# endif
-# ifdef min
-# undef min
-# endif
-#endif
-
-#include <set>
-#include <map>
-
 #include <ripple/types/impl/Base58.cpp>
 #include <ripple/types/impl/ByteOrder.cpp>
 #include <ripple/types/impl/strHex.cpp>
-#include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>
 #include <ripple/types/impl/Issue.cpp>

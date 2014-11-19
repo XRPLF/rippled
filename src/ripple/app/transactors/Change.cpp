@@ -26,7 +26,7 @@ class Change
 {
 public:
     Change (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -178,7 +178,7 @@ private:
 
 TER
 transact_Change (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

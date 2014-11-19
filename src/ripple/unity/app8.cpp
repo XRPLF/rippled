@@ -43,7 +43,6 @@
 
 #include <ripple/app/main/ParameterTable.cpp>
 #include <ripple/app/paths/RippleLineCache.cpp>
-#include <ripple/app/ledger/SerializedValidation.cpp>
 
 #ifdef _MSC_VER
 #pragma warning (pop)

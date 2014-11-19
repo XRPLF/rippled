@@ -29,7 +29,7 @@ class SetAccount
 
 public:
     SetAccount (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -338,7 +338,7 @@ public:
 
 TER
 transact_SetAccount (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

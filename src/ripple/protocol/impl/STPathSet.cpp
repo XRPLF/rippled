@@ -17,180 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/SerializedTypes.h>
-#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STPathSet.h>
 
 namespace ripple {
-
-const STAmount saZero (noIssue(), 0u);
-const STAmount saOne (noIssue(), 1u);
-
-SerializedType& SerializedType::operator= (const SerializedType& t)
-{
-    if ((t.fName != fName) && fName->isUseful () && t.fName->isUseful ())
-    {
-        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, SerializedType) // This is common for amounts
-                << "Caution: " << t.fName->getName () << " not replacing " << fName->getName ();
-    }
-
-    if (!fName->isUseful ()) fName = t.fName;
-
-    return *this;
-}
-
-bool SerializedType::isEquivalent (const SerializedType& t) const
-{
-    assert (getSType () == STI_NOTPRESENT);
-    if (t.getSType () == STI_NOTPRESENT)
-        return true;
-    WriteLog (lsDEBUG, SerializedType) << "notEquiv " << getFullText() << " not STI_NOTPRESENT";
-    return false;
-}
-
-std::string SerializedType::getFullText () const
-{
-    std::string ret;
-
-    if (getSType () != STI_NOTPRESENT)
-    {
-        if (fName->hasName ())
-        {
-            ret = fName->fieldName;
-            ret += " = ";
-        }
-
-        ret += getText ();
-    }
-
-    return ret;
-}
-
-//
-// STVariableLength
-//
-
-STVariableLength::STVariableLength (SerializerIterator& st, SField::ref name) : SerializedType (name)
-{
-    value = st.getVL ();
-}
-
-std::string STVariableLength::getText () const
-{
-    return strHex (value);
-}
-
-STVariableLength* STVariableLength::construct (SerializerIterator& u, SField::ref name)
-{
-    return new STVariableLength (name, u.getVL ());
-}
-
-bool STVariableLength::isEquivalent (const SerializedType& t) const
-{
-    const STVariableLength* v = dynamic_cast<const STVariableLength*> (&t);
-    return v && (value == v->value);
-}
-
-std::string STAccount::getText () const
-{
-    Account u;
-    RippleAddress a;
-
-    if (!getValueH160 (u))
-        return STVariableLength::getText ();
-
-    a.setAccountID (u);
-    return a.humanAccountID ();
-}
-
-STAccount* STAccount::construct (SerializerIterator& u, SField::ref name)
-{
-    return new STAccount (name, u.getVL ());
-}
-
-//
-// STVector256
-//
-
-// Return a new object from a SerializerIterator.
-STVector256* STVector256::construct (SerializerIterator& u, SField::ref name)
-{
-    Blob data = u.getVL ();
-    Blob ::iterator begin = data.begin ();
-
-    std::unique_ptr<STVector256> vec (new STVector256 (name));
-
-    int count = data.size () / (256 / 8);
-    vec->mValue.reserve (count);
-
-    unsigned int    uStart  = 0;
-
-    for (unsigned int i = 0; i != count; i++)
-    {
-        unsigned int    uEnd    = uStart + (256 / 8);
-
-        // This next line could be optimized to construct a default uint256 in the vector and then copy into it
-        vec->mValue.push_back (uint256 (Blob (begin + uStart, begin + uEnd)));
-        uStart  = uEnd;
-    }
-
-    return vec.release ();
-}
-
-void STVector256::add (Serializer& s) const
-{
-    assert (fName->isBinary ());
-    assert (fName->fieldType == STI_VECTOR256);
-    s.addVL (mValue.empty () ? nullptr : mValue[0].begin (), mValue.size () * (256 / 8));
-}
-
-bool STVector256::isEquivalent (const SerializedType& t) const
-{
-    const STVector256* v = dynamic_cast<const STVector256*> (&t);
-    return v && (mValue == v->mValue);
-}
-
-Json::Value STVector256::getJson (int) const
-{
-    Json::Value ret (Json::arrayValue);
-
-    for (auto const& vEntry : mValue)
-        ret.append (to_string (vEntry));
-
-    return ret;
-}
-
-//
-// STAccount
-//
-
-STAccount::STAccount (SField::ref n, Account const& v) : STVariableLength (n)
-{
-    peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
-}
-
-bool STAccount::isValueH160 () const
-{
-    return peekValue ().size () == (160 / 8);
-}
-
-RippleAddress STAccount::getValueNCA () const
-{
-    RippleAddress a;
-    Account account;
-
-    if (getValueH160 (account))
-        a.setAccountID (account);
-
-    return a;
-}
-
-void STAccount::setValueNCA (RippleAddress const& nca)
-{
-    setValueH160 (nca.getAccountID ());
-}
 
 std::size_t
 STPathElement::get_hash (STPathElement const& element)
@@ -229,7 +58,7 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
         {
             if (path.empty ())
             {
-                WriteLog (lsINFO, SerializedType) << "STPathSet: Empty path.";
+                WriteLog (lsINFO, STBase) << "STPathSet: Empty path.";
 
                 throw std::runtime_error ("empty path");
             }
@@ -244,7 +73,7 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
         }
         else if (iType & ~STPathElement::typeAll)
         {
-            WriteLog (lsINFO, SerializedType)
+            WriteLog (lsINFO, STBase)
                     << "STPathSet: Bad path element: " << iType;
 
             throw std::runtime_error ("bad path element");
@@ -274,7 +103,7 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
     while (1);
 }
 
-bool STPathSet::isEquivalent (const SerializedType& t) const
+bool STPathSet::isEquivalent (const STBase& t) const
 {
     const STPathSet* v = dynamic_cast<const STPathSet*> (&t);
     return v && (value == v->value);

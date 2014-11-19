@@ -20,6 +20,16 @@
 #ifndef RIPPLE_LEDGERCONSENSUS_H
 #define RIPPLE_LEDGERCONSENSUS_H
 
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/tx/LocalTxs.h>
+#include <ripple/json/json_value.h>
+#include <ripple/overlay/Peer.h>
+#include <ripple/types/RippleLedgerHash.h>
+#include <beast/chrono/abstract_clock.h>
+#include <chrono>
+
 namespace ripple {
 
 /** Manager for achieving consensus on the next ledger.

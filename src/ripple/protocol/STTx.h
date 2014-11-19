@@ -34,27 +34,27 @@ namespace ripple {
 #define TXN_SQL_INCLUDED    'I'
 #define TXN_SQL_UNKNOWN     'U'
 
-class SerializedTransaction
+class STTx
     : public STObject
-    , public CountedObject <SerializedTransaction>
+    , public CountedObject <STTx>
 {
 public:
-    static char const* getCountedObjectName () { return "SerializedTransaction"; }
+    static char const* getCountedObjectName () { return "STTx"; }
 
-    typedef std::shared_ptr<SerializedTransaction>        pointer;
-    typedef const std::shared_ptr<SerializedTransaction>& ref;
+    typedef std::shared_ptr<STTx>        pointer;
+    typedef const std::shared_ptr<STTx>& ref;
 
 public:
-    SerializedTransaction () = delete;
-    SerializedTransaction& operator= (SerializedTransaction const& other) = delete;
+    STTx () = delete;
+    STTx& operator= (STTx const& other) = delete;
 
-    SerializedTransaction (SerializedTransaction const& other) = default;
+    STTx (STTx const& other) = default;
 
-    explicit SerializedTransaction (SerializerIterator& sit);
-    explicit SerializedTransaction (TxType type);
+    explicit STTx (SerializerIterator& sit);
+    explicit STTx (TxType type);
     
     // Only called from ripple::RPC::transactionSign - can we eliminate this?
-    explicit SerializedTransaction (STObject const& object);
+    explicit STTx (STObject const& object);
 
     // STObject functions
     SerializedTypeID getSType () const
@@ -145,9 +145,9 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    SerializedTransaction* duplicate () const override
+    STTx* duplicate () const override
     {
-        return new SerializedTransaction (*this);
+        return new STTx (*this);
     }
 
     TxType tx_type_;

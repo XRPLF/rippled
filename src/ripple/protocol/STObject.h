@@ -22,9 +22,9 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/SerializedType.h>
-#include <ripple/protocol/SerializedTypes.h>
-#include <ripple/protocol/SerializedObjectTemplate.h>
+#include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/STVector256.h>
+#include <ripple/protocol/SOTemplate.h>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 namespace ripple {
@@ -32,7 +32,7 @@ namespace ripple {
 class STArray;
 
 class STObject
-    : public SerializedType
+    : public STBase
     , public CountedObject <STObject>
 {
 public:
@@ -44,27 +44,27 @@ public:
     }
 
     explicit STObject (SField::ref name)
-        : SerializedType (name), mType (nullptr)
+        : STBase (name), mType (nullptr)
     {
         ;
     }
 
     STObject (const SOTemplate & type, SField::ref name)
-        : SerializedType (name)
+        : STBase (name)
     {
         set (type);
     }
 
     STObject (
         const SOTemplate & type, SerializerIterator & sit, SField::ref name)
-        : SerializedType (name)
+        : STBase (name)
     {
         set (sit);
         setType (type);
     }
 
-    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data)
-        : SerializedType (name), mType (nullptr)
+    STObject (SField::ref name, boost::ptr_vector<STBase>& data)
+        : STBase (name), mType (nullptr)
     {
         mData.swap (data);
     }
@@ -76,7 +76,7 @@ public:
 
     virtual ~STObject () { }
 
-    static std::unique_ptr<SerializedType>
+    static std::unique_ptr<STBase>
     deserialize (SerializerIterator & sit, SField::ref name);
 
     bool setType (const SOTemplate & type);
@@ -94,7 +94,7 @@ public:
     {
         return STI_OBJECT;
     }
-    virtual bool isEquivalent (const SerializedType & t) const override;
+    virtual bool isEquivalent (const STBase & t) const override;
     virtual bool isDefault () const override
     {
         return mData.empty ();
@@ -123,42 +123,42 @@ public:
     // TODO(tom): options should be an enum.
     virtual Json::Value getJson (int options) const override;
 
-    int addObject (const SerializedType & t)
+    int addObject (const STBase & t)
     {
         mData.push_back (t.clone ().release ());
         return mData.size () - 1;
     }
-    int giveObject (std::unique_ptr<SerializedType> t)
+    int giveObject (std::unique_ptr<STBase> t)
     {
         mData.push_back (t.release ());
         return mData.size () - 1;
     }
-    int giveObject (SerializedType * t)
+    int giveObject (STBase * t)
     {
         mData.push_back (t);
         return mData.size () - 1;
     }
-    const boost::ptr_vector<SerializedType>& peekData () const
+    const boost::ptr_vector<STBase>& peekData () const
     {
         return mData;
     }
-    boost::ptr_vector<SerializedType>& peekData ()
+    boost::ptr_vector<STBase>& peekData ()
     {
         return mData;
     }
-    SerializedType& front ()
+    STBase& front ()
     {
         return mData.front ();
     }
-    const SerializedType& front () const
+    const STBase& front () const
     {
         return mData.front ();
     }
-    SerializedType& back ()
+    STBase& back ()
     {
         return mData.back ();
     }
-    const SerializedType& back () const
+    const STBase& back () const
     {
         return mData.back ();
     }
@@ -176,19 +176,19 @@ public:
     uint256 getHash (std::uint32_t prefix) const;
     uint256 getSigningHash (std::uint32_t prefix) const;
 
-    const SerializedType& peekAtIndex (int offset) const
+    const STBase& peekAtIndex (int offset) const
     {
         return mData[offset];
     }
-    SerializedType& getIndex (int offset)
+    STBase& getIndex (int offset)
     {
         return mData[offset];
     }
-    const SerializedType* peekAtPIndex (int offset) const
+    const STBase* peekAtPIndex (int offset) const
     {
         return & (mData[offset]);
     }
-    SerializedType* getPIndex (int offset)
+    STBase* getPIndex (int offset)
     {
         return & (mData[offset]);
     }
@@ -196,10 +196,10 @@ public:
     int getFieldIndex (SField::ref field) const;
     SField::ref getFieldSType (int index) const;
 
-    const SerializedType& peekAtField (SField::ref field) const;
-    SerializedType& getField (SField::ref field);
-    const SerializedType* peekAtPField (SField::ref field) const;
-    SerializedType* getPField (SField::ref field, bool createOkay = false);
+    const STBase& peekAtField (SField::ref field) const;
+    STBase& getField (SField::ref field);
+    const STBase* peekAtPField (SField::ref field) const;
+    STBase* getPField (SField::ref field, bool createOkay = false);
 
     // these throw if the field type doesn't match, or return default values
     // if the field is optional but not present
@@ -241,7 +241,7 @@ public:
     template <class Tag>
     void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
     {
-        SerializedType* rf = getPField (field, true);
+        STBase* rf = getPField (field, true);
 
         if (!rf)
             throw std::runtime_error ("Field not found");
@@ -259,35 +259,35 @@ public:
     STObject& peekFieldObject (SField::ref field);
 
     bool isFieldPresent (SField::ref field) const;
-    SerializedType* makeFieldPresent (SField::ref field);
+    STBase* makeFieldPresent (SField::ref field);
     void makeFieldAbsent (SField::ref field);
     bool delField (SField::ref field);
     void delField (int index);
 
-    static std::unique_ptr <SerializedType>
+    static std::unique_ptr <STBase>
     makeDefaultObject (SerializedTypeID id, SField::ref name);
 
     // VFALCO TODO remove the 'depth' parameter
-    static std::unique_ptr<SerializedType> makeDeserializedObject (
+    static std::unique_ptr<STBase> makeDeserializedObject (
         SerializedTypeID id,
         SField::ref name,
         SerializerIterator&,
         int depth);
 
-    static std::unique_ptr<SerializedType>
+    static std::unique_ptr<STBase>
     makeNonPresentObject (SField::ref name)
     {
         return makeDefaultObject (STI_NOTPRESENT, name);
     }
 
-    static std::unique_ptr<SerializedType> makeDefaultObject (SField::ref name)
+    static std::unique_ptr<STBase> makeDefaultObject (SField::ref name)
     {
         return makeDefaultObject (name.fieldType, name);
     }
 
     // field iterator stuff
-    typedef boost::ptr_vector<SerializedType>::iterator iterator;
-    typedef boost::ptr_vector<SerializedType>::const_iterator const_iterator;
+    typedef boost::ptr_vector<STBase>::iterator iterator;
+    typedef boost::ptr_vector<STBase>::const_iterator const_iterator;
     iterator begin ()
     {
         return mData.begin ();
@@ -309,7 +309,7 @@ public:
         return mData.empty ();
     }
 
-    bool hasMatchingEntry (const SerializedType&);
+    bool hasMatchingEntry (const STBase&);
 
     bool operator== (const STObject & o) const;
     bool operator!= (const STObject & o) const
@@ -333,7 +333,7 @@ private:
             decltype (std::declval <T> ().getValue ())>::type >::type >
     V getFieldByValue (SField::ref field) const
     {
-        const SerializedType* rf = peekAtPField (field);
+        const STBase* rf = peekAtPField (field);
 
         if (!rf)
             throw std::runtime_error ("Field not found");
@@ -359,7 +359,7 @@ private:
     template <typename T, typename V>
     V const& getFieldByConstRef (SField::ref field, V const& empty) const
     {
-        const SerializedType* rf = peekAtPField (field);
+        const STBase* rf = peekAtPField (field);
 
         if (!rf)
             throw std::runtime_error ("Field not found");
@@ -381,7 +381,7 @@ private:
     template <typename T, typename V>
     void setFieldUsingSetValue (SField::ref field, V value)
     {
-        SerializedType* rf = getPField (field, true);
+        STBase* rf = getPField (field, true);
 
         if (!rf)
             throw std::runtime_error ("Field not found");
@@ -401,7 +401,7 @@ private:
     template <typename T>
     void setFieldUsingAssignment (SField::ref field, T const& value)
     {
-        SerializedType* rf = getPField (field, true);
+        STBase* rf = getPField (field, true);
 
         if (!rf)
             throw std::runtime_error ("Field not found");
@@ -418,7 +418,7 @@ private:
     }
 
 private:
-    boost::ptr_vector<SerializedType>   mData;
+    boost::ptr_vector<STBase>   mData;
     const SOTemplate*                   mType;
 };
 
