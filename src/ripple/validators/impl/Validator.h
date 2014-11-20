@@ -43,7 +43,7 @@ private:
     // Holds the Entry of all recent ledgers for this validator.
 #if 1
     typedef beast::aged_unordered_map <RippleLedgerHash, Entry,
-        std::chrono::seconds, beast::hardened_hash<>,
+        std::chrono::steady_clock, beast::hardened_hash<>,
             RippleLedgerHash::key_equal> Table;
 #else
     typedef beast::aged_map <RippleLedgerHash, Entry,

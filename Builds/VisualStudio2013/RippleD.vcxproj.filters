@@ -630,9 +630,6 @@
     <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock_io.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\basic_seconds_clock.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
