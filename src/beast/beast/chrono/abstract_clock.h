@@ -67,7 +67,7 @@ public:
     virtual ~abstract_clock() = default;
 
     /** Returns the current time. */
-    virtual time_point now() = 0;
+    virtual time_point now() const = 0;
 
     /** Returning elapsed ticks since the epoch. */
     rep elapsed()
@@ -87,7 +87,8 @@ struct abstract_clock_wrapper
     using typename abstract_clock<Facade>::duration;
     using typename abstract_clock<Facade>::time_point;
 
-    time_point now()
+    time_point
+    now() const
     {
         return time_point(duration(
             std::chrono::duration_cast <duration>(

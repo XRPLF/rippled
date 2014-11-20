@@ -26,7 +26,7 @@ namespace beast {
 
 /** Manual clock implementation.
 
-This concrete class implements the @ref abstract_clock interface and
+    This concrete class implements the @ref abstract_clock interface and
     allows the time to be advanced manually, mainly for the purpose of
     providing a clock in unit tests.
 
@@ -52,14 +52,8 @@ public:
     {
     }
 
-    bool
-    is_steady()
-    {
-        return Clock::is_steady;
-    }
-
     time_point
-    now()
+    now() const
     {
         return now_;
     }
@@ -82,11 +76,11 @@ public:
         set (time_point (duration (v)));
     }
 
-    /** Convenience for advancing the clock by one. */
+    /** Convenience for advancing the clock by one second. */
     manual_clock&
     operator++ ()
     {
-        now_ += duration(1);
+        now_ += std::chrono::seconds(1);
         return *this;
     }
 };
