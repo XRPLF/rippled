@@ -164,8 +164,6 @@ int run (int argc, char** argv)
     // Make sure that we have the right OpenSSL and Boost libraries.
     version::checkLibraryVersions();
 
-    FatalErrorReporter reporter;
-
     using namespace std;
 
     setCallingThreadName ("main");
