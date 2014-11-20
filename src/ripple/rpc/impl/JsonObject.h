@@ -20,11 +20,10 @@
 #ifndef RIPPLED_RIPPLE_RPC_IMPL_JSONCOLLECTIONS_H
 #define RIPPLED_RIPPLE_RPC_IMPL_JSONCOLLECTIONS_H
 
+#include <ripple/rpc/impl/JsonWriter.h>
+
 namespace ripple {
 namespace RPC {
-namespace New {
-
-class Writer;
 
 /**
     Collection is a base class for Array and Object, classes which provide the
@@ -32,8 +31,8 @@ class Writer;
     heap memory and only a very small amount of stack.
 
     From http://json.org, JSON has two types of collection: array, and object.
-    Everything else is a *scalar* - a number, a string, a boolean or the special
-    value null.
+    Everything else is a *scalar* - a number, a string, a boolean, the special
+    value null, or a legacy Json::Value.
 
     Collections must write JSON "as-it-goes" in order to get the strong
     performance guarantees.  This puts restrictions upon API users:
@@ -182,7 +181,8 @@ public:
 
     /** Set a scalar value in the Object for a key.
 
-        A JSON scalar is a single value - a number, string, boolean or null.
+        A JSON scalar is a single value - a number, string, boolean, nullptr or
+        a Json::Value.
 
         `set()` throws an exception if this object is disabled (which means that
         one of its children is enabled).
@@ -193,11 +193,13 @@ public:
         An operator[] is provided to allow writing `object["key"] = scalar;`.
      */
     template <typename Scalar>
-    Object& set (std::string const& key, Scalar);
+    Object& set (std::string const& key, Scalar const&);
 
     // Detail class and method used to implement operator[].
     class Proxy;
+
     Proxy operator[] (std::string const& key);
+    Proxy operator[] (Json::StaticString const& key);
 
     /** Make a new Object at a key and return it.
 
@@ -239,7 +241,7 @@ public:
         its sub-collections is enabled).
     */
     template <typename Scalar>
-    Array& append (Scalar);
+    Array& append (const Scalar&);
 
     /** Append a new Object and return it.
 
@@ -262,6 +264,30 @@ public:
 
 //------------------------------------------------------------------------------
 
+// Generic accessor functions to allow Json::Value and Collection to
+// interoperate.
+
+/** Add a new subarray at a named key in a Json object. */
+Json::Value& addArray (Json::Value&, Json::StaticString const& key);
+
+/** Add a new subarray at a named key in a Json object. */
+Array addArray (Object&, Json::StaticString const& key);
+
+/** Add a new subobject at a named key in a Json object. */
+Json::Value& addObject (Json::Value&, Json::StaticString const& key);
+
+/** Add a new subobject at a named key in a Json object. */
+Object addObject (Object&, Json::StaticString const& key);
+
+/** Copy all the keys and values from one object into another. */
+void copyFrom (Json::Value& to, Json::Value const& from);
+
+/** Copy all the keys and values from one object into another. */
+void copyFrom (Object& to, Json::Value const& from);
+
+//------------------------------------------------------------------------------
+// Implementation details.
+
 // Detail class for Object::operator[].
 class Object::Proxy
 {
@@ -280,7 +306,50 @@ public:
     }
 };
 
-} // New
+//------------------------------------------------------------------------------
+
+template <typename Scalar>
+Array& Array::append (Scalar const& value)
+{
+    checkWritable ("append");
+    if (writer_)
+        writer_->append (value);
+    return *this;
+}
+
+template <typename Scalar>
+Object& Object::set (std::string const& key, Scalar const& value)
+{
+    checkWritable ("set");
+    if (writer_)
+        writer_->set (key, value);
+    return *this;
+}
+
+inline
+Json::Value& addArray (Json::Value& json, Json::StaticString const& key)
+{
+    return (json[key] = Json::arrayValue);
+}
+
+inline
+Array addArray (Object& json, Json::StaticString const& key)
+{
+    return json.makeArray (std::string (key));
+}
+
+inline
+Json::Value& addObject (Json::Value& json, Json::StaticString const& key)
+{
+    return (json[key] = Json::objectValue);
+}
+
+inline
+Object addObject (Object& object, Json::StaticString const& key)
+{
+    return object.makeObject (std::string (key));
+}
+
 } // RPC
 } // ripple
 

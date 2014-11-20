@@ -17,30 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
-
-#include <ripple/core/Config.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#ifndef RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
+#define RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
-{
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
-};
+/** Writes a minimal representation of a Json value to an Output in O(n) time.
+
+    Data is streamed right to the output, so only a marginal amount of memory is
+    used.  This can be very important for a very large Json::Value.
+ */
+void writeJson (Json::Value const&, Output const&);
+
+/** Return the minimal string representation of a Json::Value in O(n) time.
+
+    This requires a memory allocation for the full size of the output.
+    If possible, use write().
+ */
+std::string jsonAsString (Json::Value const&);
 
 } // RPC
 } // ripple
-
-
 
 #endif

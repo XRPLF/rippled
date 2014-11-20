@@ -17,30 +17,35 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLED_RIPPLE_RPC_YIELD_H
+#define RIPPLED_RIPPLE_RPC_YIELD_H
 
-#include <ripple/core/Config.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/Output.h>
+#include <boost/coroutine/all.hpp>
+#include <functional>
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
-{
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
-};
+/** Yield is a generic placeholder for a function that yields control of
+    execution - perhaps to another coroutine.
+
+    When code calls Yield, it might block for an indeterminate period of time.
+
+    By convention you must not be holding any locks or any resource that would
+    prevent any other task from making forward progress when you call Yield.
+*/
+using Yield = std::function <void ()>;
+
+/** Wrap an Output so it yields after approximately `chunkSize` bytes.
+
+    chunkedYieldingOutput() only yields after a call to output(), so there might
+    more than chunkSize bytes sent between calls to yield().
+ */
+Output chunkedYieldingOutput (
+    Output const&, Yield const&, std::size_t chunkSize);
 
 } // RPC
 } // ripple
-
-
 
 #endif

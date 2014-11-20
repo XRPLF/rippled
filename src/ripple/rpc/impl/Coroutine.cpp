@@ -17,30 +17,46 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
-
-#include <ripple/core/Config.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/Coroutine.h>
+#include <ripple/rpc/impl/TestOutputSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
+using CoroutinePull = boost::coroutines::coroutine <void>::pull_type;
+
+struct Coroutine::Impl : CoroutinePull
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
+    Impl (CoroutinePull&& p) : CoroutinePull (std::move(p)) {}
 };
+
+Coroutine::Coroutine (YieldFunction const& yieldFunction)
+{
+    CoroutinePull pull ([yieldFunction] (
+        boost::coroutines::coroutine <void>::push_type& push)
+    {
+        Yield yield = [&push] () { push(); };
+        yield ();
+        yieldFunction (yield);
+    });
+
+    impl_ = std::make_shared<Impl> (std::move (pull));
+    // NOTE: Passing the lambda above directly to `std::make_shared()` results
+    // in a compilation error due to a missing assignment operator that's needed
+    // but never actually called.
+}
+
+Coroutine::~Coroutine() = default;
+
+Coroutine::operator bool() const
+{
+    return bool (*impl_);
+}
+
+void Coroutine::operator()() const
+{
+    (*impl_)();
+}
 
 } // RPC
 } // ripple
-
-
-
-#endif

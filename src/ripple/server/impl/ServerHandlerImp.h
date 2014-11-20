@@ -23,6 +23,7 @@
 #include <ripple/core/Job.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
+#include <ripple/rpc/Output.h>
 #include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
@@ -49,6 +50,9 @@ public:
     ~ServerHandlerImp();
 
 private:
+    using Output = RPC::Output;
+    using Yield = RPC::Yield;
+
     void
     setup (Setup const& setup, beast::Journal journal) override;
 
@@ -104,15 +108,11 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    processSession (Job& job,
-        std::shared_ptr<HTTP::Session> const& session);
+    processSession (std::shared_ptr<HTTP::Session> const&, Yield const&);
 
-    std::string
-    createResponse (int statusCode, std::string const& description);
-
-    std::string
+    void
     processRequest (HTTP::Port const& port, std::string const& request,
-        beast::IP::Endpoint const& remoteIPAddress);
+        beast::IP::Endpoint const& remoteIPAddress, Output, Yield);
 
     //
     // PropertyStream

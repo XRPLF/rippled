@@ -17,30 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_LEDGER_H
+#define RIPPLED_RIPPLE_RPC_HANDLERS_LEDGER_H
 
-#include <ripple/core/Config.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/impl/HandlerBase.h>
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
-{
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
+class Object;
+
+class LedgerHandler : public HandlerBase {
+public:
+    explicit LedgerHandler (Context&);
+    bool check (Json::Value& error) override;
+    void write (Object& value) override;
+
+    template <class JsonValue> void writeJson (JsonValue&);
+
+private:
+    bool needsLedger_;
+    Ledger::pointer ledger_;
+    Json::Value lookupResult_;
+    int options_;
 };
 
 } // RPC
 } // ripple
-
-
 
 #endif

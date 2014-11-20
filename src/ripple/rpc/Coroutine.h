@@ -17,30 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLED_RIPPLE_RPC_COROUTINE_H
+#define RIPPLED_RIPPLE_RPC_COROUTINE_H
 
-#include <ripple/core/Config.h>
 #include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
+/** Runs a function that takes a yield as a coroutine. */
+class Coroutine
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
+public:
+    using YieldFunction = std::function <void (Yield const&)>;
+
+    explicit Coroutine (YieldFunction const&);
+    ~Coroutine();
+
+    /** Is the coroutine finished? */
+    operator bool() const;
+
+    /** Run one more step of the coroutine. */
+    void operator()() const;
+
+private:
+    struct Impl;
+
+    std::shared_ptr<Impl> impl_;
+    // We'd prefer to use std::unique_ptr here, but unfortunately, in C++11
+    // move semantics don't work well with `std::bind` or lambdas.
 };
 
 } // RPC
 } // ripple
-
-
 
 #endif

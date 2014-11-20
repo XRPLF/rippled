@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_writer.h>
+
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <ripple/rpc/impl/TestOutputSuite.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class JsonWriter_test : public TestOutputSuite
 {
@@ -31,7 +32,7 @@ public:
     void testTrivial ()
     {
         setup ("trivial");
-        expect (output_.data.empty ());
+        expect (output_.empty ());
         writer_->output (0);
         expectResult("0");
     }
@@ -161,6 +162,18 @@ public:
                       "\"subarray\":[23.5]}]]}");
     }
 
+    void testJson ()
+    {
+        setup ("object");
+        Json::Value value (Json::objectValue);
+        value["foo"] = 23;
+        writer_->startRoot (Writer::object);
+        writer_->set ("hello", value);
+        writer_->finish ();
+
+        expectResult ("{\"hello\":{\"foo\":\"bar\"}}");
+    }
+
     void run () override
     {
         testTrivial ();
@@ -177,6 +190,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JsonWriter, ripple_basics, ripple);
 
-} // New
 } // RPC
 } // ripple

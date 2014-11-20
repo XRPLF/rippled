@@ -17,30 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
-
-#include <ripple/core/Config.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#ifndef RIPPLED_RIPPLE_RPC_IMPL_HANDLERBASE_H
+#define RIPPLED_RIPPLE_RPC_IMPL_HANDLERBASE_H
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
+class Context;
+class Object;
+
+class HandlerBase
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
+public:
+    HandlerBase (Context& context) : context_ (context)
+    {
+    }
+
+    ~HandlerBase() = default;
+
+    /** Check for errors.  Return true if everything is OK.
+        On error, fill the Json::Value with error data. */
+    virtual bool check (Json::Value& error) = 0;
+
+    /** Write a result to the output object. */
+    virtual void write (Object&) = 0;
+
+protected:
+    Context& context_;
 };
 
 } // RPC
 } // ripple
-
-
 
 #endif

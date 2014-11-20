@@ -17,30 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
-
-#include <ripple/core/Config.h>
 #include <ripple/rpc/Yield.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/impl/TestOutputSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
+Output chunkedYieldingOutput (
+    Output const& output, Yield const& yield, std::size_t chunkSize)
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
-    Role role;
-    RPC::Yield yield;
-};
+    auto count = std::make_shared <std::size_t> (0);
+    return [chunkSize, count, output, yield] (Bytes const& bytes)
+    {
+        if (*count > chunkSize)
+            yield();
+        output (bytes);
+        *count += bytes.size;
+    };
+}
 
 } // RPC
 } // ripple
-
-
-
-#endif

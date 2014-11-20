@@ -21,14 +21,39 @@
 #define RIPPLED_RIPPLE_BASICS_TYPES_OUTPUT_H
 
 namespace ripple {
+namespace RPC {
 
-class Output
+struct Bytes
 {
-public:
-    virtual void output (char const* data, size_t length) = 0;
-    virtual ~Output() = default;
+    char const* data = nullptr;
+    std::size_t size = 0;
+
+    Bytes (std::string const& s) : data (s.data()), size (s.size())
+    {
+    }
+
+    Bytes (char const* cstr) : data (cstr), size (strlen (cstr))
+    {
+    }
+
+    Bytes (char const& cstr) : data (&cstr), size (1)
+    {
+    }
+
+    Bytes (char const* cstr, std::size_t s) : data (cstr), size (s)
+    {
+    }
 };
 
+using Output = std::function <void (Bytes const&)>;
+
+inline
+Output stringOutput (std::string& s)
+{
+    return [&](Bytes const& b) { s.append (b.data, b.size); };
+}
+
+} // RPC
 } // ripple
 
 #endif
