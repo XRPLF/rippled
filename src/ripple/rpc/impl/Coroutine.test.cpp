@@ -23,7 +23,7 @@
 namespace ripple {
 namespace RPC {
 
-class Coroutine_test : public New::TestOutputSuite
+class Coroutine_test : public TestOutputSuite
 {
 public:
     using Strings = std::vector <std::string>;

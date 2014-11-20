@@ -34,6 +34,7 @@
 #include <ripple/rpc/impl/ErrorCodes.cpp>
 #include <ripple/rpc/impl/JsonObject.cpp>
 #include <ripple/rpc/impl/JsonWriter.cpp>
+#include <ripple/rpc/impl/WriteJson.cpp>
 #include <ripple/rpc/impl/Manager.cpp>
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
@@ -110,6 +111,7 @@
 #include <ripple/rpc/impl/TransactionSign.cpp>
 
 #include <ripple/rpc/impl/Coroutine.test.cpp>
-#include <ripple/rpc/impl/JsonObject_test.cpp>
-#include <ripple/rpc/impl/JsonWriter_test.cpp>
-#include <ripple/rpc/impl/Status_test.cpp>
+#include <ripple/rpc/impl/JsonObject.test.cpp>
+#include <ripple/rpc/impl/JsonWriter.test.cpp>
+#include <ripple/rpc/impl/Status.test.cpp>
+#include <ripple/rpc/impl/WriteJson.test.cpp>

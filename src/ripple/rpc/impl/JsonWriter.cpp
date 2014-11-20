@@ -19,11 +19,11 @@
 
 #include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/rpc/impl/WriteJson.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 namespace {
 
@@ -38,7 +38,7 @@ std::map <char, const char*> jsonSpecialCharacterEscape = {
     {'\t', "\\t"}
 };
 
-static int const jsonEscapeLength = 2;
+static size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 const char closeBrace = '}';
@@ -64,7 +64,7 @@ size_t lengthWithoutTrailingZeros (std::string const& s)
 class Writer::Impl
 {
 public:
-    Impl (Output output) : output_(output) {}
+    Impl (Output const& output) : output_(output) {}
 
     Impl(Impl&&) = delete;
     Impl& operator=(Impl&&) = delete;
@@ -169,6 +169,8 @@ public:
         }
     }
 
+    Output const& getOutput() const { return output_; }
+
 private:
     // JSON collections are either arrrays, or objects.
     struct Collection
@@ -194,7 +196,8 @@ private:
     bool isStarted_ = false;
 };
 
-Writer::Writer (Output output) : impl_(std::make_unique <Impl> (output))
+Writer::Writer (Output const &output)
+        : impl_(std::make_unique <Impl> (output))
 {
 }
 
@@ -224,6 +227,12 @@ void Writer::output (std::string const& s)
     impl_->stringOutput (s);
 }
 
+void Writer::output (Json::Value const& value)
+{
+    impl_->markStarted();
+    writeJson (value, impl_->getOutput());
+}
+
 template <>
 void Writer::output (float f)
 {
@@ -244,10 +253,9 @@ void Writer::output (std::nullptr_t)
     impl_->output ("null");
 }
 
-template <typename Type>
-void Writer::output (Type t)
+void Writer::implOutput (std::string const& s)
 {
-    impl_->output (to_string (t));
+    impl_->output (s);
 }
 
 void Writer::finishAll ()
@@ -255,26 +263,21 @@ void Writer::finishAll ()
     impl_->finishAll ();
 }
 
-template <typename Type>
-void Writer::append (Type t)
+void Writer::rawAppend()
 {
     impl_->nextCollectionEntry (array, "append");
-    output (t);
 }
 
-template <typename Type>
-void Writer::set (std::string const& tag, Type t)
+void Writer::rawSet (std::string const& tag)
 {
     check (!tag.empty(), "Tag can't be empty");
 
     impl_->nextCollectionEntry (object, "set");
     impl_->writeObjectTag (tag);
-    output (t);
 }
 
 void Writer::startRoot (CollectionType type)
 {
-    check (impl_->empty(), "stack_ not empty() in start");
     impl_->start (type);
 }
 
@@ -296,6 +299,5 @@ void Writer::finish ()
     impl_->finish ();
 }
 
-} // New
 } // RPC
 } // ripple

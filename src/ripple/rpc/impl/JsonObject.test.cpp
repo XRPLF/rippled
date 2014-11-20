@@ -23,7 +23,6 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class JsonObject_test : public TestOutputSuite
 {
@@ -238,6 +237,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JsonObject, ripple_basics, ripple);
 
-} // New
 } // RPC
 } // ripple
