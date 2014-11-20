@@ -85,10 +85,9 @@ Json::Value doLedger (RPC::Context& context)
     }
 
 
-    Json::Value ret (Json::objectValue);
-    lpLedger->addJson (ret, iOptions);
+    lpLedger->addJson (jvResult, iOptions);
 
-    return ret;
+    return jvResult;
 }
 
 } // ripple

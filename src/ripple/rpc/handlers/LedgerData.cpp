@@ -77,12 +77,10 @@ Json::Value doLedgerData (RPC::Context& context)
     if ((limit < 0) || ((limit > maxLimit) && (context.role != Role::ADMIN)))
         limit = maxLimit;
 
-    Json::Value jvReply = Json::objectValue;
+    jvResult["ledger_hash"] = to_string (lpLedger->getHash());
+    jvResult["ledger_index"] = std::to_string( lpLedger->getLedgerSeq ());
 
-    jvReply["ledger_hash"] = to_string (lpLedger->getHash());
-    jvReply["ledger_index"] = std::to_string( lpLedger->getLedgerSeq ());
-
-    Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
+    Json::Value& nodes = (jvResult["state"] = Json::arrayValue);
     SHAMap& map = *(lpLedger->peekAccountStateMap ());
 
     for (;;)
@@ -95,7 +93,7 @@ Json::Value doLedgerData (RPC::Context& context)
        if (limit-- <= 0)
        {
            --resumePoint;
-           jvReply["marker"] = to_string (resumePoint);
+           jvResult["marker"] = to_string (resumePoint);
            break;
        }
 
@@ -114,7 +112,7 @@ Json::Value doLedgerData (RPC::Context& context)
        }
     }
 
-    return jvReply;
+    return jvResult;
 }
 
 } // ripple
