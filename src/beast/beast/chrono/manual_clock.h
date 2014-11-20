@@ -69,11 +69,13 @@ public:
         now_ = when;
     }
 
-    /** Convenience for setting the time using a duration in @ref rep units. */
+    /** Convenience for setting the time in seconds from epoch. */
+    template <class Integer>
     void
-    set (rep v)
+    set(Integer seconds_from_epoch)
     {
-        set (time_point (duration (v)));
+        set(time_point(duration(
+            std::chrono::seconds(seconds_from_epoch))));
     }
 
     /** Convenience for advancing the clock by one second. */
