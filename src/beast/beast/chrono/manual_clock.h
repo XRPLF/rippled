@@ -68,7 +68,7 @@ public:
     void
     set (time_point const& when)
     {
-        assert(!Clock::is_steady || when > now_);
+        assert(!Clock::is_steady || when >= now_);
         now_ = when;
     }
 
