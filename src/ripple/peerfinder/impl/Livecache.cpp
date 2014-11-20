@@ -27,7 +27,7 @@ namespace PeerFinder {
 class Livecache_test : public beast::unit_test::suite
 {
 public:
-    beast::manual_clock <clock_type::duration> m_clock;
+    beast::manual_clock <std::chrono::steady_clock> m_clock;
 
     // Add the address as an endpoint
     template <class C>
