@@ -164,8 +164,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock_io.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\basic_seconds_clock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\chrono\Chrono.unity.cpp">

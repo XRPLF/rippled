@@ -30,63 +30,61 @@ namespace beast {
     providing a clock in unit tests.
     @tparam The length of time, in seconds, corresponding to one tick.
 */
-template <class Duration, bool IsSteady = true>
-class manual_clock : public abstract_clock <Duration>
+template <class Clock>
+class manual_clock
+    : public abstract_clock<Clock>
 {
+private:
+    time_point now_;
+
 public:
-    using typename abstract_clock <Duration>::rep;
-    using typename abstract_clock <Duration>::duration;
-    using typename abstract_clock <Duration>::time_point;
+    using typename abstract_clock<Clock>::rep;
+    using typename abstract_clock<Clock>::duration;
+    using typename abstract_clock<Clock>::time_point;
 
-    explicit manual_clock (time_point const& t = time_point (Duration (0)))
-        : m_now (t)
+    explicit
+    manual_clock (time_point const& now = time_point(duration(0)))
+        : now_(now)
     {
     }
 
-    bool is_steady () const
+    bool
+    is_steady()
     {
-        return IsSteady;
+        return Clock::is_steady;
     }
 
-    time_point now () const
+    time_point
+    now()
     {
-        return m_now;
+        return now_;
     }
-
-#if 0
-    std::string to_string (time_point const& tp) const
-    {
-        std::stringstream ss;
-        ss << tp.time_since_epoch() << " from start";
-        return ss.str ();
-    }
-#endif
 
     /** Set the current time of the manual clock.
         Precondition:
-            ! IsSteady || t > now()
+            ! is_steady || t > now()
     */
-    void set (time_point const& t)
+    void
+    set (time_point const& when)
     {
-        //if (IsSteady)
-        m_now = t;
+        assert(!Clock::is_steady || when > now_);
+        now_ = when;
     }
 
     /** Convenience for setting the time using a duration in @ref rep units. */
-    void set (rep v)
+    void
+    set (rep v)
     {
         set (time_point (duration (v)));
     }
 
     /** Convenience for advancing the clock by one. */
-    manual_clock& operator++ ()
+    manual_clock&
+    operator++ ()
     {
-        m_now += duration (1);
+        now_ += duration(1);
         return *this;
     }
-
-private:
-    time_point m_now;
 };
 
 }

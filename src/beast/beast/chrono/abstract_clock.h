@@ -27,12 +27,12 @@ namespace beast {
 
 /** Abstract interface to a clock.
 
-    The abstract clock interface allows a dependency injection to take
-    place so that the choice of implementation can be made at run-time
-    instead of compile time. The trade-off is that the Duration used to
-    represent the clock must be chosen at compile time and cannot be
-    changed. This includes both the choice of representation (integers
-    for example) and the period in ticks corresponding to one second.
+    This makes now() a member function instead of a static member, so
+    an instance of the class can be dependency injected, facilitating
+    unit tests where time may be controlled.
+
+    An abstract_clock inherits all the nested types of the Clock
+    template parameter.
 
     Example:
 
@@ -40,56 +40,37 @@ namespace beast {
 
     struct Implementation
     {
-        abstract_clock <std::chrono::seconds>& m_clock;
-
-        // Dependency injection
-        //
-        explicit Implementation (
-            abstract_clock <std::chrono::seconds>& clock)
-            : m_clock (clock)
+        using clock_type = abstract_clock <std::chrono::steady_clock>;
+        clock_type& clock_;
+        explicit Implementation (clock_type& clock)
+            : clock_(clock)
         {
         }
     };
 
     @endcode
 
-    @tparam The length of time, in seconds, corresponding to one tick.
+    @tparam Clock A type meeting the requirements of Clock.
 */
-template <class Duration>
+template <class Clock>
 class abstract_clock
 {
 public:
-    typedef typename Duration::rep rep;
-    typedef typename Duration::period period;
-    typedef Duration duration;
-    typedef std::chrono::time_point <
-        abstract_clock, duration> time_point;
+    using rep = typename Clock::rep;
+    using period = typename Clock::period;
+    using duration = typename Clock::duration;
+    using time_point = typename Clock::time_point;
 
-    virtual ~abstract_clock () { }
+    virtual ~abstract_clock() = default;
 
     /** Returns `true` if this is a steady clock. */
-    virtual bool is_steady () const = 0;
+    virtual bool is_steady() = 0;
 
     /** Returns the current time. */
-    virtual time_point now () const = 0;
-
-#if 0
-    /** Convert the specified time point to a string. */
-    /** @{ */
-    //virtual std::string to_string (time_point const& tp) const = 0;
-
-    template <class Duration2>
-    std::string to_string (
-        std::chrono::time_point <abstract_clock, Duration2> const& tp) const
-    {
-        return to_string (
-            std::chrono::time_point_cast <Duration> (tp));
-    }
-    /** @} */
-#endif
+    virtual time_point now() = 0;
 
     /** Returning elapsed ticks since the epoch. */
-    rep elapsed () const
+    rep elapsed()
     {
         return now().time_since_epoch().count();
     }
@@ -99,68 +80,36 @@ public:
 
 namespace detail {
 
-template <class TrivialClock, class Duration>
-struct basic_abstract_clock_wrapper : public abstract_clock <Duration>
-{
-    using typename abstract_clock <Duration>::duration;
-    using typename abstract_clock <Duration>::time_point;
-
-    bool is_steady () const
-    {
-        return TrivialClock::is_steady;
-    }
-
-    time_point now () const
-    {
-        return time_point (duration (
-            std::chrono::duration_cast <duration> (
-                TrivialClock::now().time_since_epoch ()).count ()));
-    }
-};
-
-template <class TrivialClock, class Duration>
+template <class Facade, class Clock>
 struct abstract_clock_wrapper
-    : public basic_abstract_clock_wrapper <TrivialClock, Duration>
+    : public abstract_clock<Facade>
 {
-    // generic conversion displays the duration
-    /*
-    std::string to_string (typename basic_abstract_clock_wrapper <
-        TrivialClock, Duration>::time_point const& tp) const
-    {
-        std::stringstream ss;
-        ss << tp.time_since_epoch();
-        return ss.str ();
-    }
-    */
-};
+    using typename abstract_clock<Facade>::duration;
+    using typename abstract_clock<Facade>::time_point;
 
-/*
-template <class Duration>
-struct abstract_clock_wrapper <std::chrono::system_clock, Duration>
-    : public basic_abstract_clock_wrapper <std::chrono::system_clock, Duration>
-{
-    typedef std::chrono::system_clock clock_type;
-    std::string to_string (time_point const& tp)
+    bool is_steady()
     {
-        std::stringstream ss;
-        ss << clock_type::time_point (tp.time_since_epoch ());
-        return ss.str ();
+        return Clock::is_steady;
+    }
+
+    time_point now()
+    {
+        return time_point(duration(
+            std::chrono::duration_cast <duration>(
+                Clock::now().time_since_epoch()).count()));
     }
 };
-*/
 
 }
 
 //------------------------------------------------------------------------------
 
-/** Retrieve a discrete clock for a type implementing the Clock concept.
-    The interface is created as an object with static storage duration.
-*/
-template <class TrivialClock, class Duration>
-abstract_clock <Duration>& get_abstract_clock ()
+/** Returns a global instance of an abstract clock. */
+template<class Facade, class Clock = Facade>
+abstract_clock<Facade>&
+get_abstract_clock()
 {
-    static detail::abstract_clock_wrapper <
-        TrivialClock, Duration> clock;
+    static detail::abstract_clock_wrapper<Facade, Clock> clock;
     return clock;
 }
 

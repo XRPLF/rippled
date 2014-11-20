@@ -75,7 +75,7 @@ public:
     {
         using namespace RadixMap;
 
-        beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock
+        beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
 
         FullBelowCache fullBelowCache ("test.full_below", clock);
