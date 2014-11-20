@@ -28,7 +28,8 @@ namespace ripple {
 WSConnection::WSConnection (HTTP::Port const& port,
     Resource::Manager& resourceManager, Resource::Consumer usage,
         InfoSub::Source& source, bool isPublic,
-            beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
+            beast::IP::Endpoint const& remoteAddress,
+                boost::asio::io_service& io_service, CollectorManager* cm)
     : InfoSub (source, usage)
     , port_(port)
     , m_resourceManager (resourceManager)
@@ -40,6 +41,7 @@ WSConnection::WSConnection (HTTP::Port const& port,
     , m_receiveQueueRunning (false)
     , m_isDead (false)
     , m_io_service (io_service)
+    , collectorManager_ (cm)
 {
     WriteLog (lsDEBUG, WSConnection) <<
         "Websocket connection from " << remoteAddress;
@@ -156,7 +158,8 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     }
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
-    RPCHandler  mRPCHandler (m_netOPs, std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
+    RPCHandler  mRPCHandler (collectorManager_, m_netOPs,
+        std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
     Role const role = port_.allow_admin ? adminRole (port_, jvRequest,

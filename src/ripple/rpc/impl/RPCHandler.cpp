@@ -25,11 +25,14 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/Handler.h>
+#include <ripple/nodestore/Database.h>
 
 namespace ripple {
 
-RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
-    : netOps_ (netOps)
+RPCHandler::RPCHandler (CollectorManager* cm, NetworkOPs& netOps,
+    InfoSub::pointer infoSub)
+    : collectorManager_ (cm)
+    , netOps_ (netOps)
     , infoSub_ (infoSub)
 {
 }
@@ -81,6 +84,11 @@ Json::Value RPCHandler::doCommand (
     Role role,
     Resource::Charge& loadType)
 {
+    auto const start (std::chrono::high_resolution_clock::now ());
+
+    if (collectorManager_ != nullptr)
+        ++collectorManager_->rpc_requests_;
+    
     if (role != Role::ADMIN)
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
@@ -135,6 +143,12 @@ Json::Value RPCHandler::doCommand (
         return rpcError (rpcNO_CLOSED);
     }
 
+    auto & dbMetrics (getApp ().getNodeStore ().dbMetrics_);
+    if (! dbMetrics.get ())
+        dbMetrics.reset (new NodeStore::Database::DBmetrics);
+    dbMetrics->fetches = 0;
+
+    Json::Value jvResult;
     try
     {
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
@@ -144,13 +158,15 @@ Json::Value RPCHandler::doCommand (
 
         // Regularize result.
         if (jvRaw.isObject ())
-            return jvRaw;
-
-        // Probably got a string.
-        Json::Value jvResult (Json::objectValue);
-        jvResult[jss::message] = jvRaw;
-
-        return jvResult;
+        {
+            jvResult = jvRaw;
+        }
+        else
+        {
+            // Probably got a string.
+            jvResult = Json::objectValue;
+            jvResult[jss::message] = jvRaw;
+        }
     }
     catch (std::exception& e)
     {
@@ -159,8 +175,21 @@ Json::Value RPCHandler::doCommand (
         if (loadType == Resource::feeReferenceRPC)
             loadType = Resource::feeExceptionRPC;
 
-        return rpcError (rpcINTERNAL);
+        jvResult = rpcError (rpcINTERNAL);
     }
+
+    if (collectorManager_ != nullptr)
+    {
+        collectorManager_->rpc_time_.notify (
+            static_cast <beast::insight::Event::value_type> (
+                std::chrono::duration_cast <std::chrono::milliseconds> (
+                    std::chrono::high_resolution_clock::now () - start)));
+        collectorManager_->rpc_io_.notify (
+            static_cast <beast::insight::Event::value_type> (dbMetrics->fetches));
+    }
+
+    dbMetrics.release ();
+    return jvResult;
 }
 
 } // ripple

@@ -23,6 +23,7 @@
 #include <ripple/server/Role.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/app/main/CollectorManager.h>
 
 namespace ripple {
 
@@ -31,8 +32,8 @@ class NetworkOPs;
 class RPCHandler
 {
 public:
-    explicit RPCHandler (
-        NetworkOPs& netOps, InfoSub::pointer infoSub = nullptr);
+    explicit RPCHandler (CollectorManager* cm, NetworkOPs& netOps,
+        InfoSub::pointer infoSub = nullptr);
 
     Json::Value doCommand (
         Json::Value const& request,
@@ -46,6 +47,7 @@ public:
         Resource::Charge& loadType);
 
 private:
+    CollectorManager* collectorManager_;
     NetworkOPs& netOps_;
     InfoSub::pointer infoSub_;
 

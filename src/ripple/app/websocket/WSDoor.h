@@ -39,7 +39,7 @@ public:
 
 std::unique_ptr<WSDoor>
 make_WSDoor (HTTP::Port const& port, Resource::Manager& resourceManager,
-    InfoSub::Source& source);
+    InfoSub::Source& source, CollectorManager* cm);
 
 }
 

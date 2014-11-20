@@ -42,10 +42,10 @@ public:
 protected:
     typedef websocketpp::message::data::ptr message_ptr;
 
-    WSConnection (HTTP::Port const& port,
-        Resource::Manager& resourceManager, Resource::Consumer usage,
-            InfoSub::Source& source, bool isPublic,
-                beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
+    WSConnection (HTTP::Port const& port, Resource::Manager& resourceManager,
+        Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
+            beast::IP::Endpoint const& remoteAddress,
+                boost::asio::io_service& io_service, CollectorManager* cm);
 
     WSConnection(WSConnection const&) = delete;
     WSConnection& operator= (WSConnection const&) = delete;
@@ -77,6 +77,7 @@ protected:
     bool m_receiveQueueRunning;
     bool m_isDead;
     boost::asio::io_service& m_io_service;
+    CollectorManager* collectorManager_;
 };
 
 //------------------------------------------------------------------------------
@@ -102,7 +103,8 @@ private:
 
 public:
     WSConnectionType (Resource::Manager& resourceManager, InfoSub::Source& source,
-            server_type& serverHandler, connection_ptr const& cpConnection)
+            server_type& serverHandler, connection_ptr const& cpConnection,
+                CollectorManager* cm)
         : WSConnection (
             serverHandler.port(),
             resourceManager,
@@ -110,7 +112,8 @@ public:
             source,
             serverHandler.getPublic (),
             cpConnection->get_socket ().remote_endpoint (),
-            cpConnection->get_io_service ())
+            cpConnection->get_io_service (),
+            cm)
         , m_serverHandler (serverHandler)
         , m_connection (cpConnection)
     {

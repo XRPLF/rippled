@@ -34,6 +34,11 @@ public:
     virtual ~CollectorManager () = 0;
     virtual beast::insight::Collector::ptr const& collector () = 0;
     virtual beast::insight::Group::ptr const& group (std::string const& name) = 0;
+
+    beast::insight::Counter rpc_requests_;
+    beast::insight::Event rpc_io_;
+    beast::insight::Event rpc_size_;
+    beast::insight::Event rpc_time_;
 };
 
 }
