@@ -21,6 +21,12 @@
 */
 //==============================================================================
 
+#include <cstdlib>
+#include <iterator>
+#include <memory>
+
+#include <execinfo.h>
+
 // Some basic tests, to keep an eye on things and make sure these types work ok
 // on all platforms.
 
@@ -61,7 +67,9 @@ SystemStats::getStackBacktrace()
     SymInitialize (process, nullptr, TRUE);
 
     void* stack[128];
-    int frames = (int) CaptureStackBackTrace (0, numElementsInArray (stack), stack, nullptr);
+    int frames = (int) CaptureStackBackTrace (0,
+        std::distance(std::begin(stack), std::end(stack)),
+        stack, nullptr);
 
     HeapBlock<SYMBOL_INFO> symbol;
     symbol.calloc (sizeof (SYMBOL_INFO) + 256, 1);
@@ -102,13 +110,14 @@ SystemStats::getStackBacktrace()
 
 #else
     void* stack[128];
-    int frames = backtrace (stack, numElementsInArray (stack));
-    char** frameStrings = backtrace_symbols (stack, frames);
+    int frames = backtrace (stack,
+        std::distance(std::begin(stack), std::end(stack)));
+
+    std::unique_ptr<char*[], void(*)(void*)> frame (
+        backtrace_symbols (stack, frames), std::free);
 
     for (int i = 0; i < frames; ++i)
-        result.push_back (frameStrings[i]);
-
-    ::free (frameStrings);
+        result.push_back (frame[i]);
 #endif
 
     return result;

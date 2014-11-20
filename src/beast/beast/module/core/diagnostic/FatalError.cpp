@@ -20,6 +20,8 @@
 #include <beast/module/core/diagnostic/FatalError.h>
 
 #include <atomic>
+#include <exception>
+#include <iostream>
 #include <mutex>
 
 namespace beast {
@@ -40,22 +42,31 @@ FatalError (char const* message, char const* file, int line)
     if (error_count++ != 0)
         return std::terminate ();
 
-    std::cerr << "An error has occurred. This application will now terminate.\n";
-
-    if (message != nullptr && message [0] != 0)
-        std::cerr << "Message: " << message << '\n';
-
-    if (file != nullptr && file [0] != 0)
-        std::cerr << "   File: " << file << ":" << line << '\n';
-
-    auto const backtrace = SystemStats::getStackBacktrace ();
-
-    if (!backtrace.empty ())
+    // We protect this entire block of code since writing to cerr might trigger
+    // exceptions.
+    try
     {
-        std::cerr << "  Stack:" << std::endl;
+        std::cerr << "An error has occurred. The application will terminate.\n";
 
-        for (auto const& frame : backtrace)
-            std::cerr << "    " << frame << '\n';
+        if (message != nullptr && message [0] != 0)
+            std::cerr << "Message: " << message << '\n';
+
+        if (file != nullptr && file [0] != 0)
+            std::cerr << "   File: " << file << ":" << line << '\n';
+
+        auto const backtrace = SystemStats::getStackBacktrace ();
+
+        if (!backtrace.empty ())
+        {
+            std::cerr << "  Stack:" << std::endl;
+
+            for (auto const& frame : backtrace)
+                std::cerr << "    " << frame << '\n';
+        }
+    }
+    catch (...)
+    {
+        // nothing we can do - just fall through and terminate
     }
 
     return std::terminate ();
