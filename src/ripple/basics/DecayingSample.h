@@ -20,9 +20,13 @@
 #ifndef RIPPLE_BASICS_DECAYINGSAMPLE_H_INCLUDED
 #define RIPPLE_BASICS_DECAYINGSAMPLE_H_INCLUDED
 
+#include <chrono>
+    
 namespace ripple {
 
-/** Sampling function using exponential decay to provide a continuous value. */
+/** Sampling function using exponential decay to provide a continuous value.
+    @tparam The number of seconds in the decay window.
+*/
 template <int Window, typename Clock>
 class DecayingSample
 {
@@ -69,26 +73,20 @@ private:
 
         if (m_value != value_type())
         {
-            typename Clock::duration n (now - m_when);
+            std::size_t elapsed = std::chrono::duration_cast<
+                std::chrono::seconds>(now - m_when).count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
             //
-            typename Clock::duration window (Window);
-            if (n > 4 * window)
+            if (elapsed > 4 * Window)
             {
                 m_value = value_type();
             }
             else
             {
-                value_type const tick_value = 1;
-                typename Clock::duration const tick (tick_value);
-                typename Clock::duration const zero (0);
-                while (n > zero)
-                {
-                    n -= tick;
-                    m_value -= (m_value + Window - tick_value) / Window;
-                }
+                while (elapsed--)
+                    m_value -= (m_value + Window - 1) / Window;
             }
         }
 
