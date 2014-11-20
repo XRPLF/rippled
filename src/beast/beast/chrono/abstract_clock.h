@@ -50,7 +50,8 @@ namespace beast {
 
     @endcode
 
-    @tparam Clock A type meeting the requirements of Clock.
+    @tparam Clock A type meeting these requirements:
+        http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
 class abstract_clock
@@ -61,10 +62,9 @@ public:
     using duration = typename Clock::duration;
     using time_point = typename Clock::time_point;
 
-    virtual ~abstract_clock() = default;
+    static bool const is_steady = Clock::is_steady;
 
-    /** Returns `true` if this is a steady clock. */
-    virtual bool is_steady() = 0;
+    virtual ~abstract_clock() = default;
 
     /** Returns the current time. */
     virtual time_point now() = 0;
@@ -86,11 +86,6 @@ struct abstract_clock_wrapper
 {
     using typename abstract_clock<Facade>::duration;
     using typename abstract_clock<Facade>::time_point;
-
-    bool is_steady()
-    {
-        return Clock::is_steady;
-    }
 
     time_point now()
     {

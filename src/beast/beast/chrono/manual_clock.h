@@ -25,10 +25,13 @@
 namespace beast {
 
 /** Manual clock implementation.
-    This concrete class implements the @ref abstract_clock interface and
+
+This concrete class implements the @ref abstract_clock interface and
     allows the time to be advanced manually, mainly for the purpose of
     providing a clock in unit tests.
-    @tparam The length of time, in seconds, corresponding to one tick.
+
+    @tparam Clock A type meeting these requirements:
+        http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
 class manual_clock
@@ -68,7 +71,7 @@ public:
     void
     set (time_point const& when)
     {
-        assert(!Clock::is_steady || when >= now_);
+        assert(! Clock::is_steady || when >= now_);
         now_ = when;
     }
 
