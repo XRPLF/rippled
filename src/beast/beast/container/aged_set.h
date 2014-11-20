@@ -30,12 +30,12 @@ namespace beast {
 
 template <
     class Key,
-    class Duration = std::chrono::seconds,
+    class Clock = std::chrono::steady_clock,
     class Compare = std::less <Key>,
     class Allocator = std::allocator <Key>
 >
 using aged_set = detail::aged_ordered_container <
-    false, false, Key, void, Duration, Compare, Allocator>;
+    false, false, Key, void, Clock, Compare, Allocator>;
 
 }
 

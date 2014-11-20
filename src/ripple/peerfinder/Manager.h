@@ -29,7 +29,7 @@
 namespace ripple {
 namespace PeerFinder {
 
-typedef beast::abstract_clock <std::chrono::seconds> clock_type;
+typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
 /** Represents a set of addresses. */
 typedef std::vector <beast::IP::Endpoint> IPAddresses;

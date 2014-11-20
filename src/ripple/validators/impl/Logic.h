@@ -36,8 +36,8 @@ namespace Validators {
 // Forward declare unit test so it can be a friend to LRUCache.
 class Logic_test;
 
-namespace detail
-{
+namespace detail {
+
 // The LRUCache class (ab)uses an aged_unordered_set so it can hold on
 // to a limited number of values.  When the container gets too full the
 // LRUCache expires the oldest values.
@@ -58,10 +58,9 @@ template <class Key,
 class LRUCache
 {
 private:
-    typedef std::chrono::seconds Duration;
-    typedef beast::manual_clock <Duration> Clock;
+    typedef beast::manual_clock <std::chrono::steady_clock> Clock;
     typedef beast::aged_unordered_set <
-        Key, Duration, Hash, KeyEqual, Allocator> ContainerType;
+        Key, std::chrono::steady_clock, Hash, KeyEqual, Allocator> ContainerType;
 
 public:
     LRUCache () = delete;

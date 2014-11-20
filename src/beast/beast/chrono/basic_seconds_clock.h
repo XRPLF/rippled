@@ -45,25 +45,25 @@ public:
 class seconds_clock_thread
 {
 public:
-    typedef std::mutex mutex;
-    typedef std::condition_variable cond_var;
-    typedef std::lock_guard <mutex> lock_guard;
-    typedef std::unique_lock <mutex> unique_lock;
-    typedef std::chrono::steady_clock clock_type;
-    typedef std::chrono::seconds seconds;
-    typedef std::thread thread;
-    typedef std::vector <seconds_clock_worker*> workers;
+    using mutex = std::mutex;
+    using cond_var = std::condition_variable;
+    using lock_guard = std::lock_guard <mutex>;
+    using unique_lock = std::unique_lock <mutex>;
+    using clock_type = std::chrono::steady_clock;
+    using seconds = std::chrono::seconds;
+    using thread = std::thread;
+    using workers = std::vector <seconds_clock_worker*>;
 
-    bool m_stop;
-    mutex m_mutex;
-    cond_var m_cond;
-    workers m_workers;
-    thread m_thread;
+    bool stop_;
+    mutex mutex_;
+    cond_var cond_;
+    workers workers_;
+    thread thread_;
 
     seconds_clock_thread ()
-        : m_stop (false)
+        : stop_ (false)
     {
-        m_thread = thread (std::bind(
+        thread_ = thread (std::bind(
             &seconds_clock_thread::run, this));
     }
 
@@ -74,37 +74,37 @@ public:
 
     void add (seconds_clock_worker& w)
     {
-        lock_guard lock (m_mutex);
-        m_workers.push_back (&w);
+        lock_guard lock (mutex_);
+        workers_.push_back (&w);
     }
 
     void remove (seconds_clock_worker& w)
     {
-        lock_guard lock (m_mutex);
-        m_workers.erase (std::find (
-            m_workers.begin (), m_workers.end(), &w));
+        lock_guard lock (mutex_);
+        workers_.erase (std::find (
+            workers_.begin (), workers_.end(), &w));
     }
 
     void stop()
     {
-        if (m_thread.joinable())
+        if (thread_.joinable())
         {
             {
-                lock_guard lock (m_mutex);
-                m_stop = true;
+                lock_guard lock (mutex_);
+                stop_ = true;
             }
-            m_cond.notify_all();
-            m_thread.join();
+            cond_.notify_all();
+            thread_.join();
         }
     }
 
     void run()
     {
-        unique_lock lock (m_mutex);;
+        unique_lock lock (mutex_);;
 
         for (;;)
         {
-            for (auto iter : m_workers)
+            for (auto iter : workers_)
                 iter->sample();
 
             clock_type::time_point const when (
@@ -112,7 +112,7 @@ public:
                     clock_type::now().time_since_epoch()) +
                         seconds (1));
 
-            if (m_cond.wait_until (lock, when, [this]{ return m_stop; }))
+            if (cond_.wait_until (lock, when, [this]{ return stop_; }))
                 return;
         }
     }
@@ -143,24 +143,26 @@ basic_seconds_clock_main_hook()
 }
 
 /** A clock whose minimum resolution is one second.
+
     The purpose of this class is to optimize the performance of the now()
     member function call. It uses a dedicated thread that wakes up at least
     once per second to sample the requested trivial clock.
-    @tparam TrivialClock The clock to sample.
+
+    @tparam Clock A type meeting these requirements:
+        http://en.cppreference.com/w/cpp/concept/Clock
 */
-template <class TrivialClock>
+template <class Clock>
 class basic_seconds_clock
 {
 public:
-    typedef std::chrono::seconds resolution;
-    typedef typename resolution::rep rep;
-    typedef typename resolution::period period;
-    typedef std::chrono::duration <rep, period> duration;
-    typedef std::chrono::time_point <basic_seconds_clock> time_point;
+    using rep = typename Clock::rep;
+    using period = typename Clock::period;
+    using duration = typename Clock::duration;
+    using time_point = typename Clock::time_point;
 
-    static bool const is_steady = TrivialClock::is_steady;
+    static bool const is_steady = Clock::is_steady;
 
-    static time_point now ()
+    static time_point now()
     {
         // Make sure the thread is constructed before the
         // worker otherwise we will crash during destruction
@@ -176,45 +178,36 @@ public:
 
         struct worker : detail::seconds_clock_worker
         {
-            typedef std::mutex mutex;
-            typedef std::lock_guard <mutex> lock_guard;
-
             time_point m_now;
-            mutex m_mutex;
+            std::mutex mutex_;
 
-            static time_point get_now ()
+            worker()
+                : m_now(Clock::now())
             {
-                return time_point (floor <resolution> (
-                    TrivialClock::now().time_since_epoch()));
+                detail::seconds_clock_thread::instance().add(*this);
             }
 
-            worker ()
-                : m_now (get_now ())
+            ~worker()
             {
-                detail::seconds_clock_thread::instance().add (*this);
-            }
-
-            ~worker ()
-            {
-                detail::seconds_clock_thread::instance().remove (*this);
+                detail::seconds_clock_thread::instance().remove(*this);
             }
 
             time_point now()
             {
-                lock_guard lock (m_mutex);
+                std::lock_guard<std::mutex> lock (mutex_);
                 return m_now;
             }
 
-            void sample ()
+            void sample()
             {
-                lock_guard lock (m_mutex);
-                m_now = get_now ();
+                std::lock_guard<std::mutex> lock (mutex_);
+                m_now = Clock::now();
             }
         };
 
         static worker w;
 
-        return w.now ();
+        return w.now();
     }
 };
 

@@ -182,13 +182,9 @@ template <class Allocator = std::allocator <char>>
 class Livecache : protected detail::LivecacheBase
 {
 private:
-    typedef beast::aged_map <
-        beast::IP::Endpoint,
-        Element,
-        std::chrono::seconds,
-        std::less <beast::IP::Endpoint>,
-        Allocator
-            > cache_type;
+    typedef beast::aged_map <beast::IP::Endpoint, Element,
+        std::chrono::steady_clock, std::less <beast::IP::Endpoint>,
+            Allocator> cache_type;
 
     beast::Journal m_journal;
     cache_type m_cache;

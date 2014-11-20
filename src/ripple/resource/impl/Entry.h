@@ -29,7 +29,7 @@
 namespace ripple {
 namespace Resource {
 
-typedef beast::abstract_clock <std::chrono::seconds> clock_type;
+typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list

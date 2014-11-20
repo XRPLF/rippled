@@ -29,7 +29,7 @@ class KeyCache_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        beast::manual_clock <std::chrono::seconds> clock;
+        beast::manual_clock <std::chrono::steady_clock> clock;
         clock.set (0);
 
         typedef std::string Key;

@@ -36,7 +36,7 @@ public:
     };
 
     typedef beast::aged_unordered_map <RippleLedgerHash, Entry,
-        std::chrono::seconds, beast::hardened_hash<>,
+        std::chrono::steady_clock, beast::hardened_hash<>,
             RippleLedgerHash::key_equal> Table;
 
     template <class Gen>
