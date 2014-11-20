@@ -53,7 +53,7 @@ public:
     }
 
     time_point
-    now() const
+    now() const override
     {
         return now_;
     }

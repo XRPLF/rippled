@@ -88,7 +88,7 @@ struct abstract_clock_wrapper
     using typename abstract_clock<Facade>::time_point;
 
     time_point
-    now() const
+    now() const override
     {
         return time_point(duration(
             std::chrono::duration_cast <duration>(
@@ -100,7 +100,11 @@ struct abstract_clock_wrapper
 
 //------------------------------------------------------------------------------
 
-/** Returns a global instance of an abstract clock. */
+/** Returns a global instance of an abstract clock.
+    @tparam Facade A type meeting these requirements:
+        http://en.cppreference.com/w/cpp/concept/Clock
+    @tparam Clock The actual concrete clock to use.
+*/
 template<class Facade, class Clock = Facade>
 abstract_clock<Facade>&
 get_abstract_clock()
