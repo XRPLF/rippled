@@ -149,22 +149,6 @@ ErrorInfo const& get_error_info (error_code_i code)
     return category.get (code);
 }
 
-void inject_error (error_code_i code, Json::Value& json)
-{
-    ErrorInfo const& info (get_error_info (code));
-    json ["error"] = info.token;
-    json ["error_code"] = info.code;
-    json ["error_message"] = info.message;
-}
-
-void inject_error (error_code_i code, std::string const& message, Json::Value& json)
-{
-    ErrorInfo const& info (get_error_info (code));
-    json ["error"] = info.token;
-    json ["error_code"] = info.code;
-    json ["error_message"] = message;
-}
-
 Json::Value make_error (error_code_i code)
 {
     Json::Value json;
