@@ -23,7 +23,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
@@ -177,6 +176,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
             jvRequest, loadType, m_netOPs, role,
             std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ())};
         RPC::doCommand (context, jvResult[jss::result]);
+        recordMetrics (context);
     }
 
     getConsumer().charge (loadType);

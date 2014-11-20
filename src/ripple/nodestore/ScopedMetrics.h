@@ -17,36 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLE_NODESTORE_SCOPEDMETRICS_H_INCLUDED
+#define RIPPLE_NODESTORE_SCOPEDMETRICS_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/Role.h>
-#include <ripple/nodestore/ScopedMetrics.h>
+#include <cstddef>
 
 namespace ripple {
+namespace NodeStore {
 
-class NetworkOPs;
-
-namespace RPC {
-
-/** The context of information needed to call an RPC. */
-struct Context
+/** RAII observer to track NodeStore fetches made by the calling thread. */
+class ScopedMetrics
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    Role role;
-    InfoSub::pointer infoSub;
-    RPC::Yield yield;
-    NodeStore::ScopedMetrics metrics;
+private:
+    ScopedMetrics* prev_;
+
+public:
+    ScopedMetrics ();
+    ~ScopedMetrics ();
+
+    static
+    ScopedMetrics*
+    get ();
+
+    static
+    void
+    incrementThreadFetches ();
+
+    std::size_t fetches = 0;
 };
 
-} // RPC
-} // ripple
-
-
+}
+}
 
 #endif

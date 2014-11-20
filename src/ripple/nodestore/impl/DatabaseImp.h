@@ -28,6 +28,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
 #include <beast/threads/Thread.h>
+#include <ripple/nodestore/ScopedMetrics.h>
 #include <chrono>
 #include <condition_variable>
 #include <set>
@@ -167,6 +168,8 @@ public:
 
     NodeObject::Ptr fetch (uint256 const& hash) override
     {
+        ScopedMetrics::incrementThreadFetches ();
+
         return doTimedFetch (hash, false);
     }
 

@@ -33,7 +33,6 @@
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/impl/Context.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
