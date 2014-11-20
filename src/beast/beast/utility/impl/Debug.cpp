@@ -155,69 +155,6 @@ String getFileNameFromPath (const char* sourceFileName, int numberOfParents)
     return path;
 }
 
-// Returns a String with double quotes escaped
-static const String withEscapedQuotes (String const& string)
-{
-    String escaped;
-
-    int i0 = 0;
-    int i;
-
-    do
-    {
-        i = string.indexOfChar (i0, '"');
-
-        if (i == -1)
-        {
-            escaped << string.substring (i0, string.length ());
-        }
-        else
-        {
-            escaped << string.substring (i0, i) << "\\\"";
-            i0 = i + 1;
-        }
-    }
-    while (i != -1);
-
-    return escaped;
-}
-
-// Converts escaped quotes back into regular quotes
-static const String withUnescapedQuotes (String const& string)
-{
-    String unescaped;
-
-    int i0 = 0;
-    int i;
-
-    do
-    {
-        i = string.indexOfChar (i0, '\\');
-
-        if (i == -1)
-        {
-            unescaped << string.substring (i0, string.length ());
-        }
-        else
-        {
-            // peek
-            if (string.length () > i && string[i + 1] == '\"')
-            {
-                unescaped << string.substring (i0, i) << '"';
-                i0 = i + 2;
-            }
-            else
-            {
-                unescaped << string.substring (i0, i + 1);
-                i0 = i + 1;
-            }
-        }
-    }
-    while (i != -1);
-
-    return unescaped;
-}
-
 }
 
 //------------------------------------------------------------------------------
