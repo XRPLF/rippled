@@ -33,35 +33,35 @@ class runner;
 class suite_info
 {
 private:
-    typedef std::function <void (runner&)> run_type;
+    using run_type = std::function <void (runner&)>;
 
-    char const* m_name;
-    char const* m_module;
-    char const* m_library;
+    std::string name_;
+    std::string module_;
+    std::string library_;
     bool m_manual;
     run_type m_run;
 
 public:
     template <class = void>
-    suite_info (char const* name, char const* module, char const* library,
-        bool manual, run_type run);
+    suite_info (std::string const& name, std::string const& module,
+        std::string const& library, bool manual, run_type run);
 
-    char const*
+    std::string const&
     name() const
     {
-        return m_name;
+        return name_;
     }
 
-    char const*
+    std::string const&
     module() const
     {
-        return m_module;
+        return module_;
     }
 
-    char const*
+    std::string const&
     library() const
     {
-        return m_library;
+        return library_;
     }
 
     /** Returns `true` if this suite only runs manually. */
@@ -87,15 +87,11 @@ public:
 //------------------------------------------------------------------------------
 
 template <class>
-suite_info::suite_info (
-    char const* name,
-    char const* module,
-    char const* library,
-    bool manual,
-    run_type run)
-    : m_name (name)
-    , m_module (module)
-    , m_library (library)
+suite_info::suite_info (std::string const& name, std::string const& module,
+        std::string const& library, bool manual, run_type run)
+    : name_ (name)
+    , module_ (module)
+    , library_ (library)
     , m_manual (manual)
     , m_run (std::move (run))
 {
@@ -105,10 +101,7 @@ template <class>
 std::string
 suite_info::full_name() const
 {
-    return 
-        std::string (m_library) + "." +
-        std::string (m_module) + "." +
-        std::string (m_name);
+    return library_ + "." + module_ + "." + name_;
 }
 
 inline
@@ -121,15 +114,11 @@ operator< (suite_info const& lhs, suite_info const& rhs)
 /** Convenience for producing suite_info for a given test type. */
 template <class Suite>
 suite_info
-make_suite_info (char const* name, char const* module, char const* library,
-    bool manual)
+make_suite_info (std::string const& name, std::string const& module,
+    std::string const& library, bool manual)
 {
-    return suite_info (name, module, library, manual,
-        [](runner& r)
-        {
-            Suite test;
-            return test (r);
-        });
+    return suite_info(name, module, library, manual,
+        [](runner& r) { return Suite{}(r); });
 }
 
 } // unit_test

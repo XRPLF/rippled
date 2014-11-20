@@ -51,9 +51,9 @@ public:
     };
 
 private:
-    mode_t m_mode;
-    std::string m_pat;
-    std::string m_library;
+    mode_t mode_;
+    std::string pat_;
+    std::string library_;
 
 public:
     template <class = void>
@@ -69,52 +69,52 @@ public:
 
 template <class>
 selector::selector (mode_t mode, std::string const& pattern)
-    : m_mode (mode)
-    , m_pat (pattern)
+    : mode_ (mode)
+    , pat_ (pattern)
 {
-    if (m_mode == automatch && pattern.empty())
-        m_mode = all;
+    if (mode_ == automatch && pattern.empty())
+        mode_ = all;
 }
 
 template <class>
 bool
 selector::operator() (suite_info const& s)
 {
-    switch (m_mode)
+    switch (mode_)
     {
     case automatch:
-        // check suite
-        if (m_pat == s.name())
+        // suite or full name
+        if (s.name() == pat_ || s.full_name() == pat_)
         {
-            m_mode = none;
+            mode_ = none;
             return true;
         }
 
         // check module
-        if (m_pat == s.module())
+        if (pat_ == s.module())
         {
-            m_mode = module;
-            m_library = s.library();
+            mode_ = module;
+            library_ = s.library();
             return ! s.manual();
         }
 
         // check library
-        if (m_pat == s.library())
+        if (pat_ == s.library())
         {
-            m_mode = library;
+            mode_ = library;
             return ! s.manual();
         }
 
         return false;
 
     case suite:
-        return m_pat == s.name();
+        return pat_ == s.name();
 
     case module:
-        return m_pat == s.module() && ! s.manual();
+        return pat_ == s.module() && ! s.manual();
 
     case library:
-        return m_pat == s.library() && ! s.manual();
+        return pat_ == s.library() && ! s.manual();
 
     case none:
         return false;
