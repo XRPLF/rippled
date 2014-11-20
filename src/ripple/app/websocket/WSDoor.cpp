@@ -57,15 +57,17 @@ private:
     InfoSub::Source& m_source;
     LockType m_endpointLock;
     std::shared_ptr<websocketpp_02::server_autotls> m_endpoint;
+    CollectorManager& collectorManager_;
 
 public:
     WSDoorImp (HTTP::Port const& port, Resource::Manager& resourceManager,
-        InfoSub::Source& source)
+        InfoSub::Source& source, CollectorManager& cm)
         : WSDoor (source)
         , Thread ("websocket")
         , port_(std::make_shared<HTTP::Port>(port))
         , m_resourceManager (resourceManager)
         , m_source (source)
+        , collectorManager_ (cm)
     {
         startThread ();
     }
@@ -85,7 +87,7 @@ private:
 
         websocketpp_02::server_autotls::handler::ptr handler (
             new WSServerHandler <websocketpp_02::server_autotls> (
-                port_, m_resourceManager, m_source));
+                port_, m_resourceManager, m_source, collectorManager_));
 
         {
             ScopedLockType lock (m_endpointLock);
@@ -162,13 +164,13 @@ WSDoor::WSDoor (Stoppable& parent)
 
 std::unique_ptr<WSDoor>
 make_WSDoor (HTTP::Port const& port, Resource::Manager& resourceManager,
-    InfoSub::Source& source)
+    InfoSub::Source& source, CollectorManager& cm)
 {
     std::unique_ptr<WSDoor> door;
 
     try
     {
-        door = std::make_unique <WSDoorImp> (port, resourceManager, source);
+        door = std::make_unique <WSDoorImp> (port, resourceManager, source, cm);
     }
     catch (...)
     {

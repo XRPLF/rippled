@@ -27,6 +27,7 @@
 #include <ripple/server/Port.h>
 #include <ripple/json/to_string.h>
 #include <ripple/unity/websocket.h>
+#include <ripple/rpc/RPCHandler.h>
 #include <beast/asio/placeholders.h>
 #include <memory>
 
@@ -59,6 +60,8 @@ protected:
 
     virtual void preDestroy () = 0;
     virtual void disconnect () = 0;
+    
+    virtual void recordMetrics (RPC::Context const&) const = 0;
 
 public:
     void onPong (std::string const&);
@@ -140,6 +143,11 @@ public:
     static void destroy (std::shared_ptr <WSConnectionType <endpoint_type> >)
     {
         // Just discards the reference
+    }
+
+    void recordMetrics (RPC::Context const& context) const override
+    {
+        m_serverHandler.recordMetrics (context);
     }
 
     // Implement overridden functions from base class:
