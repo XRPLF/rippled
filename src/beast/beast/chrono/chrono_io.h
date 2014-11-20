@@ -856,15 +856,15 @@ operator<<(basic_ostream<_CharT, _Traits>& __os,
                 tz = f.get_timezone();
             }
             time_t __t = system_clock::to_time_t(__tp);
-            tm __tm;
+            tm* __tm;
             if (tz == local)
             {
-                if (localtime_r(&__t, &__tm) == 0)
+                if (! (__tm = localtime(&__t)))
                     failed = true;
             }
             else
             {
-                if (gmtime_r(&__t, &__tm) == 0)
+                if (! (__tm = gmtime(&__t)))
                     failed = true;
             }
             if (!failed)
@@ -875,11 +875,11 @@ operator<<(basic_ostream<_CharT, _Traits>& __os,
                     _CharT pattern[] = {'%', 'F', 'T', '%', 'H', ':', '%', 'M', ':'};
                     pb = pattern;
                     pe = pb + sizeof(pattern) / sizeof(_CharT);
-                    failed = tp.put(__os, __os, __os.fill(), &__tm, pb, pe).failed();
+                    failed = tp.put(__os, __os, __os.fill(), __tm, pb, pe).failed();
                     if (!failed)
                     {
                         duration<double> __d = __tp - system_clock::from_time_t(__t) +
-                                  seconds(__tm.tm_sec);
+                                  seconds(__tm->tm_sec);
                         if (__d.count() < 10)
                             __os << _CharT('0');
                         ios::fmtflags __flgs = __os.flags();
@@ -891,7 +891,7 @@ operator<<(basic_ostream<_CharT, _Traits>& __os,
                             _CharT sub_pattern[] = {' ', '%', 'z'};
                             pb = sub_pattern;
                             pe = pb + + sizeof(sub_pattern) / sizeof(_CharT);
-                            failed = tp.put(__os, __os, __os.fill(), &__tm, pb, pe).failed();
+                            failed = tp.put(__os, __os, __os.fill(), __tm, pb, pe).failed();
                         }
                         else
                         {
@@ -901,7 +901,7 @@ operator<<(basic_ostream<_CharT, _Traits>& __os,
                     }
                 }
                 else
-                    failed = tp.put(__os, __os, __os.fill(), &__tm, pb, pe).failed();
+                    failed = tp.put(__os, __os, __os.fill(), __tm, pb, pe).failed();
             }
         }
         catch (...)

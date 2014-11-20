@@ -31,13 +31,13 @@ namespace beast {
 template <
     class Key,
     class T,
-    class Duration = std::chrono::seconds,
+    class Clock = std::chrono::steady_clock,
     class Hash = std::hash <Key>,
     class KeyEqual = std::equal_to <Key>,
     class Allocator = std::allocator <std::pair <Key const, T>>
 >
 using aged_unordered_multimap = detail::aged_unordered_container <
-    true, true, Key, T, Duration, Hash, KeyEqual, Allocator>;
+    true, true, Key, T, Clock, Hash, KeyEqual, Allocator>;
 
 }
 

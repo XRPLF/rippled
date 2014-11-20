@@ -64,7 +64,7 @@ protected:
     explicit NetworkOPs (Stoppable& parent);
 
 public:
-    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
     enum Fault
     {

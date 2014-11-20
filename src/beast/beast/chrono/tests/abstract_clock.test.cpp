@@ -20,11 +20,8 @@
 // MODULES: ../impl/chrono_io.cpp
 
 #include <beast/chrono/abstract_clock.h>
-#include <beast/chrono/abstract_clock_io.h>
 #include <beast/chrono/manual_clock.h>
-
 #include <beast/unit_test/suite.h>
-
 #include <sstream>
 #include <string>
 #include <thread>
@@ -34,7 +31,8 @@ namespace beast {
 class abstract_clock_test : public unit_test::suite
 {
 public:
-    void test (abstract_clock <std::chrono::seconds>& c)
+    template <class Clock>
+    void test (abstract_clock<Clock>& c)
     {
         {
             auto const t1 (c.now ());
@@ -53,18 +51,18 @@ public:
 
     void test_manual ()
     {
-        typedef manual_clock <std::chrono::seconds> clock_type;
+        using clock_type = manual_clock<std::chrono::steady_clock>;
         clock_type c;
 
         std::stringstream ss;
 
-        ss << "now() = " << c.now () << std::endl;
+        ss << "now() = " << c.now().time_since_epoch() << std::endl;
 
-        c.set (clock_type::time_point (std::chrono::seconds (1)));
-        ss << "now() = " << c.now () << std::endl;
+        c.set (clock_type::time_point (std::chrono::seconds(1)));
+        ss << "now() = " << c.now().time_since_epoch() << std::endl;
 
-        c.set (clock_type::time_point (std::chrono::seconds (2)));
-        ss << "now() = " << c.now () << std::endl;
+        c.set (clock_type::time_point (std::chrono::seconds(2)));
+        ss << "now() = " << c.now().time_since_epoch() << std::endl;
 
         log << ss.str();
     }
@@ -72,16 +70,16 @@ public:
     void run ()
     {
         log << "steady_clock";
-        test (get_abstract_clock <std::chrono::steady_clock,
-            std::chrono::seconds> ());
+        test (get_abstract_clock<
+            std::chrono::steady_clock>());
 
         log << "system_clock";
-        test (get_abstract_clock <std::chrono::system_clock,
-            std::chrono::seconds> ());
+        test (get_abstract_clock<
+            std::chrono::system_clock>());
 
         log << "high_resolution_clock";
-        test (get_abstract_clock <std::chrono::high_resolution_clock,
-            std::chrono::seconds> ());
+        test (get_abstract_clock<
+            std::chrono::high_resolution_clock>());
 
         log << "manual_clock";
         test_manual ();

@@ -67,7 +67,7 @@ public:
     // VFALCO TODO Use std::shared_ptr, std::weak_ptr
     typedef std::weak_ptr <mapped_type> weak_mapped_ptr;
     typedef std::shared_ptr <mapped_type> mapped_ptr;
-    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
 public:
     // VFALCO TODO Change expiration_seconds to clock_type::duration

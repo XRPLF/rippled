@@ -818,7 +818,7 @@ public:
         RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
         srand (seed);
 
-        beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock
+        beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
 
         FullBelowCache fullBelowCache ("test.full_below", clock);

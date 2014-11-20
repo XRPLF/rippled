@@ -34,10 +34,12 @@ using weeks = std::chrono::duration
     <int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
 /** Returns an abstract_clock optimized for counting seconds. */
-inline beast::abstract_clock <std::chrono::seconds>& get_seconds_clock ()
+inline
+beast::abstract_clock<std::chrono::steady_clock>&
+get_seconds_clock()
 {
-    typedef beast::basic_seconds_clock <std::chrono::steady_clock> clock_type;
-    return beast::get_abstract_clock <clock_type, std::chrono::seconds> ();
+    return beast::get_abstract_clock<std::chrono::steady_clock,
+        beast::basic_seconds_clock<std::chrono::steady_clock>>();
 }
 
 }

@@ -32,7 +32,7 @@ namespace ripple {
 class PeerSet : beast::LeakChecked <PeerSet>
 {
 public:
-    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
     uint256 const& getHash () const
     {

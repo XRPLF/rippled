@@ -302,7 +302,7 @@ public:
         >
         using Cont = detail::aged_ordered_container <
             Base::is_multi::value, Base::is_map::value, typename Base::Key,
-                typename Base::T, typename Base::Dur, Compare, Allocator>;
+                typename Base::T, typename Base::Clock, Compare, Allocator>;
     };
 
     // unordered
@@ -318,7 +318,7 @@ public:
         >
         using Cont = detail::aged_unordered_container <
             Base::is_multi::value, Base::is_map::value,
-                typename Base::Key, typename Base::T, typename Base::Dur,
+                typename Base::Key, typename Base::T, typename Base::Clock,
                     Hash, KeyEqual, Allocator>;
     };
 
@@ -327,8 +327,8 @@ public:
     struct TestTraitsBase
     {
         typedef std::string Key;
-        typedef std::chrono::seconds Dur;
-        typedef manual_clock <Dur> Clock;
+        typedef std::chrono::steady_clock Clock;
+        typedef manual_clock<Clock> ManualClock;
     };
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
@@ -744,12 +744,12 @@ testConstructEmpty ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Comp Comp;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyComp MyComp;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " empty");
     testcase ("empty");
@@ -789,14 +789,14 @@ testConstructEmpty ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Hash Hash;
     typedef typename Traits::Equal Equal;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyHash MyHash;
     typedef typename Traits::MyEqual MyEqual;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " empty");
     testcase ("empty");
@@ -859,12 +859,12 @@ testConstructRange ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Comp Comp;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyComp MyComp;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " range");
@@ -922,14 +922,14 @@ testConstructRange ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Hash Hash;
     typedef typename Traits::Equal Equal;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyHash MyHash;
     typedef typename Traits::MyEqual MyEqual;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " range");
@@ -1002,12 +1002,12 @@ testConstructInitList ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Comp Comp;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyComp MyComp;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " init-list");
     testcase ("init-list");
@@ -1027,14 +1027,14 @@ testConstructInitList ()
     typedef typename Traits::Value Value;
     typedef typename Traits::Key Key;
     typedef typename Traits::T T;
-    typedef typename Traits::Dur Dur;
+    typedef typename Traits::Clock Clock;
     typedef typename Traits::Hash Hash;
     typedef typename Traits::Equal Equal;
     typedef typename Traits::Alloc Alloc;
     typedef typename Traits::MyHash MyHash;
     typedef typename Traits::MyEqual MyEqual;
     typedef typename Traits::MyAlloc MyAlloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " init-list");
     testcase ("init-list");
@@ -1057,7 +1057,7 @@ testCopyMove ()
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
     typedef typename Traits::Value Value;
     typedef typename Traits::Alloc Alloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " copy/move");
@@ -1139,7 +1139,7 @@ testIterator()
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
     typedef typename Traits::Value Value;
     typedef typename Traits::Alloc Alloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " iterators");
@@ -1202,7 +1202,7 @@ testReverseIterator()
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
     typedef typename Traits::Value Value;
     typedef typename Traits::Alloc Alloc;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " reverse_iterators");
@@ -1357,7 +1357,7 @@ aged_associative_container_test_base::
 testModifiers()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
     auto const l (make_list (v));
 
@@ -1418,7 +1418,7 @@ testChronological ()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
     typedef typename Traits::Value Value;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " chronological");
@@ -1484,7 +1484,7 @@ aged_associative_container_test_base::
 testArrayCreate()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto v (Traits::values());
 
     //testcase (Traits::name() + " array create");
@@ -1522,8 +1522,9 @@ reverseFillAgedContainer (Container& c, Values const& values)
     c.clear();
 
     // c.clock() returns an abstract_clock, so dynamic_cast to manual_clock.
-    typedef TestTraitsBase::Clock Clock;
-    Clock& clk (dynamic_cast <Clock&> (c.clock ()));
+    // VFALCO NOTE This is sketchy
+    typedef TestTraitsBase::ManualClock ManualClock;
+    ManualClock& clk (dynamic_cast <ManualClock&> (c.clock()));
     clk.set (0);
 
     Values rev (values);
@@ -1626,8 +1627,8 @@ testElementErase ()
     testcase ("element erase");
 
     // Make and fill the container
-    typename Traits::Clock ck;
-    typename Traits::template Cont <> c {ck};
+    typename Traits::ManualClock clock;
+    typename Traits::template Cont <> c {clock};
     reverseFillAgedContainer (c, Traits::values());
 
     {
@@ -1756,8 +1757,8 @@ testRangeErase ()
     testcase ("range erase");
 
     // Make and fill the container
-    typename Traits::Clock ck;
-    typename Traits::template Cont <> c {ck};
+    typename Traits::ManualClock clock;
+    typename Traits::template Cont <> c {clock};
     reverseFillAgedContainer (c, Traits::values());
 
     // Not bothering to test range erase with reverse iterators.
@@ -1785,7 +1786,7 @@ testCompare ()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
     typedef typename Traits::Value Value;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
     auto const v (Traits::values());
 
     //testcase (Traits::name() + " array create");
@@ -1819,7 +1820,7 @@ aged_associative_container_test_base::
 testObservers()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " observers");
     testcase ("observers");
@@ -1838,7 +1839,7 @@ aged_associative_container_test_base::
 testObservers()
 {
     typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
-    typename Traits::Clock clock;
+    typename Traits::ManualClock clock;
 
     //testcase (Traits::name() + " observers");
     testcase ("observers");
