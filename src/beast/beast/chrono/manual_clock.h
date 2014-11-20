@@ -34,14 +34,15 @@ template <class Clock>
 class manual_clock
     : public abstract_clock<Clock>
 {
-private:
-    time_point now_;
-
 public:
     using typename abstract_clock<Clock>::rep;
     using typename abstract_clock<Clock>::duration;
     using typename abstract_clock<Clock>::time_point;
 
+private:
+    time_point now_;
+
+public:
     explicit
     manual_clock (time_point const& now = time_point(duration(0)))
         : now_(now)
