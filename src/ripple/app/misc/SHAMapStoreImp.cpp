@@ -31,7 +31,9 @@ SHAMapStoreImp::SavedStateDB::init (std::string const& databasePath,
 
     std::lock_guard <std::mutex> lock (mutex_);
 
-    beast::Error error (session_.open (pathName.c_str()));
+    // for beast::String compatibility
+    std::string pathStr = pathName.c_str();
+    beast::Error error (session_.open (pathStr));
     checkError (error);
 
     session_.once (error) << "PRAGMA synchronous=FULL;";
