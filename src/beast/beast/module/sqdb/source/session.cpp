@@ -271,6 +271,18 @@ Error session::open(String fileName, std::string options)
     return err;
 }
 
+static
+std::string to_utf8(std::wstring const& s)
+{
+    return std::string{};
+}
+
+Error session::open (std::wstring const& path,
+    std::string options)
+{
+    return open(to_utf8(path), options);
+}
+
 void session::close()
 {
     if (m_connection)
