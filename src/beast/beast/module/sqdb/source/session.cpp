@@ -57,6 +57,7 @@
 */
 //==============================================================================
 
+#include <beast/Config.h>
 #include <cassert>
 #if BEAST_WINDOWS
 #include <codecvt>
