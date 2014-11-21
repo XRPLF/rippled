@@ -214,7 +214,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
 
             if (fullBelow)
             { // No partial node encountered below this node
-                node->setFullBelow ();
+                node->setFullBelowGen (generation);
                 if (mBacked)
                     m_fullBelowCache.insert (node->getNodeHash ());
             }
