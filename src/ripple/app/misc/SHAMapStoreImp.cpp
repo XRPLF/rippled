@@ -324,8 +324,7 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
             state_db_.setLastRotated (lastRotated);
         }
-        LedgerIndex canDelete;
-        std::numeric_limits <LedgerIndex>::max();
+        LedgerIndex canDelete = std::numeric_limits <LedgerIndex>::max();
         if (setup_.advisoryDelete)
             canDelete = state_db_.getCanDelete();
 
