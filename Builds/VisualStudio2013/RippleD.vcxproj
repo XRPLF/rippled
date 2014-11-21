@@ -2247,13 +2247,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\Base58Data.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\bignum_error.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CAutoBN_CTX.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CBigNum.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\CKey.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\DHUtil.h">
     </ClInclude>

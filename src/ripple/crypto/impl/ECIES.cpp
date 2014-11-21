@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/crypto/CKey.h>
 #include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>

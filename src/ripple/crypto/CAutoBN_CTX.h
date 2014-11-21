@@ -25,8 +25,10 @@
 #ifndef RIPPLE_CRYPTO_CAUTOBN_CTX_H_INCLUDED
 #define RIPPLE_CRYPTO_CAUTOBN_CTX_H_INCLUDED
 
-#include <ripple/crypto/bignum_error.h>
 #include <openssl/bn.h>
+
+#include <stdexcept>
+#include <string>
 
 namespace ripple {
 
@@ -41,7 +43,7 @@ public:
         pctx = BN_CTX_new ();
 
         if (pctx == nullptr)
-            throw bignum_error ("CAutoBN_CTX : BN_CTX_new() returned nullptr");
+            throw std::runtime_error ("CAutoBN_CTX : BN_CTX_new() returned nullptr");
     }
 
     ~CAutoBN_CTX ()

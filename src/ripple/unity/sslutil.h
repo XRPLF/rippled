@@ -27,7 +27,6 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-#include <ripple/sslutil/bignum_error.h>
 #include <ripple/sslutil/CAutoBN_CTX.h>
 #include <ripple/sslutil/CBigNum.h>
 #include <ripple/sslutil/DHUtil.h>

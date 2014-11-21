@@ -22,6 +22,9 @@
 #include <ripple/types/Base58.h>
 #include <openssl/sha.h>
 
+#include <stdexcept>
+#include <string>
+
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 The Bitcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
@@ -86,7 +89,7 @@ std::string Base58::raw_encode (
     while (bn > bn0)
     {
         if (!BN_div (&dv, &rem, &bn, &bn58, pctx))
-            throw bignum_error ("EncodeBase58 : BN_div failed");
+            throw std::runtime_error ("EncodeBase58 : BN_div failed");
 
         bn = dv;
         unsigned int c = rem.getuint ();
@@ -196,7 +199,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
         bnChar.setuint (p1 - alphabet.chars());
 
         if (!BN_mul (&bn, &bn, &bn58, pctx))
-            throw bignum_error ("DecodeBase58 : BN_mul failed");
+            throw std::runtime_error ("DecodeBase58 : BN_mul failed");
 
         bn += bnChar;
     }

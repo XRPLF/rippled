@@ -3216,16 +3216,10 @@
     <ClInclude Include="..\..\src\ripple\crypto\Base58Data.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\bignum_error.h">
-      <Filter>ripple\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CAutoBN_CTX.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CBigNum.h">
-      <Filter>ripple\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\CKey.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\DHUtil.h">
