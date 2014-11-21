@@ -81,7 +81,8 @@ public:
         , m_fetchSize (0)
     {
         for (int i = 0; i < readThreads; ++i)
-            m_readThreads.push_back (std::thread (&DatabaseImp::threadEntry, this));
+            m_readThreads.push_back (std::thread (&DatabaseImp::threadEntry,
+                    this));
     }
 
     ~DatabaseImp ()
@@ -98,7 +99,7 @@ public:
     }
 
     std::string
-    getName () const
+    getName () const override
     {
         return m_backend->getName ();
     }
@@ -201,7 +202,8 @@ public:
         {
             // Yes so at last we will try the main database.
             //
-            obj = fetchInternal (*m_backend, hash);
+            obj = fetchFrom (hash);
+            ++m_fetchTotalCount;
         }
 
         if (obj == nullptr)
@@ -230,7 +232,7 @@ public:
                 {
                     m_fastBackend->store (obj);
                     ++m_storeCount;
-                    if (obj.get())
+                    if (obj)
                         m_storeSize += obj->getData().size();
                 }
 
@@ -244,19 +246,23 @@ public:
         return obj;
     }
 
+    virtual NodeObject::Ptr fetchFrom (uint256 const& hash)
+    {
+        return fetchInternal (*m_backend, hash);
+    }
+
     NodeObject::Ptr fetchInternal (Backend& backend,
         uint256 const& hash)
     {
         NodeObject::Ptr object;
 
         Status const status = backend.fetch (hash.begin (), &object);
-        ++m_fetchTotalCount;
 
         switch (status)
         {
         case ok:
             ++m_fetchHitCount;
-            if (object.get())
+            if (object)
                 m_fetchSize += object->getData().size();
         case notFound:
             break;
@@ -284,7 +290,17 @@ public:
                 Blob&& data,
                 uint256 const& hash)
     {
-        NodeObject::Ptr object = NodeObject::createObject(type, index, std::move(data), hash);
+        storeInternal (type, index, std::move(data), hash, *m_backend.get());
+    }
+
+    void storeInternal (NodeObjectType type,
+                        std::uint32_t index,
+                        Blob&& data,
+                        uint256 const& hash,
+                        Backend& backend)
+    {
+        NodeObject::Ptr object = NodeObject::createObject(type, index,
+                std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
         assert (hash == Serializer::getSHA512Half (data));
@@ -292,9 +308,9 @@ public:
 
         m_cache.canonicalize (hash, object, true);
 
-        m_backend->store (object);
+        backend.store (object);
         ++m_storeCount;
-        if (object.get())
+        if (object)
             m_storeSize += object->getData().size();
 
         m_negCache.erase (hash);
@@ -303,7 +319,7 @@ public:
         {
             m_fastBackend->store (object);
             ++m_storeCount;
-            if (object.get())
+            if (object)
                 m_storeSize += object->getData().size();
         }
     }
@@ -329,9 +345,9 @@ public:
         m_negCache.sweep ();
     }
 
-    int getWriteLoad ()
+    std::int32_t getWriteLoad() const override
     {
-        return m_backend->getWriteLoad ();
+        return m_backend->getWriteLoad();
     }
 
     //------------------------------------------------------------------------------
@@ -380,33 +396,38 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void for_each (std::function <void(NodeObject::Ptr)> f)
+    void for_each (std::function <void(NodeObject::Ptr)> f) override
     {
         m_backend->for_each (f);
     }
 
     void import (Database& source)
     {
+        importInternal (source, *m_backend.get());
+    }
+
+    void importInternal (Database& source, Backend& dest)
+    {
         Batch b;
         b.reserve (batchWritePreallocationSize);
 
         source.for_each ([&](NodeObject::Ptr object)
         {
-            if (b.size () >= batchWritePreallocationSize)
+            if (b.size() >= batchWritePreallocationSize)
             {
-                this->m_backend->storeBatch (b);
-                b.clear ();
+                dest.storeBatch (b);
+                b.clear();
                 b.reserve (batchWritePreallocationSize);
             }
 
             b.push_back (object);
             ++m_storeCount;
-            if (object.get())
+            if (object)
                 m_storeSize += object->getData().size();
         });
 
-        if (! b.empty ())
-            m_backend->storeBatch (b);
+        if (! b.empty())
+            dest.storeBatch (b);
     }
 
     std::uint32_t getStoreCount () const override

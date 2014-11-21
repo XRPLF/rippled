@@ -78,6 +78,9 @@ class RocksDBQuickBackend
     : public Backend
     , public beast::LeakChecked <RocksDBQuickBackend>
 {
+private:
+    std::atomic <bool> m_deletePath;
+
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
@@ -162,6 +165,12 @@ public:
 
     ~RocksDBQuickBackend ()
     {
+        if (m_deletePath)
+        {
+            m_db.reset();
+            boost::filesystem::path dir = m_name;
+            boost::filesystem::remove_all (dir);
+        }
     }
 
     std::string
@@ -297,6 +306,12 @@ public:
     getWriteLoad ()
     {
         return 0;
+    }
+
+    void
+    setDeletePath() override
+    {
+        m_deletePath = true;
     }
 
     //--------------------------------------------------------------------------

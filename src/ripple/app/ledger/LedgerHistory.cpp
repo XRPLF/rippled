@@ -294,4 +294,13 @@ void LedgerHistory::tune (int size, int age)
     m_ledgers_by_hash.setTargetAge (age);
 }
 
+void LedgerHistory::clearLedgerCachePrior (LedgerIndex seq)
+{
+    for (LedgerHash it: m_ledgers_by_hash.getKeys())
+    {
+        if (getLedgerByHash (it)->getLedgerSeq() < seq)
+            m_ledgers_by_hash.del (it, false);
+    }
+}
+
 } // ripple

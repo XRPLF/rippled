@@ -29,6 +29,9 @@ class LevelDBBackend
     , public BatchWriter::Callback
     , public beast::LeakChecked <LevelDBBackend>
 {
+private:
+    std::atomic <bool> m_deletePath;
+
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
@@ -40,7 +43,8 @@ public:
 
     LevelDBBackend (int keyBytes, Parameters const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
-        : m_journal (journal)
+        : m_deletePath (false)
+        , m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
@@ -91,6 +95,16 @@ public:
             throw std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString());
 
         m_db.reset (db);
+    }
+
+    ~LevelDBBackend()
+    {
+        if (m_deletePath)
+        {
+            m_db.reset();
+            boost::filesystem::path dir = m_name;
+            boost::filesystem::remove_all (dir);
+        }
     }
 
     std::string
@@ -220,6 +234,12 @@ public:
     getWriteLoad ()
     {
         return m_batch.getWriteLoad ();
+    }
+
+    void
+    setDeletePath() override
+    {
+        m_deletePath = true;
     }
 
     //--------------------------------------------------------------------------

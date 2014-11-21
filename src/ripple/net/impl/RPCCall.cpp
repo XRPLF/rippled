@@ -358,6 +358,24 @@ private:
         return jvRequest;
     }
 
+    // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
+    Json::Value parseCanDelete (Json::Value const& jvParams)
+    {
+        Json::Value     jvRequest (Json::objectValue);
+
+        if (!jvParams.size ())
+            return jvRequest;
+
+        std::string input = jvParams[0u].asString();
+        if (input.find_first_not_of("0123456789") ==
+                std::string::npos)
+            jvRequest["can_delete"] = jvParams[0u].asUInt();
+        else
+            jvRequest["can_delete"] = input;
+
+        return jvRequest;
+    }
+
     // connect <ip> [port]
     Json::Value parseConnect (Json::Value const& jvParams)
     {
@@ -841,6 +859,7 @@ public:
             {   "account_offers",       &RPCParser::parseAccountItems,          1,  4   },
             {   "account_tx",           &RPCParser::parseAccountTransactions,   1,  8   },
             {   "book_offers",          &RPCParser::parseBookOffers,            2,  7   },
+            {   "can_delete",           &RPCParser::parseCanDelete,             0,  1   },
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },

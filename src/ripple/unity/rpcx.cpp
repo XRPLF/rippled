@@ -49,6 +49,7 @@
 #include <ripple/rpc/handlers/AccountTxSwitch.cpp>
 #include <ripple/rpc/handlers/BlackList.cpp>
 #include <ripple/rpc/handlers/BookOffers.cpp>
+#include <ripple/rpc/handlers/CanDelete.cpp>
 #include <ripple/rpc/handlers/Connect.cpp>
 #include <ripple/rpc/handlers/ConsensusInfo.cpp>
 #include <ripple/rpc/handlers/Feature.cpp>

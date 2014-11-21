@@ -30,6 +30,7 @@
 #include <ripple/app/ledger/OrderBookDB.cpp>
 #include <ripple/app/main/LoadManager.cpp>
 #include <ripple/app/misc/CanonicalTXSet.cpp>
+#include <ripple/app/misc/SHAMapStoreImp.cpp>
 #include <ripple/app/shamap/SHAMap.cpp>
 #include <ripple/app/shamap/SHAMapItem.cpp>
 #include <ripple/app/shamap/SHAMapSync.cpp>

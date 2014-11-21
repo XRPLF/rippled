@@ -49,6 +49,7 @@ JSS ( base_fee_xrp );
 JSS ( bids );
 JSS ( binary );
 JSS ( build_version );
+JSS ( can_delete );
 JSS ( closed );
 JSS ( closed_ledger );
 JSS ( close_time );

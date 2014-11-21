@@ -17,64 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DATABASECON_H
-#define RIPPLE_DATABASECON_H
+#ifndef RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
+#define RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
 
-#include <ripple/core/Config.h>
-
-#include <mutex>
-#include <string>
+#include <ripple/nodestore/Database.h>
 
 namespace ripple {
+namespace NodeStore {
 
-class Database;
+/* This class has two key-value store Backend objects for persisting SHAMap
+ * records. This facilitates online deletion of data. New backends are
+ * rotated in. Old ones are rotated out and deleted.
+ */
 
-// VFALCO NOTE This looks like a pointless class. Figure out
-//         what purpose it is really trying to serve and do it better.
-class DatabaseCon
+class DatabaseRotating
 {
 public:
-    struct Setup
-    {
-        bool onlineDelete;
-        Config::StartUpType startUp;
-        bool standAlone;
-        boost::filesystem::path dataDir;
-    };
+    virtual ~DatabaseRotating() = default;
 
-    DatabaseCon (Setup const& setup,
-            std::string const& name,
-            const char* initString[],
-            int countInit);
-    ~DatabaseCon ();
+    virtual TaggedCache <uint256, NodeObject>& getPositiveCache() = 0;
 
-    Database* getDB ()
-    {
-        return mDatabase;
-    }
+    virtual std::mutex& peekMutex() const = 0;
 
-    typedef std::recursive_mutex mutex;
+    virtual std::shared_ptr <Backend> const& getWritableBackend() const = 0;
 
-    std::unique_lock<mutex> lock ()
-    {
-        return std::unique_lock<mutex>(mLock);
-    }
+    virtual std::shared_ptr <Backend> const& getArchiveBackend () const = 0;
 
-    mutex& peekMutex()
-    {
-        return mLock;
-    }
+    virtual std::shared_ptr <Backend> rotateBackends (
+            std::shared_ptr <Backend> const& newBackend) = 0;
 
-private:
-    Database* mDatabase;
-    mutex  mLock;
+    /** Ensure that node is in writableBackend */
+    virtual NodeObject::Ptr fetchNode (uint256 const& hash) = 0;
 };
 
-//------------------------------------------------------------------------------
-
-DatabaseCon::Setup
-setup_DatabaseCon (Config const& c);
-
-} // ripple
+}
+}
 
 #endif

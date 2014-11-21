@@ -40,6 +40,7 @@ enum error_code_i
     // Programs should use error tokens.
 
     // Misc failure
+    rpcGENERAL,
     rpcLOAD_FAILED,
     rpcNO_PERMISSION,
     rpcNO_EVENTS,
@@ -47,6 +48,8 @@ enum error_code_i
     rpcTOO_BUSY,
     rpcSLOW_DOWN,
     rpcHIGH_FEE,
+    rpcNOT_ENABLED,
+    rpcNOT_READY,
 
     // Networking
     rpcNO_CLOSED,

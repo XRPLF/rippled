@@ -17,64 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DATABASECON_H
-#define RIPPLE_DATABASECON_H
-
-#include <ripple/core/Config.h>
-
-#include <mutex>
-#include <string>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
 namespace ripple {
+namespace NodeStore {
 
-class Database;
-
-// VFALCO NOTE This looks like a pointless class. Figure out
-//         what purpose it is really trying to serve and do it better.
-class DatabaseCon
+// Make sure to call it already locked!
+std::shared_ptr <Backend> DatabaseRotatingImp::rotateBackends (
+        std::shared_ptr <Backend> const& newBackend)
 {
-public:
-    struct Setup
-    {
-        bool onlineDelete;
-        Config::StartUpType startUp;
-        bool standAlone;
-        boost::filesystem::path dataDir;
-    };
+    std::shared_ptr <Backend> oldBackend = archiveBackend_;
+    archiveBackend_ = writableBackend_;
+    writableBackend_ = newBackend;
 
-    DatabaseCon (Setup const& setup,
-            std::string const& name,
-            const char* initString[],
-            int countInit);
-    ~DatabaseCon ();
+    return oldBackend;
+}
 
-    Database* getDB ()
+NodeObject::Ptr DatabaseRotatingImp::fetchFrom (uint256 const& hash)
+{
+    Backends b = getBackends();
+    NodeObject::Ptr object = fetchInternal (*b.writableBackend, hash);
+    if (!object)
     {
-        return mDatabase;
+        object = fetchInternal (*b.archiveBackend, hash);
+        if (object)
+        {
+            getWritableBackend()->store (object);
+            m_negCache.erase (hash);
+        }
     }
 
-    typedef std::recursive_mutex mutex;
+    return object;
+}
+}
 
-    std::unique_lock<mutex> lock ()
-    {
-        return std::unique_lock<mutex>(mLock);
-    }
-
-    mutex& peekMutex()
-    {
-        return mLock;
-    }
-
-private:
-    Database* mDatabase;
-    mutex  mLock;
-};
-
-//------------------------------------------------------------------------------
-
-DatabaseCon::Setup
-setup_DatabaseCon (Config const& c);
-
-} // ripple
-
-#endif
+}

@@ -18,24 +18,21 @@
 //==============================================================================
 
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/core/Config.h>
 
 namespace ripple {
 
-DatabaseCon::DatabaseCon (std::string const& strName, const char* initStrings[], int initCount)
+DatabaseCon::DatabaseCon (Setup const& setup,
+        std::string const& strName,
+        const char* initStrings[],
+        int initCount)
 {
-    // VFALCO TODO remove this dependency on the config by making it the caller's
-    //         responsibility to pass in the path. Add a member function to Application
-    //         or Config to compute this path.
-    //
-    auto const startUp = getConfig ().START_UP;
     auto const useTempFiles  // Use temporary files or regular DB files?
-        = getConfig ().RUN_STANDALONE &&
-          startUp != Config::LOAD &&
-          startUp != Config::LOAD_FILE &&
-          startUp != Config::REPLAY;
+        = setup.standAlone &&
+          setup.startUp != Config::LOAD &&
+          setup.startUp != Config::LOAD_FILE &&
+          setup.startUp != Config::REPLAY;
     boost::filesystem::path pPath = useTempFiles
-        ? "" : (getConfig ().DATA_DIR / strName);
+        ? "" : (setup.dataDir / strName);
 
     mDatabase = new SqliteDatabase (pPath.string ().c_str ());
     mDatabase->connect ();
@@ -48,6 +45,20 @@ DatabaseCon::~DatabaseCon ()
 {
     mDatabase->disconnect ();
     delete mDatabase;
+}
+
+DatabaseCon::Setup
+setup_DatabaseCon (Config const& c)
+{
+    DatabaseCon::Setup setup = {};
+
+    if (c.nodeDatabase["online_delete"].isNotEmpty())
+        setup.onlineDelete = c.nodeDatabase["online_delete"].getIntValue();
+    setup.startUp = c.START_UP;
+    setup.standAlone = c.RUN_STANDALONE;
+    setup.dataDir = c.DATA_DIR;
+
+    return setup;
 }
 
 } // ripple

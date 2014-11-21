@@ -169,13 +169,13 @@ public:
     }
 
     // sync functions
-    bool isFullBelow (void) const
+    bool isFullBelow (std::uint32_t generation) const
     {
-        return mFullBelow;
+        return mFullBelowGen == generation;
     }
-    void setFullBelow (void)
+    void setFullBelowGen (std::uint32_t gen)
     {
-        mFullBelow = true;
+        mFullBelowGen = gen;
     }
 
     virtual void dump (SHAMapNodeID const&);
@@ -197,7 +197,7 @@ private:
     std::uint32_t           mSeq;
     TNType                  mType;
     int                     mIsBranch;
-    bool                    mFullBelow;
+    std::uint32_t           mFullBelowGen;
 
     bool updateHash ();
 
