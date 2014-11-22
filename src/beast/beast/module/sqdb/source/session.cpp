@@ -61,7 +61,7 @@
 #include <cassert>
 #if BEAST_WINDOWS
 #include <codecvt>
-#include <locale
+#include <locale>
 #endif
 
 namespace beast {

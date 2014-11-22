@@ -31,9 +31,7 @@ SHAMapStoreImp::SavedStateDB::init (std::string const& databasePath,
 
     std::lock_guard <std::mutex> lock (mutex_);
 
-    // for beast::String compatibility
-    std::string pathStr = pathName.c_str();
-    beast::Error error (session_.open (pathStr));
+    auto error = session_.open (pathName.string());
     checkError (error);
 
     session_.once (error) << "PRAGMA synchronous=FULL;";
@@ -442,7 +440,7 @@ SHAMapStoreImp::dbPaths()
         if (! boost::filesystem::is_directory (dbPath))
         {
             std::cerr << "node db path must be a directory. "
-                    << dbPath.native();
+                    << dbPath.string();
             throw std::runtime_error (
                     "node db path must be a directory.");
         }
@@ -459,11 +457,11 @@ SHAMapStoreImp::dbPaths()
     for (boost::filesystem::directory_iterator it (dbPath);
             it != boost::filesystem::directory_iterator(); ++it)
     {
-        if (! state.writableDb.compare (it->path().native()))
+        if (! state.writableDb.compare (it->path().string()))
             writableDbExists = true;
-        else if (! state.archiveDb.compare (it->path().native()))
+        else if (! state.archiveDb.compare (it->path().string()))
             archiveDbExists = true;
-        else if (! dbPrefix_.compare (it->path().stem().native()))
+        else if (! dbPrefix_.compare (it->path().stem().string()))
             boost::filesystem::remove_all (it->path());
     }
 
@@ -484,7 +482,7 @@ SHAMapStoreImp::dbPaths()
                 << std::endl << std::endl
                 << "To resume operation, make backups of and "
                 << "remove the files matching "
-                << stateDbPathName.native()
+                << stateDbPathName.string()
                 << " and contents of the directory "
                 << setup_.nodeDatabase["path"].toStdString()
                 << std::endl;
@@ -510,7 +508,7 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
         p += ".%%%%";
         newPath = boost::filesystem::unique_path (p);
     }
-    parameters.set("path", newPath.native());
+    parameters.set("path", newPath.string());
 
     return manager_.make_Backend (parameters, scheduler_,
             nodeStoreJournal_);
