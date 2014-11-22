@@ -465,9 +465,8 @@ TER PathState::expandPath (
         << " currency=" << uMaxCurrencyID
         << " issuer=" << uSenderIssuerID;
 
-    if (tesSUCCESS == terStatus
-            && uMaxIssuerID != uSenderIssuerID)
-        // Issuer was not same as sender.
+    // Issuer was not same as sender.
+    if (tesSUCCESS == terStatus && uMaxIssuerID != uSenderIssuerID)
     {
         // May have an implied account node.
         // - If it was XRP, then issuers would have matched.
@@ -534,31 +533,33 @@ TER PathState::expandPath (
         }
     }
 
-    auto const& backNode = nodes_.back ();
-
     if (terStatus == tesSUCCESS
-        && !isXRP(currencyOutID)                         // Next is not XRP
-        && issuerOutID != uReceiverID              // Out issuer is not receiver
-        && (backNode.issue_.currency != currencyOutID
-        // Previous will be an offer.
-            || backNode.account_ != issuerOutID))
-        // Need the implied issuer.
+        && !isXRP(currencyOutID)               // Next is not XRP
+        && issuerOutID != uReceiverID)         // Out issuer is not receiver
     {
-        // Add implied account.
-        WriteLog (lsDEBUG, RippleCalc)
-            << "expandPath: receiver implied:"
-            << " account=" << issuerOutID
-            << " currency=" << currencyOutID
-            << " issuer=" << issuerOutID;
+        assert (!nodes_.empty ());
 
-        terStatus   = pushNode (
-            !isXRP(currencyOutID)
-                ? STPathElement::typeAccount | STPathElement::typeCurrency |
-                  STPathElement::typeIssuer
-                : STPathElement::typeAccount | STPathElement::typeCurrency,
-            issuerOutID,
-            currencyOutID,
-            issuerOutID);
+        auto const& backNode = nodes_.back ();
+
+        if (backNode.issue_.currency != currencyOutID  // Previous will be offer
+            || backNode.account_ != issuerOutID)       // Need implied issuer
+        {
+            // Add implied account.
+            WriteLog (lsDEBUG, RippleCalc)
+                << "expandPath: receiver implied:"
+                << " account=" << issuerOutID
+                << " currency=" << currencyOutID
+                << " issuer=" << issuerOutID;
+
+            terStatus   = pushNode (
+                !isXRP(currencyOutID)
+                    ? STPathElement::typeAccount | STPathElement::typeCurrency |
+                      STPathElement::typeIssuer
+                    : STPathElement::typeAccount | STPathElement::typeCurrency,
+                issuerOutID,
+                currencyOutID,
+                issuerOutID);
+        }
     }
 
     if (terStatus == tesSUCCESS)
