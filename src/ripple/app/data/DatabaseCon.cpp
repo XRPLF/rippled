@@ -50,7 +50,7 @@ DatabaseCon::~DatabaseCon ()
 DatabaseCon::Setup
 setup_DatabaseCon (Config const& c)
 {
-    DatabaseCon::Setup setup = {};
+    DatabaseCon::Setup setup;
 
     if (c.nodeDatabase["online_delete"].isNotEmpty())
         setup.onlineDelete = c.nodeDatabase["online_delete"].getIntValue();

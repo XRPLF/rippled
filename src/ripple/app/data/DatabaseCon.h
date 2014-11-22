@@ -36,9 +36,9 @@ class DatabaseCon
 public:
     struct Setup
     {
-        bool onlineDelete;
-        Config::StartUpType startUp;
-        bool standAlone;
+        bool onlineDelete = false;
+        Config::StartUpType startUp = Config::NORMAL;
+        bool standAlone = false;
         boost::filesystem::path dataDir;
     };
 
