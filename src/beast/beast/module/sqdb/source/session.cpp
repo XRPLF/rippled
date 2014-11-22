@@ -57,12 +57,7 @@
 */
 //==============================================================================
 
-#include <beast/Config.h>
 #include <cassert>
-#if BEAST_WINDOWS
-#include <codecvt>
-#include <locale>
-#endif
 
 namespace beast {
 namespace sqdb {
@@ -274,24 +269,6 @@ Error session::open(String fileName, std::string options)
     }
 
     return err;
-}
-
-static
-std::string to_utf8(std::wstring const& s)
-{
-#if BEAST_WINDOWS
-    std::wstring_convert <std::codecvt_utf8_utf16<wchar_t>> converter;
-    std::string r = converter.to_bytes (s);
-    return r;
-#else
-    return std::string{};
-#endif
-}
-
-Error session::open (std::wstring const& path,
-    std::string options)
-{
-    return open(to_utf8(path), options);
 }
 
 void session::close()

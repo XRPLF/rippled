@@ -104,8 +104,6 @@ public:
     */
     Error open(String fileName,
                std::string options = "timeout=infinite|mode=create|threads=multi");
-    Error open(std::wstring const& path,
-        std::string options = "timeout=infinite|mode=create|threads=multi");
 
     void close();
 
