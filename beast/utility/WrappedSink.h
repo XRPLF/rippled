@@ -28,19 +28,21 @@ namespace beast {
 class WrappedSink : public beast::Journal::Sink
 {
 private:
-    std::string prefix_;
     beast::Journal::Sink& sink_;
+    std::string prefix_;
 
 public:
     explicit
-    WrappedSink (beast::Journal::Sink& sink)
-        : sink_ (sink)
+    WrappedSink (beast::Journal::Sink& sink, std::string const& prefix = "")
+        : sink_(sink)
+        , prefix_(prefix)
     {
     }
 
     explicit
-    WrappedSink (beast::Journal const& journal)
-        : sink_ (journal.sink())
+    WrappedSink (beast::Journal const& journal, std::string const& prefix = "")
+        : sink_(journal.sink())
+        , prefix_(prefix)
     {
     }
 
