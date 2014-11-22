@@ -65,30 +65,6 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
 {
 }
 
-PeerImp::PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
-    PeerFinder::Slot::ptr const& slot, boost::asio::io_service& io_service,
-        std::shared_ptr<boost::asio::ssl::context> const& context,
-            OverlayImpl& overlay)
-    : Child (overlay)
-    , id_(id)
-    , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
-    , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
-    , journal_ (sink_)
-    , p_journal_(p_sink_)
-    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
-        context, io_service))
-    , socket_ (ssl_bundle_->socket)
-    , stream_ (ssl_bundle_->stream)
-    , strand_ (socket_.get_io_service())
-    , timer_ (socket_.get_io_service())
-    , remote_address_ (remoteAddress)
-    , overlay_ (overlay)
-    , m_inbound (false)
-    , state_ (State::connecting)
-    , slot_ (slot)
-{
-}
-
 PeerImp::~PeerImp ()
 {
     if (cluster())
@@ -116,7 +92,27 @@ PeerImp::run()
     }
     else
     {
-        doConnect();
+        assert (state_ == State::active);
+        // XXX Set timer: connection is in grace period to be useful.
+        // XXX Set timer: connection idle (idle may vary depending on connection type.)
+        if ((hello_.has_ledgerclosed ()) && (
+            hello_.ledgerclosed ().size () == (256 / 8)))
+        {
+            memcpy (closedLedgerHash_.begin (),
+                hello_.ledgerclosed ().data (), 256 / 8);
+            if ((hello_.has_ledgerprevious ()) &&
+                (hello_.ledgerprevious ().size () == (256 / 8)))
+            {
+                memcpy (previousLedgerHash_.begin (),
+                    hello_.ledgerprevious ().data (), 256 / 8);
+                addLedger (previousLedgerHash_);
+            }
+            else
+            {
+                previousLedgerHash_.zero();
+            }
+        }
+        doProtocolStart(false);
     }
 }
 
@@ -458,294 +454,6 @@ PeerImp::onShutdown(error_code ec)
 }
 
 //------------------------------------------------------------------------------
-//
-// outbound
-//
-
-void PeerImp::doConnect()
-{
-    if (journal_.info) journal_.info <<
-        "Connect " << remote_address_;
-    usage_ = overlay_.resourceManager().newOutboundEndpoint (remote_address_);
-    if (usage_.disconnect())
-        return fail("doConnect: Resources");
-
-    setTimer();
-    stream_.next_layer().async_connect (
-        beast::IPAddressConversion::to_asio_endpoint (remote_address_),
-            strand_.wrap (std::bind (&PeerImp::onConnect,
-                shared_from_this (), beast::asio::placeholders::error)));
-}
-
-void
-PeerImp::onConnect (error_code ec)
-{
-    assert(state_ == State::connecting);
-    cancelTimer();
-    if(! socket_.is_open())
-        return;
-    if(ec == boost::asio::error::operation_aborted)
-        return;
-    socket_type::endpoint_type local_endpoint;
-    if(! ec)
-        local_endpoint = stream_.next_layer().local_endpoint (ec);
-    if(ec)
-        return fail("onConnect", ec);
-    if(journal_.trace) journal_.trace <<
-        "onConnect";
-
-    // VFALCO Can we do this after the call to onConnected?
-    state_ = State::connected;
-    if (! overlay_.peerFinder().onConnected (slot_,
-            beast::IPAddressConversion::from_asio (local_endpoint)))
-        return fail("onConnect: Duplicate");
-
-    setTimer();
-    stream_.set_verify_mode (boost::asio::ssl::verify_none);
-    stream_.async_handshake (
-        boost::asio::ssl::stream_base::client,
-        strand_.wrap (std::bind (&PeerImp::onHandshake,
-            std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                beast::asio::placeholders::error)));
-}
-
-void
-PeerImp::onHandshake (error_code ec)
-{
-    cancelTimer();
-    if(! socket_.is_open())
-        return;
-    if(ec == boost::asio::error::operation_aborted)
-        return;
-    if(ec)
-        return fail("onHandshake", ec);
-    if(journal_.trace) journal_.trace <<
-        "onHandshake";
-    if (! overlay_.setup().http_handshake)
-        return doProtocolStart(true); // legacy
-
-    bool success;
-    std::tie(sharedValue_, success) = makeSharedValue(
-        stream_.native_handle(), journal_);
-    if (! success)
-        return close(); // makeSharedValue logs
-
-    beast::http::message req = makeRequest(
-        beast::IPAddressConversion::to_asio_address(remote_address_));
-    auto const hello = buildHello (sharedValue_, getApp());
-    appendHello (req, hello);
-    write (write_buffer_, req);
-
-    setTimer();
-    stream_.async_write_some (write_buffer_.data(),
-        strand_.wrap (std::bind (&PeerImp::onWriteRequest,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-}
-
-// Called repeatedly with the http request data
-void
-PeerImp::onWriteRequest (error_code ec, std::size_t bytes_transferred)
-{
-    cancelTimer();
-    if(! socket_.is_open())
-        return;
-    if(ec == boost::asio::error::operation_aborted)
-        return;
-    if(ec)
-        return fail("onWriteRequest", ec);
-    if(journal_.trace) journal_.trace <<
-        "onWriteRequest: " << bytes_transferred << " bytes";
-
-    write_buffer_.consume (bytes_transferred);
-    if (write_buffer_.size() == 0)
-    {
-        http_parser_ = boost::in_place (std::ref(http_message_),
-            std::ref(http_body_), false);
-        return onReadResponse (error_code(), 0);
-    }
-
-    setTimer();
-    stream_.async_write_some (write_buffer_.data(),
-        strand_.wrap (std::bind (&PeerImp::onWriteRequest,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-}
-
-template <class = void>
-boost::asio::ip::tcp::endpoint
-parse_endpoint (std::string const& s, boost::system::error_code& ec)
-{
-    beast::IP::Endpoint bep;
-    std::istringstream is(s);
-    is >> bep;
-    if (is.fail())
-    {
-        ec = boost::system::errc::make_error_code(
-            boost::system::errc::invalid_argument);
-        return boost::asio::ip::tcp::endpoint{};
-    }
-
-    return beast::IPAddressConversion::to_asio_endpoint(bep);
-}
-
-// Called repeatedly with the http response data
-void
-PeerImp::onReadResponse (error_code ec, std::size_t bytes_transferred)
-{
-    cancelTimer();
-    if(! socket_.is_open())
-        return;
-    if(ec == boost::asio::error::operation_aborted)
-        return;
-    if(ec == boost::asio::error::eof)
-    {
-        if(journal_.info) journal_.info <<
-            "EOF";
-        setTimer();
-        return stream_.async_shutdown(strand_.wrap(std::bind(&PeerImp::onShutdown,
-            shared_from_this(), beast::asio::placeholders::error)));
-    }
-    if(ec)
-        return fail("onReadResponse", ec);
-    if(journal_.trace)
-    {
-        if(bytes_transferred > 0) journal_.trace <<
-            "onReadResponse: " << bytes_transferred << " bytes";
-        else journal_.trace <<
-            "onReadResponse";
-    }
-
-    if (! ec)
-    {
-        read_buffer_.commit (bytes_transferred);
-        std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = http_parser_->write (
-            read_buffer_.data());
-        if (! ec)
-        {
-            read_buffer_.consume (bytes_consumed);
-            if (http_parser_->complete())
-                return processResponse(http_message_, http_body_);
-        }
-    }
-
-    if (ec)
-    {
-        return fail("onReadResponse", ec);
-    }
-
-    setTimer();
-    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::onReadResponse,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-}
-
-template <class Streambuf>
-void
-PeerImp::processResponse (beast::http::message const& m,
-    Streambuf const& body)
-{
-    if (http_message_.status() == 503)
-    {
-        Json::Value json;
-        Json::Reader r;
-        auto const success = r.parse(to_string(body), json);
-        if (success)
-        {
-            if (json.isObject() && json.isMember("peer-ips"))
-            {
-                Json::Value const& ips = json["peer-ips"];
-                if (ips.isArray())
-                {
-                    std::vector<boost::asio::ip::tcp::endpoint> eps;
-                    eps.reserve(ips.size());
-                    for (auto const& v : ips)
-                    {
-                        if (v.isString())
-                        {
-                            error_code ec;
-                            auto const ep = parse_endpoint(v.asString(), ec);
-                            if (!ec)
-                                eps.push_back(ep);
-                        }
-                    }
-                    overlay_.peerFinder().onRedirects(beast::IPAddressConversion::
-                        to_asio_endpoint(remote_address_), eps);
-                }
-            }
-        }
-    }
-
-    if (! OverlayImpl::isPeerUpgrade(m))
-    {
-        if (journal_.info) journal_.info <<
-            "HTTP Response: " << m.status() << " " << m.reason();
-        return close();
-    }
-
-    bool success;
-    std::tie(hello_, success) = parseHello (http_message_, journal_);
-    if(! success)
-        return fail("processResponse: Bad TMHello");
-
-    uint256 sharedValue;
-    std::tie(sharedValue, success) = makeSharedValue(
-        ssl_bundle_->stream.native_handle(), journal_);
-    if(! success)
-        return close(); // makeSharedValue logs
-
-    std::tie(publicKey_, success) = verifyHello (hello_,
-        sharedValue, journal_, getApp());
-    if(! success)
-        return close(); // verifyHello logs
-
-    auto protocol = BuildInfo::make_protocol(hello_.protoversion());
-    if(journal_.info) journal_.info <<
-        "Protocol: " << to_string(protocol);
-    if(journal_.info) journal_.info <<
-        "Public Key: " << publicKey_.humanNodePublic();
-    bool const cluster = getApp().getUNL().nodeInCluster(publicKey_, name_);
-    if (cluster)
-        if (journal_.info) journal_.info <<
-            "Cluster name: " << name_;
-
-    auto const result = overlay_.peerFinder().activate (
-        slot_, RipplePublicKey(publicKey_), cluster);
-    if (result != PeerFinder::Result::success)
-        return fail("Outbound slots full");
-
-    state_ = State::active;
-    overlay_.activate(shared_from_this ());
-
-    // XXX Set timer: connection is in grace period to be useful.
-    // XXX Set timer: connection idle (idle may vary depending on connection type.)
-    if ((hello_.has_ledgerclosed ()) && (
-        hello_.ledgerclosed ().size () == (256 / 8)))
-    {
-        memcpy (closedLedgerHash_.begin (),
-            hello_.ledgerclosed ().data (), 256 / 8);
-        if ((hello_.has_ledgerprevious ()) &&
-            (hello_.ledgerprevious ().size () == (256 / 8)))
-        {
-            memcpy (previousLedgerHash_.begin (),
-                hello_.ledgerprevious ().data (), 256 / 8);
-            addLedger (previousLedgerHash_);
-        }
-        else
-        {
-            previousLedgerHash_.zero();
-        }
-    }
-
-    doProtocolStart(false);
-}
-
-//------------------------------------------------------------------------------
-//
-// inbound
-//
 
 void PeerImp::doLegacyAccept()
 {
@@ -825,7 +533,7 @@ PeerImp::makeResponse (beast::http::message const& req,
     resp.reason("Switching Protocols");
     resp.version(req.version());
     resp.headers.append("Connection", "Upgrade");
-    resp.headers.append("Upgrade", "RTXP/1.3");
+    resp.headers.append("Upgrade", "RTXP/1.2");
     resp.headers.append("Connect-AS", "Peer");
     resp.headers.append("Server", BuildInfo::getFullVersionString());
     protocol::TMHello hello = buildHello(sharedValue, getApp());

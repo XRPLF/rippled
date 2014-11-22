@@ -80,7 +80,6 @@ public:
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code= boost::system::error_code ;
-    using yield_context = boost::asio::yield_context;
     using socket_type = boost::asio::ip::tcp::socket;
     using stream_type = boost::asio::ssl::stream <socket_type&>;
     using address_type = boost::asio::ip::address;
@@ -174,14 +173,17 @@ public:
             std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                 OverlayImpl& overlay);
 
-    /** Create an outgoing peer. */
-    PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
-        PeerFinder::Slot::ptr const& slot, boost::asio::io_service& io_service,
-            std::shared_ptr<boost::asio::ssl::context> const& context,
-                OverlayImpl& overlay);
+    /** Create outgoing, handshaked peer. */
+    // VFALCO legacyPublicKey should be implied by the Slot
+    template <class Buffers>
+    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
+            Resource::Consumer usage, protocol::TMHello&& hello,
+                RippleAddress const& legacyPublicKey, id_t id,
+                    OverlayImpl& overlay);
 
     virtual
-    ~PeerImp ();
+    ~PeerImp();
 
     PeerFinder::Slot::ptr const&
     slot()
@@ -307,33 +309,6 @@ private:
     // Called when SSL shutdown completes
     void
     onShutdown (error_code ec);
-
-    //
-    // outbound completion path
-    //
-
-    void
-    doConnect();
-
-    void
-    onConnect (error_code ec);
-
-    void
-    onHandshake (error_code ec);
-
-    void
-    onWriteRequest (error_code ec, std::size_t bytes_transferred);
-
-    void
-    onReadResponse (error_code ec, std::size_t bytes_transferred);
-
-    template <class Streambuf>
-    void
-    processResponse (beast::http::message const& m, Streambuf const& body);
-
-    //
-    // inbound completion path
-    //
 
     void
     doAccept();
@@ -472,16 +447,16 @@ private:
 
 template <class ConstBufferSequence>
 PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
-    PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
+    PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffers,
         std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
             OverlayImpl& overlay)
     : Child (overlay)
-    , id_(id)
-    , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
-    , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
+    , id_ (id)
+    , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
+    , p_sink_ (deprecatedLogs().journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
-    , p_journal_(p_sink_)
-    , ssl_bundle_(std::move(ssl_bundle))
+    , p_journal_ (p_sink_)
+    , ssl_bundle_ (std::move(ssl_bundle))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
@@ -494,7 +469,37 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , slot_ (slot)
 {
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
-        boost::asio::buffer_size(buffer)), buffer));
+        boost::asio::buffer_size(buffers)), buffers));
+}
+
+template <class Buffers>
+PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
+        Resource::Consumer usage, protocol::TMHello&& hello,
+            RippleAddress const& legacyPublicKey, id_t id,
+                OverlayImpl& overlay)
+    : Child (overlay)
+    , id_ (id)
+    , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
+    , p_sink_ (deprecatedLogs().journal("Protocol"), makePrefix(id))
+    , journal_ (sink_)
+    , p_journal_ (p_sink_)
+    , ssl_bundle_(std::move(ssl_bundle))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
+    , strand_ (socket_.get_io_service())
+    , timer_ (socket_.get_io_service())
+    , remote_address_ (slot->remote_endpoint())
+    , overlay_ (overlay)
+    , m_inbound (false)
+    , state_ (State::active)
+    , publicKey_ (legacyPublicKey)
+    , hello_ (std::move(hello))
+    , usage_ (usage)
+    , slot_ (std::move(slot))
+{
+    read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
+        boost::asio::buffer_size(buffers)), buffers));
 }
 
 template <class FwdIt, class>
