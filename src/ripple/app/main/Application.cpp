@@ -894,11 +894,14 @@ public:
         m_journal.info << "Received shutdown request";
         stop (m_journal);
         m_journal.info << "Done.";
-        exitWithCode(0);
+        StopSustain();
     }
 
-    void exitWithCode(int code){
+    void exitWithCode(int code)
+    {
         StopSustain();
+        // VFALCO This breaks invariants: automatic objects
+        //        will not have destructors called.
         std::exit(code);
     }
 
