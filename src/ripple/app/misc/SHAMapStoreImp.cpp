@@ -690,7 +690,7 @@ SHAMapStoreImp::onChildrenStopped()
 SHAMapStore::Setup
 setup_SHAMapStore (Config const& c)
 {
-    SHAMapStore::Setup setup = {};
+    SHAMapStore::Setup setup;
 
     if (c.nodeDatabase["online_delete"].isNotEmpty())
         setup.deleteInterval = c.nodeDatabase["online_delete"].getIntValue();

@@ -37,9 +37,9 @@ class SHAMapStore
 public:
     struct Setup
     {
-        std::uint32_t deleteInterval;
-        bool advisoryDelete;
-        std::uint32_t ledgerHistory;
+        std::uint32_t deleteInterval = 0;
+        bool advisoryDelete = false;
+        std::uint32_t ledgerHistory = 0;
         beast::StringPairArray nodeDatabase;
         beast::StringPairArray ephemeralNodeDatabase;
         std::string databasePath;
