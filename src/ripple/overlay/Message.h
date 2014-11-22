@@ -122,7 +122,6 @@ public:
         return type(buffers_begin(buffers),
             buffers_end(buffers));
     }
-
     /** @} */
 
 private:

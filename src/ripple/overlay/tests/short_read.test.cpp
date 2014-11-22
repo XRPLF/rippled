@@ -21,7 +21,6 @@
 #include <beast/asio/placeholders.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
 #include <beast/threads/Thread.h>

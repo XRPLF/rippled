@@ -209,6 +209,22 @@ parseHello (beast::http::message const& m, beast::Journal journal)
 
     {
         // Required
+        auto const iter = h.find ("Upgrade");
+        if (iter == h.end())
+            return result;
+        auto const versions = parse_ProtocolVersions(iter->second);
+        if (versions.empty())
+            return result;
+        hello.set_protoversion(
+            (static_cast<std::uint32_t>(versions.back().first) << 16) |
+            (static_cast<std::uint32_t>(versions.back().second)));
+        hello.set_protoversionmin(
+            (static_cast<std::uint32_t>(versions.front().first) << 16) |
+            (static_cast<std::uint32_t>(versions.front().second)));
+    }
+
+    {
+        // Required
         auto const iter = h.find ("Public-Key");
         if (iter == h.end())
             return result;

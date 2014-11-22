@@ -30,8 +30,8 @@
 #include <ripple/resource/Manager.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/container/flat_map.hpp>
 #include <atomic>
 #include <cassert>
@@ -68,7 +68,6 @@ private:
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
-    using yield_context = boost::asio::yield_context;
 
     struct Timer
         : Child
@@ -172,6 +171,9 @@ public:
     findPeerByShortID (Peer::id_t const& id) override;
 
     void
+    add_active (std::shared_ptr<PeerImp> const& peer);
+
+    void
     remove (PeerFinder::Slot::ptr const& slot);
 
     /** Called when a peer has connected successfully
@@ -189,6 +191,10 @@ public:
     static
     bool
     isPeerUpgrade (beast::http::message const& request);
+
+    static
+    std::string
+    makePrefix (std::uint32_t id);
 
 private:
     std::shared_ptr<HTTP::Writer>

@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_TMHELLO_H_INCLUDED
 
 #include "ripple.pb.h"
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/http/message.h>
