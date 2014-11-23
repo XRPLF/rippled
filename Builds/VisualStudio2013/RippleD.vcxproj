@@ -2485,18 +2485,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\OverlayImpl.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2506,6 +2497,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolMessage.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\TMHello.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
