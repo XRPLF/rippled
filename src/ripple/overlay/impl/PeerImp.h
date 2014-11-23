@@ -397,31 +397,31 @@ public:
     }
 
     error_code
-    on_message_unknown (std::uint16_t type);
+    onMessageUnknown (std::uint16_t type);
 
     error_code
-    on_message_begin (std::uint16_t type,
+    onMessageBegin (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m);
 
     void
-    on_message_end (std::uint16_t type,
+    onMessageEnd (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m);
 
-    void on_message (std::shared_ptr <protocol::TMHello> const& m);
-    void on_message (std::shared_ptr <protocol::TMPing> const& m);
-    void on_message (std::shared_ptr <protocol::TMProofWork> const& m);
-    void on_message (std::shared_ptr <protocol::TMCluster> const& m);
-    void on_message (std::shared_ptr <protocol::TMGetPeers> const& m);
-    void on_message (std::shared_ptr <protocol::TMPeers> const& m);
-    void on_message (std::shared_ptr <protocol::TMEndpoints> const& m);
-    void on_message (std::shared_ptr <protocol::TMTransaction> const& m);
-    void on_message (std::shared_ptr <protocol::TMGetLedger> const& m);
-    void on_message (std::shared_ptr <protocol::TMLedgerData> const& m);
-    void on_message (std::shared_ptr <protocol::TMProposeSet> const& m);
-    void on_message (std::shared_ptr <protocol::TMStatusChange> const& m);
-    void on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
-    void on_message (std::shared_ptr <protocol::TMValidation> const& m);
-    void on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
+    void onMessage (std::shared_ptr <protocol::TMHello> const& m);
+    void onMessage (std::shared_ptr <protocol::TMPing> const& m);
+    void onMessage (std::shared_ptr <protocol::TMProofWork> const& m);
+    void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
+    void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
+    void onMessage (std::shared_ptr <protocol::TMEndpoints> const& m);
+    void onMessage (std::shared_ptr <protocol::TMTransaction> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetLedger> const& m);
+    void onMessage (std::shared_ptr <protocol::TMLedgerData> const& m);
+    void onMessage (std::shared_ptr <protocol::TMProposeSet> const& m);
+    void onMessage (std::shared_ptr <protocol::TMStatusChange> const& m);
+    void onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
+    void onMessage (std::shared_ptr <protocol::TMValidation> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
 
     //--------------------------------------------------------------------------
 

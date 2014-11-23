@@ -982,7 +982,7 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
 //------------------------------------------------------------------------------
 
 PeerImp::error_code
-PeerImp::on_message_unknown (std::uint16_t type)
+PeerImp::onMessageUnknown (std::uint16_t type)
 {
     error_code ec;
     // TODO
@@ -990,7 +990,7 @@ PeerImp::on_message_unknown (std::uint16_t type)
 }
 
 PeerImp::error_code
-PeerImp::on_message_begin (std::uint16_t type,
+PeerImp::onMessageBegin (std::uint16_t type,
     std::shared_ptr <::google::protobuf::Message> const& m)
 {
     error_code ec;
@@ -1018,14 +1018,14 @@ PeerImp::on_message_begin (std::uint16_t type,
 }
 
 void
-PeerImp::on_message_end (std::uint16_t,
+PeerImp::onMessageEnd (std::uint16_t,
     std::shared_ptr <::google::protobuf::Message> const&)
 {
     load_event_.reset();
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
 {
     std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
     std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
@@ -1141,7 +1141,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMPing> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMPing> const& m)
 {
     if (m->type () == protocol::TMPing::ptPING)
     {
@@ -1151,7 +1151,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMPing> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMProofWork> const& m)
 {
     if (m->has_response ())
     {
@@ -1219,7 +1219,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMCluster> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 {
     // VFALCO NOTE I think we should drop the peer immediately
     if (!clusterNode_)
@@ -1261,13 +1261,13 @@ PeerImp::on_message (std::shared_ptr <protocol::TMCluster> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMGetPeers> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeers> const& m)
 {
     // VFALCO TODO This message is now obsolete due to PeerFinder
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMPeers> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMPeers> const& m)
 {
     // VFALCO TODO This message is now obsolete due to PeerFinder
     std::vector <beast::IP::Endpoint> list;
@@ -1290,7 +1290,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMPeers> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMEndpoints> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 {
     std::vector <PeerFinder::Endpoint> endpoints;
 
@@ -1332,7 +1332,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMEndpoints> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 {
     Serializer s (m->rawtransaction ());
 
@@ -1397,14 +1397,14 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMGetLedger> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetLedger> const& m)
 {
     getApp().getJobQueue().addJob (jtPACK, "recvGetLedger", std::bind(
         beast::weak_fn(&PeerImp::getLedger, shared_from_this()), m));
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
 {
     protocol::TMLedgerData& packet = *m;
 
@@ -1460,7 +1460,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 {
     protocol::TMProposeSet& set = *m;
 
@@ -1546,7 +1546,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMStatusChange> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
 {
     p_journal_.trace << "Status: Change";
 
@@ -1612,7 +1612,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMStatusChange> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
 {
     uint256 hashes;
 
@@ -1642,7 +1642,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
@@ -1705,7 +1705,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
 }
 
 void
-PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 {
     protocol::TMGetObjectByHash& packet = *m;
 

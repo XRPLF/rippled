@@ -204,7 +204,7 @@ ProtocolStream::write (boost::asio::const_buffer buffer,
                     break;
 
                 default:
-                    ec = handler.on_message_unknown(type_);
+                    ec = handler.onMessageUnknown(type_);
                     break;
                 }
                 header_bytes_ = 0;
@@ -228,11 +228,11 @@ ProtocolStream::invoke (ProtocolHandler& handler) ->
     bool const parsed (m->ParseFromArray (body_.data(), length_));
     if (! parsed)
         return parse_error();
-    ec = handler.on_message_begin (type_, m);
+    ec = handler.onMessageBegin (type_, m);
     if (! ec)
     {
-        handler.on_message (m);
-        handler.on_message_end (type_, m);
+        handler.onMessage (m);
+        handler.onMessageEnd (type_, m);
     }
     return ec;
 }
