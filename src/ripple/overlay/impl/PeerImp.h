@@ -407,21 +407,21 @@ public:
     on_message_end (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m);
 
-    error_code on_message (std::shared_ptr <protocol::TMHello> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMPing> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMCluster> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMPeers> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMEndpoints> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMTransaction> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMGetLedger> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMLedgerData> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMProposeSet> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMStatusChange> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMValidation> const& m);
-    error_code on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
+    void on_message (std::shared_ptr <protocol::TMHello> const& m);
+    void on_message (std::shared_ptr <protocol::TMPing> const& m);
+    void on_message (std::shared_ptr <protocol::TMProofWork> const& m);
+    void on_message (std::shared_ptr <protocol::TMCluster> const& m);
+    void on_message (std::shared_ptr <protocol::TMGetPeers> const& m);
+    void on_message (std::shared_ptr <protocol::TMPeers> const& m);
+    void on_message (std::shared_ptr <protocol::TMEndpoints> const& m);
+    void on_message (std::shared_ptr <protocol::TMTransaction> const& m);
+    void on_message (std::shared_ptr <protocol::TMGetLedger> const& m);
+    void on_message (std::shared_ptr <protocol::TMLedgerData> const& m);
+    void on_message (std::shared_ptr <protocol::TMProposeSet> const& m);
+    void on_message (std::shared_ptr <protocol::TMStatusChange> const& m);
+    void on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
+    void on_message (std::shared_ptr <protocol::TMValidation> const& m);
+    void on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
 
     //--------------------------------------------------------------------------
 

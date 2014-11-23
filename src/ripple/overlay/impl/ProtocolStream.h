@@ -231,7 +231,7 @@ ProtocolStream::invoke (ProtocolHandler& handler) ->
     ec = handler.on_message_begin (type_, m);
     if (! ec)
     {
-        ec = handler.on_message (m);
+        handler.on_message (m);
         handler.on_message_end (type_, m);
     }
     return ec;
