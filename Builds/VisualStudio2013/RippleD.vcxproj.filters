@@ -3522,21 +3522,9 @@
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\OverlayImpl.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
@@ -3547,6 +3535,9 @@
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolMessage.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\TMHello.cpp">

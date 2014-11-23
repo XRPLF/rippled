@@ -21,8 +21,13 @@
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
 #include "ripple.pb.h"
-
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/buffers_iterator.hpp>
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <memory>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
@@ -62,13 +67,84 @@ public:
     bool operator == (Message const& other) const;
 
     /** Calculate the length of a packed message. */
+    /** @{ */
     static unsigned getLength (std::vector <uint8_t> const& buf);
 
+    template <class FwdIter>
+    static
+    std::enable_if_t<std::is_same<typename
+        FwdIter::value_type, std::uint8_t>::value, std::size_t>
+    size (FwdIter first, FwdIter last)
+    {
+        if (std::distance(first, last) <
+                Message::kHeaderBytes)
+            return 0;
+        std::size_t n;
+        n  = std::size_t{*first++} << 24;
+        n += std::size_t{*first++} << 16;
+        n += std::size_t{*first++} <<  8;
+        n += std::size_t{*first};
+        return n;
+    }
+
+    template <class BufferSequence>
+    static
+    std::size_t
+    size (BufferSequence const& buffers)
+    {
+        return size(buffers_begin(buffers),
+            buffers_end(buffers));
+    }
+    /** @} */
+
     /** Determine the type of a packed message. */
+    /** @{ */
     static int getType (std::vector <uint8_t> const& buf);
 
+    template <class FwdIter>
+    static
+    std::enable_if_t<std::is_same<typename
+        FwdIter::value_type, std::uint8_t>::value, int>
+    type (FwdIter first, FwdIter last)
+    {
+        if (std::distance(first, last) <
+                Message::kHeaderBytes)
+            return 0;
+        return (int{*std::next(first, 4)} << 8) |
+            *std::next(first, 5);
+    }
+
+    template <class BufferSequence>
+    static
+    int
+    type (BufferSequence const& buffers)
+    {
+        return type(buffers_begin(buffers),
+            buffers_end(buffers));
+    }
+
+    /** @} */
+
 private:
-    // Encodes the size and type into a header at the beginning of buf
+    template <class BufferSequence, class Value = std::uint8_t>
+    static
+    boost::asio::buffers_iterator<BufferSequence, Value>
+    buffers_begin (BufferSequence const& buffers)
+    {
+        return boost::asio::buffers_iterator<
+            BufferSequence, Value>::begin (buffers);
+    }
+
+    template <class BufferSequence, class Value = std::uint8_t>
+    static
+    boost::asio::buffers_iterator<BufferSequence, Value>
+    buffers_end (BufferSequence const& buffers)
+    {
+        return boost::asio::buffers_iterator<
+            BufferSequence, Value>::end (buffers);
+    }
+
+        // Encodes the size and type into a header at the beginning of buf
     //
     void encodeHeader (unsigned size, int type);
 
