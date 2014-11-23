@@ -17,11 +17,30 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/asio/streambuf.h>
+#include <beast/unit_test/suite.h>
 
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
+namespace beast {
+namespace asio {
 
+class streambuf_test : public unit_test::suite
+{
+public:
+    static void foo (int)
+    {
+    }
+
+    void run()
+    {
+        beast::asio::streambuf b(10);
+        b.prepare(10);
+        b.commit(10);
+        b.prepare(5);
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(streambuf,asio,beast);
+
+}
+}

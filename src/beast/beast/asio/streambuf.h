@@ -420,13 +420,18 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
     mutable_buffers_type
 {
     debug_check();
-
     iterator last = out_;
-
     if (last != list_.end())
     {
         size_type const avail = last->size() - out_pos_;
-        if (n > avail)
+        if (avail == 0)
+        {
+            // Happens when the last buffer is fully committed
+            out_pos_ = 0;
+            ++last;
+            assert(last == list_.end());
+        }
+        else if (n > avail)
         {
             n -= avail;
             while (++last != list_.end())
@@ -436,7 +441,6 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
                     ++last;
                     out_end_ = n;
                     n = 0;
-                    debug_check();
                     break;
                 }
                 n -= last->size();
@@ -447,8 +451,8 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
             ++last;
             out_end_ = out_pos_ + n;
             n = 0;
-            debug_check();
         }
+        debug_check();
     }
 
     if (n > 0)
@@ -647,7 +651,8 @@ basic_streambuf<Allocator>::debug_check() const
     assert(&out != &front || out_pos_ >= in_pos_);
     assert(&out != &back  || out_end_ <= back.size());
     assert(&out != &back  || out_pos_ <= back.size());
-    assert(&out == &back  || out_pos_ <  back.size());
+    assert(&out == &back  || out_pos_ <  out.size());
+    assert(&out != &back  || out_pos_ <= out_end_);
 #endif
 }
 
@@ -676,8 +681,8 @@ to_string (basic_streambuf<Allocator> const& buf)
 {
     std::string s;
     s.resize(buf.size());
-    boost::asio::buffer_copy(boost::asio::buffer(s),
-        buf.data());
+    boost::asio::buffer_copy(boost::asio::buffer(
+        &s[0], s.size()), buf.data());
     return s;
 }
 
