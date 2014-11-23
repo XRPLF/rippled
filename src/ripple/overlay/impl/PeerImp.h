@@ -50,8 +50,6 @@ class PeerImp
     : public Peer
     , public std::enable_shared_from_this <PeerImp>
     , public OverlayImpl::Child
-    , private beast::LeakChecked <Peer>
-    , private ProtocolHandler
 {
 public:
     /** Type of connection.
@@ -383,9 +381,10 @@ private:
     void
     onWriteMessage (error_code ec, std::size_t bytes_transferred);
 
+public:
     //--------------------------------------------------------------------------
     //
-    // ProtocolHandler
+    // ProtocolStream
     //
     //--------------------------------------------------------------------------
 
@@ -398,32 +397,31 @@ private:
     }
 
     error_code
-    on_message_unknown (std::uint16_t type) override;
+    on_message_unknown (std::uint16_t type);
 
     error_code
     on_message_begin (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) override;
+        std::shared_ptr <::google::protobuf::Message> const& m);
 
     void
     on_message_end (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) override;
+        std::shared_ptr <::google::protobuf::Message> const& m);
 
-    // message handlers
-    error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMPing> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMCluster> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMPeers> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMEndpoints> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMTransaction> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetLedger> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMLedgerData> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMProposeSet> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMStatusChange> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMValidation> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m) override;
+    error_code on_message (std::shared_ptr <protocol::TMHello> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMPing> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMCluster> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMPeers> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMEndpoints> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMTransaction> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMGetLedger> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMLedgerData> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMProposeSet> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMStatusChange> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMValidation> const& m);
+    error_code on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
 
     //--------------------------------------------------------------------------
 

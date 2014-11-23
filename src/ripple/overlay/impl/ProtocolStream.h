@@ -31,42 +31,6 @@
 
 namespace ripple {
 
-/** Handles protocol messages. */
-class ProtocolHandler
-{
-protected:
-    typedef boost::system::error_code error_code;
-
-public:
-    // Called for messages of unknown type
-    virtual error_code on_message_unknown (std::uint16_t type) = 0;
-
-    // Called before a specific message handler is invoked
-    virtual error_code on_message_begin (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) = 0;
-
-    // Called after a specific message handler is invoked,
-    // if on_message_begin did not return an error.
-    virtual void on_message_end (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) = 0;
-
-    virtual error_code on_message (std::shared_ptr <protocol::TMHello> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMPing> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMCluster> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMPeers> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMEndpoints> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMTransaction> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMGetLedger> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMLedgerData> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMProposeSet> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMStatusChange> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMValidation> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m) { return error_code(); }
-};
-
 /** Turns a stream of bytes into protocol messages and invokes the handler. */
 class ProtocolStream
 {
@@ -91,7 +55,8 @@ private:
     invoke (ProtocolHandler& handler)
     {
         boost::system::error_code ec;
-        std::shared_ptr <Message> m (std::make_shared <Message>());
+        std::shared_ptr <Message> const m (
+            std::make_shared <Message>());
         bool const parsed (m->ParseFromArray (body_.data(), length_));
         if (! parsed)
             return parse_error();
@@ -184,7 +149,8 @@ public:
         The handler is called for each complete protocol message contained
         in the buffers.
     */
-    template <class ConstBufferSequence>
+    template <class ConstBufferSequence,
+        class ProtocolHandler>
     boost::system::error_code
     write (ConstBufferSequence const& buffers,
         ProtocolHandler& handler)
