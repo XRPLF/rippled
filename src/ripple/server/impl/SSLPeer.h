@@ -83,7 +83,7 @@ detect_peer_protocol (Socket& socket, StreamBuf& buf, Yield yield)
            The type for 'hello' is 1.
         */
         if (n>=1 && data[0] != 0)
-            break;;
+            break;
         if (n>=2 && data[1] != 0)
             break;
         if (n>=5 && data[4] != 0)
@@ -188,12 +188,12 @@ SSLPeer::do_close()
     stream_.async_shutdown (strand_.wrap (std::bind (
         &SSLPeer::on_shutdown, shared_from_this(),
             std::placeholders::_1)));
-    cancel_timer();
 }
 
 void
 SSLPeer::on_shutdown (error_code ec)
 {
+    cancel_timer();
     stream_.lowest_layer().close(ec);
 }
 
