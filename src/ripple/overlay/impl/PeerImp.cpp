@@ -62,7 +62,6 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , usage_(consumer)
     , slot_ (slot)
     , http_message_(std::move(request))
-    , message_stream_(*this)
 {
 }
 
@@ -87,7 +86,6 @@ PeerImp::PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
     , m_inbound (false)
     , state_ (State::connecting)
     , slot_ (slot)
-    , message_stream_(*this)
 {
 }
 
@@ -911,10 +909,20 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
     }
 
     read_buffer_.commit (bytes_transferred);
-    ec = message_stream_.write (read_buffer_.data());
-    read_buffer_.consume (read_buffer_.size());
-    if(ec)
-        return fail("onReadMessage", ec);
+
+    while (read_buffer_.size() > 0)
+    {
+        std::size_t bytes_consumed;
+        std::tie(bytes_consumed, ec) = invokeProtocolMessage(
+            read_buffer_.data(), *this);
+        if (ec)
+            return fail("onReadMessage", ec);
+        if (! stream_.next_layer().is_open())
+            return;
+        if (bytes_consumed == 0)
+            break;
+        read_buffer_.consume (bytes_consumed);
+    }
     if(gracefulClose_)
         return;
     // Timeout on writes only
@@ -966,12 +974,12 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
 
 //------------------------------------------------------------------------------
 //
-// abstract_protocol_handler
+// ProtocolHandler
 //
 //------------------------------------------------------------------------------
 
 PeerImp::error_code
-PeerImp::on_message_unknown (std::uint16_t type)
+PeerImp::onMessageUnknown (std::uint16_t type)
 {
     error_code ec;
     // TODO
@@ -979,7 +987,7 @@ PeerImp::on_message_unknown (std::uint16_t type)
 }
 
 PeerImp::error_code
-PeerImp::on_message_begin (std::uint16_t type,
+PeerImp::onMessageBegin (std::uint16_t type,
     std::shared_ptr <::google::protobuf::Message> const& m)
 {
     error_code ec;
@@ -1000,25 +1008,22 @@ PeerImp::on_message_begin (std::uint16_t type,
     if (! ec)
     {
         load_event_ = getApp().getJobQueue ().getLoadEventAP (
-            jtPEER, protocol_message_name(type));
+            jtPEER, protocolMessageName(type));
     }
 
     return ec;
 }
 
 void
-PeerImp::on_message_end (std::uint16_t,
+PeerImp::onMessageEnd (std::uint16_t,
     std::shared_ptr <::google::protobuf::Message> const&)
 {
     load_event_.reset();
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
 {
-    error_code ec;
-    timer_.cancel(ec);
-
     std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
     std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
     std::uint32_t const maxTime (ourTime + clockToleranceDeltaSeconds);
@@ -1113,8 +1118,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
                 }
             }
 
-            sendGetPeers();
-            return ec;
+            return sendGetPeers();
         }
 
         if (result == PeerFinder::Result::full)
@@ -1122,44 +1126,35 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             // TODO Provide correct HTTP response
             auto const redirects = overlay_.peerFinder().redirect (slot_);
             sendEndpoints (redirects.begin(), redirects.end());
-            gracefulClose();
-            return ec;
+            return gracefulClose();
         }
-        else
+        else if (result == PeerFinder::Result::duplicate)
         {
-            // VFALCO TODO Duplicate connection
-            //fail("Hello: Duplicate public key");
+            return fail("Duplicate public key");
         }
     }
 
-    ec = invalid_argument_error();
-    return ec;
+    fail("TMHello invalid");
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMPing> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMPing> const& m)
 {
-    error_code ec;
     if (m->type () == protocol::TMPing::ptPING)
     {
         m->set_type (protocol::TMPing::ptPONG);
         send (std::make_shared<Message> (*m, protocol::mtPING));
     }
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMProofWork> const& m)
 {
-    error_code ec;
     if (m->has_response ())
     {
         // this is an answer to a proof of work we requested
         if (m->response ().size () != (256 / 8))
-        {
-            charge (Resource::feeInvalidRequest);
-            return ec;
-        }
+            return charge (Resource::feeInvalidRequest);
 
         uint256 response;
         memcpy (response.begin (), m->response ().data (), 256 / 8);
@@ -1169,20 +1164,16 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
             m->token (), response);
 
         if (r == powOK)
-        {
             // credit peer
             // WRITEME
-            return ec;
-        }
+            return;
 
         // return error message
         // WRITEME
         if (r != powTOOEASY)
-        {
             charge (Resource::feeBadProofOfWork);
-        }
 
-        return ec;
+        return;
     }
 
     if (m->has_result ())
@@ -1200,10 +1191,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
 
         if ((m->challenge ().size () != (256 / 8)) || (
             m->target ().size () != (256 / 8)))
-        {
-            charge (Resource::feeInvalidRequest);
-            return ec;
-        }
+            return charge (Resource::feeInvalidRequest);
 
         memcpy (challenge.begin (), m->challenge ().data (), 256 / 8);
         memcpy (target.begin (), m->target ().data (), 256 / 8);
@@ -1211,10 +1199,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
             m->token (), m->iterations (), challenge, target);
 
         if (!pow->isValid ())
-        {
-            charge (Resource::feeInvalidRequest);
-            return ec;
-        }
+            return charge (Resource::feeInvalidRequest);
 
 #if 0   // Until proof of work is completed, don't do it
         getApp().getJobQueue ().addJob (
@@ -1224,24 +1209,18 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProofWork> const& m)
                         std::weak_ptr <PeerImp> (shared_from_this ()), pow));
 #endif
 
-        return ec;
+        return;
     }
 
     p_journal_.info << "Bad proof of work";
-
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMCluster> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 {
-    error_code ec;
     // VFALCO NOTE I think we should drop the peer immediately
     if (! cluster())
-    {
-        charge (Resource::feeUnwantedData);
-        return ec;
-    }
+        return charge (Resource::feeUnwantedData);
 
     for (int i = 0; i < m->clusternodes().size(); ++i)
     {
@@ -1276,21 +1255,17 @@ PeerImp::on_message (std::shared_ptr <protocol::TMCluster> const& m)
     }
 
     getApp().getFeeTrack().setClusterFee(getApp().getUNL().getClusterFee());
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMGetPeers> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeers> const& m)
 {
-    error_code ec;
     // VFALCO TODO This message is now obsolete due to PeerFinder
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMPeers> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMPeers> const& m)
 {
-    error_code ec;
     // VFALCO TODO This message is now obsolete due to PeerFinder
     std::vector <beast::IP::Endpoint> list;
     list.reserve (m->nodes().size());
@@ -1309,13 +1284,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMPeers> const& m)
 
     if (! list.empty())
         overlay_.peerFinder().on_legacy_endpoints (list);
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMEndpoints> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 {
-    error_code ec;
     std::vector <PeerFinder::Endpoint> endpoints;
 
     endpoints.reserve (m->endpoints().size());
@@ -1353,13 +1326,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMEndpoints> const& m)
 
     if (! endpoints.empty())
         overlay_.peerFinder().on_endpoints (slot_, endpoints);
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 {
-    error_code ec;
     Serializer s (m->rawtransaction ());
 
     try
@@ -1378,11 +1349,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
             if (flags & SF_BAD)
             {
                 charge (Resource::feeInvalidSignature);
-                return ec;
+                return;
             }
 
             if (!(flags & SF_RETRY))
-                return ec;
+                return;
         }
 
         p_journal_.debug <<
@@ -1420,34 +1391,29 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
         p_journal_.warning << "Transaction invalid: " <<
             s.getHex();
     }
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMGetLedger> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetLedger> const& m)
 {
-    error_code ec;
     getApp().getJobQueue().addJob (jtPACK, "recvGetLedger", std::bind(
         beast::weak_fn(&PeerImp::getLedger, shared_from_this()), m));
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
 {
-    error_code ec;
     protocol::TMLedgerData& packet = *m;
 
     if (m->nodes ().size () <= 0)
     {
         p_journal_.warning << "Ledger/TXset data with no nodes";
-        return ec;
+        return;
     }
 
     if (m->has_requestcookie ())
     {
         Peer::ptr target = overlay_.findPeerByShortID (m->requestcookie ());
-
         if (target)
         {
             m->clear_requestcookie ();
@@ -1459,8 +1425,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
             p_journal_.info << "Unable to route TX/ledger data reply";
             charge (Resource::feeUnwantedData);
         }
-
-        return ec;
+        return;
     }
 
     uint256 hash;
@@ -1469,7 +1434,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
     {
         p_journal_.warning << "TX candidate reply with invalid hash size";
         charge (Resource::feeInvalidRequest);
-        return ec;
+        return;
     }
 
     memcpy (hash.begin (), m->ledgerhash ().data (), 32);
@@ -1477,12 +1442,10 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
     if (m->type () == protocol::liTS_CANDIDATE)
     {
         // got data for a candidate transaction set
-
         getApp().getJobQueue().addJob(jtTXN_DATA, "recvPeerData", std::bind(
             beast::weak_fn(&PeerImp::peerTXData, shared_from_this()),
             std::placeholders::_1, hash, m, p_journal_));
-
-        return ec;
+        return;
     }
 
     if (!getApp().getInboundLedgers ().gotLedgerData (
@@ -1491,18 +1454,16 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
         p_journal_.trace  << "Got data for unwanted ledger";
         charge (Resource::feeUnwantedData);
     }
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 {
-    error_code ec;
     protocol::TMProposeSet& set = *m;
 
     // VFALCO Magic numbers are bad
     if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
-        return ec;
+        return;
 
     // VFALCO Magic numbers are bad
     // Roll this into a validation function
@@ -1516,14 +1477,14 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
     {
         p_journal_.warning << "Proposal: malformed";
         charge (Resource::feeInvalidSignature);
-        return ec;
+        return;
     }
 
     if (set.has_previousledger () && (set.previousledger ().size () != 32))
     {
         p_journal_.warning << "Proposal: malformed";
         charge (Resource::feeInvalidRequest);
-        return ec;
+        return;
     }
 
     uint256 proposeHash, prevLedger;
@@ -1541,7 +1502,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
         suppression, id_))
     {
         p_journal_.trace << "Proposal: duplicate";
-        return ec;
+        return;
     }
 
     RippleAddress signerPublic = RippleAddress::createNodePublic (
@@ -1550,14 +1511,14 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
     if (signerPublic == getConfig ().VALIDATION_PUB)
     {
         p_journal_.trace << "Proposal: self";
-        return ec;
+        return;
     }
 
     bool isTrusted = getApp().getUNL ().nodeInUNL (signerPublic);
     if (!isTrusted && getApp().getFeeTrack ().isLoadedLocal ())
     {
         p_journal_.debug << "Proposal: Dropping UNTRUSTED (load)";
-        return ec;
+        return;
     }
 
     p_journal_.trace <<
@@ -1579,13 +1540,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
         "recvPropose->checkPropose", std::bind(beast::weak_fn(
             &PeerImp::checkPropose, shared_from_this()), std::placeholders::_1,
             m, proposal, consensusLCL));
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMStatusChange> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
 {
-    error_code ec;
     p_journal_.trace << "Status: Change";
 
     if (!m->has_networktime ())
@@ -1610,7 +1569,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMStatusChange> const& m)
         }
 
         previousLedgerHash_.zero ();
-        return ec;
+        return;
     }
 
     if (m->has_ledgerhash () && (m->ledgerhash ().size () == (256 / 8)))
@@ -1640,25 +1599,24 @@ PeerImp::on_message (std::shared_ptr <protocol::TMStatusChange> const& m)
         minLedger_ = m->firstseq ();
         maxLedger_ = m->lastseq ();
 
+        // VFALCO Is this workaround still needed?
         // Work around some servers that report sequences incorrectly
         if (minLedger_ == 0)
             maxLedger_ = 0;
         if (maxLedger_ == 0)
             minLedger_ = 0;
     }
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
 {
-    error_code ec;
     uint256 hashes;
 
     if (m->hash ().size () != (256 / 8))
     {
         charge (Resource::feeInvalidRequest);
-        return ec;
+        return;
     }
 
     uint256 hash;
@@ -1678,11 +1636,10 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
                 shared_from_this (), hash, m->status ()))
             charge (Resource::feeUnwantedData);
     }
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
@@ -1691,7 +1648,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
     {
         p_journal_.warning << "Validation: Too small";
         charge (Resource::feeInvalidRequest);
-        return ec;
+        return;
     }
 
     try
@@ -1705,14 +1662,14 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
         {
             p_journal_.trace << "Validation: Too old";
             charge (Resource::feeUnwantedData);
-            return ec;
+            return;
         }
 
         if (! getApp().getHashRouter ().addSuppressionPeer (
             s.getSHA512Half(), id_))
         {
             p_journal_.trace << "Validation: duplicate";
-            return ec;
+            return;
         }
 
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
@@ -1742,14 +1699,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
             "Validation: Unknown exception";
         charge (Resource::feeInvalidRequest);
     }
-
-    return ec;
 }
 
-PeerImp::error_code
-PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 {
-    error_code ec;
     protocol::TMGetObjectByHash& packet = *m;
 
     if (packet.query ())
@@ -1758,7 +1712,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
         if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
         {
             doFetchPack (m);
-            return ec;
+            return;
         }
 
         protocol::TMGetObjectByHash reply;
@@ -1862,7 +1816,6 @@ PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
         if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
             getApp().getOPs ().gotFetchPack (progress, pLSeq);
     }
-    return ec;
 }
 
 //--------------------------------------------------------------------------
