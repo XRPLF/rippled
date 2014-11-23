@@ -23,4 +23,5 @@
 
 #include <beast/asio/impl/IPAddressConversion.cpp>
 #include <beast/asio/tests/bind_handler.test.cpp>
+#include <beast/asio/tests/streambuf.test.cpp>
 
