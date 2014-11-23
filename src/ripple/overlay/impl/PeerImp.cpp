@@ -920,6 +920,8 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
         std::size_t bytes_consumed;
         std::tie(bytes_consumed, ec) =
             message_stream_.write (read_buffer_.data(), *this);
+        if (! stream_.next_layer().is_open())
+            return;
         read_buffer_.consume (bytes_consumed);
         if(ec)
             return fail("onReadMessage", ec);
