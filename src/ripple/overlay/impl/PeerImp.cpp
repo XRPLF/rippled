@@ -64,7 +64,6 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , usage_(consumer)
     , slot_ (slot)
     , http_message_(std::move(request))
-    , message_stream_(*this)
 {
 }
 
@@ -92,7 +91,6 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     , m_inbound (false)
     , state_ (State::connecting)
     , slot_ (slot)
-    , message_stream_(*this)
 {
 }
 
@@ -916,7 +914,7 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
     }
 
     read_buffer_.commit (bytes_transferred);
-    ec = message_stream_.write (read_buffer_.data());
+    ec = message_stream_.write (read_buffer_.data(), *this);
     read_buffer_.consume (read_buffer_.size());
     if(ec)
         return fail("onReadMessage", ec);
@@ -971,7 +969,7 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
 
 //------------------------------------------------------------------------------
 //
-// abstract_protocol_handler
+// ProtocolHandler
 //
 //------------------------------------------------------------------------------
 

@@ -23,7 +23,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/message_name.h>
-#include <ripple/overlay/impl/message_stream.h>
+#include <ripple/overlay/impl/ProtocolStream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/app/misc/ProofOfWork.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
@@ -51,7 +51,7 @@ class PeerImp
     , public std::enable_shared_from_this <PeerImp>
     , public OverlayImpl::Child
     , private beast::LeakChecked <Peer>
-    , private abstract_protocol_handler
+    , private ProtocolHandler
 {
 public:
     /** Type of connection.
@@ -157,7 +157,7 @@ private:
     beast::http::message http_message_;
     boost::optional <beast::http::parser> http_parser_;
     beast::http::body http_body_;
-    message_stream message_stream_;
+    ProtocolStream message_stream_;
     beast::asio::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
@@ -385,7 +385,7 @@ private:
 
     //--------------------------------------------------------------------------
     //
-    // abstract_protocol_handler
+    // ProtocolHandler
     //
     //--------------------------------------------------------------------------
 
@@ -513,7 +513,6 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , m_inbound (true)
     , state_ (State::connected)
     , slot_ (slot)
-    , message_stream_(*this)
 {
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffer)), buffer));
