@@ -1011,7 +1011,7 @@ PeerImp::onMessageBegin (std::uint16_t type,
     if (! ec)
     {
         load_event_ = getApp().getJobQueue ().getLoadEventAP (
-            jtPEER, protocol_message_name(type));
+            jtPEER, protocolMessageName(type));
     }
 
     return ec;

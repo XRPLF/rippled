@@ -237,6 +237,34 @@ ProtocolStream::invoke (ProtocolHandler& handler) ->
     return ec;
 }
 
+/** Returns the name of a protocol message given its type. */
+inline
+std::string
+protocolMessageName (int type)
+{
+    switch (type)
+    {
+    case protocol::mtHELLO:             return "hello";
+    case protocol::mtPING:              return "ping";
+    case protocol::mtPROOFOFWORK:       return "proof_of_work";
+    case protocol::mtCLUSTER:           return "cluster";
+    case protocol::mtGET_PEERS:         return "get_peers";
+    case protocol::mtPEERS:             return "peers";
+    case protocol::mtENDPOINTS:         return "endpoints";
+    case protocol::mtTRANSACTION:       return "tx";
+    case protocol::mtGET_LEDGER:        return "get_ledger";
+    case protocol::mtLEDGER_DATA:       return "ledger_data";
+    case protocol::mtPROPOSE_LEDGER:    return "propose";
+    case protocol::mtSTATUS_CHANGE:     return "status";
+    case protocol::mtHAVE_SET:          return "have_set";
+    case protocol::mtVALIDATION:        return "validation";
+    case protocol::mtGET_OBJECTS:       return "get_objects";
+    default:
+        break;
+    };
+    return "unknown";
+}
+
 } // ripple
 
 #endif

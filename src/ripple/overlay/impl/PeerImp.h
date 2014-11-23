@@ -22,7 +22,6 @@
 
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/overlay/impl/message_name.h>
 #include <ripple/overlay/impl/ProtocolStream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/app/misc/ProofOfWork.h>
