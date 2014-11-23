@@ -35,6 +35,8 @@ namespace ripple {
 class ProtocolStream
 {
 private:
+    using error_code = boost::system::error_code;
+
     std::size_t header_bytes_ = 0;
     std::size_t body_bytes_ = 0;
     std::uint32_t length_;
@@ -50,49 +52,75 @@ public:
 
     /** Write data to the protocol stream.
         This may call the handler for up to one complete message.
+        @return The number of bytes consumed and the error code if any.
     */
-    /** @{ */
-    template <class ProtocolHandler>
-    boost::system::error_code
-    write (boost::asio::const_buffer buffer, ProtocolHandler& handler);
-
     template <class ConstBufferSequence, class ProtocolHandler>
-    boost::system::error_code
+    std::pair<std::size_t, error_code>
     write (ConstBufferSequence const& buffers, ProtocolHandler& handler);
-    /** @} */
 
 private:
     static
-    boost::system::error_code
+    error_code
     parse_error()
     {
         return boost::system::errc::make_error_code (
             boost::system::errc::invalid_argument);
     }
 
+    template <class ProtocolHandler>
+    error_code
+    write (boost::asio::const_buffer buffer, ProtocolHandler& handler,
+        bool& did_one, std::size_t& bytes_consumed);
+
     template <class Message, class ProtocolHandler>
-    boost::system::error_code
+    error_code
     invoke (ProtocolHandler& handler);
 };
 
+template <class ConstBufferSequence, class ProtocolHandler>
+auto
+ProtocolStream::write (ConstBufferSequence const& buffers,
+    ProtocolHandler& handler) ->
+        std::pair<std::size_t, error_code>
+{
+    std::pair<std::size_t, error_code> result;
+    result.first = 0;
+    for (auto const& buffer : buffers)
+    {
+        bool did_one;
+        std::size_t bytes_consumed;
+        result.second = write (buffer, handler,
+            did_one, bytes_consumed);
+        result.first += bytes_consumed;
+        if (did_one || result.second)
+            break;
+    }
+    return result;
+}
+
 template <class ProtocolHandler>
-boost::system::error_code
+auto
 ProtocolStream::write (boost::asio::const_buffer buffer,
-    ProtocolHandler& handler)
+    ProtocolHandler& handler, bool& did_one,
+        std::size_t& bytes_consumed) ->
+            error_code
 {
     using namespace boost::asio;
-    boost::system::error_code ec;
-    std::size_t remain (buffer_size(buffer));
-    while (remain)
+
+    error_code ec;
+    did_one = false;
+    bytes_consumed = 0;
+    std::size_t const size = buffer_size(buffer);
+    while (bytes_consumed < size)
     {
         if (header_bytes_ < header_.size())
         {
-            std::size_t const n (buffer_copy (
+            std::size_t const n = buffer_copy(
                 mutable_buffer (header_.data() + header_bytes_,
-                    header_.size() - header_bytes_), buffer));
+                    header_.size() - header_bytes_), buffer);
             header_bytes_ += n;
             buffer = buffer + n;
-            remain = remain - n;
+            bytes_consumed += n;
             if (header_bytes_ >= header_.size())
             {
                 assert (header_bytes_ == header_.size());
@@ -104,11 +132,12 @@ ProtocolStream::write (boost::asio::const_buffer buffer,
 
         if (header_bytes_ >= header_.size())
         {
-            std::size_t const n (buffer_copy (mutable_buffer (body_.data() +
-                body_bytes_, body_.size() - body_bytes_), buffer));
+            std::size_t const n = buffer_copy(
+                mutable_buffer(body_.data() + body_bytes_,
+                    body_.size() - body_bytes_), buffer);
             body_bytes_ += n;
             buffer = buffer + n;
-            remain = remain - n;
+            bytes_consumed += n;
             if (body_bytes_ >= length_)
             {
                 assert (body_bytes_ == length_);
@@ -135,32 +164,20 @@ ProtocolStream::write (boost::asio::const_buffer buffer,
                 }
                 header_bytes_ = 0;
                 body_bytes_ = 0;
+                did_one = true;
+                break;
             }
         }
     }
     return ec;
 }
 
-template <class ConstBufferSequence, class ProtocolHandler>
-boost::system::error_code
-ProtocolStream::write (ConstBufferSequence const& buffers,
-    ProtocolHandler& handler)
-{
-    boost::system::error_code ec;
-    for (auto const& buffer : buffers)
-    {
-        ec = write(buffer, handler);
-        if (ec)
-            break;
-    }
-    return ec;
-}
-
 template <class Message, class ProtocolHandler>
-boost::system::error_code
-ProtocolStream::invoke (ProtocolHandler& handler)
+auto
+ProtocolStream::invoke (ProtocolHandler& handler) ->
+    error_code
 {
-    boost::system::error_code ec;
+    error_code ec;
     std::shared_ptr <Message> const m (
         std::make_shared <Message>());
     bool const parsed (m->ParseFromArray (body_.data(), length_));

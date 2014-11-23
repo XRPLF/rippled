@@ -914,10 +914,16 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
     }
 
     read_buffer_.commit (bytes_transferred);
-    ec = message_stream_.write (read_buffer_.data(), *this);
-    read_buffer_.consume (read_buffer_.size());
-    if(ec)
-        return fail("onReadMessage", ec);
+
+    while (read_buffer_.size() > 0)
+    {
+        std::size_t bytes_consumed;
+        std::tie(bytes_consumed, ec) =
+            message_stream_.write (read_buffer_.data(), *this);
+        read_buffer_.consume (bytes_consumed);
+        if(ec)
+            return fail("onReadMessage", ec);
+    }
     if(gracefulClose_)
         return;
     // Timeout on writes only
