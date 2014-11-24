@@ -676,8 +676,8 @@ to_string (basic_streambuf<Allocator> const& buf)
 {
     std::string s;
     s.resize(buf.size());
-    boost::asio::buffer_copy(boost::asio::buffer(s),
-        buf.data());
+    boost::asio::buffer_copy(boost::asio::buffer(
+        &s[0], s.size()), buf.data());
     return s;
 }
 
