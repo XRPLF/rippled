@@ -167,9 +167,9 @@ OverlayImpl::onLegacyPeerHello (
         // self connect, close
         return;
 
-    auto const peer = std::make_shared<PeerImp>(std::move(ssl_bundle),
-        boost::asio::const_buffers_1(buffer), remote_endpoint, *this,
-            m_resourceManager, *m_peerFinder, slot, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, boost::asio::const_buffers_1(buffer),
+            std::move(ssl_bundle),  *this);
     {
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
@@ -273,9 +273,9 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto const peer = std::make_shared<PeerImp>(std::move(ssl_bundle),
-        std::move(request), hello, remote_endpoint, publicKey, consumer,
-            slot,  *this, m_resourceManager, *m_peerFinder, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, std::move(request), hello, publicKey,
+            consumer, std::move(ssl_bundle), *this);
     {
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
@@ -341,9 +341,8 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
         m_peerFinder->new_outbound_slot (remote_endpoint);
     if (slot == nullptr)
         return;
-    auto const peer = std::make_shared <PeerImp> (remote_endpoint,
-        io_service_, *this, m_resourceManager, *m_peerFinder, slot,
-            setup_.context, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, io_service_, setup_.context, *this);
     {
         // We're on the strand but lets make this code
         // the same as the others to avoid confusion.
