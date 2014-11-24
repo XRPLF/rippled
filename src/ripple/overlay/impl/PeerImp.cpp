@@ -35,12 +35,12 @@
 
 namespace ripple {
 
-PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    beast::http::message&& request, protocol::TMHello const& hello,
-    endpoint_type remote_endpoint, RippleAddress const& publicKey,
-        Resource::Consumer consumer, PeerFinder::Slot::ptr const& slot,
-            OverlayImpl& overlay, Resource::Manager& resourceManager,
-                PeerFinder::Manager& peerFinder, id_t id)
+PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
+    PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+        protocol::TMHello const& hello, RippleAddress const& publicKey,
+            Resource::Consumer consumer,
+                std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                    OverlayImpl& overlay)
     : Child (overlay)
     , id_(id)
     , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
@@ -54,8 +54,6 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , timer_ (socket_.get_io_service())
     , remote_address_ (
         beast::IPAddressConversion::from_asio(remote_endpoint))
-    , resourceManager_ (resourceManager)
-    , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
     , state_ (State::active)
@@ -68,11 +66,10 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
 {
 }
 
-PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
-    boost::asio::io_service& io_service, OverlayImpl& overlay,
-        Resource::Manager& resourceManager, PeerFinder::Manager& peerFinder,
-            PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context, id_t id)
+PeerImp::PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
+    PeerFinder::Slot::ptr const& slot, boost::asio::io_service& io_service,
+        std::shared_ptr<boost::asio::ssl::context> const& context,
+            OverlayImpl& overlay)
     : Child (overlay)
     , id_(id)
     , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
@@ -86,8 +83,6 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
-    , resourceManager_ (resourceManager)
-    , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (false)
     , state_ (State::connecting)
@@ -107,7 +102,7 @@ PeerImp::~PeerImp ()
         assert(publicKey_.isValid());
         overlay_.onPeerDeactivate(id_, publicKey_);
     }
-    peerFinder_.on_closed (slot_);
+    overlay_.peerFinder().on_closed (slot_);
     overlay_.remove (slot_);
 }
 
@@ -473,7 +468,7 @@ void PeerImp::doConnect()
 {
     if (journal_.info) journal_.info <<
         "Connect " << remote_address_;
-    usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
+    usage_ = overlay_.resourceManager().newOutboundEndpoint (remote_address_);
     if (usage_.disconnect())
         return fail("doConnect: Resources");
 
@@ -503,7 +498,7 @@ PeerImp::onConnect (error_code ec)
 
     // VFALCO Can we do this after the call to onConnected?
     state_ = State::connected;
-    if (! peerFinder_.onConnected (slot_,
+    if (! overlay_.peerFinder().onConnected (slot_,
             beast::IPAddressConversion::from_asio (local_endpoint)))
         return fail("onConnect: Duplicate");
 
@@ -678,7 +673,7 @@ PeerImp::processResponse (beast::http::message const& m,
                                 eps.push_back(ep);
                         }
                     }
-                    peerFinder_.onRedirects(beast::IPAddressConversion::
+                    overlay_.peerFinder().onRedirects(beast::IPAddressConversion::
                         to_asio_endpoint(remote_address_), eps);
                 }
             }
@@ -718,7 +713,7 @@ PeerImp::processResponse (beast::http::message const& m,
         if (journal_.info) journal_.info <<
             "Cluster name: " << name_;
 
-    auto const result = peerFinder_.activate (slot_,
+    auto const result = overlay_.peerFinder().activate (slot_,
         RipplePublicKey(publicKey_), clusterNode_);
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
@@ -759,7 +754,7 @@ void PeerImp::doLegacyAccept()
     assert(read_buffer_.size() > 0);
     if(journal_.debug) journal_.debug <<
         "doLegacyAccept: " << remote_address_;
-    usage_ = resourceManager_.newInboundEndpoint (remote_address_);
+    usage_ = overlay_.resourceManager().newInboundEndpoint (remote_address_);
     if (usage_.disconnect ())
         return fail("doLegacyAccept: Resources");
     doProtocolStart(true);
@@ -1090,7 +1085,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         state_ = State::handshaked;
         hello_ = *m;
 
-        auto const result = peerFinder_.activate (slot_,
+        auto const result = overlay_.peerFinder().activate (slot_,
             RipplePublicKey (publicKey_), clusterNode_);
 
         if (result == PeerFinder::Result::success)
@@ -1125,7 +1120,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         if (result == PeerFinder::Result::full)
         {
             // TODO Provide correct HTTP response
-            auto const redirects = peerFinder_.redirect (slot_);
+            auto const redirects = overlay_.peerFinder().redirect (slot_);
             sendEndpoints (redirects.begin(), redirects.end());
             gracefulClose();
             return ec;
@@ -1276,7 +1271,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMCluster> const& m)
             if (item.address != beast::IP::Endpoint())
                 gossip.items.push_back(item);
         }
-        resourceManager_.importConsumers (name_, gossip);
+        overlay_.resourceManager().importConsumers (name_, gossip);
     }
 
     getApp().getFeeTrack().setClusterFee(getApp().getUNL().getClusterFee());
@@ -1312,7 +1307,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMPeers> const& m)
     }
 
     if (! list.empty())
-        peerFinder_.on_legacy_endpoints (list);
+        overlay_.peerFinder().on_legacy_endpoints (list);
     return ec;
 }
 
@@ -1356,7 +1351,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMEndpoints> const& m)
     }
 
     if (! endpoints.empty())
-        peerFinder_.on_endpoints (slot_, endpoints);
+        overlay_.peerFinder().on_endpoints (slot_, endpoints);
     return ec;
 }
 

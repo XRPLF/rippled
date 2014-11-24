@@ -33,11 +33,11 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/container/flat_map.hpp>
-#include <beast/cxx14/memory.h> // <memory>
 #include <atomic>
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
 #include <unordered_map>
 
@@ -131,16 +131,28 @@ public:
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
 
-    Setup const&
-    setup() const
+    PeerFinder::Manager&
+    peerFinder()
     {
-        return setup_;
+        return *m_peerFinder;
+    }
+
+    Resource::Manager&
+    resourceManager()
+    {
+        return m_resourceManager;
     }
 
     ServerHandler&
     serverHandler()
     {
         return serverHandler_;
+    }
+
+    Setup const&
+    setup() const
+    {
+        return setup_;
     }
 
     void
