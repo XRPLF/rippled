@@ -40,19 +40,14 @@ class ProtocolStream
 private:
     using error_code = boost::system::error_code;
 
-    std::size_t header_bytes_ = 0;
-    std::size_t body_bytes_ = 0;
+    std::size_t header_bytes_;
+    std::size_t body_bytes_;
     std::uint32_t length_;
     std::uint16_t type_;
     std::vector <std::uint8_t> header_; // VFALCO TODO Use std::array
     std::vector <std::uint8_t> body_;
 
 public:
-    ProtocolStream()
-    {
-        header_.resize (Message::kHeaderBytes);
-    }
-
     /** Write data to the protocol stream.
         This may call the handler for up to one complete message.
         @return The number of bytes consumed and the error code if any.
