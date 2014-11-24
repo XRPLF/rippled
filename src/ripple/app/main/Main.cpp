@@ -68,7 +68,7 @@ void startServer ()
             if (!getConfig ().QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
-            RPCHandler  rhHandler (getApp().getOPs ());
+            RPCHandler  rhHandler (nullptr, getApp ().getOPs ());
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, Role::ADMIN, loadType);
@@ -78,7 +78,7 @@ void startServer ()
         }
     }
 
-    getApp().run ();                 // Blocks till we get a stop RPC.
+    getApp ().run ();                 // Blocks till we get a stop RPC.
 }
 
 void printHelp (const po::options_description& desc)

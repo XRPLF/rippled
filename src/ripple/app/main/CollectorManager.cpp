@@ -49,6 +49,10 @@ public:
         }
 
         m_groups = beast::insight::make_Groups (m_collector);
+        rpc_requests_ = m_collector->make_counter ("rpc", "requests");
+        rpc_io_ = m_collector->make_event ("rpc", "io");
+        rpc_size_ = m_collector->make_event ("rpc", "size");
+        rpc_time_ = m_collector->make_event ("rpc", "time");
     }
 
     ~CollectorManagerImp ()

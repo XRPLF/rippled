@@ -65,6 +65,7 @@ private:
     std::shared_ptr<HTTP::Port> port_;
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
+    CollectorManager* collectorManager_;
 
 protected:
     // VFALCO TODO Make this private.
@@ -78,10 +79,12 @@ protected:
 
 public:
     WSServerHandler (std::shared_ptr<HTTP::Port> const& port,
-        Resource::Manager& resourceManager, InfoSub::Source& source)
+        Resource::Manager& resourceManager, InfoSub::Source& source,
+            CollectorManager* cm)
         : port_(port)
         , m_resourceManager (resourceManager)
         , m_source (source)
+        , collectorManager_ (cm)
     {
     }
 
@@ -199,7 +202,8 @@ public:
             std::pair <typename MapType::iterator, bool> const result (
                 mMap.emplace (cpClient,
                     std::make_shared < WSConnectionType <endpoint_type> > (std::ref(m_resourceManager),
-                    std::ref (m_source), std::ref(*this), std::cref(cpClient))));
+                    std::ref (m_source), std::ref (*this), std::cref (cpClient),
+                    collectorManager_)));
             assert (result.second);
             (void) result.second;
             WriteLog (lsDEBUG, WSServerHandlerLog) <<

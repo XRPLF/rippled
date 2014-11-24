@@ -31,6 +31,8 @@
 namespace ripple {
 namespace NodeStore {
 
+boost::thread_specific_ptr<Database::DBmetrics> Database::dbMetrics_;
+
 class DatabaseImp
     : public Database
     , public beast::LeakChecked <DatabaseImp>
@@ -146,6 +148,9 @@ public:
 
     NodeObject::Ptr fetch (uint256 const& hash) override
     {
+        if (dbMetrics_.get ())
+            ++dbMetrics_->fetches;
+
         return doTimedFetch (hash, false);
     }
 

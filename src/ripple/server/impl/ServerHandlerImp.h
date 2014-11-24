@@ -23,7 +23,6 @@
 #include <ripple/core/Job.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
-#include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
 
@@ -40,11 +39,12 @@ private:
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
     Setup setup_;
+    CollectorManager* collectorManager_;
 
 public:
     ServerHandlerImp (Stoppable& parent, boost::asio::io_service& io_service,
         JobQueue& jobQueue, NetworkOPs& networkOPs,
-            Resource::Manager& resourceManager);
+            Resource::Manager& resourceManager, CollectorManager* cm);
 
     ~ServerHandlerImp();
 

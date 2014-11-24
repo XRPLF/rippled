@@ -28,6 +28,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/Manager.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/RPCHandler.h> 
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
@@ -48,7 +49,8 @@ ServerHandler::ServerHandler (Stoppable& parent)
 
 ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
-        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            CollectorManager* cm)
     : ServerHandler (parent)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
@@ -56,6 +58,7 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))
+    , collectorManager_ (cm)
 {
 }
 
@@ -279,7 +282,7 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
 
 
     std::string response;
-    RPCHandler rpcHandler (m_networkOPs);
+    RPCHandler rpcHandler (collectorManager_, m_networkOPs);
     Resource::Charge loadType = Resource::feeReferenceRPC;
 
     m_journal.debug << "Query: " << strMethod << params;
@@ -291,6 +294,12 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
     usage.charge (loadType);
 
     response = JSONRPCReply (result, Json::Value (), id);
+
+    if (collectorManager_ != nullptr)
+    {
+        collectorManager_->rpc_size_.notify (
+            static_cast <beast::insight::Event::value_type> (response.size ()));
+    }
 
     return createResponse (200, response);
 }
@@ -718,11 +727,12 @@ setup_ServerHandler (BasicConfig const& config, std::ostream& log)
 
 std::unique_ptr <ServerHandler>
 make_ServerHandler (beast::Stoppable& parent,
-    boost::asio::io_service& io_service, JobQueue& jobQueue,
-        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+    boost::asio::io_service& io_service, JobQueue& jobQueue, 
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            CollectorManager* cm)
 {
     return std::make_unique <ServerHandlerImp> (parent, io_service,
-        jobQueue, networkOPs, resourceManager);
+        jobQueue, networkOPs, resourceManager, cm);
 }
 
 }

@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
 #include <ripple/nodestore/NodeObject.h>
+#include <boost/thread/tss.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -141,6 +142,13 @@ public:
     virtual std::uint32_t getFetchHitCount () const = 0;
     virtual std::uint32_t getStoreSize () const = 0;
     virtual std::uint32_t getFetchSize () const = 0;
+
+    struct DBmetrics
+    {
+        std::size_t fetches;
+    };
+
+    static boost::thread_specific_ptr<DBmetrics> dbMetrics_;
 };
 
 }

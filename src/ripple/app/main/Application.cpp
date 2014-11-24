@@ -305,7 +305,7 @@ public:
 
         , serverHandler_ (make_ServerHandler (*m_networkOPs,
             get_io_service(), *m_jobQueue, *m_networkOPs,
-                *m_resourceManager))
+                *m_resourceManager, m_collectorManager.get ()))
 
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main",
             m_nodeStoreScheduler, m_logs.journal("NodeObject"),
@@ -727,7 +727,8 @@ public:
         {
             if (! port.websockets())
                 continue;
-            auto door = make_WSDoor(port, *m_resourceManager, getOPs());
+            auto door (make_WSDoor (port, *m_resourceManager, getOPs (),
+                m_collectorManager.get ()));
             if (door == nullptr)
             {
                 m_journal.fatal << "Could not create Websocket for [" <<
