@@ -2497,6 +2497,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolInputStream.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolStream.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\TMHello.cpp">

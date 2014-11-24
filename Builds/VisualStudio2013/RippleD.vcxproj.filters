@@ -3519,6 +3519,9 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolInputStream.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolStream.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>

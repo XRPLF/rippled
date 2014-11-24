@@ -21,8 +21,11 @@
 #define RIPPLE_OVERLAY_PROTOCOLSTREAM_H_INCLUDED
 
 #include "ripple.pb.h"
+#include <ripple/overlay/impl/ProtocolInputStream.h>
 #include <ripple/overlay/Message.h>
+#include <google/protobuf/io/zero_copy_stream.h>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
 #include <cassert>
 #include <cstdint>
@@ -76,6 +79,8 @@ private:
     error_code
     invoke (ProtocolHandler& handler);
 };
+
+//------------------------------------------------------------------------------
 
 template <class ConstBufferSequence, class ProtocolHandler>
 auto
