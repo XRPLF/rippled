@@ -142,7 +142,7 @@ struct peer_in_cluster
         if (skipPeer (peer))
             return false;
 
-        if (!peer->isInCluster ())
+        if (! peer->cluster())
             return false;
 
         return true;

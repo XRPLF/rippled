@@ -123,9 +123,6 @@ private:
     State state_;          // Current state
     bool detaching_ = false;
 
-    // True if peer is a node in our cluster
-    bool clusterNode_ = false;
-
     // Node public key of peer.
     RippleAddress publicKey_;
 
@@ -239,6 +236,12 @@ public:
         return id_;
     }
 
+    bool
+    cluster() const override
+    {
+        return slot_->cluster();
+    }
+
     RippleAddress const&
     getNodePublic () const override
     {
@@ -247,18 +250,6 @@ public:
 
     Json::Value
     json() override;
-
-    bool
-    isInCluster () const override
-    {
-        return clusterNode_;
-    }
-
-    std::string const&
-    getClusterNodeName() const override
-    {
-        return name_;
-    }
 
     //
     // Ledger
