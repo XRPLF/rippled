@@ -143,66 +143,21 @@ ProtocolStream::write (boost::asio::const_buffer buffer,
                 assert (body_bytes_ == length_);
                 switch (type_)
                 {
-                case protocol::mtHELLO:
-                    invoke <protocol::TMHello> (handler);
-                    break;
-
-                case protocol::mtPING:
-                    invoke <protocol::TMPing> (handler);
-                    break;
-
-                case protocol::mtPROOFOFWORK:
-                    invoke <protocol::TMProofWork> (handler);
-                    break;
-
-                case protocol::mtCLUSTER:
-                    invoke <protocol::TMCluster> (handler);
-                    break;
-
-                case protocol::mtGET_PEERS:
-                    invoke <protocol::TMGetPeers> (handler);
-                    break;
-
-                case protocol::mtPEERS:
-                    invoke <protocol::TMPeers> (handler);
-                    break;
-
-                case protocol::mtENDPOINTS:
-                    invoke <protocol::TMEndpoints> (handler);
-                    break;
-
-                case protocol::mtTRANSACTION:
-                    invoke <protocol::TMTransaction> (handler);
-                    break;
-
-                case protocol::mtGET_LEDGER:
-                    invoke <protocol::TMGetLedger> (handler);
-                    break;
-
-                case protocol::mtLEDGER_DATA:
-                    invoke <protocol::TMLedgerData> (handler);
-                    break;
-
-                case protocol::mtPROPOSE_LEDGER:
-                    invoke <protocol::TMProposeSet> (handler);
-                    break;
-
-                case protocol::mtSTATUS_CHANGE:
-                    invoke <protocol::TMStatusChange> (handler);
-                    break;
-
-                case protocol::mtHAVE_SET:
-                    invoke <protocol::TMHaveTransactionSet> (handler);
-                    break;
-
-                case protocol::mtVALIDATION:
-                    invoke <protocol::TMValidation> (handler);
-                    break;
-
-                case protocol::mtGET_OBJECTS:
-                    invoke <protocol::TMGetObjectByHash> (handler);
-                    break;
-
+                case protocol::mtHELLO:             invoke <protocol::TMHello> (handler); break;
+                case protocol::mtPING:              invoke <protocol::TMPing> (handler); break;
+                case protocol::mtPROOFOFWORK:       invoke <protocol::TMProofWork> (handler); break;
+                case protocol::mtCLUSTER:           invoke <protocol::TMCluster> (handler); break;
+                case protocol::mtGET_PEERS:         invoke <protocol::TMGetPeers> (handler); break;
+                case protocol::mtPEERS:             invoke <protocol::TMPeers> (handler); break;
+                case protocol::mtENDPOINTS:         invoke <protocol::TMEndpoints> (handler); break;
+                case protocol::mtTRANSACTION:       invoke <protocol::TMTransaction> (handler); break;
+                case protocol::mtGET_LEDGER:        invoke <protocol::TMGetLedger> (handler); break;
+                case protocol::mtLEDGER_DATA:       invoke <protocol::TMLedgerData> (handler); break;
+                case protocol::mtPROPOSE_LEDGER:    invoke <protocol::TMProposeSet> (handler); break;
+                case protocol::mtSTATUS_CHANGE:     invoke <protocol::TMStatusChange> (handler); break;
+                case protocol::mtHAVE_SET:          invoke <protocol::TMHaveTransactionSet> (handler); break;
+                case protocol::mtVALIDATION:        invoke <protocol::TMValidation> (handler); break;
+                case protocol::mtGET_OBJECTS:       invoke <protocol::TMGetObjectByHash> (handler); break;
                 default:
                     ec = handler.onMessageUnknown(type_);
                     break;
