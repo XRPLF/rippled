@@ -132,15 +132,6 @@ public:
 
             return temREDUNDANT;
         }
-        else if (bMax && maxSourceAmount == saDstAmount &&
-                 maxSourceAmount.getCurrency () == saDstAmount.getCurrency ())
-        {
-            // Consistent but redundant transaction.
-            m_journal.trace <<
-                "Malformed transaction: Redundant SendMax.";
-
-            return temREDUNDANT_SEND_MAX;
-        }
         else if (bXRPDirect && bMax)
         {
             // Consistent but redundant transaction.
