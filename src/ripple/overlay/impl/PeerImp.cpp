@@ -91,7 +91,7 @@ PeerImp::PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
 
 PeerImp::~PeerImp ()
 {
-    if (clusterNode_)
+    if (cluster())
         if (journal_.warning) journal_.warning <<
             name_ << " left cluster";
     if (state_ == State::active)
@@ -190,7 +190,7 @@ PeerImp::json()
     if (m_inbound)
         ret["inbound"] = true;
 
-    if (clusterNode_)
+    if (cluster())
     {
         ret["cluster"] = true;
 
@@ -706,13 +706,13 @@ PeerImp::processResponse (beast::http::message const& m,
         "Protocol: " << to_string(protocol);
     if(journal_.info) journal_.info <<
         "Public Key: " << publicKey_.humanNodePublic();
-    clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
-    if (clusterNode_)
+    bool const cluster = getApp().getUNL().nodeInCluster(publicKey_, name_);
+    if (cluster)
         if (journal_.info) journal_.info <<
             "Cluster name: " << name_;
 
-    auto const result = overlay_.peerFinder().activate (slot_,
-        RipplePublicKey(publicKey_), clusterNode_);
+    auto const result = overlay_.peerFinder().activate (
+        slot_, RipplePublicKey(publicKey_), cluster);
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
@@ -785,8 +785,8 @@ void PeerImp::doAccept()
         "Protocol: " << to_string(protocol);
     if(journal_.info) journal_.info <<
         "Public Key: " << publicKey_.humanNodePublic();
-    clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
-    if (clusterNode_)
+    bool const cluster = getApp().getUNL().nodeInCluster(publicKey_, name_);
+    if (cluster)
         if (journal_.info) journal_.info <<
             "Cluster name: " << name_;
 
@@ -1078,8 +1078,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
             "Protocol: " << to_string(protocol);
         if(journal_.info) journal_.info <<
             "Public Key: " << publicKey_.humanNodePublic();
-        clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
-        if (clusterNode_)
+        bool const cluster = getApp().getUNL().nodeInCluster(publicKey_, name_);
+        if (cluster)
             if (journal_.info) journal_.info <<
                 "Cluster name: " << name_;
 
@@ -1089,7 +1089,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
         hello_ = *m;
 
         auto const result = overlay_.peerFinder().activate (slot_,
-            RipplePublicKey (publicKey_), clusterNode_);
+            RipplePublicKey (publicKey_), cluster);
 
         if (result == PeerFinder::Result::success)
         {
@@ -1217,7 +1217,7 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 {
     // VFALCO NOTE I think we should drop the peer immediately
-    if (!clusterNode_)
+    if (! cluster())
         return charge (Resource::feeUnwantedData);
 
     for (int i = 0; i < m->clusternodes().size(); ++i)
@@ -1357,7 +1357,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         p_journal_.debug <<
             "Got tx " << txID;
 
-        if (clusterNode_)
+        if (cluster())
         {
             if (! m->has_deferred () || ! m->deferred ())
             {
@@ -2005,7 +2005,7 @@ PeerImp::checkPropose (Job& job,
             "proposal with previous ledger";
         memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
 
-        if (!clusterNode_ && !proposal->checkSign (set.signature ()))
+        if (! cluster() && !proposal->checkSign (set.signature ()))
         {
             p_journal_.warning <<
                 "Proposal with previous ledger fails sig check";
@@ -2066,7 +2066,7 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
     {
         // VFALCO Which functions throw?
         uint256 signingHash = val->getSigningHash();
-        if (!clusterNode_ && !val->isValid (signingHash))
+        if (! cluster() && !val->isValid (signingHash))
         {
             p_journal_.warning <<
                 "Validation is invalid";
@@ -2200,7 +2200,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
     }
     else
     {
-        if (getApp().getFeeTrack().isLoadedLocal() && !clusterNode_)
+        if (getApp().getFeeTrack().isLoadedLocal() && ! cluster())
         {
             p_journal_.debug <<
                 "GetLedger: Too busy";

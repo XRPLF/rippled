@@ -72,22 +72,17 @@ public:
     id_t
     id() const = 0;
 
+    /** Returns `true` if this connection is a member of the cluster. */
+    virtual
+    bool
+    cluster() const = 0;
+
     virtual
     RippleAddress const&
     getNodePublic() const = 0;
 
     virtual
     Json::Value json() = 0;
-
-    // VFALCO TODO Replace both with
-    //             boost::optional<std::string> const& cluster_id();
-    virtual
-    bool
-    isInCluster() const = 0;
-
-    virtual
-    std::string const&
-    getClusterNodeName() const = 0;
 
     //
     // Ledger
