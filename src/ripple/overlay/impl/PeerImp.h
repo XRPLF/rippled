@@ -117,8 +117,6 @@ private:
 
     // These is up here to prevent warnings about order of initializations
     //
-    Resource::Manager& resourceManager_;
-    PeerFinder::Manager& peerFinder_;
     OverlayImpl& overlay_;
     bool m_inbound;
 
@@ -170,27 +168,26 @@ public:
     PeerImp (PeerImp const&) = delete;
     PeerImp& operator= (PeerImp const&) = delete;
 
+    /** Create an active incoming peer from an established ssl connection. */
+    PeerImp (id_t id, endpoint_type remote_endpoint,
+        PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+            protocol::TMHello const& hello, RippleAddress const& publicKey,
+                Resource::Consumer consumer,
+                    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                        OverlayImpl& overlay);
+
     /** Create an incoming legacy peer from an established ssl connection. */
     template <class ConstBufferSequence>
-    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
-            OverlayImpl& overlay, Resource::Manager& resourceManager,
-                PeerFinder::Manager& peerFinder,
-                    PeerFinder::Slot::ptr const& slot, id_t id);
-
-    /** Create an active incoming peer from an established ssl connection. */
-    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        beast::http::message&& request, protocol::TMHello const& hello,
-            endpoint_type remote_endpoint, RippleAddress const& publicKey,
-                Resource::Consumer consumer, PeerFinder::Slot::ptr const& slot,
-                    OverlayImpl& overlay, Resource::Manager& resourceManager,
-                        PeerFinder::Manager& peerFinder, id_t id);
+    PeerImp (id_t id, endpoint_type remote_endpoint,
+        PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                OverlayImpl& overlay);
 
     /** Create an outgoing peer. */
-    PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context, id_t id);
+    PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
+        PeerFinder::Slot::ptr const& slot, boost::asio::io_service& io_service,
+            std::shared_ptr<boost::asio::ssl::context> const& context,
+                OverlayImpl& overlay);
 
     virtual
     ~PeerImp ();
@@ -489,11 +486,10 @@ private:
 //------------------------------------------------------------------------------
 
 template <class ConstBufferSequence>
-PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder,
-                PeerFinder::Slot::ptr const& slot, id_t id)
+PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
+    PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
+        std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+            OverlayImpl& overlay)
     : Child (overlay)
     , id_(id)
     , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
@@ -507,8 +503,6 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , timer_ (socket_.get_io_service())
     , remote_address_ (
         beast::IPAddressConversion::from_asio(remote_endpoint))
-    , resourceManager_ (resourceManager)
-    , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
     , state_ (State::connected)
