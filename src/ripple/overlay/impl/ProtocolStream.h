@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
@@ -218,6 +219,76 @@ protocolMessageName (int type)
         break;
     };
     return "unknown";
+}
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+template <class Message, class Buffers, class Handler>
+std::enable_if_t<std::is_base_of<
+    ::google::protobuf::Message, Message>::Value,
+        boost::system::error_code>
+invoke (int type, Buffers const& buffers,
+    Handler& handler)
+{
+    ProtocolInputStream<Buffers> stream(buffers);
+    auto const m (std::make_shared<Message>());
+    if (! m->ParseFromZeroCopyStream(stream))
+        return boost::system::errc::make_error_code(
+            boost::system::errc::invalid_argument);
+    auto ec = handler.onMessageBegin (type, m);
+    if (! ec)
+    {
+        handler.onMessage (m);
+        handler.onMessageEnd (type, m);
+    }
+    return ec;
+}
+
+}
+
+/** Calls the handler for up to one protocol message in the passed buffers.
+*/
+template <class Buffers, class Handler>
+std::pair <std::size_t, boost::system::error_code>
+parseProtocolMessage (Buffers const& buffers, Handler& handler)
+{
+    std::pair<std::size_t,boost::system::error_code> result = { 0, {} };
+    boost::system::error_code& ec = result.second;
+
+    auto const type = Message::type(buffers);
+    if (type == 0)
+        return result;
+    auto const size = Message::kHeaderBytes + Message::size(buffers);
+    if (boost::asio::buffer_size(buffers) < size)
+        return result;
+
+    switch (type)
+    {
+    case protocol::mtHELLO:         ec = detail::invoke<protocol::TMHello> (type, buffers, handler); break;
+    case protocol::mtPING:          ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
+    case protocol::mtPROOFOFWORK:   ec = detail::invoke<protocol::TMProofWork> (type, buffers, handler); break;
+    case protocol::mtCLUSTER:       ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
+    case protocol::mtGET_PEERS:     ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
+    case protocol::mtPEERS:         ec = detail::invoke<protocol::TMPeers> (type, buffers, handler); break;
+    case protocol::mtENDPOINTS:     ec = detail::invoke<protocol::TMEndpoints> (type, buffers, handler); break;
+    case protocol::mtTRANSACTION:   ec = detail::invoke<protocol::TMTransaction> (type, buffers, handler); break;
+    case protocol::mtGET_LEDGER:    ec = detail::invoke<protocol::TMGetLedger> (type, buffers, handler); break;
+    case protocol::mtLEDGER_DATA:   ec = detail::invoke<protocol::TMLedgerData> (type, buffers, handler); break;
+    case protocol::mtPROPOSE_LEDGER:ec = detail::invoke<protocol::TMProposeSet> (type, buffers, handler); break;
+    case protocol::mtSTATUS_CHANGE: ec = detail::invoke<protocol::TMStatusChange> (type, buffers, handler); break;
+    case protocol::mtHAVE_SET:      ec = detail::invoke<protocol::TMHaveTransactionSet> (type, buffers, handler); break;
+    case protocol::mtVALIDATION:    ec = detail::invoke<protocol::TMValidation> (type, buffers, handler); break;
+    case protocol::mtGET_OBJECTS:   ec = detail::invoke<protocol::TMGetObjectByHash> (type, buffers, handler); break;
+    default:
+        result.second = handler.onMessageUnknown (type);
+        break;
+    }
+    if (! ec)
+        result.first = size;
+
+    return result;
 }
 
 } // ripple
