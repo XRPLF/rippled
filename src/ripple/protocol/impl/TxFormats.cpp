@@ -94,7 +94,6 @@ void TxFormats::addCommonFields (Item& item)
         << SOElement(sfSourceTag,           SOE_OPTIONAL)
         << SOElement(sfAccount,             SOE_REQUIRED)
         << SOElement(sfSequence,            SOE_REQUIRED)
-        << SOElement(sfPreviousTxnID,       SOE_OPTIONAL) // Deprecated: Do not use
         << SOElement(sfLastLedgerSequence,  SOE_OPTIONAL)
         << SOElement(sfAccountTxnID,        SOE_OPTIONAL)
         << SOElement(sfFee,                 SOE_REQUIRED)
