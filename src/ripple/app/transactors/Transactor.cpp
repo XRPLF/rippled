@@ -207,11 +207,6 @@ TER Transactor::checkSeq ()
         return tefPAST_SEQ;
     }
 
-    // Deprecated: Do not use
-    if (mTxn.isFieldPresent (sfPreviousTxnID) &&
-            (mTxnAccount->getFieldH256 (sfPreviousTxnID) != mTxn.getFieldH256 (sfPreviousTxnID)))
-        return tefWRONG_PRIOR;
-
     if (mTxn.isFieldPresent (sfAccountTxnID) &&
             (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
         return tefWRONG_PRIOR;
@@ -231,7 +226,7 @@ TER Transactor::checkSeq ()
 // check stuff before you bother to lock the ledger
 TER Transactor::preCheck ()
 {
-    mTxnAccountID   = mTxn.getSourceAccount ().getAccountID ();
+    mTxnAccountID = mTxn.getSourceAccount ().getAccountID ();
 
     if (!mTxnAccountID)
     {
