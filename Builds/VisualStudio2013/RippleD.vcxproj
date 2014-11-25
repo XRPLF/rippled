@@ -2817,9 +2817,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
@@ -2829,8 +2826,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\LegacyFees.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\Manager.h">
     </ClInclude>

@@ -28,7 +28,6 @@
 #include <ripple/resource/impl/Fees.cpp>
 #include <ripple/resource/impl/Key.h>
 #include <ripple/resource/impl/Kind.h>
-#include <ripple/resource/impl/LegacyFees.cpp>
 #include <ripple/resource/impl/Manager.cpp>
 #include <ripple/resource/impl/Tests.cpp>
 #include <ripple/resource/impl/Tuning.h>

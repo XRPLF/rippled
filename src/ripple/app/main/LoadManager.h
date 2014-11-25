@@ -21,6 +21,7 @@
 #define RIPPLE_LOADMANAGER_H_INCLUDED
 
 #include <beast/threads/Stoppable.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -34,8 +35,6 @@ namespace ripple {
 
     The warning system is used instead of merely dropping, because hostile
     peers can just reconnect anyway.
-
-    @see LoadSource, LoadType
 */
 class LoadManager : public beast::Stoppable
 {
@@ -43,18 +42,11 @@ protected:
     explicit LoadManager (Stoppable& parent);
 
 public:
-    /** Create a new manager.
-
-        @note The thresholds for warnings and punishments are in
-              the ctor-initializer
-    */
-    static LoadManager* New (Stoppable& parent, beast::Journal journal);
-
     /** Destroy the manager.
 
         The destructor returns only after the thread has stopped.
     */
-    virtual ~LoadManager () { }
+    virtual ~LoadManager () = default;
 
     /** Turn on deadlock detection.
 
@@ -77,6 +69,9 @@ public:
     */
     virtual void resetDeadlockDetector () = 0;
 };
+
+std::unique_ptr<LoadManager>
+make_LoadManager (beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

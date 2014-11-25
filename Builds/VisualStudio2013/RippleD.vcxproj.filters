@@ -3900,9 +3900,6 @@
     <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h">
       <Filter>ripple\resource\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
-      <Filter>ripple\resource\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
       <Filter>ripple\resource\impl</Filter>
     </ClInclude>
@@ -3914,9 +3911,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
       <Filter>ripple\resource\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\LegacyFees.h">
-      <Filter>ripple\resource</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\Manager.h">
       <Filter>ripple\resource</Filter>
