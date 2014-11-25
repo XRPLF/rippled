@@ -329,7 +329,7 @@ public:
 
         , mValidations (make_Validations ())
 
-        , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
+        , m_loadManager (make_LoadManager (*this, m_logs.journal("LoadManager")))
 
         , m_sweepTimer (this)
 
