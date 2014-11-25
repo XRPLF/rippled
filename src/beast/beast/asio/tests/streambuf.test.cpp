@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,14 +17,30 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
-#define RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
+#include <beast/asio/streambuf.h>
+#include <beast/unit_test/suite.h>
 
-namespace ripple {
+namespace beast {
+namespace asio {
 
-char const*
-protocol_message_name (int type);
+class streambuf_test : public unit_test::suite
+{
+public:
+    static void foo (int)
+    {
+    }
+
+    void run()
+    {
+        beast::asio::streambuf b(10);
+        b.prepare(10);
+        b.commit(10);
+        b.prepare(5);
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(streambuf,asio,beast);
 
 }
-
-#endif
+}

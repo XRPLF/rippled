@@ -22,8 +22,7 @@
 
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/overlay/impl/message_name.h>
-#include <ripple/overlay/impl/message_stream.h>
+#include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/app/misc/ProofOfWork.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
@@ -44,14 +43,10 @@
 
 namespace ripple {
 
-class PeerImp;
-
 class PeerImp
     : public Peer
     , public std::enable_shared_from_this <PeerImp>
     , public OverlayImpl::Child
-    , private beast::LeakChecked <Peer>
-    , private abstract_protocol_handler
 {
 public:
     /** Type of connection.
@@ -117,16 +112,11 @@ private:
 
     // These is up here to prevent warnings about order of initializations
     //
-    Resource::Manager& resourceManager_;
-    PeerFinder::Manager& peerFinder_;
     OverlayImpl& overlay_;
     bool m_inbound;
 
     State state_;          // Current state
     bool detaching_ = false;
-
-    // True if peer is a node in our cluster
-    bool clusterNode_ = false;
 
     // Node public key of peer.
     RippleAddress publicKey_;
@@ -157,7 +147,6 @@ private:
     beast::http::message http_message_;
     boost::optional <beast::http::parser> http_parser_;
     beast::http::body http_body_;
-    message_stream message_stream_;
     beast::asio::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
@@ -170,27 +159,26 @@ public:
     PeerImp (PeerImp const&) = delete;
     PeerImp& operator= (PeerImp const&) = delete;
 
+    /** Create an active incoming peer from an established ssl connection. */
+    PeerImp (id_t id, endpoint_type remote_endpoint,
+        PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+            protocol::TMHello const& hello, RippleAddress const& publicKey,
+                Resource::Consumer consumer,
+                    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                        OverlayImpl& overlay);
+
     /** Create an incoming legacy peer from an established ssl connection. */
     template <class ConstBufferSequence>
-    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
-            OverlayImpl& overlay, Resource::Manager& resourceManager,
-                PeerFinder::Manager& peerFinder,
-                    PeerFinder::Slot::ptr const& slot, id_t id);
-
-    /** Create an active incoming peer from an established ssl connection. */
-    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        beast::http::message&& request, protocol::TMHello const& hello,
-            endpoint_type remote_endpoint, RippleAddress const& publicKey,
-                Resource::Consumer consumer, PeerFinder::Slot::ptr const& slot,
-                    OverlayImpl& overlay, Resource::Manager& resourceManager,
-                        PeerFinder::Manager& peerFinder, id_t id);
+    PeerImp (id_t id, endpoint_type remote_endpoint,
+        PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                OverlayImpl& overlay);
 
     /** Create an outgoing peer. */
-    PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context, id_t id);
+    PeerImp (id_t id, beast::IP::Endpoint remoteAddress,
+        PeerFinder::Slot::ptr const& slot, boost::asio::io_service& io_service,
+            std::shared_ptr<boost::asio::ssl::context> const& context,
+                OverlayImpl& overlay);
 
     virtual
     ~PeerImp ();
@@ -242,6 +230,12 @@ public:
         return id_;
     }
 
+    bool
+    cluster() const override
+    {
+        return slot_->cluster();
+    }
+
     RippleAddress const&
     getNodePublic () const override
     {
@@ -250,18 +244,6 @@ public:
 
     Json::Value
     json() override;
-
-    bool
-    isInCluster () const override
-    {
-        return clusterNode_;
-    }
-
-    std::string const&
-    getClusterNodeName() const override
-    {
-        return name_;
-    }
 
     //
     // Ledger
@@ -383,9 +365,10 @@ private:
     void
     onWriteMessage (error_code ec, std::size_t bytes_transferred);
 
+public:
     //--------------------------------------------------------------------------
     //
-    // abstract_protocol_handler
+    // ProtocolStream
     //
     //--------------------------------------------------------------------------
 
@@ -398,32 +381,31 @@ private:
     }
 
     error_code
-    on_message_unknown (std::uint16_t type) override;
+    onMessageUnknown (std::uint16_t type);
 
     error_code
-    on_message_begin (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) override;
+    onMessageBegin (std::uint16_t type,
+        std::shared_ptr <::google::protobuf::Message> const& m);
 
     void
-    on_message_end (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m) override;
+    onMessageEnd (std::uint16_t type,
+        std::shared_ptr <::google::protobuf::Message> const& m);
 
-    // message handlers
-    error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMPing> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMCluster> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMPeers> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMEndpoints> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMTransaction> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetLedger> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMLedgerData> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMProposeSet> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMStatusChange> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMHaveTransactionSet> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMValidation> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m) override;
+    void onMessage (std::shared_ptr <protocol::TMHello> const& m);
+    void onMessage (std::shared_ptr <protocol::TMPing> const& m);
+    void onMessage (std::shared_ptr <protocol::TMProofWork> const& m);
+    void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
+    void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
+    void onMessage (std::shared_ptr <protocol::TMEndpoints> const& m);
+    void onMessage (std::shared_ptr <protocol::TMTransaction> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetLedger> const& m);
+    void onMessage (std::shared_ptr <protocol::TMLedgerData> const& m);
+    void onMessage (std::shared_ptr <protocol::TMProposeSet> const& m);
+    void onMessage (std::shared_ptr <protocol::TMStatusChange> const& m);
+    void onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
+    void onMessage (std::shared_ptr <protocol::TMValidation> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
 
     //--------------------------------------------------------------------------
 
@@ -489,11 +471,10 @@ private:
 //------------------------------------------------------------------------------
 
 template <class ConstBufferSequence>
-PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder,
-                PeerFinder::Slot::ptr const& slot, id_t id)
+PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
+    PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
+        std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+            OverlayImpl& overlay)
     : Child (overlay)
     , id_(id)
     , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
@@ -507,13 +488,10 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , timer_ (socket_.get_io_service())
     , remote_address_ (
         beast::IPAddressConversion::from_asio(remote_endpoint))
-    , resourceManager_ (resourceManager)
-    , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
     , state_ (State::connected)
     , slot_ (slot)
-    , message_stream_(*this)
 {
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffer)), buffer));

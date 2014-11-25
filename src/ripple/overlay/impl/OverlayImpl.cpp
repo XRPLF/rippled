@@ -167,9 +167,9 @@ OverlayImpl::onLegacyPeerHello (
         // self connect, close
         return;
 
-    auto const peer = std::make_shared<PeerImp>(std::move(ssl_bundle),
-        boost::asio::const_buffers_1(buffer), remote_endpoint, *this,
-            m_resourceManager, *m_peerFinder, slot, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, boost::asio::const_buffers_1(buffer),
+            std::move(ssl_bundle),  *this);
     {
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
@@ -241,15 +241,18 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     handoff.moved = true;
     bool success = true;
+
     protocol::TMHello hello;
     std::tie(hello, success) = parseHello (request, journal_);
     if(! success)
         return handoff;
+
     uint256 sharedValue;
     std::tie(sharedValue, success) = makeSharedValue(
         ssl_bundle->stream.native_handle(), journal_);
     if(! success)
         return handoff;
+
     RippleAddress publicKey;
     std::tie(publicKey, success) = verifyHello (hello,
         sharedValue, journal_, getApp());
@@ -257,11 +260,11 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
 
     std::string name;
-    bool clusterNode = getApp().getUNL().nodeInCluster(
+    bool const cluster = getApp().getUNL().nodeInCluster(
         publicKey, name);
+    
     auto const result = m_peerFinder->activate (slot,
-        RipplePublicKey(publicKey), clusterNode);
-
+        RipplePublicKey(publicKey), cluster);
     if (result != PeerFinder::Result::success)
     {
         if (journal_.trace) journal_.trace <<
@@ -273,9 +276,9 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto const peer = std::make_shared<PeerImp>(std::move(ssl_bundle),
-        std::move(request), hello, remote_endpoint, publicKey, consumer,
-            slot,  *this, m_resourceManager, *m_peerFinder, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, std::move(request), hello, publicKey,
+            consumer, std::move(ssl_bundle), *this);
     {
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
@@ -341,9 +344,8 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
         m_peerFinder->new_outbound_slot (remote_endpoint);
     if (slot == nullptr)
         return;
-    auto const peer = std::make_shared <PeerImp> (remote_endpoint,
-        io_service_, *this, m_resourceManager, *m_peerFinder, slot,
-            setup_.context, next_id_++);
+    auto const peer = std::make_shared<PeerImp>(next_id_++,
+        remote_endpoint, slot, io_service_, setup_.context, *this);
     {
         // We're on the strand but lets make this code
         // the same as the others to avoid confusion.
@@ -353,7 +355,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     }
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void
 OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
@@ -364,11 +366,11 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
     m_peers.erase (iter);
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //
 // Stoppable
 //
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 // Caller must hold the mutex
 void
@@ -465,18 +467,18 @@ OverlayImpl::onChildrenStopped ()
     checkStopped ();
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //
 // PropertyStream
 //
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void
 OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
 {
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /** A peer has connected successfully
     This is called after the peer handshake has been completed and during
     peer activation. At this point, the peer address and the public key
