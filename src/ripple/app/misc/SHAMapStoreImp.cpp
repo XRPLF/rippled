@@ -563,7 +563,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for (
-                    std::chrono::microseconds (pause_));
+                    std::chrono::milliseconds (setup_.backOff));
     }
     journal_.debug << "finished: " << deleteQuery;
 }
@@ -634,15 +634,12 @@ SHAMapStoreImp::health()
         return Health::ok;
 
     NetworkOPs::OperatingMode mode = netOPs_->getOperatingMode();
-    std::uint32_t age = netOPs_->getNetworkTimeNC() - (
-            validatedLedger_->getCloseTimeNC() -
-            validatedLedger_->getCloseResolution());
 
-    if (mode != NetworkOPs::omFULL || age >= ageTooHigh_)
+    std::int32_t age = ledgerMaster_->getValidatedLedgerAge();
+    if (mode != NetworkOPs::omFULL || age >= setup_.ageThreshold)
     {
-        journal_.warning << "server not healthy, not deleting. state: "
-                << mode << " age " << age << " age threshold "
-                << ageTooHigh_;
+        journal_.warning << "Not deleting. state: " << mode << " age " << age
+                << " age threshold " << setup_.ageThreshold;
         healthy_ = false;
     }
 
@@ -702,6 +699,10 @@ setup_SHAMapStore (Config const& c)
     setup.databasePath = c.DATABASE_PATH;
     if (c.nodeDatabase["delete_batch"].isNotEmpty())
         setup.deleteBatch = c.nodeDatabase["delete_batch"].getIntValue();
+    if (c.nodeDatabase["backOff"].isNotEmpty())
+        setup.backOff = c.nodeDatabase["backOff"].getIntValue();
+    if (c.nodeDatabase["age_threshold"].isNotEmpty())
+        setup.ageThreshold = c.nodeDatabase["age_threshold"].getIntValue();
 
     return setup;
 }
