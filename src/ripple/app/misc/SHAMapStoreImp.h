@@ -77,10 +77,6 @@ private:
     std::string const dbPrefix_ = "rippledb";
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
-    // microseconds to back off between sqlite deletion batches
-    std::uint32_t pause_ = 1000;
-    // seconds to compare against ledger age
-    std::uint16_t ageTooHigh_ = 60;
     // minimum # of ledgers to maintain for health of network
     std::uint32_t minimumDeletionInterval_ = 256;
 
