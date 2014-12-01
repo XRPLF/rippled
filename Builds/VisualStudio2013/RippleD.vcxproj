@@ -2516,6 +2516,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ZeroCopyStream.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\make_Overlay.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\Message.h">

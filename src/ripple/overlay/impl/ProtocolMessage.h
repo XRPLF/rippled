@@ -22,7 +22,7 @@
 
 #include "ripple.pb.h"
 #include <ripple/overlay/Message.h>
-#include <google/protobuf/io/zero_copy_stream.h>
+#include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
@@ -34,102 +34,33 @@
 
 namespace ripple {
 
-/** Implements ZeroCopyInputStream around a buffer sequence.
-    @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-*/
-template <class Buffers>
-class ZeroCopyInputStream
-    : public ::google::protobuf::io::ZeroCopyInputStream
+/** Returns the name of a protocol message given its type. */
+template <class = void>
+std::string
+protocolMessageName (int type)
 {
-private:
-    using iterator = typename Buffers::const_iterator;
-    using const_buffer = boost::asio::const_buffer;
-
-    std::int64_t count_ = 0;
-    iterator last_;
-    iterator first_;    // Where pos_ comes from
-    const_buffer pos_;  // What Next() will return
-
-public:
-    ZeroCopyInputStream (Buffers const& buffers);
-
-    bool
-    Next (const void** data, int* size) override;
-
-    void
-    BackUp (int count) override;
-
-    bool
-    Skip (int count) override;
-
-    std::int64_t
-    ByteCount() const override
+    switch (type)
     {
-        return count_;
-    }
-};
-
-//------------------------------------------------------------------------------
-
-template <class Buffers>
-ZeroCopyInputStream<Buffers>::ZeroCopyInputStream (Buffers const& buffers)
-    : last_ (buffers.end())
-    , first_ (buffers.begin())
-    , pos_ ((first_ != last_) ?
-        *first_ : const_buffer(nullptr, 0))
-{
+    case protocol::mtHELLO:             return "hello";
+    case protocol::mtPING:              return "ping";
+    case protocol::mtPROOFOFWORK:       return "proof_of_work";
+    case protocol::mtCLUSTER:           return "cluster";
+    case protocol::mtGET_PEERS:         return "get_peers";
+    case protocol::mtPEERS:             return "peers";
+    case protocol::mtENDPOINTS:         return "endpoints";
+    case protocol::mtTRANSACTION:       return "tx";
+    case protocol::mtGET_LEDGER:        return "get_ledger";
+    case protocol::mtLEDGER_DATA:       return "ledger_data";
+    case protocol::mtPROPOSE_LEDGER:    return "propose";
+    case protocol::mtSTATUS_CHANGE:     return "status";
+    case protocol::mtHAVE_SET:          return "have_set";
+    case protocol::mtVALIDATION:        return "validation";
+    case protocol::mtGET_OBJECTS:       return "get_objects";
+    default:
+        break;
+    };
+    return "unknown";
 }
-
-template <class Buffers>
-bool
-ZeroCopyInputStream<Buffers>::Next (const void** data, int* size)
-{
-    *data = boost::asio::buffer_cast<void const*>(pos_);
-    *size = boost::asio::buffer_size(pos_);
-    if (first_ == last_)
-        return false;
-    count_ += *size;
-    pos_ = (++first_ != last_) ? *first_ :
-        const_buffer(nullptr, 0);
-    return true;
-}
-
-template <class Buffers>
-void
-ZeroCopyInputStream<Buffers>::BackUp (int count)
-{
-    --first_;
-    pos_ = *first_ +
-        (boost::asio::buffer_size(*first_) - count);
-    count_ -= count;
-}
-
-template <class Buffers>
-bool
-ZeroCopyInputStream<Buffers>::Skip (int count)
-{
-    if (first_ == last_)
-        return false;
-    while (count > 0)
-    {
-        auto const size =
-            boost::asio::buffer_size(pos_);
-        if (count < size)
-        {
-            pos_ = pos_ + count;
-            count_ += count;
-            return true;
-        }
-        count_ += size;
-        if (++first_ == last_)
-            return false;
-        count -= size;
-        pos_ = *first_;
-    }
-    return true;
-}
-
-//------------------------------------------------------------------------------
 
 namespace detail {
 
@@ -203,36 +134,6 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
         result.first = size;
 
     return result;
-}
-
-//------------------------------------------------------------------------------
-
-/** Returns the name of a protocol message given its type. */
-inline
-std::string
-protocolMessageName (int type)
-{
-    switch (type)
-    {
-    case protocol::mtHELLO:             return "hello";
-    case protocol::mtPING:              return "ping";
-    case protocol::mtPROOFOFWORK:       return "proof_of_work";
-    case protocol::mtCLUSTER:           return "cluster";
-    case protocol::mtGET_PEERS:         return "get_peers";
-    case protocol::mtPEERS:             return "peers";
-    case protocol::mtENDPOINTS:         return "endpoints";
-    case protocol::mtTRANSACTION:       return "tx";
-    case protocol::mtGET_LEDGER:        return "get_ledger";
-    case protocol::mtLEDGER_DATA:       return "ledger_data";
-    case protocol::mtPROPOSE_LEDGER:    return "propose";
-    case protocol::mtSTATUS_CHANGE:     return "status";
-    case protocol::mtHAVE_SET:          return "have_set";
-    case protocol::mtVALIDATION:        return "validation";
-    case protocol::mtGET_OBJECTS:       return "get_objects";
-    default:
-        break;
-    };
-    return "unknown";
 }
 
 } // ripple

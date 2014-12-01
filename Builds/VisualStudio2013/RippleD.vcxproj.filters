@@ -3540,6 +3540,9 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\ZeroCopyStream.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\make_Overlay.h">
       <Filter>ripple\overlay</Filter>
     </ClInclude>
