@@ -44,10 +44,6 @@
 #define BEAST_DISABLE_CONTRACT_CHECKS 0
 #endif
 
-#ifndef BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
-#define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 0
-#endif
-
 //------------------------------------------------------------------------------
 
 #ifndef BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
