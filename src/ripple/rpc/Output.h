@@ -20,15 +20,20 @@
 #ifndef RIPPLED_RIPPLE_BASICS_TYPES_OUTPUT_H
 #define RIPPLED_RIPPLE_BASICS_TYPES_OUTPUT_H
 
+#include <boost/utility/string_ref.hpp>
+
 namespace ripple {
+namespace RPC {
 
-class Output
+using Output = std::function <void (boost::string_ref const&)>;
+
+inline
+Output stringOutput (std::string& s)
 {
-public:
-    virtual void output (char const* data, size_t length) = 0;
-    virtual ~Output() = default;
-};
+    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
+}
 
+} // RPC
 } // ripple
 
 #endif
