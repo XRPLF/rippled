@@ -54,7 +54,7 @@ Json::Value doConnect (RPC::Context& context)
     if (! is_unspecified (ip))
         getApp().overlay ().connect (ip.at_port(iPort));
 
-    return "connecting";
+    return RPC::makeObjectValue ("connecting");
 }
 
 } // ripple

@@ -46,6 +46,16 @@ struct Handler
 
 const Handler* getHandler(std::string name);
 
+/** Return a Json::objectValue with a single entry. */
+template <class Value>
+Json::Value makeObjectValue (
+    Value const& value, Json::StaticString const& field = jss::message)
+{
+    Json::Value result (Json::objectValue);
+    result[field] = value;
+    return result;
+}
+
 } // RPC
 } // ripple
 

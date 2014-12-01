@@ -100,6 +100,8 @@ public:
 
 } // namespace RPCDetail
 
+
+/** Returns a Json::objectValue. */
 Json::Value transactionSign (
     Json::Value params,
     bool bSubmit,

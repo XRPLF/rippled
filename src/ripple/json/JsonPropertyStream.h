@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-/** A PropertyStream::Sink which produces a Json::Value. */
+/** A PropertyStream::Sink which produces a Json::Value of type objectValue. */
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
@@ -65,4 +65,3 @@ protected:
 }
 
 #endif
-

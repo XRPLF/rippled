@@ -36,12 +36,12 @@ Json::Value doUnlDelete (RPC::Context& context)
     if (raNodePublic.setNodePublic (strNode))
     {
         getApp().getUNL ().nodeRemovePublic (raNodePublic);
-        return "removing node by public key";
+        return RPC::makeObjectValue ("removing node by public key");
     }
     else
     {
         getApp().getUNL ().nodeRemoveDomain (strNode);
-        return "removing node by domain";
+        return RPC::makeObjectValue ("removing node by domain");
     }
 }
 

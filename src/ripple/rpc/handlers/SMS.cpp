@@ -29,7 +29,7 @@ Json::Value doSMS (RPC::Context& context)
     HTTPClient::sendSMS (
         getApp().getIOService (), context.params["text"].asString ());
 
-    return "sms dispatched";
+    return RPC::makeObjectValue ("sms dispatched");
 }
 
 } // ripple
