@@ -31,7 +31,7 @@ public:
     void testTrivial ()
     {
         setup ("trivial");
-        expect (output_.data.empty ());
+        expect (output_.empty ());
         writer_->output (0);
         expectResult("0");
     }

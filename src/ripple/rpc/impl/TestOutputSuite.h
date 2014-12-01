@@ -20,6 +20,7 @@
 #ifndef RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
 #define RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
 
+#include <ripple/rpc/Output.h>
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <beast/unit_test/suite.h>
 
@@ -27,36 +28,32 @@ namespace ripple {
 namespace RPC {
 namespace New {
 
-struct TestOutput : public Output
-{
-    void output (char const* s, size_t length) override
-    {
-        data.append (s, length);
-    }
-
-    std::string data;
-};
-
-
 class TestOutputSuite : public beast::unit_test::suite
 {
 protected:
-    TestOutput output_;
+    std::string output_;
+
     std::unique_ptr <Writer> writer_;
 
     void setup (std::string const& testName)
     {
         testcase (testName);
-        output_.data.clear ();
-        writer_ = std::make_unique <Writer> (output_);
+        output_.clear ();
+        writer_ = std::make_unique <Writer> (stringOutput (output_));
     }
 
     // Test the result and report values.
     void expectResult (std::string const& expected)
     {
-        expect (output_.data == expected,
-                "\nresult:   " + output_.data +
-                "\nexpected: " + expected);
+        expectResult (output_, expected);
+    }
+
+    // Test the result and report values.
+    void expectResult (std::string const& result, std::string const& expected)
+    {
+        expect (result == expected,
+                "\n" "result:   '" + result + "'" +
+                "\n" "expected: '" + expected + "'");
     }
 };
 
