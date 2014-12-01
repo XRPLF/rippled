@@ -20,6 +20,7 @@
 #ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_UNIQUENODELIST_H_INCLUDED
 
+#include <ripple/app/peers/ClusterNodeStatus.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
 #include <boost/filesystem.hpp>
