@@ -101,6 +101,7 @@ public:
     void filterNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
                              std::set<SHAMapNodeID>& recentNodes, int max, bool aggressive);
 
+    /** Return a Json::objectValue. */
     Json::Value getJson (int);
     void runData ();
 

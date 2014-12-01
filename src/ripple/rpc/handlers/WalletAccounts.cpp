@@ -60,18 +60,14 @@ Json::Value doWalletAccounts (RPC::Context& context)
         if (!ret.empty ())
             return ret;
 
-        ret["accounts"]
+        ret[jss::accounts]
                 = RPC::accounts (ledger, naMasterGenerator, context.netOps);
         return ret;
     }
     else
     {
         // Had accounts via seed as master, return them.
-        Json::Value ret (Json::objectValue);
-
-        ret["accounts"] = jsonAccounts;
-
-        return ret;
+        return RPC::makeObjectValue (jsonAccounts, jss::accounts);
     }
 }
 

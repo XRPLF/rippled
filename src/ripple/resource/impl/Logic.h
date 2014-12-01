@@ -239,6 +239,7 @@ public:
         return getJson (warningThreshold);
     }
 
+    /** Returns a Json::objectValue. */
     Json::Value getJson (int threshold)
     {
         clock_type::time_point const now (m_clock.now());

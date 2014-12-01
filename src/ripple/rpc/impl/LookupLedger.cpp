@@ -40,6 +40,11 @@ static const int LEDGER_VALIDATED = -3;
 //
 // In the absence of the "ledger_hash" or "ledger_index" parameters, the code
 // assumes that "ledger_index" has the value "current".
+//
+// Returns a Json::objectValue.  If there was an error, it will be in that
+// return value.  Otherwise, the object contains the field "validated" and
+// optionally the fields "ledger_hash", "ledger_index" and
+// "ledger_current_index", if they are defined.
 Json::Value lookupLedger (
     Json::Value const& params,
     Ledger::pointer& ledger,

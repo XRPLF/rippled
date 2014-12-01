@@ -68,7 +68,7 @@ Json::Value doAccountInfo (RPC::Context& context)
     else
     {
         result["account"] = naAccount.humanAccountID ();
-        result            = rpcError (rpcACT_NOT_FOUND, result);
+        RPC::inject_error (rpcACT_NOT_FOUND, result);
     }
 
     return result;

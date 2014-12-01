@@ -31,7 +31,7 @@ Json::Value doUnlLoad (RPC::Context& context)
         return rpcError (rpcLOAD_FAILED);
     }
 
-    return "loading";
+    return RPC::makeObjectValue ("loading");
 }
 
 } // ripple

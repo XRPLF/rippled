@@ -34,6 +34,7 @@ namespace jss {
 //        TODO Move the string not part of the JSON-RPC API into another file
 JSS ( accepted );
 JSS ( account );
+JSS ( accounts );
 JSS ( account_hash );
 JSS ( account_index );
 JSS ( accountState );

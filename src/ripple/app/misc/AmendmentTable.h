@@ -144,6 +144,8 @@ public:
     virtual void reportValidations (const AmendmentSet&) = 0;
 
     virtual Json::Value getJson (int) = 0;
+
+    /** Returns a Json::objectValue. */
     virtual Json::Value getJson (uint256 const& ) = 0;
 
     virtual void

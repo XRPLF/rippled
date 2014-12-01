@@ -25,7 +25,7 @@ Json::Value doStop (RPC::Context& context)
     auto lock = getApp().masterLock();
     getApp().signalStop ();
 
-    return SYSTEM_NAME " server stopping";
+    return RPC::makeObjectValue (SYSTEM_NAME " server stopping");
 }
 
 } // ripple

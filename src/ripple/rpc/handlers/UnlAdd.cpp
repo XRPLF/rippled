@@ -39,13 +39,13 @@ Json::Value doUnlAdd (RPC::Context& context)
     {
         getApp().getUNL ().nodeAddPublic (
             raNodePublic, UniqueNodeList::vsManual, strComment);
-        return "adding node by public key";
+        return RPC::makeObjectValue ("adding node by public key");
     }
     else
     {
         getApp().getUNL ().nodeAddDomain (
             strNode, UniqueNodeList::vsManual, strComment);
-        return "adding node by domain";
+        return RPC::makeObjectValue ("adding node by domain");
     }
 }
 
