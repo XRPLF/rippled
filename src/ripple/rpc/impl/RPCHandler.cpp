@@ -140,7 +140,9 @@ Json::Value RPCHandler::doCommand (
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
             jtGENERIC, "cmd:" + strCommand);
         RPC::Context context {params, loadType, netOps_, infoSub_, role_};
-        return handler->method_(context);
+        auto result = handler->method_(context);
+        assert (result.isObject());
+        return result;
     }
     catch (std::exception& e)
     {
