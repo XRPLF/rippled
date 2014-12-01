@@ -72,6 +72,7 @@ public:
 private:
     // Unchecked conversion of unsigned to hex string
     template<class OutIter, class Unsigned>
+    static
     std::enable_if_t<std::is_unsigned<Unsigned>::value, OutIter>
     to_hex(OutIter const first, OutIter const last, Unsigned n);
 };
