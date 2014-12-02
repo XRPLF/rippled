@@ -26,13 +26,11 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class TestOutputSuite : public beast::unit_test::suite
 {
 protected:
     std::string output_;
-
     std::unique_ptr <Writer> writer_;
 
     void setup (std::string const& testName)
@@ -46,6 +44,7 @@ protected:
     void expectResult (std::string const& expected)
     {
         writer_.reset ();
+
         expectEquals (output_, expected);
     }
 
@@ -58,7 +57,6 @@ protected:
     }
 };
 
-} // New
 } // RPC
 } // ripple
 

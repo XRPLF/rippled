@@ -2810,6 +2810,8 @@
     </ClInclude>
     <None Include="..\..\src\ripple\resource\README.md">
     </None>
+    <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\ErrorCodes.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrencies.cpp">
@@ -3006,6 +3008,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Context.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\ErrorCodes.cpp">
@@ -3026,7 +3034,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\JsonObject.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonObject_test.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonObject.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\JsonWriter.cpp">
@@ -3034,7 +3042,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\JsonWriter.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonWriter_test.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonWriter.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
@@ -3061,7 +3069,7 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Status_test.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Status.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\TestOutputSuite.h">
@@ -3073,10 +3081,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\impl\WriteJson.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield_test.cpp">
+    <ClInclude Include="..\..\src\ripple\rpc\impl\WriteJson.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\WriteJson.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
