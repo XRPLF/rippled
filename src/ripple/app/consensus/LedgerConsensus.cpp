@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
@@ -38,7 +39,6 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/UintTypes.h>
-
 
 namespace ripple {
 
@@ -559,7 +559,7 @@ public:
             WriteLog (lsWARNING, LedgerConsensus) << mPrevLedgerHash
                 << " to " << netLgr;
             WriteLog (lsWARNING, LedgerConsensus)
-                << mPreviousLedger->getJson (0);
+                << ripple::getJson (*mPreviousLedger, 0);
 
             if (ShouldLog (lsDEBUG, LedgerConsensus))
             {
