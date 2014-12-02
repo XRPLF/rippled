@@ -25,7 +25,6 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 /** Status represents the results of an operation that might fail.
 
@@ -114,7 +113,6 @@ private:
     Strings messages_;
 };
 
-} // namespace New
 } // namespace RPC
 } // ripple
 

@@ -22,7 +22,6 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class codeString_test : public beast::unit_test::suite
 {
@@ -209,6 +208,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE (fillJson, Status, RPC);
 
-} // namespace New
 } // namespace RPC
 } // ripple

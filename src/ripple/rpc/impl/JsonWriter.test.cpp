@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_writer.h>
+
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <ripple/rpc/impl/TestOutputSuite.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class JsonWriter_test : public TestOutputSuite
 {
@@ -31,6 +32,13 @@ public:
     void testTrivial ()
     {
         setup ("trivial");
+        expect (output_.empty ());
+        expectResult("");
+    }
+
+    void testNearTrivial ()
+    {
+        setup ("near trivial");
         expect (output_.empty ());
         writer_->output (0);
         expectResult("0");
@@ -49,6 +57,10 @@ public:
         setup ("23");
         writer_->output (23);
         expectResult ("23");
+
+        setup ("23.0");
+        writer_->output (23.0);
+        expectResult ("23.0");
 
         setup ("23.5");
         writer_->output (23.5);
@@ -161,9 +173,22 @@ public:
                       "\"subarray\":[23.5]}]]}");
     }
 
+    void testJson ()
+    {
+        setup ("object");
+        Json::Value value (Json::objectValue);
+        value["foo"] = 23;
+        writer_->startRoot (Writer::object);
+        writer_->set ("hello", value);
+        writer_->finish ();
+
+        expectResult ("{\"hello\":{\"foo\":23}}");
+    }
+
     void run () override
     {
         testTrivial ();
+        testNearTrivial ();
         testPrimitives ();
         testEmpty ();
         testEscaping ();
@@ -172,11 +197,11 @@ public:
         testEmbeddedArraySimple ();
         testObject ();
         testComplexObject ();
+        testJson();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(JsonWriter, ripple_basics, ripple);
 
-} // New
 } // RPC
 } // ripple

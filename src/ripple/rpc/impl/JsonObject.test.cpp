@@ -23,17 +23,37 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 class JsonObject_test : public TestOutputSuite
 {
+    void setup (std::string const& testName)
+    {
+        testcase (testName);
+        output_.clear ();
+    }
+
+    std::unique_ptr<WriterObject> writerObject_;
+
+    Object& makeRoot()
+    {
+        writerObject_ = std::make_unique<WriterObject> (
+            stringWriterObject (output_));
+        return **writerObject_;
+    }
+
+    void expectResult (std::string const& expected)
+    {
+        writerObject_.reset();
+        TestOutputSuite::expectResult (expected);
+    }
+
 public:
     void testTrivial ()
     {
         setup ("trivial");
 
         {
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             (void) root;
         }
         expectResult ("{}");
@@ -43,7 +63,7 @@ public:
     {
         setup ("simple");
         {
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             root["hello"] = "world";
             root["skidoo"] = 23;
             root["awake"] = false;
@@ -60,7 +80,7 @@ public:
     void testSimpleShort ()
     {
         setup ("simpleShort");
-        Object::Root (*writer_)
+        makeRoot()
                 .set ("hello", "world")
                 .set ("skidoo", 23)
                 .set ("awake", false)
@@ -77,7 +97,7 @@ public:
     {
         setup ("oneSub");
         {
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             root.makeArray ("ar");
         }
         expectResult ("{\"ar\":[]}");
@@ -87,7 +107,7 @@ public:
     {
         setup ("subs");
         {
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
 
             {
                 // Add an array with three entries.
@@ -122,7 +142,7 @@ public:
         setup ("subsShort");
 
         {
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
 
             // Add an array with three entries.
             root.makeArray ("ar")
@@ -163,19 +183,19 @@ public:
     {
         {
             setup ("object failure assign");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto obj = root.makeObject ("o1");
             expectException ([&]() { root["fail"] = "complete"; });
         }
         {
             setup ("object failure object");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto obj = root.makeObject ("o1");
             expectException ([&] () { root.makeObject ("o2"); });
         }
         {
             setup ("object failure Array");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto obj = root.makeArray ("o1");
             expectException ([&] () { root.makeArray ("o2"); });
         }
@@ -185,7 +205,7 @@ public:
     {
         {
             setup ("array failure append");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto array = root.makeArray ("array");
             auto subarray = array.makeArray ();
             auto fail = [&]() { array.append ("fail"); };
@@ -193,7 +213,7 @@ public:
         }
         {
             setup ("array failure makeArray");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto array = root.makeArray ("array");
             auto subarray = array.makeArray ();
             auto fail = [&]() { array.makeArray (); };
@@ -201,7 +221,7 @@ public:
         }
         {
             setup ("array failure makeObject");
-            Object::Root root (*writer_);
+            auto& root = makeRoot();
             auto array = root.makeArray ("array");
             auto subarray = array.makeArray ();
             auto fail = [&]() { array.makeObject (); };
@@ -213,7 +233,7 @@ public:
     {
 #ifdef DEBUG
         setup ("repeating keys");
-        Object::Root root(*writer_);
+        auto& root = makeRoot();
         root.set ("foo", "bar")
             .set ("baz", 0);
         auto fail = [&]() { root.set ("foo", "bar"); };
@@ -223,6 +243,7 @@ public:
 
     void run () override
     {
+        testTrivial ();
         testSimple ();
         testSimpleShort ();
 
@@ -238,6 +259,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JsonObject, ripple_basics, ripple);
 
-} // New
 } // RPC
 } // ripple

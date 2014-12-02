@@ -17,59 +17,27 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/Status.h>
+#ifndef RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
+#define RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
 
 namespace ripple {
 namespace RPC {
 
-std::string Status::codeString () const
-{
-    if (!*this)
-        return "";
+/** Writes a minimal representation of a Json value to an Output in O(n) time.
 
-    if (type_ == Type::none)
-        return std::to_string (code_);
+    Data is streamed right to the output, so only a marginal amount of memory is
+    used.  This can be very important for a very large Json::Value.
+ */
+void writeJson (Json::Value const&, Output const&);
 
-    if (type_ == Status::Type::TER)
-    {
-        std::string s1, s2;
+/** Return the minimal string representation of a Json::Value in O(n) time.
 
-        auto success = transResultInfo (toTER (), s1, s2);
-        assert (success);
-        (void) success;
+    This requires a memory allocation for the full size of the output.
+    If possible, use write().
+ */
+std::string jsonAsString (Json::Value const&);
 
-        return s1 + ": " + s2;
-    }
-
-    if (type_ == Status::Type::error_code_i)
-    {
-        auto info = get_error_info (toErrorCode ());
-        return info.token +  ": " + info.message;
-    }
-
-    assert (false);
-    return "";
-}
-
-void Status::fillJson (Json::Value& value)
-{
-    static const std::string separator = ": ";
-
-    if (!*this)
-        return;
-
-    auto& error = value[jss::error];
-    error[jss::code] = code_;
-    error[jss::message] = codeString ();
-
-    // Are there any more messages?
-    if (!messages_.empty ())
-    {
-        auto& messages = error[jss::data];
-        for (auto& i: messages_)
-            messages.append (i);
-    }
-}
-
-} // namespace RPC
+} // RPC
 } // ripple
+
+#endif

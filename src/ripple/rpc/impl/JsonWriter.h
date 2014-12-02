@@ -22,10 +22,10 @@
 
 #include <ripple/basics/ToString.h>
 #include <ripple/rpc/Output.h>
+#include <ripple/rpc/ErrorCodes.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 /**
  *  Writer implements an O(1)-space, O(1)-granular output JSON writer.
@@ -127,13 +127,13 @@ class Writer
 public:
     enum CollectionType {array, object};
 
-    explicit Writer (Output output);
+    explicit Writer (Output const& output);
     Writer(Writer&&);
     Writer& operator=(Writer&&);
 
     ~Writer();
 
-    /** Start a new collection at the root level.  May only be called once. */
+    /** Start a new collection at the root level. */
     void startRoot (CollectionType);
 
     /** Start a new collection inside an array. */
@@ -152,10 +152,18 @@ public:
     /** Append a value to an array.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
-     *  literal, or nullptr.
+     *  literal, nullptr or Json::Value
      */
     template <typename Scalar>
-    void append (Scalar);
+    void append (Scalar t)
+    {
+        rawAppend();
+        output (t);
+    }
+
+    /** Add a comma before this next item if not the first item in an array.
+        Useful if you are writing the actual array yourself. */
+    void rawAppend();
 
     /** Add a key, value assignment to an object.
      *
@@ -168,8 +176,16 @@ public:
      *  If CHECK_JSON_WRITER is defined, this function throws an exception if if
      *  the tag you use has already been used in this object.
      */
-    template <typename Scalar>
-    void set (std::string const& key, Scalar value);
+    template <typename Type>
+    void set (std::string const& tag, Type t)
+    {
+        rawSet (tag);
+        output (t);
+    }
+
+    /** Emit just "tag": as part of an object.  Useful if you are writing the
+        actual value data yourself. */
+    void rawSet (std::string const& key);
 
     // You won't need to call anything below here until you are writing single
     // items (numbers, strings, bools, null) to a JSON stream.
@@ -180,13 +196,32 @@ public:
     /*** Output a literal constant or C string. */
     void output (char const*);
 
+    /*** Output a literal constant or C string. */
+    void output (Json::Value const&);
+
     /** Output numbers, booleans, or nullptr. */
-    template <typename Scalar>
-    void output (Scalar t);
+    template <typename Type>
+    void output (Type t)
+    {
+        implOutput (to_string (t));
+    }
+
+    /** Output an error code. */
+    void output (error_code_i t)
+    {
+        output (int(t));
+    }
+
+    void output (Json::StaticString const& t)
+    {
+        output (t.c_str());
+    }
 
 private:
     class Impl;
     std::unique_ptr <Impl> impl_;
+
+    void implOutput (std::string const&);
 };
 
 class JsonException : public std::exception
@@ -208,7 +243,6 @@ inline void check (bool condition, std::string const& message)
         throw JsonException (message);
 }
 
-} // New
 } // RPC
 } // ripple
 
