@@ -32,7 +32,7 @@ char charHex (int iDigit)
     return 0;
 }
 
-int charUnHex (char cDigit)
+int charUnHex (unsigned char c)
 {
     struct HexTab
     {
@@ -49,15 +49,15 @@ int charUnHex (char cDigit)
                 hex ['a'+i] = 10 + i;
             }
         }
-        int operator[] (int i) const
+        int operator[] (unsigned char c) const
         {
-           return hex[i];
+            return hex[c];
         }
     };
 
     static HexTab xtab;
 
-    return xtab[cDigit];
+    return xtab[c];
 }
 
 }
