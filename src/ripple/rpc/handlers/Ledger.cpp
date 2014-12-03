@@ -17,77 +17,73 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/rpc/ErrorCodes.h>
+#include <ripple/rpc/handlers/Ledger.h>
+#include <ripple/rpc/impl/JsonObject.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
+namespace RPC {
 
-// ledger [id|index|current|closed] [full]
-// {
-//    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
-//    full: true | false    // optional, defaults to false.
-// }
-Json::Value doLedger (RPC::Context& context)
+LedgerHandler::LedgerHandler (Context& context) : context_ (context)
 {
-    if (!context.params.isMember ("ledger")
-        && !context.params.isMember ("ledger_hash")
-        && !context.params.isMember ("ledger_index"))
+}
+
+Status LedgerHandler::check (Json::Value& error)
+{
+    bool needsLedger = context_.params.isMember (jss::ledger) ||
+            context_.params.isMember (jss::ledger_hash) ||
+            context_.params.isMember (jss::ledger_index);
+    if (!needsLedger)
+        return Status::OK;
+
+    lookupResult_ = RPC::lookupLedger (
+        context_.params, ledger_, context_.netOps);
+
+    if (!ledger_)
     {
-        Json::Value ret (Json::objectValue), current (Json::objectValue),
-                closed (Json::objectValue);
-
-        getApp().getLedgerMaster ().getCurrentLedger ()->addJson (current, 0);
-        getApp().getLedgerMaster ().getClosedLedger ()->addJson (closed, 0);
-
-        ret["open"] = current;
-        ret["closed"] = closed;
-
-        return ret;
+        error = lookupResult_;
+        auto code = error_code_i (error[jss::error_code].asInt());
+        return {code, {error[jss::error_message].asString()}};
     }
 
-    Ledger::pointer     lpLedger;
-    Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.netOps);
-
-    if (!lpLedger)
-        return jvResult;
-
-    bool bFull = context.params.isMember ("full")
-            && context.params["full"].asBool ();
-    bool bTransactions = context.params.isMember ("transactions")
-            && context.params["transactions"].asBool ();
-    bool bAccounts = context.params.isMember ("accounts")
-            && context.params["accounts"].asBool ();
-    bool bExpand = context.params.isMember ("expand")
-            && context.params["expand"].asBool ();
-    int     iOptions        = (bFull ? LEDGER_JSON_FULL : 0)
-                              | (bExpand ? LEDGER_JSON_EXPAND : 0)
-                              | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
-                              | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
+    bool bFull = context_.params.isMember (jss::full)
+            && context_.params[jss::full].asBool ();
+    bool bTransactions = context_.params.isMember (jss::transactions)
+            && context_.params[jss::transactions].asBool ();
+    bool bAccounts = context_.params.isMember (jss::accounts)
+            && context_.params[jss::accounts].asBool ();
+    bool bExpand = context_.params.isMember (jss::expand)
+            && context_.params[jss::expand].asBool ();
+    options_ = (bFull ? LEDGER_JSON_FULL : 0)
+            | (bExpand ? LEDGER_JSON_EXPAND : 0)
+            | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
+            | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
     if (bFull || bAccounts)
     {
-
-        if (context.role != Role::ADMIN)
+        if (context_.role != Role::ADMIN)
         {
             // Until some sane way to get full ledgers has been implemented,
             // disallow retrieving all state nodes.
-            return rpcError (rpcNO_PERMISSION);
+            error = rpcError (rpcNO_PERMISSION);
+            return rpcNO_PERMISSION;
         }
 
         if (getApp().getFeeTrack().isLoadedLocal() &&
-            context.role != Role::ADMIN)
+            context_.role != Role::ADMIN)
         {
-            WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
-            return rpcError(rpcTOO_BUSY);
+            error = rpcError(rpcTOO_BUSY);
+            return rpcTOO_BUSY;
         }
-        context.loadType = Resource::feeHighBurdenRPC;
+        context_.loadType = Resource::feeHighBurdenRPC;
     }
 
-
-    lpLedger->addJson (jvResult, iOptions);
-
-    return jvResult;
+    std::cerr << "!!! LedgerHandler::check FIVE - true\n";
+    return Status::OK;
 }
 
+} // RPC
 } // ripple
