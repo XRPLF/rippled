@@ -43,7 +43,8 @@ Json::Value RPCHandler::doRpcCommand (
     const std::string& strMethod,
     Json::Value const& jvParams,
     Role role,
-    Resource::Charge& loadType)
+    Resource::Charge& loadType,
+    Yield yield)
 {
     WriteLog (lsTRACE, RPCHandler)
         << "doRpcCommand:" << strMethod << ":" << jvParams;
@@ -60,7 +61,7 @@ Json::Value RPCHandler::doRpcCommand (
     // Provide the JSON-RPC method as the field "command" in the request.
     params[jss::command] = strMethod;
 
-    Json::Value jvResult = doCommand (params, role, loadType);
+    Json::Value jvResult = doCommand (params, role, loadType, yield);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
@@ -79,7 +80,8 @@ Json::Value RPCHandler::doRpcCommand (
 Json::Value RPCHandler::doCommand (
     const Json::Value& params,
     Role role,
-    Resource::Charge& loadType)
+    Resource::Charge& loadType,
+    Yield yield)
 {
     if (role != Role::ADMIN)
     {
@@ -139,9 +141,10 @@ Json::Value RPCHandler::doCommand (
     {
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
             jtGENERIC, "cmd:" + strCommand);
-        RPC::Context context {params, loadType, netOps_, infoSub_, role_};
-        auto result = handler->method_(context);
-        assert (result.isObject());
+        RPC::Context context {
+            params, loadType, netOps_, infoSub_, role_, yield};
+        Json::Value result (Json::objectValue);
+        handler->valueMethod_ (context, result);
         return result;
     }
     catch (std::exception& e)
