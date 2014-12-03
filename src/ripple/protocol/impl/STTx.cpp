@@ -181,10 +181,15 @@ bool STTx::checkSign () const
     {
         try
         {
+            ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
+                ? ECDSA::strict
+                : ECDSA::not_strict;
+
             RippleAddress n;
             n.setAccountPublic (getFieldVL (sfSigningPubKey));
 
-            sig_state_ = checkSign (n);
+            sig_state_ = n.accountPublicVerify (getSigningHash (),
+                getFieldVL (sfTxnSignature), fullyCanonical);
         }
         catch (...)
         {
@@ -195,23 +200,6 @@ bool STTx::checkSign () const
     assert (!boost::indeterminate (sig_state_));
 
     return static_cast<bool> (sig_state_);
-}
-
-bool STTx::checkSign (RippleAddress const& public_key) const
-{
-    try
-    {
-        ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
-            ? ECDSA::strict
-            : ECDSA::not_strict;
-
-        return public_key.accountPublicVerify (getSigningHash (),
-            getFieldVL (sfTxnSignature), fullyCanonical);
-    }
-    catch (...)
-    {
-        return false;
-    }
 }
 
 void STTx::setSigningPubKey (RippleAddress const& naSignPubKey)

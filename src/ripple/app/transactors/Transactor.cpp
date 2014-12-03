@@ -251,7 +251,7 @@ TER Transactor::preCheck ()
     if (!mTxn.isKnownGood ())
     {
         if (mTxn.isKnownBad () ||
-            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
+            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign()))
         {
             mTxn.setBad ();
             m_journal.warning << "apply: Invalid transaction (bad signature)";
