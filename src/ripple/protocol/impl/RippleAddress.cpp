@@ -443,7 +443,7 @@ RippleAddress RippleAddress::createAccountPublic (
 {
     RippleAddress   naNew;
 
-    naNew.setAccountPublic (getPublicKey (GeneratePublicDeterministicKey (generator.getGenerator(), iSeq)));
+    naNew.setAccountPublic (generator, iSeq);
 
     return naNew;
 }
@@ -541,21 +541,6 @@ uint256 RippleAddress::getAccountPrivate () const
 
     case VER_ACCOUNT_PRIVATE:
         return uint256 (vchData);
-
-    default:
-        throw std::runtime_error ("bad source: " + std::to_string(nVersion));
-    }
-}
-
-std::string RippleAddress::humanAccountPrivate () const
-{
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - humanAccountPrivate");
-
-    case VER_ACCOUNT_PRIVATE:
-        return ToString ();
 
     default:
         throw std::runtime_error ("bad source: " + std::to_string(nVersion));
@@ -713,13 +698,6 @@ std::string RippleAddress::humanGenerator () const
     default:
         throw std::runtime_error ("bad source: " + std::to_string(nVersion));
     }
-}
-
-bool RippleAddress::setGenerator (std::string const& strGenerator)
-{
-    mIsValid = SetString (
-        strGenerator, VER_FAMILY_GENERATOR, Base58::getRippleAlphabet ());
-    return mIsValid;
 }
 
 void RippleAddress::setGenerator (Blob const& vPublic)
@@ -929,7 +907,6 @@ public:
 
         expect (naAccountPublic0.humanAccountID () == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID ());
         expect (naAccountPublic0.humanAccountPublic () == "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw", naAccountPublic0.humanAccountPublic ());
-        expect (naAccountPrivate0.humanAccountPrivate () == "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate ());
 
         // Create account #1 public/private key pair.
         RippleAddress   naAccountPublic1    = RippleAddress::createAccountPublic (generator, 1);
@@ -937,7 +914,6 @@ public:
 
         expect (naAccountPublic1.humanAccountID () == "r4bYF7SLUMD7QgSLLpgJx38WJSY12ViRjP", naAccountPublic1.humanAccountID ());
         expect (naAccountPublic1.humanAccountPublic () == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPrw", naAccountPublic1.humanAccountPublic ());
-        expect (naAccountPrivate1.humanAccountPrivate () == "p9JEm822LMrzJii1k7TvdphfENTp6G5jr253Xa5rkzUWVr8ogQt", naAccountPrivate1.humanAccountPrivate ());
 
         // Check account signing.
         expect (naAccountPrivate0.accountPrivateSign (uHash, vucTextSig), "Signing failed.");
