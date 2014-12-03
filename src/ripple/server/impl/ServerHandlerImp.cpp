@@ -194,8 +194,7 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     RPC::Coroutine::YieldFunction yieldFunction =
         [this, detach] (Yield const& y) { processSession (detach, y); };
-    RPC::Coroutine coroutine (yieldFunction);
-    runCoroutine (std::move(coroutine), m_jobQueue);
+    runCoroutine (RPC::Coroutine (yieldFunction), m_jobQueue);
 }
 
 void
@@ -317,13 +316,22 @@ ServerHandlerImp::processRequest (
     // Parse params
     Json::Value params = jsonRPC ["params"];
 
-    if (params.isNull ())
-        params = Json::Value (Json::arrayValue);
+    if (params.isNull () || params.empty())
+        params = Json::Value (Json::objectValue);
 
-    else if (!params.isArray ())
+    else if (!params.isArray () || params.size() != 1)
     {
         HTTPReply (400, "params unparseable", output);
         return;
+    }
+    else
+    {
+        params = std::move (params[0u]);
+        if (!params.isObject())
+        {
+            HTTPReply (400, "params unparseable", output);
+            return;
+        }
     }
 
     // VFALCO TODO Shouldn't we handle this earlier?
@@ -337,22 +345,57 @@ ServerHandlerImp::processRequest (
         return;
     }
 
-
-    RPCHandler rpcHandler (m_networkOPs);
     Resource::Charge loadType = Resource::feeReferenceRPC;
 
     m_journal.debug << "Query: " << strMethod << params;
 
-    auto result = rpcHandler.doRpcCommand (
-        strMethod, params, role, loadType, yield);
-    m_journal.debug << "Reply: " << result;
+    // Provide the JSON-RPC method as the field "command" in the request.
+    params[jss::command] = strMethod;
+    WriteLog (lsTRACE, RPCHandler)
+        << "doRpcCommand:" << strMethod << ":" << params;
 
+    RPC::Context context {params, loadType, m_networkOPs, role, nullptr, yield};
+    std::string response;
+
+    if (RPC::streamingRPC)
+    {
+        executeRPC (context, response);
+    }
+    else
+    {
+        Json::Value result;
+        RPC::doCommand (context, result);
+
+        // Always report "status".  On an error report the request as received.
+        if (result.isMember ("error"))
+        {
+            result[jss::status] = jss::error;
+            result[jss::request] = params;
+            WriteLog (lsDEBUG, RPCErr) <<
+                "rpcError: " << result ["error"] <<
+                ": " << result ["error_message"];
+        }
+        else
+        {
+            result[jss::status]  = jss::success;
+        }
+
+        Json::Value reply (Json::objectValue);
+        reply[jss::result] = std::move (result);
+        response = to_string (reply);
+    }
+
+    response += '\n';
     usage.charge (loadType);
 
-    Json::Value reply (Json::objectValue);
-    reply[jss::result] = std::move (result);
-    auto response = to_string (reply);
-    response += '\n';
+    if (m_journal.debug.active())
+    {
+        static const int maxSize = 10000;
+        if (response.size() <= maxSize)
+            m_journal.debug << "Reply: " << response;
+        else
+            m_journal.debug << "Reply: " << response.substr (0, maxSize);
+    }
 
     HTTPReply (200, response, output);
 }

@@ -159,8 +159,6 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     }
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
-    RPCHandler  mRPCHandler (m_netOPs, std::dynamic_pointer_cast<InfoSub> (
-        this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
     Role const role = port_.allow_admin ? adminRole (port_, jvRequest,
@@ -172,8 +170,10 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     }
     else
     {
-        jvResult[jss::result] = mRPCHandler.doCommand (
-            jvRequest, role, loadType);
+        RPC::Context context {
+            jvRequest, loadType, m_netOPs, role,
+            std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ())};
+        RPC::doCommand (context, jvResult[jss::result]);
     }
 
     getConsumer().charge (loadType);

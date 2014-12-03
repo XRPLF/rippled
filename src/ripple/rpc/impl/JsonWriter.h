@@ -21,6 +21,7 @@
 #define RIPPLED_RIPPLE_BASICS_TYPES_JSONWRITER_H
 
 #include <ripple/basics/ToString.h>
+#include <ripple/rpc/ErrorCodes.h>
 #include <ripple/rpc/Output.h>
 #include <ripple/rpc/ErrorCodes.h>
 

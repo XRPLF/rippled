@@ -33,8 +33,8 @@ struct Context
     Json::Value params;
     Resource::Charge& loadType;
     NetworkOPs& netOps;
-    InfoSub::pointer infoSub;
     Role role;
+    InfoSub::pointer infoSub;
     RPC::Yield yield;
 };
 

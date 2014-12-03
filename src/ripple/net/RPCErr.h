@@ -22,8 +22,6 @@
 
 namespace ripple {
 
-Json::Value const& logRPCError (Json::Value const& json);
-
 // VFALCO NOTE these are deprecated
 bool isRpcError (Json::Value jvResult);
 Json::Value rpcError (int iError,

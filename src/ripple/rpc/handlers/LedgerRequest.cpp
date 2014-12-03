@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 
 namespace ripple {
 

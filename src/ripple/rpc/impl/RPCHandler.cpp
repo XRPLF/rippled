@@ -25,137 +25,226 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/Handler.h>
+#include <ripple/rpc/impl/WriteJson.h>
 
 namespace ripple {
+namespace RPC {
 
-RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
-    : netOps_ (netOps)
-    , infoSub_ (infoSub)
+namespace {
+
+/**
+   This code is called from both the HTTP RPC handler and Websockets.
+
+   The form of the Json returned is somewhat different between the two services.
+
+   HTML:
+     Success:
+        {
+           "result" : {
+              "ledger" : {
+                 "accepted" : false,
+                 "transaction_hash" : "..."
+              },
+              "ledger_index" : 10300865,
+              "validated" : false,
+              "status" : "success"  # Status is inside the result.
+           }
+        }
+
+     Failure:
+        {
+           "result" : {
+              "error" : "noNetwork",
+              "error_code" : 16,
+              "error_message" : "Not synced to Ripple network.",
+              "request" : {
+                 "command" : "ledger",
+                 "ledger_index" : 10300865
+              },
+              "status" : "error"
+           }
+        }
+
+   Websocket:
+     Success:
+        {
+           "result" : {
+              "ledger" : {
+                 "accepted" : false,
+                 "transaction_hash" : "..."
+              },
+              "ledger_index" : 10300865,
+              "validated" : false
+           }
+           "type": "response",
+           "status": "success",   # Status is OUTside the result!
+           "id": "client's ID",   # Optional
+           "warning": 3.14        # Optional
+        }
+
+     Failure:
+        {
+          "error" : "noNetwork",
+          "error_code" : 16,
+          "error_message" : "Not synced to Ripple network.",
+          "request" : {
+             "command" : "ledger",
+             "ledger_index" : 10300865
+          },
+          "type": "response",
+          "status" : "error",
+          "id": "client's ID"   # Optional
+        }
+
+ */
+
+error_code_i fillHandler (Context& context,
+                          boost::optional<Handler const&>& result)
 {
-}
-
-// Provide the JSON-RPC "result" value.
-//
-// JSON-RPC provides a method and an array of params. JSON-RPC is used as a
-// transport for a command and a request object. The command is the method. The
-// request object is supplied as the first element of the params.
-Json::Value RPCHandler::doRpcCommand (
-    const std::string& strMethod,
-    Json::Value const& jvParams,
-    Role role,
-    Resource::Charge& loadType,
-    Yield yield)
-{
-    WriteLog (lsTRACE, RPCHandler)
-        << "doRpcCommand:" << strMethod << ":" << jvParams;
-
-    if (!jvParams.isArray () || jvParams.size () > 1)
-        return logRPCError (rpcError (rpcINVALID_PARAMS));
-
-    Json::Value params = jvParams.size () ? jvParams[0u]
-        : Json::Value (Json::objectValue);
-
-    if (!params.isObject ())
-        return logRPCError (rpcError (rpcINVALID_PARAMS));
-
-    // Provide the JSON-RPC method as the field "command" in the request.
-    params[jss::command] = strMethod;
-
-    Json::Value jvResult = doCommand (params, role, loadType, yield);
-
-    // Always report "status".  On an error report the request as received.
-    if (jvResult.isMember ("error"))
-    {
-        jvResult[jss::status] = jss::error;
-        jvResult[jss::request] = params;
-    }
-    else
-    {
-        jvResult[jss::status]  = jss::success;
-    }
-
-    return logRPCError (jvResult);
-}
-
-Json::Value RPCHandler::doCommand (
-    const Json::Value& params,
-    Role role,
-    Resource::Charge& loadType,
-    Yield yield)
-{
-    if (role != Role::ADMIN)
+    if (context.role != Role::ADMIN)
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
-        if (jc > RPC::Tuning::maxJobQueueClients)
+        if (jc > Tuning::maxJobQueueClients)
         {
             WriteLog (lsDEBUG, RPCHandler) << "Too busy for command: " << jc;
-            return rpcError (rpcTOO_BUSY);
+            return rpcTOO_BUSY;
         }
     }
 
-    if (!params.isMember ("command"))
-        return rpcError (rpcCOMMAND_MISSING);
+    if (!context.params.isMember ("command"))
+        return rpcCOMMAND_MISSING;
 
-    std::string strCommand  = params[jss::command].asString ();
+    std::string strCommand  = context.params[jss::command].asString ();
 
     WriteLog (lsTRACE, RPCHandler) << "COMMAND:" << strCommand;
-    WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << params;
+    WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << context.params;
 
-    role_ = role;
-
-    auto handler = RPC::getHandler(strCommand);
+    auto handler = getHandler(strCommand);
 
     if (!handler)
-        return rpcError (rpcUNKNOWN_COMMAND);
+        return rpcUNKNOWN_COMMAND;
 
-    if (handler->role_ == Role::ADMIN && role_ != Role::ADMIN)
-        return rpcError (rpcNO_PERMISSION);
+    if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
+        return rpcNO_PERMISSION;
 
-    if ((handler->condition_ & RPC::NEEDS_NETWORK_CONNECTION) &&
-        (netOps_.getOperatingMode () < NetworkOPs::omSYNCING))
+    if ((handler->condition_ & NEEDS_NETWORK_CONNECTION) &&
+        (context.netOps.getOperatingMode () < NetworkOPs::omSYNCING))
     {
         WriteLog (lsINFO, RPCHandler)
             << "Insufficient network mode for RPC: "
-            << netOps_.strOperatingMode ();
+            << context.netOps.strOperatingMode ();
 
-        return rpcError (rpcNO_NETWORK);
+        return rpcNO_NETWORK;
     }
 
     if (!getConfig ().RUN_STANDALONE
-        && (handler->condition_ & RPC::NEEDS_CURRENT_LEDGER)
+        && (handler->condition_ & NEEDS_CURRENT_LEDGER)
         && (getApp().getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::maxValidatedLedgerAge))
+            Tuning::maxValidatedLedgerAge))
     {
-        return rpcError (rpcNO_CURRENT);
+        return rpcNO_CURRENT;
     }
 
-    if ((handler->condition_ & RPC::NEEDS_CLOSED_LEDGER) &&
-        !netOps_.getClosedLedger ())
+    if ((handler->condition_ & NEEDS_CLOSED_LEDGER) &&
+        !context.netOps.getClosedLedger ())
     {
-        return rpcError (rpcNO_CLOSED);
+        return rpcNO_CLOSED;
     }
 
+    result = *handler;
+    return rpcSUCCESS;
+}
+
+template <class Object, class Method>
+Status callMethod (
+    Context& context, Method method, std::string const& name, Object& result)
+{
     try
     {
-        LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
-            jtGENERIC, "cmd:" + strCommand);
-        RPC::Context context {
-            params, loadType, netOps_, infoSub_, role_, yield};
-        Json::Value result (Json::objectValue);
-        handler->valueMethod_ (context, result);
-        return result;
+        auto v = getApp().getJobQueue().getLoadEventAP(
+            jtGENERIC, "cmd:" + name);
+        return method (context, result);
     }
     catch (std::exception& e)
     {
         WriteLog (lsINFO, RPCHandler) << "Caught throw: " << e.what ();
 
-        if (loadType == Resource::feeReferenceRPC)
-            loadType = Resource::feeExceptionRPC;
+        if (context.loadType == Resource::feeReferenceRPC)
+            context.loadType = Resource::feeExceptionRPC;
 
-        return rpcError (rpcINTERNAL);
+        inject_error (rpcINTERNAL, result);
+        return rpcINTERNAL;
     }
 }
 
+template <class Method, class Object>
+void getResult (
+    Context& context, Method method, Object& object, std::string const& name)
+{
+    auto&& result = addObject (object, jss::result);
+    if (auto status = callMethod (context, method, name, result))
+    {
+        WriteLog (lsDEBUG, RPCErr) << "rpcError: " << status.toString();
+        result[jss::status] = jss::error;
+        result[jss::request] = context.params;
+    }
+    else
+    {
+        result[jss::status] = jss::success;
+    }
+}
+
+} // namespace
+
+Status doCommand (RPC::Context& context, Json::Value& result)
+{
+    boost::optional <Handler const&> handler;
+    if (auto error = fillHandler (context, handler))
+    {
+        inject_error (error, result);
+        return error;
+    }
+
+    if (auto method = handler->valueMethod_)
+        return callMethod (context, method, handler->name_, result);
+
+    return rpcUNKNOWN_COMMAND;
+}
+
+/** Execute an RPC command and store the results in a string. */
+void executeRPC (RPC::Context& context, std::string& output)
+{
+    boost::optional <Handler const&> handler;
+    if (auto error = fillHandler (context, handler))
+    {
+        auto wo = stringWriterObject (output);
+        auto&& sub = addObject (*wo, jss::result);
+        inject_error (error, sub);
+    }
+    else if (auto method = handler->objectMethod_)
+    {
+        auto wo = stringWriterObject (output);
+        getResult (context, method, *wo, handler->name_);
+    }
+    else if (auto method = handler->valueMethod_)
+    {
+        auto object = Json::Value (Json::objectValue);
+        getResult (context, method, object, handler->name_);
+
+        if (streamingRPC)
+            output = jsonAsString (object);
+        else
+            output = to_string (object);
+    }
+    else
+    {
+        // Can't ever get here.
+        assert (false);
+        throw RPC::JsonException ("RPC handler with no method");
+    }
+}
+
+} // RPC
 } // ripple
