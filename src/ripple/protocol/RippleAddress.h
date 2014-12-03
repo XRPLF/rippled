@@ -153,8 +153,6 @@ public:
     //
     uint256 getAccountPrivate () const;
 
-    std::string humanAccountPrivate () const;
-
     bool setAccountPrivate (std::string const& strPrivate);
     void setAccountPrivate (Blob const& vPrivate);
     void setAccountPrivate (uint256 hash256);
@@ -181,11 +179,6 @@ public:
         naNew.setAccountPrivate (vPrivate);
 
         return naNew;
-    }
-
-    static std::string createHumanAccountPrivate (Blob const& vPrivate)
-    {
-        return createAccountPrivate (vPrivate).humanAccountPrivate ();
     }
 
     //
