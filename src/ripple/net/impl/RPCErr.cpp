@@ -34,17 +34,4 @@ bool isRpcError (Json::Value jvResult)
     return jvResult.isObject () && jvResult.isMember ("error");
 }
 
-Json::Value const& logRPCError (Json::Value const& json)
-{
-    if (RPC::contains_error (json))
-    {
-        WriteLog (lsDEBUG, RPCErr) <<
-            "rpcError: " << json ["error"] <<
-            ": " << json ["error_message"];
-    }
-
-    return json;
-}
-
 } // ripple
-

@@ -68,10 +68,12 @@ void startServer ()
             if (!getConfig ().QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
-            RPCHandler  rhHandler (getApp().getOPs ());
-
             Resource::Charge loadType = Resource::feeReferenceRPC;
-            Json::Value jvResult    = rhHandler.doCommand (jvCommand, Role::ADMIN, loadType);
+            RPC::Context context {
+                jvCommand, loadType, getApp().getOPs (), Role::ADMIN};
+
+            Json::Value jvResult;
+            RPC::doCommand (context, jvResult);
 
             if (!getConfig ().QUIET)
                 std::cerr << "Result: " << jvResult << std::endl;
