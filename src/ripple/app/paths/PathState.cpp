@@ -438,6 +438,8 @@ TER PathState::expandPath (
     if ((isXRP (uMaxCurrencyID) && !isXRP (uMaxIssuerID))
         || (isXRP (currencyOutID) && !isXRP (issuerOutID)))
     {
+        WriteLog (lsDEBUG, RippleCalc)
+            << "expandPath> issuer with XRP";
         terStatus   = temBAD_PATH;
     }
 
