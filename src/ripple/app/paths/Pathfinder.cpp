@@ -176,6 +176,7 @@ Pathfinder::Pathfinder (
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
+    assert (isXRP(uSrcCurrency) == isXRP(uSrcIssuer));
 }
 
 Pathfinder::Pathfinder (
@@ -188,7 +189,11 @@ Pathfinder::Pathfinder (
         mDstAccount (uDstAccount),
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
-        mSrcAmount ({uSrcCurrency, uSrcAccount}, 1u, 0, true),
+        mSrcAmount (
+        {
+            uSrcCurrency,
+            isXRP (uSrcCurrency) ? xrpAccount () : uSrcAccount
+        }, 1u, 0, true),
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
