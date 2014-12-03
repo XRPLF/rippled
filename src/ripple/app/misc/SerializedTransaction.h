@@ -111,7 +111,6 @@ public:
     void sign (RippleAddress const& private_key);
 
     bool checkSign () const;
-    bool checkSign (RippleAddress const& public_key) const;
 
     bool isKnownGood () const
     {

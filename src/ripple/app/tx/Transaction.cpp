@@ -69,7 +69,7 @@ Transaction::pointer Transaction::sharedTransaction (
 bool Transaction::checkSign () const
 {
     if (mFromPubKey.isValid ())
-        return mTransaction->checkSign (mFromPubKey);
+        return mTransaction->checkSign();
 
     WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
     return false;
