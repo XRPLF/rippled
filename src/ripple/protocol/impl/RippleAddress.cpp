@@ -375,12 +375,14 @@ std::string RippleAddress::humanAccountID () const
                 else
                     ret = ToString ();
 
-                rncMapNew[vchData] = ret;
-                if (rncMapNew.size () > 128000)
+                if (rncMapNew.size () >= 128000)
                 {
                     rncMapOld = std::move (rncMapNew);
                     rncMapNew.clear ();
+                    rncMapNew.reserve (128000);
                 }
+
+                rncMapNew[vchData] = ret;
             }
         }
 
