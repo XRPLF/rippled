@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/core/SystemParameters.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
 
@@ -118,10 +119,6 @@ bool to_issuer(Account& issuer, std::string const& s)
     if (success)
         issuer = address.getAccountID ();
     return success;
-}
-
-const char* systemCurrencyCode() {
-    return "XRP";
 }
 
 Account const& xrpAccount()

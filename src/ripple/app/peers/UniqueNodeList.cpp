@@ -39,8 +39,6 @@ namespace ripple {
 #define NODE_FETCH_JOBS         10
 #define NODE_FETCH_SECONDS      10
 #define NODE_FILE_BYTES_MAX     (50<<10)    // 50k
-#define NODE_FILE_NAME          SYSTEM_NAME ".txt"
-#define NODE_FILE_PATH          "/" NODE_FILE_NAME
 
 // Wait for validation information to be stable before scoring.
 // #define SCORE_DELAY_SECONDS      20
@@ -118,6 +116,8 @@ public:
         , mFetchActive (0)
         , m_fetchTimer (this)
     {
+        node_file_name_ = std::string (systemName ()) + ".txt";
+        node_file_path_ = "/" + node_file_name_;
     }
 
     //--------------------------------------------------------------------------
@@ -1161,19 +1161,19 @@ private:
 
         if (!bReject)
         {
-            IniFileSections             secSite = parseIniFile (strSiteFile, true);
-            bool                bGood   = !err;
+            IniFileSections secSite = parseIniFile (strSiteFile, true);
+            bool bGood   = !err;
 
             if (bGood)
             {
-                WriteLog (lsTRACE, UniqueNodeList) << boost::format ("Validator: '%s' received " NODE_FILE_NAME ".") % strDomain;
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": retrieved configuration";
             }
             else
             {
-                WriteLog (lsTRACE, UniqueNodeList)
-                        << boost::format ("Validator: '%s' unable to retrieve " NODE_FILE_NAME ": %s")
-                        % strDomain
-                        % err.message ();
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": unable to retrieve configuration: "
+                    <<  err.message ();
             }
 
             //
@@ -1185,19 +1185,17 @@ private:
             {
                 bGood   = false;
 
-                WriteLog (lsTRACE, UniqueNodeList)
-                        << boost::format ("Validator: '%s' bad " NODE_FILE_NAME " missing single entry for " SECTION_DOMAIN ".")
-                        % strDomain;
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": " << SECTION_DOMAIN
+                    << "entry missing.";
             }
 
             if (bGood && strSite != strDomain)
             {
                 bGood   = false;
 
-                WriteLog (lsTRACE, UniqueNodeList)
-                        << boost::format ("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_DOMAIN " does not match: %s")
-                        % strDomain
-                        % strSite;
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": " << SECTION_DOMAIN << " does not match " << strSite;
             }
 
             //
@@ -1210,9 +1208,8 @@ private:
                 // Bad [validation_public_key] IniFileSections.
                 bGood   = false;
 
-                WriteLog (lsTRACE, UniqueNodeList)
-                        << boost::format ("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " does not have single entry.")
-                        % strDomain;
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": " << SECTION_PUBLIC_KEY << " entry missing.";
             }
 
             RippleAddress   naNodePublic;
@@ -1222,16 +1219,13 @@ private:
                 // Bad public key.
                 bGood   = false;
 
-                WriteLog (lsTRACE, UniqueNodeList)
-                        << boost::format ("Validator: '%s' bad " NODE_FILE_NAME " " SECTION_PUBLIC_KEY " is bad: ")
-                        % strDomain
-                        % strNodePublicKey;
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << ": " << SECTION_PUBLIC_KEY << " is not a public key: "
+                    << strNodePublicKey;
             }
 
             if (bGood)
             {
-                // WriteLog (lsTRACE, UniqueNodeList) << boost::format("naNodePublic: '%s'") % naNodePublic.humanNodePublic();
-
                 seedDomain  sdCurrent;
 
                 bool bFound = getSeedDomains (strDomain, sdCurrent);
@@ -1255,12 +1249,14 @@ private:
 
                 if (bChangedB)
                 {
-                    WriteLog (lsTRACE, UniqueNodeList) << boost::format ("Validator: '%s' processing new " NODE_FILE_NAME ".") % strDomain;
+                    WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                        << ": processing new " << node_file_name_ << ".";
                     processFile (strDomain, naNodePublic, secSite);
                 }
                 else
                 {
-                    WriteLog (lsTRACE, UniqueNodeList) << boost::format ("Validator: '%s' no change for " NODE_FILE_NAME ".") % strDomain;
+                    WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                        << ": no change in " << node_file_name_ << ".";
                     fetchFinish ();
                 }
             }
@@ -1361,7 +1357,8 @@ private:
 
                 setSeedDomains (sdCurrent, false);
 
-                WriteLog (lsTRACE, UniqueNodeList) << "Validator: '" << strDomain << "' fetching " NODE_FILE_NAME ".";
+                WriteLog (lsTRACE, UniqueNodeList) << strDomain
+                    << " fetching " << node_file_name_ << ".";
 
                 fetchProcess (strDomain);   // Go get it.
 
@@ -1401,14 +1398,15 @@ private:
     // Get the ripple.txt and process it.
     void fetchProcess (std::string strDomain)
     {
-        WriteLog (lsTRACE, UniqueNodeList) << "Fetching '" NODE_FILE_NAME "' from '" << strDomain << "'.";
+        WriteLog (lsTRACE, UniqueNodeList) << strDomain
+            << ": fetching " << node_file_name_ << ".";
 
         std::deque<std::string> deqSites;
 
         // Order searching from most specifically for purpose to generic.
         // This order allows the client to take the most burden rather than the servers.
-        deqSites.push_back (str (boost::format (SYSTEM_NAME ".%s") % strDomain));
-        deqSites.push_back (str (boost::format ("www.%s") % strDomain));
+        deqSites.push_back (systemName () + strDomain);
+        deqSites.push_back ("www." + strDomain);
         deqSites.push_back (strDomain);
 
         HTTPClient::get (
@@ -1416,7 +1414,7 @@ private:
             getApp().getIOService (),
             deqSites,
             443,
-            NODE_FILE_PATH,
+            node_file_path_,
             NODE_FILE_BYTES_MAX,
             boost::posix_time::seconds (NODE_FETCH_SECONDS),
             std::bind (&UniqueNodeListImp::responseFetch, this, strDomain,
@@ -1734,7 +1732,8 @@ private:
         //
         // Process Validators
         //
-        processValidators (strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, getIniFileSection (secSite, SECTION_VALIDATORS));
+        processValidators (strDomain, node_file_name_, naNodePublic,
+            vsReferral, getIniFileSection (secSite, SECTION_VALIDATORS));
 
         //
         // Process ips
@@ -2047,6 +2046,9 @@ private:
     beast::DeadlineTimer m_fetchTimer;                  // Timer to start fetching.
 
     std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
+
+    std::string node_file_name_;
+    std::string node_file_path_;
 };
 
 //------------------------------------------------------------------------------

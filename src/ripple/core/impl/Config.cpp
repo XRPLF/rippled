@@ -342,9 +342,9 @@ void Config::setup (std::string const& strConf, bool bQuiet)
                 strXdgDataHome  = strHome + "/.local/share";
             }
 
-            CONFIG_DIR  = strXdgConfigHome + "/" SYSTEM_NAME;
+            CONFIG_DIR  = strXdgConfigHome + "/" + systemName ();
             CONFIG_FILE = CONFIG_DIR / strConfFile;
-            DATA_DIR    = strXdgDataHome + "/" SYSTEM_NAME;
+            DATA_DIR    = strXdgDataHome + "/" + systemName ();
 
             boost::filesystem::create_directories (CONFIG_DIR, ec);
 

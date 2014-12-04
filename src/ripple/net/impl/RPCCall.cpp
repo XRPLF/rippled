@@ -61,7 +61,7 @@ std::string createHTTPPost (
     s << "POST "
       << (strPath.empty () ? "/" : strPath)
       << " HTTP/1.0\r\n"
-      << "User-Agent: " SYSTEM_NAME "-json-rpc/v1\r\n"
+      << "User-Agent: " << systemName () << "-json-rpc/v1\r\n"
       << "Host: " << strHost << "\r\n"
       << "Content-Type: application/json\r\n"
       << "Content-Length: " << strMsg.size () << "\r\n"
