@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
 #include <boost/regex.hpp>
 #include <iostream>
+#include <type_traits>
 
 namespace ripple {
 
@@ -915,7 +915,7 @@ public:
             {   "unsubscribe",          &RPCParser::parseEvented,               -1, -1  },
         };
 
-        int i = RIPPLE_ARRAYSIZE (commandsA);
+        auto i = std::extent<decltype(commandsA)>::value;
 
         while (i-- && strMethod != commandsA[i].pCommand)
             ;

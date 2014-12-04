@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ArraySize.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
+#include <type_traits>
 
 namespace ripple {
 
@@ -180,18 +180,18 @@ bool ProofOfWork::calcResultInfo (PowResult powCode, std::string& strToken, std:
         {   powOK,                  "powOK",                    "Valid proof-of-work."                                  },
     };
 
-    int iIndex  = RIPPLE_ARRAYSIZE (powResultInfoA);
+    auto index = std::extent<decltype(powResultInfoA)>::value;
 
-    while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
+    while (index-- && powResultInfoA[index].powCode != powCode)
         ;
 
-    if (iIndex >= 0)
+    if (index >= 0)
     {
-        strToken    = powResultInfoA[iIndex].cpToken;
-        strHuman    = powResultInfoA[iIndex].cpHuman;
+        strToken    = powResultInfoA[index].cpToken;
+        strHuman    = powResultInfoA[index].cpHuman;
     }
 
-    return iIndex >= 0;
+    return index >= 0;
 }
 
 } // ripple

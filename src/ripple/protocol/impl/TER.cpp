@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ArraySize.h>
 #include <ripple/protocol/TER.h>
 
 namespace ripple {
@@ -127,18 +126,18 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tesSUCCESS,             "tesSUCCESS",               "The transaction was applied. Only final in a validated ledger."        },
     };
 
-    int iIndex = RIPPLE_ARRAYSIZE (transResultInfoA);
+    auto index = std::extent<decltype(transResultInfoA)>::value;
 
-    while (iIndex-- && transResultInfoA[iIndex].terCode != terCode)
+    while (index-- && transResultInfoA[index].terCode != terCode)
         ;
 
-    if (iIndex >= 0)
+    if (index >= 0)
     {
-        strToken    = transResultInfoA[iIndex].cpToken;
-        strHuman    = transResultInfoA[iIndex].cpHuman;
+        strToken    = transResultInfoA[index].cpToken;
+        strHuman    = transResultInfoA[index].cpHuman;
     }
 
-    return iIndex >= 0;
+    return index >= 0;
 }
 
 std::string transToken (TER terCode)
