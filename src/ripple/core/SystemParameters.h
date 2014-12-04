@@ -20,50 +20,47 @@
 #ifndef RIPPLE_CORE_SYSTEMPARAMETERS_H_INCLUDED
 #define RIPPLE_CORE_SYSTEMPARAMETERS_H_INCLUDED
 
+#include <cstdint>
+
 namespace ripple {
 
-/** Protocol specific constant globals. */
-// VFALCO NOTE use these from now on instead of the macros!
-class RippleSystem
+/** Various protocol and system specific constant globals. */
+
+/* The name of the system. */
+static inline
+std::string const&
+systemName ()
 {
-public:
-    static inline char const* getSystemName ()
-    {
-        return "ripple";
-    }
+    static std::string const name = "ripple";
+    return name;
+}
 
-    static char const* getCurrencyCode ()
-    {
-        return "XRP";
-    }
+/** Configure the native currency. */
+static
+std::uint64_t const
+SYSTEM_CURRENCY_GIFT = 1000;
 
-    static char const* getCurrencyCodeRipple ()
-    {
-        return "XRR";
-    }
+static
+std::uint64_t const
+SYSTEM_CURRENCY_USERS = 100000000;
 
-    static int getCurrencyPrecision ()
-    {
-        return 6;
-    }
-};
+static
+std::uint64_t const
+SYSTEM_CURRENCY_PARTS = 1000000;
 
-// VFALCO TODO I would love to replace these macros with the language
-//         constructs above. The problem is the way they are used at
-//         the point of call, i.e. "User-agent:" SYSTEM_NAME
-//         It will be necessary to rewrite some of them to use string streams.
-//
-#define SYSTEM_NAME                 "ripple"
-#define SYSTEM_CURRENCY_PRECISION   6
+/** Calculate the amount of native currency created at genesis. */
+static
+std::uint64_t const
+SYSTEM_CURRENCY_START = SYSTEM_CURRENCY_GIFT * SYSTEM_CURRENCY_USERS * SYSTEM_CURRENCY_PARTS;
 
-// VFALCO TODO Replace with C++11 long long constants
-// VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
-//             or in the Application
-//
-#define SYSTEM_CURRENCY_GIFT        1000ull
-#define SYSTEM_CURRENCY_USERS       100000000ull
-#define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
-#define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
+/* The currency code for the native currency. */
+static inline
+std::string const&
+systemCurrencyCode ()
+{
+    static std::string const code = "XRP";
+    return code;
+}
 
 } // ripple
 

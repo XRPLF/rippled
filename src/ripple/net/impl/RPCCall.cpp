@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
 #include <boost/regex.hpp>
 #include <iostream>
+#include <type_traits>
 
 namespace ripple {
 
@@ -61,7 +61,7 @@ std::string createHTTPPost (
     s << "POST "
       << (strPath.empty () ? "/" : strPath)
       << " HTTP/1.0\r\n"
-      << "User-Agent: " SYSTEM_NAME "-json-rpc/v1\r\n"
+      << "User-Agent: " << systemName () << "-json-rpc/v1\r\n"
       << "Host: " << strHost << "\r\n"
       << "Content-Type: application/json\r\n"
       << "Content-Length: " << strMsg.size () << "\r\n"
@@ -838,17 +838,25 @@ public:
     // <-- { method: xyz, params: [... ] } or { error: ..., ... }
     Json::Value parseCommand (std::string strMethod, Json::Value jvParams, bool allowAnyCommand)
     {
-        WriteLog (lsTRACE, RPCParser) << "RPC method:" << strMethod;
-        WriteLog (lsTRACE, RPCParser) << "RPC params:" << jvParams;
+        if (ShouldLog (lsTRACE, RPCParser))
+        {
+            WriteLog (lsTRACE, RPCParser) << "RPC method:" << strMethod;
+            WriteLog (lsTRACE, RPCParser) << "RPC params:" << jvParams;
+        }
 
         struct Command
         {
-            const char*     pCommand;
-            parseFuncPtr    pfpFunc;
-            int             iMinParams;
-            int             iMaxParams;
+            const char*     name;
+            parseFuncPtr    parse;
+            int             minParams;
+            int             maxParams;
         };
-        static Command commandsA[] =
+
+        // FIXME: replace this with a function-static std::map and the lookup
+        // code with std::map::find when the problem with magic statics on
+        // Visual Studio is fixed.
+        static
+        Command const commands[] =
         {
             // Request-response methods
             // - Returns an error, or the request.
@@ -915,29 +923,33 @@ public:
             {   "unsubscribe",          &RPCParser::parseEvented,               -1, -1  },
         };
 
-        int i = RIPPLE_ARRAYSIZE (commandsA);
+        auto const count = jvParams.size ();
 
-        while (i-- && strMethod != commandsA[i].pCommand)
-            ;
-
-        if (i < 0)
+        for (auto const& command : commands)
         {
-            if (!allowAnyCommand)
-                return rpcError (rpcUNKNOWN_COMMAND);
+            if (strMethod == command.name)
+            {
+                if ((command.minParams >= 0 && count < command.minParams) ||
+                    (command.maxParams >= 0 && count > command.maxParams))
+                {
+                    WriteLog (lsDEBUG, RPCParser) <<
+                        "Wrong number of parameters for " << command.name <<
+                        " minimum=" << command.minParams <<
+                        " maximum=" << command.maxParams <<
+                        " actual=" << count;
 
-            return parseAsIs (jvParams);
+                    return rpcError (rpcBAD_SYNTAX);
+                }
+
+                return (this->* (command.parse)) (jvParams);
+            }
         }
-        else if ((commandsA[i].iMinParams >= 0 && jvParams.size () < commandsA[i].iMinParams)
-                 || (commandsA[i].iMaxParams >= 0 && jvParams.size () > commandsA[i].iMaxParams))
-        {
-            WriteLog (lsWARNING, RPCParser) << "Wrong number of parameters: minimum=" << commandsA[i].iMinParams
-                                            << " maximum=" << commandsA[i].iMaxParams
-                                            << " actual=" << jvParams.size ();
 
-            return rpcError (rpcBAD_SYNTAX);
-        }
+        // The command could not be found
+        if (!allowAnyCommand)
+            return rpcError (rpcUNKNOWN_COMMAND);
 
-        return (this->* (commandsA[i].pfpFunc)) (jvParams);
+        return parseAsIs (jvParams);
     }
 };
 

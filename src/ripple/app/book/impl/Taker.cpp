@@ -92,7 +92,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     }
     else
     {
-        Amount const taker_charge (Amount::saFromRate (taker_charge_rate));
+        Amount const taker_charge (amountFromRate (taker_charge_rate));
         amount = offer.quality ().ceil_in (amount,
             divide (taker_funds, taker_charge));
     }
@@ -116,7 +116,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     }
     else
     {
-        Amount const owner_charge (Amount::saFromRate (owner_charge_rate));
+        Amount const owner_charge (amountFromRate (owner_charge_rate));
         owner_amount = offer.quality ().ceil_out (owner_amount,
             divide (owner_funds, owner_charge));
     }

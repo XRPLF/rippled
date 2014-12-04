@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <beast/unit_test/suite.h>
 

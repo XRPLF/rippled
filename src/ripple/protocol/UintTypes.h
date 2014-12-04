@@ -83,8 +83,6 @@ std::string to_string(Account const&);
 /** Returns "", "XRP", or three letter ISO code. */
 std::string to_string(Currency const& c);
 
-const char* systemCurrencyCode();
-
 /** Tries to convert a string to a Currency, returns true on success. */
 bool to_currency(Currency&, std::string const&);
 

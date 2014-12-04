@@ -852,6 +852,12 @@ void STAmount::set (std::int64_t v)
 //------------------------------------------------------------------------------
 
 STAmount
+amountFromRate (std::uint64_t uRate)
+{
+    return STAmount (noIssue(), uRate, -9, false);
+}
+
+STAmount
 amountFromQuality (std::uint64_t rate)
 {
     if (rate == 0)
@@ -1135,7 +1141,6 @@ operator- (STAmount const& value)
 //
 //------------------------------------------------------------------------------
 
-// NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
 STAmount
 divide (STAmount const& num, STAmount const& den, Issue const& issue)
 {

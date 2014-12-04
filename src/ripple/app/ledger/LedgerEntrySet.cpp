@@ -1276,12 +1276,8 @@ STAmount LedgerEntrySet::rippleTransferFee (
 
         if (QUALITY_ONE != uTransitRate)
         {
-            // NIKB use STAmount::saFromRate
-            STAmount saTransitRate (
-                noIssue(), static_cast<std::uint64_t> (uTransitRate), -9);
-
             STAmount saTransferTotal = multiply (
-                saAmount, saTransitRate, saAmount.issue ());
+                saAmount, amountFromRate (uTransitRate), saAmount.issue ());
             STAmount saTransferFee = saTransferTotal - saAmount;
 
             WriteLog (lsDEBUG, LedgerEntrySet) << "rippleTransferFee:" <<

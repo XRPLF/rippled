@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ArraySize.h>
 #include <ripple/app/node/SqliteFactory.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -44,8 +44,6 @@ static const char* s_nodeStoreDBInit [] =
     "END TRANSACTION;"
 };
 
-static int s_nodeStoreDBCount = RIPPLE_ARRAYSIZE (s_nodeStoreDBInit);
-
 //------------------------------------------------------------------------------
 
 class SqliteBackend : public NodeStore::Backend
@@ -53,8 +51,8 @@ class SqliteBackend : public NodeStore::Backend
 public:
     explicit SqliteBackend (std::string const& path, int hashnode_cache_size)
         : m_name (path)
-        , m_db (new DatabaseCon(setup_DatabaseCon (getConfig()),
-                path, s_nodeStoreDBInit, s_nodeStoreDBCount))
+        , m_db (new DatabaseCon(setup_DatabaseCon (getConfig()), path,
+            s_nodeStoreDBInit, std::extent<decltype(s_nodeStoreDBInit)>::value))
     {
         std::string s ("PRAGMA cache_size=-");
         s += std::to_string (hashnode_cache_size);

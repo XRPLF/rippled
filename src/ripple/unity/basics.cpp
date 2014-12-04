@@ -38,5 +38,3 @@
 #include <ripple/basics/impl/make_SSLContext.cpp>
 #include <ripple/basics/impl/ResolverAsio.cpp>
 #include <ripple/basics/impl/TaggedCache.cpp>
-
-#include <ripple/basics/tests/cross_offer.test.cpp>

@@ -230,7 +230,7 @@ TER RippleCalc::rippleCalculate ()
                     << "rippleCalc: AFTER:"
                     << " mIndex=" << pathState->index()
                     << " uQuality=" << pathState->quality()
-                    << " rate=" << STAmount::saFromRate (pathState->quality());
+                    << " rate=" << amountFromRate (pathState->quality());
 
                 if (!pathState->quality())
                 {
@@ -257,7 +257,7 @@ TER RippleCalc::rippleCalculate ()
                              lsDEBUG, RippleCalc)
                         << "rippleCalc: better:"
                         << " uQuality="
-                        << STAmount::saFromRate (pathState->quality())
+                        << amountFromRate (pathState->quality())
                         << " inPass()=" << pathState->inPass()
                         << " saOutPass=" << pathState->outPass();
 
@@ -278,7 +278,7 @@ TER RippleCalc::rippleCalculate ()
                             << " mIndex=" << pathState->index()
                             << " uQuality=" << pathState->quality()
                             << " rate="
-                            << STAmount::saFromRate (pathState->quality())
+                            << amountFromRate (pathState->quality())
                             << " inPass()=" << pathState->inPass()
                             << " saOutPass=" << pathState->outPass();
 
@@ -306,7 +306,7 @@ TER RippleCalc::rippleCalculate ()
                     << "rippleCalc: "
                     << "Summary: " << pathState->index()
                     << " rate: "
-                    << STAmount::saFromRate (pathState->quality())
+                    << amountFromRate (pathState->quality())
                     << " quality:" << pathState->quality()
                     << " best: " << (iBest == pathState->index ());
             }
@@ -320,7 +320,7 @@ TER RippleCalc::rippleCalculate ()
             WriteLog (lsDEBUG, RippleCalc)
                 << "rippleCalc: best:"
                 << " uQuality="
-                << STAmount::saFromRate (pathState->quality())
+                << amountFromRate (pathState->quality())
                 << " inPass()=" << pathState->inPass()
                 << " saOutPass=" << pathState->outPass();
 

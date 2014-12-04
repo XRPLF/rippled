@@ -84,7 +84,7 @@ void startServer ()
 void printHelp (const po::options_description& desc)
 {
     std::cerr
-        << SYSTEM_NAME "d [options] <command> <params>\n"
+        << systemName () << "d [options] <command> <params>\n"
         << desc << std::endl
         << "Commands: \n"
            "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]\n"

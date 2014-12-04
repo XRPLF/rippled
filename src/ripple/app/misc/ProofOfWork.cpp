@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ArraySize.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
+#include <type_traits>
 
 namespace ripple {
 
@@ -154,8 +154,15 @@ bool ProofOfWork::checkSolution (uint256 const& solution) const
 
 bool ProofOfWork::validateToken (std::string const& strToken)
 {
-    static boost::regex reToken ("[[:xdigit:]]{64}-[[:xdigit:]]{64}-[[:digit:]]+-[[:digit:]]+-[[:xdigit:]]{64}");
-    boost::smatch       smMatch;
+    static boost::regex const reToken (
+        "[[:xdigit:]]{64}-"
+        "[[:xdigit:]]{64}-"
+        "[[:digit:]]+-"
+        "[[:digit:]]+-"
+        "[[:xdigit:]]{64}",
+        boost::regex_constants::optimize);
+
+    boost::smatch smMatch;
 
     return boost::regex_match (strToken, smMatch, reToken);
 }
@@ -164,34 +171,35 @@ bool ProofOfWork::validateToken (std::string const& strToken)
 
 bool ProofOfWork::calcResultInfo (PowResult powCode, std::string& strToken, std::string& strHuman)
 {
-    static struct
+    struct PowResultInfo
     {
-        PowResult       powCode;
-        const char*     cpToken;
-        const char*     cpHuman;
-    } powResultInfoA[] =
-    {
-        {   powREUSED,              "powREUSED",                "Proof-of-work has already been used."                  },
-        {   powBADNONCE,            "powBADNONCE",              "The solution does not meet the required difficulty."   },
-        {   powEXPIRED,             "powEXPIRED",               "Token is expired."                                     },
-        {   powCORRUPT,             "powCORRUPT",               "Invalid token."                                        },
-        {   powTOOEASY,             "powTOOEASY",               "Difficulty has increased since token was issued."      },
-
-        {   powOK,                  "powOK",                    "Valid proof-of-work."                                  },
+        PowResult code;
+        char const* token;
+        char const* text;
     };
 
-    int iIndex  = RIPPLE_ARRAYSIZE (powResultInfoA);
-
-    while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
-        ;
-
-    if (iIndex >= 0)
+    static
+    PowResultInfo const results[] =
     {
-        strToken    = powResultInfoA[iIndex].cpToken;
-        strHuman    = powResultInfoA[iIndex].cpHuman;
+        { powOK,       "powOK",       "Valid proof-of-work."                                },
+        { powREUSED,   "powREUSED",   "Proof-of-work has already been used."                },
+        { powBADNONCE, "powBADNONCE", "The solution does not meet the required difficulty." },
+        { powEXPIRED,  "powEXPIRED",  "Token is expired."                                   },
+        { powCORRUPT,  "powCORRUPT",  "Invalid token."                                      },
+        { powTOOEASY,  "powTOOEASY",  "Difficulty has increased since token was issued."    },
+    };
+
+    for (auto const& result : results)
+    {
+        if (powCode == result.code)
+        {
+            strToken = result.token;
+            strHuman = result.text;
+            return true;
+        }
     }
 
-    return iIndex >= 0;
+    return false;
 }
 
 } // ripple
