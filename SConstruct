@@ -335,9 +335,7 @@ def config_env(toolchain, variant, env):
         if variant == 'release':
             env.Append(CCFLAGS=[
                 '-O3',
-                '-fno-strict-aliasing',
-                '-march=native',
-                '-mtune=native'
+                '-fno-strict-aliasing'
                 ])
 
         if toolchain != 'msvc':
