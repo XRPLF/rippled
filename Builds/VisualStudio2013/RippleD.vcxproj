@@ -2116,8 +2116,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\websocket\WSServerHandler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ArraySize.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
@@ -2198,9 +2196,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\tests\cross_offer.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Time.h">

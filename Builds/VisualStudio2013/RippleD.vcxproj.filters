@@ -337,9 +337,6 @@
     <Filter Include="ripple\basics\impl">
       <UniqueIdentifier>{1B5E3484-E132-ADEA-8A38-01B0F4ABAC58}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\basics\tests">
-      <UniqueIdentifier>{B1F0C3D5-71C4-3ABF-E292-F147387D07CB}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\core">
       <UniqueIdentifier>{235DCF23-2CF8-4F03-1A54-C159823A7E8D}</UniqueIdentifier>
     </Filter>
@@ -3048,9 +3045,6 @@
     <ClInclude Include="..\..\src\ripple\app\websocket\WSServerHandler.h">
       <Filter>ripple\app\websocket</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ArraySize.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -3150,9 +3144,6 @@
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\tests\cross_offer.test.cpp">
-      <Filter>ripple\basics\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
