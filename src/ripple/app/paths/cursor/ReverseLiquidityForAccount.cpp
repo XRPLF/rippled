@@ -205,7 +205,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                     << " (available) previousNode.saRevRedeem="
                     << previousNode().saRevRedeem
                     << " uRateMax="
-                    << STAmount::saFromRate (uRateMax).getText ();
+                    << amountFromRate (uRateMax).getText ();
             }
             else
             {

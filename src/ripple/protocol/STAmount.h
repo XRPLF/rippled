@@ -124,13 +124,6 @@ public:
 
     static
     STAmount
-    saFromRate (std::uint64_t uRate = 0)
-    {
-        return STAmount (noIssue(), uRate, -9, false);
-    }
-
-    static
-    STAmount
     deserialize (SerializerIterator&);
 
     //--------------------------------------------------------------------------
@@ -314,6 +307,9 @@ amountFromQuality (std::uint64_t rate);
 
 STAmount
 amountFromJson (SField::ref name, Json::Value const& v);
+
+STAmount
+amountFromRate (std::uint64_t uRate);
 
 bool
 amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource);
