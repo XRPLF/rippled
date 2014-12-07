@@ -107,40 +107,47 @@ public:
         }
         catch (...)
         {
-            cpClient->close (websocketpp::close::status::value (crTooSlow), std::string ("Client is too slow."));
+            cpClient->close (websocketpp::close::status::value (crTooSlow),
+                             std::string ("Client is too slow."));
         }
     }
 
-    static void ssendb (connection_ptr cpClient, std::string const& strMessage, bool broadcast)
+    static void ssendb (connection_ptr cpClient, std::string const& strMessage,
+                        bool broadcast)
     {
         try
         {
-            WriteLog (broadcast ? lsTRACE : lsDEBUG, WSServerHandlerLog) << "Ws:: Sending '" << strMessage << "'";
+            WriteLog (broadcast ? lsTRACE : lsDEBUG, WSServerHandlerLog)
+                    << "Ws:: Sending '" << strMessage << "'";
 
             cpClient->send (strMessage);
         }
         catch (...)
         {
-            cpClient->close (websocketpp::close::status::value (crTooSlow), std::string ("Client is too slow."));
+            cpClient->close (websocketpp::close::status::value (crTooSlow),
+                             std::string ("Client is too slow."));
         }
     }
 
     void send (connection_ptr cpClient, message_ptr mpMessage)
     {
-        cpClient->get_strand ().post (std::bind (
-                                          &WSServerHandler<endpoint_type>::ssend, cpClient, mpMessage));
+        cpClient->get_strand ().post (
+            std::bind (
+                &WSServerHandler<endpoint_type>::ssend,
+                cpClient, mpMessage));
     }
 
-    void send (connection_ptr cpClient, std::string const& strMessage, bool broadcast)
+    void send (connection_ptr cpClient, std::string const& strMessage,
+               bool broadcast)
     {
-        cpClient->get_strand ().post (std::bind (
-                                          &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage, broadcast));
+        cpClient->get_strand ().post (
+            std::bind (
+                &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage,
+                broadcast));
     }
 
     void send (connection_ptr cpClient, Json::Value const& jvObj, bool broadcast)
     {
-        // WriteLog (lsDEBUG, WSServerHandlerLog) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
-
         send (cpClient, to_string (jvObj), broadcast);
     }
 
@@ -164,7 +171,9 @@ public:
             try
             {
                 WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                    "Ws:: ping_out(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
+                    "Ws:: ping_out(" <<
+                     cpClient->get_socket ().remote_endpoint ().to_string () <<
+                     ")";
             }
             catch (...)
             {
@@ -198,12 +207,16 @@ public:
         {
             std::pair <typename MapType::iterator, bool> const result (
                 mMap.emplace (cpClient,
-                    std::make_shared < WSConnectionType <endpoint_type> > (std::ref(m_resourceManager),
-                    std::ref (m_source), std::ref(*this), std::cref(cpClient))));
+                    std::make_shared < WSConnectionType <endpoint_type> > (
+                        std::ref(m_resourceManager),
+                        std::ref (m_source),
+                        std::ref(*this),
+                        std::cref(cpClient))));
             assert (result.second);
             (void) result.second;
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint() << ")";
+                "Ws:: on_open(" <<
+                cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (...)
         {
@@ -245,7 +258,8 @@ public:
 
     void doClose (connection_ptr const& cpClient, char const* reason)
     {
-        // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
+        // we cannot destroy the connection while holding the map lock or we
+        // deadlock with pubLedger
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
@@ -257,7 +271,8 @@ public:
                 {
                     WriteLog (lsDEBUG, WSServerHandlerLog) <<
                         "Ws:: " << reason << "(" <<
-                           cpClient->get_socket ().remote_endpoint() << ") not found";
+                           cpClient->get_socket ().remote_endpoint() <<
+                           ") not found";
                 }
                 catch (...)
                 {
@@ -265,7 +280,9 @@ public:
                 return;
             }
 
-            ptr = it->second;       // prevent the WSConnection from being destroyed until we release the lock
+            ptr = it->second;
+            // prevent the WSConnection from being destroyed until we release
+            // the lock
             mMap.erase (it);
         }
         ptr->preDestroy (); // Must be done before we return
@@ -280,8 +297,10 @@ public:
         }
 
         // Must be done without holding the websocket send lock
-        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
-                                       std::bind (&WSConnectionType <endpoint_type>::destroy, ptr));
+        getApp().getJobQueue ().addJob (
+            jtCLIENT,
+            "WSClient::destroy",
+            std::bind (&WSConnectionType <endpoint_type>::destroy, ptr));
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage)
@@ -305,7 +324,8 @@ public:
             try
             {
                 WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                    "Ws:: Rejected(" << cpClient->get_socket().remote_endpoint() <<
+                    "Ws:: Rejected(" <<
+                    cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
             }
             catch (...)
@@ -357,7 +377,8 @@ public:
                            std::placeholders::_1, cpClient));
     }
 
-    bool do_message (Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)
+    bool do_message (Job& job, const connection_ptr& cpClient,
+                     const wsc_ptr& conn, const message_ptr& mpMessage)
     {
         Json::Value     jvRequest;
         Json::Reader    jrReader;
@@ -377,11 +398,13 @@ public:
             Json::Value jvResult (Json::objectValue);
 
             jvResult[jss::type]    = jss::error;
-            jvResult[jss::error]   = "wsTextRequired"; // We only accept text messages.
+            jvResult[jss::error]   = "wsTextRequired";
+            // We only accept text messages.
 
             send (cpClient, jvResult, false);
         }
-        else if (!jrReader.parse (mpMessage->get_payload (), jvRequest) || jvRequest.isNull () || !jvRequest.isObject ())
+        else if (!jrReader.parse (mpMessage->get_payload (), jvRequest) ||
+                 jvRequest.isNull () || !jvRequest.isObject ())
         {
             Json::Value jvResult (Json::objectValue);
 
@@ -431,13 +454,17 @@ public:
 
         if (!serverOkay (reason))
         {
-            cpClient->set_body (std::string ("<HTML><BODY>Server cannot accept clients: ") + reason + "</BODY></HTML>");
+            cpClient->set_body (
+                std::string ("<HTML><BODY>Server cannot accept clients: ") +
+                reason + "</BODY></HTML>");
             return false;
         }
 
         cpClient->set_body (
-            "<!DOCTYPE html><html><head><title>" SYSTEM_NAME " Test</title></head>"
-            "<body><h1>" SYSTEM_NAME " Test</h1><p>This page shows http(s) connectivity is working.</p></body></html>");
+            "<!DOCTYPE html><html><head><title>" SYSTEM_NAME
+            " Test</title></head>"
+            "<body><h1>" SYSTEM_NAME " Test</h1><p>This page shows http(s) "
+            "connectivity is working.</p></body></html>");
         return true;
     }
 };

@@ -85,7 +85,8 @@ private:
         {
             ScopedLockType lock (m_endpointLock);
 
-            m_endpoint = std::make_shared<websocketpp::server_autotls> (handler);
+            m_endpoint = std::make_shared<websocketpp::server_autotls> (
+                handler);
         }
 
         // Call the main-event-loop of the websocket server.
@@ -95,9 +96,11 @@ private:
         }
         catch (websocketpp::exception& e)
         {
-            WriteLog (lsWARNING, WSDoor) << "websocketpp exception: " << e.what ();
+            WriteLog (lsWARNING, WSDoor) << "websocketpp exception: "
+                                         << e.what ();
 
-            // temporary workaround for websocketpp throwing exceptions on access/close races
+            // temporary workaround for websocketpp throwing exceptions on
+            // access/close races
             for (;;)
             {
                 // https://github.com/zaphoyd/websocketpp/issues/98
@@ -108,7 +111,8 @@ private:
                 }
                 catch (websocketpp::exception& e)
                 {
-                    WriteLog (lsWARNING, WSDoor) << "websocketpp exception: " << e.what ();
+                    WriteLog (lsWARNING, WSDoor) << "websocketpp exception: "
+                                                 << e.what ();
                 }
             }
         }
@@ -169,4 +173,3 @@ make_WSDoor (HTTP::Port const& port, Resource::Manager& resourceManager,
 }
 
 }
-

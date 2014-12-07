@@ -45,7 +45,8 @@ protected:
     WSConnection (HTTP::Port const& port,
         Resource::Manager& resourceManager, Resource::Consumer usage,
             InfoSub::Source& source, bool isPublic,
-                beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
+                beast::IP::Endpoint const& remoteAddress,
+                    boost::asio::io_service& io_service);
 
     WSConnection(WSConnection const&) = delete;
     WSConnection& operator= (WSConnection const&) = delete;
@@ -101,12 +102,15 @@ private:
     weak_connection_ptr m_connection;
 
 public:
-    WSConnectionType (Resource::Manager& resourceManager, InfoSub::Source& source,
-            server_type& serverHandler, connection_ptr const& cpConnection)
+    WSConnectionType (Resource::Manager& resourceManager,
+                      InfoSub::Source& source,
+                      server_type& serverHandler,
+                      connection_ptr const& cpConnection)
         : WSConnection (
             serverHandler.port(),
             resourceManager,
-            resourceManager.newInboundEndpoint (cpConnection->get_socket ().remote_endpoint ()),
+            resourceManager.newInboundEndpoint (
+                cpConnection->get_socket ().remote_endpoint ()),
             source,
             serverHandler.getPublic (),
             cpConnection->get_socket ().remote_endpoint (),
@@ -204,7 +208,8 @@ public:
 
             m_pingTimer.async_wait (ptr->get_strand ().wrap (
                 std::bind (&WSConnectionType <endpoint_type>::pingTimer,
-                    m_connection, &m_serverHandler, beast::asio::placeholders::error)));
+                    m_connection, &m_serverHandler,
+                           beast::asio::placeholders::error)));
         }
     }
 };
