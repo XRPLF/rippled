@@ -47,25 +47,24 @@ yone.
 
 ###Key Protocol Features
 <ol>
-	<li>XRP is Ripple’s native <a href='http://en.wikipedia.org/wiki/Cryptoc
+<li>XRP is Ripple’s native <a href='http://en.wikipedia.org/wiki/Cryptoc
 urrency' target='_blank'>cryptocurrency</a> with a fixed supply that decreases s
 lowly over time, with no mining. XRP acts as a bridge currency, and pays for tra
 nsaction fees that protect the network against spam
-	<img alt='XRP as bridge currency' src='images/vehicle_currency.png' 
-	width='420' height='140'/> 
-	</li>
+<img alt='XRP as bridge currency' src='images/vehicle_currency.png' width='420' height='140'/> 
+</li>
 
-	<li>Pathfinding discovers cheap and efficient payment paths through mult
+<li>Pathfinding discovers cheap and efficient payment paths through mult
 iple <a href='https://www.ripplecharts.com' target='_blank'>order books</a> allo
 wing anyone to <a href='https://www.rippletrade.com' target='_blank'>trade</a> a
 nything. When two accounts aren’t linked by relationships of trust, the Ripple p
 athfinding engine considers intermediate links and order books to produce a set 
 of possible paths the transaction can take. When the payment is processed, the l
 iquidity along these paths is iteratively consumed in best-first order
-	<img alt='Pathfinding EUR to JPY' src='images/pathfinding.png'
-	width='323' height='140' /></li>
+<img alt='Pathfinding EUR to JPY' src='images/pathfinding.png' width='545' height='236' />
+</li>
 
-	<li><a href='https://www.youtube.com/watch?v=pj1QVb1vlC0' target='_blank
+<li><a href='https://www.youtube.com/watch?v=pj1QVb1vlC0' target='_blank
 '>Consensus</a> confirms transactions in an atomic fashion, without mining, ensu
 ring efficient use of resources</li>
 </ol>
