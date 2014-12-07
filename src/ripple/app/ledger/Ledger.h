@@ -66,6 +66,16 @@ class SqliteStatement;
     of data. It all depends on what is in the corresponding SHAMap entry.
     Various functions are provided to populate or depopulate the caches that
     the object holds references to.
+
+    Ledgers are constructed as either mutable or immutable.
+
+    1) If you are the sole owner of a mutable ledger, you can do whatever you
+    want with no need for locks.
+
+    2) If you have an immutable ledger, you cannot ever change it, so no need
+    for locks.
+
+    3) Mutable ledgers cannot be shared.
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
@@ -381,7 +391,7 @@ public:
 
     SLE::pointer
     getRippleState (uint256 const& uNode) const;
-    
+
     SLE::pointer
     getRippleState (
         Account const& a, Account const& b, Currency const& currency) const;
