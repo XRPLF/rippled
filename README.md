@@ -53,6 +53,7 @@ lowly over time, with no mining. XRP acts as a bridge currency, and pays for tra
 nsaction fees that protect the network against spam
 
 <img alt='XRP as bridge currency' src='images/vehicle_currency.png' width='420' height='140'/> 
+<br/>
 </li>
 
 <li>Pathfinding discovers cheap and efficient payment paths through mult
@@ -63,6 +64,7 @@ athfinding engine considers intermediate links and order books to produce a set
 of possible paths the transaction can take. When the payment is processed, the l
 iquidity along these paths is iteratively consumed in best-first order
 <img alt='Pathfinding EUR to JPY' src='images/pathfinding.png' width='545' height='236' />
+<br/>
 </li>
 
 <li><a href='https://www.youtube.com/watch?v=pj1QVb1vlC0' target='_blank
