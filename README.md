@@ -1,5 +1,5 @@
-:<img src='images/Logo_M.png' alt='Ripple' width='304' height='81' 
-align='middle' />: 
+<img src='images/Logo_M.png' alt='Ripple' width='304' height='81' 
+align='center' /> 
 
 #The World’s Fastest and Most Secure Payment System
 
