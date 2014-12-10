@@ -1409,7 +1409,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
     }
 
     m_journal.warning << "We are not running on the consensus ledger";
-    m_journal.info << "Our LCL: " << getJson (*ourClosed, 0);
+    m_journal.info << "Our LCL: " << getJson (*ourClosed);
     m_journal.info << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))

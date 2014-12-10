@@ -78,7 +78,7 @@ void LedgerHandler::writeResult (Object& value)
     if (ledger_)
     {
         RPC::copyFrom (value, result_);
-        addJson (*ledger_, value, options_, context_.yield);
+        addJson (value, {*ledger_, options_, context_.yield});
     }
     else
     {
@@ -86,13 +86,12 @@ void LedgerHandler::writeResult (Object& value)
         auto& yield = context_.yield;
         {
             auto&& closed = RPC::addObject (value, jss::closed);
-            addJson (*master.getClosedLedger(), closed, 0, yield);
+            addJson (closed, {*master.getClosedLedger(), 0, yield});
         }
         {
             auto&& open = RPC::addObject (value, jss::open);
-            addJson (*master.getCurrentLedger(), open, 0, yield);
+            addJson (open, {*master.getCurrentLedger(), 0, yield});
         }
-
     }
 }
 

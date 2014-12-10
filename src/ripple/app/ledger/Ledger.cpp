@@ -643,7 +643,7 @@ bool Ledger::saveValidatedLedger (bool current)
     if (!getAccountHash ().isNonZero ())
     {
         WriteLog (lsFATAL, Ledger) << "AH is zero: "
-                                   << getJson (*this, 0);
+                                   << getJson (*this);
         assert (false);
     }
 
@@ -920,7 +920,7 @@ Ledger::pointer Ledger::getSQL (std::string const& sql)
         {
             WriteLog (lsERROR, Ledger) << "Failed on ledger";
             Json::Value p;
-            addJson (*ret, p, LEDGER_JSON_FULL);
+            addJson (p, {*ret, LEDGER_JSON_FULL});
             WriteLog (lsERROR, Ledger) << p;
         }
 
@@ -1648,7 +1648,7 @@ bool Ledger::assertSane () const
 
     WriteLog (lsFATAL, Ledger) << "ledger is not sane";
 
-    Json::Value j = getJson (*this, 0);
+    Json::Value j = getJson (*this);
 
     j [jss::accountTreeHash] = to_string (mAccountHash);
     j [jss::transTreeHash] = to_string (mTransHash);

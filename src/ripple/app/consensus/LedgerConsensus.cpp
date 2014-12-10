@@ -559,7 +559,7 @@ public:
             WriteLog (lsWARNING, LedgerConsensus) << mPrevLedgerHash
                 << " to " << netLgr;
             WriteLog (lsWARNING, LedgerConsensus)
-                << ripple::getJson (*mPreviousLedger, 0);
+                << ripple::getJson (*mPreviousLedger);
 
             if (ShouldLog (lsDEBUG, LedgerConsensus))
             {
