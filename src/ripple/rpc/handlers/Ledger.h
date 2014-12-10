@@ -40,7 +40,7 @@ class LedgerHandler {
 public:
     explicit LedgerHandler (Context&);
 
-    Status check (Json::Value& error);
+    Status check ();
 
     template <class Object>
     void writeResult (Object&);
@@ -63,7 +63,7 @@ public:
 private:
     Context& context_;
     Ledger::pointer ledger_;
-    Json::Value lookupResult_;
+    Json::Value result_;
     int options_;
 };
 
@@ -77,7 +77,7 @@ void LedgerHandler::writeResult (Object& value)
 {
     if (ledger_)
     {
-        RPC::copyFrom (value, lookupResult_);
+        RPC::copyFrom (value, result_);
         addJson (*ledger_, value, options_, context_.yield);
     }
     else

@@ -31,32 +31,23 @@ LedgerHandler::LedgerHandler (Context& context) : context_ (context)
 {
 }
 
-Status LedgerHandler::check (Json::Value& error)
+Status LedgerHandler::check ()
 {
-    bool needsLedger = context_.params.isMember (jss::ledger) ||
-            context_.params.isMember (jss::ledger_hash) ||
-            context_.params.isMember (jss::ledger_index);
+    auto const& params = context_.params;
+    bool needsLedger = params.isMember (jss::ledger) ||
+            params.isMember (jss::ledger_hash) ||
+            params.isMember (jss::ledger_index);
     if (!needsLedger)
         return Status::OK;
 
-    lookupResult_ = RPC::lookupLedger (
-        context_.params, ledger_, context_.netOps);
+    if (auto s = RPC::lookupLedger (params, ledger_, context_.netOps, result_))
+        return s;
 
-    if (!ledger_)
-    {
-        error = lookupResult_;
-        auto code = error_code_i (error[jss::error_code].asInt());
-        return {code, {error[jss::error_message].asString()}};
-    }
+    bool bFull = params[jss::full].asBool();
+    bool bTransactions = params[jss::transactions].asBool();
+    bool bAccounts = params[jss::accounts].asBool();
+    bool bExpand = params[jss::expand].asBool();
 
-    bool bFull = context_.params.isMember (jss::full)
-            && context_.params[jss::full].asBool ();
-    bool bTransactions = context_.params.isMember (jss::transactions)
-            && context_.params[jss::transactions].asBool ();
-    bool bAccounts = context_.params.isMember (jss::accounts)
-            && context_.params[jss::accounts].asBool ();
-    bool bExpand = context_.params.isMember (jss::expand)
-            && context_.params[jss::expand].asBool ();
     options_ = (bFull ? LEDGER_JSON_FULL : 0)
             | (bExpand ? LEDGER_JSON_EXPAND : 0)
             | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
@@ -64,24 +55,19 @@ Status LedgerHandler::check (Json::Value& error)
 
     if (bFull || bAccounts)
     {
+        // Until some sane way to get full ledgers has been implemented,
+        // disallow retrieving all state nodes.
         if (context_.role != Role::ADMIN)
-        {
-            // Until some sane way to get full ledgers has been implemented,
-            // disallow retrieving all state nodes.
-            error = rpcError (rpcNO_PERMISSION);
             return rpcNO_PERMISSION;
-        }
 
         if (getApp().getFeeTrack().isLoadedLocal() &&
             context_.role != Role::ADMIN)
         {
-            error = rpcError(rpcTOO_BUSY);
             return rpcTOO_BUSY;
         }
         context_.loadType = Resource::feeHighBurdenRPC;
     }
 
-    std::cerr << "!!! LedgerHandler::check FIVE - true\n";
     return Status::OK;
 }
 

@@ -35,6 +35,19 @@ Handler::Method<Json::Value> byRef (Function const& f)
     };
 }
 
+template <class Object, class HandlerImpl>
+Status handle (Context& context, Object& object)
+{
+    HandlerImpl handler (context);
+
+    auto status = handler.check ();
+    if (status)
+        status.inject (object);
+    else
+        handler.writeResult (object);
+    return status;
+};
+
 class HandlerTable {
   public:
     HandlerTable (std::vector<Handler> const& entries) {
@@ -56,39 +69,19 @@ class HandlerTable {
   private:
     std::map<std::string, Handler> table_;
 
-    template <class Impl>
+    template <class HandlerImpl>
     void addHandler()
     {
-        assert (table_.find(Impl::name()) == table_.end());
-        auto valueMethod = [] (Context& context, Json::Value& object)
-        {
-            Impl handler (context);
-            auto status = handler.check (object);
-            if (!status)
-                handler.writeResult (object);
-            return status;
-        };
+        assert (table_.find(HandlerImpl::name()) == table_.end());
 
-        auto objectMethod = [] (Context& context, Object& object)
-        {
-            Impl handler (context);
-            Json::Value error;
-            auto status = handler.check (error);
-            if (!status)
-                handler.writeResult (object);
-            else
-                RPC::copyFrom (object, error);
-            return status;
-        };
+        Handler h;
+        h.name_ = HandlerImpl::name(),
+        h.valueMethod_ = &handle<Json::Value, HandlerImpl>,
+        h.role_ = HandlerImpl::role(),
+        h.condition_ = HandlerImpl::condition(),
+        h.objectMethod_ = &handle<Object, HandlerImpl>;
 
-        auto handler = Handler {
-            Impl::name(),
-            valueMethod,
-            Impl::role(),
-            Impl::condition(),
-            objectMethod};
-
-        table_[Impl::name()] = handler;
+        table_[HandlerImpl::name()] = h;
     };
 };
 
