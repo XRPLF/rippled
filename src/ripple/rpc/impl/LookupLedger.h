@@ -20,13 +20,29 @@
 #ifndef RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 #define RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 
+#include <ripple/rpc/Status.h>
+
 namespace ripple {
 namespace RPC {
 
+/** Look up a ledger from a request and fill a Json::Result with either
+    an error, or data representing a ledger.
+
+    If there is no error in the return value, then the ledger pointer will have
+    been filled.
+*/
 Json::Value lookupLedger (
-    Json::Value const& jvRequest,
-    Ledger::pointer& lpLedger,
-    NetworkOPs& netOps);
+    Json::Value const& request, Ledger::pointer&, NetworkOPs&);
+
+/** Look up a ledger from a request and fill a Json::Result with the data
+    representing a ledger.
+
+    If the returned Status is OK, the ledger pointer will have been filled. */
+Status lookupLedger (
+    Json::Value const& request,
+    Ledger::pointer&,
+    NetworkOPs&,
+    Json::Value& result);
 
 } // RPC
 } // ripple
