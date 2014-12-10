@@ -30,35 +30,49 @@
 
 namespace ripple {
 
+struct LedgerFill
+{
+    LedgerFill (Ledger const& l,
+                int o = 0,
+                RPC::Yield const& y = {},
+                RPC::YieldStrategy const& ys = {})
+            : ledger (l),
+              options (o),
+              yield (y),
+              yieldStrategy (ys)
+    {
+    }
+
+    Ledger const& ledger;
+    int options;
+    RPC::Yield yield;
+    RPC::YieldStrategy yieldStrategy;
+};
+
 /** Given a Ledger, options, and a generic Object that has Json semantics,
     fill the Object with a description of the ledger.
 */
 template <class Object>
-void fillJson (Ledger const&, Object&, int options,
-               RPC::Yield const& yield = {});
+void fillJson (Object&, LedgerFill const&);
 
 /** Add Json to an existing generic Object. */
 template <class Object>
-void addJson (Ledger const&, Object&, int options,
-              RPC::Yield const& yield = {});
+void addJson (Object&, LedgerFill const&);
 
 /** Return a new Json::Value representing the ledger with given options.*/
-Json::Value getJson (Ledger const&, int options,
-                     RPC::Yield const& yield = {});
+Json::Value getJson (LedgerFill const&);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations.
 
-auto const accountYieldCount = 0;
-auto const transactionYieldCount = 0;
-
 template <typename Object>
-void fillJson (
-    Ledger const& ledger, Object& json, int options, RPC::Yield const& yield)
+void fillJson (Object& json, LedgerFill const& fill)
 {
-    bool const bFull (options & LEDGER_JSON_FULL);
-    bool const bExpand (options & LEDGER_JSON_EXPAND);
+    auto const& ledger = fill.ledger;
+
+    bool const bFull (fill.options & LEDGER_JSON_FULL);
+    bool const bExpand (fill.options & LEDGER_JSON_EXPAND);
 
     // DEPRECATED
     json[jss::seqNum]       = to_string (ledger.getLedgerSeq());
@@ -100,20 +114,17 @@ void fillJson (
     }
 
     auto &transactionMap = ledger.peekTransactionMap();
-    if (transactionMap && (bFull || options & LEDGER_JSON_DUMP_TXRP))
+    if (transactionMap && (bFull || fill.options & LEDGER_JSON_DUMP_TXRP))
     {
         auto&& txns = RPC::addArray (json, jss::transactions);
         SHAMapTreeNode::TNType type;
 
-        int count = 0;
+        RPC::CountedYield count (
+            fill.yieldStrategy.transactionYieldCount, fill.yield);
         for (auto item = transactionMap->peekFirstItem (type); item;
              item = transactionMap->peekNextItem (item->getTag (), type))
         {
-            if (transactionYieldCount && ++count >= transactionYieldCount)
-            {
-                yield();
-                count = 0;
-            }
+            count.yield();
             if (bFull || bExpand)
             {
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
@@ -148,33 +159,26 @@ void fillJson (
     }
 
     auto& accountStateMap = ledger.peekAccountStateMap();
-    if (accountStateMap && (bFull || options & LEDGER_JSON_DUMP_STATE))
+    if (accountStateMap && (bFull || fill.options & LEDGER_JSON_DUMP_STATE))
     {
         auto&& array = RPC::addArray (json, jss::accountState);
-        auto count = 0;
+        RPC::CountedYield count (
+            fill.yieldStrategy.accountYieldCount, fill.yield);
         if (bFull || bExpand)
         {
             ledger.visitStateItems (
-                [&array, &count, &yield] (SLE::ref sle)
+                [&array, &count, &fill] (SLE::ref sle)
                 {
-                    if (accountYieldCount && ++count >= accountYieldCount)
-                    {
-                        yield();
-                        count = 0;
-                    }
+                    count.yield();
                     array.append (sle->getJson(0));
                 });
         }
         else
         {
             accountStateMap->visitLeaves(
-                [&array, &count, &yield] (SHAMapItem::ref smi)
+                [&array, &count, &fill] (SHAMapItem::ref smi)
                 {
-                    if (accountYieldCount && ++count >= accountYieldCount)
-                    {
-                        yield();
-                        count = 0;
-                    }
+                    count.yield();
                     array.append (to_string(smi->getTag ()));
                 });
         }
@@ -183,18 +187,17 @@ void fillJson (
 
 /** Add Json to an existing generic Object. */
 template <class Object>
-void addJson (
-    Ledger const& ledger, Object& json, int options, RPC::Yield const& yield)
+void addJson (Object& json, LedgerFill const& fill)
 {
     auto&& object = RPC::addObject (json, jss::ledger);
-    fillJson (ledger, object, options, yield);
+    fillJson (object, fill);
 }
 
 inline
-Json::Value getJson (Ledger const& ledger, int options, RPC::Yield const& yield)
+Json::Value getJson (LedgerFill const& fill)
 {
     Json::Value json;
-    fillJson (ledger, json, options, yield);
+    fillJson (json, fill);
     return json;
 }
 

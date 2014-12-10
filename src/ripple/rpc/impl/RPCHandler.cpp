@@ -22,10 +22,16 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/WriteJson.h>
+
+#include <ripple/server/Role.h>
+#include <ripple/core/Config.h>
+#include <ripple/net/InfoSub.h>
+#include <ripple/rpc/impl/Context.h>
 
 namespace ripple {
 namespace RPC {
@@ -198,7 +204,8 @@ void getResult (
 
 } // namespace
 
-Status doCommand (RPC::Context& context, Json::Value& result)
+Status doCommand (
+    RPC::Context& context, Json::Value& result, YieldStrategy const&)
 {
     boost::optional <Handler const&> handler;
     if (auto error = fillHandler (context, handler))
@@ -214,7 +221,8 @@ Status doCommand (RPC::Context& context, Json::Value& result)
 }
 
 /** Execute an RPC command and store the results in a string. */
-void executeRPC (RPC::Context& context, std::string& output)
+void executeRPC (
+    RPC::Context& context, std::string& output, YieldStrategy const& strategy)
 {
     boost::optional <Handler const&> handler;
     if (auto error = fillHandler (context, handler))
@@ -232,8 +240,7 @@ void executeRPC (RPC::Context& context, std::string& output)
     {
         auto object = Json::Value (Json::objectValue);
         getResult (context, method, object, handler->name_);
-
-        if (streamingRPC)
+        if (strategy.streaming == YieldStrategy::Streaming::yes)
             output = jsonAsString (object);
         else
             output = to_string (object);

@@ -94,7 +94,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         // We already have the ledger they want
         Json::Value jvResult;
         jvResult[jss::ledger_index] = ledger->getLedgerSeq();
-        addJson (*ledger, jvResult, 0);
+        addJson (jvResult, {*ledger, 0});
         return jvResult;
     }
     else

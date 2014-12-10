@@ -192,9 +192,19 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     auto detach = session.detach();
 
-    RPC::Coroutine::YieldFunction yieldFunction =
-        [this, detach] (Yield const& y) { processSession (detach, y); };
-    runCoroutine (RPC::Coroutine (yieldFunction), m_jobQueue);
+    if (setup_.yieldStrategy.useCoroutines ==
+        RPC::YieldStrategy::UseCoroutines::yes)
+    {
+        RPC::Coroutine::YieldFunction yieldFunction =
+                [this, detach] (Yield const& y) { processSession (detach, y); };
+        runCoroutine (RPC::Coroutine (yieldFunction), m_jobQueue);
+    }
+    else
+    {
+        m_jobQueue.addJob (
+            jtCLIENT, "RPC-Client",
+            [=] (Job&) { processSession (detach, RPC::Yield{}); });
+    }
 }
 
 void
@@ -211,23 +221,14 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 //------------------------------------------------------------------------------
 
-// ServerHandlerImp will yield after emitting serverOutputChunkSize bytes.
-// If this value is 0, it means "yield after each output"
-// A negative value means "never yield"
-// TODO(tom): negotiate a spot for this in Configs.
-const int serverOutputChunkSize = -1;
-
 // Dispatched on the job queue
 void
 ServerHandlerImp::processSession (
     std::shared_ptr<HTTP::Session> const& session, Yield const& yield)
 {
     auto output = makeOutput (*session);
-    if (serverOutputChunkSize >= 0)
-    {
-        output = RPC::chunkedYieldingOutput (
-            output, yield, serverOutputChunkSize);
-    }
+    if (auto byteYieldCount = setup_.yieldStrategy.byteYieldCount)
+        output = RPC::chunkedYieldingOutput (output, yield, byteYieldCount);
 
     processRequest (
         session->port(),
@@ -313,7 +314,12 @@ ServerHandlerImp::processRequest (
         return;
     }
 
-    // Parse params
+    // Extract request parameters from the request Json as `params`.
+    //
+    // If the field "params" is empty, `params` is an empty object.
+    //
+    // Otherwise, that field must be an array of length 1 (why?)
+    // and we take that first entry and validate that it's an object.
     Json::Value params = jsonRPC ["params"];
 
     if (params.isNull () || params.empty())
@@ -357,14 +363,14 @@ ServerHandlerImp::processRequest (
     RPC::Context context {params, loadType, m_networkOPs, role, nullptr, yield};
     std::string response;
 
-    if (RPC::streamingRPC)
+    if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)
     {
-        executeRPC (context, response);
+        executeRPC (context, response, setup_.yieldStrategy);
     }
     else
     {
         Json::Value result;
-        RPC::doCommand (context, result);
+        RPC::doCommand (context, result, setup_.yieldStrategy);
 
         // Always report "status".  On an error report the request as received.
         if (result.isMember ("error"))
@@ -797,8 +803,10 @@ setup_ServerHandler (BasicConfig const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
     setup.ports = detail::parse_Ports (config, log);
+    setup.yieldStrategy = RPC::makeYieldStrategy (config["server"]);
     detail::setup_Client(setup);
     detail::setup_Overlay(setup);
+
     return setup;
 }
 

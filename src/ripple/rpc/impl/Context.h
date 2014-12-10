@@ -22,6 +22,7 @@
 
 #include <ripple/core/Config.h>
 #include <ripple/rpc/Yield.h>
+#include <ripple/server/Role.h>
 #include <ripple/server/ServerHandler.h>
 
 namespace ripple {
