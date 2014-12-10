@@ -37,37 +37,30 @@ Json::Value doLedgerData (RPC::Context& context)
     int const JSON_PAGE_LENGTH = 256;
 
     Ledger::pointer lpLedger;
+    auto const& params = context.params;
 
-    Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.netOps);
+    Json::Value jvResult = RPC::lookupLedger (params, lpLedger, context.netOps);
     if (!lpLedger)
         return jvResult;
 
     uint256 resumePoint;
-    if (context.params.isMember ("marker"))
+    if (params.isMember ("marker"))
     {
-        Json::Value const& jMarker = context.params["marker"];
+        Json::Value const& jMarker = params["marker"];
         if (!jMarker.isString ())
             return RPC::expected_field_error ("marker", "valid");
         if (!resumePoint.SetHex (jMarker.asString ()))
             return RPC::expected_field_error ("marker", "valid");
     }
 
-    bool isBinary = false;
-    if (context.params.isMember ("binary"))
-    {
-        Json::Value const& jBinary = context.params["binary"];
-        if (!jBinary.isBool ())
-            return RPC::expected_field_error ("binary", "bool");
-        isBinary = jBinary.asBool ();
-    }
+    bool isBinary = params["binary"].asBool();
 
     int limit = -1;
     int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
 
-    if (context.params.isMember ("limit"))
+    if (params.isMember ("limit"))
     {
-        Json::Value const& jLimit = context.params["limit"];
+        Json::Value const& jLimit = params["limit"];
         if (!jLimit.isIntegral ())
             return RPC::expected_field_error ("limit", "integer");
 
