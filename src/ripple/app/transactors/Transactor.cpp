@@ -30,7 +30,6 @@ TER transact_SetRegularKey (STTx const& txn, TransactionEngineParams params, Tra
 TER transact_SetTrust (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CreateOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CancelOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_AddWallet (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_Change (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CreateTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CancelTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
@@ -60,9 +59,6 @@ Transactor::transact (
 
     case ttOFFER_CANCEL:
         return transact_CancelOffer (txn, params, engine);
-
-    case ttWALLET_ADD:
-        return transact_AddWallet (txn, params, engine);
 
     case ttAMENDMENT:
     case ttFEE:

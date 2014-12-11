@@ -3102,9 +3102,6 @@
     <ClInclude Include="..\..\src\ripple\app\peers\UniqueNodeList.h">
       <Filter>ripple\app\peers</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
-      <Filter>ripple\app\transactors</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
