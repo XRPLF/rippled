@@ -6,20 +6,10 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-software-properties
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo add-apt-repository -y ppa:boost-latest/ppa
+  - sudo add-apt-repository -y ppa:afrank/boost
   - sudo apt-get update -qq
   - sudo apt-get install -qq g++-4.8
-  - sudo apt-get install -qq libboost1.55-all-dev 
-  # We want debug symbols for boost as we install gdb later
-  - sudo apt-get install -qq libboost1.55-dbg
-  - | # Setup the BOOST_ROOT
-      export BOOST_ROOT=$HOME/boost_root
-      mkdir -p $BOOST_ROOT/stage
-      ln -s /usr/lib/x86_64-linux-gnu $BOOST_ROOT/stage/lib
-      ln -s /usr/include/boost $BOOST_ROOT/boost
-  - | # Try to patch boost
-      sudo patch /usr/include/boost/bimap/detail/debug/static_error.hpp Builds/travis/static_error.boost.patch
-      sudo patch /usr/include/boost/config/compiler/clang.hpp Builds/travis/clang.boost.patch
+  - sudo apt-get install -qq libboost1.57-all-dev
   - sudo apt-get install -qq mlocate
   - sudo updatedb
   - sudo locate libboost | grep /lib | grep -e ".a$"
