@@ -224,9 +224,17 @@ inline bool isTecClaim(TER x)
 }
 
 // VFALCO TODO group these into a shell class along with the defines above.
-extern bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman);
-extern std::string transToken (TER terCode);
-extern std::string transHuman (TER terCode);
+extern
+bool
+transResultInfo (TER code, std::string& token, std::string& text);
+
+extern
+std::string
+transToken (TER code);
+
+extern
+std::string
+transHuman (TER code);
 
 } // ripple
 
