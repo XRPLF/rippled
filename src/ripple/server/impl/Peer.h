@@ -397,34 +397,33 @@ Peer<Impl>::do_write (yield_context yield)
     for(;;)
     {
         bytes_out_ += bytes;
-
-        bool empty;
         void const* data;
         {
             std::lock_guard <std::mutex> lock (mutex_);
-            buffer& b = write_queue_.front();
-            b.used += bytes;
-            if (b.used < b.bytes)
+            assert(! write_queue_.empty());
+            buffer& b1 = write_queue_.front();
+            b1.used += bytes;
+            if (b1.used >= b1.bytes)
             {
-                empty = false;
+                write_queue_.pop_front();
+                if (write_queue_.empty())
+                    break;
+                buffer& b2 = write_queue_.front();
+                data = b2.data.get();
+                bytes = b2.bytes;
             }
             else
             {
-                write_queue_.pop_front();
-                empty = write_queue_.empty();
+                data = b1.data.get() + b1.used;
+                bytes = b1.bytes - b1.used;
             }
-            data = b.data.get() + b.used;
-            bytes = b.bytes - b.used;
         }
-        if (empty)
-            break;
 
         start_timer();
         bytes = boost::asio::async_write (impl().stream_,
             boost::asio::buffer (data, bytes),
                 boost::asio::transfer_at_least(1), yield[ec]);
         cancel_timer();
-
         if (ec)
             return fail (ec, "write");
     }
@@ -532,8 +531,11 @@ Peer<Impl>::complete()
     message_ = beast::http::message{};
     complete_ = true;
 
-    if (! write_queue_.empty())
-        return;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (! write_queue_.empty())
+            return;
+    }
 
     // keep-alive
     boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
@@ -555,8 +557,11 @@ Peer<Impl>::close (bool graceful)
     if (graceful)
     {
         graceful_ = true;
-        if (! write_queue_.empty())
-            return;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (! write_queue_.empty())
+                return;
+        }
         return do_close();
     }
 
