@@ -50,6 +50,7 @@ yone.
 urrency' target='_blank'>cryptocurrency</a> with a fixed supply that decreases s
 lowly over time, with no mining. XRP acts as a bridge currency, and pays for tra
 nsaction fees that protect the network against spam
+
 	<img alt='XRP as bridge currency' src='images/vehicle_currency.png' width='420' height='140'/> 
 
 2. Pathfinding discovers cheap and efficient payment paths through mult
