@@ -981,47 +981,11 @@ public:
         expect (publicKey.to_string() == deprecatedPublicKey.humanNodePublic(),
             publicKey.to_string());
 
-        testcase ("RipplePrivateKey");
-        RippleAddress deprecatedPrivateKey (RippleAddress::createNodePrivate (seed));
-        expect (deprecatedPrivateKey.humanNodePrivate () ==
-            "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe",
-                deprecatedPrivateKey.humanNodePrivate ());
-        RipplePrivateKey privateKey (deprecatedPrivateKey);
-        expect (privateKey.to_string() == deprecatedPrivateKey.humanNodePrivate(),
-            privateKey.to_string());
-
         testcase ("Generator");
         RippleAddress generator (RippleAddress::createGeneratorPublic (seed));
         expect (generator.humanGenerator () ==
             "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt",
                 generator.humanGenerator ());
-
-        testcase ("RippleAccountID");
-        RippleAddress deprecatedAccountPublicKey (
-            RippleAddress::createAccountPublic (generator, 0));
-        expect (deprecatedAccountPublicKey.humanAccountID () ==
-            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-                deprecatedAccountPublicKey.humanAccountID ());
-        RippleAccountID accountID (deprecatedAccountPublicKey);
-        expect (accountID.to_string() ==
-            deprecatedAccountPublicKey.humanAccountID(),
-                accountID.to_string());
-
-        testcase ("RippleAccountPublicKey");
-        expect (deprecatedAccountPublicKey.humanAccountPublic () ==
-            "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw",
-                deprecatedAccountPublicKey.humanAccountPublic ());
-
-        testcase ("RippleAccountPrivateKey");
-        RippleAddress deprecatedAccountPrivateKey (
-            RippleAddress::createAccountPrivate (generator, seed, 0));
-        expect (deprecatedAccountPrivateKey.humanAccountPrivate () ==
-            "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh",
-                deprecatedAccountPrivateKey.humanAccountPrivate ());
-        RippleAccountPrivateKey accountPrivateKey (deprecatedAccountPrivateKey);
-        expect (accountPrivateKey.to_string() ==
-            deprecatedAccountPrivateKey.humanAccountPrivate(),
-                privateKey.to_string());
     }
 };
 

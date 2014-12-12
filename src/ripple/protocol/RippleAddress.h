@@ -25,11 +25,6 @@
 #include <ripple/types/RipplePublicKey.h>
 #include <ripple/types/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/types/RippleAccountID.h>
-#include <ripple/types/RippleAccountPrivateKey.h>
-#include <ripple/types/RippleAccountPublicKey.h>
-#include <ripple/types/RipplePrivateKey.h>
-#include <ripple/types/RipplePublicKeyHash.h>
 
 namespace ripple {
 
@@ -283,61 +278,6 @@ operator>=(RippleAddress const& lhs, RippleAddress const& rhs)
 {
     return !(lhs < rhs);
 }
-
-/** RipplePublicKeyHash */
-template <>
-struct RipplePublicKeyHashTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        auto const ui (v.getNodeID ());
-        construct (ui.begin(), ui.end(), value);
-    }
-};
-
-/** RipplePrivateKey */
-template <>
-struct RipplePrivateKeyTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        uint256 const ui (v.getNodePrivate ());
-        construct (ui.begin(), ui.end(), value);
-    }
-};
-
-/** RippleAccountID */
-template <>
-struct RippleAccountIDTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        auto const ui (v.getAccountID ());
-        construct (ui.begin(), ui.end(), value);
-    }
-};
-
-/** RippleAccountPublicKey */
-template <>
-struct RippleAccountPublicKeyTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        Blob const& b (v.getAccountPublic ());
-        construct (&b.front(), &b.back()+1, value);
-    }
-};
-
-/** RippleAccountPrivateKey */
-template <>
-struct RippleAccountPrivateKeyTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        uint256 const ui (v.getAccountPrivate ());
-        construct (ui.begin(), ui.end(), value);
-    }
-};
 
 } // ripple
 

@@ -3166,12 +3166,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\ByteOrder.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\CryptoIdentifier.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\IdentifierStorage.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\IdentifierType.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3181,29 +3175,14 @@
     <ClCompile Include="..\..\src\ripple\types\impl\Issue.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\Issue.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountID.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountPrivateKey.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountPublicKey.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\RippleLedgerHash.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RipplePrivateKey.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\RipplePublicKey.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RipplePublicKeyHash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\SimpleIdentifier.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\strHex.h">
     </ClInclude>
