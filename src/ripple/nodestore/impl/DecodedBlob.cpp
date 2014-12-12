@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <beast/ByteOrder.h>
 #include <algorithm>
 
 namespace ripple {

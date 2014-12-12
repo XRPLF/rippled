@@ -85,7 +85,7 @@ RipplePublicKey::to_string() const
     std::reverse_copy (e.begin(), e.end(), le.begin());
     le.back() = 0; // make BIGNUM positive
     return Base58::raw_encode (le.data(),
-        le.data() + le.size(), Base58::getRippleAlphabet(), true);
+        le.data() + le.size(), Base58::getRippleAlphabet());
 }
 
 inline

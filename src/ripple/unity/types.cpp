@@ -22,5 +22,4 @@
 #include <ripple/types/impl/Base58.cpp>
 #include <ripple/types/impl/ByteOrder.cpp>
 #include <ripple/types/impl/strHex.cpp>
-#include <ripple/types/impl/RippleIdentifierTests.cpp>
 #include <ripple/types/impl/Issue.cpp>

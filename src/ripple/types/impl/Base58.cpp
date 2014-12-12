@@ -66,9 +66,8 @@ Base58::Alphabet const& Base58::getRippleAlphabet ()
     return alphabet;
 }
 
-std::string Base58::raw_encode (
-    unsigned char const* begin, unsigned char const* end,
-        Alphabet const& alphabet, bool withCheck)
+std::string Base58::raw_encode (unsigned char const* begin,
+    unsigned char const* end, Alphabet const& alphabet)
 {
     CAutoBN_CTX pctx;
     CBigNum bn58 = 58;

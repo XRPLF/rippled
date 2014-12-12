@@ -4308,15 +4308,6 @@
     <ClInclude Include="..\..\src\ripple\types\ByteOrder.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\CryptoIdentifier.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\IdentifierStorage.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\IdentifierType.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
@@ -4326,37 +4317,16 @@
     <ClCompile Include="..\..\src\ripple\types\impl\Issue.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
-      <Filter>ripple\types\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\Issue.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountID.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountPrivateKey.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RippleAccountPublicKey.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\RippleLedgerHash.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RipplePrivateKey.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\RipplePublicKey.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\RipplePublicKeyHash.h">
-      <Filter>ripple\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\SimpleIdentifier.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\strHex.h">

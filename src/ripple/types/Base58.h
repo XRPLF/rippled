@@ -87,9 +87,8 @@ public:
     static Alphabet const& getBitcoinAlphabet ();
     static Alphabet const& getRippleAlphabet ();
 
-    static std::string raw_encode (
-        unsigned char const* begin, unsigned char const* end,
-            Alphabet const& alphabet, bool withCheck);
+    static std::string raw_encode (unsigned char const* begin,
+        unsigned char const* end, Alphabet const& alphabet);
 
     static void fourbyte_hash256 (void* out, void const* in, std::size_t bytes);
 
@@ -122,7 +121,7 @@ public:
                    std::back_inserter (v));
         // Pad zero to make the BIGNUM positive
         v.push_back (0);
-        return raw_encode (&v.front(), &v.back()+1, alphabet, withCheck);
+        return raw_encode (&v.front(), &v.back()+1, alphabet);
     }
 
     template <class Container>
