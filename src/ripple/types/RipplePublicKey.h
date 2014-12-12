@@ -20,26 +20,81 @@
 #ifndef RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 
-#include <ripple/types/CryptoIdentifier.h>
-#include <ripple/types/IdentifierType.h>
+#include <ripple/types/Base58.h>
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iterator>
+#include <ostream>
+#include <stdexcept>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
-class RipplePublicKeyTraits
-    : public CryptoIdentifier <33, 28, true>
+// Simplified public key that avoids the complexities of RippleAddress
+class RipplePublicKey
 {
+private:
+    std::array<std::uint8_t, 33> data_;
+
 public:
-    template <typename Other>
-    struct assign
+    /** Construct from a range of unsigned char. */
+    template <class FwdIt, std::enable_if_t<std::is_same<unsigned char,
+        typename std::iterator_traits<FwdIt>::value_type>::value>* = 0>
+    RipplePublicKey (FwdIt first, FwdIt last);
+
+    template <class = void>
+    std::string
+    to_string() const;
+
+    friend
+    bool
+    operator< (RipplePublicKey const& lhs, RipplePublicKey const& rhs)
     {
-        void operator() (value_type& value, Other const& other)
-        {
-            value = other;
-        }
-    };
+        return lhs.data_ < rhs.data_;
+    }
+
+    friend
+    bool
+    operator== (RipplePublicKey const& lhs, RipplePublicKey const& rhs)
+    {
+        return lhs.data_ == rhs.data_;
+    }
 };
 
-typedef IdentifierType <RipplePublicKeyTraits> RipplePublicKey;
+template <class FwdIt, std::enable_if_t<std::is_same<unsigned char,
+    typename std::iterator_traits<FwdIt>::value_type>::value>*>
+RipplePublicKey::RipplePublicKey (FwdIt first, FwdIt last)
+{
+    assert(std::distance(first, last) == data_.size());
+    // VFALCO TODO Use 4-arg copy from C++14
+    std::copy (first, last, data_.begin());
+}
+
+template <class>
+std::string
+RipplePublicKey::to_string() const
+{
+    // The expanded form of the key is:
+    //  <type> <key> <checksum>
+    std::array <std::uint8_t, 1 + 33 + 4> e;
+    e[0] = 28; // node public key type
+    std::copy (data_.begin(), data_.end(), e.begin() + 1);
+    Base58::fourbyte_hash256 (&*(e.begin() + 34), e.data(), 34);
+    // Convert key + checksum to little endian with an extra pad byte
+    std::array <std::uint8_t, 4 + 33 + 1 + 1> le;
+    std::reverse_copy (e.begin(), e.end(), le.begin());
+    le.back() = 0; // make BIGNUM positive
+    return Base58::raw_encode (le.data(),
+        le.data() + le.size(), Base58::getRippleAlphabet(), true);
+}
+
+inline
+std::ostream&
+operator<< (std::ostream& os, RipplePublicKey const& k)
+{
+    return os << k.to_string();
+}
 
 }
 

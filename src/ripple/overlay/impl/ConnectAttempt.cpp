@@ -492,7 +492,7 @@ ConnectAttempt::onReadBody (error_code ec,
             "Cluster name: " << name;
 
     auto const result = overlay_.peerFinder().activate (
-        slot_, RipplePublicKey(publicKey), cluster);
+        slot_, publicKey.toPublicKey(), cluster);
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
@@ -605,7 +605,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
             "Cluster name: " << name;
 
     auto const result = overlay_.peerFinder().activate (slot_,
-        RipplePublicKey(publicKey), clusterNode);
+        publicKey.toPublicKey(), clusterNode);
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
