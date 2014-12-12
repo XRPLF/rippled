@@ -589,7 +589,7 @@ for toolchain in all_toolchains:
 
         object_builder.add_source_files(
             'beastc.c',
-            CCFLAGS=['-Wno-array-bounds'])
+            CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
 
         object_builder.add_source_files(
             'nodestore.cpp',
@@ -639,7 +639,7 @@ for toolchain in all_toolchains:
 
         object_builder.add_source_files(
             'snappy.cpp',
-            CCFLAGS=['-Wno-unused-function'],
+            CCFLAGS=([] if toolchain == 'msvc' else ['-Wno-unused-function']),
             CPPPATH=[
                 'src/snappy/snappy',
                 'src/snappy/config',
