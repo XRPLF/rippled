@@ -26,6 +26,7 @@
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
+#include <ripple/types/RipplePublicKey.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/ripemd.h>
 #include <openssl/bn.h>
@@ -135,6 +136,13 @@ RippleAddress RippleAddress::createNodePublic (std::string const& strPublic)
     naNew.setNodePublic (strPublic);
 
     return naNew;
+}
+
+RipplePublicKey
+RippleAddress::toPublicKey() const
+{
+    assert (nVersion == VER_NODE_PUBLIC);
+    return RipplePublicKey (vchData.begin(), vchData.end());
 }
 
 NodeID RippleAddress::getNodeID () const
@@ -969,7 +977,7 @@ public:
         expect (deprecatedPublicKey.humanNodePublic () ==
             "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9",
                 deprecatedPublicKey.humanNodePublic ());
-        RipplePublicKey publicKey (deprecatedPublicKey);
+        RipplePublicKey publicKey = deprecatedPublicKey.toPublicKey();
         expect (publicKey.to_string() == deprecatedPublicKey.humanNodePublic(),
             publicKey.to_string());
 

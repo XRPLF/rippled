@@ -800,7 +800,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
         hello_ = *m;
 
         auto const result = overlay_.peerFinder().activate (slot_,
-            RipplePublicKey (publicKey_), cluster);
+            publicKey_.toPublicKey(), cluster);
 
         if (result == PeerFinder::Result::success)
         {

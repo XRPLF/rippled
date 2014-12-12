@@ -270,7 +270,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         publicKey, name);
     
     auto const result = m_peerFinder->activate (slot,
-        RipplePublicKey(publicKey), cluster);
+        publicKey.toPublicKey(), cluster);
     if (result != PeerFinder::Result::success)
     {
         if (journal.trace) journal.trace <<
@@ -409,7 +409,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
     journal_.debug <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
-        ":" << RipplePublicKey(peer->getNodePublic()) << ")";
+        ":" << peer->getNodePublic().toPublicKey() << ")";
 
     // As we are not on the strand, run() must be called
     // while holding the lock, otherwise new I/O can be
@@ -569,7 +569,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
     journal_.debug <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
-        ":" << RipplePublicKey(peer->getNodePublic()) << ")";
+        ":" << peer->getNodePublic().toPublicKey() << ")";
 
     // We just accepted this peer so we have non-zero active peers
     assert(size() != 0);

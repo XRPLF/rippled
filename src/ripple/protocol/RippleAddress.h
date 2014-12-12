@@ -22,13 +22,13 @@
 
 #include <ripple/crypto/Base58Data.h>
 #include <ripple/crypto/ECDSACanonical.h>
+#include <ripple/types/RipplePublicKey.h>
 #include <ripple/types/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/types/RippleAccountID.h>
 #include <ripple/types/RippleAccountPrivateKey.h>
 #include <ripple/types/RippleAccountPublicKey.h>
 #include <ripple/types/RipplePrivateKey.h>
-#include <ripple/types/RipplePublicKey.h>
 #include <ripple/types/RipplePublicKeyHash.h>
 
 namespace ripple {
@@ -68,6 +68,12 @@ public:
     bool isSet () const;
 
     static void clearCache ();
+
+    /** Returns the public key.
+        Precondition: version == VER_NODE_PUBLIC
+    */
+    RipplePublicKey
+    toPublicKey() const;
 
     //
     // Node Public - Also used for Validators
@@ -114,15 +120,6 @@ public:
         std::string const& strAccountID,
         Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
     void setAccountID (Account const& hash160In);
-
-    #if 0
-    static RippleAddress createAccountID (std::string const& strAccountID)
-    {
-        RippleAddress na;
-        na.setAccountID (strAccountID);
-        return na;
-    }
-    #endif
 
     static RippleAddress createAccountID (Account const& uiAccountID);
 
@@ -286,17 +283,6 @@ operator>=(RippleAddress const& lhs, RippleAddress const& rhs)
 {
     return !(lhs < rhs);
 }
-
-/** RipplePublicKey */
-template <>
-struct RipplePublicKeyTraits::assign <RippleAddress>
-{
-    void operator() (value_type& value, RippleAddress const& v) const
-    {
-        Blob const& b (v.getNodePublic ());
-        construct (&b.front(), &b.back()+1, value);
-    }
-};
 
 /** RipplePublicKeyHash */
 template <>
