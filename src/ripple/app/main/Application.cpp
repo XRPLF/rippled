@@ -19,7 +19,6 @@
 
 #include <ripple/app/impl/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
-#include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
@@ -188,7 +187,6 @@ public:
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
-    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
     std::unique_ptr <LoadManager> m_loadManager;
     beast::DeadlineTimer m_sweepTimer;
 
@@ -329,8 +327,6 @@ public:
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
         , mValidations (make_Validations ())
-
-        , mProofOfWorkFactory (make_ProofOfWorkFactory ())
 
         , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
 
@@ -505,11 +501,6 @@ public:
     UniqueNodeList& getUNL ()
     {
         return *m_deprecatedUNL;
-    }
-
-    ProofOfWorkFactory& getProofOfWorkFactory ()
-    {
-        return *mProofOfWorkFactory;
     }
 
     SHAMapStore& getSHAMapStore () override

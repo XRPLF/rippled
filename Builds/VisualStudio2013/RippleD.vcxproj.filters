@@ -2730,21 +2730,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\OrderBook.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\misc\PowResult.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\ProofOfWork.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWork.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStore.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
@@ -4012,15 +3997,6 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Print.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofCreate.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofSolve.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofVerify.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Random.cpp">

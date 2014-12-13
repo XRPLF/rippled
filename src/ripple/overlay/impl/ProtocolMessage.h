@@ -113,7 +113,6 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     {
     case protocol::mtHELLO:         ec = detail::invoke<protocol::TMHello> (type, buffers, handler); break;
     case protocol::mtPING:          ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
-    case protocol::mtPROOFOFWORK:   ec = detail::invoke<protocol::TMProofWork> (type, buffers, handler); break;
     case protocol::mtCLUSTER:       ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
     case protocol::mtGET_PEERS:     ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
     case protocol::mtPEERS:         ec = detail::invoke<protocol::TMPeers> (type, buffers, handler); break;

@@ -117,9 +117,6 @@ HandlerTable HANDLERS({
     {   "ping",                 byRef (&doPing),                Role::USER,  NO_CONDITION     },
     {   "print",                byRef (&doPrint),               Role::ADMIN,   NO_CONDITION     },
 //      {   "profile",              byRef (&doProfile),             Role::USER,  NEEDS_CURRENT_LEDGER  },
-    {   "proof_create",         byRef (&doProofCreate),         Role::ADMIN,   NO_CONDITION     },
-    {   "proof_solve",          byRef (&doProofSolve),          Role::ADMIN,   NO_CONDITION     },
-    {   "proof_verify",         byRef (&doProofVerify),         Role::ADMIN,   NO_CONDITION     },
     {   "random",               byRef (&doRandom),              Role::USER,  NO_CONDITION     },
     {   "ripple_path_find",     byRef (&doRipplePathFind),      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "sign",                 byRef (&doSign),                Role::USER,  NO_CONDITION     },
@@ -143,6 +140,7 @@ HandlerTable HANDLERS({
     {   "wallet_accounts",      byRef (&doWalletAccounts),      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "wallet_propose",       byRef (&doWalletPropose),       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_seed",          byRef (&doWalletSeed),          Role::ADMIN,   NO_CONDITION     },
+
     // Evented methods
     {   "subscribe",            byRef (&doSubscribe),           Role::USER,  NO_CONDITION     },
     {   "unsubscribe",          byRef (&doUnsubscribe),         Role::USER,  NO_CONDITION     },

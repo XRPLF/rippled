@@ -24,8 +24,6 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/app/misc/ProofOfWork.h>
-#include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/Protocol.h>
@@ -371,7 +369,6 @@ public:
 
     void onMessage (std::shared_ptr <protocol::TMHello> const& m);
     void onMessage (std::shared_ptr <protocol::TMPing> const& m);
-    void onMessage (std::shared_ptr <protocol::TMProofWork> const& m);
     void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
@@ -420,9 +417,6 @@ private:
 
     void
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
-
-    void
-    doProofOfWork (Job&, std::weak_ptr <PeerImp> peer, ProofOfWork::pointer pow);
 
     void
     checkTransaction (Job&, int flags, STTx::pointer stx);
