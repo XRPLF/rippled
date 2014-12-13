@@ -856,74 +856,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMPing> const& m)
 }
 
 void
-PeerImp::onMessage (std::shared_ptr <protocol::TMProofWork> const& m)
-{
-    if (m->has_response ())
-    {
-        // this is an answer to a proof of work we requested
-        if (m->response ().size () != (256 / 8))
-            return charge (Resource::feeInvalidRequest);
-
-        uint256 response;
-        memcpy (response.begin (), m->response ().data (), 256 / 8);
-
-        // VFALCO TODO Use a dependency injection here
-        PowResult r = getApp().getProofOfWorkFactory ().checkProof (
-            m->token (), response);
-
-        if (r == powOK)
-            // credit peer
-            // WRITEME
-            return;
-
-        // return error message
-        // WRITEME
-        if (r != powTOOEASY)
-            charge (Resource::feeBadProofOfWork);
-
-        return;
-    }
-
-    if (m->has_result ())
-    {
-        // this is a reply to a proof of work we sent
-        // WRITEME
-    }
-
-    if (m->has_target () && m->has_challenge () && m->has_iterations ())
-    {
-        // this is a challenge
-        // WRITEME: Reject from inbound connections
-
-        uint256 challenge, target;
-
-        if ((m->challenge ().size () != (256 / 8)) || (
-            m->target ().size () != (256 / 8)))
-            return charge (Resource::feeInvalidRequest);
-
-        memcpy (challenge.begin (), m->challenge ().data (), 256 / 8);
-        memcpy (target.begin (), m->target ().data (), 256 / 8);
-        ProofOfWork::pointer pow = std::make_shared<ProofOfWork> (
-            m->token (), m->iterations (), challenge, target);
-
-        if (!pow->isValid ())
-            return charge (Resource::feeInvalidRequest);
-
-#if 0   // Until proof of work is completed, don't do it
-        getApp().getJobQueue ().addJob (
-            jtPROOFWORK,
-            "recvProof->doProof",
-            std::bind (&PeerImp::doProofOfWork, std::placeholders::_1,
-                        std::weak_ptr <PeerImp> (shared_from_this ()), pow));
-#endif
-
-        return;
-    }
-
-    p_journal_.info << "Bad proof of work";
-}
-
-void
 PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 {
     // VFALCO NOTE I think we should drop the peer immediately
@@ -1618,38 +1550,6 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
         std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (),
             std::placeholders::_1, std::weak_ptr<PeerImp> (shared_from_this ()),
                 packet, hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
-}
-
-void
-PeerImp::doProofOfWork (Job&, std::weak_ptr <PeerImp> peer,
-    ProofOfWork::pointer pow)
-{
-    if (peer.expired ())
-        return;
-
-    uint256 solution = pow->solve ();
-
-    if (solution.isZero ())
-    {
-        p_journal_.warning << "Failed to solve proof of work";
-    }
-    else
-    {
-        Peer::ptr pptr (peer.lock ());
-
-        if (pptr)
-        {
-            protocol::TMProofWork reply;
-            reply.set_token (pow->getToken ());
-            reply.set_response (solution.begin (), solution.size ());
-            pptr->send (std::make_shared<Message> (
-                reply, protocol::mtPROOFOFWORK));
-        }
-        else
-        {
-            // WRITEME: Save solved proof of work for new connection
-        }
-    }
 }
 
 void

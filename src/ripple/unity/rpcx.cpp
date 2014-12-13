@@ -72,9 +72,6 @@
 #include <ripple/rpc/handlers/Peers.cpp>
 #include <ripple/rpc/handlers/Ping.cpp>
 #include <ripple/rpc/handlers/Print.cpp>
-#include <ripple/rpc/handlers/ProofCreate.cpp>
-#include <ripple/rpc/handlers/ProofSolve.cpp>
-#include <ripple/rpc/handlers/ProofVerify.cpp>
 #include <ripple/rpc/handlers/Random.cpp>
 #include <ripple/rpc/handlers/RipplePathFind.cpp>
 #include <ripple/rpc/handlers/SMS.cpp>

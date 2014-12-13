@@ -30,7 +30,6 @@ Charge legacyFee (LoadType t)
     case LT_RequestNoReply:     return feeRequestNoReply;
     case LT_InvalidSignature:   return feeInvalidSignature;
     case LT_UnwantedData:       return feeUnwantedData;
-    case LT_BadPoW:             return feeBadProofOfWork;
     case LT_BadData:            return feeBadData;
 
     case LT_RPCInvalid:         return feeInvalidRPC;

@@ -1841,18 +1841,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\OrderBook.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\misc\PowResult.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\ProofOfWork.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWork.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStore.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\SHAMapStoreImp.cpp">
@@ -2908,15 +2896,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Print.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofCreate.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofSolve.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\ProofVerify.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Random.cpp">
