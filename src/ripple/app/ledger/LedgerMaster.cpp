@@ -935,7 +935,8 @@ public:
             {
                 if (!standalone_ && !getApp().getFeeTrack().isLoadedLocal() &&
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
-                    (mValidLedgerSeq == mPubLedgerSeq))
+                    (mValidLedgerSeq == mPubLedgerSeq) &&
+                    (getValidatedLedgerAge() < 60))
                 { // We are in sync, so can acquire
                     std::uint32_t missing;
                     {
@@ -1071,7 +1072,11 @@ public:
         std::list<Ledger::pointer> ret;
 
         WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
-        if (!mPubLedger)
+        if (mValidLedger.empty ())
+        {
+            // No valid ledger, nothing to do
+        }
+        else if (! mPubLedger)
         {
             WriteLog (lsINFO, LedgerMaster) << "First published ledger will be " << mValidLedgerSeq;
             ret.push_back (mValidLedger.get ());
