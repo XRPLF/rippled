@@ -20,9 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/consensus/LedgerConsensus.cpp>
-#include <ripple/app/misc/PowResult.h>
-#include <ripple/app/misc/ProofOfWorkFactory.cpp>
-#include <ripple/app/misc/ProofOfWork.cpp>
 #include <ripple/app/peers/PeerSet.cpp>
 #include <ripple/app/shamap/SHAMapSyncFilters.cpp>
 #include <ripple/app/ledger/LedgerCleaner.cpp>
