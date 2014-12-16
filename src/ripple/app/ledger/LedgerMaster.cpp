@@ -920,7 +920,7 @@ public:
     // Returns 'true' if the caller should call this function again
     // if it has nothing better to do. Returns 'false' if it needs
     // things to happen before it can make more progress
-    bool tryFetch (std::uint32_t missing)
+    bool tryFetch (LedgerIndex missing)
     {
 
         // Get the ledger after the missing ledger
@@ -935,6 +935,7 @@ public:
             WriteLog (lsFATAL, LedgerMaster) << "Ledgers: " <<
                 getApp().getLedgerMaster().getCompleteLedgers();
             clearLedger (missing + 1);
+            // Next time, nextLedger will be different
             return true;
         }
 
@@ -953,7 +954,7 @@ public:
 
             InboundLedger::pointer acq =
                 getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
-                    nextLedger->getLedgerSeq() - 1, InboundLedger::fcHISTORY);
+                    missing, InboundLedger::fcHISTORY);
             if (acq->isComplete() && !acq->isFailed())
             {
                 ledger = acq->getLedger();
@@ -993,7 +994,7 @@ public:
             {
                 if (missing >= i)
                 {
-                    std::uint32_t seq = missing - i;
+                    LedgerIndex seq = missing - i;
                     uint256 hash = nextLedger->getLedgerHash (seq);
                     if (hash.isNonZero())
                         getApp().getInboundLedgers().findCreate (hash,
@@ -1003,7 +1004,7 @@ public:
         }
         catch (...)
         {
-            WriteLog (lsWARNING, LedgerMaster) << "Threw while prefecthing";
+            WriteLog (lsWARNING, LedgerMaster) << "Threw while prefetching";
         }
 
         return false;
@@ -1057,7 +1058,7 @@ public:
                 WriteLog (lsTRACE, LedgerMaster) <<
                     "tryAdvance found " << pubLedgers.size() <<
                     " ledgers to publish";
-                for (auto ledger : pubLedgers)
+                for (auto& ledger : pubLedgers)
                 {
                     {
                         ScopedUnlockType sul (m_mutex);
@@ -1085,7 +1086,7 @@ public:
         std::list<Ledger::pointer> ret;
 
         WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
-        if (!mValidLedger)
+        if (!mValidLedger.empty ())
         { // No valid ledger, nothing to do
         }
         else if (!mPubLedger)
