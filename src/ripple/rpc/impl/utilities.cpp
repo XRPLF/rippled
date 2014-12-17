@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include <utility>
 
 namespace ripple {
@@ -45,16 +46,18 @@ addPaymentDeliveredAmount (
             return;
         }
 
-        // If the transaction was in a ledger that closed after commit
-        // e7f0b8eca69dd47419eee7b82c8716b3aa5a9e39, which introduced the
-        // metadata field, in the absence of DeliveredAmount we assume that the
-        // correct amount is in the Amount field.
         if (auto ledger = context.netOps_.getLedgerBySeq (transaction->getLedger ()))
         {
-            boost::posix_time::ptime const cutoff (
-                boost::gregorian::date (2014, boost::gregorian::Jan, 20));
+            // The first ledger where the DeliveredAmount flag appears is
+            // which closed on 2014-Jan-24 at 04:50:10. If the transaction we
+            // are dealing with is in a ledger that closed after this date then
+            // the absence of DeliveredAmount indicates that the correct amount
+            // is in the Amount field.
 
-            if (ledger->getCloseTime () > cutoff)
+            boost::posix_time::ptime const cutoff (
+                boost::posix_time::time_from_string ("2014-01-24 04:50:10"));
+
+            if (ledger->getCloseTime () >= cutoff)
             {
                 meta[jss::delivered_amount] =
                     serializedTx->getFieldAmount (sfAmount).getJson (1);
