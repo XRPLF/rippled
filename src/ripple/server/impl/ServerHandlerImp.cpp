@@ -28,10 +28,12 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/Manager.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/Coroutine.h>
 #include <beast/crypto/base64.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -146,6 +148,36 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
     return Handoff{};
 }
 
+static inline
+RPC::Output makeOutput (HTTP::Session& session)
+{
+    return [&](boost::string_ref const& b)
+    {
+        session.write (b.data(), b.size());
+    };
+}
+
+namespace {
+
+void runCoroutine (RPC::Coroutine coroutine, JobQueue& jobQueue)
+{
+    if (!coroutine)
+        return;
+    coroutine();
+    if (!coroutine)
+        return;
+
+    // Reschedule the job on the job queue.
+    jobQueue.addJob (
+        jtCLIENT, "RPC-Coroutine",
+        [coroutine, &jobQueue] (Job&)
+        {
+            runCoroutine (coroutine, jobQueue);
+        });
+}
+
+} // namespace
+
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
@@ -153,14 +185,26 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     if (! authorized (session.port(),
         build_map(session.request().headers)))
     {
-        session.write (HTTPReply (403, "Forbidden"));
+        HTTPReply (403, "Forbidden", makeOutput (session));
         session.close (true);
         return;
     }
 
-    m_jobQueue.addJob (jtCLIENT, "RPC-Client", std::bind (
-        &ServerHandlerImp::processSession, this, std::placeholders::_1,
-            session.detach()));
+    auto detach = session.detach();
+
+    if (setup_.yieldStrategy.useCoroutines ==
+        RPC::YieldStrategy::UseCoroutines::yes)
+    {
+        RPC::Coroutine::YieldFunction yieldFunction =
+                [this, detach] (Yield const& y) { processSession (detach, y); };
+        runCoroutine (RPC::Coroutine (yieldFunction), m_jobQueue);
+    }
+    else
+    {
+        m_jobQueue.addJob (
+            jtCLIENT, "RPC-Client",
+            [=] (Job&) { processSession (detach, RPC::Yield{}); });
+    }
 }
 
 void
@@ -179,34 +223,33 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 // Dispatched on the job queue
 void
-ServerHandlerImp::processSession (Job& job,
-    std::shared_ptr<HTTP::Session> const& session)
+ServerHandlerImp::processSession (
+    std::shared_ptr<HTTP::Session> const& session, Yield const& yield)
 {
-    session->write (processRequest (session->port(),
-        to_string(session->body()), session->remoteAddress().at_port(0)));
+    auto output = makeOutput (*session);
+    if (auto byteYieldCount = setup_.yieldStrategy.byteYieldCount)
+        output = RPC::chunkedYieldingOutput (output, yield, byteYieldCount);
+
+    processRequest (
+        session->port(),
+        to_string (session->body()),
+        session->remoteAddress().at_port (0),
+        output,
+        yield);
 
     if (session->request().keep_alive())
-    {
         session->complete();
-    }
     else
-    {
         session->close (true);
-    }
 }
 
-std::string
-ServerHandlerImp::createResponse (
-    int statusCode,
-    std::string const& description)
-{
-    return HTTPReply (statusCode, description);
-}
-
-// VFALCO ARGH! returning a single std::string for the entire response?
-std::string
-ServerHandlerImp::processRequest (HTTP::Port const& port,
-    std::string const& request, beast::IP::Endpoint const& remoteIPAddress)
+void
+ServerHandlerImp::processRequest (
+    HTTP::Port const& port,
+    std::string const& request,
+    beast::IP::Endpoint const& remoteIPAddress,
+    Output output,
+    Yield yield)
 {
     Json::Value jsonRPC;
     {
@@ -216,7 +259,8 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
             jsonRPC.isNull () ||
             ! jsonRPC.isObject ())
         {
-            return createResponse (400, "Unable to parse request");
+            HTTPReply (400, "Unable to parse request", output);
+            return;
         }
     }
 
@@ -239,34 +283,62 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
     if (usage.disconnect ())
-        return createResponse (503, "Server is overloaded");
+    {
+        HTTPReply (503, "Server is overloaded", output);
+        return;
+    }
 
     // Parse id now so errors from here on will have the id
     //
     // VFALCO NOTE Except that "id" isn't included in the following errors.
     //
     Json::Value const id = jsonRPC ["id"];
-
     Json::Value const method = jsonRPC ["method"];
 
     if (method.isNull ())
-        return createResponse (400, "Null method");
+    {
+        HTTPReply (400, "Null method", output);
+        return;
+    }
 
     if (! method.isString ())
-        return createResponse (400, "method is not string");
+    {
+        HTTPReply (400, "method is not string", output);
+        return;
+    }
 
     std::string strMethod = method.asString ();
     if (strMethod.empty())
-        return createResponse (400, "method is empty");
+    {
+        HTTPReply (400, "method is empty", output);
+        return;
+    }
 
-    // Parse params
+    // Extract request parameters from the request Json as `params`.
+    //
+    // If the field "params" is empty, `params` is an empty object.
+    //
+    // Otherwise, that field must be an array of length 1 (why?)
+    // and we take that first entry and validate that it's an object.
     Json::Value params = jsonRPC ["params"];
 
-    if (params.isNull ())
-        params = Json::Value (Json::arrayValue);
+    if (params.isNull () || params.empty())
+        params = Json::Value (Json::objectValue);
 
-    else if (!params.isArray ())
-        return HTTPReply (400, "params unparseable");
+    else if (!params.isArray () || params.size() != 1)
+    {
+        HTTPReply (400, "params unparseable", output);
+        return;
+    }
+    else
+    {
+        params = std::move (params[0u]);
+        if (!params.isObject())
+        {
+            HTTPReply (400, "params unparseable", output);
+            return;
+        }
+    }
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
@@ -275,25 +347,63 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing
         // XXX This needs rate limiting to prevent brute forcing password.
-        return HTTPReply (403, "Forbidden");
+        HTTPReply (403, "Forbidden", output);
+        return;
     }
 
-
-    std::string response;
-    RPCHandler rpcHandler (m_networkOPs);
     Resource::Charge loadType = Resource::feeReferenceRPC;
 
     m_journal.debug << "Query: " << strMethod << params;
 
-    Json::Value const result (rpcHandler.doRpcCommand (
-        strMethod, params, role, loadType));
-    m_journal.debug << "Reply: " << result;
+    // Provide the JSON-RPC method as the field "command" in the request.
+    params[jss::command] = strMethod;
+    WriteLog (lsTRACE, RPCHandler)
+        << "doRpcCommand:" << strMethod << ":" << params;
 
+    RPC::Context context {params, loadType, m_networkOPs, role, nullptr, yield};
+    std::string response;
+
+    if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)
+    {
+        executeRPC (context, response, setup_.yieldStrategy);
+    }
+    else
+    {
+        Json::Value result;
+        RPC::doCommand (context, result, setup_.yieldStrategy);
+
+        // Always report "status".  On an error report the request as received.
+        if (result.isMember ("error"))
+        {
+            result[jss::status] = jss::error;
+            result[jss::request] = params;
+            WriteLog (lsDEBUG, RPCErr) <<
+                "rpcError: " << result ["error"] <<
+                ": " << result ["error_message"];
+        }
+        else
+        {
+            result[jss::status]  = jss::success;
+        }
+
+        Json::Value reply (Json::objectValue);
+        reply[jss::result] = std::move (result);
+        response = to_string (reply);
+    }
+
+    response += '\n';
     usage.charge (loadType);
 
-    response = JSONRPCReply (result, Json::Value (), id);
+    if (m_journal.debug.active())
+    {
+        static const int maxSize = 10000;
+        if (response.size() <= maxSize)
+            m_journal.debug << "Reply: " << response;
+        else
+            m_journal.debug << "Reply: " << response.substr (0, maxSize);
+    }
 
-    return createResponse (200, response);
+    HTTPReply (200, response, output);
 }
 
 //------------------------------------------------------------------------------
@@ -693,8 +803,10 @@ setup_ServerHandler (BasicConfig const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
     setup.ports = detail::parse_Ports (config, log);
+    setup.yieldStrategy = RPC::makeYieldStrategy (config["server"]);
     detail::setup_Client(setup);
     detail::setup_Overlay(setup);
+
     return setup;
 }
 

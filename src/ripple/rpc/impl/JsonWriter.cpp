@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/rpc/impl/WriteJson.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 namespace {
 
@@ -37,7 +37,7 @@ std::map <char, const char*> jsonSpecialCharacterEscape = {
     {'\t', "\\t"}
 };
 
-static int const jsonEscapeLength = 2;
+static size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 const char closeBrace = '}';
@@ -50,12 +50,24 @@ const char quote = '"';
 
 const std::string none;
 
+static auto const integralFloatsBecomeInts = false;
+
 size_t lengthWithoutTrailingZeros (std::string const& s)
 {
-    if (s.find ('.') == std::string::npos)
+    auto dotPos = s.find ('.');
+    if (dotPos == std::string::npos)
         return s.size();
 
-    return s.find_last_not_of ('0') + 1;
+    auto lastNonZero = s.find_last_not_of ('0');
+    auto hasDecimals = dotPos != lastNonZero;
+
+    if (hasDecimals)
+        return lastNonZero + 1;
+
+    if (integralFloatsBecomeInts || lastNonZero + 2 > s.size())
+        return lastNonZero;
+
+    return lastNonZero + 2;
 }
 
 } // namespace
@@ -63,51 +75,51 @@ size_t lengthWithoutTrailingZeros (std::string const& s)
 class Writer::Impl
 {
 public:
-    Impl (Output& output) : output_(output) {}
+    Impl (Output const& output) : output_(output) {}
+    ~Impl() = default;
 
     Impl(Impl&&) = delete;
     Impl& operator=(Impl&&) = delete;
-
 
     bool empty() const { return stack_.empty (); }
 
     void start (CollectionType ct)
     {
         char ch = (ct == array) ? openBracket : openBrace;
-        output (&ch, 1);
+        output ({&ch, 1});
         stack_.push (Collection());
         stack_.top().type = ct;
     }
 
-    void output (char const* data, size_t size)
+    void output (boost::string_ref const& bytes)
     {
         markStarted ();
-        output_.output (data, size);
+        output_ (bytes);
     }
 
-    void stringOutput (char const* data, size_t size)
+    void stringOutput (boost::string_ref const& bytes)
     {
         markStarted ();
-        size_t position = 0, writtenUntil = 0;
+        std::size_t position = 0, writtenUntil = 0;
 
-        output_.output (&quote, 1);
-        for (; position < size; ++position)
+        output_ ({&quote, 1});
+        auto data = bytes.data();
+        for (; position < bytes.size(); ++position)
         {
             auto i = jsonSpecialCharacterEscape.find (data[position]);
             if (i != jsonSpecialCharacterEscape.end ())
             {
                 if (writtenUntil < position)
                 {
-                    output_.output (
-                        data + writtenUntil, position - writtenUntil);
+                    output_ ({data + writtenUntil, position - writtenUntil});
                 }
-                output_.output (i->second, jsonEscapeLength);
+                output_ ({i->second, jsonEscapeLength});
                 writtenUntil = position + 1;
             };
         }
         if (writtenUntil < position)
-            output_.output (data + writtenUntil, position - writtenUntil);
-        output_.output (&quote, 1);
+            output_ ({data + writtenUntil, position - writtenUntil});
+        output_ ({&quote, 1});
     }
 
     void markStarted ()
@@ -129,7 +141,7 @@ public:
         if (stack_.top ().isFirst)
             stack_.top ().isFirst = false;
         else
-            output (&comma, 1);
+            output_ ({&comma, 1});
     }
 
     void writeObjectTag (std::string const& tag)
@@ -141,8 +153,8 @@ public:
         tags.insert (tag);
 #endif
 
-        stringOutput (tag.data(), tag.size());
-        output (&colon, 1);
+        stringOutput (tag);
+        output_ ({&colon, 1});
     }
 
     bool isFinished() const
@@ -156,7 +168,7 @@ public:
 
         auto isArray = stack_.top().type == array;
         auto ch = isArray ? closeBracket : closeBrace;
-        output (&ch, 1);
+        output_ ({&ch, 1});
         stack_.pop();
     }
 
@@ -168,6 +180,8 @@ public:
                 finish();
         }
     }
+
+    Output const& getOutput() const { return output_; }
 
 private:
     // JSON collections are either arrrays, or objects.
@@ -188,19 +202,21 @@ private:
 
     using Stack = std::stack <Collection, std::vector<Collection>>;
 
-    Output& output_;
+    Output output_;
     Stack stack_;
 
     bool isStarted_ = false;
 };
 
-Writer::Writer (Output& output) : impl_(std::make_unique <Impl> (output))
+Writer::Writer (Output const &output)
+        : impl_(std::make_unique <Impl> (output))
 {
 }
 
 Writer::~Writer()
 {
-    impl_->finishAll ();
+    if (impl_)
+        impl_->finishAll ();
 }
 
 Writer::Writer(Writer&& w)
@@ -216,66 +232,66 @@ Writer& Writer::operator=(Writer&& w)
 
 void Writer::output (char const* s)
 {
-    impl_->stringOutput (s, strlen (s));
+    impl_->stringOutput (s);
 }
 
 void Writer::output (std::string const& s)
 {
-    impl_->stringOutput (s.data(), s.size ());
+    impl_->stringOutput (s);
+}
+
+void Writer::output (Json::Value const& value)
+{
+    impl_->markStarted();
+    writeJson (value, impl_->getOutput());
 }
 
 template <>
 void Writer::output (float f)
 {
     auto s = to_string (f);
-    impl_->output (s.data (), lengthWithoutTrailingZeros (s));
+    impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
 template <>
 void Writer::output (double f)
 {
     auto s = to_string (f);
-    impl_->output (s.data (), lengthWithoutTrailingZeros (s));
+    impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
 template <>
 void Writer::output (std::nullptr_t)
 {
-    impl_->output ("null", strlen("null"));
+    impl_->output ("null");
 }
 
-template <typename Type>
-void Writer::output (Type t)
+void Writer::implOutput (std::string const& s)
 {
-    auto s = to_string (t);
-    impl_->output (s.data(), s.size());
+    impl_->output (s);
 }
 
 void Writer::finishAll ()
 {
-    impl_->finishAll ();
+    if (impl_)
+        impl_->finishAll ();
 }
 
-template <typename Type>
-void Writer::append (Type t)
+void Writer::rawAppend()
 {
     impl_->nextCollectionEntry (array, "append");
-    output (t);
 }
 
-template <typename Type>
-void Writer::set (std::string const& tag, Type t)
+void Writer::rawSet (std::string const& tag)
 {
     check (!tag.empty(), "Tag can't be empty");
 
     impl_->nextCollectionEntry (object, "set");
     impl_->writeObjectTag (tag);
-    output (t);
 }
 
 void Writer::startRoot (CollectionType type)
 {
-    check (impl_->empty(), "stack_ not empty() in start");
     impl_->start (type);
 }
 
@@ -294,9 +310,9 @@ void Writer::startSet (CollectionType type, std::string const& key)
 
 void Writer::finish ()
 {
-    impl_->finish ();
+    if (impl_)
+        impl_->finish ();
 }
 
-} // New
 } // RPC
 } // ripple

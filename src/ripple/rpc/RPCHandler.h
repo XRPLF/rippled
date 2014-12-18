@@ -20,38 +20,27 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
-#include <ripple/server/Role.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/Context.h>
 
 namespace ripple {
+namespace RPC {
 
-class NetworkOPs;
+struct Context;
+struct YieldStrategy;
 
-class RPCHandler
-{
-public:
-    explicit RPCHandler (
-        NetworkOPs& netOps, InfoSub::pointer infoSub = nullptr);
+/** Execute an RPC command and store the results in a Json::Value. */
+Status doCommand (RPC::Context&, Json::Value&, YieldStrategy const& s = {});
 
-    Json::Value doCommand (
-        Json::Value const& request,
-        Role role,
-        Resource::Charge& loadType);
+/** Execute an RPC command and store the results in an std::string. */
+void executeRPC (RPC::Context&, std::string&, YieldStrategy const& s = {});
 
-    Json::Value doRpcCommand (
-        std::string const& command,
-        Json::Value const& params,
-        Role role,
-        Resource::Charge& loadType);
+/** Temporary flag to enable RPCs. */
+auto const streamingRPC = false;
 
-private:
-    NetworkOPs& netOps_;
-    InfoSub::pointer infoSub_;
-
-    Role role_ = Role::FORBID;
-};
-
+} // RPC
 } // ripple
 
 #endif

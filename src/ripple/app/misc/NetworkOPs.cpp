@@ -19,6 +19,7 @@
 
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
@@ -590,7 +591,7 @@ NetworkOPsImp::getHostId (bool forAdmin)
     // (this could be cached instead of recalculated every time)
     Blob const& addr (getApp ().getLocalCredentials ().getNodePublic ().
             getNodePublic ());
-        
+
     return RFC1751::getWordFromBlob (addr.data (), addr.size ());
 }
 
@@ -1408,7 +1409,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
     }
 
     m_journal.warning << "We are not running on the consensus ledger";
-    m_journal.info << "Our LCL: " << ourClosed->getJson (0);
+    m_journal.info << "Our LCL: " << getJson (*ourClosed);
     m_journal.info << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))

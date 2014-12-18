@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 
 namespace ripple {
 
@@ -41,7 +42,7 @@ Json::Value doLedgerHeader (RPC::Context& context)
 
     // This information isn't verified: they should only use it if they trust
     // us.
-    lpLedger->addJson (jvResult, 0);
+    addJson (jvResult, {*lpLedger, 0});
 
     return jvResult;
 }

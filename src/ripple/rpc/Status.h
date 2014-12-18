@@ -25,7 +25,6 @@
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
 /** Status represents the results of an operation that might fail.
 
@@ -62,13 +61,15 @@ public:
     {
     }
 
+    Status (error_code_i e, std::string const& s)
+            : type_ (Type::error_code_i), code_ (e), messages_ ({s})
+    {
+    }
+
     /* Returns a representation of the integer status Code as a string.
        If the Status is OK, the result is an empty string.
     */
     std::string codeString () const;
-
-    /** Fill a Json::Value. If the Status is OK, fillJson has no effect. */
-    void fillJson(Json::Value&);
 
     /** Returns true if the Status is *not* OK. */
     operator bool() const
@@ -98,15 +99,39 @@ public:
         return error_code_i (code_);
     }
 
+    /** Apply the Status to a JsonObject
+     */
+    template <class Object>
+    void inject (Object& object)
+    {
+        if (auto ec = toErrorCode())
+        {
+            if (messages_.empty())
+                inject_error (ec, object);
+            else
+                inject_error (ec, message(), object);
+        }
+    }
+
     Strings const& messages() const
     {
         return messages_;
     }
 
+    /** Return the first message, if any. */
+    std::string message() const;
+
     Type type() const
     {
         return type_;
     }
+
+    std::string toString() const;
+
+    /** Fill a Json::Value with an RPC 2.0 response.
+        If the Status is OK, fillJson has no effect.
+        Not currently used. */
+    void fillJson(Json::Value&);
 
 private:
     Type type_ = Type::none;
@@ -114,7 +139,6 @@ private:
     Strings messages_;
 };
 
-} // namespace New
 } // namespace RPC
 } // ripple
 

@@ -17,47 +17,43 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
-#define RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
-
-#include <ripple/rpc/Output.h>
-#include <ripple/rpc/impl/JsonWriter.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/rpc/Coroutine.h>
+#include <ripple/rpc/impl/TestOutputSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-class TestOutputSuite : public beast::unit_test::suite
+using CoroutinePull = boost::coroutines::coroutine <void>::pull_type;
+
+struct Coroutine::Impl : CoroutinePull
 {
-protected:
-    std::string output_;
-    std::unique_ptr <Writer> writer_;
-
-    void setup (std::string const& testName)
-    {
-        testcase (testName);
-        output_.clear ();
-        writer_ = std::make_unique <Writer> (stringOutput (output_));
-    }
-
-    // Test the result and report values.
-    void expectResult (std::string const& expected)
-    {
-        writer_.reset ();
-
-        expectEquals (output_, expected);
-    }
-
-    // Test the result and report values.
-    void expectEquals (std::string const& result, std::string const& expected)
-    {
-        expect (result == expected,
-                "\n" "result:   '" + result + "'" +
-                "\n" "expected: '" + expected + "'");
-    }
+    Impl (CoroutinePull&& p) : CoroutinePull (std::move(p)) {}
 };
+
+Coroutine::Coroutine (YieldFunction const& yieldFunction)
+{
+    CoroutinePull pull ([yieldFunction] (
+        boost::coroutines::coroutine <void>::push_type& push)
+    {
+        Yield yield = [&push] () { push(); };
+        yield ();
+        yieldFunction (yield);
+    });
+
+    impl_ = std::make_shared<Impl> (std::move (pull));
+}
+
+Coroutine::~Coroutine() = default;
+
+Coroutine::operator bool() const
+{
+    return bool (*impl_);
+}
+
+void Coroutine::operator()() const
+{
+    (*impl_)();
+}
 
 } // RPC
 } // ripple
-
-#endif

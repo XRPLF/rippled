@@ -49,10 +49,10 @@ enum LedgerStateParms
     lepERROR        = 32,   // error
 };
 
-#define LEDGER_JSON_DUMP_TXRP   0x10000000
-#define LEDGER_JSON_DUMP_STATE  0x20000000
-#define LEDGER_JSON_EXPAND      0x40000000
-#define LEDGER_JSON_FULL        0x80000000
+#define LEDGER_JSON_DUMP_TXRP   0x1
+#define LEDGER_JSON_DUMP_STATE  0x2
+#define LEDGER_JSON_EXPAND      0x4
+#define LEDGER_JSON_FULL        0x8
 
 class SqliteStatement;
 
@@ -66,6 +66,16 @@ class SqliteStatement;
     of data. It all depends on what is in the corresponding SHAMap entry.
     Various functions are provided to populate or depopulate the caches that
     the object holds references to.
+
+    Ledgers are constructed as either mutable or immutable.
+
+    1) If you are the sole owner of a mutable ledger, you can do whatever you
+    want with no need for locks.
+
+    2) If you have an immutable ledger, you cannot ever change it, so no need
+    for locks.
+
+    3) Mutable ledgers cannot be shared.
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
@@ -381,7 +391,7 @@ public:
 
     SLE::pointer
     getRippleState (uint256 const& uNode) const;
-    
+
     SLE::pointer
     getRippleState (
         Account const& a, Account const& b, Currency const& currency) const;
@@ -419,8 +429,12 @@ public:
 
     static std::set<std::uint32_t> getPendingSaves();
 
-    Json::Value getJson (int options) const;
-    void addJson (Json::Value&, int options);
+    /** Const version of getHash() which gets the current value without calling
+        updateHash(). */
+    uint256 const& getRawHash () const
+    {
+        return mHash;
+    }
 
     bool walkLedger () const;
     bool assertSane () const;
