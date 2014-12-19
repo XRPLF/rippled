@@ -26,7 +26,7 @@
 #define RIPPLE_CKEYDETERMINISTIC_H
 
 #include <ripple/crypto/ec_key.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <openssl/bn.h>
 
 namespace ripple {

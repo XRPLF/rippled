@@ -19,6 +19,7 @@
 
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <beast/unit_test.h>

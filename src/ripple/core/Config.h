@@ -21,9 +21,9 @@
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/core/SystemParameters.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/RippleAddress.h>
-#include <ripple/unity/json.h>
+#include <ripple/json/json_value.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/core/files/File.h>

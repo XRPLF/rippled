@@ -29,10 +29,10 @@
 // - E-mail usually won't line-break if there's no punctuation to break at.
 // - Doubleclicking selects the whole number as one word if it's all alphanumeric.
 //
-#ifndef RIPPLE_TYPES_BASE58_H
-#define RIPPLE_TYPES_BASE58_H
+#ifndef RIPPLE_CRYPTO_BASE58_H
+#define RIPPLE_CRYPTO_BASE58_H
 
-#include <ripple/types/Blob.h>
+#include <ripple/basics/Blob.h>
 #include <array>
 #include <cassert>
 #include <iterator>

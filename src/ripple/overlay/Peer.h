@@ -21,11 +21,9 @@
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
 #include <ripple/overlay/Message.h>
-
-#include <ripple/unity/json.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/RippleAddress.h>
-
 #include <beast/net/IPEndpoint.h>
 
 namespace ripple {

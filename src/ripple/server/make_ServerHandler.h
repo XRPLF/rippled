@@ -20,17 +20,16 @@
 #ifndef RIPPLE_SERVER_MAKE_SERVERHANDLER_H_INCLUDED
 #define RIPPLE_SERVER_MAKE_SERVERHANDLER_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/server/Server.h>
-#include <ripple/overlay/Overlay.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/resource/Manager.h>
 #include <ripple/server/ServerHandler.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <beast/threads/Stoppable.h>
 #include <boost/asio/io_service.hpp>
-#include <vector>
+#include <memory>
 
 namespace ripple {
+
+class NetworkOPs;
 
 std::unique_ptr <ServerHandler>
 make_ServerHandler (beast::Stoppable& parent, boost::asio::io_service& io_service,

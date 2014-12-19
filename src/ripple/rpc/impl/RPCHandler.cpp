@@ -19,6 +19,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/rpc/RPCHandler.h>

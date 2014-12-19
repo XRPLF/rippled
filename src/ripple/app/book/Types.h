@@ -21,7 +21,7 @@
 #define RIPPLE_CORE_TYPES_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
-#include <ripple/types/Book.h>
+#include <ripple/protocol/Book.h>
 
 #include <chrono>
 #include <cstdint>

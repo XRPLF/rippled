@@ -22,6 +22,7 @@
 
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
+#include <beast/utility/PropertyStream.h>
 #include <beast/utility/Journal.h>
 
 namespace ripple {

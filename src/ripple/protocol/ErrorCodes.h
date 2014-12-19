@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_ERRORCODES_H_INCLUDED
-#define RIPPLE_RPC_ERRORCODES_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_ERRORCODES_H_INCLUDED
+#define RIPPLE_PROTOCOL_ERRORCODES_H_INCLUDED
 
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/unity/json.h>
+#include <ripple/json/json_value.h>
 
 namespace ripple {
 

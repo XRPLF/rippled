@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/json/to_string.h>
+
 namespace ripple {
 
 void BookListeners::addSubscriber (InfoSub::ref sub)

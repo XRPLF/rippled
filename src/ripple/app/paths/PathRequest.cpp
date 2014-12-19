@@ -23,7 +23,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/rpc/ErrorCodes.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
 #include <boost/log/trivial.hpp>
 #include <tuple>

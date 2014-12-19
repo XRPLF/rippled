@@ -21,7 +21,7 @@
 #define RIPPLE_STATUS_H
 
 #include <ripple/protocol/TER.h>
-#include <ripple/rpc/ErrorCodes.h>
+#include <ripple/protocol/ErrorCodes.h>
 
 namespace ripple {
 namespace RPC {

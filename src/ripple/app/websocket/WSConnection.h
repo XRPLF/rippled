@@ -23,6 +23,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/resource/Manager.h>
 #include <ripple/server/Port.h>
+#include <ripple/json/to_string.h>
 #include <beast/asio/placeholders.h>
 #include <memory>
 

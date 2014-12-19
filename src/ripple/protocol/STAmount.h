@@ -23,7 +23,7 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
-#include <ripple/types/Issue.h>
+#include <ripple/protocol/Issue.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {

@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/rpc/Manager.h>
 #include <ripple/unity/app.h>
-#include <ripple/unity/rpcx.h>
 #include <ripple/unity/websocket.h>
 #include <ripple/app/impl/BasicApp.cpp>
 #include <ripple/app/main/CollectorManager.cpp>

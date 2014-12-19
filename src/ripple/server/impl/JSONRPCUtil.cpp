@@ -21,7 +21,7 @@
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <ripple/core/SystemParameters.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/json/to_string.h>
 #include <boost/algorithm/string.hpp>
 

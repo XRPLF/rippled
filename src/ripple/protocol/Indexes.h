@@ -24,8 +24,8 @@
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/types/base_uint.h>
-#include <ripple/types/Book.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/protocol/Book.h>
 
 namespace ripple {
 

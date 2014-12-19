@@ -22,11 +22,11 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef RIPPLE_TYPES_UINT160_H_INCLUDED
-#define RIPPLE_TYPES_UINT160_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_UINT160_H_INCLUDED
+#define RIPPLE_PROTOCOL_UINT160_H_INCLUDED
 
-#include <ripple/types/base_uint.h>
-#include <ripple/types/strHex.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/basics/strHex.h>
 #include <boost/functional/hash.hpp>
 #include <functional>
 

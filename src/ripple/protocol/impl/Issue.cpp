@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/types/Book.h>
-#include <ripple/types/Issue.h>
+#include <ripple/protocol/Book.h>
+#include <ripple/protocol/Issue.h>
 #include <beast/unit_test/suite.h>
 #include <map>
 #include <set>

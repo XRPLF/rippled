@@ -20,8 +20,6 @@
 #ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
-#include <ripple/server/ServerHandler.h>
-
 namespace ripple {
 namespace RPC {
 

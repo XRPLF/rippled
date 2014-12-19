@@ -22,8 +22,8 @@
 
 #include <ripple/crypto/Base58Data.h>
 #include <ripple/crypto/ECDSACanonical.h>
-#include <ripple/types/RipplePublicKey.h>
-#include <ripple/types/UInt160.h>
+#include <ripple/protocol/RipplePublicKey.h>
+#include <ripple/protocol/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
 
 namespace ripple {

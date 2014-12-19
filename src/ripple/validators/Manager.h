@@ -22,7 +22,7 @@
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/validators/Connection.h>
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/http/URL.h>
 #include <beast/module/core/files/File.h>

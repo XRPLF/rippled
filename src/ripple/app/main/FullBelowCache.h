@@ -20,7 +20,7 @@
 #ifndef RIPPLE_FULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_FULLBELOWCACHE_H_INCLUDED
 
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <ripple/app/main/BasicFullBelowCache.h>
 
 namespace ripple {

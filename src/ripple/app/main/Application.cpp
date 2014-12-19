@@ -19,13 +19,14 @@
 
 #include <ripple/app/impl/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
+#include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/net/SNTPClient.h>
 #include <ripple/nodestore/Database.h>

@@ -22,7 +22,7 @@
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/basics/seconds_clock.h>
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/validators/impl/Store.h>
 #include <ripple/validators/impl/Tuning.h>
 #include <beast/chrono/manual_clock.h>

@@ -18,14 +18,33 @@
 //==============================================================================
 
 #include <ripple/crypto/GenerateDeterministicKey.h>
-
+#include <ripple/crypto/Base58.h>
 #include <ripple/crypto/CBigNum.h>
-#include <ripple/protocol/Serializer.h>
+#include <array>
 #include <string>
 
 namespace ripple {
 
 using openssl::ec_key;
+
+uint256
+getSHA512Half (void const* data, std::size_t bytes)
+{
+    uint256 j[2];
+    SHA512 (reinterpret_cast<unsigned char const*>(data), bytes, 
+        reinterpret_cast<unsigned char*> (j));
+    return j[0];
+}
+
+template <class FwdIt>
+void
+copy_uint32 (FwdIt out, std::uint32_t v)
+{
+    *out++ =  v >> 24;
+    *out++ = (v >> 16) & 0xff;
+    *out++ = (v >>  8) & 0xff;
+    *out   =  v        & 0xff;
+}
 
 // #define EC_DEBUG
 
@@ -67,19 +86,20 @@ ec_key GenerateRootDeterministicKey (uint128 const& seed)
         return ec_key::invalid;
     }
 
+    // find non-zero private key less than the curve's order
     BIGNUM* privKey = nullptr;
-    int seq = 0;
-
+    std::uint32_t seq = 0;
     do
     {
-        // private key must be non-zero and less than the curve's order
-        Serializer s ((128 + 32) / 8);
-        s.add128 (seed);
-        s.add32 (seq++);
-        uint256 root = s.getSHA512Half ();
-        s.secureErase ();
+        // buf: 0                seed               16  seq  20
+        //      |<--------------------------------->|<------>|
+        std::array<std::uint8_t, 20> buf;
+        std::copy(seed.begin(), seed.end(), buf.begin());
+        copy_uint32 (buf.begin() + 16, seq++);
+        ++seq;
+        uint256 root = getSHA512Half (buf.data(), buf.size());
+        std::fill (buf.begin(), buf.end(), 0); // security erase
         privKey = BN_bin2bn ((const unsigned char*) &root, sizeof (root), privKey);
-
         if (privKey == nullptr)
         {
             EC_KEY_free (pkey);
@@ -88,7 +108,7 @@ ec_key GenerateRootDeterministicKey (uint128 const& seed)
             return ec_key::invalid;
         }
 
-        root.zero ();
+        root.zero(); // security erase
     }
     while (BN_is_zero (privKey) || (BN_cmp (privKey, order) >= 0));
 
@@ -188,17 +208,20 @@ static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
     int subSeq = 0;
     BIGNUM* ret = nullptr;
 
+    assert(pubGen.size() == 33);
     do
     {
-        Serializer s ((33 * 8 + 32 + 32) / 8);
-        s.addRaw (pubGen);
-        s.add32 (seq);
-        s.add32 (subSeq++);
-        uint256 root = s.getSHA512Half ();
-        s.secureErase ();
+        // buf: 0          pubGen             33 seq   37 subSeq  41
+        //      |<--------------------------->|<------>|<-------->|
+        std::array<std::uint8_t, 41> buf;
+        std::copy (pubGen.begin(), pubGen.end(), buf.begin());
+        copy_uint32 (buf.begin() + 33, seq);
+        copy_uint32 (buf.begin() + 37, subSeq++);
+        uint256 root = getSHA512Half (buf.data(), buf.size());
+        std::fill(buf.begin(), buf.end(), 0); // security erase
         ret = BN_bin2bn ((const unsigned char*) &root, sizeof (root), ret);
-
         if (!ret) return nullptr;
+        root.zero(); // security erase
     }
     while (BN_is_zero (ret) || (BN_cmp (ret, order) >= 0));
 

@@ -20,7 +20,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/crypto/CBigNum.h>
-#include <ripple/core/SystemParameters.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/module/core/text/LexicalCast.h>

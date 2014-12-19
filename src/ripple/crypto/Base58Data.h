@@ -32,8 +32,8 @@
 #ifndef RIPPLE_CRYPTO_BASE58DATA_H
 #define RIPPLE_CRYPTO_BASE58DATA_H
 
-#include <ripple/types/Base58.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/crypto/Base58.h>
+#include <ripple/basics/base_uint.h>
 
 namespace ripple {
 

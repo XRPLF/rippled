@@ -21,7 +21,7 @@
 #define RIPPLE_INBOUNDLEDGERS_H
 
 #include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/cxx14/memory.h> // <memory>
 

@@ -21,7 +21,7 @@
 #define RIPPLE_SHAMAPNODEID_H
 
 #include <ripple/protocol/Serializer.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <ostream>
 #include <string>
 #include <tuple>

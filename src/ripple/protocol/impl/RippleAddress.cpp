@@ -26,7 +26,7 @@
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/types/RipplePublicKey.h>
+#include <ripple/protocol/RipplePublicKey.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/ripemd.h>
 #include <openssl/bn.h>
@@ -957,6 +957,17 @@ public:
             = naAccountPrivate1.accountPrivateDecrypt (naAccountPublic0, vucTextCipher);
 
         expect (vucTextSrc == vucTextRecovered, "Encrypt-decrypt failed.");
+
+        {
+            RippleAddress nSeed;
+            uint128 seed1, seed2;
+            seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
+            nSeed.setSeed (seed1);
+            expect (nSeed.humanSeed() == "shHM53KPZ87Gwdqarm1bAmPeXg8Tn",
+                "Incorrect human seed");
+            expect (nSeed.humanSeed1751() == "MAD BODY ACE MINT OKAY HUB WHAT DATA SACK FLAT DANA MATH",
+                "Incorrect 1751 seed");
+        }
     }
 };
 

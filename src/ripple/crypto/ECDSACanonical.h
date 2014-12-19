@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CRYPTO_ECDSACANONICAL_H_INCLUDED
 #define RIPPLE_CRYPTO_ECDSACANONICAL_H_INCLUDED
 
-#include <ripple/types/Blob.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 

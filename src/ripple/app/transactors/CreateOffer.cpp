@@ -21,6 +21,7 @@
 #include <ripple/app/book/Taker.h>
 #include <ripple/app/book/Types.h>
 #include <ripple/app/book/Amounts.h>
+#include <ripple/json/to_string.h>
 
 #include <beast/cxx14/memory.h>
 

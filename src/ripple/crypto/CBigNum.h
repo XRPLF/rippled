@@ -25,7 +25,7 @@
 #ifndef RIPPLE_CRYPTO_CBIGNUM_H_INCLUDED
 #define RIPPLE_CRYPTO_CBIGNUM_H_INCLUDED
 
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <openssl/bn.h>
 
 namespace ripple {

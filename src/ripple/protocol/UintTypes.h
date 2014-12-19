@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_BASICS
-#define RIPPLE_TYPES_BASICS
+#ifndef RIPPLE_PROTOCOL_BASICS
+#define RIPPLE_PROTOCOL_BASICS
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 
 namespace ripple {
 namespace detail {

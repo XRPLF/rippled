@@ -22,7 +22,6 @@
 
 #include <ripple/basics/BasicTypes.h>
 #include <ripple/core/LoadMonitor.h>
-#include <ripple/unity/json.h>
 
 namespace ripple {
 

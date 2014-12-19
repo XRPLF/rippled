@@ -23,6 +23,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
 #include <ripple/app/websocket/WSConnection.h>
+#include <ripple/json/json_reader.h>
 #include <memory>
 
 namespace ripple {

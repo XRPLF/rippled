@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/json/JsonPropertyStream.h>
+
 namespace ripple {
 
 JsonPropertyStream::JsonPropertyStream ()

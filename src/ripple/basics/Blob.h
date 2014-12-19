@@ -17,14 +17,17 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_RIPPLELEDGERHASH_H_INCLUDED
-#define RIPPLE_TYPES_RIPPLELEDGERHASH_H_INCLUDED
+#ifndef RIPPLE_BASICS_BLOB_H_INCLUDED
+#define RIPPLE_BASICS_BLOB_H_INCLUDED
 
-#include <ripple/types/base_uint.h>
+#include <vector>
 
 namespace ripple {
 
-using LedgerHash = uint256;
+/** Storage for linear binary data.
+    Blocks of binary data appear often in various idioms and structures.
+*/
+typedef std::vector <unsigned char> Blob;
 
 }
 

@@ -21,10 +21,11 @@
 #define RIPPLE_LEDGERMASTER_H_INCLUDED
 
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
+#include <beast/utility/PropertyStream.h>
 
 namespace ripple {
 

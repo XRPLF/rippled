@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
-#define RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_RIPPLEPUBLICKEY_H_INCLUDED
+#define RIPPLE_PROTOCOL_RIPPLEPUBLICKEY_H_INCLUDED
 
-#include <ripple/types/Base58.h>
+#include <ripple/crypto/Base58.h>
 #include <algorithm>
 #include <array>
 #include <cstdint>

@@ -22,7 +22,7 @@
 
 #include <ripple/basics/byte_view.h>
 #include <ripple/protocol/SField.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <iomanip>
 #include <sstream>
 

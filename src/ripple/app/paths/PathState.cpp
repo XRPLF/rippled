@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/paths/Credit.h>
+#include <ripple/json/to_string.h>
 
 namespace ripple {
 

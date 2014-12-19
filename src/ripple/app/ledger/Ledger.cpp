@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/unit_test/suite.h>

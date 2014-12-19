@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CANONICALTXSET_H
 #define RIPPLE_CANONICALTXSET_H
 
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 
 namespace ripple {
 

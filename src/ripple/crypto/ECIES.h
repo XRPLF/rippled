@@ -21,7 +21,7 @@
 #define RIPPLE_ECIES_H
 
 #include <ripple/crypto/ec_key.h>
-#include <ripple/types/Blob.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 

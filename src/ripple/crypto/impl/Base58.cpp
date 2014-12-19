@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/crypto/Base58.h>
 #include <ripple/crypto/CAutoBN_CTX.h>
 #include <ripple/crypto/CBigNum.h>
-#include <ripple/types/Base58.h>
 #include <openssl/sha.h>
 
 #include <stdexcept>

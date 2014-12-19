@@ -24,13 +24,17 @@
 #endif
 
 #include <ripple/protocol/impl/BuildInfo.cpp>
-#include <ripple/protocol/impl/SField.cpp>
+#include <ripple/protocol/impl/ByteOrder.cpp>
+#include <ripple/protocol/impl/ErrorCodes.cpp>
 #include <ripple/protocol/impl/HashPrefix.cpp>
 #include <ripple/protocol/impl/Indexes.cpp>
+#include <ripple/protocol/impl/Issue.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
+#include <ripple/protocol/impl/SField.cpp>
 #include <ripple/protocol/impl/SOTemplate.cpp>
+#include <ripple/protocol/impl/strHex.cpp>
 #include <ripple/protocol/impl/TER.cpp>
 #include <ripple/protocol/impl/TxFormats.cpp>
 #include <ripple/protocol/impl/UintTypes.cpp>
@@ -49,5 +53,4 @@
 #include <ripple/protocol/impl/STValidation.cpp>
 #include <ripple/protocol/impl/STVector256.cpp>
 
-// VFALCO Should be in a tests dir
-#include <ripple/protocol/impl/STAmount.test.cpp>
+#include <ripple/protocol/tests/STAmount.test.cpp>

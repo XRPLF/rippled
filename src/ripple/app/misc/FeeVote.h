@@ -21,7 +21,7 @@
 #define RIPPLE_APP_FEEVOTE_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/core/SystemParameters.h>
+#include <ripple/protocol/SystemParameters.h>
 
 namespace ripple {
 

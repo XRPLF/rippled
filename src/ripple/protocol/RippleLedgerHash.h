@@ -17,19 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SSLUTIL_H_INCLUDED
-#define RIPPLE_SSLUTIL_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_RIPPLELEDGERHASH_H_INCLUDED
+#define RIPPLE_PROTOCOL_RIPPLELEDGERHASH_H_INCLUDED
 
-#include <ripple/unity/types.h>
+#include <ripple/basics/base_uint.h>
 
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-#include <openssl/ripemd.h>
-#include <openssl/sha.h>
+namespace ripple {
 
-#include <ripple/sslutil/CAutoBN_CTX.h>
-#include <ripple/sslutil/CBigNum.h>
-#include <ripple/sslutil/DHUtil.h>
-#include <ripple/sslutil/ECDSACanonical.h>
+using LedgerHash = uint256;
+
+}
 
 #endif

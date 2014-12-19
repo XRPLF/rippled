@@ -19,7 +19,7 @@
 
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/STInteger.h>
-#include <ripple/rpc/ErrorCodes.h> // VFALCO Questionable dependency
+#include <ripple/protocol/ErrorCodes.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <cassert>
 

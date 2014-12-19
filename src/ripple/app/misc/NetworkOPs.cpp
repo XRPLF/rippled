@@ -28,6 +28,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
+#include <ripple/json/to_string.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/HashPrefix.h>

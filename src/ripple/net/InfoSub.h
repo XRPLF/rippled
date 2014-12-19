@@ -23,7 +23,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/resource/Consumer.h>
-#include <ripple/types/Book.h>
+#include <ripple/protocol/Book.h>
 #include <beast/threads/Stoppable.h>
 #include <mutex>
 

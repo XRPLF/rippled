@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_H
-#define RIPPLE_TYPES_H
+#ifndef RIPPLE_TYPES_H_INCLUDED
+#define RIPPLE_TYPES_H_INCLUDED
 
 namespace ripple {
 

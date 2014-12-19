@@ -20,7 +20,7 @@
 #ifndef RIPPLE_ECKEY_H
 #define RIPPLE_ECKEY_H
 
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 
 namespace ripple {
 namespace openssl {

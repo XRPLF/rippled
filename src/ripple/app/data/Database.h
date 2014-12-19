@@ -20,7 +20,7 @@
 #ifndef RIPPLE_DATABASE_H_INCLUDED
 #define RIPPLE_DATABASE_H_INCLUDED
 
-#include <ripple/types/Blob.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 

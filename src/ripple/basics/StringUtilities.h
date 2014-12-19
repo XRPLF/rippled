@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 #define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
-#include <ripple/types/Blob.h>
-#include <ripple/types/ByteOrder.h>
-#include <ripple/types/strHex.h>
+#include <ripple/basics/ByteOrder.h>
+#include <ripple/basics/Blob.h>
+#include <ripple/basics/strHex.h>
 #include <boost/format.hpp>
 #include <beast/module/core/text/StringPairArray.h>
 #include <string>

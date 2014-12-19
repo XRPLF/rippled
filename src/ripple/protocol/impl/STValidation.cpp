@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/core/Config.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/HashPrefix.h>
 

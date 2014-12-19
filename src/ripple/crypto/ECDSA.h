@@ -21,8 +21,8 @@
 #define RIPPLE_ECDSA_H
 
 #include <ripple/crypto/ec_key.h>
-#include <ripple/types/base_uint.h>
-#include <ripple/types/Blob.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 

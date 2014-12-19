@@ -22,6 +22,7 @@
 #include <ripple/basics/ThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/RandomNumbers.h>
+#include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/protocol/BuildInfo.h>

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/ErrorCodes.h>
+#include <unordered_map>
 #include <utility>
-
-#include <ripple/rpc/ErrorCodes.h>
 
 namespace std {
 
@@ -41,7 +41,7 @@ namespace detail {
 class ErrorCategory
 {
 public:
-    typedef hash_map <error_code_i, ErrorInfo> Map;
+    using Map = std::unordered_map <error_code_i, ErrorInfo> ;
 
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")

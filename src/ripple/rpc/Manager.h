@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_MANAGER_H_INCLUDED
 
 #include <ripple/rpc/Request.h>
+#include <memory>
 
 namespace ripple {
 namespace RPC {

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_ISSUE_INCLUDED
-#define RIPPLE_TYPES_ISSUE_INCLUDED
+#ifndef RIPPLE_PROTOCOL_ISSUE_INCLUDED
+#define RIPPLE_PROTOCOL_ISSUE_INCLUDED
 
 #include <cassert>
 #include <functional>

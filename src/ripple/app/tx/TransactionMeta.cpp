@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>
 
 namespace ripple {

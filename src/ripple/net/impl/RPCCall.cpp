@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_reader.h>
+#include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/ErrorCodes.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>

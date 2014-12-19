@@ -23,7 +23,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/Scheduler.h>
-#include <ripple/rpc/ErrorCodes.h>
+#include <ripple/protocol/ErrorCodes.h>
 
 namespace ripple {
 

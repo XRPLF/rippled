@@ -21,17 +21,11 @@
 
 // Unfortunate but necessary since RPC handlers can literally do anything
 #include <ripple/unity/app.h>
-#include <ripple/unity/json.h>
 #include <ripple/protocol/JsonFields.h>
 
-#include <ripple/unity/rpcx.h>
-
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/overlay/Overlay.h>
-#include <tuple>
 
 #include <ripple/rpc/impl/Coroutine.cpp>
-#include <ripple/rpc/impl/ErrorCodes.cpp>
 #include <ripple/rpc/impl/JsonObject.cpp>
 #include <ripple/rpc/impl/JsonWriter.cpp>
 #include <ripple/rpc/impl/WriteJson.cpp>

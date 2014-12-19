@@ -18,8 +18,7 @@
 //==============================================================================
 
 #include <ripple/crypto/GenerateDeterministicKey.h>
-#include <ripple/protocol/RippleAddress.h>
-#include <ripple/types/base_uint.h>
+#include <ripple/basics/base_uint.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
@@ -51,15 +50,6 @@ public:
 
         unexpected (to_string (priv2) != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B",
             "Incorrect private key for generator");
-
-        RippleAddress nSeed;
-        nSeed.setSeed (seed1);
-
-        unexpected (nSeed.humanSeed () != "shHM53KPZ87Gwdqarm1bAmPeXg8Tn",
-            "Incorrect human seed");
-
-        unexpected (nSeed.humanSeed1751 () != "MAD BODY ACE MINT OKAY HUB WHAT DATA SACK FLAT DANA MATH",
-            "Incorrect 1751 seed");
     }
 };
 

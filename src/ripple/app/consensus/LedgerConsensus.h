@@ -26,7 +26,7 @@
 #include <ripple/app/tx/LocalTxs.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
-#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/chrono/abstract_clock.h>
 #include <chrono>
 

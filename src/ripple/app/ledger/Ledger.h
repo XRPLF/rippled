@@ -27,7 +27,7 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/types/Book.h>
+#include <ripple/protocol/Book.h>
 #include <set>
 
 namespace ripple {

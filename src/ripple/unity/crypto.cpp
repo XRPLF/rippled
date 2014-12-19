@@ -23,6 +23,7 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/crypto/impl/Base58.cpp>
 #include <ripple/crypto/impl/Base58Data.cpp>
 #include <ripple/crypto/impl/CBigNum.cpp>
 #include <ripple/crypto/impl/DHUtil.cpp>
