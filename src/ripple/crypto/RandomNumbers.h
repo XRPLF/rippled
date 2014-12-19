@@ -21,6 +21,7 @@
 #define RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 
 #include <beast/utility/Journal.h>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
@@ -62,29 +63,23 @@ public:
         Fills the memory for the object with random numbers.
         This is a type-safe alternative to the function above.
 
-        @param object A pointer to the object to fill.
-
-        @tparam T The type of `object`
-
-        @note Undefined behavior results if `T` is not a POD type.
+        @param object A pointer to a POD object to fill.
     */
     template <class T>
-    void fill (T* object)
+    std::enable_if_t<std::is_pod<T>::value>
+    fill (T* object)
     {
         fillBytes (object, sizeof (T));
     }
 
 private:
-    RandomNumbers ();
-
-    ~RandomNumbers ();
+    RandomNumbers () = default;
+    ~RandomNumbers () = default;
 
     bool platformAddEntropy (beast::Journal::Stream stream);
 
-    void platformAddPerformanceMonitorEntropy ();
-
 private:
-    bool m_initialized;
+    bool m_initialized = false;
 };
 
 }

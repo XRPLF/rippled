@@ -35,15 +35,6 @@
 
 namespace ripple {
 
-RandomNumbers::RandomNumbers ()
-    : m_initialized (false)
-{
-}
-
-RandomNumbers::~RandomNumbers ()
-{
-}
-
 bool RandomNumbers::initialize (beast::Journal::Stream stream)
 {
     assert (!m_initialized);
@@ -63,14 +54,8 @@ void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
     assert (m_initialized);
 
     // VFALCO NOTE When a spinlock is available in beast, use it here.
-    if (! m_initialized)
-    {
-        if (! initialize ())
-        {
-            char const* message = "Unable to add system entropy";
-            throw std::runtime_error (message);
-        }
-    }
+    if (! m_initialized && !initialize ())
+        throw std::runtime_error ("Unable to add system entropy");
 
 #ifdef PURIFY
     memset (destinationBuffer, 0, numberOfBytes);
@@ -161,83 +146,5 @@ bool RandomNumbers::platformAddEntropy (beast::Journal::Stream stream)
 }
 
 #endif
-
-//------------------------------------------------------------------------------
-
-//
-// "Never go to sea with two chronometers; take one or three."
-// Our three time sources are:
-//  - System clock
-//  - Median of other nodes's clocks
-//  - The user (asking the user to fix the system clock if the first two disagree)
-//
-
-void RandomNumbers::platformAddPerformanceMonitorEntropy ()
-{
-    // VFALCO TODO Remove all this fancy stuff
-    struct
-    {
-        std::int64_t operator () () const
-        {
-            return time (nullptr);
-        }
-    } GetTime;
-
-    struct
-    {
-        void operator () ()
-        {
-            struct
-            {
-                // VFALCO TODO clean this up
-                std::int64_t operator () () const
-                {
-                    std::int64_t nCounter = 0;
-#if BEAST_WIN32
-                    QueryPerformanceCounter ((LARGE_INTEGER*)&nCounter);
-#else
-                    timeval t;
-                    gettimeofday (&t, nullptr);
-                    nCounter = t.tv_sec * 1000000 + t.tv_usec;
-#endif
-                    return nCounter;
-                }
-            } GetPerformanceCounter;
-
-            // Seed with CPU performance counter
-            std::int64_t nCounter = GetPerformanceCounter ();
-            RAND_add (&nCounter, sizeof (nCounter), 1.5);
-            memset (&nCounter, 0, sizeof (nCounter));
-        }
-    } RandAddSeed;
-
-    RandAddSeed ();
-
-    // This can take up to 2 seconds, so only do it every 10 minutes
-    static std::int64_t nLastPerfmon;
-
-    if (GetTime () < nLastPerfmon + 10 * 60)
-        return;
-
-    nLastPerfmon = GetTime ();
-
-#if BEAST_WIN32
-    // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
-    // Seed with the entire set of perfmon data
-    unsigned char pdata[250000];
-    memset (pdata, 0, sizeof (pdata));
-    unsigned long nSize = sizeof (pdata);
-    long ret = RegQueryValueExA (HKEY_PERFORMANCE_DATA, "Global", nullptr, nullptr, pdata, &nSize);
-    RegCloseKey (HKEY_PERFORMANCE_DATA);
-
-    if (ret == ERROR_SUCCESS)
-    {
-        RAND_add (pdata, nSize, nSize / 100.0);
-        memset (pdata, 0, nSize);
-        //printf("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", GetTime()).c_str(), nSize);
-    }
-
-#endif
-}
 
 }
