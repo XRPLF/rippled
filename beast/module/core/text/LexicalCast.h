@@ -21,15 +21,16 @@
 #define BEAST_LEXICALCAST_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
+#include <iostream>
+#include <iterator>
 #include <limits>
 #include <string>
-#include <utility>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <typeinfo>
-#include <iostream>
+#include <utility>
 
 namespace beast {
 
@@ -169,14 +170,14 @@ struct LexicalCast <Out, std::string>
     std::enable_if_t <std::is_unsigned <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
-        return parseUnsigned (out, std::begin(in), std::end(in));
+        return parseUnsigned (out, in.begin(), in.end());
     }
 
     template <class Integral = Out>
     std::enable_if_t <std::is_signed <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
-        return parseSigned (out, std::begin(in), std::end(in));
+        return parseSigned (out, in.begin(), in.end());
     }
 
     bool
