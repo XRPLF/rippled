@@ -20,72 +20,36 @@
 #ifndef RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 #define RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 
-#include <beast/utility/Journal.h>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
-/** Cryptographically secure random number source.
+/** Adds entropy to the RNG pool.
+
+    @param buffer An optional buffer that contains random data.
+    @param count The size of the buffer, in bytes (or 0).
+
+    This can be called multiple times to stir entropy into the pool
+    without any locks.
 */
-class RandomNumbers
+void add_entropy (void* buffer = nullptr, int count = 0);
+
+/** Generate random bytes, suitable for cryptography. */
+/**@{*/
+/**
+    @param buffer The place to store the bytes.
+    @param count The number of bytes to generate.
+*/
+void random_fill (void* buffer, int count);
+
+/** Fills a POD object with random data */
+template <class T, class = std::enable_if_t<std::is_pod<T>::value>>
+void
+random_fill (T* object)
 {
-public:
-    /** Retrieve the instance of the generator.
-    */
-    static RandomNumbers& getInstance ();
-
-    /** Initialize the generator.
-
-        If the generator is not manually initialized, it will be
-        automatically initialized on first use. If automatic initialization
-        fails, an exception is thrown.
-
-        @return `true` if enough entropy could be retrieved.
-    */
-    bool initialize (beast::Journal::Stream stream = beast::Journal::Stream());
-
-    /** Generate secure random numbers.
-
-        The generated data is suitable for cryptography.
-
-        @invariant The destination buffer must be large enough or
-                   undefined behavior results.
-
-        @param destinationBuffer The place to store the bytes.
-        @param numberOfBytes The number of bytes to generate.
-    */
-    void fillBytes (void* destinationBuffer, int numberOfBytes);
-
-    /** Generate secure random numbers.
-
-        The generated data is suitable for cryptography.
-
-        Fills the memory for the object with random numbers.
-        This is a type-safe alternative to the function above.
-
-        @param object A pointer to the object to fill.
-
-        @tparam T The type of `object`
-
-        @note Undefined behavior results if `T` is not a POD type.
-    */
-    template <class T>
-    void fill (T* object)
-    {
-        fillBytes (object, sizeof (T));
-    }
-
-private:
-    RandomNumbers ();
-
-    ~RandomNumbers ();
-
-    bool platformAddEntropy (beast::Journal::Stream stream);
-
-    void platformAddPerformanceMonitorEntropy ();
-
-private:
-    bool m_initialized;
-};
+    random_fill (object, sizeof (T));
+}
+/**@}*/
 
 }
 

@@ -218,11 +218,8 @@ int run (int argc, char** argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
-    if (! RandomNumbers::getInstance ().initialize ())
-    {
-        std::cerr << "Unable to add system entropy" << std::endl;
-        iResult = 2;
-    }
+    // Seed the RNG early
+    add_entropy ();
 
     if (!iResult)
     {

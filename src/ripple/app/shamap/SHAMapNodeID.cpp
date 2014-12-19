@@ -64,7 +64,7 @@ SHAMapNodeID::calculate_hash (uint256 const& node, int depth)
         HashParams ()
             : golden_ratio (0x9e3779b9)
         {
-            RandomNumbers::getInstance ().fill (&cookie_value);
+            random_fill (&cookie_value);
         }
 
         // The cookie value protects us against algorithmic complexity attacks.

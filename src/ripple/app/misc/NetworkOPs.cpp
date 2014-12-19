@@ -2895,7 +2895,8 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     if (m_standalone)
         jvResult[jss::stand_alone] = m_standalone;
 
-    RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
+    // CHECKME: is it necessary to provide a random number here?
+    random_fill (uRandom.begin (), uRandom.size ());
 
     jvResult[jss::random]          = to_string (uRandom);
     jvResult[jss::server_status]   = strOperatingMode ();
