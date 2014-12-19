@@ -66,10 +66,8 @@ protected:
     void SetData (int version, base_uint<Bits, Tag> const& from)
     {
         nVersion = version;
-
         vchData.resize (from.size ());
-
-        std::copy (std::begin (from), std::end(from), std::begin (vchData));
+        std::copy (from.begin(), from.end(), vchData.begin());
     }
 
 public:

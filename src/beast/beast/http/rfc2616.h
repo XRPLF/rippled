@@ -20,11 +20,12 @@
 #ifndef BEAST_HTTP_RFC2616_H_INCLUDED
 #define BEAST_HTTP_RFC2616_H_INCLUDED
 
+#include <boost/regex.hpp>
 #include <algorithm>
 #include <string>
+#include <iterator>
 #include <utility>
 #include <vector>
-#include <boost/regex.hpp>
 
 namespace beast {
 
@@ -130,8 +131,8 @@ trim (String const& s)
 {
     using std::begin;
     using std::end;
-    auto first (begin(s));
-    auto last (end(s));
+    auto first = begin(s);
+    auto last = end(s);
     std::tie (first, last) = trim (first, last);
     return { first, last };
 }

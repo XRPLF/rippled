@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/crypto/Base58Data.h>
+#include <algorithm>
 
 namespace ripple {
 
@@ -42,7 +43,7 @@ CBase58Data::CBase58Data ()
 CBase58Data::~CBase58Data ()
 {
     // Ensures that any potentially sensitive data is cleared from memory
-    std::fill (std::begin (vchData), std::end(vchData), 0);
+    std::fill (vchData.begin(), vchData.end(), 0);
 }
 
 bool CBase58Data::SetString (

@@ -23,6 +23,7 @@
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <cctype>
+#include <iterator>
 #include <locale>
 #include <string>
 
@@ -37,9 +38,11 @@ struct ci_less
     bool
     operator() (String const& lhs, String const& rhs) const
     {
-        typedef typename String::value_type char_type;
-        return std::lexicographical_compare (std::begin(lhs), std::end(lhs),
-            std::begin(rhs), std::end(rhs),
+        using std::begin;
+        using std::end;
+        using char_type = typename String::value_type;
+        return std::lexicographical_compare (
+            begin(lhs), end(lhs), begin(rhs), end(rhs),
             [] (char_type lhs, char_type rhs)
             {
                 return std::tolower(lhs) < std::tolower(rhs);
@@ -54,7 +57,9 @@ std::enable_if_t<std::is_same<typename Lhs::value_type, char>::value &&
     std::is_same<typename Lhs::value_type, char>::value, bool>
 ci_equal(Lhs const& lhs, Rhs const& rhs)
 {
-    return std::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+    using std::begin;
+    using std::end;
+    return std::equal (begin(lhs), end(lhs), begin(rhs), end(rhs),
         [] (char lhs, char rhs)
         {
             return std::tolower(lhs) == std::tolower(rhs);
