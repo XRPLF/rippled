@@ -65,8 +65,8 @@ public:
 
         @param object A pointer to a POD object to fill.
     */
-    template <class T>
-    std::enable_if_t<std::is_pod<T>::value>
+    template <class T, class = std::enable_if_t<std::is_pod<T>::value>>
+    void
     fill (T* object)
     {
         fillBytes (object, sizeof (T));
