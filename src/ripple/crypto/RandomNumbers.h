@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 #define RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 
-#include <beast/utility/Journal.h>
+#include <string>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
@@ -34,36 +34,16 @@ public:
     */
     static RandomNumbers& getInstance ();
 
-    /** Initialize the generator.
+    /** Generate secure random numbers suitable for cryptography.
 
-        If the generator is not manually initialized, it will be
-        automatically initialized on first use. If automatic initialization
-        fails, an exception is thrown.
-
-        @return `true` if enough entropy could be retrieved.
+        @param buffer The place to store the bytes.
+        @param bytes The number of bytes to generate.
     */
-    bool initialize (beast::Journal::Stream stream = beast::Journal::Stream());
+    void fillBytes (void* buffer, int bytes);
 
-    /** Generate secure random numbers.
+    /** Generate secure random numbers suitable for cryptography.
 
-        The generated data is suitable for cryptography.
-
-        @invariant The destination buffer must be large enough or
-                   undefined behavior results.
-
-        @param destinationBuffer The place to store the bytes.
-        @param numberOfBytes The number of bytes to generate.
-    */
-    void fillBytes (void* destinationBuffer, int numberOfBytes);
-
-    /** Generate secure random numbers.
-
-        The generated data is suitable for cryptography.
-
-        Fills the memory for the object with random numbers.
-        This is a type-safe alternative to the function above.
-
-        @param object A pointer to a POD object to fill.
+        @param object pointer to a POD object to fill.
     */
     template <class T, class = std::enable_if_t<std::is_pod<T>::value>>
     void
@@ -73,13 +53,10 @@ public:
     }
 
 private:
-    RandomNumbers () = default;
+    RandomNumbers ();
     ~RandomNumbers () = default;
 
-    bool platformAddEntropy (beast::Journal::Stream stream);
-
-private:
-    bool m_initialized = false;
+    bool platformAddEntropy (char *buf, size_t size, std::string& error);
 };
 
 }

@@ -26,45 +26,26 @@
 #include <windows.h>
 #include <wincrypt.h>
 #endif
-#if BEAST_LINUX || BEAST_BSD || BEAST_MAC || BEAST_IOS
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
 #include <fstream>
 
 namespace ripple {
 
-bool RandomNumbers::initialize (beast::Journal::Stream stream)
+RandomNumbers::RandomNumbers ()
 {
-    assert (!m_initialized);
+    std::string error;
+    char buf[128];
 
-    bool success = platformAddEntropy (stream);
+    if (!platformAddEntropy (buf, sizeof (buf), error))
+        throw std::runtime_error ("Unable to add system entropy: " + error);
 
-    if (success)
-        m_initialized = true;
-
-    return success;
+    RAND_seed (buf, sizeof (buf));
 }
 
-void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
+void RandomNumbers::fillBytes (void* buffer, int bytes)
 {
-    // VFALCO NOTE this assert is here to remind us that the code is not yet
-    //         thread safe.
-    assert (m_initialized);
-
-    // VFALCO NOTE When a spinlock is available in beast, use it here.
-    if (! m_initialized && !initialize ())
-        throw std::runtime_error ("Unable to add system entropy");
-
-#ifdef PURIFY
-    memset (destinationBuffer, 0, numberOfBytes);
-#endif
-
-    if (RAND_bytes (reinterpret_cast <unsigned char*> (destinationBuffer), numberOfBytes) != 1)
+    if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), bytes) != 1)
     {
         assert (false);
-
         throw std::runtime_error ("Entropy pool not seeded");
     }
 }
@@ -81,67 +62,53 @@ RandomNumbers& RandomNumbers::getInstance ()
 #if BEAST_WIN32
 
 // Get entropy from the Windows crypto provider
-bool RandomNumbers::platformAddEntropy (beast::Journal::Stream stream)
+bool
+RandomNumbers::platformAddEntropy (char *buf, size_t size, std::string& error)
 {
-    char name[512], rand[128];
-    DWORD count = 500;
-    HCRYPTPROV cryptoHandle;
+    HCRYPTPROV handle;
 
-    if (!CryptGetDefaultProviderA (PROV_RSA_FULL, nullptr, CRYPT_MACHINE_DEFAULT, name, &count))
+    if (!CryptAcquireContextA (&handle, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
-        stream << "Unable to get default crypto provider";
+        error = "Unable to acquire crypto provider context";
         return false;
     }
 
-    if (!CryptAcquireContextA (&cryptoHandle, nullptr, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
+    auto ret = CryptGenRandom (handle, size, reinterpret_cast<BYTE*> (buf));
+
+    CryptReleaseContext (handle, 0);
+
+    if (!ret)
     {
-        stream << "Unable to acquire crypto provider";
+        error = "Unable to get entropy from crypto provider";
         return false;
     }
-
-    if (!CryptGenRandom (cryptoHandle, 128, reinterpret_cast<BYTE*> (rand)))
-    {
-        stream << "Unable to get entropy from crypto provider";
-        CryptReleaseContext (cryptoHandle, 0);
-        return false;
-    }
-
-    CryptReleaseContext (cryptoHandle, 0);
-    RAND_seed (rand, 128);
 
     return true;
 }
 
 #else
 
-bool RandomNumbers::platformAddEntropy (beast::Journal::Stream stream)
+bool
+RandomNumbers::platformAddEntropy (char *buf, size_t size, std::string& error)
 {
-    char rand[128];
-    std::ifstream reader;
-
-    reader.open ("/dev/urandom", std::ios::in | std::ios::binary);
+    std::ifstream reader ("/dev/urandom", std::ios::in | std::ios::binary);
 
     if (!reader.is_open ())
     {
-#ifdef BEAST_DEBUG
-        stream << "Unable to open random source";
-#endif
+        error = "Unable to open random source";
         return false;
     }
 
-    reader.read (rand, 128);
+    reader.read (buf, size);
 
     int bytesRead = reader.gcount ();
 
     if (bytesRead == 0)
     {
-#ifdef BEAST_DEBUG
-        stream << "Unable to read from random source";
-#endif
+        error = "Unable to read from random source";
         return false;
     }
 
-    RAND_seed (rand, bytesRead);
     return bytesRead >= 64;
 }
 

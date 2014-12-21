@@ -217,9 +217,14 @@ int run (int argc, char** argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
-    if (! RandomNumbers::getInstance ().initialize ())
+    // Seed the RNG early
+    try
     {
-        std::cerr << "Unable to add system entropy" << std::endl;
+        RandomNumbers::getInstance ();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << e.what () << std::endl;
         iResult = 2;
     }
 
