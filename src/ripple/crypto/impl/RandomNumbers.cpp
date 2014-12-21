@@ -18,25 +18,21 @@
 //==============================================================================
 
 #include <ripple/crypto/RandomNumbers.h>
-#include <beast/Config.h>
-#include <cassert>
-#include <cstdint>
 #include <openssl/rand.h>
-#if BEAST_WIN32
-#include <windows.h>
-#include <wincrypt.h>
-#endif
-#include <fstream>
+
+#include <random>
+#include <stdexcept>
 
 namespace ripple {
 
 RandomNumbers::RandomNumbers ()
 {
-    std::string error;
-    char buf[128];
+    unsigned int buf[32];
 
-    if (!platformAddEntropy (buf, sizeof (buf), error))
-        throw std::runtime_error ("Unable to add system entropy: " + error);
+    std::random_device rd;
+
+    for (auto& x : buf)
+        x = rd ();
 
     RAND_seed (buf, sizeof (buf));
 }
@@ -44,10 +40,7 @@ RandomNumbers::RandomNumbers ()
 void RandomNumbers::fillBytes (void* buffer, int bytes)
 {
     if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), bytes) != 1)
-    {
-        assert (false);
-        throw std::runtime_error ("Entropy pool not seeded");
-    }
+        throw std::runtime_error ("Insufficient entropy in pool.");
 }
 
 RandomNumbers& RandomNumbers::getInstance ()
@@ -56,62 +49,5 @@ RandomNumbers& RandomNumbers::getInstance ()
 
     return instance;
 }
-
-//------------------------------------------------------------------------------
-
-#if BEAST_WIN32
-
-// Get entropy from the Windows crypto provider
-bool
-RandomNumbers::platformAddEntropy (char *buf, size_t size, std::string& error)
-{
-    HCRYPTPROV handle;
-
-    if (!CryptAcquireContextA (&handle, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
-    {
-        error = "Unable to acquire crypto provider context";
-        return false;
-    }
-
-    auto ret = CryptGenRandom (handle, size, reinterpret_cast<BYTE*> (buf));
-
-    CryptReleaseContext (handle, 0);
-
-    if (!ret)
-    {
-        error = "Unable to get entropy from crypto provider";
-        return false;
-    }
-
-    return true;
-}
-
-#else
-
-bool
-RandomNumbers::platformAddEntropy (char *buf, size_t size, std::string& error)
-{
-    std::ifstream reader ("/dev/urandom", std::ios::in | std::ios::binary);
-
-    if (!reader.is_open ())
-    {
-        error = "Unable to open random source";
-        return false;
-    }
-
-    reader.read (buf, size);
-
-    int bytesRead = reader.gcount ();
-
-    if (bytesRead == 0)
-    {
-        error = "Unable to read from random source";
-        return false;
-    }
-
-    return bytesRead >= 64;
-}
-
-#endif
 
 }

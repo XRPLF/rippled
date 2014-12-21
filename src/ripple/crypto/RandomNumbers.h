@@ -20,7 +20,6 @@
 #ifndef RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 #define RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 
-#include <string>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
@@ -55,8 +54,6 @@ public:
 private:
     RandomNumbers ();
     ~RandomNumbers () = default;
-
-    bool platformAddEntropy (char *buf, size_t size, std::string& error);
 };
 
 }

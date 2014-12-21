@@ -218,15 +218,7 @@ int run (int argc, char** argv)
     p.add ("parameters", -1);
 
     // Seed the RNG early
-    try
-    {
-        RandomNumbers::getInstance ();
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what () << std::endl;
-        iResult = 2;
-    }
+    (void)RandomNumbers::getInstance ();
 
     if (!iResult)
     {
