@@ -111,7 +111,7 @@ public:
         }
         catch (...)
         {
-            cpClient->close (websocketpp::close::status::value (crTooSlow),
+            cpClient->close (websocketpp_02::close::status::value (crTooSlow),
                              std::string ("Client is too slow."));
         }
     }
@@ -128,7 +128,7 @@ public:
         }
         catch (...)
         {
-            cpClient->close (websocketpp::close::status::value (crTooSlow),
+            cpClient->close (websocketpp_02::close::status::value (crTooSlow),
                              std::string ("Client is too slow."));
         }
     }
@@ -397,7 +397,7 @@ public:
         {
         }
 
-        if (mpMessage->get_opcode () != websocketpp::frame::opcode::TEXT)
+        if (mpMessage->get_opcode () != websocketpp_02::frame::opcode::TEXT)
         {
             Json::Value jvResult (Json::objectValue);
 
