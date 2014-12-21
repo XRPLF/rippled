@@ -53,6 +53,10 @@ public:
 
 private:
     RandomNumbers ();
+
+    RandomNumbers(RandomNumbers const&) = delete;
+    RandomNumbers& operator=(RandomNumbers const&) = delete;
+
     ~RandomNumbers () = default;
 };
 
