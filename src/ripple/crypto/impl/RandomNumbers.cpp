@@ -39,7 +39,7 @@ void add_entropy (void* buffer, int count)
 
     std::random_device rd;
 
-    for (auto& x : buf)
+    for (auto& x : rdbuf)
         x = rd ();
 
     // In all our supported platforms, std::random_device is non-deterministic
