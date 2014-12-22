@@ -231,7 +231,7 @@ public:
 
                 query.mReceivedReply = false;
                 query.mLocalTimeSent = now;
-                RandomNumbers::getInstance ().fill (&query.mQueryNonce);
+                random_fill (&query.mQueryNonce);
                 reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
                 reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
                 mSocket.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,

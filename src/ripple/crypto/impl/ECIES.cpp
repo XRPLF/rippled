@@ -131,7 +131,7 @@ Blob encryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publ
 {
 
     ECIES_ENC_IV_TYPE iv;
-    RandomNumbers::getInstance ().fillBytes (iv.begin (), ECIES_ENC_BLK_SIZE);
+    random_fill (iv.begin (), ECIES_ENC_BLK_SIZE);
 
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;

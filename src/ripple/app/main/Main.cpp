@@ -218,7 +218,7 @@ int run (int argc, char** argv)
     p.add ("parameters", -1);
 
     // Seed the RNG early
-    (void)RandomNumbers::getInstance ();
+    add_entropy ();
 
     if (!iResult)
     {

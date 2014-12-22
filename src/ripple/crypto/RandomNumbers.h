@@ -24,41 +24,32 @@
 
 namespace ripple {
 
-/** Cryptographically secure random number source.
+/** Adds entropy to the RNG pool.
+
+    @param buffer An optional buffer that contains random data.
+    @param count The size of the buffer, in bytes (or 0).
+
+    This can be called multiple times to stir entropy into the pool
+    without any locks.
 */
-class RandomNumbers
+void add_entropy (void* buffer = nullptr, int count = 0);
+
+/** Generate random bytes, suitable for cryptography. */
+/**@{*/
+/**
+    @param buffer The place to store the bytes.
+    @param count The number of bytes to generate.
+*/
+void random_fill (void* buffer, int count);
+
+/** Fills a POD object with random data */
+template <class T, class = std::enable_if_t<std::is_pod<T>::value>>
+void
+random_fill (T* object)
 {
-public:
-    /** Retrieve the instance of the generator.
-    */
-    static RandomNumbers& getInstance ();
-
-    /** Generate secure random numbers suitable for cryptography.
-
-        @param buffer The place to store the bytes.
-        @param bytes The number of bytes to generate.
-    */
-    void fillBytes (void* buffer, int bytes);
-
-    /** Generate secure random numbers suitable for cryptography.
-
-        @param object pointer to a POD object to fill.
-    */
-    template <class T, class = std::enable_if_t<std::is_pod<T>::value>>
-    void
-    fill (T* object)
-    {
-        fillBytes (object, sizeof (T));
-    }
-
-private:
-    RandomNumbers ();
-
-    RandomNumbers(RandomNumbers const&) = delete;
-    RandomNumbers& operator=(RandomNumbers const&) = delete;
-
-    ~RandomNumbers () = default;
-};
+    random_fill (object, sizeof (T));
+}
+/**@}*/
 
 }
 

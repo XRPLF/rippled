@@ -25,29 +25,34 @@
 
 namespace ripple {
 
-RandomNumbers::RandomNumbers ()
+void add_entropy (void* buffer, int count)
 {
-    unsigned int buf[32];
+    assert (buffer == nullptr || count != 0);
+
+    // If we are passed data in we use it but conservatively estimate that it
+    // contains only around 2 bits of entropy per byte.
+    if (buffer != nullptr && count != 0)
+        RAND_add (buffer, count, count / 4.0);
+
+    // Try to add a bit more entropy from the system
+    unsigned int rdbuf[32];
 
     std::random_device rd;
 
     for (auto& x : buf)
         x = rd ();
 
-    RAND_seed (buf, sizeof (buf));
+    // In all our supported platforms, std::random_device is non-deterministic
+    // but we conservatively estimate it has around 4 bits of entropy per byte.
+    RAND_add (rdbuf, sizeof (rdbuf), sizeof (rdbuf) / 2.0);
 }
 
-void RandomNumbers::fillBytes (void* buffer, int bytes)
+void random_fill (void* buffer, int count)
 {
-    if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), bytes) != 1)
+    assert (count > 0);
+
+    if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), count) != 1)
         throw std::runtime_error ("Insufficient entropy in pool.");
-}
-
-RandomNumbers& RandomNumbers::getInstance ()
-{
-    static RandomNumbers instance;
-
-    return instance;
 }
 
 }
