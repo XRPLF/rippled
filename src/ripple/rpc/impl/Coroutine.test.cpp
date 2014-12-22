@@ -51,9 +51,7 @@ public:
             result.push_back (buffer);
         }
 
-        auto r = strJoin (result.begin(), result.end(), ", ");
-        auto e = strJoin (expected.begin(), expected.end(), ", ");
-        expectEquals (r, e);
+        expectCollectionEquals (result, expected);
     }
 
     void run() override
