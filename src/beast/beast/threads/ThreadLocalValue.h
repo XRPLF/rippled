@@ -28,6 +28,8 @@
 #include <beast/threads/SpinLock.h>
 #include <beast/threads/Thread.h>
 
+#include <atomic>
+
 namespace beast {
 
 // (NB: on win32, native thread-locals aren't possible in a dynamically loaded DLL in XP).
@@ -60,7 +62,6 @@ template <typename Type>
 class ThreadLocalValue
 {
 public:
-    /** */
     ThreadLocalValue() = default;
     ThreadLocalValue (ThreadLocalValue const&) = delete;
     ThreadLocalValue& operator= (ThreadLocalValue const&) = delete;
@@ -71,7 +72,7 @@ public:
     ~ThreadLocalValue()
     {
        #if BEAST_NO_COMPILER_THREAD_LOCAL
-        for (ObjectHolder* o = first.value; o != nullptr;)
+        for (ObjectHolder* o = first.load (); o != nullptr;)
         {
             ObjectHolder* const next = o->next;
             delete o;
@@ -114,11 +115,11 @@ public:
        #if BEAST_NO_COMPILER_THREAD_LOCAL
         const Thread::ThreadID threadId = Thread::getCurrentThreadId();
 
-        for (ObjectHolder* o = first.get(); o != nullptr; o = o->next)
+        for (ObjectHolder* o = first.load(); o != nullptr; o = o->next)
             if (o->threadId == threadId)
                 return o->object;
 
-        for (ObjectHolder* o = first.get(); o != nullptr; o = o->next)
+        for (ObjectHolder* o = first.load(); o != nullptr; o = o->next)
         {
             if (o->threadId == nullptr)
             {
@@ -136,14 +137,10 @@ public:
             }
         }
 
-        ObjectHolder* const newObject = new ObjectHolder (threadId);
+        ObjectHolder* const newObject = new ObjectHolder (threadId, first.load());
 
-        do
-        {
-            newObject->next = first.get();
-        }
-        while (! first.compareAndSetBool (newObject, newObject->next));
-
+        while (!first.compare_exchange_strong (newObject->next, newObject))
+            ;
         return newObject->object;
        #elif BEAST_MAC
         static __thread Type object;
@@ -162,7 +159,7 @@ public:
        #if BEAST_NO_COMPILER_THREAD_LOCAL
         const Thread::ThreadID threadId = Thread::getCurrentThreadId();
 
-        for (ObjectHolder* o = first.get(); o != nullptr; o = o->next)
+        for (ObjectHolder* o = first.load(); o != nullptr; o = o->next)
         {
             if (o->threadId == threadId)
             {
@@ -178,8 +175,8 @@ private:
    #if BEAST_NO_COMPILER_THREAD_LOCAL
     struct ObjectHolder
     {
-        ObjectHolder (const Thread::ThreadID& tid)
-            : threadId (tid), object()
+        ObjectHolder (const Thread::ThreadID& tid, ObjectHolder* n)
+            : threadId (tid), next (n), object()
         {}
         ObjectHolder (ObjectHolder const&) = delete;
         ObjectHolder& operator= (ObjectHolder const&) = delete;
@@ -189,7 +186,7 @@ private:
         Type object;
     };
 
-    Atomic<ObjectHolder*> mutable first;
+    std::atomic<ObjectHolder*> mutable first;
     SpinLock mutable lock;
    #endif
 };
