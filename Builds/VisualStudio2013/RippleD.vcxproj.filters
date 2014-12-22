@@ -181,14 +181,8 @@
     <Filter Include="beast\threads">
       <UniqueIdentifier>{08F944AB-789E-3C7A-6322-D7567E6B5060}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\threads\detail">
-      <UniqueIdentifier>{A265EF98-7D2F-4C8A-F555-DF2E473E2B73}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\threads\impl">
       <UniqueIdentifier>{E8A9A46E-3151-7072-ADF1-C230D86E9791}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\threads\tests">
-      <UniqueIdentifier>{8F25D378-93AB-1151-163A-07BE27FB90F6}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\unit_test">
       <UniqueIdentifier>{2762284D-66E5-8B48-1F8E-67116DB1FC6B}</UniqueIdentifier>
@@ -337,6 +331,9 @@
     <Filter Include="ripple\basics\impl">
       <UniqueIdentifier>{1B5E3484-E132-ADEA-8A38-01B0F4ABAC58}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\basics\tests">
+      <UniqueIdentifier>{B1F0C3D5-71C4-3ABF-E292-F147387D07CB}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\core">
       <UniqueIdentifier>{235DCF23-2CF8-4F03-1A54-C159823A7E8D}</UniqueIdentifier>
     </Filter>
@@ -429,12 +426,6 @@
     </Filter>
     <Filter Include="ripple\server\tests">
       <UniqueIdentifier>{9BA46DD5-4B0C-3C1D-6F16-93DE8A9B7313}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\sitefiles">
-      <UniqueIdentifier>{CB0AC82D-AEA3-F41C-847F-D6ECA4971891}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\sitefiles\impl">
-      <UniqueIdentifier>{1D95DF26-0788-BD2C-2864-8B038A51FD58}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
@@ -614,9 +605,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
       <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Atomic.h">
-      <Filter>beast</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <Filter>beast\boost</Filter>
@@ -1491,16 +1479,7 @@
     <ClInclude Include="..\..\src\beast\beast\Threads.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\detail\BindHandler.h">
-      <Filter>beast\threads\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\detail\DispatchedHandler.h">
-      <Filter>beast\threads\detail</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\RecursiveMutex.cpp">
-      <Filter>beast\threads\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\ServiceQueue.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
@@ -1524,9 +1503,6 @@
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ServiceQueue.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\SharedData.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
@@ -1542,13 +1518,7 @@
     <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\tests\ServiceQueue.cpp">
-      <Filter>beast\threads\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\threads\Thread.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ThreadLocalValue.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
@@ -3069,6 +3039,9 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\CheckLibraryVersions.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\impl\CheckLibraryVersionsImpl.h">
+      <Filter>ripple\basics\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\impl\CountedObject.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3094,6 +3067,9 @@
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\TaggedCache.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\TestSuite.test.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\ThreadName.cpp">
@@ -3147,6 +3123,12 @@
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\TestSuite.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
+      <Filter>ripple\basics\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -4329,21 +4311,6 @@
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
-      <Filter>ripple\sitefiles\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
-      <Filter>ripple\sitefiles\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
-      <Filter>ripple\sitefiles\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
-      <Filter>ripple\sitefiles\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
-      <Filter>ripple\sitefiles</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4441,9 +4408,6 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\server.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">

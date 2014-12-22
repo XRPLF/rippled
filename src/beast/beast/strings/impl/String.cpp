@@ -36,6 +36,7 @@
 #include <stdarg.h>
 
 #include <algorithm>
+#include <atomic>
 
 namespace beast {
 
@@ -86,8 +87,9 @@ public:
     //==============================================================================
     static CharPointerType createUninitialisedBytes (const size_t numBytes)
     {
-        StringHolder* const s = reinterpret_cast <StringHolder*> (new char [sizeof (StringHolder) - sizeof (CharType) + numBytes]);
-        s->refCount.value = 0;
+        StringHolder* const s = reinterpret_cast <StringHolder*> (
+            new char [sizeof (StringHolder) - sizeof (CharType) + numBytes]);
+        s->refCount.store (0);
         s->allocatedNumBytes = numBytes;
         return CharPointerType (s->text);
     }
@@ -198,7 +200,7 @@ public:
     {
         StringHolder* const b = bufferFromText (text);
 
-        if (b->refCount.get() <= 0)
+        if (b->refCount.load() <= 0)
             return text;
 
         CharPointerType newText (createUninitialisedBytes (b->allocatedNumBytes));
@@ -212,7 +214,7 @@ public:
     {
         StringHolder* const b = bufferFromText (text);
 
-        if (b->refCount.get() <= 0 && b->allocatedNumBytes >= numBytes)
+        if (b->refCount.load() <= 0 && b->allocatedNumBytes >= numBytes)
             return text;
 
         CharPointerType newText (createUninitialisedBytes (std::max (b->allocatedNumBytes, numBytes)));
@@ -228,7 +230,7 @@ public:
     }
 
     //==============================================================================
-    Atomic<int> refCount;
+    std::atomic<int> refCount;
     size_t allocatedNumBytes;
     CharType text[1];
 

@@ -25,10 +25,9 @@
 #define BEAST_CHARPOINTER_UTF16_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/Atomic.h>
-
 #include <beast/strings/CharacterFunctions.h>
 
+#include <atomic>
 #include <cstdint>
 
 namespace beast {
@@ -474,7 +473,7 @@ public:
     /** Atomically swaps this pointer for a new value, returning the previous value. */
     CharPointer_UTF16 atomicSwap (const CharPointer_UTF16 newValue)
     {
-        return CharPointer_UTF16 (reinterpret_cast <Atomic<CharType*>&> (data).exchange (newValue.data));
+        return CharPointer_UTF16 (reinterpret_cast <std::atomic<CharType*>&> (data).exchange (newValue.data));
     }
 
     /** These values are the byte-order-mark (BOM) values for a UTF-16 stream. */

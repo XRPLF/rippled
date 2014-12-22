@@ -21,6 +21,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <thread>
 
 namespace ripple {
 
@@ -374,7 +375,7 @@ public:
             while (getApp().getFeeTrack().isLoadedLocal())
             {
                 m_journal.debug << "Waiting for load to subside";
-                sleep(5000);
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 if (this->threadShouldExit ())
                     return;
             }
@@ -412,7 +413,8 @@ public:
                     SharedState::Access state (m_state);
                     ++state->failures;
                 }
-                sleep(2000); // Wait for acquiring to catch up to us
+                // Wait for acquiring to catch up to us
+                std::this_thread::sleep_for(std::chrono::seconds(2));
             }
             else
             {
@@ -424,7 +426,8 @@ public:
                         --state->maxRange;
                     state->failures = 0;
                 }
-                sleep(100); // Reduce I/O pressure a bit
+                // Reduce I/O pressure and wait for acquiring to catch up to us
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
 
         }

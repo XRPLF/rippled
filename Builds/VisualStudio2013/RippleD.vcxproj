@@ -158,8 +158,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Atomic.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -849,14 +847,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Threads.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\detail\BindHandler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\detail\DispatchedHandler.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\RecursiveMutex.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\ServiceQueue.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
@@ -877,8 +868,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ServiceQueue.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\SharedData.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\SharedLockGuard.h">
@@ -889,12 +878,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\tests\ServiceQueue.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\threads\Thread.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ThreadLocalValue.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2135,6 +2119,8 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\CheckLibraryVersions.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\impl\CheckLibraryVersionsImpl.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\impl\CountedObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2160,6 +2146,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\TaggedCache.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\TestSuite.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\ThreadName.cpp">
@@ -2199,6 +2188,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\TestSuite.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Time.h">
@@ -3185,19 +3179,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\app.h">
@@ -3271,8 +3252,6 @@
     <ClCompile Include="..\..\src\ripple\unity\rpcx.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\server.cpp">
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

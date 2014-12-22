@@ -324,12 +324,6 @@ public:
     */
     static double getMillisecondCounterHiRes() noexcept;
 
-    /** Waits until the getMillisecondCounter() reaches a given value.
-
-        This will make the thread sleep as efficiently as it can while it's waiting.
-    */
-    static void waitForMillisecondCounter (std::uint32_t targetTime) noexcept;
-
     /** Less-accurate but faster version of getMillisecondCounter().
 
         This will return the last value that getMillisecondCounter() returned, so doesn't
