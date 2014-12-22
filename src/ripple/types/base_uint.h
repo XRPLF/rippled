@@ -154,6 +154,11 @@ public:
 
     base_uint (base_uint<Bits, Tag> const& other) = default;
 
+    ~base_uint()
+    {
+        std::fill_n((unsigned volatile*)pn, static_cast<std::size_t>(WIDTH), 0);
+    }
+
     template <class OtherTag>
     void copyFrom (base_uint<Bits, OtherTag> const& other)
     {
