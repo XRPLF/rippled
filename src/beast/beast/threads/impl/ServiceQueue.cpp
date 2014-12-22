@@ -42,10 +42,7 @@ private:
 //------------------------------------------------------------------------------
 
 ServiceQueueBase::ServiceQueueBase()
-{
-}
-
-ServiceQueueBase::~ServiceQueueBase()
+    : m_stopped (0)
 {
 }
 
@@ -98,7 +95,7 @@ std::size_t ServiceQueueBase::run_one ()
 void ServiceQueueBase::stop ()
 {
     SharedState::Access state (m_state);
-    m_stopped.set (1);
+    m_stopped.store (1);
     while (! state->waiting.empty ())
     {
         Waiter& waiting (state->waiting.front());
@@ -110,8 +107,8 @@ void ServiceQueueBase::stop ()
 void ServiceQueueBase::reset()
 {
     // Must be stopped
-    bassert (m_stopped.get () != 0);
-    m_stopped.set (0);
+    bassert (m_stopped.load () != 0);
+    m_stopped.store (0);
 }
 
 // Block on the event if there are no items

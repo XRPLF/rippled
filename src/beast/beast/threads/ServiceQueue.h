@@ -27,6 +27,8 @@
 
 #include <beast/threads/detail/DispatchedHandler.h>
 
+#include <atomic>
+
 namespace beast {
 
 namespace detail {
@@ -334,7 +336,7 @@ class ServiceQueueBase
 {
 public:
     ServiceQueueBase();
-    ~ServiceQueueBase();
+    ~ServiceQueueBase() = default;
 
     std::size_t poll();
     std::size_t poll_one();
@@ -342,7 +344,7 @@ public:
     std::size_t run_one();
     void stop();
     bool stopped() const
-        { return m_stopped.get() != 0; }
+        { return m_stopped.load() != 0; }
     void reset();
 
 protected:
@@ -394,7 +396,7 @@ protected:
 
     typedef SharedData <State> SharedState;
     SharedState m_state;
-    Atomic <int> m_stopped;
+    std::atomic <int> m_stopped;
 
     static ThreadLocalValue <ServiceQueueBase*> s_service;
 };
