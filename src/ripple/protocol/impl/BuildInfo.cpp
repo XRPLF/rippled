@@ -34,7 +34,7 @@ char const* getRawVersionString ()
     //
     //  The build version number (edit this for each release)
     //
-        "0.26.4-rc4"
+        "0.26.5-rc1"
     //
     //  Must follow the format described here:
     //
