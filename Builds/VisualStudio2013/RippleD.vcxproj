@@ -158,8 +158,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Atomic.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
