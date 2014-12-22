@@ -24,6 +24,8 @@
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/module/core/time/AtExitHook.h>
 
+#include <atomic>
+
 namespace beast
 {
 
@@ -99,7 +101,7 @@ public:
                 bassert (lifetime == SingletonLifetime::createOnDemand || ! staticData.destructorCalled);
                 staticData.instance = &staticData.object;
                 new (staticData.instance) SharedSingleton (lifetime);
-                memoryBarrier();
+                std::atomic_thread_fence (std::memory_order_seq_cst);
                 instance = staticData.instance;
             }
         }

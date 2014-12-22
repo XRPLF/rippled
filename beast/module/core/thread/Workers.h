@@ -122,7 +122,7 @@ private:
         , public Thread
     {
     public:
-        Worker (Workers& workers, String const& threadName);
+        Worker (Workers& workers, std::string const& threadName);
 
         ~Worker ();
 
@@ -138,7 +138,7 @@ private:
 
 private:
     Callback& m_callback;
-    String m_threadNames;                        // The name to give each thread
+    std::string m_threadNames;                   // The name to give each thread
     WaitableEvent m_allPaused;                   // signaled when all threads paused
     semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
