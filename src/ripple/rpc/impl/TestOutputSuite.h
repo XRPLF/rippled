@@ -22,12 +22,12 @@
 
 #include <ripple/rpc/Output.h>
 #include <ripple/rpc/impl/JsonWriter.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/basics/TestSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-class TestOutputSuite : public beast::unit_test::suite
+class TestOutputSuite : public TestSuite
 {
 protected:
     std::string output_;
@@ -41,19 +41,12 @@ protected:
     }
 
     // Test the result and report values.
-    void expectResult (std::string const& expected)
+    void expectResult (std::string const& expected,
+                       std::string const& message = "")
     {
         writer_.reset ();
 
-        expectEquals (output_, expected);
-    }
-
-    // Test the result and report values.
-    void expectEquals (std::string const& result, std::string const& expected)
-    {
-        expect (result == expected,
-                "\n" "result:   '" + result + "'" +
-                "\n" "expected: '" + expected + "'");
+        expectEquals (output_, expected, message);
     }
 };
 

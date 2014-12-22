@@ -17,25 +17,22 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
-#endif
+#include <ripple/basics/TestSuite.h>
 
-#include <BeastConfig.h>
+namespace ripple {
 
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/TestSuite.test.cpp>
-#include <ripple/basics/impl/ThreadName.cpp>
-#include <ripple/basics/impl/Time.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
+struct TestSuite_test : TestSuite
+{
+    void run() override
+    {
+        expectEquals (2, 2, "this won't get printed.");
+        using Vec = std::vector<std::string>;
+        Vec v1{"hello", "world"};
+        Vec v2{"hello", "world"};
+        expectCollectionEquals (v1, v2, "this won't get printed.");
 
-#include <ripple/basics/impl/KeyCache.cpp>
-#include <ripple/basics/impl/make_SSLContext.cpp>
-#include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/TaggedCache.cpp>
+        // TODO(tom): how to test failure?
+    }
+};
+
+} // ripple

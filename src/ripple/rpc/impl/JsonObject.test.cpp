@@ -165,20 +165,6 @@ public:
             "\"obj2\":{\"h\":\"w\",\"f\":false}}");
     }
 
-    template <typename Functor>
-    void expectException (Functor f)
-    {
-        bool success = true;
-        try
-        {
-            f();
-            success = false;
-        } catch (std::exception)
-        {
-        }
-        expect (success, "no exception thrown");
-    }
-
     void testFailureObject()
     {
         {
