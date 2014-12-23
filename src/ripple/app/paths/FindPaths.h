@@ -41,12 +41,12 @@ public:
     bool findPathsForIssue (
         Issue const& issue,
 
-        /** On input, pathsOut contains any paths you want to ensure are
+        /** On input, pathsInOut contains any paths you want to ensure are
             included if still good.
 
-            On output, pathsOut will have any additional paths found. Only
+            On output, pathsInOut will have any additional paths found. Only
             non-default paths without source or destination will be added. */
-        STPathSet& pathsOut,
+        STPathSet& pathsInOut,
 
         /** On input, fullLiquidityPath must be an empty STPath.
 
@@ -73,12 +73,12 @@ bool findPathsForOneIssuer (
         pathsOut. */
     unsigned int const maxPaths,
 
-    /** On input, pathsOut contains any paths you want to ensure are included if
+    /** On input, pathsInOut contains any paths you want to ensure are included if
         still good.
 
-        On output, pathsOut will have any additional paths found. Only
+        On output, pathsInOut will have any additional paths found. Only
         non-default paths without source or destination will be added. */
-    STPathSet& pathsOut,
+    STPathSet& pathsInOut,
 
     /** On input, fullLiquidityPath must be an empty STPath.
 

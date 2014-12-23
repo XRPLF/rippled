@@ -156,8 +156,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
             ++level;
         }
 
-        if (context.params.isMember("depth")
-            && context.params["depth"].isIntegral())
+        if (context.params.isMember("search_depth")
+            && context.params["search_depth"].isIntegral())
         {
             int rLev = context.params["search_depth"].asInt ();
             if ((rLev < level) || (context.role == Role::ADMIN))
@@ -206,28 +206,19 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
 
-            int level = getConfig().PATH_SEARCH_OLD;
-            if ((getConfig().PATH_SEARCH_MAX > level)
-                && !getApp().getFeeTrack().isLoadedLocal())
-            {
-                ++level;
-            }
-            if (context.params.isMember("depth")
-                && context.params["depth"].isIntegral())
-            {
-                int rLev = context.params["search_depth"].asInt ();
-                if ((rLev < level) || (context.role == Role::ADMIN))
-                    level = rLev;
-            }
-
             STPathSet spsComputed;
             if (context.params.isMember("paths"))
             {
-                STParsedJSONObject paths ("paths", context.params["paths"]);
+                Json::Value pathSet = Json::objectValue;
+                pathSet["Paths"] = context.params["paths"];
+                STParsedJSONObject paths ("pathSet", pathSet);
                 if (paths.object.get() == nullptr)
                     return paths.error;
                 else
-                    spsComputed = paths.object.get()->downcast<STPathSet> ();
+                {
+                    spsComputed = paths.object.get()->getFieldPathSet (sfPaths);
+                    WriteLog (lsTRACE, RPCHandler) << "ripple_path_find: Paths: " << spsComputed.getJson (0);
+                }
             }
 
             STPath fullLiquidityPath;
