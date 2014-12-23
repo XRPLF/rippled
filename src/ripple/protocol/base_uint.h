@@ -204,10 +204,15 @@ public:
     base_uint& operator= (std::uint64_t uHost)
     {
         *this = beast::zero;
-
+        union
+        {
+            unsigned u[2];
+            std::uint64_t ul;
+        };
         // Put in least significant bits.
-        ((std::uint64_t*) end ())[-1] = htobe64 (uHost);
-
+        ul = htobe64 (uHost);
+        pn[WIDTH-2] = u[0];
+        pn[WIDTH-1] = u[1];
         return *this;
     }
 
