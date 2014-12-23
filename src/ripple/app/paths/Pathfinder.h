@@ -54,9 +54,6 @@ public:
 
     bool findPaths (int searchLevel);
 
-    /** Make sure that all the input paths are included in mCompletePaths. */
-    void addPathsFromPreviousPathfinding (STPathSet&);
-
     /** Compute the rankings of the paths. */
     void computePathRanks (int maxPaths);
 
@@ -68,6 +65,7 @@ public:
     STPathSet getBestPaths (
         int maxPaths,
         STPath& fullLiquidityPath,
+        STPathSet& extraPaths,
         Account const& srcIssuer);
 
     enum NodeType
@@ -166,6 +164,11 @@ private:
         Account const& fromAccount,
         Account const& toAccount,
         Currency const& currency);
+
+    void rankPaths (
+        int maxPaths,
+        STPathSet const& paths,
+        std::vector <PathRank>& rankedPaths);
 
     Account mSrcAccount;
     Account mDstAccount;
