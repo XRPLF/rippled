@@ -64,7 +64,7 @@ private:
     Context& context_;
     Ledger::pointer ledger_;
     Json::Value result_;
-    int options_;
+    int options_ = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
