@@ -34,4 +34,6 @@
 #include <ripple/crypto/impl/GenerateDeterministicKey.cpp>
 #include <ripple/crypto/impl/RandomNumbers.cpp>
 #include <ripple/crypto/impl/RFC1751.cpp>
+
 #include <ripple/crypto/tests/CKey.test.cpp>
+#include <ripple/crypto/tests/ECDSACanonical.test.cpp>

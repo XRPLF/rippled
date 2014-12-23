@@ -19,7 +19,7 @@
 
 #include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/Yield.h>
-#include <ripple/rpc/impl/TestOutputSuite.h>
+#include <ripple/rpc/tests/TestOutputSuite.test.h>
 
 namespace ripple {
 namespace RPC {

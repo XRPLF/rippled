@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/module/core/maths/Random.h>
 #include <beast/unit_test/suite.h>
-
 #include <functional>
 
 namespace ripple {
@@ -32,7 +32,9 @@ public:
         tableItemsExtra = 20
     };
 
-    typedef hash_map <uint256, Blob> Map;
+    using Map = hash_map <uint256, Blob> ;
+    using Table = SHAMap;
+    using Item = SHAMapItem;
 
     struct TestFilter : SHAMapSyncFilter
     {
@@ -63,6 +65,28 @@ public:
         beast::Journal mJournal;
     };
 
+    std::shared_ptr <Item>
+    make_random_item (beast::Random& r)
+    {
+        Serializer s;
+        for (int d = 0; d < 3; ++d)
+            s.add32 (r.nextInt ());
+        return std::make_shared <Item> (
+            to256(s.getRIPEMD160()), s.peekData ());
+    }
+
+    void
+    add_random_items (std::size_t n, Table& t, beast::Random& r)
+    {
+        while (n--)
+        {
+            std::shared_ptr <SHAMapItem> item (
+                make_random_item (r));
+            auto const result (t.addItem (*item, false, false));
+            assert (result);
+            (void) result;
+        }
+    }
 
     void on_fetch (Map& map, uint256 const& hash, Blob const& blob)
     {
@@ -73,8 +97,6 @@ public:
 
     void run ()
     {
-        using namespace RadixMap;
-
         beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
 

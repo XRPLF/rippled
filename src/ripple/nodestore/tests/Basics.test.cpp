@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/tests/Base.test.h>
+
 namespace ripple {
 namespace NodeStore {
 

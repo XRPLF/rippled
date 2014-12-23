@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/JsonObject.h>
-#include <ripple/rpc/impl/TestOutputSuite.h>
+#include <ripple/rpc/tests/TestOutputSuite.test.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

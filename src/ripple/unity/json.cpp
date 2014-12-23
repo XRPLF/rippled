@@ -42,7 +42,6 @@
 #include <ripple/json/impl/json_value.cpp>
 #include <ripple/json/impl/json_writer.cpp>
 #include <ripple/json/impl/to_string.cpp>
-
-#include <ripple/json/impl/Tests.cpp>
-
 #include <ripple/json/impl/JsonPropertyStream.cpp>
+
+#include <ripple/json/tests/JsonCpp.test.cpp>

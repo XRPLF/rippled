@@ -23,6 +23,5 @@
 #include <ripple/validators/impl/Logic.cpp>
 #include <ripple/validators/impl/Manager.cpp>
 #include <ripple/validators/impl/StoreSqdb.cpp>
-#include <ripple/validators/impl/Tests.cpp>
 
 #include <ripple/validators/tests/Validators.test.cpp>

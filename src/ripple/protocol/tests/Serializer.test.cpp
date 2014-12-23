@@ -17,53 +17,28 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TESTOVERLAY_SIMPLEPAYLOAD_H_INCLUDED
-#define RIPPLE_TESTOVERLAY_SIMPLEPAYLOAD_H_INCLUDED
+#include <ripple/protocol/Serializer.h>
+#include <beast/unit_test/suite.h>
 
-namespace TestOverlay
-{
+namespace ripple {
 
-/** A simple message payload. */
-class SimplePayload
+class Serializer_test : public beast::unit_test::suite
 {
 public:
-    SimplePayload () = default;
-    SimplePayload (SimplePayload const& other) = default;
-    SimplePayload& operator= (SimplePayload const& other) = default;
-
-    SimplePayload (int what, std::string const& data = "", int hops = 0)
-        : m_hops (hops)
-        , m_what (what)
-        , m_data (data)
+    void run ()
     {
-    }
+        Serializer s1;
+        s1.add32 (3);
+        s1.add256 (uint256 ());
 
-    SimplePayload withHop () const
-    {
-        return SimplePayload (m_what, m_data, m_hops + 1);
-    }
+        Serializer s2;
+        s2.add32 (0x12345600);
+        s2.addRaw (s1.peekData ());
 
-    int hops () const
-    {
-        return m_hops;
+        expect (s1.getPrefixHash (0x12345600) == s2.getSHA512Half ());
     }
-
-    int what () const
-    {
-        return m_what;
-    }
-
-    std::string data () const
-    {
-        return m_data;
-    }
-
-private:
-    int m_hops;
-    int m_what;
-    std::string m_data;
 };
 
-}
+BEAST_DEFINE_TESTSUITE(Serializer,ripple_data,ripple);
 
-#endif
+} // ripple

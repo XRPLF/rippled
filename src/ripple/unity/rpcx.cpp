@@ -103,9 +103,10 @@
 #include <ripple/rpc/impl/ParseAccountIds.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
 
-#include <ripple/rpc/impl/Coroutine.test.cpp>
-#include <ripple/rpc/impl/JsonObject.test.cpp>
-#include <ripple/rpc/impl/JsonWriter.test.cpp>
-#include <ripple/rpc/impl/Status.test.cpp>
-#include <ripple/rpc/impl/WriteJson.test.cpp>
-#include <ripple/rpc/impl/Yield.test.cpp>
+#include <ripple/rpc/tests/Coroutine.test.cpp>
+#include <ripple/rpc/tests/JsonObject.test.cpp>
+#include <ripple/rpc/tests/JSONRPC.test.cpp>
+#include <ripple/rpc/tests/JsonWriter.test.cpp>
+#include <ripple/rpc/tests/Status.test.cpp>
+#include <ripple/rpc/tests/WriteJson.test.cpp>
+#include <ripple/rpc/tests/Yield.test.cpp>

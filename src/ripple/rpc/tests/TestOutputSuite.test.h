@@ -17,33 +17,40 @@
 */
 //==============================================================================
 
-#include <cassert>
+#ifndef RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#define RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
+
+#include <ripple/rpc/Output.h>
+#include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/basics/TestSuite.h>
 
 namespace ripple {
-namespace RadixMap {
+namespace RPC {
 
-std::shared_ptr <Item> make_random_item (beast::Random& r)
+class TestOutputSuite : public TestSuite
 {
-    Serializer s;
-    for (int d = 0; d < 3; ++d)
-        s.add32 (r.nextInt ());
-    return std::make_shared <Item> (
-        to256(s.getRIPEMD160()), s.peekData ());
-}
+protected:
+    std::string output_;
+    std::unique_ptr <Writer> writer_;
 
-//------------------------------------------------------------------------------
-
-void add_random_items (std::size_t n, Table& t, beast::Random& r)
-{
-    while (n--)
+    void setup (std::string const& testName)
     {
-        std::shared_ptr <SHAMapItem> item (
-            make_random_item (r));
-        auto const result (t.addItem (*item, false, false));
-        assert (result);
-        (void) result;
+        testcase (testName);
+        output_.clear ();
+        writer_ = std::make_unique <Writer> (stringOutput (output_));
     }
-}
 
-}
-}
+    // Test the result and report values.
+    void expectResult (std::string const& expected,
+                       std::string const& message = "")
+    {
+        writer_.reset ();
+
+        expectEquals (output_, expected, message);
+    }
+};
+
+} // RPC
+} // ripple
+
+#endif

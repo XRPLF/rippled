@@ -19,7 +19,6 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Serializer.h>
-#include <beast/unit_test/suite.h>
 #include <openssl/ripemd.h>
 #include <openssl/pem.h>
 
@@ -647,26 +646,5 @@ Blob SerializerIterator::getRaw (int iLength)
 
     return mSerializer.getRaw (iPos, iLength);
 }
-
-//------------------------------------------------------------------------------
-
-class Serializer_test : public beast::unit_test::suite
-{
-public:
-    void run ()
-    {
-        Serializer s1;
-        s1.add32 (3);
-        s1.add256 (uint256 ());
-
-        Serializer s2;
-        s2.add32 (0x12345600);
-        s2.addRaw (s1.peekData ());
-
-        expect (s1.getPrefixHash (0x12345600) == s2.getSHA512Half ());
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(Serializer,ripple_data,ripple);
 
 } // ripple

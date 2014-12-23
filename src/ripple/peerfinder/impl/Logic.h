@@ -25,6 +25,7 @@
 #include <ripple/peerfinder/impl/Fixed.h>
 #include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Handouts.h>
+#include <ripple/peerfinder/impl/Livecache.h>
 #include <ripple/peerfinder/impl/Reporting.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Source.h>
@@ -32,6 +33,7 @@
 #include <beast/smart_ptr/SharedPtr.h>
 #include <functional>
 #include <map>
+#include <set>
 
 namespace ripple {
 namespace PeerFinder {

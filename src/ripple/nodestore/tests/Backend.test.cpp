@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/tests/Base.test.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 
 namespace ripple {

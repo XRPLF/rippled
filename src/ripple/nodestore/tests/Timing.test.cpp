@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/tests/Base.test.h>
 #include <limits>
-#include <beast/Config.h>
 
 namespace ripple {
 namespace NodeStore {

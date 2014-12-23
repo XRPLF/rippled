@@ -32,7 +32,6 @@
 #include <ripple/peerfinder/impl/Bootcache.cpp>
 #include <ripple/peerfinder/impl/Config.cpp>
 #include <ripple/peerfinder/impl/Endpoint.cpp>
-#include <ripple/peerfinder/impl/Livecache.cpp>
 #include <ripple/peerfinder/impl/Manager.cpp>
 #include <ripple/peerfinder/impl/SlotImp.cpp>
 #include <ripple/peerfinder/impl/SourceStrings.cpp>
@@ -45,3 +44,5 @@
 #include <ripple/peerfinder/sim/NodeSnapshot.h>
 #include <ripple/peerfinder/sim/Params.h>
 #include <ripple/peerfinder/sim/Tests.cpp>
+
+#include <ripple/peerfinder/tests/Livecache.test.cpp>

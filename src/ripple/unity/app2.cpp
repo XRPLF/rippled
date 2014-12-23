@@ -31,10 +31,12 @@
 #include <ripple/app/main/LoadManager.cpp>
 #include <ripple/app/misc/CanonicalTXSet.cpp>
 #include <ripple/app/misc/SHAMapStoreImp.cpp>
+
 #include <ripple/app/shamap/SHAMap.cpp>
 #include <ripple/app/shamap/SHAMapItem.cpp>
 #include <ripple/app/shamap/SHAMapSync.cpp>
 #include <ripple/app/shamap/SHAMapMissingNode.cpp>
-#include <ripple/app/shamap/RadixMapTest.h>
-#include <ripple/app/shamap/RadixMapTest.cpp>
-#include <ripple/app/shamap/FetchPackTests.cpp>
+
+#include <ripple/app/shamap/tests/FetchPack.test.cpp>
+#include <ripple/app/shamap/tests/SHAMap.test.cpp>
+#include <ripple/app/shamap/tests/SHAMapSync.test.cpp>

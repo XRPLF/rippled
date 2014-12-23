@@ -28,7 +28,6 @@
 #include <ripple/protocol/impl/ErrorCodes.cpp>
 #include <ripple/protocol/impl/HashPrefix.cpp>
 #include <ripple/protocol/impl/Indexes.cpp>
-#include <ripple/protocol/impl/Issue.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
@@ -53,4 +52,10 @@
 #include <ripple/protocol/impl/STValidation.cpp>
 #include <ripple/protocol/impl/STVector256.cpp>
 
+#include <ripple/protocol/tests/BuildInfo.test.cpp>
+#include <ripple/protocol/tests/Issue.test.cpp>
+#include <ripple/protocol/tests/RippleAddress.test.cpp>
+#include <ripple/protocol/tests/Serializer.test.cpp>
 #include <ripple/protocol/tests/STAmount.test.cpp>
+#include <ripple/protocol/tests/STObject.test.cpp>
+#include <ripple/protocol/tests/STTx.test.cpp>

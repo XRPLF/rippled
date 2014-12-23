@@ -34,9 +34,11 @@
 #include <ripple/basics/impl/ThreadName.cpp>
 #include <ripple/basics/impl/Time.cpp>
 #include <ripple/basics/impl/UptimeTimer.cpp>
-
-#include <ripple/basics/impl/KeyCache.cpp>
 #include <ripple/basics/impl/make_SSLContext.cpp>
 #include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/TaggedCache.cpp>
+
 #include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
+#include <ripple/basics/tests/KeyCache.test.cpp>
+#include <ripple/basics/tests/RangeSet.test.cpp>
+#include <ripple/basics/tests/StringUtilities.test.cpp>
+#include <ripple/basics/tests/TaggedCache.test.cpp>

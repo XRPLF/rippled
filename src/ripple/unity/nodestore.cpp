@@ -35,6 +35,7 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <ripple/nodestore/impl/BatchWriter.h>
+
 #include <ripple/nodestore/backend/HyperDBFactory.h>
 #include <ripple/nodestore/backend/HyperDBFactory.cpp>
 #include <ripple/nodestore/backend/LevelDBFactory.h>
@@ -63,8 +64,7 @@
 #include <ripple/nodestore/impl/Scheduler.cpp>
 #include <ripple/nodestore/impl/Task.cpp>
 
-#include <ripple/nodestore/tests/TestBase.h>
-#include <ripple/nodestore/tests/BackendTests.cpp>
-#include <ripple/nodestore/tests/BasicTests.cpp>
-#include <ripple/nodestore/tests/DatabaseTests.cpp>
-#include <ripple/nodestore/tests/TimingTests.cpp>
+#include <ripple/nodestore/tests/Backend.test.cpp>
+#include <ripple/nodestore/tests/Basics.test.cpp>
+#include <ripple/nodestore/tests/Database.test.cpp>
+#include <ripple/nodestore/tests/Timing.test.cpp>

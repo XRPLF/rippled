@@ -25,3 +25,5 @@
 #include <ripple/core/impl/LoadMonitor.cpp>
 #include <ripple/core/impl/Job.cpp>
 #include <ripple/core/impl/JobQueue.cpp>
+
+#include <ripple/core/tests/LoadFeeTrack.test.cpp>

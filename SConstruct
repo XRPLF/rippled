@@ -26,6 +26,8 @@
 
     vcxproj         Generate Visual Studio 2013 project file
 
+    count           Show line count metrics
+
 If the clang toolchain is detected, then the default target will use it, else
 the gcc toolchain will be used. On Windows environments, the MSVC toolchain is
 also detected.
@@ -676,3 +678,33 @@ vcxproj = base.VSProject(
     VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
+
+#-------------------------------------------------------------------------------
+
+# Adds a phony target to the environment that always builds
+# See: http://www.scons.org/wiki/PhonyTargets
+def PhonyTargets(env = None, **kw):
+    if not env: env = DefaultEnvironment()
+    for target, action in kw.items():
+        env.AlwaysBuild(env.Alias(target, [], action))
+
+# Build the list of rippled source files that hold unit tests
+def do_count(target, source, env):
+    def list_testfiles(base, suffixes):
+        def _iter(base):
+            for parent, _, files in os.walk(base):
+                for path in files:
+                    path = os.path.join(parent, path)
+                    r = os.path.splitext(path)
+                    if r[1] in suffixes:
+                        if r[0].endswith('.test'):
+                            yield os.path.normpath(path)
+        return list(_iter(base))
+
+    testfiles = list_testfiles(os.path.join('src', 'ripple'), env.get('CPPSUFFIXES'))
+    lines = 0
+    for f in testfiles:
+        lines = lines + sum(1 for line in open(f))
+    print "Total unit test lines: %d" % lines
+
+PhonyTargets(env, count = do_count)
