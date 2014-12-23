@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstring>
 
 namespace beast {
 
@@ -240,8 +241,9 @@ private:
     static inline StringHolder* bufferFromText (const CharPointerType text) noexcept
     {
         // (Can't use offsetof() here because of warnings about this not being a POD)
-        return reinterpret_cast <StringHolder*> (reinterpret_cast <char*> (text.getAddress())
-                    - (reinterpret_cast <size_t> (reinterpret_cast <StringHolder*> (1)->text) - 1));
+        auto const text_offset = reinterpret_cast<char*>(empty.text) - reinterpret_cast<char*>(&empty);
+        auto const tmp = reinterpret_cast<char*>(text.getAddress()) - text_offset;
+        return static_cast<StringHolder*>(std::memmove(tmp, tmp, 0));
     }
 };
 
