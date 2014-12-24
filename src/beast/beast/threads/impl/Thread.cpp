@@ -34,7 +34,6 @@ namespace beast {
 Thread::Thread (std::string const& threadName_)
     : threadName (threadName_),
       threadHandle (nullptr),
-      threadId (0),
       shouldExit (false)
 {
 }
@@ -54,49 +53,14 @@ Thread::~Thread()
 }
 
 //==============================================================================
-// Use a ref-counted object to hold this shared data, so that it can outlive its static
-// shared pointer when threads are still running during static shutdown.
-struct CurrentThreadHolder : public SharedObject
-{
-    CurrentThreadHolder() noexcept {}
-
-    typedef SharedPtr <CurrentThreadHolder> Ptr;
-    ThreadLocalValue<Thread*> value;
-};
-
-static char currentThreadHolderLock [sizeof (SpinLock)]; // (statically initialised to zeros).
-
-static SpinLock* castToSpinLockWithoutAliasingWarning (void* s)
-{
-    return static_cast<SpinLock*> (s);
-}
-
-static CurrentThreadHolder::Ptr getCurrentThreadHolder()
-{
-    static CurrentThreadHolder::Ptr currentThreadHolder;
-    SpinLock::ScopedLockType lock (*castToSpinLockWithoutAliasingWarning (currentThreadHolderLock));
-
-    if (currentThreadHolder == nullptr)
-        currentThreadHolder = new CurrentThreadHolder();
-
-    return currentThreadHolder;
-}
-
 void Thread::threadEntryPoint()
 {
-    const CurrentThreadHolder::Ptr currentThreadHolder (getCurrentThreadHolder());
-    currentThreadHolder->value = this;
-
     if (!threadName.empty ())
         setCurrentThreadName (threadName);
 
     if (startSuspensionEvent.wait (10000))
-    {
-        bassert (getCurrentThreadId() == threadId);
         run();
-    }
 
-    currentThreadHolder->value.releaseCurrentThreadStorage();
     closeThreadHandle();
 }
 
@@ -133,19 +97,12 @@ void Thread::signalThreadShouldExit()
 
 void Thread::waitForThreadToExit () const
 {
-    // Doh! So how exactly do you expect this thread to wait for itself to stop??
-    bassert (getThreadId() != getCurrentThreadId() || getCurrentThreadId() == 0);
-
     while (isThreadRunning())
         std::this_thread::sleep_for (std::chrono::seconds (1));
 }
 
 void Thread::stopThread ()
 {
-    // agh! You can't stop the thread that's calling this method! How on earth
-    // would that work??
-    bassert (getCurrentThreadId() != getThreadId());
-
     const RecursiveMutex::ScopedLockType sl (startStopLock);
 
     if (isThreadRunning())
@@ -210,13 +167,11 @@ void Thread::launchThread()
 {
     unsigned int newThreadId;
     threadHandle = (void*) _beginthreadex (0, 0, &threadEntryProc, this, 0, &newThreadId);
-    threadId = (ThreadID) newThreadId;
 }
 
 void Thread::closeThreadHandle()
 {
     CloseHandle ((HANDLE) threadHandle);
-    threadId = 0;
     threadHandle = 0;
 }
 
@@ -245,11 +200,6 @@ void Thread::setCurrentThreadName (std::string const& name)
    #else
     (void) name;
    #endif
-}
-
-Thread::ThreadID Thread::getCurrentThreadId()
-{
-    return (ThreadID) (std::intptr_t) GetCurrentThreadId();
 }
 
 }
@@ -312,13 +262,11 @@ void Thread::launchThread()
     {
         pthread_detach (handle);
         threadHandle = (void*) handle;
-        threadId = (ThreadID) threadHandle;
     }
 }
 
 void Thread::closeThreadHandle()
 {
-    threadId = 0;
     threadHandle = 0;
 }
 
@@ -336,11 +284,6 @@ void Thread::setCurrentThreadName (std::string const& name)
      prctl (PR_SET_NAME, name.c_str (), 0, 0, 0);
     #endif
    #endif
-}
-
-Thread::ThreadID Thread::getCurrentThreadId()
-{
-    return (ThreadID) pthread_self();
 }
 
 }

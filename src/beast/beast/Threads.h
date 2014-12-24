@@ -28,7 +28,6 @@
 #include <beast/threads/SpinLock.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/Thread.h>
-#include <beast/threads/ThreadLocalValue.h>
 #include <beast/threads/WaitableEvent.h>
 #include <beast/threads/ScopedWrapperContext.h>
 

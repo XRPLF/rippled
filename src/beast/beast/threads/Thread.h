@@ -40,9 +40,6 @@ namespace beast {
     do their business. The thread can then be started with the startThread() method
     and controlled with various other methods.
 
-    This class also contains some thread-related static methods, such
-    as sleep(), yield(), getCurrentThreadId() etc.
-
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
@@ -127,7 +124,7 @@ public:
 
         @see signalThreadShouldExit
     */
-    inline bool threadShouldExit() const                { return shouldExit; }
+    inline bool threadShouldExit() const { return shouldExit; }
 
     /** Waits for the thread to stop.
 
@@ -156,36 +153,11 @@ public:
     void notify() const;
 
     //==============================================================================
-    /** A value type used for thread IDs.
-        @see getCurrentThreadId(), getThreadId()
-    */
-    typedef void* ThreadID;
-
-    /** Returns an id that identifies the caller thread.
-
-        To find the ID of a particular thread object, use getThreadId().
-
-        @returns    a unique identifier that identifies the calling thread.
-        @see getThreadId
-    */
-    static ThreadID getCurrentThreadId();
-
-    /** Returns the ID of this thread.
-
-        That means the ID of this thread object - not of the thread that's calling the method.
-
-        This can change when the thread is started and stopped, and will be invalid if the
-        thread's not actually running.
-
-        @see getCurrentThreadId
-    */
-    ThreadID getThreadId() const noexcept                           { return threadId; }
-
     /** Returns the name of the thread.
 
         This is the name that gets set in the constructor.
     */
-    std::string const& getThreadName() const                             { return threadName; }
+    std::string const& getThreadName() const { return threadName; }
 
     /** Changes the name of the caller thread.
         Different OSes may place different length or content limits on this name.
@@ -197,7 +169,6 @@ private:
     //==============================================================================
     std::string const threadName;
     void* volatile threadHandle;
-    ThreadID threadId;
     RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
     bool volatile shouldExit;
