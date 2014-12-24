@@ -88,11 +88,11 @@ function build_setup(opts, host) {
 
     var steps = [
       function run_server(callback) {
-        if (opts.no_server)  {
+        var server_config = extend({}, config.default_server_config, config.servers[host]);
+
+        if (opts.no_server || server_config.no_server)  {
           return callback();
         }
-
-        var server_config = extend({}, config.default_server_config, config.servers[host]);
 
         data.server = Server.from_config(host, server_config, !!opts.verbose_server);
 
@@ -151,6 +151,7 @@ function build_teardown(host) {
   function teardown(done) {
     var data = this.store[host];
     var opts = data.opts;
+    var server_config = extend({}, config.default_server_config, config.servers[host]);
 
     var series = [
       function disconnect_websocket(callback) {
@@ -162,7 +163,7 @@ function build_teardown(host) {
       },
 
       function stop_server(callback) {
-        if (opts.no_server) {
+        if (opts.no_server || server_config.no_server) {
           callback();
         } else {
           data.server.once('stopped', callback)
@@ -172,7 +173,7 @@ function build_teardown(host) {
       }
     ];
 
-    if (!opts.no_server && data.server.stopped) {
+    if (!(opts.no_server || server_config.no_server) && data.server.stopped) {
       done()
     } else {
       async.series(series, done);
@@ -206,12 +207,7 @@ function account_dump(remote, account, callback) {
   // construct a json result
 };
 
-function create_accounts(remote, src, amount, accounts, callback) {
-  assert.strictEqual(arguments.length, 5);
-
-  remote.set_account_seq(src, 1);
-
-  async.forEach(accounts, function (account, callback) {
+function fund_account(remote, src, account, amount, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
     remote.set_account_seq(account, 1);
@@ -231,6 +227,38 @@ function create_accounts(remote, src, amount, accounts, callback) {
     });
 
     tx.submit();
+}
+
+function create_account(remote, src, account, amount, callback) {
+  var info = remote.requestAccountInfo(account);
+
+  info.once('success', function(m) {
+    if(m.account_data.Balance === "0") {
+      fund_account(remote, src, account, amount, callback);
+    } else {
+      callback(new Error("Account " + account + " is already funded"));
+    }
+  });
+
+  info.once('error', function(m) {
+    if(m.error === "remoteError"
+      && m.remote.error === "actNotFound") {
+      fund_account(remote, src, account, amount, callback);
+    } else {
+      callback(m);
+    }
+  });
+
+  info.request();
+}
+
+function create_accounts(remote, src, amount, accounts, callback) {
+  assert.strictEqual(arguments.length, 5);
+
+  remote.set_account_seq(src, 1);
+
+  async.forEach(accounts, function (account, callback) {
+    create_account(remote, src, account, amount, callback);
   }, callback);
 };
 

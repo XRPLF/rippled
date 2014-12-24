@@ -11,11 +11,12 @@ suite('WebSocket connection', function() {
   setup(function(done) {
     this.timeout(2000);
 
-    var cfg = extend({}, config.default_server_config, config.servers.alpha);
+    var host = config.server_default;
+    var cfg = extend({}, config.default_server_config, config.servers[host]);
     if (cfg.no_server) {
       done();
     } else {
-      server = Server.from_config("alpha", cfg);
+      server = Server.from_config(host, cfg);
       server.once('started', done)
       server.start();
     }
@@ -24,7 +25,9 @@ suite('WebSocket connection', function() {
   teardown(function(done) {
     this.timeout(2000);
     
-    if (config.servers.alpha.no_server) {
+    var host = config.server_default;
+    var cfg = extend({}, config.default_server_config, config.servers[host]);
+    if (cfg.no_server) {
       done();
     } else {
       server.on('stopped', done);
@@ -39,7 +42,8 @@ suite('WebSocket connection', function() {
     // push the measured time out this far.
     this.timeout(3000);
 
-    var alpha = Remote.from_config("alpha");
+    var host = config.server_default;
+    var alpha = Remote.from_config(host);
 
     alpha.on('connected', function () {
       alpha.on('disconnected', function () {

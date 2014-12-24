@@ -70,7 +70,8 @@ suite('JSON-RPC', function() {
   });
 
   test('server info', function(done) {
-    var rippled_config = config.servers.alpha;
+    var host = config.server_default;
+    var rippled_config = config.servers[host];
     var client  = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
 
     client.call('server_info', [ ], function (result) {
@@ -82,7 +83,8 @@ suite('JSON-RPC', function() {
   });
 
   test('subscribe server', function(done) {
-    var rippled_config = config.servers.alpha;
+    var host = config.server_default;
+    var rippled_config = config.servers[host];
     var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
     var http_config    = config.http_servers["zed"];
 
@@ -100,7 +102,8 @@ suite('JSON-RPC', function() {
   test('subscribe ledger', function(done) {
     var self = this;
 
-    var rippled_config = config.servers.alpha;
+    var host = config.server_default;
+    var rippled_config = config.servers[host];
     var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
     var http_config    = config.http_servers["zed"];
 
