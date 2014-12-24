@@ -36,7 +36,6 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
-#include <ripple/sitefiles/Sitefiles.h>
 #include <ripple/validators/make_Manager.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
@@ -172,7 +171,6 @@ public:
 
     // These are Stoppable-related
     std::unique_ptr <JobQueue> m_jobQueue;
-    std::unique_ptr <SiteFiles::Manager> m_siteFiles;
     std::unique_ptr <RPC::Manager> m_rpcManager;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
@@ -282,9 +280,6 @@ public:
         // Anything which calls addJob must be a descendant of the JobQueue
         //
 
-        , m_siteFiles (SiteFiles::Manager::New (
-            *this, m_logs.journal("SiteFiles")))
-
         , m_rpcManager (RPC::make_Manager (m_logs.journal("RPCManager")))
 
         , m_orderBookDB (*m_jobQueue)
@@ -385,11 +380,6 @@ public:
     RPC::Manager& getRPCManager ()
     {
         return *m_rpcManager;
-    }
-
-    SiteFiles::Manager& getSiteFiles()
-    {
-        return *m_siteFiles;
     }
 
     LocalCredentials& getLocalCredentials ()

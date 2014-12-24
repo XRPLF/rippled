@@ -581,7 +581,6 @@ for toolchain in all_toolchains:
             'resource.cpp',
             'rpcx.cpp',
             'server.cpp',
-            'sitefiles.cpp',
             'validators.cpp',
             'websocket.cpp',
         )
