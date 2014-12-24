@@ -23,6 +23,14 @@ function init_config() {
   return require('ripple-lib').config.load(get_config());
 };
 
+exports.get_server_config =
+get_server_config =
+function(config, host) {
+  config = config || init_config();
+  host = host || config.server_default;
+  return extend({}, config.default_server_config, config.servers[host]);
+}
+
 function prepare_tests(tests, fn) {
   var tests = typeof tests === 'string' ? [ tests ] : tests;
   var result = [ ];
@@ -88,11 +96,11 @@ function build_setup(opts, host) {
 
     var steps = [
       function run_server(callback) {
-        if (opts.no_server)  {
+        var server_config = get_server_config(config, host);
+
+        if (opts.no_server || server_config.no_server)  {
           return callback();
         }
-
-        var server_config = extend({}, config.default_server_config, config.servers[host]);
 
         data.server = Server.from_config(host, server_config, !!opts.verbose_server);
 
@@ -151,6 +159,7 @@ function build_teardown(host) {
   function teardown(done) {
     var data = this.store[host];
     var opts = data.opts;
+    var server_config = get_server_config(config, host);
 
     var series = [
       function disconnect_websocket(callback) {
@@ -162,7 +171,7 @@ function build_teardown(host) {
       },
 
       function stop_server(callback) {
-        if (opts.no_server) {
+        if (opts.no_server || server_config.no_server) {
           callback();
         } else {
           data.server.once('stopped', callback)
@@ -172,7 +181,7 @@ function build_teardown(host) {
       }
     ];
 
-    if (!opts.no_server && data.server.stopped) {
+    if (!(opts.no_server || server_config.no_server) && data.server.stopped) {
       done()
     } else {
       async.series(series, done);
@@ -206,12 +215,9 @@ function account_dump(remote, account, callback) {
   // construct a json result
 };
 
-function create_accounts(remote, src, amount, accounts, callback) {
-  assert.strictEqual(arguments.length, 5);
-
-  remote.set_account_seq(src, 1);
-
-  async.forEach(accounts, function (account, callback) {
+exports.fund_account =
+fund_account =
+function(remote, src, account, amount, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
     remote.set_account_seq(account, 1);
@@ -220,17 +226,52 @@ function create_accounts(remote, src, amount, accounts, callback) {
 
     tx.payment(src, account, amount);
 
-    tx.once('proposed', function (m) {
-      //console.log('proposed: %s', JSON.stringify(m));
-      callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
+    tx.once('proposed', function (result) {
+      //console.log('proposed: %s', JSON.stringify(result));
+      callback(result.engine_result === 'tesSUCCESS' ? null : new Error());
     });
 
-    tx.once('error', function (m) {
-      //console.log('error: %s', JSON.stringify(m));
-      callback(m);
+    tx.once('error', function (result) {
+      //console.log('error: %s', JSON.stringify(result));
+      callback(result);
     });
 
     tx.submit();
+}
+
+exports.create_account =
+create_account =
+function(remote, src, account, amount, callback) {
+  // Before creating the account, check if it exists in the ledger.
+  // If it does, regardless of the balance, fail the test, because
+  // the ledger is not in the expected state.
+  var info = remote.requestAccountInfo(account);
+
+  info.once('success', function(result) {
+    // The account exists. Fail by returning an error to callback.
+    callback(new Error("Account " + account + " already exists"));
+  });
+
+  info.once('error', function(result) {
+    if (result.error === "remoteError" && result.remote.error === "actNotFound") {
+      // rippled indicated the account does not exist. Create it by funding it.
+      fund_account(remote, src, account, amount, callback);
+    } else {
+      // Some other error occurred. Pass it up to the callback.
+      callback(result);
+    }
+  });
+
+  info.request();
+}
+
+function create_accounts(remote, src, amount, accounts, callback) {
+  assert.strictEqual(arguments.length, 5);
+
+  remote.set_account_seq(src, 1);
+
+  async.forEach(accounts, function (account, callback) {
+    create_account(remote, src, account, amount, callback);
   }, callback);
 };
 

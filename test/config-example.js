@@ -3,6 +3,7 @@
 //
 
 var path        = require("path");
+var extend      = require('extend');
 var testconfig  = require("./testconfig.js");
 
 exports.accounts = testconfig.accounts;
@@ -58,6 +59,11 @@ exports.servers = {
     'node_db': 'type=memory'
   }
 };
+
+exports.servers.debug = extend({
+  no_server: true,
+  debug_logfile: "debug.log"
+}, exports.servers.alpha);
 
 exports.http_servers = {
   // A local test server
