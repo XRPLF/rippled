@@ -3,6 +3,7 @@
 //
 
 var path        = require("path");
+var extend      = require('extend');
 var testconfig  = require("./testconfig.js");
 
 exports.accounts = testconfig.accounts;
