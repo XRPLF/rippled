@@ -207,7 +207,9 @@ function account_dump(remote, account, callback) {
   // construct a json result
 };
 
-function fund_account(remote, src, account, amount, callback) {
+exports.fund_account =
+fund_account =
+function(remote, src, account, amount, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
     remote.set_account_seq(account, 1);
@@ -216,36 +218,39 @@ function fund_account(remote, src, account, amount, callback) {
 
     tx.payment(src, account, amount);
 
-    tx.once('proposed', function (m) {
-      //console.log('proposed: %s', JSON.stringify(m));
-      callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
+    tx.once('proposed', function (result) {
+      //console.log('proposed: %s', JSON.stringify(result));
+      callback(result.engine_result === 'tesSUCCESS' ? null : new Error());
     });
 
-    tx.once('error', function (m) {
-      //console.log('error: %s', JSON.stringify(m));
-      callback(m);
+    tx.once('error', function (result) {
+      //console.log('error: %s', JSON.stringify(result));
+      callback(result);
     });
 
     tx.submit();
 }
 
-function create_account(remote, src, account, amount, callback) {
+exports.create_account =
+create_account =
+function(remote, src, account, amount, callback) {
+  // Before creating the account, check if it exists in the ledger.
+  // If it does, regardless of the balance, fail the test, because
+  // the ledger is not in the expected state.
   var info = remote.requestAccountInfo(account);
 
-  info.once('success', function(m) {
-    if(m.account_data.Balance === "0") {
-      fund_account(remote, src, account, amount, callback);
-    } else {
-      callback(new Error("Account " + account + " is already funded"));
-    }
+  info.once('success', function(result) {
+    // The account exists. Fail by returning an error to callback.
+    callback(new Error("Account " + account + " already exists"));
   });
 
-  info.once('error', function(m) {
-    if(m.error === "remoteError"
-      && m.remote.error === "actNotFound") {
+  info.once('error', function(result) {
+    if (result.error === "remoteError" && result.remote.error === "actNotFound") {
+      // rippled indicated the account does not exist. Create it by funding it.
       fund_account(remote, src, account, amount, callback);
     } else {
-      callback(m);
+      // Some other error occurred. Pass it up to the callback.
+      callback(result);
     }
   });
 
