@@ -17,11 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/json/json_reader.h>
+#include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 #include <beast/cxx14/memory.h> // <memory>
 

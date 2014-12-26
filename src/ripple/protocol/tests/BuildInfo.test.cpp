@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/protocol/BuildInfo.h>
+#include <beast/module/core/diagnostic/SemanticVersion.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

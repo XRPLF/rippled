@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/ToString.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

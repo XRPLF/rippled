@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+    
 namespace ripple {
 
 char charHex (int iDigit)

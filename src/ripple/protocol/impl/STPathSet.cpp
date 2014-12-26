@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/strHex.h>
+#include <ripple/basics/StringUtilities.h>
 
 namespace ripple {
 

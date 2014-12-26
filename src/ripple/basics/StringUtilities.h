@@ -25,6 +25,7 @@
 #include <ripple/basics/strHex.h>
 #include <boost/format.hpp>
 #include <beast/module/core/text/StringPairArray.h>
+#include <sstream>
 #include <string>
 
 namespace ripple {

@@ -20,6 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STPATHELEMENT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STPATHELEMENT_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/STBase.h>
+#include <ripple/protocol/UintTypes.h>
 #include <cstddef>
 
 namespace ripple {

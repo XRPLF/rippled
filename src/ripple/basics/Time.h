@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_TIME_H_INCLUDED
 #define RIPPLE_BASICS_TIME_H_INCLUDED
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace ripple {
 
 // VFALCO TODO Roll this into some utilities header

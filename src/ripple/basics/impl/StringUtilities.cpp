@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/ToString.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
+#include <boost/algorithm/string.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/regex.hpp>
+#include <algorithm>
 #include <cstdarg>
-
-#include <ripple/basics/ToString.h>
 
 namespace ripple {
 

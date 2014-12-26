@@ -25,6 +25,8 @@
 #ifndef RIPPLE_BASICS_STRHEX_H_INCLUDED
 #define RIPPLE_BASICS_STRHEX_H_INCLUDED
 
+#include <string>
+    
 namespace ripple {
 
 /** Converts an integer to the corresponding hex digit

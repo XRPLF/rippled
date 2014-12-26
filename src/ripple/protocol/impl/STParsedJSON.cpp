@@ -20,8 +20,19 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/LedgerFormats.h>
+#include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STBitString.h>
+#include <ripple/protocol/STBlob.h>
+#include <ripple/protocol/STVector256.h>
+#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/TxFormats.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <cassert>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 

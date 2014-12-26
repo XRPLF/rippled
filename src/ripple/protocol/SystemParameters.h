@@ -21,10 +21,11 @@
 #define RIPPLE_CORE_SYSTEMPARAMETERS_H_INCLUDED
 
 #include <cstdint>
+#include <string>
 
 namespace ripple {
 
-/** Various protocol and system specific constant globals. */
+// Various protocol and system specific constant globals.
 
 /* The name of the system. */
 static inline

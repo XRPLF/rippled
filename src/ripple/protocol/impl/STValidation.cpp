@@ -19,6 +19,8 @@
 
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/json/to_string.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 

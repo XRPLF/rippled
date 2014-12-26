@@ -17,14 +17,17 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
-
+#include <boost/format.hpp>
+    
 // For Sustain Linux variants
 // VFALCO TODO Rewrite Sustain to use beast::Process
 #ifdef __linux__
 #include <sys/types.h>
 #include <sys/prctl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
 #ifdef __FreeBSD__
 #include <sys/types.h>

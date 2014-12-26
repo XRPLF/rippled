@@ -21,6 +21,7 @@
 #include <boost/algorithm/string.hpp>
 // VFALCO TODO Use std::chrono
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <cassert>
 #include <fstream>
 
 namespace ripple {
@@ -203,7 +204,7 @@ Logs::fromSeverity (beast::Journal::Severity level)
     case Journal::kError:   return lsERROR;
 
     default:
-        bassertfalse;
+        assert(false);
     case Journal::kFatal:
         break;
     }
@@ -223,7 +224,7 @@ Logs::toSeverity (LogSeverity level)
     case lsWARNING: return Journal::kWarning;
     case lsERROR:   return Journal::kError;
     default:
-        bassertfalse;
+        assert(false);
     case lsFATAL:
         break;
     }
@@ -313,7 +314,7 @@ Logs::format (std::string& output, std::string const& message,
     case beast::Journal::kWarning:  output += "WRN "; break;
     case beast::Journal::kError:    output += "ERR "; break;
     default:
-        bassertfalse;
+        assert(false);
     case beast::Journal::kFatal:    output += "FTL "; break;
     }
 

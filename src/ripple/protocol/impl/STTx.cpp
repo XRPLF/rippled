@@ -17,13 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/core/Config.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
+#include <boost/format.hpp>
 
 namespace ripple {
 

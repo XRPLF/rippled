@@ -20,7 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 
+#include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STBlob.h>
+#include <string>
 
 namespace ripple {
 

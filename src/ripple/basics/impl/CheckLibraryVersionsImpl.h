@@ -21,6 +21,8 @@
 #define RIPPLE_BASICS_CHECKLIBRARYVERSIONS_IMPL_H_INCLUDED
 
 #include <ripple/basics/CheckLibraryVersions.h>
+#include <boost/version.hpp>
+#include <openssl/opensslv.h>
 
 namespace ripple {
 namespace version {

@@ -507,6 +507,8 @@ else:
         default_toolchain = 'clang'
     else:
         raise ValueError("Don't understand toolchains in " + str(toolchains))
+
+default_tu_style = 'unity'
 default_variant = 'release'
 default_target = None
 
@@ -533,141 +535,168 @@ class ObjectBuilder(object):
             if kwds:
                 env = env.Clone()
                 env.Prepend(**kwds)
-            path = UNITY_BUILD_DIRECTORY + filename
-            o = env.Object(Beast.variantFile(path, self.variant_dirs))
+            o = env.Object(Beast.variantFile(filename, self.variant_dirs))
             self.objects.append(o)
 
+def list_sources(base, suffixes):
+    def _iter(base):
+        for parent, dirs, files in os.walk(base):
+            files = [f for f in files if not f[0] == '.']
+            dirs[:] = [d for d in dirs if not d[0] == '.']
+            for path in files:
+                path = os.path.join(parent, path)
+                r = os.path.splitext(path)
+                if r[1] in suffixes:
+                    yield os.path.normpath(path)
+    return list(_iter(base))
 
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-for toolchain in all_toolchains:
-    for variant in variants:
-        # Configure this variant's construction environment
-        env = base.Clone()
-        config_env(toolchain, variant, env)
-        variant_name = '%s.%s' % (toolchain, variant)
-        variant_dir = os.path.join(build_dir, variant_name)
-        variant_dirs = {
-            os.path.join(variant_dir, 'src') :
-                'src',
-            os.path.join(variant_dir, 'proto') :
-                os.path.join (build_dir, 'proto'),
-            }
-        for dest, source in variant_dirs.iteritems():
-            env.VariantDir(dest, source, duplicate=0)
 
-        object_builder = ObjectBuilder(env, variant_dirs)
-        object_builder.add_source_files(
-            'app.cpp',
-            'app1.cpp',
-            'app2.cpp',
-            'app3.cpp',
-            'app4.cpp',
-            'app5.cpp',
-            'app6.cpp',
-            'app7.cpp',
-            'app8.cpp',
-            'app9.cpp',
-            'basics.cpp',
-            'beast.cpp',
-            'core.cpp',
-            'crypto.cpp',
-            'json.cpp',
-            'net.cpp',
-            'overlay.cpp',
-            'peerfinder.cpp',
-            'protobuf.cpp',
-            'protocol.cpp',
-            'ripple.proto.cpp',
-            'resource.cpp',
-            'rpcx.cpp',
-            'server.cpp',
-            'validators.cpp',
-            'websocket.cpp',
-        )
+for tu_style in ['classic', 'unity']:
+    for toolchain in all_toolchains:
+        for variant in variants:
+            # Configure this variant's construction environment
+            env = base.Clone()
+            config_env(toolchain, variant, env)
+            variant_name = '%s.%s' % (toolchain, variant)
+            if tu_style == 'classic':
+                variant_name += '.nounity'
+            variant_dir = os.path.join(build_dir, variant_name)
+            variant_dirs = {
+                os.path.join(variant_dir, 'src') :
+                    'src',
+                os.path.join(variant_dir, 'proto') :
+                    os.path.join (build_dir, 'proto'),
+                }
+            for dest, source in variant_dirs.iteritems():
+                env.VariantDir(dest, source, duplicate=0)
 
-        object_builder.add_source_files(
-            'beastc.c',
-            CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
+            object_builder = ObjectBuilder(env, variant_dirs)
 
-        object_builder.add_source_files(
-            'nodestore.cpp',
-            CPPPATH=[
-                'src/leveldb/include',
-                #'src/hyperleveldb/include', # hyper
-                'src/rocksdb2/include',
-            ]
-        )
+            if tu_style == 'classic':
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/basics', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/protocol', '.cpp'))
+            else:
+                object_builder.add_source_files(
+                    'src/ripple/unity/basics.cpp',
+                    'src/ripple/unity/protocol.cpp',
+                )
 
-        if 'gcc' in toolchain:
-            no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
-        else:
-            no_uninitialized_warning = {}
-
-        object_builder.add_source_files(
-            'leveldb.cpp',
-            CPPPATH=[
-                'src/leveldb/',
-                'src/leveldb/include',
-                'src/snappy/snappy',
-                'src/snappy/config',
-            ],
-            **no_uninitialized_warning
-        )
-
-        object_builder.add_source_files(
-            'hyperleveldb.cpp',
-            CPPPATH=[
-                'src/hyperleveldb',
-                'src/snappy/snappy',
-                'src/snappy/config',
-            ],
-            **no_uninitialized_warning
-        )
-
-        object_builder.add_source_files(
-            'rocksdb.cpp',
-            CPPPATH=[
-                'src/rocksdb2',
-                'src/rocksdb2/include',
-                'src/snappy/snappy',
-                'src/snappy/config',
-            ],
-            **no_uninitialized_warning
-        )
-
-        object_builder.add_source_files(
-            'snappy.cpp',
-            CCFLAGS=([] if toolchain == 'msvc' else ['-Wno-unused-function']),
-            CPPPATH=[
-                'src/snappy/snappy',
-                'src/snappy/config',
-            ]
-        )
-
-        if toolchain == "clang" and Beast.system.osx:
-            object_builder.add_source_files('beastobjc.mm')
-
-        target = env.Program(
-            target=os.path.join(variant_dir, 'rippled'),
-            source=object_builder.objects
+            object_builder.add_source_files(
+                'src/ripple/unity/app.cpp',
+                'src/ripple/unity/app1.cpp',
+                'src/ripple/unity/app2.cpp',
+                'src/ripple/unity/app3.cpp',
+                'src/ripple/unity/app4.cpp',
+                'src/ripple/unity/app5.cpp',
+                'src/ripple/unity/app6.cpp',
+                'src/ripple/unity/app7.cpp',
+                'src/ripple/unity/app8.cpp',
+                'src/ripple/unity/app9.cpp',
+                'src/ripple/unity/beast.cpp',
+                'src/ripple/unity/core.cpp',
+                'src/ripple/unity/crypto.cpp',
+                'src/ripple/unity/json.cpp',
+                'src/ripple/unity/net.cpp',
+                'src/ripple/unity/overlay.cpp',
+                'src/ripple/unity/peerfinder.cpp',
+                'src/ripple/unity/protobuf.cpp',
+                'src/ripple/unity/ripple.proto.cpp',
+                'src/ripple/unity/resource.cpp',
+                'src/ripple/unity/rpcx.cpp',
+                'src/ripple/unity/server.cpp',
+                'src/ripple/unity/validators.cpp',
+                'src/ripple/unity/websocket.cpp'
             )
 
-        if toolchain == default_toolchain and variant == default_variant:
-            default_target = target
-            install_target = env.Install (build_dir, source=default_target)
-            env.Alias ('install', install_target)
-            env.Default (install_target)
-            aliases['all'].extend(install_target)
-        if toolchain == 'msvc':
-            config = env.VSProjectConfig(variant, 'x64', target, env)
-            msvc_configs.append(config)
-        if toolchain in toolchains:
-            aliases['all'].extend(target)
-            aliases[variant].extend(target)
-            aliases[toolchain].extend(target)
-            env.Alias(variant_name, target)
+            object_builder.add_source_files(
+                'src/ripple/unity/beastc.c',
+                CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
+
+            object_builder.add_source_files(
+                'src/ripple/unity/nodestore.cpp',
+                CPPPATH=[
+                    'src/leveldb/include',
+                    #'src/hyperleveldb/include', # hyper
+                    'src/rocksdb2/include',
+                ]
+            )
+
+            if 'gcc' in toolchain:
+                no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+            else:
+                no_uninitialized_warning = {}
+
+            object_builder.add_source_files(
+                'src/ripple/unity/leveldb.cpp',
+                CPPPATH=[
+                    'src/leveldb/',
+                    'src/leveldb/include',
+                    'src/snappy/snappy',
+                    'src/snappy/config',
+                ],
+                **no_uninitialized_warning
+            )
+
+            object_builder.add_source_files(
+                'src/ripple/unity/hyperleveldb.cpp',
+                CPPPATH=[
+                    'src/hyperleveldb',
+                    'src/snappy/snappy',
+                    'src/snappy/config',
+                ],
+                **no_uninitialized_warning
+            )
+
+            object_builder.add_source_files(
+                'src/ripple/unity/rocksdb.cpp',
+                CPPPATH=[
+                    'src/rocksdb2',
+                    'src/rocksdb2/include',
+                    'src/snappy/snappy',
+                    'src/snappy/config',
+                ],
+                **no_uninitialized_warning
+            )
+
+            object_builder.add_source_files(
+                'src/ripple/unity/snappy.cpp',
+                CCFLAGS=([] if toolchain == 'msvc' else ['-Wno-unused-function']),
+                CPPPATH=[
+                    'src/snappy/snappy',
+                    'src/snappy/config',
+                ]
+            )
+
+            if toolchain == "clang" and Beast.system.osx:
+                object_builder.add_source_files('src/ripple/unity/beastobjc.mm')
+
+            target = env.Program(
+                target=os.path.join(variant_dir, 'rippled'),
+                source=object_builder.objects
+                )
+
+            if tu_style == default_tu_style:
+                if toolchain == default_toolchain and (
+                    variant == default_variant):
+                    default_target = target
+                    install_target = env.Install (build_dir, source=default_target)
+                    env.Alias ('install', install_target)
+                    env.Default (install_target)
+                    aliases['all'].extend(install_target)
+                if toolchain == 'msvc':
+                    config = env.VSProjectConfig(variant, 'x64', target, env)
+                    msvc_configs.append(config)
+                if toolchain in toolchains:
+                    aliases['all'].extend(target)
+                    aliases[toolchain].extend(target)
+            if toolchain in toolchains:
+                aliases[variant].extend(target)
+                env.Alias(variant_name, target)
 
 for key, value in aliases.iteritems():
     env.Alias(key, value)
@@ -700,7 +729,6 @@ def do_count(target, source, env):
                         if r[0].endswith('.test'):
                             yield os.path.normpath(path)
         return list(_iter(base))
-
     testfiles = list_testfiles(os.path.join('src', 'ripple'), env.get('CPPSUFFIXES'))
     lines = 0
     for f in testfiles:

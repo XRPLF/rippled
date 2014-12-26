@@ -3075,6 +3075,9 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\ResolverAsio.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\strHex.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\StringUtilities.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3763,9 +3766,6 @@
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STPathSet.cpp">
-      <Filter>ripple\protocol\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\strHex.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STTx.cpp">

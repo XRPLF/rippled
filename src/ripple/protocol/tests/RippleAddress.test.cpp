@@ -19,6 +19,8 @@
 
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/RipplePublicKey.h>
+#include <ripple/protocol/Serializer.h>
+#include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

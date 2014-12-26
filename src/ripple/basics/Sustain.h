@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_SUSTAIN_H_INCLUDED
 #define RIPPLE_BASICS_SUSTAIN_H_INCLUDED
 
+#include <string>
+
 namespace ripple {
 
 // "Sustain" is a system for a buddy process that monitors the main process

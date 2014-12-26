@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
