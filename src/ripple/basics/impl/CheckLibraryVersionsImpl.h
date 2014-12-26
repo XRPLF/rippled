@@ -17,26 +17,32 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
+#ifndef RIPPLE_BASICS_CHECKLIBRARYVERSIONS_IMPL_H_INCLUDED
+#define RIPPLE_BASICS_CHECKLIBRARYVERSIONS_IMPL_H_INCLUDED
+
+#include <ripple/basics/CheckLibraryVersions.h>
+
+namespace ripple {
+namespace version {
+
+/** Both Boost and OpenSSL have integral version numbers. */
+typedef unsigned long long VersionNumber;
+
+/** Minimal required boost version. */
+extern const char boostMinimal[];
+
+/** Minimal required OpenSSL version. */
+extern const char openSSLMinimal[];
+
+std::string boostVersion(VersionNumber boostVersion = BOOST_VERSION);
+std::string openSSLVersion(
+    VersionNumber openSSLVersion = OPENSSL_VERSION_NUMBER);
+
+void checkVersion(std::string name, std::string required, std::string actual);
+void checkBoost(std::string version = boostVersion());
+void checkOpenSSL(std::string version = openSSLVersion());
+
+}  // namespace version
+}  // namespace ripple
+
 #endif
-
-#include <BeastConfig.h>
-
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/TestSuite.test.cpp>
-#include <ripple/basics/impl/ThreadName.cpp>
-#include <ripple/basics/impl/Time.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
-
-#include <ripple/basics/impl/KeyCache.cpp>
-#include <ripple/basics/impl/make_SSLContext.cpp>
-#include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/TaggedCache.cpp>
-#include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
