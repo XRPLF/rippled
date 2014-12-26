@@ -95,57 +95,5 @@ void checkLibraryVersions()
     checkOpenSSL();
 }
 
-struct CheckLibraryVersions_test : beast::unit_test::suite
-{
-    void print_message()
-    {
-        log << "ssl minimal: " << openSSLMinimal << "\n"
-            << "ssl actual:  " << openSSLVersion() << "\n"
-            << "boost minimal: " << boostMinimal << "\n"
-            << "boost actual:  " << boostVersion() << "\n"
-            << std::flush;
-    }
-
-    void test_bad_ssl()
-    {
-        std::string error;
-        try {
-            checkOpenSSL(openSSLVersion(0x0090819fL));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your OpenSSL library is out of date.\n"
-          "Your version: 0.9.8-o\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
-    }
-
-    void test_bad_boost()
-    {
-        std::string error;
-        try {
-            checkBoost(boostVersion(105400));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your Boost library is out of date.\n"
-          "Your version: 1.54.0\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
-    }
-
-
-    void run()
-    {
-        print_message();
-        checkLibraryVersions();
-
-        test_bad_ssl();
-        test_bad_boost();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(CheckLibraryVersions, ripple_basics, ripple);
-
 }  // namespace version
 }  // namespace ripple
