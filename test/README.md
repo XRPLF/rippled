@@ -2,7 +2,8 @@
 
 ## Basic usage.
 
-Documentation for running these tests can be found with the
+Documentation for installation of dependencies and running these
+tests can be found with the
 [_Ripple build instructions_][unit_testing].
 (Also for [_Windows_][windows_unit_testing],
 [_OS X_][osx_unit_testing],
@@ -21,6 +22,7 @@ these steps:
 
 1. If you haven't already, copy the example configuration file:
 `cp test/config-example.js test/config.js`
+
 2. Edit test/config.js to specify a "debug" server configuration.
   1. Change the existing default server: `exports.server_default = "debug";`
   (near the top of the file).
@@ -32,22 +34,29 @@ these steps:
     debug_logfile: "debug.log"
   }, exports.servers.alpha);
   ```
+
 3. Create a rippled.cfg file for the tests.
   1. Run `npm test`. The tests will fail. **That is ok and expected.**
   2. Copy and/or rename the *tmp/server/debug/rippled.cfg* file to somewhere 
   convenient.
-4. Start rippled in your debugger of choice with command line options
-`-a -v --conf <your npm rippled.cfg>`. Set any breakpoints now.
-5. To skip any tests that you don't want to debug, especially if they modify the
+
+4. Set any rippled breakpoints.
+
+5. Start rippled in your debugger of choice with command line options
+`-a -v --conf <your npm rippled.cfg>`.
+
+6. To skip any tests that you don't want to debug, especially if they modify the
 ledger, change `test(` to `test.skip(` in the .js file.
-6. Start your test(s) in the node-inspector debugger.
+
+7. Start your test(s) in the node-inspector debugger.
 (Note that the tests can be run without the debugger, but you will probably
 have problems with time outs or reused ledgers. Use at your own risk.)
   1. `node_modules/node-inspector/bin/inspector.js`
   2. `mocha --debug --debug-brk test/<testfile.js>`
   3. Browse to http://127.0.0.1:8080/debug?port=5858 in a browser supported 
   by node-inspector (i.e. Chrome or Safari).
-7. If you would like to run multiple tests, you probably want to put
+
+8. If you would like to run multiple tests, you probably want to put
 a breakpoint in the following function:
   * File testutils.js -> function `build_teardown()` -> nested function
   `teardown()` -> nested series function `stop_server()`: When this is
