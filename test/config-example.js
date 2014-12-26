@@ -59,6 +59,11 @@ exports.servers = {
   }
 };
 
+exports.servers.debug = extend({
+  no_server: true,
+  debug_logfile: "debug.log"
+}, exports.servers.alpha);
+
 exports.http_servers = {
   // A local test server
   "zed" : {
