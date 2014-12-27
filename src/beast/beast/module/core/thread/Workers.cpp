@@ -232,7 +232,6 @@ void Workers::Worker::run ()
 class Workers_test : public unit_test::suite
 {
 public:
-
     struct TestCallback : Workers::Callback
     {
         explicit TestCallback (int count_)
@@ -250,13 +249,6 @@ public:
         WaitableEvent finished;
         std::atomic <int> count;
     };
-
-    template <class T1, class T2>
-    bool
-    expectEquals (T1 const& t1, T2 const& t2)
-    {
-        return expect (t1 == t2);
-    }
 
     void testThreads (int const threadCount)
     {
@@ -276,14 +268,12 @@ public:
         // 10 seconds should be enough to finish on any system
         //
         bool signaled = cb.finished.wait (10 * 1000);
-
         expect (signaled, "timed out");
 
         w.pauseAllThreadsAndWait ();
 
-        int const count (cb.count.load ());
-
-        expectEquals (count, 0);
+        // We had better finished all our work!
+        expect (cb.count.load () == 0, "Did not complete task!");
     }
 
     void run ()
