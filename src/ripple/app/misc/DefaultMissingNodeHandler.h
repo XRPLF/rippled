@@ -17,10 +17,19 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_APP_DEFAULTMISSINGNODEHANDLER_H_INCLUDED
+#define RIPPLE_APP_DEFAULTMISSINGNODEHANDLER_H_INCLUDED
 
-#include <ripple/unity/app.h>
+#include <cstdint>
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/Ledger.test.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+namespace ripple {
+
+/** Default handler which calls NetworkOPs. */
+struct DefaultMissingNodeHandler
+{
+    void operator()(std::uint32_t refNum);
+};
+
+}
+
+#endif

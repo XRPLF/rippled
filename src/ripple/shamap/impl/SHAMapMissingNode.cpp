@@ -17,20 +17,31 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/SHAMapMissingNode.h>
+#include <ostream>
+
 namespace ripple {
 
-class SHAMap;
-
-SHAMapItem::SHAMapItem (uint256 const& tag, Blob const& data)
-    : mTag (tag)
-    , mData (data)
+std::ostream&
+operator<< (std::ostream& out, const SHAMapMissingNode& mn)
 {
-}
+    switch (mn.getMapType ())
+    {
+    case smtTRANSACTION:
+        out << "Missing/TXN(" << mn.getNodeHash () << ")";
+        break;
 
-SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
-    : mTag (tag)
-    , mData (data.peekData ())
-{
+    case smtSTATE:
+        out << "Missing/STA(" << mn.getNodeHash () << ")";
+        break;
+
+    case smtFREE:
+    default:
+        out << "Missing/" << mn.getNodeHash ();
+        break;
+    };
+
+    return out;
 }
 
 } // ripple

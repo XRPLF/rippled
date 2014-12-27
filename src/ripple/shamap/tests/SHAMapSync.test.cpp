@@ -17,7 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/SHAMap.h>
+#include <ripple/shamap/SHAMapItem.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/protocol/UInt160.h>
+#include <beast/chrono/manual_clock.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/rand.h> // DEPRECATED
 
@@ -30,6 +37,14 @@ namespace ripple {
 class SHAMapSync_test : public beast::unit_test::suite
 {
 public:
+    struct Handler
+    {
+        void operator()(std::uint32_t refNum) const
+        {
+            throw std::runtime_error("missing node");
+        }
+    };
+
     static SHAMapItem::pointer makeRandomAS ()
     {
         Serializer s;
@@ -96,9 +111,14 @@ public:
 
         FullBelowCache fullBelowCache ("test.full_below", clock);
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
+        NodeStore::DummyScheduler scheduler;
+        auto db = NodeStore::Manager::instance().make_Database (
+            "test", scheduler, j, 1, parseDelimitedKeyValueString("type=memory"));
 
-        SHAMap source (smtFREE, fullBelowCache, treeNodeCache);
-        SHAMap destination (smtFREE, fullBelowCache, treeNodeCache);
+        SHAMap source (smtFREE, fullBelowCache, treeNodeCache,
+            *db, Handler(), beast::Journal());
+        SHAMap destination (smtFREE, fullBelowCache, treeNodeCache,
+            *db, Handler(), beast::Journal());
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
@@ -150,7 +170,6 @@ public:
             {
                 if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes, (rand () % 2) == 0, (rand () % 2) == 0))
                 {
-                    WriteLog (lsFATAL, SHAMap) << "GetNodeFat fails";
                     fail ("GetNodeFat");
                 }
                 else
@@ -182,7 +201,6 @@ public:
 
                 if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, nullptr).isGood ())
                 {
-                    WriteLog (lsTRACE, SHAMap) << "AddKnownNode fails";
                     fail ("AddKnownNode");
                 }
                 else
@@ -199,7 +217,7 @@ public:
         destination.clearSynching ();
 
 #ifdef SMS_DEBUG
-        WriteLog (lsINFO, SHAMap) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
+        log << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
                                   bytes / 1024 << " KB";
 #endif
 
@@ -213,8 +231,8 @@ public:
         }
 
 #ifdef SMS_DEBUG
-        WriteLog (lsINFO, SHAMap) << "SHAMapSync test passed: " << items << " items, " <<
-                                  passes << " passes, " << nodes << " nodes";
+        log << "SHAMapSync test passed: " << items << " items, " <<
+            passes << " passes, " << nodes << " nodes";
 #endif
     }
 };

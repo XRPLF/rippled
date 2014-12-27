@@ -17,16 +17,52 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_FULLBELOWCACHE_H_INCLUDED
-#define RIPPLE_FULLBELOWCACHE_H_INCLUDED
+#ifndef RIPPLE_SHAMAPMISSINGNODE_H
+#define RIPPLE_SHAMAPMISSINGNODE_H
 
 #include <ripple/basics/base_uint.h>
-#include <ripple/app/main/BasicFullBelowCache.h>
-
+    
 namespace ripple {
 
-typedef BasicFullBelowCache <uint256> FullBelowCache;
+enum SHAMapType
+{
+    smtTRANSACTION  = 1,    // A tree of transactions
+    smtSTATE        = 2,    // A tree of state nodes
+    smtFREE         = 3,    // A tree not part of a ledger
+};
 
-}
+class SHAMapMissingNode : public std::runtime_error
+{
+public:
+    SHAMapMissingNode (SHAMapType t,
+                       uint256 const& nodeHash)
+        : std::runtime_error ("SHAMapMissingNode")
+        , mType (t)
+        , mNodeHash (nodeHash)
+    {
+    }
+
+    virtual ~SHAMapMissingNode () throw ()
+    {
+    }
+
+    SHAMapType getMapType () const
+    {
+        return mType;
+    }
+
+    uint256 const& getNodeHash () const
+    {
+        return mNodeHash;
+    }
+
+private:
+    SHAMapType mType;
+    uint256 mNodeHash;
+};
+
+extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
+
+} // ripple
 
 #endif

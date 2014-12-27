@@ -17,33 +17,28 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/nodestore/Database.h>
+#include <ripple/shamap/SHAMap.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
 
 namespace ripple {
 
-void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
-{
-    getApp().getOPs ().missingNodeInLedger (refNUm);
-};
-
-//------------------------------------------------------------------------------
-
 SHAMap::SHAMap (
     SHAMapType t,
     FullBelowCache& fullBelowCache,
     TreeNodeCache& treeNodeCache,
-    std::uint32_t seq,
-    MissingNodeHandler missing_node_handler)
-    : m_fullBelowCache (fullBelowCache)
+    NodeStore::Database& db,
+    MissingNodeHandler missing_node_handler,
+    beast::Journal journal,
+    std::uint32_t seq)
+    : journal_(journal)
+    , db_(db)
+    , m_fullBelowCache (fullBelowCache)
     , mSeq (seq)
     , mLedgerSeq (0)
     , mTreeNodeCache (treeNodeCache)
     , mState (smsModifying)
     , mType (t)
-    , mBacked (true)
     , m_missing_node_handler (missing_node_handler)
 {
     assert (mSeq != 0);
@@ -57,14 +52,17 @@ SHAMap::SHAMap (
     uint256 const& hash,
     FullBelowCache& fullBelowCache,
     TreeNodeCache& treeNodeCache,
-    MissingNodeHandler missing_node_handler)
-    : m_fullBelowCache (fullBelowCache)
+    NodeStore::Database& db,
+    MissingNodeHandler missing_node_handler,
+    beast::Journal journal)
+    : journal_(journal)
+    , db_(db)
+    , m_fullBelowCache (fullBelowCache)
     , mSeq (1)
     , mLedgerSeq (0)
     , mTreeNodeCache (treeNodeCache)
     , mState (smsSynching)
     , mType (t)
-    , mBacked (true)
     , m_missing_node_handler (missing_node_handler)
 {
     root = std::make_shared<SHAMapTreeNode> (mSeq);
@@ -74,15 +72,13 @@ SHAMap::SHAMap (
 SHAMap::~SHAMap ()
 {
     mState = smsInvalid;
-
-    if (root)
-        logTimedDestroy <SHAMap> (root, "root node");
 }
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
     SHAMap::pointer ret = std::make_shared<SHAMap> (mType,
-        m_fullBelowCache, mTreeNodeCache);
+        m_fullBelowCache, mTreeNodeCache, db_, m_missing_node_handler,
+            journal_);
     SHAMap& newMap = *ret;
 
     if (!isMutable)
@@ -156,14 +152,16 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
 
         if (! node->setChild (branch, child->getNodeHash(), child))
         {
-            WriteLog (lsFATAL, SHAMap) << "dirtyUp terminates early";
+            journal_.fatal <<
+                "dirtyUp terminates early";
             assert (false);
             return;
         }
 
-#ifdef ST_DEBUG
-        WriteLog (lsTRACE, SHAMap) << "dirtyUp sets branch " << branch << " to " << prevHash;
-#endif
+    #ifdef ST_DEBUG
+        if (journal_.trace) journal_.trace <<
+            "dirtyUp sets branch " << branch << " to " << prevHash;
+    #endif
         child = std::move (node);
     }
 }
@@ -192,9 +190,9 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeFromDB (uint256 const& hash)
 {
     SHAMapTreeNode::pointer node;
 
-    if (mBacked && getApp().running ())
+    if (mBacked)
     {
-        NodeObject::pointer obj = getApp().getNodeStore().fetch (hash);
+        NodeObject::pointer obj = db_.fetch (hash);
         if (obj)
         {
             try
@@ -205,7 +203,8 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeFromDB (uint256 const& hash)
             }
             catch (...)
             {
-                WriteLog (lsWARNING, SHAMap) << "Invalid DB node " << hash;
+                if (journal_.warning) journal_.warning <<
+                    "Invalid DB node " << hash;
                 return SHAMapTreeNode::pointer ();
             }
         }
@@ -394,7 +393,7 @@ SHAMapTreeNode* SHAMap::descendAsync (SHAMapTreeNode* parent, int branch,
         if (!ptr && mBacked)
         {
             NodeObject::pointer obj;
-            if (!getApp().getNodeStore().asyncFetch (hash, obj))
+            if (! db_.asyncFetch (hash, obj))
             {
                 pending = true;
                 return nullptr;
@@ -877,7 +876,8 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     if (!node->setItem (item, !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
                         (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM)))
     {
-        WriteLog (lsWARNING, SHAMap) << "SHAMap setItem, no change";
+        if (journal_.warning) journal_.warning <<
+            "SHAMap setItem, no change";
         return true;
     }
 
@@ -885,24 +885,28 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     return true;
 }
 
-void SHAMapItem::dump ()
-{
-    WriteLog (lsINFO, SHAMap) << "SHAMapItem(" << mTag << ") " << mData.size () << "bytes";
-}
-
 bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 {
     if (hash == root->getNodeHash ())
         return true;
 
-    if (ShouldLog (lsTRACE, SHAMap))
+    if (journal_.trace)
     {
         if (mType == smtTRANSACTION)
-            WriteLog (lsTRACE, SHAMap) << "Fetch root TXN node " << hash;
+        {
+            journal_.trace
+                << "Fetch root TXN node " << hash;
+        }
         else if (mType == smtSTATE)
-            WriteLog (lsTRACE, SHAMap) << "Fetch root STATE node " << hash;
+        {
+            journal_.trace <<
+                "Fetch root STATE node " << hash;
+        }
         else
-            WriteLog (lsTRACE, SHAMap) << "Fetch root SHAMap node " << hash;
+        {
+            journal_.trace <<
+                "Fetch root SHAMap node " << hash;
+        }
     }
 
     SHAMapTreeNode::pointer newRoot = fetchNodeNT (SHAMapNodeID(), hash, filter);
@@ -938,7 +942,7 @@ void SHAMap::writeNode (
 
     Serializer s;
     node->addRaw (s, snfPREFIX);
-    getApp().getNodeStore().store (t, seq,
+    db_.store (t, seq,
         std::move (s.modData ()), node->getNodeHash ());
 }
 
@@ -1108,7 +1112,8 @@ bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeF
 void SHAMap::dump (bool hash)
 {
     int leafCount = 0;
-    WriteLog (lsINFO, SHAMap) << " MAP Contains";
+    if (journal_.info) journal_.info <<
+        " MAP Contains";
 
     std::stack <std::pair <SHAMapTreeNode*, SHAMapNodeID> > stack;
     stack.push ({root.get (), SHAMapNodeID ()});
@@ -1119,11 +1124,11 @@ void SHAMap::dump (bool hash)
         SHAMapNodeID nodeID = stack.top().second;
         stack.pop();
 
-        WriteLog (lsINFO, SHAMap) << node->getString (nodeID);
+        if (journal_.info) journal_.info <<
+            node->getString (nodeID);
         if (hash)
-        {
-           WriteLog (lsINFO, SHAMap) << "Hash: " << node->getNodeHash();
-        }
+           if (journal_.info) journal_.info <<
+               "Hash: " << node->getNodeHash();
 
         if (node->isInner ())
         {
@@ -1145,7 +1150,8 @@ void SHAMap::dump (bool hash)
     }
     while (!stack.empty ());
 
-    WriteLog (lsINFO, SHAMap) << leafCount << " resident leaves";
+    if (journal_.info) journal_.info <<
+        leafCount << " resident leaves";
 }
 
 SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash)

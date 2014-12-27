@@ -24,8 +24,10 @@
 #ifndef BEAST_RANDOM_H_INCLUDED
 #define BEAST_RANDOM_H_INCLUDED
 
-namespace beast
-{
+#include <cstddef>
+#include <cstdint>
+    
+namespace beast {
 
 //==============================================================================
 /**

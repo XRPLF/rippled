@@ -17,10 +17,31 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_SHAMAPSYNCFILTER_H
+#define RIPPLE_SHAMAPSYNCFILTER_H
 
-#include <ripple/unity/app.h>
+#include <ripple/shamap/SHAMapTreeNode.h>
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/Ledger.test.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+/** Callback for filtering SHAMap during sync. */
+namespace ripple {
+
+class SHAMapSyncFilter
+{
+public:
+    virtual ~SHAMapSyncFilter () { }
+
+    // Note that the nodeData is overwritten by this call
+    virtual void gotNode (bool fromFilter,
+                          SHAMapNodeID const& id,
+                          uint256 const& nodeHash,
+                          Blob& nodeData,
+                          SHAMapTreeNode::TNType type) = 0;
+
+    virtual bool haveNode (SHAMapNodeID const& id,
+                           uint256 const& nodeHash,
+                           Blob& nodeData) = 0;
+};
+
+}
+
+#endif

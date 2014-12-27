@@ -20,7 +20,7 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
-#include <ripple/app/shamap/SHAMap.h>
+#include <ripple/shamap/SHAMap.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/app/misc/AccountState.h>

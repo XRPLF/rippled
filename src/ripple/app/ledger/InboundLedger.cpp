@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/shamap/SHAMapNodeID.h>
+#include <ripple/app/ledger/AccountStateSF.h>
+#include <ripple/app/ledger/TransactionStateSF.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>

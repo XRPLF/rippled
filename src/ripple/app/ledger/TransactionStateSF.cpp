@@ -17,11 +17,36 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/TransactionStateSF.h>
+#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/nodestore/Database.h>
+#include <ripple/protocol/HashPrefix.h>
+
 namespace ripple {
-namespace RadMap {
 
-// Unit test to go here if the class becomes
-// a non-trivial wrapper for KeyCache.
+TransactionStateSF::TransactionStateSF (std::uint32_t ledgerSeq)
+    : mLedgerSeq (ledgerSeq)
+{
+}
 
+void TransactionStateSF::gotNode (bool fromFilter,
+                                  SHAMapNodeID const& id,
+                                  uint256 const& nodeHash,
+                                  Blob& nodeData,
+                                  SHAMapTreeNode::TNType type)
+{
+    getApp().getNodeStore ().store (
+        (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
+        mLedgerSeq,
+        std::move (nodeData),
+        nodeHash);
 }
+
+bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
+                                   uint256 const& nodeHash,
+                                   Blob& nodeData)
+{
+    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
 }
+
+} // ripple

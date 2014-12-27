@@ -17,27 +17,35 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+#define RIPPLE_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+
+#include <ripple/shamap/SHAMapSyncFilter.h>
+
 namespace ripple {
 
-std::ostream& operator<< (std::ostream& out, const SHAMapMissingNode& mn)
+// This class is only needed on add functions
+// sync filter for account state nodes during ledger sync
+class AccountStateSF : public SHAMapSyncFilter
 {
-    switch (mn.getMapType ())
-    {
-    case smtTRANSACTION:
-        out << "Missing/TXN(" << mn.getNodeHash () << ")";
-        break;
+public:
+    explicit AccountStateSF (std::uint32_t ledgerSeq);
 
-    case smtSTATE:
-        out << "Missing/STA(" << mn.getNodeHash () << ")";
-        break;
+    // Note that the nodeData is overwritten by this call
+    void gotNode (bool fromFilter,
+                  SHAMapNodeID const& id,
+                  uint256 const& nodeHash,
+                  Blob& nodeData,
+                  SHAMapTreeNode::TNType);
 
-    case smtFREE:
-    default:
-        out << "Missing/" << mn.getNodeHash ();
-        break;
-    };
+    bool haveNode (SHAMapNodeID const& id,
+                   uint256 const& nodeHash,
+                   Blob& nodeData);
 
-    return out;
-}
+private:
+    std::uint32_t mLedgerSeq;
+};
 
 } // ripple
+
+#endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/SHAMap.h>
+    
 namespace ripple {
 
 // This code is used to compare another node's transaction tree

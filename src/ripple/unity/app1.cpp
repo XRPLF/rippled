@@ -21,6 +21,5 @@
 
 #include <ripple/app/consensus/LedgerConsensus.cpp>
 #include <ripple/app/peers/PeerSet.cpp>
-#include <ripple/app/shamap/SHAMapSyncFilters.cpp>
 #include <ripple/app/ledger/LedgerCleaner.cpp>
 #include <ripple/app/ledger/LedgerMaster.cpp>

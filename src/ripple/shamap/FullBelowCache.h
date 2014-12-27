@@ -17,14 +17,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
-#define RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
+#ifndef RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
+#define RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 
+#include <ripple/basics/base_uint.h>
 #include <ripple/basics/KeyCache.h>
-#include <ripple/app/main/Tuning.h>
 #include <beast/insight/Collector.h>
+#include <atomic>
+#include <string>
 
 namespace ripple {
+
+namespace detail {
 
 /** Remembers which tree keys have all descendants resident.
     This optimizes the process of acquiring a complete tree.
@@ -36,6 +40,12 @@ private:
     typedef KeyCache <Key> CacheType;
 
 public:
+    enum
+    {
+         defaultCacheTargetSize = 0
+        ,defaultCacheExpirationSeconds = 120
+    };
+
     typedef Key key_type;
     typedef typename CacheType::size_type size_type;
     typedef typename CacheType::clock_type clock_type;
@@ -121,6 +131,10 @@ private:
     KeyCache <Key> m_cache;
     std::atomic <std::uint32_t> m_gen;
 };
+
+} // detail
+
+using FullBelowCache = detail::BasicFullBelowCache <uint256>;
 
 }
 

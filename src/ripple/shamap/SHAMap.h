@@ -17,22 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_H
-#define RIPPLE_SHAMAP_H
+#ifndef RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
 
-#include <ripple/app/shamap/SHAMapAddNode.h>
-#include <ripple/app/shamap/SHAMapItem.h>
-#include <ripple/app/shamap/SHAMapMissingNode.h>
-#include <ripple/app/shamap/SHAMapNodeID.h>
-#include <ripple/app/shamap/SHAMapSyncFilter.h>
-#include <ripple/app/shamap/SHAMapTreeNode.h>
-#include <ripple/basics/LoggedTimings.h>
+#include <ripple/shamap/FullBelowCache.h>
+#include <ripple/shamap/SHAMapAddNode.h>
+#include <ripple/shamap/SHAMapItem.h>
+#include <ripple/shamap/SHAMapMissingNode.h>
+#include <ripple/shamap/SHAMapNodeID.h>
+#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/app/main/FullBelowCache.h>
+#include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
+#include <beast/utility/Journal.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <stack>
 
 namespace std {
 
@@ -71,6 +73,9 @@ enum SHAMapState
     smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
 };
 
+/** Function object which handles missing nodes. */
+using MissingNodeHandler = std::function <void (std::uint32_t refNum)>;
+
 /** A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
 
     A radix tree is a tree with two properties:
@@ -95,16 +100,6 @@ enum SHAMapState
  */
 class SHAMap
 {
-private:
-    /** Function object which handles missing nodes. */
-    typedef std::function <void (std::uint32_t refNum)> MissingNodeHandler;
-
-    /** Default handler which calls NetworkOPs. */
-    struct DefaultMissingNodeHandler
-    {
-        void operator() (std::uint32_t refNUm);
-    };
-
 public:
     enum
     {
@@ -129,15 +124,20 @@ public:
         SHAMapType t,
         FullBelowCache& fullBelowCache,
         TreeNodeCache& treeNodeCache,
-        std::uint32_t seq = 1,
-        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+        NodeStore::Database& db,
+        MissingNodeHandler missing_node_handler,
+        beast::Journal journal,
+        std::uint32_t seq = 1
+        );
 
     SHAMap (
         SHAMapType t,
         uint256 const& hash,
         FullBelowCache& fullBelowCache,
         TreeNodeCache& treeNodeCache,
-        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+        NodeStore::Database& db,
+        MissingNodeHandler missing_node_handler,
+        beast::Journal journal);
 
     ~SHAMap ();
 
@@ -324,7 +324,8 @@ private:
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
 
 private:
-
+    beast::Journal journal_;
+    NodeStore::Database& db_;
     FullBelowCache& m_fullBelowCache;
     std::uint32_t mSeq;
     std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
@@ -332,7 +333,7 @@ private:
     SHAMapTreeNode::pointer root;
     SHAMapState mState;
     SHAMapType mType;
-    bool mBacked;       // Map is backed by the database
+    bool mBacked = true; // Map is backed by the database
     MissingNodeHandler m_missing_node_handler;
 };
 

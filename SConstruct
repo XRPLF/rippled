@@ -581,6 +581,8 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     *list_sources('src/ripple/protocol', '.cpp'))
                 object_builder.add_source_files(
+                    *list_sources('src/ripple/shamap', '.cpp'))
+                object_builder.add_source_files(
                     *list_sources('src/ripple/nodestore', '.cpp'),
                     CPPPATH=[
                         'src/leveldb/include',
@@ -591,6 +593,7 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     'src/ripple/unity/basics.cpp',
                     'src/ripple/unity/protocol.cpp',
+                    'src/ripple/unity/shamap.cpp',
                 )
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/shamap/SHAMapSyncFilters.h>
+#include <ripple/app/ledger/ConsensusTransSetSF.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -83,56 +83,6 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeH
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------------
-
-AccountStateSF::AccountStateSF (std::uint32_t ledgerSeq)
-    : mLedgerSeq (ledgerSeq)
-{
-}
-
-void AccountStateSF::gotNode (bool fromFilter,
-                              SHAMapNodeID const& id,
-                              uint256 const& nodeHash,
-                              Blob& nodeData,
-                              SHAMapTreeNode::TNType)
-{
-    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
-}
-
-bool AccountStateSF::haveNode (SHAMapNodeID const& id,
-                               uint256 const& nodeHash,
-                               Blob& nodeData)
-{
-    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
-}
-
-//------------------------------------------------------------------------------
-
-TransactionStateSF::TransactionStateSF (std::uint32_t ledgerSeq)
-    : mLedgerSeq (ledgerSeq)
-{
-}
-
-void TransactionStateSF::gotNode (bool fromFilter,
-                                  SHAMapNodeID const& id,
-                                  uint256 const& nodeHash,
-                                  Blob& nodeData,
-                                  SHAMapTreeNode::TNType type)
-{
-    getApp().getNodeStore ().store (
-        (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
-        mLedgerSeq,
-        std::move (nodeData),
-        nodeHash);
-}
-
-bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
-                                   uint256 const& nodeHash,
-                                   Blob& nodeData)
-{
-    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
 }
 
 } // ripple

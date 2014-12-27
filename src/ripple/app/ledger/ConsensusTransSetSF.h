@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPSYNCFILTERS_H
-#define RIPPLE_SHAMAPSYNCFILTERS_H
+#ifndef RIPPLE_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
+#define RIPPLE_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
+
+#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <ripple/basics/TaggedCache.h>
 
 namespace ripple {
 
@@ -48,50 +51,6 @@ public:
 
 private:
     NodeCache& m_nodeCache;
-};
-
-// This class is only needed on add functions
-// sync filter for account state nodes during ledger sync
-class AccountStateSF : public SHAMapSyncFilter
-{
-public:
-    explicit AccountStateSF (std::uint32_t ledgerSeq);
-
-    // Note that the nodeData is overwritten by this call
-    void gotNode (bool fromFilter,
-                  SHAMapNodeID const& id,
-                  uint256 const& nodeHash,
-                  Blob& nodeData,
-                  SHAMapTreeNode::TNType);
-
-    bool haveNode (SHAMapNodeID const& id,
-                   uint256 const& nodeHash,
-                   Blob& nodeData);
-
-private:
-    std::uint32_t mLedgerSeq;
-};
-
-// This class is only needed on add functions
-// sync filter for transactions tree during ledger sync
-class TransactionStateSF : public SHAMapSyncFilter
-{
-public:
-    explicit TransactionStateSF (std::uint32_t ledgerSeq);
-
-    // Note that the nodeData is overwritten by this call
-    void gotNode (bool fromFilter,
-                  SHAMapNodeID const& id,
-                  uint256 const& nodeHash,
-                  Blob& nodeData,
-                  SHAMapTreeNode::TNType);
-
-    bool haveNode (SHAMapNodeID const& id,
-                   uint256 const& nodeHash,
-                   Blob& nodeData);
-
-private:
-    std::uint32_t mLedgerSeq;
 };
 
 } // ripple

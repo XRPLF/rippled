@@ -17,10 +17,36 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
+#define RIPPLE_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
 
-#include <ripple/unity/app.h>
+#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <cstdint>
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/Ledger.test.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+namespace ripple {
+
+// This class is only needed on add functions
+// sync filter for transactions tree during ledger sync
+class TransactionStateSF : public SHAMapSyncFilter
+{
+public:
+    explicit TransactionStateSF (std::uint32_t ledgerSeq);
+
+    // Note that the nodeData is overwritten by this call
+    void gotNode (bool fromFilter,
+                  SHAMapNodeID const& id,
+                  uint256 const& nodeHash,
+                  Blob& nodeData,
+                  SHAMapTreeNode::TNType);
+
+    bool haveNode (SHAMapNodeID const& id,
+                   uint256 const& nodeHash,
+                   Blob& nodeData);
+
+private:
+    std::uint32_t mLedgerSeq;
+};
+
+} // ripple
+
+#endif

@@ -24,13 +24,8 @@ namespace ripple {
 
 enum
 {
-    fullBelowTargetSize = 524288
-
+     fullBelowTargetSize = 524288
     ,fullBelowExpirationSeconds = 600
-
-    ,defaultCacheTargetSize = 0
-
-    ,defaultCacheExpirationSeconds = 120
 };
 
 }

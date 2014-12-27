@@ -49,7 +49,6 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/OrderBook.h>
-#include <ripple/app/shamap/SHAMapSyncFilters.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/misc/IHashRouter.h>

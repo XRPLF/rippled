@@ -17,7 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <beast/module/core/text/LexicalCast.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -431,9 +436,10 @@ void SHAMapTreeNode::makeInner ()
     mHash.zero ();
 }
 
-void SHAMapTreeNode::dump (const SHAMapNodeID & id)
+void SHAMapTreeNode::dump (const SHAMapNodeID & id, beast::Journal journal)
 {
-    WriteLog (lsDEBUG, SHAMapNodeID) << "SHAMapTreeNode(" << id.getNodeID () << ")";
+    if (journal.debug) journal.debug <<
+        "SHAMapTreeNode(" << id.getNodeID () << ")";
 }
 
 std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const

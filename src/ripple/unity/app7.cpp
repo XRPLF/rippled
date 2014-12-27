@@ -25,4 +25,5 @@
 #include <ripple/app/ledger/LedgerHistory.cpp>
 #include <ripple/app/tx/TransactionAcquire.cpp>
 #include <ripple/app/tx/LocalTxs.cpp>
+#include <ripple/app/misc/DefaultMissingNodeHandler.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>

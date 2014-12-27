@@ -17,10 +17,29 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/shamap/SHAMapItem.h>
+    
+namespace ripple {
 
-#include <ripple/unity/app.h>
+class SHAMap;
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/Ledger.test.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+SHAMapItem::SHAMapItem (uint256 const& tag, Blob const& data)
+    : mTag (tag)
+    , mData (data)
+{
+}
+
+SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
+    : mTag (tag)
+    , mData (data.peekData ())
+{
+}
+
+// VFALCO This function appears not to be called
+void SHAMapItem::dump (beast::Journal journal)
+{
+    if (journal.info) journal.info <<
+        "SHAMapItem(" << mTag << ") " << mData.size () << "bytes";
+}
+
+} // ripple

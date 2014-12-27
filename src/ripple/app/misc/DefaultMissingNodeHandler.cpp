@@ -17,50 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPMISSINGNODE_H
-#define RIPPLE_SHAMAPMISSINGNODE_H
+#include <ripple/app/misc/DefaultMissingNodeHandler.h>
+#include <ripple/app/misc/NetworkOPs.h>
 
 namespace ripple {
 
-enum SHAMapType
+void
+DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
 {
-    smtTRANSACTION  = 1,    // A tree of transactions
-    smtSTATE        = 2,    // A tree of state nodes
-    smtFREE         = 3,    // A tree not part of a ledger
-};
-
-class SHAMapMissingNode : public std::runtime_error
-{
-public:
-    SHAMapMissingNode (SHAMapType t,
-                       uint256 const& nodeHash)
-        : std::runtime_error ("SHAMapMissingNode")
-        , mType (t)
-        , mNodeHash (nodeHash)
-    {
-    }
-
-    virtual ~SHAMapMissingNode () throw ()
-    {
-    }
-
-    SHAMapType getMapType () const
-    {
-        return mType;
-    }
-
-    uint256 const& getNodeHash () const
-    {
-        return mNodeHash;
-    }
-
-private:
-    SHAMapType mType;
-    uint256 mNodeHash;
-};
-
-extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
+    getApp().getOPs ().missingNodeInLedger (refNUm);
+}
 
 } // ripple
-
-#endif

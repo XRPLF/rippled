@@ -21,10 +21,15 @@
 #define RIPPLE_NETWORKOPS_H
 
 #include <ripple/protocol/STValidation.h>
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/net/InfoSub.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <tuple>
+
+#include "ripple.pb.h"
 
 namespace ripple {
 

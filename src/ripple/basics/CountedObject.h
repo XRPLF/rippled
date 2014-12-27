@@ -22,6 +22,7 @@
 
 #include <beast/utility/LeakChecked.h>
 #include <atomic>
+#include <string>
 #include <utility>
 #include <vector>
 

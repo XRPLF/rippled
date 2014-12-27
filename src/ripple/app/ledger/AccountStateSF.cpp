@@ -17,10 +17,32 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/app/ledger/AccountStateSF.h>
+#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/nodestore/Database.h>
+#include <ripple/protocol/HashPrefix.h>
 
-#include <ripple/unity/app.h>
+namespace ripple {
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/Ledger.test.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+AccountStateSF::AccountStateSF (std::uint32_t ledgerSeq)
+    : mLedgerSeq (ledgerSeq)
+{
+}
+
+void AccountStateSF::gotNode (bool fromFilter,
+                              SHAMapNodeID const& id,
+                              uint256 const& nodeHash,
+                              Blob& nodeData,
+                              SHAMapTreeNode::TNType)
+{
+    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
+}
+
+bool AccountStateSF::haveNode (SHAMapNodeID const& id,
+                               uint256 const& nodeHash,
+                               Blob& nodeData)
+{
+    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
+}
+
+} // ripple

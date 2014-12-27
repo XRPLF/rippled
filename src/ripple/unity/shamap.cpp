@@ -17,31 +17,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPSYNCFILTER_H
-#define RIPPLE_SHAMAPSYNCFILTER_H
+#include <BeastConfig.h>
 
-#include <ripple/app/shamap/SHAMapTreeNode.h>
+#include <ripple/shamap/impl/SHAMap.cpp>
+#include <ripple/shamap/impl/SHAMapDelta.cpp>
+#include <ripple/shamap/impl/SHAMapItem.cpp>
+#include <ripple/shamap/impl/SHAMapMissingNode.cpp>
+#include <ripple/shamap/impl/SHAMapNodeID.cpp>
+#include <ripple/shamap/impl/SHAMapSync.cpp>
+#include <ripple/shamap/impl/SHAMapTreeNode.cpp>
 
-/** Callback for filtering SHAMap during sync. */
-namespace ripple {
-
-class SHAMapSyncFilter
-{
-public:
-    virtual ~SHAMapSyncFilter () { }
-
-    // Note that the nodeData is overwritten by this call
-    virtual void gotNode (bool fromFilter,
-                          SHAMapNodeID const& id,
-                          uint256 const& nodeHash,
-                          Blob& nodeData,
-                          SHAMapTreeNode::TNType type) = 0;
-
-    virtual bool haveNode (SHAMapNodeID const& id,
-                           uint256 const& nodeHash,
-                           Blob& nodeData) = 0;
-};
-
-}
-
-#endif
+#include <ripple/shamap/tests/FetchPack.test.cpp>
+#include <ripple/shamap/tests/SHAMap.test.cpp>
+#include <ripple/shamap/tests/SHAMapSync.test.cpp>

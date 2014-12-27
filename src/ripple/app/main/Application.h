@@ -20,12 +20,13 @@
 #ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
-#include <ripple/app/main/FullBelowCache.h>
-#include <ripple/app/shamap/TreeNodeCache.h>
+#include <ripple/shamap/FullBelowCache.h>
+#include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
 #include <beast/utility/PropertyStream.h>
+#include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
-
+    
 namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {

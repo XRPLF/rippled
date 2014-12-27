@@ -23,6 +23,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>
+#include <beast/utility/Journal.h>
 #include <memory>
 
 namespace ripple {
@@ -122,7 +123,8 @@ public:
     }
 #endif
 
-    virtual void dump ();
+    // VFALCO Why is this virtual?
+    virtual void dump (beast::Journal journal);
 
 private:
     uint256 mTag;

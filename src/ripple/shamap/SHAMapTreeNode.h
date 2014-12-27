@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPTREENODE_H
-#define RIPPLE_SHAMAPTREENODE_H
+#ifndef RIPPLE_SHAMAP_SHAMAPTREENODE_H
+#define RIPPLE_SHAMAP_SHAMAPTREENODE_H
 
-#include <ripple/app/shamap/SHAMapNodeID.h>
-#include <ripple/app/shamap/TreeNodeCache.h>
+#include <ripple/shamap/SHAMapItem.h>
+#include <ripple/shamap/SHAMapNodeID.h>
+#include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/TaggedCache.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 
@@ -66,11 +68,6 @@ public:
     SHAMapTreeNode (Blob const & data, std::uint32_t seq,
                     SHANodeFormat format, uint256 const& hash, bool hashValid);
     void addRaw (Serializer&, SHANodeFormat format);
-
-    virtual bool isPopulated () const
-    {
-        return true;
-    }
 
     // node functions
     std::uint32_t getSeq () const
@@ -178,7 +175,8 @@ public:
         mFullBelowGen = gen;
     }
 
-    virtual void dump (SHAMapNodeID const&);
+    // VFALCO Why is this virtual?
+    virtual void dump (SHAMapNodeID const&, beast::Journal journal);
     virtual std::string getString (SHAMapNodeID const&) const;
 
     SHAMapTreeNode* getChildPointer (int branch);

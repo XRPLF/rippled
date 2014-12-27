@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/utility/static_initializer.h>
@@ -176,9 +176,10 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
     return branch;
 }
 
-void SHAMapNodeID::dump () const
+void SHAMapNodeID::dump (beast::Journal journal) const
 {
-    WriteLog (lsDEBUG, SHAMapNodeID) << getString ();
+    if (journal.debug) journal.debug <<
+        getString ();
 }
 
 } // ripple

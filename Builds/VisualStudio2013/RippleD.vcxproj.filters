@@ -313,12 +313,6 @@
     <Filter Include="ripple\app\peers">
       <UniqueIdentifier>{07831F2A-6752-E81C-87AF-4D47D425BE8E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\shamap">
-      <UniqueIdentifier>{091DDFB4-76F4-04FB-2787-D51B4A44185E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\shamap\tests">
-      <UniqueIdentifier>{A42D8FD4-E866-E1A8-9CBC-1C75906F16D2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\transactors">
       <UniqueIdentifier>{418BEF0D-AAAB-C368-7D9E-0A97636DE5A6}</UniqueIdentifier>
     </Filter>
@@ -444,6 +438,15 @@
     </Filter>
     <Filter Include="ripple\server\tests">
       <UniqueIdentifier>{9BA46DD5-4B0C-3C1D-6F16-93DE8A9B7313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\shamap">
+      <UniqueIdentifier>{81841155-E173-EABC-D87B-5DDBE199F8E3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\shamap\impl">
+      <UniqueIdentifier>{92AC870A-6B4B-9CD5-4F7F-648C72CFA0D3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\shamap\tests">
+      <UniqueIdentifier>{F0AEA72D-7030-C8C7-1E34-1029BBD56886}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
@@ -2544,10 +2547,22 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\AcceptedLedgerTx.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\AccountStateSF.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\AccountStateSF.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\BookListeners.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\BookListeners.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.cpp">
@@ -2631,22 +2646,22 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\Application.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\main\BasicFullBelowCache.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\CollectorManager.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\CollectorManager.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\main\FullBelowCache.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\LoadManager.cpp">
@@ -2695,6 +2710,12 @@
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\CanonicalTXSet.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.cpp">
+      <Filter>ripple\app\misc</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\FeeVote.h">
@@ -2864,66 +2885,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\peers\UniqueNodeList.h">
       <Filter>ripple\app\peers</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMap.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMap.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapAddNode.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapDelta.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapItem.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapItem.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapMissingNode.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapMissingNode.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapNodeID.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapNodeID.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapSync.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapSyncFilter.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapSyncFilters.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapSyncFilters.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\SHAMapTreeNode.cpp">
-      <Filter>ripple\app\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapTreeNode.h">
-      <Filter>ripple\app\shamap</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\shamap\tests\FetchPack.test.cpp">
-      <Filter>ripple\app\shamap\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\shamap\tests\SHAMap.test.cpp">
-      <Filter>ripple\app\shamap\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\shamap\tests\SHAMapSync.test.cpp">
-      <Filter>ripple\app\shamap\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\shamap\TreeNodeCache.h">
-      <Filter>ripple\app\shamap</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
       <Filter>ripple\app\transactors</Filter>
@@ -3432,18 +3393,12 @@
     <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Backend.cpp">
-      <Filter>ripple\nodestore\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\BatchWriter.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\BatchWriter.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Database.cpp">
-      <Filter>ripple\nodestore\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
@@ -3468,9 +3423,6 @@
     <ClInclude Include="..\..\src\ripple\nodestore\impl\EncodedBlob.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Factory.cpp">
-      <Filter>ripple\nodestore\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\ManagerImp.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
@@ -3478,12 +3430,6 @@
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
-      <Filter>ripple\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Scheduler.cpp">
-      <Filter>ripple\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Task.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
@@ -4341,6 +4287,63 @@
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\FullBelowCache.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMap.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapDelta.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapItem.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapMissingNode.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapNodeID.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapSync.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMapTreeNode.cpp">
+      <Filter>ripple\shamap\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMap.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapAddNode.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapItem.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapMissingNode.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapNodeID.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapSyncFilter.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\SHAMapTreeNode.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\shamap\tests\FetchPack.test.cpp">
+      <Filter>ripple\shamap\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\tests\SHAMap.test.cpp">
+      <Filter>ripple\shamap\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\shamap\tests\SHAMapSync.test.cpp">
+      <Filter>ripple\shamap\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4438,6 +4441,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\server.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\shamap.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">

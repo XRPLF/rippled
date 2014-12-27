@@ -17,7 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/FullBelowCache.h>
+#include <ripple/shamap/SHAMap.h>
+#include <ripple/basics/Blob.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
 #include <beast/unit_test/suite.h>
+#include <beast/utility/Journal.h>
 #include <beast/chrono/manual_clock.h>
 
 namespace ripple {
@@ -25,8 +32,14 @@ namespace ripple {
 class SHAMap_test : public beast::unit_test::suite
 {
 public:
-    // VFALCO TODO Rename this to createFilledVector and pass an unsigned char, tidy up
-    //
+    struct Handler
+    {
+        void operator()(std::uint32_t refNum) const
+        {
+            throw std::runtime_error("missing node");
+        }
+    };
+
     static Blob IntToVUC (int v)
     {
         Blob vuc;
@@ -43,9 +56,12 @@ public:
 
         beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
-
+        
         FullBelowCache fullBelowCache ("test.full_below", clock);
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
+        NodeStore::DummyScheduler scheduler;
+        auto db = NodeStore::Manager::instance().make_Database (
+            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory"));
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -55,7 +71,8 @@ public:
         h4.SetHex ("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
         h5.SetHex ("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-        SHAMap sMap (smtFREE, fullBelowCache, treeNodeCache);
+        SHAMap sMap (smtFREE, fullBelowCache, treeNodeCache,
+            *db, Handler(), beast::Journal());
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
         unexpected (!sMap.addItem (i2, true, false), "no add");
         unexpected (!sMap.addItem (i1, true, false), "no add");

@@ -112,7 +112,7 @@ The `fetchNodeExternalNT()` method goes through three phases:
 
  2. If the node is not in the TreeNodeCache, we attempt to locate the node
     in the historic data stored by the data base.  The call to
-    to `getApp().getNodeStore().fetch(hash)` does that work for us.
+    to `fetch(hash)` does that work for us.
 
  3. Finally, if mLedgerSeq is non-zero and we did't locate the node in the
     historic data, then we call a MissingNodeHandler.

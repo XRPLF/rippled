@@ -17,9 +17,17 @@
 */
 //==============================================================================
 
+#include <ripple/shamap/SHAMap.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/UnorderedContainers.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/protocol/UInt160.h>
+#include <beast/chrono/manual_clock.h>
 #include <beast/module/core/maths/Random.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
+#include <stdexcept>
 
 namespace ripple {
 
@@ -35,6 +43,14 @@ public:
     using Map = hash_map <uint256, Blob> ;
     using Table = SHAMap;
     using Item = SHAMapItem;
+
+    struct Handler
+    {
+        void operator()(std::uint32_t refNum) const
+        {
+            throw std::runtime_error("missing node");
+        }
+    };
 
     struct TestFilter : SHAMapSyncFilter
     {
@@ -102,9 +118,12 @@ public:
 
         FullBelowCache fullBelowCache ("test.full_below", clock);
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
+        NodeStore::DummyScheduler scheduler;
+        auto db = NodeStore::Manager::instance().make_Database (
+            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory"));
 
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            smtFREE, fullBelowCache, treeNodeCache));
+            smtFREE, fullBelowCache, treeNodeCache, *db, Handler(), beast::Journal()));
 
         pass ();
 
