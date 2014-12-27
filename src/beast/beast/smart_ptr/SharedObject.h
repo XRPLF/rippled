@@ -56,11 +56,10 @@ namespace beast {
     Once a new SharedObject has been assigned to a pointer, be
     careful not to delete the object manually.
 
-    This class uses an Atomic<int> value to hold the reference count, so that it
-    the pointers can be passed between threads safely. For a faster but non-thread-safe
-    version, use SingleThreadedSharedObject instead.
+    This class uses an std::atomic<int> value to hold the reference count, so
+    that the pointers can be passed between threads safely.
 
-    @see SharedPtr, SharedObjectArray, SingleThreadedSharedObject
+    @see SharedPtr, SharedObjectArray
 */
 class SharedObject
 {

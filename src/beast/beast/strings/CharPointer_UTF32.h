@@ -25,10 +25,9 @@
 #define BEAST_CHARPOINTER_UTF32_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/Atomic.h>
-    
 #include <beast/strings/CharacterFunctions.h>
 
+#include <atomic>
 #include <cwchar>
 
 namespace beast {
@@ -370,7 +369,7 @@ public:
     /** Atomically swaps this pointer for a new value, returning the previous value. */
     CharPointer_UTF32 atomicSwap (const CharPointer_UTF32 newValue)
     {
-        return CharPointer_UTF32 (reinterpret_cast <Atomic<CharType*>&> (data).exchange (newValue.data));
+        return CharPointer_UTF32 (reinterpret_cast <std::atomic<CharType*>&> (data).exchange (newValue.data));
     }
 
 private:

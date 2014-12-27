@@ -41,7 +41,6 @@
 
 // New header-only library modeled more closely according to boost
 #include <beast/SmartPtr.h>
-#include <beast/Atomic.h>
 #include <beast/Arithmetic.h>
 #include <beast/ByteOrder.h>
 #include <beast/HeapBlock.h>

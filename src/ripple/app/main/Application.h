@@ -30,7 +30,6 @@ namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {
 
-namespace SiteFiles { class Manager; }
 namespace Validators { class Manager; }
 namespace Resource { class Manager; }
 namespace NodeStore { class Database; }
@@ -97,7 +96,6 @@ public:
     virtual FullBelowCache&         getFullBelowCache () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual RPC::Manager&           getRPCManager () = 0;
-    virtual SiteFiles::Manager&     getSiteFiles () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual TreeNodeCache&          getTreeNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
