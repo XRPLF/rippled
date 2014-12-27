@@ -12,7 +12,7 @@ suite('WebSocket connection', function() {
     this.timeout(2000);
 
     var host = config.server_default;
-    var cfg = extend({}, config.default_server_config, config.servers[host]);
+    var cfg = testutils.get_server_config(config, host);
     if (cfg.no_server) {
       done();
     } else {
@@ -25,8 +25,7 @@ suite('WebSocket connection', function() {
   teardown(function(done) {
     this.timeout(2000);
     
-    var host = config.server_default;
-    var cfg = extend({}, config.default_server_config, config.servers[host]);
+    var cfg = testutils.get_server_config(config);
     if (cfg.no_server) {
       done();
     } else {

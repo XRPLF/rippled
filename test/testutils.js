@@ -23,6 +23,14 @@ function init_config() {
   return require('ripple-lib').config.load(get_config());
 };
 
+exports.get_server_config =
+get_server_config =
+function(config, host) {
+  config = config || init_config();
+  host = host || config.server_default;
+  return extend({}, config.default_server_config, config.servers[host]);
+}
+
 function prepare_tests(tests, fn) {
   var tests = typeof tests === 'string' ? [ tests ] : tests;
   var result = [ ];
@@ -88,7 +96,7 @@ function build_setup(opts, host) {
 
     var steps = [
       function run_server(callback) {
-        var server_config = extend({}, config.default_server_config, config.servers[host]);
+        var server_config = get_server_config(config, host);
 
         if (opts.no_server || server_config.no_server)  {
           return callback();
@@ -151,7 +159,7 @@ function build_teardown(host) {
   function teardown(done) {
     var data = this.store[host];
     var opts = data.opts;
-    var server_config = extend({}, config.default_server_config, config.servers[host]);
+    var server_config = get_server_config(config, host);
 
     var series = [
       function disconnect_websocket(callback) {
