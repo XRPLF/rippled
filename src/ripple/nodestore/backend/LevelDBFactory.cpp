@@ -19,7 +19,13 @@
 
 #if RIPPLE_LEVELDB_AVAILABLE
 
-#include <ripple/core/Config.h>
+#include <ripple/core/Config.h> // VFALCO Bad dependency
+#include <ripple/nodestore/Factory.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/BatchWriter.h>
+#include <ripple/nodestore/impl/DecodedBlob.h>
+#include <ripple/nodestore/impl/EncodedBlob.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 namespace NodeStore {
@@ -27,7 +33,6 @@ namespace NodeStore {
 class LevelDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public beast::LeakChecked <LevelDBBackend>
 {
 private:
     std::atomic <bool> m_deletePath;
@@ -268,10 +273,13 @@ public:
         options.block_cache = leveldb::NewLRUCache (
             getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
         m_lruCache.reset (options.block_cache);
+
+        Manager::instance().insert(*this);
     }
 
     ~LevelDBFactory()
     {
+        Manager::instance().erase(*this);
     }
 
     std::string
@@ -294,11 +302,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <Factory>
-make_LevelDBFactory ()
-{
-    return std::make_unique <LevelDBFactory> ();
-}
+static LevelDBFactory levelDBFactory;
 
 }
 }

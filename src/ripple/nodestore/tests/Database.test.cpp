@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <ripple/nodestore/tests/Base.test.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <beast/module/core/diagnostic/UnitTestUtilities.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -28,8 +31,6 @@ public:
     void testImport (std::string const& destBackendType,
         std::string const& srcBackendType, std::int64_t seedValue)
     {
-        std::unique_ptr <Manager> manager (make_Manager ());
-
         DummyScheduler scheduler;
 
         beast::UnitTestUtilities::TempDirectory node_db ("node_db");
@@ -45,8 +46,8 @@ public:
 
         // Write to source db
         {
-            std::unique_ptr <Database> src (manager->make_Database (
-                "test", scheduler, j, 2, srcParams));
+            std::unique_ptr <Database> src = Manager::instance().make_Database (
+                "test", scheduler, j, 2, srcParams);
             storeBatch (*src, batch);
         }
 
@@ -54,8 +55,8 @@ public:
 
         {
             // Re-open the db
-            std::unique_ptr <Database> src (manager->make_Database (
-                "test", scheduler, j, 2, srcParams));
+            std::unique_ptr <Database> src = Manager::instance().make_Database (
+                "test", scheduler, j, 2, srcParams);
 
             // Set up the destination database
             beast::UnitTestUtilities::TempDirectory dest_db ("dest_db");
@@ -63,8 +64,8 @@ public:
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
-            std::unique_ptr <Database> dest (manager->make_Database (
-                "test", scheduler, j, 2, destParams));
+            std::unique_ptr <Database> dest = Manager::instance().make_Database (
+                "test", scheduler, j, 2, destParams);
 
             testcase ("import into '" + destBackendType +
                 "' from '" + srcBackendType + "'");
@@ -90,8 +91,6 @@ public:
                         std::int64_t const seedValue,
                         int numObjectsToTest = 2000)
     {
-        std::unique_ptr <Manager> manager (make_Manager ());
-
         DummyScheduler scheduler;
 
         std::string s = "NodeStore backend '" + type + "'";
@@ -121,8 +120,8 @@ public:
 
         {
             // Open the database
-            std::unique_ptr <Database> db (manager->make_Database ("test", scheduler,
-                j, 2, nodeParams, tempParams));
+            std::unique_ptr <Database> db = Manager::instance().make_Database (
+                "test", scheduler, j, 2, nodeParams, tempParams);
 
             // Write the batch
             storeBatch (*db, batch);
@@ -147,8 +146,8 @@ public:
         {
             {
                 // Re-open the database without the ephemeral DB
-                std::unique_ptr <Database> db (manager->make_Database (
-                    "test", scheduler, j, 2, nodeParams));
+                std::unique_ptr <Database> db = Manager::instance().make_Database (
+                    "test", scheduler, j, 2, nodeParams);
 
                 // Read it back in
                 Batch copy;
@@ -163,8 +162,8 @@ public:
             if (useEphemeralDatabase)
             {
                 // Verify the ephemeral db
-                std::unique_ptr <Database> db (manager->make_Database ("test",
-                    scheduler, j, 2, tempParams, beast::StringPairArray ()));
+                std::unique_ptr <Database> db = Manager::instance().make_Database ("test",
+                    scheduler, j, 2, tempParams, beast::StringPairArray ());
 
                 // Read it back in
                 Batch copy;

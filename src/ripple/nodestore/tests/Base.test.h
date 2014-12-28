@@ -20,9 +20,10 @@
 #ifndef RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 #define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 
+#include <ripple/nodestore/Database.h>
+#include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/maths/Random.h>
-#include <ripple/basics/StringUtilities.h>
 #include <boost/algorithm/string.hpp>
 #include <iomanip>
 

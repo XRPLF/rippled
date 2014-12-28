@@ -3405,39 +3405,21 @@
     <ClCompile Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\MemoryFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\NullFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.h">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
@@ -3489,9 +3471,12 @@
     <ClCompile Include="..\..\src\ripple\nodestore\impl\Factory.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\ManagerImp.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\ManagerImp.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>

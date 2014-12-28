@@ -19,9 +19,15 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
-#include <ripple/core/Config.h>
+#include <ripple/core/Config.h> // VFALCO Bad dependency
+#include <ripple/nodestore/Factory.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/BatchWriter.h>
+#include <ripple/nodestore/impl/DecodedBlob.h>
+#include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/threads/Thread.h>
 #include <atomic>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 namespace NodeStore {
@@ -77,7 +83,6 @@ public:
 class RocksDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public beast::LeakChecked <RocksDBBackend>
 {
 private:
     std::atomic <bool> m_deletePath;
@@ -367,10 +372,13 @@ public:
             getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
 
         m_lruCache = table_options.block_cache;
+
+        Manager::instance().insert(*this);
     }
 
     ~RocksDBFactory ()
     {
+        Manager::instance().erase(*this);
     }
 
     std::string
@@ -391,13 +399,7 @@ public:
     }
 };
 
-//------------------------------------------------------------------------------
-
-std::unique_ptr <Factory>
-make_RocksDBFactory ()
-{
-    return std::make_unique <RocksDBFactory> ();
-}
+static RocksDBFactory rocksDBFactory;
 
 }
 }

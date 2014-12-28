@@ -2403,33 +2403,21 @@
     <ClCompile Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\MemoryFactory.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\NullFactory.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DatabaseRotating.h">
@@ -2472,9 +2460,11 @@
     <ClCompile Include="..\..\src\ripple\nodestore\impl\Factory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\ManagerImp.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\ManagerImp.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

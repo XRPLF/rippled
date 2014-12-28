@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/impl/EncodedBlob.h>
+#include <beast/ByteOrder.h>
+    
 namespace ripple {
 namespace NodeStore {
 

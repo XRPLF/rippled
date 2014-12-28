@@ -47,7 +47,7 @@ public:
         All pending operations are completed, pending writes flushed,
         and files closed before this returns.
     */
-    virtual ~Database () = 0 ;
+    virtual ~Database() = default;
 
     /** Retrieve the name associated with this backend.
         This is used for diagnostics and may not reflect the actual path

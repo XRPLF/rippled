@@ -43,7 +43,7 @@ public:
         or other tasks scheduled, they will be completed before this call
         returns.
     */
-    virtual ~Backend () = 0;
+    virtual ~Backend() = default;
 
     /** Get the human-readable name of this backend.
         This is used for diagnostic output.

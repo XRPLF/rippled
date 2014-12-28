@@ -20,7 +20,10 @@
 #ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 #define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
+#include <ripple/nodestore/NodeObject.h>
 #include <beast/module/core/memory/MemoryBlock.h>
+#include <beast/utility/noexcept.h>
+#include <cstddef>
 
 namespace ripple {
 namespace NodeStore {
@@ -34,13 +37,13 @@ struct EncodedBlob
 public:
     void prepare (NodeObject::Ptr const& object);
     void const* getKey () const noexcept { return m_key; }
-    size_t getSize () const noexcept { return m_size; }
+    std::size_t getSize () const noexcept { return m_size; }
     void const* getData () const noexcept { return m_data.getData (); }
 
 private:
     void const* m_key;
     beast::MemoryBlock m_data;
-    size_t m_size;
+    std::size_t m_size;
 };
 
 }

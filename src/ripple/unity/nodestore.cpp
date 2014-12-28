@@ -17,52 +17,29 @@
 */
 //==============================================================================
 
-#include <memory>
-#include <vector>
+//#include <memory>
+//#include <vector>
 
 // backend support
 #include <ripple/unity/leveldb.h>
 #include <ripple/unity/hyperleveldb.h>
 #include <ripple/unity/rocksdb.h>
 
-#include <beast/cxx14/memory.h>
-
-#include <ripple/basics/seconds_clock.h>
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/basics/KeyCache.h>
-
-#include <ripple/nodestore/impl/Tuning.h>
-#include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/nodestore/impl/EncodedBlob.h>
-#include <ripple/nodestore/impl/BatchWriter.h>
-
-#include <ripple/nodestore/backend/HyperDBFactory.h>
 #include <ripple/nodestore/backend/HyperDBFactory.cpp>
-#include <ripple/nodestore/backend/LevelDBFactory.h>
 #include <ripple/nodestore/backend/LevelDBFactory.cpp>
-#include <ripple/nodestore/backend/MemoryFactory.h>
 #include <ripple/nodestore/backend/MemoryFactory.cpp>
-#include <ripple/nodestore/backend/NullFactory.h>
 #include <ripple/nodestore/backend/NullFactory.cpp>
-#include <ripple/nodestore/backend/RocksDBFactory.h>
 #include <ripple/nodestore/backend/RocksDBFactory.cpp>
-#include <ripple/nodestore/backend/RocksDBQuickFactory.h>
 #include <ripple/nodestore/backend/RocksDBQuickFactory.cpp>
 
-#include <ripple/nodestore/impl/Backend.cpp>
 #include <ripple/nodestore/impl/BatchWriter.cpp>
 #include <ripple/nodestore/impl/DatabaseImp.h>
-#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
-#include <ripple/nodestore/impl/Database.cpp>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.cpp>
 #include <ripple/nodestore/impl/DummyScheduler.cpp>
 #include <ripple/nodestore/impl/DecodedBlob.cpp>
 #include <ripple/nodestore/impl/EncodedBlob.cpp>
-#include <ripple/nodestore/impl/Factory.cpp>
-#include <ripple/nodestore/impl/Manager.cpp>
+#include <ripple/nodestore/impl/ManagerImp.cpp>
 #include <ripple/nodestore/impl/NodeObject.cpp>
-#include <ripple/nodestore/impl/Scheduler.cpp>
-#include <ripple/nodestore/impl/Task.cpp>
 
 #include <ripple/nodestore/tests/Backend.test.cpp>
 #include <ripple/nodestore/tests/Basics.test.cpp>

@@ -153,7 +153,6 @@ public:
     beast::Journal m_journal;
     Application::LockType m_masterMutex;
 
-    std::unique_ptr <NodeStore::Manager> m_nodeStoreManager;
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <SHAMapStore> m_shaMapStore;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
@@ -206,20 +205,6 @@ public:
     //--------------------------------------------------------------------------
 
     static
-    std::vector <std::unique_ptr <NodeStore::Factory>>
-    make_Factories (int hashnode_cache_size)
-    {
-        std::vector <std::unique_ptr <NodeStore::Factory>> list;
-
-        // VFALCO NOTE SqliteFactory is here because it has
-        //             dependencies like SqliteDatabase and DatabaseCon
-        //
-        list.emplace_back (make_SqliteFactory (hashnode_cache_size));
-
-        return list;
-    }
-
-    static
     std::size_t numberOfThreads()
     {
     #if RIPPLE_SINGLE_IO_SERVICE_THREAD
@@ -238,16 +223,12 @@ public:
 
         , m_journal (m_logs.journal("Application"))
 
-        , m_nodeStoreManager (NodeStore::make_Manager (
-            std::move (make_Factories (
-                getConfig ().getSize(siHashNodeDBCache) * 1024))))
-
         , m_nodeStoreScheduler (*this)
 
         , m_shaMapStore (make_SHAMapStore (setup_SHAMapStore (
-                getConfig()), *this, *m_nodeStoreManager.get(),
-                m_nodeStoreScheduler, m_logs.journal ("SHAMapStore"),
-                m_logs.journal ("NodeObject"), m_txMaster))
+                getConfig()), *this, m_nodeStoreScheduler,
+                m_logs.journal ("SHAMapStore"), m_logs.journal ("NodeObject"),
+                    m_txMaster))
 
         , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
 
@@ -1392,10 +1373,10 @@ void ApplicationImp::updateTables ()
     if (getConfig ().doImport)
     {
         NodeStore::DummyScheduler scheduler;
-        std::unique_ptr <NodeStore::Database> source (
-            m_nodeStoreManager->make_Database ("NodeStore.import", scheduler,
+        std::unique_ptr <NodeStore::Database> source =
+            NodeStore::Manager::instance().make_Database ("NodeStore.import", scheduler,
                 deprecatedLogs().journal("NodeObject"), 0,
-                    getConfig ().importNodeDatabase));
+                    getConfig ().importNodeDatabase);
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"

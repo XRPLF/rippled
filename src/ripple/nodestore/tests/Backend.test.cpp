@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/nodestore/tests/Base.test.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 
 namespace ripple {
@@ -31,8 +33,6 @@ public:
     void testBackend (std::string const& type, std::int64_t const seedValue,
                       int numObjectsToTest = 2000)
     {
-        std::unique_ptr <Manager> manager (make_Manager ());
-
         DummyScheduler scheduler;
 
         testcase ("Backend type=" + type);
@@ -50,8 +50,8 @@ public:
 
         {
             // Open the backend
-            std::unique_ptr <Backend> backend (manager->make_Backend (
-                params, scheduler, j));
+            std::unique_ptr <Backend> backend =
+                Manager::instance().make_Backend (params, scheduler, j);
 
             // Write the batch
             storeBatch (*backend, batch);
@@ -74,8 +74,8 @@ public:
 
         {
             // Re-open the backend
-            std::unique_ptr <Backend> backend (manager->make_Backend (
-                params, scheduler, j));
+            std::unique_ptr <Backend> backend = Manager::instance().make_Backend (
+                params, scheduler, j);
 
             // Read it back in
             Batch copy;

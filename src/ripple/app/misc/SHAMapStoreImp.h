@@ -81,7 +81,6 @@ private:
     std::uint32_t minimumDeletionInterval_ = 256;
 
     Setup setup_;
-    NodeStore::Manager& manager_;
     NodeStore::Scheduler& scheduler_;
     beast::Journal journal_;
     beast::Journal nodeStoreJournal_;
@@ -107,7 +106,6 @@ private:
 public:
     SHAMapStoreImp (Setup const& setup,
             Stoppable& parent,
-            NodeStore::Manager& manager,
             NodeStore::Scheduler& scheduler,
             beast::Journal journal,
             beast::Journal nodeStoreJournal,

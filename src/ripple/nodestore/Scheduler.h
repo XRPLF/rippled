@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 
 #include <ripple/nodestore/Task.h>
+#include <chrono>
 
 namespace ripple {
 namespace NodeStore {
@@ -52,7 +53,7 @@ struct BatchWriteReport
 class Scheduler
 {
 public:
-    virtual ~Scheduler() = 0;
+    virtual ~Scheduler() = default;
 
     /** Schedules a task.
         Depending on the implementation, the task may be invoked either on

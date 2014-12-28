@@ -191,14 +191,12 @@ SHAMapStoreImp::SavedStateDB::checkError (beast::Error const& error)
 
 SHAMapStoreImp::SHAMapStoreImp (Setup const& setup,
         Stoppable& parent,
-        NodeStore::Manager& manager,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
         beast::Journal nodeStoreJournal,
         TransactionMaster& transactionMaster)
     : SHAMapStore (parent)
     , setup_ (setup)
-    , manager_ (manager)
     , scheduler_ (scheduler)
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
@@ -254,7 +252,7 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
     }
     else
     {
-        db = manager_.make_Database (name, scheduler_, nodeStoreJournal_,
+        db = NodeStore::Manager::instance().make_Database (name, scheduler_, nodeStoreJournal_,
                 readThreads, setup_.nodeDatabase,
                 setup_.ephemeralNodeDatabase);
     }
@@ -510,7 +508,7 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
     }
     parameters.set("path", newPath.string());
 
-    return manager_.make_Backend (parameters, scheduler_,
+    return NodeStore::Manager::instance().make_Backend (parameters, scheduler_,
             nodeStoreJournal_);
 }
 
@@ -522,10 +520,10 @@ SHAMapStoreImp::makeDatabaseRotating (std::string const& name,
 {
     std::unique_ptr <NodeStore::Backend> fastBackend (
         (setup_.ephemeralNodeDatabase.size() > 0)
-            ? manager_.make_Backend (setup_.ephemeralNodeDatabase,
+            ? NodeStore::Manager::instance().make_Backend (setup_.ephemeralNodeDatabase,
             scheduler_, journal_) : nullptr);
 
-    return manager_.make_DatabaseRotating ("NodeStore.main", scheduler_,
+    return NodeStore::Manager::instance().make_DatabaseRotating ("NodeStore.main", scheduler_,
             readThreads, writableBackend, archiveBackend,
             std::move (fastBackend), nodeStoreJournal_);
 }
@@ -710,13 +708,12 @@ setup_SHAMapStore (Config const& c)
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore (SHAMapStore::Setup const& s,
         beast::Stoppable& parent,
-        NodeStore::Manager& manager,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
         beast::Journal nodeStoreJournal,
         TransactionMaster& transactionMaster)
 {
-    return std::make_unique<SHAMapStoreImp> (s, parent, manager, scheduler,
+    return std::make_unique<SHAMapStoreImp> (s, parent, scheduler,
             journal, nodeStoreJournal, transactionMaster);
 }
 

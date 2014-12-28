@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/node/SqliteFactory.h>
+#include <ripple/core/Config.h>
 #include <type_traits>
 
 namespace ripple {
@@ -225,13 +226,8 @@ private:
 
 class SqliteFactory : public NodeStore::Factory
 {
-    int hashnode_cache_size_;
-
 public:
-    SqliteFactory (int hashnode_cache_size)
-        : hashnode_cache_size_ (hashnode_cache_size)
-    {
-    }
+    SqliteFactory() = default;
 
     std::string
     getName () const
@@ -244,15 +240,11 @@ public:
             NodeStore::Scheduler&, beast::Journal)
     {
         return std::make_unique <SqliteBackend> (
-            keyValues ["path"].toStdString (), hashnode_cache_size_);
+            keyValues ["path"].toStdString (),
+                getConfig ().getSize(siHashNodeDBCache) * 1024);
     }
 };
 
-//------------------------------------------------------------------------------
-
-std::unique_ptr <NodeStore::Factory> make_SqliteFactory (int hashnode_cache_size)
-{
-    return std::make_unique <SqliteFactory> (hashnode_cache_size);
-}
+static SqliteFactory sqliteFactory;
 
 }

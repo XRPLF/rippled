@@ -580,11 +580,25 @@ for tu_style in ['classic', 'unity']:
                     *list_sources('src/ripple/basics', '.cpp'))
                 object_builder.add_source_files(
                     *list_sources('src/ripple/protocol', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/nodestore', '.cpp'),
+                    CPPPATH=[
+                        'src/leveldb/include',
+                        #'src/hyperleveldb/include', # hyper
+                        'src/rocksdb2/include',
+                    ])
             else:
                 object_builder.add_source_files(
                     'src/ripple/unity/basics.cpp',
                     'src/ripple/unity/protocol.cpp',
                 )
+                object_builder.add_source_files(
+                    'src/ripple/unity/nodestore.cpp',
+                    CPPPATH=[
+                        'src/leveldb/include',
+                        #'src/hyperleveldb/include', # hyper
+                        'src/rocksdb2/include',
+                    ])
 
             object_builder.add_source_files(
                 'src/ripple/unity/app.cpp',
@@ -616,15 +630,6 @@ for tu_style in ['classic', 'unity']:
             object_builder.add_source_files(
                 'src/ripple/unity/beastc.c',
                 CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
-
-            object_builder.add_source_files(
-                'src/ripple/unity/nodestore.cpp',
-                CPPPATH=[
-                    'src/leveldb/include',
-                    #'src/hyperleveldb/include', # hyper
-                    'src/rocksdb2/include',
-                ]
-            )
 
             if 'gcc' in toolchain:
                 no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}

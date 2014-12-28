@@ -20,9 +20,14 @@
 #ifndef RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 
-#include <beast/threads/Thread.h>
-#include <ripple/basics/Log.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/Tuning.h>
+#include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/KeyCache.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/seconds_clock.h>
+#include <beast/threads/Thread.h>
 #include <chrono>
 #include <condition_variable>
 #include <set>

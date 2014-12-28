@@ -22,28 +22,34 @@
 
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/Scheduler.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce backends. */
+/** Base class for backend factories. */
 class Factory
 {
 public:
-    virtual ~Factory () = 0;
+    virtual
+    ~Factory() = default;
 
     /** Retrieve the name of this factory. */
-    virtual std::string getName () const = 0;
+    virtual
+    std::string
+    getName() const = 0;
 
     /** Create an instance of this factory's backend.
+
         @param keyBytes The fixed number of bytes per key.
         @param keyValues A set of key/value configuration pairs.
         @param scheduler The scheduler to use for running tasks.
         @return A pointer to the Backend object.
     */
-    virtual std::unique_ptr <Backend> createInstance (size_t keyBytes,
-        Parameters const& parameters, Scheduler& scheduler,
-            beast::Journal journal) = 0;
+    virtual
+    std::unique_ptr <Backend>
+    createInstance (size_t keyBytes, Parameters const& parameters,
+        Scheduler& scheduler, beast::Journal journal) = 0;
 };
 
 }

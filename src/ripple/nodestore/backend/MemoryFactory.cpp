@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Factory.h>
+#include <ripple/nodestore/Manager.h>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -108,6 +112,16 @@ public:
 class MemoryFactory : public Factory
 {
 public:
+    MemoryFactory()
+    {
+        Manager::instance().insert(*this);
+    }
+
+    ~MemoryFactory()
+    {
+        Manager::instance().erase(*this);
+    }
+
     std::string
     getName () const
     {
@@ -128,11 +142,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <Factory>
-make_MemoryFactory ()
-{
-    return std::make_unique <MemoryFactory> ();
-}
+static MemoryFactory memoryFactory;
 
 }
 }

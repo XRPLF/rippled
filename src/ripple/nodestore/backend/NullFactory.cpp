@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Factory.h>
+#include <ripple/nodestore/Manager.h>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -75,6 +79,16 @@ private:
 class NullFactory : public Factory
 {
 public:
+    NullFactory()
+    {
+        Manager::instance().insert(*this);
+    }
+
+    ~NullFactory()
+    {
+        Manager::instance().erase(*this);
+    }
+
     std::string
     getName () const
     {
@@ -91,12 +105,7 @@ public:
     }
 };
 
-//------------------------------------------------------------------------------
-
-std::unique_ptr <Factory> make_NullFactory ()
-{
-    return std::make_unique <NullFactory> ();
-}
+static NullFactory nullFactory;
 
 }
 }

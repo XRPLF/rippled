@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <ripple/nodestore/tests/Base.test.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <beast/module/core/diagnostic/UnitTestUtilities.h>
 #include <limits>
 
 namespace ripple {
@@ -210,7 +213,6 @@ public:
 
     using check_func = std::function<bool(Status const)>;
     using backend_ptr = std::unique_ptr<Backend>;
-    using manager_ptr = std::unique_ptr<Manager>;
     using result_type = std::vector<std::pair<std::string, double>>;
 
     static bool checkNotFound(Status const status)
@@ -265,11 +267,10 @@ public:
         Stopwatch t;
         result_type results;
 
-        auto manager = make_Manager();
         DummyScheduler scheduler;
         beast::Journal j;
 
-        auto backend = manager->make_Backend(params, scheduler, j);
+        auto backend = Manager::instance().make_Backend(params, scheduler, j);
 
         NodeFactory insertFactory(seedValue, numObjects, 0, numObjects);
         NodeFactory batchFactory(seedValue, numObjects, numObjects * 10,

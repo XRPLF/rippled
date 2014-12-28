@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <ripple/nodestore/tests/Base.test.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/DecodedBlob.h>
+#include <ripple/nodestore/impl/EncodedBlob.h>
 
 namespace ripple {
 namespace NodeStore {
