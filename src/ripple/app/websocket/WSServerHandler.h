@@ -20,11 +20,14 @@
 #ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
+#include <ripple/app/websocket/WSConnection.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <ripple/app/websocket/WSConnection.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/unity/websocket.h>
 #include <memory>
+#include <unordered_map>
 
 namespace ripple {
 
@@ -74,7 +77,7 @@ protected:
     LockType mLock;
 
     // For each connection maintain an associated object to track subscriptions.
-    typedef hash_map <connection_ptr, wsc_ptr> MapType;
+    using MapType = hash_map <connection_ptr, wsc_ptr>;
     MapType mMap;
 
 public:

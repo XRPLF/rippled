@@ -20,6 +20,8 @@
 #ifndef RIPPLED_RIPPLE_MODULE_APP_PATHS_PATHCURSOR_H
 #define RIPPLED_RIPPLE_MODULE_APP_PATHS_PATHCURSOR_H
 
+#include <ripple/app/paths/RippleCalc.h>
+
 namespace ripple {
 namespace path {
 

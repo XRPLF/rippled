@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/OfferStream.h>
 #include <ripple/app/book/Taker.h>
 #include <ripple/app/book/Quality.h>
+#include <ripple/app/transactors/CreateOffer.h>
 #include <beast/streams/debug_ostream.h>
 
 namespace ripple {

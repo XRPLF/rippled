@@ -20,6 +20,11 @@
 #ifndef JSON_WRITER_H_INCLUDED
 #define JSON_WRITER_H_INCLUDED
 
+#include <ripple/json/json_config.h>
+#include <ripple/json/json_forwards.h>
+#include <ripple/json/json_value.h>
+#include <vector>
+
 namespace Json
 {
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
-
 #include <beast/unit_test/suite.h>
 #include <beast/cxx14/type_traits.h>
 

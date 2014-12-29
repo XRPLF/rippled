@@ -17,8 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerCleaner.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <thread>

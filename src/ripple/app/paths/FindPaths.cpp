@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/Pathfinder.h>
 

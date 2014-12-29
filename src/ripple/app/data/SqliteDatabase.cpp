@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/basics/Log.h>

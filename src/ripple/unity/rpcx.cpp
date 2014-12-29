@@ -19,8 +19,9 @@
 
 #include <BeastConfig.h>
 
-// Unfortunate but necessary since RPC handlers can literally do anything
-#include <ripple/unity/app.h>
+// This has to be included early to prevent an obscure MSVC compile error
+#include <boost/asio/deadline_timer.hpp>
+
 #include <ripple/protocol/JsonFields.h>
 
 #include <ripple/rpc/RPCHandler.h>

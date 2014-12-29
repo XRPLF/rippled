@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/app/data/Database.h>
+
 namespace ripple {
 
 Database::Database (const char* host)

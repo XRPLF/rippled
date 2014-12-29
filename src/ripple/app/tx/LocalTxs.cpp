@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/LocalTxs.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
+
 /*
  This code prevents scenarios like the following:
 1) A client submits a transaction.
@@ -40,7 +44,6 @@ succeed normally at step 6. Transactions remain tracked and
 test-applied to all new open ledgers until seen in a fully-
 validated ledger
 */
-
 
 namespace ripple {
 

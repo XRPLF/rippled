@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/basics/Blob.h>

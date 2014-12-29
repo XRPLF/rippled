@@ -17,9 +17,28 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
+#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/ledger/AcceptedLedger.h>
+#include <ripple/app/ledger/InboundLedger.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/main/LoadManager.h>
+#include <ripple/app/main/LocalCredentials.h>
+#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/Validations.h>
+#include <ripple/app/peers/ClusterNodeStatus.h>
+#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
@@ -29,9 +48,11 @@
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
+#include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/Manager.h>
@@ -93,7 +114,7 @@ public:
     {
     }
 
-    ~NetworkOPsImp ()
+    ~NetworkOPsImp()
     {
     }
 

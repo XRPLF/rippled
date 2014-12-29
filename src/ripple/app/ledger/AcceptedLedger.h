@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ACCEPTEDLEDGER_H
 #define RIPPLE_ACCEPTEDLEDGER_H
 
+#include <ripple/app/ledger/AcceptedLedgerTx.h>
+
 namespace ripple {
 
 /** A ledger that has become irrevocable.

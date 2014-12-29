@@ -17,9 +17,17 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/main/LoadManager.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeTimer.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/json/to_string.h>
+#include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -31,7 +39,7 @@ public:
     //--------------------------------------------------------------------------
 
     beast::Journal m_journal;
-    typedef RippleMutex LockType;
+    using LockType = std::mutex;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 

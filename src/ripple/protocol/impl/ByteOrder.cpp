@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-#ifdef BEAST_WIN32
+#include <BeastConfig.h>
+
+#ifdef _MSC_VER
+#include <cstdint>
 #include <Winsock2.h>
 // <Winsock2.h> defines min, max and does other stupid things
 # ifdef max
@@ -30,7 +33,7 @@
 
 namespace ripple {
 
-#if BEAST_WIN32
+#if _MSC_VER
 
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
 // but we don't need to check the endianness

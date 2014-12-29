@@ -20,7 +20,13 @@
 #ifndef RIPPLE_LEDGERENTRYSET_H
 #define RIPPLE_LEDGERENTRYSET_H
 
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/protocol/STLedgerEntry.h>
+
 namespace ripple {
+
+// VFALCO Does this belong here? Is it correctly named?
 
 enum TransactionEngineParams
 {

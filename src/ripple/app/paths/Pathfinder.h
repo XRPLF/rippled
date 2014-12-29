@@ -20,6 +20,12 @@
 #ifndef RIPPLE_PATHFINDER_H
 #define RIPPLE_PATHFINDER_H
 
+#include <ripple/app/book/Types.h>
+#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/core/LoadEvent.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STPathSet.h>
+
 namespace ripple {
 
 /** Calculates payment paths.

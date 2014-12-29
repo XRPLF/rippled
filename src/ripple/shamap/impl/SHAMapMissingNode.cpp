@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapMissingNode.h>
 #include <ostream>
 

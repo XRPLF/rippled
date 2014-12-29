@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+#include <ripple/core/JobQueue.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
@@ -38,6 +39,7 @@ namespace ripple {
 
 class Peer;
 class LedgerConsensus;
+class LedgerMaster;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as

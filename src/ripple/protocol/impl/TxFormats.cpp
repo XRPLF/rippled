@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/TxFormats.h>
 
 namespace ripple {

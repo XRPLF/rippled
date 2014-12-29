@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <boost/foreach.hpp>
+#include <map>
+#include <mutex>
 
 namespace ripple {
 
@@ -105,8 +111,8 @@ private:
 
     Entry& findCreateEntry (uint256 const& , bool& created);
 
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     // Stores all suppressed hashes and their expiration time

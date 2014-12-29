@@ -17,11 +17,19 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/book/Types.h>
+#include <ripple/app/paths/RippleState.h>
+#include <ripple/protocol/STAmount.h>
+#include <cstdint>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 RippleState::pointer RippleState::makeItem (
     Account const& accountID, STLedgerEntry::ref ledgerEntry)
 {
+    // VFALCO Does this ever happen in practice?
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
         return pointer ();
 

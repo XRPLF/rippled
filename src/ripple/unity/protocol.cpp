@@ -19,10 +19,6 @@
 
 #include <BeastConfig.h>
 
-#if DOXYGEN
-#include <ripple/protocol/README.md>
-#endif
-
 #include <ripple/protocol/impl/BuildInfo.cpp>
 #include <ripple/protocol/impl/ByteOrder.cpp>
 #include <ripple/protocol/impl/ErrorCodes.cpp>
@@ -58,3 +54,7 @@
 #include <ripple/protocol/tests/STAmount.test.cpp>
 #include <ripple/protocol/tests/STObject.test.cpp>
 #include <ripple/protocol/tests/STTx.test.cpp>
+
+#if DOXYGEN
+#include <ripple/protocol/README.md>
+#endif

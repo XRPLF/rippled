@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/node/SqliteFactory.h>
+#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/core/Config.h>
 #include <type_traits>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 

@@ -21,6 +21,7 @@
 #define RIPPLE_CANONICALTXSET_H
 
 #include <ripple/protocol/RippleLedgerHash.h>
+#include <ripple/protocol/STTx.h>
 
 namespace ripple {
 
@@ -32,7 +33,7 @@ namespace ripple {
 
 */
 // VFALCO TODO rename to SortedTxSet
-class CanonicalTXSet : beast::LeakChecked <CanonicalTXSet>
+class CanonicalTXSet
 {
 public:
     class Key

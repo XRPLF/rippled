@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 namespace path {
@@ -36,8 +38,9 @@ void PathCursor::nextIncrement (LedgerEntrySet const& lesCheckpoint) const
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
-    WriteLog (lsTRACE, RippleCalc)
-        << "nextIncrement: Path In: " << pathState_.getJson ();
+    // VFALCO-FIXME this generates errors
+    // WriteLog (lsTRACE, RippleCalc)
+    //     << "nextIncrement: Path In: " << pathState_.getJson ();
 
     auto status = liquidity(lesCheckpoint);
 
@@ -57,8 +60,9 @@ void PathCursor::nextIncrement (LedgerEntrySet const& lesCheckpoint) const
         pathState_.setQuality(getRate (
             pathState_.outPass(), pathState_.inPass()));
 
-        WriteLog (lsTRACE, RippleCalc)
-            << "nextIncrement: Path after forward: " << pathState_.getJson ();
+        // VFALCO-FIXME this generates errors
+        // WriteLog (lsTRACE, RippleCalc)
+        //     << "nextIncrement: Path after forward: " << pathState_.getJson ();
     }
     else
     {

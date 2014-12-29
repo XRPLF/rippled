@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/basics/base_uint.h>
 #include <beast/unit_test/suite.h>

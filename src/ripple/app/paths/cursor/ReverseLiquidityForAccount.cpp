@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 namespace path {
@@ -151,7 +153,8 @@ TER PathCursor::reverseLiquidityForAccount () const
         << " node.saRevIssue:" << node().saRevIssue
         << " saNxtOwed:" << saNxtOwed;
 
-    WriteLog (lsTRACE, RippleCalc) << pathState_.getJson ();
+    // VFALCO-FIXME this generates errors
+    //WriteLog (lsTRACE, RippleCalc) << pathState_.getJson ();
 
     // Current redeem req can't be more than IOUs on hand.
     assert (!node().saRevRedeem || -saNxtOwed >= node().saRevRedeem);

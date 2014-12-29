@@ -20,13 +20,18 @@
 #ifndef RIPPLE_ACCOUNTSTATE_H
 #define RIPPLE_ACCOUNTSTATE_H
 
+#include <ripple/basics/Blob.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STLedgerEntry.h>
+
 namespace ripple {
 
 //
 // Provide abstract access to an account's state, such that access to the serialized format is hidden.
 //
 
-class AccountState : beast::LeakChecked <AccountState>
+class AccountState
 {
 public:
     typedef std::shared_ptr<AccountState> pointer;

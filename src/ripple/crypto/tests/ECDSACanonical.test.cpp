@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/ECDSACanonical.h>
 #include <beast/unit_test/suite.h>
 #include <algorithm>

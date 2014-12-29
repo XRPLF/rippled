@@ -17,12 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/net/SNTPClient.h>
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
+#include <boost/asio.hpp>
 #include <boost/foreach.hpp>
+#include <mutex>
 
 namespace ripple {
 
@@ -345,8 +348,8 @@ public:
     }
 
 private:
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     boost::asio::io_service m_io_service;

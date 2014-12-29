@@ -17,7 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/misc/AccountState.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
+#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
 namespace ripple {

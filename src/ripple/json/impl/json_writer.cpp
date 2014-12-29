@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/json/json_writer.h>
+#include <iomanip>
+#include <sstream>
+#include <string>
 #include <utility>
 
 namespace Json

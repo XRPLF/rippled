@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/Pathfinder.h>
+#include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/JobQueue.h>
 #include <tuple>

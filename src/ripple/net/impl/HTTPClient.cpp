@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
@@ -24,6 +25,7 @@
 #include <ripple/websocket/autosocket/AutoSocket.h>
 #include <beast/asio/placeholders.h>
 #include <beast/module/core/memory/SharedSingleton.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/ip/tcp.hpp>

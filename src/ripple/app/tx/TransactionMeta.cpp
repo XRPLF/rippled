@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>
+#include <boost/foreach.hpp>
+#include <string>
 
 namespace ripple {
 

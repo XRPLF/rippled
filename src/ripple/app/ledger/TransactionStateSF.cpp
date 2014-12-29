@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/ledger/TransactionStateSF.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -35,6 +38,9 @@ void TransactionStateSF::gotNode (bool fromFilter,
                                   Blob& nodeData,
                                   SHAMapTreeNode::TNType type)
 {
+    // VFALCO SHAMapSync filters should be passed the SHAMap, the
+    //        SHAMap should provide an accessor to get the injected Database,
+    //        and this should use that Database instad of getNodeStore
     getApp().getNodeStore ().store (
         (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
         mLedgerSeq,

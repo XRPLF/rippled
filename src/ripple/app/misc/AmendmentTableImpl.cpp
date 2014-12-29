@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/Validations.h>
+#include <ripple/app/data/DatabaseCon.h>
+#include <boost/format.hpp>
+
 namespace ripple {
 
 /** Track the list of "amendments"
@@ -25,10 +32,9 @@ namespace ripple {
     rules that is identified by a 256-bit amendment identifier
     and adopted, or rejected, by the network.
 */
-    class AmendmentTableImpl : public AmendmentTable
+class AmendmentTableImpl : public AmendmentTable
 {
 protected:
-
     typedef hash_map<uint256, AmendmentState> amendmentMap_t;
     typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
     typedef hash_set<uint256> amendmentList_t;
@@ -49,7 +55,6 @@ protected:
     void setJson (Json::Value& v, const AmendmentState&);
 
 public:
-
     AmendmentTableImpl (std::chrono::seconds majorityTime, int majorityFraction,
             beast::Journal journal)
         : m_majorityTime (majorityTime)

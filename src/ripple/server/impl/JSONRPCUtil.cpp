@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/protocol/JsonFields.h>

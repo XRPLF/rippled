@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/rand.h>
-
+#include <cassert>
 #include <random>
 #include <stdexcept>
 

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/consensus/DisputedTx.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/misc/DefaultMissingNodeHandler.h> // VFALCO bad dependency

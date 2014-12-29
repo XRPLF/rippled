@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HASHROUTER_H_INCLUDED
 #define RIPPLE_HASHROUTER_H_INCLUDED
 
+#include <ripple/basics/base_uint.h>
 #include <cstdint>
 #include <set>
 

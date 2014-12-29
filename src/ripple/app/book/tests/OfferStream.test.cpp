@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/OfferStream.h>
-
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

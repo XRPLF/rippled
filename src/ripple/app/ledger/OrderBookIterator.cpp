@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/OrderBookIterator.h>
+#include <ripple/basics/Log.h>
+
 namespace ripple {
 
 /** Iterate through the directories in an order book */

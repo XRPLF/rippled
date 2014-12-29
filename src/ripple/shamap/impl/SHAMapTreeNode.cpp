@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>

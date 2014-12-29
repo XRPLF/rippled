@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/BasicConfig.h>
 #include <boost/regex.hpp>
 #include <algorithm>

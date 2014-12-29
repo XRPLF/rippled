@@ -20,7 +20,12 @@
 #ifndef RIPPLED_RIPPLE_MODULE_APP_PATHS_NODEDIRECTORY_H
 #define RIPPLED_RIPPLE_MODULE_APP_PATHS_NODEDIRECTORY_H
 
+#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/protocol/Indexes.h>
+
 namespace ripple {
+
+// VFALCO TODO de-inline these function definitions
 
 class NodeDirectory {
   public:

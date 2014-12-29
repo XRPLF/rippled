@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/peers/UniqueNodeList.h>
 
 namespace ripple {
 

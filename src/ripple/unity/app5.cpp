@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #include <ripple/app/ledger/LedgerTiming.cpp>
 #include <ripple/app/ledger/AcceptedLedgerTx.cpp>
 #include <ripple/app/main/LocalCredentials.cpp>

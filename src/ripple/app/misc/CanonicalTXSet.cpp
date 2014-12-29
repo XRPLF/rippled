@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
+
 namespace ripple {
 
 bool CanonicalTXSet::Key::operator< (Key const& rhs) const

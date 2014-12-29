@@ -17,13 +17,7 @@
 */
 //==============================================================================
 
-//#include <memory>
-//#include <vector>
-
-// backend support
-#include <ripple/unity/leveldb.h>
-#include <ripple/unity/hyperleveldb.h>
-#include <ripple/unity/rocksdb.h>
+#include <BeastConfig.h>
 
 #include <ripple/nodestore/backend/HyperDBFactory.cpp>
 #include <ripple/nodestore/backend/LevelDBFactory.cpp>

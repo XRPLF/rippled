@@ -20,13 +20,17 @@
 #ifndef RIPPLE_OVERLAY_TMHELLO_H_INCLUDED
 #define RIPPLE_OVERLAY_TMHELLO_H_INCLUDED
 
-#include "ripple.pb.h"
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/http/message.h>
 #include <beast/utility/Journal.h>
 #include <utility>
+
+#include <boost/asio/ssl.hpp>
+
+#include "ripple.pb.h"
 
 namespace ripple {
 

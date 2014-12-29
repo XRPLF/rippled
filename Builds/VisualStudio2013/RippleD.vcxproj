@@ -1804,11 +1804,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\NodeStoreScheduler.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\ParameterTable.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\ParameterTable.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\AccountState.cpp">
@@ -1987,6 +1982,8 @@
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\transactors\CreateOffer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateOfferBridged.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2289,6 +2286,8 @@
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\json\impl\json_assert.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\impl\json_batchallocator.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\impl\json_internalarray.inl">
@@ -2504,9 +2503,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Counts.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
@@ -2523,6 +2519,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderConfig.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
@@ -3198,8 +3197,6 @@
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\app.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app1.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app2.cpp">

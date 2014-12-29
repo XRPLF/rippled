@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/diagnostic/FatalError.h>

@@ -20,6 +20,11 @@
 #ifndef RIPPLE_RIPPLECALC_H
 #define RIPPLE_RIPPLECALC_H
 
+#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/paths/PathState.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/TER.h>
+
 namespace ripple {
 namespace path {
 

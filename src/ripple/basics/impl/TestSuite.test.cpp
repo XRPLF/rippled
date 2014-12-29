@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/TestSuite.h>
+#include <vector>
 
 namespace ripple {
 

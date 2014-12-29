@@ -22,6 +22,7 @@
 
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/json/json_value.h>
+#include <ripple/net/InfoSub.h>
 
 namespace ripple {
 

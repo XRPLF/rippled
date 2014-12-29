@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/json/json_writer.h>
-
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 #include <beast/unit_test/suite.h>

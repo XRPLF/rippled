@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/validators/impl/StoreSqdb.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/utility/Debug.h>

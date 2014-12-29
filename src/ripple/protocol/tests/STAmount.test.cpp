@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/protocol/STAmount.h>

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/basics/seconds_clock.h>
 #include <beast/container/aged_unordered_set.h>

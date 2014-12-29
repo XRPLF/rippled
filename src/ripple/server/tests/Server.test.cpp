@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>

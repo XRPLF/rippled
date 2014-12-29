@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
 
 namespace ripple {

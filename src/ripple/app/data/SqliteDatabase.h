@@ -20,6 +20,10 @@
 #ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
 #define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
+#include <ripple/app/data/Database.h>
+#include <ripple/basics/Blob.h>
+#include <ripple/core/JobQueue.h>
+#include <beast/module/sqlite/sqlite.h>
 #include <beast/threads/Thread.h>
 #include <mutex>
 

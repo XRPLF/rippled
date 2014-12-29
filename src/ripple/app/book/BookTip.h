@@ -22,7 +22,7 @@
 
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/book/Types.h>
-
+#include <ripple/protocol/Indexes.h>
 #include <beast/utility/noexcept.h>
 
 #include <functional>

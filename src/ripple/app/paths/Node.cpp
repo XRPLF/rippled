@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/paths/Node.h>
+#include <ripple/app/paths/PathState.h>
+
 namespace ripple {
 namespace path {
 

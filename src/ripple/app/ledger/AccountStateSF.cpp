@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/ledger/AccountStateSF.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -35,6 +38,9 @@ void AccountStateSF::gotNode (bool fromFilter,
                               Blob& nodeData,
                               SHAMapTreeNode::TNType)
 {
+    // VFALCO SHAMapSync filters should be passed the SHAMap, the
+    //        SHAMap should provide an accessor to get the injected Database,
+    //        and this should use that Database instad of getNodeStore
     getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
 }
 

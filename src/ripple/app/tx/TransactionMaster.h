@@ -20,11 +20,15 @@
 #ifndef __TRANSACTIONMASTER__
 #define __TRANSACTIONMASTER__
 
+#include <ripple/app/tx/Transaction.h>
+#include <ripple/shamap/SHAMapItem.h>
+#include <ripple/shamap/SHAMapTreeNode.h>
+
 namespace ripple {
 
 // Tracks all transactions in memory
 
-class TransactionMaster : beast::LeakChecked <TransactionMaster>
+class TransactionMaster
 {
 public:
     TransactionMaster ();

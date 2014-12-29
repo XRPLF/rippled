@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/data/DatabaseCon.h>
+#include <ripple/app/data/SqliteDatabase.h>
 
 namespace ripple {
 

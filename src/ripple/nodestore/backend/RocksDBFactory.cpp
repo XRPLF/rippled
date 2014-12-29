@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+
+#include <ripple/unity/rocksdb.h>
+
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/core/Config.h> // VFALCO Bad dependency
@@ -361,18 +365,10 @@ public:
 class RocksDBFactory : public Factory
 {
 public:
-    std::shared_ptr <rocksdb::Cache> m_lruCache;
     RocksDBEnv m_env;
 
     RocksDBFactory ()
     {
-        rocksdb::BlockBasedTableOptions table_options;
-
-        table_options.block_cache = rocksdb::NewLRUCache (
-            getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-
-        m_lruCache = table_options.block_cache;
-
         Manager::instance().insert(*this);
     }
 

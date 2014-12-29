@@ -20,8 +20,11 @@
 #ifndef JSON_TO_STRING_H_INCLUDED
 #define JSON_TO_STRING_H_INCLUDED
 
-namespace Json
-{
+#include <ripple/json/json_config.h>
+#include <string>
+#include <ostream>
+
+namespace Json {
 
 class Value;
 

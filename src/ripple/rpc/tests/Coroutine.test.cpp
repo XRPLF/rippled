@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>

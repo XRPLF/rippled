@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/overlay/README.md>
-#endif
-
 #include <BeastConfig.h>
 
 #include <ripple/overlay/impl/ConnectAttempt.cpp>
@@ -32,3 +28,6 @@
 #include <ripple/overlay/tests/short_read.test.cpp>
 #include <ripple/overlay/tests/TMHello.test.cpp>
 
+#if DOXYGEN
+#include <ripple/overlay/README.md>
+#endif

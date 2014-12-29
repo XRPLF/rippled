@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/AcceptedLedgerTx.h>
+#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <boost/foreach.hpp>

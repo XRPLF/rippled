@@ -17,17 +17,10 @@
 */
 //==============================================================================
 
-/** Add this to get the @ref ripple_net module.
-
-    @file ripple_net.cpp
-    @ingroup ripple_net
-*/
-
 #undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/
 
 #include <BeastConfig.h>
-
 #include <ripple/net/impl/HTTPRequest.cpp>
 #include <ripple/net/impl/HTTPClient.cpp>
 #include <ripple/net/impl/InfoSub.cpp>

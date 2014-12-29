@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/DirectoryEntryIterator.h>
+#include <ripple/basics/Log.h>
+
 namespace ripple {
 
 /** Get the current ledger entry */

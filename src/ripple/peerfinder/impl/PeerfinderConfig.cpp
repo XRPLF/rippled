@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 
 namespace ripple {
 namespace PeerFinder {

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/server/make_ServerHandler.h>

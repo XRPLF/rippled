@@ -21,6 +21,7 @@
 #define RIPPLED_RIPPLE_BASICS_TESTSUITE_H
 
 #include <beast/unit_test/suite.h>
+#include <string>
 
 namespace ripple {
 

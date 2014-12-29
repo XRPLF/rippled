@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/app/paths/RippleState.h>
 
 namespace ripple {
 

@@ -20,6 +20,9 @@
 #ifndef RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
 #define RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
 
+#include <ripple/app/book/Types.h>
+#include <ripple/protocol/STAmount.h>
+
 namespace ripple {
 
 /** Calculate the maximum amount of IOUs that an account can hold

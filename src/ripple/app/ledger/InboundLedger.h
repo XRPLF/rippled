@@ -20,7 +20,9 @@
 #ifndef RIPPLE_INBOUNDLEDGER_H
 #define RIPPLE_INBOUNDLEDGER_H
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/peers/PeerSet.h>
+#include <ripple/basics/CountedObject.h>
 #include <set>
 
 namespace ripple {

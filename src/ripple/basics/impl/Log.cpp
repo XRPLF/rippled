@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <boost/algorithm/string.hpp>
 // VFALCO TODO Use std::chrono

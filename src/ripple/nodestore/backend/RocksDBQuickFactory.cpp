@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+
+#include <ripple/unity/rocksdb.h>
+
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/core/Config.h> // VFALCO Bad dependency

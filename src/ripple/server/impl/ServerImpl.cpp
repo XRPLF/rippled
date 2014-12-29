@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <ripple/server/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>

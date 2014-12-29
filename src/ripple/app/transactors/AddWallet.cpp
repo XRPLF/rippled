@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/transactors/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
+
 namespace ripple {
 
 class AddWallet

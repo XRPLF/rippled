@@ -21,10 +21,14 @@
 #define RIPPLE_RPC_CONTEXT
 
 #include <ripple/core/Config.h>
+#include <ripple/net/InfoSub.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
+
+class NetworkOPs;
+
 namespace RPC {
 
 /** The context of information needed to call an RPC. */

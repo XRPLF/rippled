@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/core/impl/LoadFeeTrackImp.h>
 #include <ripple/core/Config.h>
 

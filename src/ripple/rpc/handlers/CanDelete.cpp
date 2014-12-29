@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format.hpp>

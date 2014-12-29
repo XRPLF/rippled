@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <unordered_map>
 #include <utility>

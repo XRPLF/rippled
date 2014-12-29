@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_RPCERR_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCERR_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+
 namespace ripple {
 
 // VFALCO NOTE these are deprecated

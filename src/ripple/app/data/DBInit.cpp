@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/data/DBInit.h>
+#include <type_traits>
+
 namespace ripple {
 
 // Transaction database holds transactions and public keys

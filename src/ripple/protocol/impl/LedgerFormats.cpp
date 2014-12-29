@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <beast/module/core/memory/SharedSingleton.h>
 

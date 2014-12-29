@@ -17,6 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/protocol/Indexes.h>
+
 namespace ripple {
 
 OrderBookDB::OrderBookDB (Stoppable& parent)

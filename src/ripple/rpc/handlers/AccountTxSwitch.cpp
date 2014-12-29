@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+
 namespace ripple {
 
 // Temporary switching code until the old account_tx is removed

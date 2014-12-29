@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
-
 #include <cassert>
 #include <limits>
 

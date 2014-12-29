@@ -17,8 +17,16 @@
 */
 //==============================================================================
 
-#ifndef __PROPOSELEDGER__
-#define __PROPOSELEDGER__
+#ifndef RIPPLE_APP_LEDGERPROPOSAL_H_INCLUDED
+#define RIPPLE_APP_LEDGERPROPOSAL_H_INCLUDED
+
+#include <ripple/basics/CountedObject.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <cstdint>
+#include <string>
 
 namespace ripple {
 

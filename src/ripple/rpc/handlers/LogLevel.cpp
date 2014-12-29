@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

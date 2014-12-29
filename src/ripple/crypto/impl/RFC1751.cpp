@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/RFC1751.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>

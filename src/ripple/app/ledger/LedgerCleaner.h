@@ -20,10 +20,11 @@
 #ifndef RIPPLE_LEDGERCLEANER_H_INCLUDED
 #define RIPPLE_LEDGERCLEANER_H_INCLUDED
 
-#include <beast/cxx14/memory.h> // <memory>
+#include <ripple/json/json_value.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/utility/Journal.h>
+#include <memory>
 
 namespace ripple {
 

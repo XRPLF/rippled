@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Credit.h>
+#include <BeastConfig.h>
+#include <ripple/app/book/Types.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 

@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #include <ripple/app/book/tests/OfferStream.test.cpp>
 #include <ripple/app/book/tests/Quality.test.cpp>
 #include <ripple/app/ledger/InboundLedger.cpp>

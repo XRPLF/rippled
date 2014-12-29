@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/peerfinder/Manager.h>
 #include <ripple/peerfinder/impl/Checker.h>
 #include <ripple/peerfinder/impl/Logic.h>

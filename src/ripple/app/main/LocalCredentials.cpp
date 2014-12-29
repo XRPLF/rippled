@@ -17,13 +17,18 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/main/LocalCredentials.h>
+#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/Config.h>
+#include <iostream>
 
 namespace ripple {
-
-LocalCredentials::LocalCredentials () = default;
 
 void LocalCredentials::start ()
 {

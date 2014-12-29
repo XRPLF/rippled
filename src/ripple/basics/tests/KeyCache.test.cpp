@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/KeyCache.h>
-
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
 

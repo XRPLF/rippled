@@ -118,6 +118,8 @@ enum error_code_i
 
 //------------------------------------------------------------------------------
 
+// VFALCO NOTE these should probably not be in the RPC namespace.
+
 namespace RPC {
 
 /** Maps an rpc error code to its token and default message. */

@@ -17,9 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/app/ledger/AccountStateSF.h>
+#include <ripple/app/ledger/InboundLedger.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionStateSF.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>

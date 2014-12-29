@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/core/Config.h>
 #include <ripple/app/transactors/Transactor.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 

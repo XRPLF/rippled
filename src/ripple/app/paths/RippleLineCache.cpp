@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/paths/RippleLineCache.h>
+
 namespace ripple {
 
 RippleLineCache::RippleLineCache (Ledger::ref l)

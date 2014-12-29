@@ -17,7 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
@@ -148,8 +154,9 @@ private:
         if (!feeObject)
             feeObject = mEngine->entryCreate (ltFEE_SETTINGS, index);
 
-        m_journal.trace <<
-            "Previous fee object: " << feeObject->getJson (0);
+        // VFALCO-FIXME this generates errors
+        // m_journal.trace <<
+        //     "Previous fee object: " << feeObject->getJson (0);
 
         feeObject->setFieldU64 (
             sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
@@ -162,8 +169,9 @@ private:
 
         mEngine->entryModify (feeObject);
 
-        m_journal.trace <<
-            "New fee object: " << feeObject->getJson (0);
+        // VFALCO-FIXME this generates errors
+        // m_journal.trace <<
+        //     "New fee object: " << feeObject->getJson (0);
         m_journal.warning << "Fees have been changed";
         return tesSUCCESS;
     }

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/Base58Data.h>
 #include <algorithm>
 

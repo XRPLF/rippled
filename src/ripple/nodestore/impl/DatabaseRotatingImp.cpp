@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
 namespace ripple {

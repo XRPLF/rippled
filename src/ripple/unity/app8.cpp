@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable: 4309) // truncation of constant value
@@ -41,7 +39,6 @@
 #include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
 #include <ripple/app/paths/cursor/RippleLiquidity.cpp>
 
-#include <ripple/app/main/ParameterTable.cpp>
 #include <ripple/app/paths/RippleLineCache.cpp>
 
 #ifdef _MSC_VER

@@ -17,7 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/main/LocalCredentials.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/overlay/impl/TMHello.h>
 #include <beast/crypto/base64.h>

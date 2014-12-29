@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
+#include <BeastConfig.h>
 #include <ripple/net/RPCSub.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/json/to_string.h>
+#include <ripple/net/RPCCall.h>
+#include <deque>
 
 namespace ripple {
 

@@ -20,15 +20,19 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
+#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/basics/Log.h> // deprecated
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/Job.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STTx.h>
 #include <ripple/validators/Manager.h>
-#include <ripple/unity/app.h> // VFALCO REMOVE
 #include <beast/ByteOrder.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
@@ -83,9 +87,6 @@ private:
     using stream_type = boost::asio::ssl::stream <socket_type&>;
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-
-    // Time alloted for a peer to send a HELLO message (DEPRECATED)
-    static const boost::posix_time::seconds nodeVerifySeconds;
 
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
@@ -522,11 +523,6 @@ PeerImp::sendEndpoints (FwdIt first, FwdIt last)
 
     send (std::make_shared <Message> (tm, protocol::mtENDPOINTS));
 }
-
-//------------------------------------------------------------------------------
-
-// DEPRECATED
-const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
 
 }
 

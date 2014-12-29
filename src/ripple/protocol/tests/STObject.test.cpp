@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STAccount.h>

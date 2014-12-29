@@ -20,10 +20,13 @@
 #ifndef RIPPLE_APP_SHAMAPSTORE_H_INCLUDED
 #define RIPPLE_APP_SHAMAPSTORE_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/core/Config.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <beast/threads/Stoppable.h>
 
 namespace ripple {
 

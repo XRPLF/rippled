@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/json/json_value.h>
+#include <ripple/json/json_reader.h>
 #include <beast/unit_test/suite.h>
 #include <beast/utility/type_name.h>
 

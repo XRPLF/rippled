@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/resource/README.md>
-#endif
-
 #include <BeastConfig.h>
 
 #include <ripple/resource/impl/Charge.cpp>
@@ -30,5 +26,8 @@
 #include <ripple/resource/impl/Kind.h>
 #include <ripple/resource/impl/Manager.cpp>
 #include <ripple/resource/impl/Tuning.h>
-
 #include <ripple/resource/tests/Logic.test.cpp>
+
+#if DOXYGEN
+#include <ripple/resource/README.md>
+#endif

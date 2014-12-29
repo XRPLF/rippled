@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/misc/DefaultMissingNodeHandler.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 
 namespace ripple {

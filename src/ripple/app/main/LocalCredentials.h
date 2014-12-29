@@ -20,13 +20,17 @@
 #ifndef RIPPLE_LOCALCREDENTIALS_H
 #define RIPPLE_LOCALCREDENTIALS_H
 
+#include <ripple/protocol/RippleAddress.h>
+#include <mutex>
+#include <string>
+
 namespace ripple {
 
 /** Holds the cryptographic credentials identifying this instance of the server. */
 class LocalCredentials
 {
 public:
-    LocalCredentials ();
+    LocalCredentials () = default;
     LocalCredentials (LocalCredentials const&) = delete;
     LocalCredentials& operator= (LocalCredentials const&) = delete;
 

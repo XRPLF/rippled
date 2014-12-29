@@ -17,7 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/misc/SHAMapStoreImp.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+#include <boost/format.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
@@ -548,8 +552,8 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
 
     boost::format formattedDeleteQuery (deleteQuery);
 
-    journal_.debug << "start: " << deleteQuery << " from "
-            << min << " to " << lastRotated;
+    if (journal_.debug) journal_.debug <<
+        "start: " << deleteQuery << " from " << min << " to " << lastRotated;
     while (min < lastRotated)
     {
         min = (min + setup_.deleteBatch >= lastRotated) ? lastRotated :

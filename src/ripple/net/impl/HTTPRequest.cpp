@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/net/HTTPRequest.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/algorithm/string.hpp>

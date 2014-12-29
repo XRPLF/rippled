@@ -18,11 +18,16 @@
 //==============================================================================
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/seconds_clock.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 

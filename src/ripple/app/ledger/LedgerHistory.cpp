@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/seconds_clock.h>
+#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerHistory.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/seconds_clock.h>
 
 namespace ripple {
 

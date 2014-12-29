@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
+#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 

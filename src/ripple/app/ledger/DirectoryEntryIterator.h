@@ -20,6 +20,10 @@
 #ifndef RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
 #define RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
 
+#include <ripple/basics/base_uint.h>
+#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/protocol/STLedgerEntry.h>
+
 namespace ripple {
 
 /** An iterator that walks the ledger entries in a single directory */

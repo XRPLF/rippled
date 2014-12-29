@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ACCEPTEDLEDGERTX_H
 #define RIPPLE_ACCEPTEDLEDGERTX_H
 
+#include <ripple/app/ledger/Ledger.h>
+
 namespace ripple {
 
 /**

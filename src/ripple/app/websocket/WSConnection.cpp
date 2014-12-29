@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/websocket/WSConnection.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>

@@ -546,7 +546,7 @@ def list_sources(base, suffixes):
             for path in files:
                 path = os.path.join(parent, path)
                 r = os.path.splitext(path)
-                if r[1] in suffixes:
+                if r[1] and r[1] in suffixes:
                     yield os.path.normpath(path)
     return list(_iter(base))
 
@@ -577,7 +577,21 @@ for tu_style in ['classic', 'unity']:
 
             if tu_style == 'classic':
                 object_builder.add_source_files(
+                    *list_sources('src/ripple/app', '.cpp'))
+                object_builder.add_source_files(
                     *list_sources('src/ripple/basics', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/core', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/crypto', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/json', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/net', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/overlay', '.cpp'))
+                object_builder.add_source_files(
+                    *list_sources('src/ripple/peerfinder', '.cpp'))
                 object_builder.add_source_files(
                     *list_sources('src/ripple/protocol', '.cpp'))
                 object_builder.add_source_files(
@@ -591,7 +605,23 @@ for tu_style in ['classic', 'unity']:
                     ])
             else:
                 object_builder.add_source_files(
+                    'src/ripple/unity/app.cpp',
+                    'src/ripple/unity/app1.cpp',
+                    'src/ripple/unity/app2.cpp',
+                    'src/ripple/unity/app3.cpp',
+                    'src/ripple/unity/app4.cpp',
+                    'src/ripple/unity/app5.cpp',
+                    'src/ripple/unity/app6.cpp',
+                    'src/ripple/unity/app7.cpp',
+                    'src/ripple/unity/app8.cpp',
+                    'src/ripple/unity/app9.cpp',
+                    'src/ripple/unity/core.cpp',
                     'src/ripple/unity/basics.cpp',
+                    'src/ripple/unity/crypto.cpp',
+                    'src/ripple/unity/net.cpp',
+                    'src/ripple/unity/overlay.cpp',
+                    'src/ripple/unity/peerfinder.cpp',
+                    'src/ripple/unity/json.cpp',
                     'src/ripple/unity/protocol.cpp',
                     'src/ripple/unity/shamap.cpp',
                 )
@@ -604,23 +634,7 @@ for tu_style in ['classic', 'unity']:
                     ])
 
             object_builder.add_source_files(
-                'src/ripple/unity/app.cpp',
-                'src/ripple/unity/app1.cpp',
-                'src/ripple/unity/app2.cpp',
-                'src/ripple/unity/app3.cpp',
-                'src/ripple/unity/app4.cpp',
-                'src/ripple/unity/app5.cpp',
-                'src/ripple/unity/app6.cpp',
-                'src/ripple/unity/app7.cpp',
-                'src/ripple/unity/app8.cpp',
-                'src/ripple/unity/app9.cpp',
                 'src/ripple/unity/beast.cpp',
-                'src/ripple/unity/core.cpp',
-                'src/ripple/unity/crypto.cpp',
-                'src/ripple/unity/json.cpp',
-                'src/ripple/unity/net.cpp',
-                'src/ripple/unity/overlay.cpp',
-                'src/ripple/unity/peerfinder.cpp',
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',

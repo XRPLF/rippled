@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #include <ripple/app/ledger/InboundLedgers.cpp>
 #include <ripple/app/ledger/LedgerHistory.cpp>
 #include <ripple/app/tx/TransactionAcquire.cpp>

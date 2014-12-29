@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#include <sstream>
-#include <vector>
-
+#include <BeastConfig.h>
+#include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
-
-#include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
+#include <sstream>
+#include <vector>
 
 namespace ripple {
 namespace version {

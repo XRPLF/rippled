@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_TX_TRANSACTOR_H_INCLUDED
 
+#include <ripple/app/tx/TransactionEngine.h>
+
 namespace ripple {
 
 class Transactor

@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/websocket/WSDoor.h>
+#include <ripple/app/websocket/WSServerHandler.h>
+#include <ripple/unity/websocket.h>
+#include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -44,8 +49,8 @@ class WSDoorImp
     , beast::LeakChecked <WSDoorImp>
 {
 private:
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::recursive_mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
 
     std::shared_ptr<HTTP::Port> port_;
     Resource::Manager& m_resourceManager;

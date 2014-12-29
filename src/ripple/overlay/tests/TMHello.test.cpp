@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/overlay/impl/TMHello.h>
 #include <beast/unit_test/suite.h>
 

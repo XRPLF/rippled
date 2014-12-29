@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
-#endif
-
 #include <BeastConfig.h>
 
 #include <ripple/basics/impl/BasicConfig.cpp>
@@ -43,3 +39,7 @@
 #include <ripple/basics/tests/RangeSet.test.cpp>
 #include <ripple/basics/tests/StringUtilities.test.cpp>
 #include <ripple/basics/tests/TaggedCache.test.cpp>
+
+#if DOXYGEN
+#include <ripple/basics/README.md>
+#endif

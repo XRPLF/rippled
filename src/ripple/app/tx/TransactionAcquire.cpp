@@ -17,10 +17,16 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/ledger/ConsensusTransSetSF.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/DefaultMissingNodeHandler.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/overlay/Overlay.h>
 #include <boost/foreach.hpp>
+#include <memory>
 
 namespace ripple {
 

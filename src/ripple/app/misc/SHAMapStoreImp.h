@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_SHAMAPSTOREIMP_H_INCLUDED
 #define RIPPLE_APP_SHAMAPSTOREIMP_H_INCLUDED
 
+#include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>

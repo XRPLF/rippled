@@ -20,10 +20,13 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/Config.h>
+#include <ripple/net/InfoSub.h>
 #include <ripple/resource/Manager.h>
 #include <ripple/server/Port.h>
 #include <ripple/json/to_string.h>
+#include <ripple/unity/websocket.h>
 #include <beast/asio/placeholders.h>
 #include <memory>
 

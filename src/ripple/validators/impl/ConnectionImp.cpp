@@ -17,13 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/validators/impl/ConnectionImp.h>
 
 namespace ripple {
 namespace Validators {
-
-
-
 
 }
 }

@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
 #include <ripple/peerfinder/Slot.h>
+#include <ripple/peerfinder/Manager.h>
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_container_utility.h>
 #include <boost/optional.hpp>

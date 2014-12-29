@@ -21,6 +21,8 @@
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
 #include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/iosformat.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/container/aged_map.h>
 #include <beast/utility/maybe_const.h>

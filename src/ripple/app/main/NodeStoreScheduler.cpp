@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
 
 namespace ripple {

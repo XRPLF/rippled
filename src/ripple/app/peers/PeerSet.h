@@ -20,7 +20,12 @@
 #ifndef RIPPLE_PEERSET_H
 #define RIPPLE_PEERSET_H
 
+#include <ripple/basics/Log.h>
+#include <ripple/core/Job.h>
 #include <ripple/overlay/Peer.h>
+#include <beast/chrono/abstract_clock.h>
+#include <beast/utility/LeakChecked.h>
+#include <beast/utility/Journal.h>
 #include <boost/asio/deadline_timer.hpp>
 
 namespace ripple {

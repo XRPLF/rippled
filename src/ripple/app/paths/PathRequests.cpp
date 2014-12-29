@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/PathRequests.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/resource/Fees.h>
 #include <boost/foreach.hpp>

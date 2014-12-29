@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+
+#include <ripple/unity/hyperleveldb.h>
+
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
 #include <ripple/core/Config.h> // VFALCO Bad dependency

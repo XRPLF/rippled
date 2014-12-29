@@ -20,6 +20,11 @@
 #ifndef RIPPLE_RIPPLESTATE_H
 #define RIPPLE_RIPPLESTATE_H
 
+#include <ripple/app/book/Types.h>
+#include <ripple/protocol/STAmount.h>
+#include <cstdint>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 //

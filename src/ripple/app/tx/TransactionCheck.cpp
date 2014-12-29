@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/TransactionEngine.h>
+
 namespace ripple {
 
 // VFALCO TODO move this into TransactionEngine.cpp

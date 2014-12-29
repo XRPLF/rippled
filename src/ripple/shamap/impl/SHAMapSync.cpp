@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>

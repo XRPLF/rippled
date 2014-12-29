@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PATHSTATE_H
 #define RIPPLE_PATHSTATE_H
 
+#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/app/paths/Node.h>
 #include <ripple/app/paths/Types.h>
 

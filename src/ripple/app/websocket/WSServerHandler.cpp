@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/websocket/WSServerHandler.h>
 
 namespace ripple {

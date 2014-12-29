@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Serializer.h>
 
 namespace ripple {
 
@@ -35,7 +38,6 @@ LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
     mPeerID         = mPublicKey.getNodeID ();
     mTime           = boost::posix_time::second_clock::universal_time ();
 }
-
 
 LedgerProposal::LedgerProposal (RippleAddress const& naPub, RippleAddress const& naPriv,
                                 uint256 const& prevLgr, uint256 const& position,

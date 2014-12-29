@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
+#include <openssl/hmac.h>
 #include <openssl/pem.h>
 
 namespace ripple {

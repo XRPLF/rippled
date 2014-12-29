@@ -20,6 +20,9 @@
 #ifndef RIPPLE_BOOKLISTENERS_H
 #define RIPPLE_BOOKLISTENERS_H
 
+#include <ripple/net/InfoSub.h>
+#include <memory>
+
 namespace ripple {
 
 /** Listen to public/subscribe messages from a book. */

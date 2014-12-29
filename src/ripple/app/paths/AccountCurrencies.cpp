@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 
 namespace ripple {

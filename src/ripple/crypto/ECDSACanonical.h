@@ -37,11 +37,14 @@ enum class ECDSA
     The return value for something that is not an ECDSA
     signature is unspecified. (But the function will not crash.)
 */
-bool isCanonicalECDSASig (void const* signature, size_t sigLen, ECDSA mustBeStrict);
+bool isCanonicalECDSASig (void const* signature,
+    std::size_t sigLen, ECDSA mustBeStrict);
 
-inline bool isCanonicalECDSASig (Blob const& signature, ECDSA mustBeStrict)
+inline bool isCanonicalECDSASig (Blob const& signature,
+    ECDSA mustBeStrict)
 {
-    return signature.empty() ? false : isCanonicalECDSASig (&signature[0], signature.size(), mustBeStrict);
+    return signature.empty() ? false :
+        isCanonicalECDSASig (&signature[0], signature.size(), mustBeStrict);
 }
 
 /** Converts a canonical secp256k1 ECDSA signature to a
@@ -52,7 +55,7 @@ inline bool isCanonicalECDSASig (Blob const& signature, ECDSA mustBeStrict)
     enough to accommodate the largest valid fully-canonical
     secp256k1 ECDSA signature (72 bytes).
 */
-bool makeCanonicalECDSASig (void *signature, size_t& sigLen);
+bool makeCanonicalECDSASig (void *signature, std::size_t& sigLen);
 
 }
 

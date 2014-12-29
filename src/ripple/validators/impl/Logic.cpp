@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/validators/impl/ConnectionImp.h>
 #include <ripple/validators/impl/Logic.h>
 

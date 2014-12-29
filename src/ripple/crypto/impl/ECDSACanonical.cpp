@@ -17,12 +17,14 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/ECDSACanonical.h>
 #include <beast/unit_test/suite.h>
-#include <algorithm>
-#include <iterator>
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
+#include <algorithm>
+#include <cstring>
+#include <iterator>
 
 namespace ripple {
 
@@ -48,7 +50,7 @@ struct BigNum
         BN_hex2bn (&num, hex);
     }
 
-    BigNum (unsigned char const* ptr, size_t len)
+    BigNum (unsigned char const* ptr, std::size_t len)
         : num (BN_new ())
     {
         set (ptr, len);
@@ -76,7 +78,7 @@ struct BigNum
         return num;
     }
 
-    bool set (unsigned char const* ptr, size_t len)
+    bool set (unsigned char const* ptr, std::size_t len)
     {
         if (BN_bin2bn (ptr, len, num) == nullptr)
             return false;
@@ -88,18 +90,18 @@ struct BigNum
 class SignaturePart
 {
 private:
-    size_t m_skip;
+    std::size_t m_skip;
     BigNum m_bn;
 
 public:
-    SignaturePart (unsigned char const* sig, size_t size)
+    SignaturePart (unsigned char const* sig, std::size_t size)
         : m_skip (0)
     {
         // The format is: <02> <length of signature> <signature>
         if ((sig[0] != 0x02) || (size < 3))
             return;
 
-        size_t const len (sig[1]);
+        std::size_t const len (sig[1]);
 
         // Claimed length can't be longer than amount of data available
         if (len > (size - 2))
@@ -139,7 +141,7 @@ public:
     }
 
     // Returns the number of bytes to skip for this signature part
-    size_t skip () const
+    std::size_t skip () const
     {
         return m_skip;
     }
@@ -163,7 +165,7 @@ static BigNum const modulus (
     https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
     https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
 */
-bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
+bool isCanonicalECDSASig (void const* vSig, std::size_t sigLen, ECDSA strict_param)
 {
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -238,7 +240,7 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
     @param sigLen the length of the signature
     @returns true if the signature was already canonical, false otherwise
 */
-bool makeCanonicalECDSASig (void* vSig, size_t& sigLen)
+bool makeCanonicalECDSASig (void* vSig, std::size_t& sigLen)
 {
     unsigned char * sig = reinterpret_cast<unsigned char *> (vSig);
     bool ret = false;
@@ -260,14 +262,14 @@ bool makeCanonicalECDSASig (void* vSig, size_t& sigLen)
         { // no extra padding byte is needed
             sig[1] = sig[1] - sLen + newSlen;
             sig[sPos - 1] = newSlen;
-            memcpy (&sig[sPos], newSbuf, newSlen);
+            std::memcpy (&sig[sPos], newSbuf, newSlen);
         }
         else
         { // an extra padding byte is needed
             sig[1] = sig[1] - sLen + newSlen + 1;
             sig[sPos - 1] = newSlen + 1;
             sig[sPos] = 0;
-            memcpy (&sig[sPos + 1], newSbuf, newSlen);
+            std::memcpy (&sig[sPos + 1], newSbuf, newSlen);
         }
         sigLen = sig[1] + 2;
     }

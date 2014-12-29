@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <beast/module/core/text/LexicalCast.h>

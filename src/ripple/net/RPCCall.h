@@ -20,6 +20,12 @@
 #ifndef RIPPLE_NET_RPC_RPCCALL_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCCALL_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+#include <boost/asio/io_service.hpp>
+#include <functional>
+#include <string>
+#include <vector>
+
 namespace ripple {
 
 //

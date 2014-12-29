@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
 #include <ripple/core/JobTypes.h>
+#include <ripple/json/json_value.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <boost/function.hpp>

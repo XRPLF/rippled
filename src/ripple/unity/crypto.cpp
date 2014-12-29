@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/crypto/README.md>
-#endif
-
 #include <BeastConfig.h>
 
 #include <ripple/crypto/impl/Base58.cpp>
@@ -37,3 +33,7 @@
 
 #include <ripple/crypto/tests/CKey.test.cpp>
 #include <ripple/crypto/tests/ECDSACanonical.test.cpp>
+
+#if DOXYGEN
+#include <ripple/crypto/README.md>
+#endif

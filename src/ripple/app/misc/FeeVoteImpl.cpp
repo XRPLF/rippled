@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/Validations.h>
+#include <ripple/basics/BasicConfig.h>
+#include <beast/utility/Journal.h>
+
 namespace ripple {
 
 namespace detail {

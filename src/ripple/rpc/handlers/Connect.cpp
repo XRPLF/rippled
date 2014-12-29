@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/overlay/Overlay.h>
 
 namespace ripple {

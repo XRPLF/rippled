@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/Credit.h>
+#include <ripple/app/paths/PathState.h>
+#include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
+#include <boost/lexical_cast.hpp>
 
 namespace ripple {
 

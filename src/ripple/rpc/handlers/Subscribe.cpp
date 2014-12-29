@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/net/RPCSub.h>
 #include <ripple/rpc/impl/ParseAccountIds.h>
 #include <ripple/server/Role.h>

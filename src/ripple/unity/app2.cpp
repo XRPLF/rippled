@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #include <ripple/app/data/Database.cpp>
 #include <ripple/app/data/DatabaseCon.cpp>
 #include <ripple/app/data/SqliteDatabase.cpp>

@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/Bootcache.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>
 #include <ripple/peerfinder/impl/iosformat.h>
@@ -29,6 +30,7 @@
 #include <ripple/peerfinder/impl/Reporting.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Source.h>
+#include <ripple/peerfinder/impl/Store.h>
 #include <beast/container/aged_container_utility.h>
 #include <beast/smart_ptr/SharedPtr.h>
 #include <functional>

@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/PathRequest.h>
+#include <ripple/app/paths/PathRequests.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>

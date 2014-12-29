@@ -20,8 +20,9 @@
 #ifndef RIPPLE_DATABASECON_H
 #define RIPPLE_DATABASECON_H
 
+#include <ripple/app/data/Database.h>
 #include <ripple/core/Config.h>
-
+#include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <string>
 

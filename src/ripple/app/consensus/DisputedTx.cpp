@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/consensus/DisputedTx.h>
+#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/basics/Log.h>
+#include <ripple/json/to_string.h>
+
 namespace ripple {
 
 // Track a peer's yes/no vote on a particular disputed transaction

@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/Transaction.h>
+#include <ripple/basics/Log.h>
+#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+
 namespace ripple {
 
 Transaction::Transaction (STTx::ref sit, Validate validate)

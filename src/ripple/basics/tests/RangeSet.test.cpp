@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/RangeSet.h>
 #include <beast/unit_test/suite.h>
 

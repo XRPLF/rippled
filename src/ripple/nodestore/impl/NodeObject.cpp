@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <memory>
 

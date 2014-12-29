@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/server/Role.h>
 

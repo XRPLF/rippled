@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/PlainPeer.h>
 #include <ripple/server/impl/SSLPeer.h>

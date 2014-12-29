@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>

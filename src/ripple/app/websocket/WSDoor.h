@@ -20,7 +20,10 @@
 #ifndef RIPPLE_WSDOOR_H_INCLUDED
 #define RIPPLE_WSDOOR_H_INCLUDED
 
+#include <ripple/net/InfoSub.h>
+#include <ripple/resource/Manager.h>
 #include <ripple/server/Port.h>
+#include <beast/threads/Stoppable.h>
 
 namespace ripple {
 

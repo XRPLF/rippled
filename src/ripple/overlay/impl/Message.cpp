@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/overlay/Message.h>
-
 #include <cstdint>
 
 namespace ripple {

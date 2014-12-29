@@ -17,11 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/Base58.h>
 #include <ripple/crypto/CBigNum.h>
 #include <array>
 #include <string>
+#include <openssl/ec.h>
+#include <openssl/pem.h>
+#include <openssl/sha.h>
 
 namespace ripple {
 

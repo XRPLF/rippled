@@ -21,7 +21,9 @@
 #define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
+#include <ripple/net/InfoSub.h>
 #include <beast/threads/Stoppable.h>
+#include <boost/asio/io_service.hpp>
 
 namespace ripple {
 
@@ -32,6 +34,7 @@ public:
     typedef std::shared_ptr <RPCSub> pointer;
     typedef pointer const& ref;
 
+    // VFALCO Why is the io_service needed?
     static pointer New (InfoSub::Source& source,
         boost::asio::io_service& io_service, JobQueue& jobQueue,
             std::string const& strUrl, std::string const& strUsername,

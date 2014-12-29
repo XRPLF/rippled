@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/core/impl/LoadFeeTrackImp.h>
+#include <ripple/core/Config.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

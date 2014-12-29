@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/app.h>
-
 #include <ripple/app/book/impl/BookTip.cpp>
 #include <ripple/app/book/impl/OfferStream.cpp>
 #include <ripple/app/book/impl/Quality.cpp>

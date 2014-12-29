@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/json/to_string.h>
 
 namespace ripple {

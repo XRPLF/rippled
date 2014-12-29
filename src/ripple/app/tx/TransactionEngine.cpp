@@ -17,6 +17,15 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/app/tx/TransactionEngine.h>
+#include <ripple/app/transactors/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
+#include <boost/foreach.hpp>
+#include <cassert>
+
 namespace ripple {
 
 //

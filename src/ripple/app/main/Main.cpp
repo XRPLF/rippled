@@ -17,18 +17,29 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+#include <ripple/basics/Log.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/basics/CheckLibraryVersions.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
+#include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/RPCHandler.h>
+#include <ripple/server/Role.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <beast/chrono/basic_seconds_clock.h>
 #include <beast/unit_test.h>
+#include <beast/utility/Debug.h>
 #include <beast/streams/debug_ostream.h>
+#include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
+#include <cstdlib>
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
 #include <sys/resource.h>
@@ -398,4 +409,55 @@ int run (int argc, char** argv)
     return iResult;
 }
 
+extern int run (int argc, char** argv);
+
+} // ripple
+
+// Must be outside the namespace for obvious reasons
+//
+int main (int argc, char** argv)
+{
+    // Workaround for Boost.Context / Boost.Coroutine
+    // https://svn.boost.org/trac/boost/ticket/10657
+    (void)beast::Time::currentTimeMillis();
+
+#if defined(__GNUC__) && !defined(__clang__)
+    auto constexpr gccver = (__GNUC__ * 100 * 100) +
+                            (__GNUC_MINOR__ * 100) +
+                            __GNUC_PATCHLEVEL__;
+
+    static_assert (gccver >= 40801,
+        "GCC version 4.8.1 or later is required to compile rippled.");
+#endif
+
+    static_assert (BOOST_VERSION >= 105500,
+        "Boost version 1.55 or later is required to compile rippled");
+
+    //
+    // These debug heap calls do nothing in release or non Visual Studio builds.
+    //
+
+    // Checks the heap at every allocation and deallocation (slow).
+    //
+    //beast::Debug::setAlwaysCheckHeap (false);
+
+    // Keeps freed memory blocks and fills them with a guard value.
+    //
+    //beast::Debug::setHeapDelayedFree (false);
+
+    // At exit, reports all memory blocks which have not been freed.
+    //
+#if RIPPLE_DUMP_LEAKS_ON_EXIT
+    beast::Debug::setHeapReportLeaks (true);
+#else
+    beast::Debug::setHeapReportLeaks (false);
+#endif
+
+    atexit(&google::protobuf::ShutdownProtobufLibrary);
+
+    auto const result (ripple::run (argc, argv));
+
+    beast::basic_seconds_clock_main_hook();
+
+    return result;
 }

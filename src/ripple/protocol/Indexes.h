@@ -74,6 +74,7 @@ getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir = 0);
 uint256
 getQualityNext (uint256 const& uBase);
 
+// VFALCO This name could be better
 std::uint64_t
 getQuality (uint256 const& uBase);
 

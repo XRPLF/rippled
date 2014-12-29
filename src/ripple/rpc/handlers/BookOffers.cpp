@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
+
 namespace ripple {
 
 Json::Value doBookOffers (RPC::Context& context)

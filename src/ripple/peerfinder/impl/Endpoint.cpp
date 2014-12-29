@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/peerfinder/Manager.h>
 
 namespace ripple {

@@ -20,6 +20,11 @@
 #ifndef RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
 #define RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
 
+#include <ripple/app/ledger/DirectoryEntryIterator.h>
+#include <ripple/protocol/Indexes.h>
+
+// VFALCO TODO Split these to separate files and de-inline the definitions
+
 namespace ripple {
 
 /** An iterator that walks the directories in a book */

@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/peerfinder/README.md>
-#endif
-
 #include <BeastConfig.h>
 
 #ifndef NDEBUG
@@ -30,7 +26,7 @@
 #endif
 
 #include <ripple/peerfinder/impl/Bootcache.cpp>
-#include <ripple/peerfinder/impl/Config.cpp>
+#include <ripple/peerfinder/impl/PeerfinderConfig.cpp>
 #include <ripple/peerfinder/impl/Endpoint.cpp>
 #include <ripple/peerfinder/impl/Manager.cpp>
 #include <ripple/peerfinder/impl/SlotImp.cpp>
@@ -46,3 +42,7 @@
 #include <ripple/peerfinder/sim/Tests.cpp>
 
 #include <ripple/peerfinder/tests/Livecache.test.cpp>
+
+#if DOXYGEN
+#include <ripple/peerfinder/README.md>
+#endif

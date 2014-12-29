@@ -20,6 +20,7 @@
 #ifndef RIPPLE_LEDGERMASTER_H_INCLUDED
 #define RIPPLE_LEDGERMASTER_H_INCLUDED
 
+#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/insight/Collector.h>

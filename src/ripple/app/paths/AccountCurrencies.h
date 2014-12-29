@@ -20,6 +20,8 @@
 #ifndef RIPPLED_RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H
 #define RIPPLED_RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H
 
+#include <ripple/app/paths/RippleLineCache.h>
+
 namespace ripple {
 
 CurrencySet accountDestCurrencies

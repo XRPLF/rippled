@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <tuple>
-
+#include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/basics/Log.h>
+#include <tuple>
 
 namespace ripple {
 namespace path {
@@ -50,8 +51,9 @@ TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
             break;
     }
 
-    WriteLog (lsTRACE, RippleCalc)
-        << "nextIncrement: Path after reverse: " << pathState_.getJson ();
+    // VFALCO-FIXME this generates errors
+    // WriteLog (lsTRACE, RippleCalc)
+    //     << "nextIncrement: Path after reverse: " << pathState_.getJson ();
 
     if (resultCode != tesSUCCESS)
         return resultCode;
