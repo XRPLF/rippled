@@ -23,39 +23,39 @@
 #include <ripple/core/JobQueue.h>
 #include <tuple>
 
+/*
+
+Core Pathfinding Engine
+
+The pathfinding request is identified by category, XRP to XRP, XRP to
+non-XRP, non-XRP to XRP, same currency non-XRP to non-XRP, cross-currency
+non-XRP to non-XRP.  For each category, there is a table of paths that the
+pathfinder searches for.  Complete paths are collected.
+
+Each complete path is then rated and sorted. Paths with no or trivial
+liquidity are dropped.  Otherwise, paths are sorted based on quality,
+liquidity, and path length.
+
+Path slots are filled in quality (ratio of out to in) order, with the
+exception that the last path must have enough liquidity to complete the
+payment (assuming no liquidity overlap).  In addition, if no selected path
+is capable of providing enough liquidity to complete the payment by itself,
+an extra "covering" path is returned.
+
+The selected paths are then tested to determine if they can complete the
+payment and, if so, at what cost.  If they fail and a covering path was
+found, the test is repeated with the covering path.  If this succeeds, the
+final paths and the estimated cost are returned.
+
+The engine permits the search depth to be selected and the paths table
+includes the depth at which each path type is found.  A search depth of zero
+causes no searching to be done.  Extra paths can also be injected, and this
+should be used to preserve previously-found paths across invokations for the
+same path request (particularly if the search depth may change).
+
+*/
+
 namespace ripple {
-
-/*
-we just need to find a succession of the highest quality paths there until we
-find enough width
-
-Don't do branching within each path
-
-We have a list of paths we are working on but how do we compare the ones that
-are terminating in a different currency?
-
-Loops
-
-TODO: what is a good way to come up with multiple paths?
-    Maybe just change the sort criteria?
-    first a low cost one and then a fat short one?
-
-
-OrderDB:
-    getXRPOffers();
-
-    // return list of all orderbooks that want XRP
-    // return list of all orderbooks that want Issuer
-    // return list of all orderbooks that want this issuer and currency
-*/
-
-/*
-Test sending to XRP
-Test XRP to XRP
-Test offer in middle
-Test XRP to USD
-Test USD to EUR
-*/
 
 namespace {
 
@@ -63,7 +63,6 @@ namespace {
 //    cost of path
 //    length of path
 //    width of path
-//    correct currency at the end.
 
 // Compare two PathRanks.  A better PathRank is lower, so the best are sorted to
 // the beginning.

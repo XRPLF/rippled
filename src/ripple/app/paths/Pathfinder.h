@@ -113,8 +113,6 @@ private:
                       isNoRippleOut:
                           isNoRipple
 
-      addPathsFromPreviousPathfinding
-
       computePathRanks:
           rippleCalculate
           getPathLiquidity:
