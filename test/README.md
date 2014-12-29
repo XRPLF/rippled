@@ -1,4 +1,4 @@
-# NPM tests
+# Integration tests
 
 ## Basic usage.
 
