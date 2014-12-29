@@ -972,6 +972,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 {
+
+    if (getApp().getOPs().isNeedNetworkLedger ())
+    {
+        // If we've never been in synch, there's nothing we can do
+        // with a transaction
+        return;
+    }
+
     Serializer s (m->rawtransaction ());
 
     try

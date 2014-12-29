@@ -43,15 +43,16 @@ public:
 
     bool findPathsForIssue (
         Issue const& issue,
-        STPathSet& pathsOut,
+        STPathSet& pathsInOut,
         STPath& fullLiquidityPath)
     {
         if (auto& pathfinder = getPathFinder (issue.currency))
         {
-            pathsOut = pathfinder->getBestPaths (
-                maxPaths_,  fullLiquidityPath, issue.account);
+            pathsInOut = pathfinder->getBestPaths (
+                maxPaths_,  fullLiquidityPath, pathsInOut, issue.account);
             return true;
         }
+        assert (false);
         return false;
     }
 
@@ -99,10 +100,10 @@ FindPaths::~FindPaths() = default;
 
 bool FindPaths::findPathsForIssue (
     Issue const& issue,
-    STPathSet& pathsOut,
+    STPathSet& pathsInOut,
     STPath& fullLiquidityPath)
 {
-    return impl_->findPathsForIssue (issue, pathsOut, fullLiquidityPath);
+    return impl_->findPathsForIssue (issue, pathsInOut, fullLiquidityPath);
 }
 
 bool findPathsForOneIssuer (
@@ -113,7 +114,7 @@ bool findPathsForOneIssuer (
     STAmount const& dstAmount,
     int searchLevel,
     unsigned int const maxPaths,
-    STPathSet& pathsOut,
+    STPathSet& pathsInOut,
     STPath& fullLiquidityPath)
 {
     Pathfinder pf (
@@ -127,9 +128,8 @@ bool findPathsForOneIssuer (
     if (!pf.findPaths (searchLevel))
         return false;
 
-    pf.addPathsFromPreviousPathfinding (pathsOut);
     pf.computePathRanks (maxPaths);
-    pathsOut = pf.getBestPaths(maxPaths, fullLiquidityPath, srcIssue.account);
+    pathsInOut = pf.getBestPaths(maxPaths, fullLiquidityPath, pathsInOut, srcIssue.account);
     return true;
 }
 

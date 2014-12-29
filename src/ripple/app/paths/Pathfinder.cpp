@@ -23,39 +23,39 @@
 #include <ripple/core/JobQueue.h>
 #include <tuple>
 
+/*
+
+Core Pathfinding Engine
+
+The pathfinding request is identified by category, XRP to XRP, XRP to
+non-XRP, non-XRP to XRP, same currency non-XRP to non-XRP, cross-currency
+non-XRP to non-XRP.  For each category, there is a table of paths that the
+pathfinder searches for.  Complete paths are collected.
+
+Each complete path is then rated and sorted. Paths with no or trivial
+liquidity are dropped.  Otherwise, paths are sorted based on quality,
+liquidity, and path length.
+
+Path slots are filled in quality (ratio of out to in) order, with the
+exception that the last path must have enough liquidity to complete the
+payment (assuming no liquidity overlap).  In addition, if no selected path
+is capable of providing enough liquidity to complete the payment by itself,
+an extra "covering" path is returned.
+
+The selected paths are then tested to determine if they can complete the
+payment and, if so, at what cost.  If they fail and a covering path was
+found, the test is repeated with the covering path.  If this succeeds, the
+final paths and the estimated cost are returned.
+
+The engine permits the search depth to be selected and the paths table
+includes the depth at which each path type is found.  A search depth of zero
+causes no searching to be done.  Extra paths can also be injected, and this
+should be used to preserve previously-found paths across invokations for the
+same path request (particularly if the search depth may change).
+
+*/
+
 namespace ripple {
-
-/*
-we just need to find a succession of the highest quality paths there until we
-find enough width
-
-Don't do branching within each path
-
-We have a list of paths we are working on but how do we compare the ones that
-are terminating in a different currency?
-
-Loops
-
-TODO: what is a good way to come up with multiple paths?
-    Maybe just change the sort criteria?
-    first a low cost one and then a fat short one?
-
-
-OrderDB:
-    getXRPOffers();
-
-    // return list of all orderbooks that want XRP
-    // return list of all orderbooks that want Issuer
-    // return list of all orderbooks that want this issuer and currency
-*/
-
-/*
-Test sending to XRP
-Test XRP to XRP
-Test offer in middle
-Test XRP to USD
-Test USD to EUR
-*/
 
 namespace {
 
@@ -63,7 +63,6 @@ namespace {
 //    cost of path
 //    length of path
 //    width of path
-//    correct currency at the end.
 
 // Compare two PathRanks.  A better PathRank is lower, so the best are sorted to
 // the beginning.
@@ -339,35 +338,6 @@ bool Pathfinder::findPaths (int searchLevel)
     return true;
 }
 
-void Pathfinder::addPathsFromPreviousPathfinding (STPathSet& pathsOut)
-{
-    // Add any result paths that aren't in mCompletePaths.
-    // TODO(tom): this is also quadratic in the size of the paths.
-    for (auto const& path : pathsOut)
-    {
-        // make sure no paths were lost
-        bool found = false;
-        if (!path.empty ())
-        {
-            for (auto const& ePath : mCompletePaths)
-            {
-                if (ePath == path)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            // TODO(tom): write a test that exercises this code path.
-            if (!found)
-                mCompletePaths.push_back (path);
-        }
-    }
-
-    WriteLog (lsDEBUG, Pathfinder)
-        << mCompletePaths.size () << " paths to filter";
-}
-
 TER Pathfinder::getPathLiquidity (
     STPath const& path,            // IN:  The path to check.
     STAmount const& minDstAmount,  // IN:  The minimum output this path must
@@ -441,9 +411,6 @@ STAmount smallestUsefulAmount (STAmount const& amount, int maxPaths)
 
 void Pathfinder::computePathRanks (int maxPaths)
 {
-    if (mCompletePaths.size () <= maxPaths)
-        return;
-
     mRemainingAmount = mDstAmount;
 
     // Must subtract liquidity in default path from remaining amount.
@@ -479,34 +446,7 @@ void Pathfinder::computePathRanks (int maxPaths)
         WriteLog (lsDEBUG, Pathfinder) << "Default path causes exception";
     }
 
-    // Ignore paths that move only very small amounts.
-    auto saMinDstAmount = smallestUsefulAmount (mDstAmount, maxPaths);
-
-    // Get the PathRank for each path.
-    for (int i = 0; i < mCompletePaths.size (); ++i)
-    {
-        auto const& currentPath = mCompletePaths[i];
-        STAmount liquidity;
-        uint64_t uQuality;
-        auto const resultCode = getPathLiquidity (
-            currentPath, saMinDstAmount, liquidity, uQuality);
-
-        if (resultCode != tesSUCCESS)
-        {
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: " << transToken (resultCode) <<
-                ": " << currentPath.getJson (0);
-        }
-        else
-        {
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: quality: " << uQuality <<
-                ": " << currentPath.getJson (0);
-
-            mPathRanks.push_back ({uQuality, currentPath.size (), liquidity, i});
-        }
-    }
-    std::sort (mPathRanks.begin (), mPathRanks.end (), comparePathRank);
+    rankPaths (maxPaths, mCompletePaths, mPathRanks);
 }
 
 static bool isDefaultPath (STPath const& path)
@@ -540,16 +480,66 @@ static STPath removeIssuer (STPath const& path)
     return ret;
 }
 
+// For each useful path in the input path set,
+// create a ranking entry in the output vector of path ranks
+void Pathfinder::rankPaths (
+    int maxPaths,
+    STPathSet const& paths,
+    std::vector <PathRank>& rankedPaths)
+{
+
+    rankedPaths.clear ();
+    rankedPaths.reserve (paths.size());
+
+    // Ignore paths that move only very small amounts.
+    auto saMinDstAmount = smallestUsefulAmount (mDstAmount, maxPaths);
+
+    for (int i = 0; i < paths.size (); ++i)
+    {
+        auto const& currentPath = paths[i];
+        STAmount liquidity;
+        uint64_t uQuality;
+        auto const resultCode = getPathLiquidity (
+            currentPath, saMinDstAmount, liquidity, uQuality);
+
+        if (resultCode != tesSUCCESS)
+        {
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: dropping : " << transToken (resultCode) <<
+                ": " << currentPath.getJson (0);
+        }
+        else
+        {
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: quality: " << uQuality <<
+                ": " << currentPath.getJson (0);
+
+            rankedPaths.push_back ({uQuality, currentPath.size (), liquidity, i});
+        }
+    }
+    std::sort (rankedPaths.begin (), rankedPaths.end (), comparePathRank);
+}
+
 STPathSet Pathfinder::getBestPaths (
     int maxPaths,
     STPath& fullLiquidityPath,
+    STPathSet& extraPaths,
     Account const& srcIssuer)
 {
+    WriteLog (lsDEBUG, Pathfinder) << "findPaths: " <<
+        mCompletePaths.size() << " paths and " <<
+        extraPaths.size () << " extras";
+
     assert (fullLiquidityPath.empty ());
     const bool issuerIsSender = isXRP (mSrcCurrency) || (srcIssuer == mSrcAccount);
 
-    if (issuerIsSender && (mCompletePaths.size () <= maxPaths))
+    if (issuerIsSender &&
+            (mCompletePaths.size () <= maxPaths) &&
+            (extraPaths.size() == 0))
         return mCompletePaths;
+
+    std::vector <PathRank> extraPathRanks;
+    rankPaths (maxPaths, extraPaths, extraPathRanks);
 
     STPathSet bestPaths;
 
@@ -557,19 +547,62 @@ STPathSet Pathfinder::getBestPaths (
     // fill bestPaths, then look through the rest for the best individual
     // path that can satisfy the entire liquidity - if one exists.
     STAmount remaining = mRemainingAmount;
-    for (auto& pathRank: mPathRanks)
+
+    auto pathsIterator = mPathRanks.begin ();
+    auto extraPathsIterator = extraPathRanks.begin ();
+
+
+    do
     {
+        bool usePath = false;
+        bool useExtraPath = false;
+
+        if (pathsIterator == mPathRanks.end())
+        {
+            if (extraPathsIterator == extraPathRanks.end ())
+                break;
+	    useExtraPath = true;
+        }
+        else if (extraPathsIterator == extraPathRanks.end ())
+        {
+            usePath = true;
+        }
+        else if (extraPathsIterator->quality > pathsIterator->quality)
+            useExtraPath = true;
+        else if (extraPathsIterator->quality < pathsIterator->quality)
+            usePath = true;
+        else if (extraPathsIterator->liquidity > pathsIterator->liquidity)
+            useExtraPath = true;
+        else if (extraPathsIterator->liquidity < pathsIterator->liquidity)
+            usePath = true;
+        else
+        {
+            // Risk is high they have identical liquidity
+            useExtraPath = true;
+            usePath = true;
+        }
+
+        auto& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
+
+        auto& path = usePath ? mCompletePaths[pathRank.index] :
+            extraPaths[pathRank.index];
+
+        if (useExtraPath)
+            ++extraPathsIterator;
+
+        if (usePath)
+            ++pathsIterator;
+
         auto iPathsLeft = maxPaths - bestPaths.size ();
         if (!(iPathsLeft > 0 || fullLiquidityPath.empty ()))
             break;
 
-        auto& path = mCompletePaths[pathRank.index];
         assert (!path.empty ());
         if (path.empty ())
             continue;
 
-        bool startsWithIssuer = false;
-        if (! issuerIsSender)
+        bool startsWithIssuer = useExtraPath;
+        if (! issuerIsSender && ! startsWithIssuer)
         {
             if (path.front ().getAccountID() != srcIssuer)
                 continue;
@@ -603,6 +636,7 @@ STPathSet Pathfinder::getBestPaths (
                 "Skipping a non-filling path: " << path.getJson (0);
         }
     }
+    while (1);
 
     if (remaining > zero)
     {
