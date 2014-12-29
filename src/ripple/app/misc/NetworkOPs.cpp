@@ -838,6 +838,12 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq)
 void NetworkOPsImp::submitTransaction (
     Job&, STTx::pointer iTrans, stCallback callback)
 {
+    if (isNeedNetworkLedger ())
+    {
+        // Nothing we can do if we've never been in sync
+        return;
+    }
+
     // this is an asynchronous interface
     Serializer s;
     iTrans->add (s);
