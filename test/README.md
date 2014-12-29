@@ -7,7 +7,7 @@ tests can be found with the
 [_Rippled build instructions_][unit_testing].
 (Also for [_Windows_][windows_unit_testing],
 [_OS X_][osx_unit_testing],
-or [_Ubunutu_][ubuntu_unit_testing].)
+or [_Ubuntu_][ubuntu_unit_testing].)
 
 ## Advanced usage.
 
