@@ -25,7 +25,6 @@
 #define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
 #include <beast/module/core/text/StringArray.h>
-#include <beast/utility/LeakChecked.h>
 
 namespace beast {
 
@@ -35,7 +34,7 @@ namespace beast {
 
     @see StringArray
 */
-class StringPairArray : LeakChecked <StringPairArray>
+class StringPairArray
 {
 public:
     //==============================================================================

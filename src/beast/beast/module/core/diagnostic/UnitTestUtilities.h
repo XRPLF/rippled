@@ -20,6 +20,8 @@
 #ifndef BEAST_UNITTESTUTILITIES_H_INCLUDED
 #define BEAST_UNITTESTUTILITIES_H_INCLUDED
 
+#include <beast/module/core/files/File.h>
+    
 namespace beast {
 namespace UnitTestUtilities {
 
