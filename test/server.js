@@ -87,7 +87,22 @@ Server.prototype.set_ledger_file = function(fn) {
 Server.prototype._serverSpawnSync = function() {
   var self  = this;
 
-  var path = this.config.rippled_path;
+  var rippledpath = this.config.rippled_path;
+  // Override the config with command line if provided
+  if(process.env["npm_config_rippled"]) {
+    rippledpath = path.resolve(process.cwd(),
+        process.env["npm_config_rippled"]);
+  } else {
+    for(var i = process.argv.length-1; i >= 0; --i) {
+      arg = process.argv[i].split("=", 2);
+      if(arg.length === 2 && arg[0] === "--rippled") {
+        rippledpath = path.resolve(process.cwd(), arg[1]);
+        break;
+      }
+    };
+  }
+  assert(rippledpath, "rippled_path not provided");
+
   var args  = [
     "-a",
     "-v",
@@ -108,12 +123,12 @@ Server.prototype._serverSpawnSync = function() {
   };
 
   // Spawn in standalone mode for now.
-  this.child = child.spawn(path, args, options);
+  this.child = child.spawn(rippledpath, args, options);
 
   if (!this.quiet)
     console.log("server: start %s: %s --conf=%s",
                 this.child.pid,
-                this.config.rippled_path,
+                rippledpath,
                 args.join(" "),
                 this.configPath());
 
@@ -144,11 +159,11 @@ Server.prototype._serverSpawnSync = function() {
 
 // Prepare server's working directory.
 Server.prototype._makeBase = function (done) {
-  var path  = this.serverPath();
+  var serverpath  = this.serverPath();
   var self  = this;
 
   // Reset the server directory, build it if needed.
-  nodeutils.resetPath(path, '0777', function (e) {
+  nodeutils.resetPath(serverpath, '0777', function (e) {
     if (e) throw e;
     self._writeConfig(done);
   });
