@@ -110,15 +110,15 @@ Json::Value doAccountTx (RPC::Context& context)
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                std::uint32_t uLedgerIndex = std::get<2> (it);
                 jvObj["tx_blob"] = std::get<0> (it);
                 jvObj["meta"] = std::get<1> (it);
-                jvObj["ledger_index"] = uLedgerIndex;
-                jvObj[jss::validated]
-                        = bValidated
-                        && uValidatedMin <= uLedgerIndex
-                        && uValidatedMax >= uLedgerIndex;
 
+                std::uint32_t uLedgerIndex = std::get<2> (it);
+
+                jvObj["ledger_index"] = uLedgerIndex;
+                jvObj[jss::validated] = bValidated &&
+                    uValidatedMin <= uLedgerIndex &&
+                    uValidatedMax >= uLedgerIndex;
             }
         }
         else
@@ -136,13 +136,15 @@ Json::Value doAccountTx (RPC::Context& context)
 
                 if (it.second)
                 {
+                    auto meta = it.second->getJson (1);
+                    addPaymentDeliveredAmount (meta, context, it.first, it.second);
+                    jvObj[jss::meta] = meta;
+
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();
 
-                    jvObj[jss::meta] = it.second->getJson (0);
-                    jvObj[jss::validated]
-                            = bValidated
-                            && uValidatedMin <= uLedgerIndex
-                            && uValidatedMax >= uLedgerIndex;
+                    jvObj[jss::validated] = bValidated &&
+                        uValidatedMin <= uLedgerIndex &&
+                        uValidatedMax >= uLedgerIndex;
                 }
 
             }

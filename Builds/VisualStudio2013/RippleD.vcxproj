@@ -3090,6 +3090,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Utilities.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\WriteJson.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

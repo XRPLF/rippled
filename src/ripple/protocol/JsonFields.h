@@ -68,6 +68,7 @@ JSS ( converge_time_s );
 JSS ( currency );
 JSS ( data );
 JSS ( date );
+JSS ( delivered_amount );
 JSS ( engine_result );
 JSS ( engine_result_code );
 JSS ( engine_result_message );
