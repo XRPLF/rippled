@@ -50,37 +50,39 @@ STPathElement::get_hash (STPathElement const& element)
     return (hash_account ^ hash_currency ^ hash_issuer);
 }
 
-STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
+std::unique_ptr<STBase>
+STPathSet::deserialize (SerializerIterator& sit, SField::ref name)
 {
-    std::vector<STPath> paths;
     std::vector<STPathElement> path;
+
+    auto pathset = std::make_unique <STPathSet> (name);
 
     do
     {
-        int iType   = s.get8 ();
+        int iType = sit.get8 ();
 
         if (iType == STPathElement::typeNone ||
             iType == STPathElement::typeBoundary)
         {
             if (path.empty ())
             {
-                WriteLog (lsINFO, STBase) << "STPathSet: Empty path.";
-
+                WriteLog (lsINFO, STBase)
+                    << "STPathSet: Empty path.";
                 throw std::runtime_error ("empty path");
             }
 
-            paths.push_back (path);
+            pathset->push_back (path);
             path.clear ();
 
             if (iType == STPathElement::typeNone)
             {
-                return new STPathSet (name, paths);
+                return std::move (pathset);
             }
         }
         else if (iType & ~STPathElement::typeAll)
         {
             WriteLog (lsINFO, STBase)
-                    << "STPathSet: Bad path element: " << iType;
+                << "STPathSet: Bad path element: " << iType;
 
             throw std::runtime_error ("bad path element");
         }
@@ -95,13 +97,13 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
             Account issuer;
 
             if (hasAccount)
-                account.copyFrom (s.get160 ());
+                account.copyFrom (sit.get160 ());
 
             if (hasCurrency)
-                currency.copyFrom (s.get160 ());
+                currency.copyFrom (sit.get160 ());
 
             if (hasIssuer)
-                issuer.copyFrom (s.get160 ());
+                issuer.copyFrom (sit.get160 ());
 
             path.emplace_back (account, currency, issuer, hasCurrency);
         }
@@ -109,13 +111,36 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
     while (1);
 }
 
-bool STPathSet::isEquivalent (const STBase& t) const
+bool
+STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
+{ // assemble base+tail and add it to the set if it's not a duplicate
+    value.push_back (base);
+
+    std::vector<STPath>::reverse_iterator it = value.rbegin ();
+
+    STPath& newPath = *it;
+    newPath.push_back (tail);
+
+    while (++it != value.rend ())
+    {
+        if (*it == newPath)
+        {
+            value.pop_back ();
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
+STPathSet::isEquivalent (const STBase& t) const
 {
     const STPathSet* v = dynamic_cast<const STPathSet*> (&t);
     return v && (value == v->value);
 }
 
-bool STPath::hasSeen (
+bool
+STPath::hasSeen (
     Account const& account, Currency const& currency,
     Account const& issuer) const
 {
@@ -130,7 +155,8 @@ bool STPath::hasSeen (
     return false;
 }
 
-Json::Value STPath::getJson (int) const
+Json::Value
+STPath::getJson (int) const
 {
     Json::Value ret (Json::arrayValue);
 
@@ -157,7 +183,8 @@ Json::Value STPath::getJson (int) const
     return ret;
 }
 
-Json::Value STPathSet::getJson (int options) const
+Json::Value
+STPathSet::getJson (int options) const
 {
     Json::Value ret (Json::arrayValue);
     for (auto it: value)
@@ -166,7 +193,8 @@ Json::Value STPathSet::getJson (int options) const
     return ret;
 }
 
-void STPathSet::add (Serializer& s) const
+void
+STPathSet::add (Serializer& s) const
 {
     assert (fName->isBinary ());
     assert (fName->fieldType == STI_PATHSET);

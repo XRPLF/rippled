@@ -26,37 +26,44 @@
 namespace ripple {
 
 // variable length byte string
-class STBlob : public STBase
+class STBlob
+    : public STBase
 {
 public:
-    STBlob (Blob const& v) : value (v)
-    {
-        ;
-    }
-    STBlob (SField::ref n, Blob const& v) : STBase (n), value (v)
-    {
-        ;
-    }
-    STBlob (SField::ref n) : STBase (n)
-    {
-        ;
-    }
+    STBlob () = default;
+
+    STBlob (Blob const& v)
+        : value (v)
+    { }
+
+    STBlob (SField::ref n, Blob const& v)
+        : STBase (n), value (v)
+    { }
+
+    STBlob (SField::ref n)
+        : STBase (n)
+    { }
+
     STBlob (SerializerIterator&, SField::ref name = sfGeneric);
-    STBlob ()
+
+    static
+    std::unique_ptr<STBase>
+    deserialize (SerializerIterator& sit, SField::ref name)
     {
-        ;
-    }
-    static std::unique_ptr<STBase> deserialize (SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<STBase> (construct (sit, name));
+        return std::make_unique<STBlob> (name, sit.getVL ());
     }
 
-    virtual SerializedTypeID getSType () const
+    SerializedTypeID
+    getSType () const override
     {
         return STI_VL;
     }
-    virtual std::string getText () const;
-    void add (Serializer& s) const
+
+    std::string
+    getText () const override;
+
+    void
+    add (Serializer& s) const override
     {
         assert (fName->isBinary ());
         assert ((fName->fieldType == STI_VL) ||
@@ -64,41 +71,53 @@ public:
         s.addVL (value);
     }
 
-    Blob const& peekValue () const
+    Blob const&
+    peekValue () const
     {
         return value;
     }
-    Blob& peekValue ()
+
+    Blob&
+    peekValue ()
     {
         return value;
     }
-    Blob getValue () const
+
+    Blob
+    getValue () const
     {
         return value;
     }
-    void setValue (Blob const& v)
+
+    void
+    setValue (Blob const& v)
     {
         value = v;
     }
 
+    explicit
     operator Blob () const
     {
         return value;
     }
-    virtual bool isEquivalent (const STBase& t) const;
-    virtual bool isDefault () const
+
+    bool
+    isEquivalent (const STBase& t) const override;
+
+    bool
+    isDefault () const override
     {
         return value.empty ();
     }
 
+    std::unique_ptr<STBase>
+    duplicate () const override
+    {
+        return std::make_unique<STBlob>(*this);
+    }
+
 private:
     Blob value;
-
-    virtual STBlob* duplicate () const
-    {
-        return new STBlob (*this);
-    }
-    static STBlob* construct (SerializerIterator&, SField::ref);
 };
 
 } // ripple

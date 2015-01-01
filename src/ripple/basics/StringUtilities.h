@@ -32,21 +32,6 @@ namespace ripple {
 
 extern std::string urlEncode (std::string const& strSrc);
 
-// NIKB TODO remove this function - it's only used for some logging in the UNL
-//           code which can be trivially rewritten.
-template<class Iterator>
-std::string strJoin (Iterator first, Iterator last, std::string strSeperator)
-{
-    std::ostringstream  ossValues;
-
-    for (Iterator start = first; first != last; first++)
-    {
-        ossValues << str (boost::format ("%s%s") % (start == first ? "" : strSeperator) % *first);
-    }
-
-    return ossValues.str ();
-}
-
 // NIKB TODO Remove the need for all these overloads. Move them out of here.
 inline const std::string strHex (std::string const& strSrc)
 {

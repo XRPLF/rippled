@@ -30,7 +30,7 @@ namespace ripple {
 // Validation flags
 const std::uint32_t vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
 
-class STValidation
+class STValidation final
     : public STObject
     , public CountedObject <STValidation>
 {

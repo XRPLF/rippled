@@ -25,7 +25,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/overlay/Overlay.h>
-#include <boost/foreach.hpp>
 #include <memory>
 
 namespace ripple {
@@ -118,7 +117,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
 
         bool found = false;
         Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
-        BOOST_FOREACH (Peer::ptr const& peer, peerList)
+        for (auto const& peer : peerList)
         {
             if (peer->hasTxSet (getHash ()))
             {
@@ -129,8 +128,8 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
 
         if (!found)
         {
-            BOOST_FOREACH (Peer::ptr const& peer, peerList)
-            peerHas (peer);
+            for (auto const& peer : peerList)
+                peerHas (peer);
         }
     }
     else if (!progress)

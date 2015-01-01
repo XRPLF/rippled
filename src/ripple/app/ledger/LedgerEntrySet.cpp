@@ -599,7 +599,7 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, std::uint32_t& uCount)
 
         if (sleNode)
         {
-            uCount      += sleNode->getFieldV256 (sfIndexes).peekValue ().size ();
+            uCount      += sleNode->getFieldV256 (sfIndexes).size ();
 
             uNodeDir    = sleNode->getFieldU64 (sfIndexNext);       // Get next node.
         }
@@ -626,7 +626,7 @@ bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
     if (!sleNode)
         return true;
 
-    if (!sleNode->getFieldV256 (sfIndexes).peekValue ().empty ())
+    if (!sleNode->getFieldV256 (sfIndexes).empty ())
         return false;
 
     // If there's another page, it must be non-empty
@@ -681,7 +681,7 @@ TER LedgerEntrySet::dirAdd (
 
         svIndexes   = sleNode->getFieldV256 (sfIndexes);
 
-        if (DIR_NODE_MAX != svIndexes.peekValue ().size ())
+        if (DIR_NODE_MAX != svIndexes.size ())
         {
             // Add to current node.
             entryModify (sleNode);
@@ -714,7 +714,7 @@ TER LedgerEntrySet::dirAdd (
         }
     }
 
-    svIndexes.peekValue ().push_back (uLedgerIndex); // Append entry.
+    svIndexes.push_back (uLedgerIndex); // Append entry.
     sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
 
     WriteLog (lsTRACE, LedgerEntrySet) <<
@@ -723,7 +723,6 @@ TER LedgerEntrySet::dirAdd (
         "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
     WriteLog (lsTRACE, LedgerEntrySet) <<
         "dirAdd:  appending: Node: " << strHex (uNodeDir);
-    // WriteLog (lsINFO, LedgerEntrySet) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
     return tesSUCCESS;
 }
@@ -764,56 +763,51 @@ TER LedgerEntrySet::dirDelete (
         }
     }
 
-    STVector256 svIndexes   = sleNode->getFieldV256 (sfIndexes);
-    std::vector<uint256>& vuiIndexes  = svIndexes.peekValue ();
+    STVector256 svIndexes = sleNode->getFieldV256 (sfIndexes);
 
-    auto it = std::find (vuiIndexes.begin (), vuiIndexes.end (), uLedgerIndex);
+    auto it = std::find (svIndexes.begin (), svIndexes.end (), uLedgerIndex);
 
-    if (vuiIndexes.end () == it)
+    if (svIndexes.end () == it)
     {
         if (!bSoft)
         {
             assert (false);
-
             WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: no such entry";
-
             return tefBAD_LEDGER;
         }
-        else if (uNodeDir < 20)
+        
+        if (uNodeDir < 20)
         {
             // Go the extra mile. Even if entry not in node, try the next node.
-
             return dirDelete (bKeepRoot, uNodeDir + 1, uRootIndex, uLedgerIndex,
                 bStable, true);
         }
-        else
-        {
-            return tefBAD_LEDGER;
-        }
+        
+        return tefBAD_LEDGER;
     }
 
     // Remove the element.
-    if (vuiIndexes.size () > 1)
+    if (svIndexes.size () > 1)
     {
         if (bStable)
         {
-            vuiIndexes.erase (it);
+            svIndexes.erase (it);
         }
         else
         {
-            *it = vuiIndexes[vuiIndexes.size () - 1];
-            vuiIndexes.resize (vuiIndexes.size () - 1);
+            *it = svIndexes[svIndexes.size () - 1];
+            svIndexes.resize (svIndexes.size () - 1);
         }
     }
     else
     {
-        vuiIndexes.clear ();
+        svIndexes.clear ();
     }
 
     sleNode->setFieldV256 (sfIndexes, svIndexes);
     entryModify (sleNode);
 
-    if (vuiIndexes.empty ())
+    if (svIndexes.empty ())
     {
         // May be able to delete nodes.
         std::uint64_t       uNodePrevious   = sleNode->getFieldU64 (sfIndexPrevious);
@@ -844,7 +838,7 @@ TER LedgerEntrySet::dirDelete (
 
                 assert (sleLast);
 
-                if (sleLast->getFieldV256 (sfIndexes).peekValue ().empty ())
+                if (sleLast->getFieldV256 (sfIndexes).empty ())
                 {
                     // Both nodes are empty.
 
@@ -908,7 +902,7 @@ TER LedgerEntrySet::dirDelete (
 
             assert (sleRoot);
 
-            if (sleRoot->getFieldV256 (sfIndexes).peekValue ().empty ())
+            if (sleRoot->getFieldV256 (sfIndexes).empty ())
             {
                 // Both nodes are empty.
 
@@ -950,11 +944,10 @@ bool LedgerEntrySet::dirNext (
     uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
 {
     STVector256             svIndexes   = sleNode->getFieldV256 (sfIndexes);
-    std::vector<uint256>&   vuiIndexes  = svIndexes.peekValue ();
 
-    assert (uDirEntry <= vuiIndexes.size ());
+    assert (uDirEntry <= svIndexes.size ());
 
-    if (uDirEntry >= vuiIndexes.size ())
+    if (uDirEntry >= svIndexes.size ())
     {
         std::uint64_t         uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
 
@@ -983,7 +976,7 @@ bool LedgerEntrySet::dirNext (
         }
     }
 
-    uEntryIndex = vuiIndexes[uDirEntry++];
+    uEntryIndex = svIndexes[uDirEntry++];
 
     WriteLog (lsTRACE, LedgerEntrySet) << "dirNext:" <<
         " uDirEntry=" << uDirEntry <<

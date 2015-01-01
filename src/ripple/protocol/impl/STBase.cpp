@@ -138,12 +138,6 @@ STBase::getFName() const
     return *fName;
 }
 
-std::unique_ptr<STBase>
-STBase::clone() const
-{
-    return std::unique_ptr<STBase> (duplicate());
-}
-
 void
 STBase::addFieldID (Serializer& s) const
 {
@@ -162,7 +156,7 @@ STBase::deserialize (SField::ref name)
 STBase*
 new_clone (const STBase& s)
 {
-    STBase* const copy (s.clone ().release ());
+    STBase* const copy (s.duplicate ().release ());
     assert (typeid (*copy) == typeid (s));
     return copy;
 }

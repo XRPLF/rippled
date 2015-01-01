@@ -26,7 +26,8 @@
 
 namespace ripple {
 
-class STAccount : public STBlob
+class STAccount final
+    : public STBlob
 {
 public:
     STAccount (Blob const& v) : STBlob (v)
@@ -51,11 +52,11 @@ public:
         return std::unique_ptr<STBase> (construct (sit, name));
     }
 
-    SerializedTypeID getSType () const
+    SerializedTypeID getSType () const override
     {
         return STI_ACCOUNT;
     }
-    std::string getText () const;
+    std::string getText () const override;
 
     RippleAddress getValueNCA () const;
     void setValueNCA (RippleAddress const& nca);
@@ -79,11 +80,13 @@ public:
 
     bool isValueH160 () const;
 
-private:
-    virtual STAccount* duplicate () const
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return new STAccount (*this);
+        return std::make_unique<STAccount>(*this);
     }
+
+private:
     static STAccount* construct (SerializerIterator&, SField::ref);
 };
 

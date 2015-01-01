@@ -36,7 +36,7 @@ Json::Value doLogLevel (RPC::Context& context)
         std::vector< std::pair<std::string, std::string> > logTable (
             deprecatedLogs().partition_severities());
         typedef std::map<std::string, std::string>::value_type stringPair;
-        BOOST_FOREACH (const stringPair & it, logTable)
+        for (auto const& it : logTable)
             lev[it.first] = it.second;
 
         ret["levels"] = lev;

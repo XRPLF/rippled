@@ -21,7 +21,6 @@
 #include <ripple/crypto/RFC1751.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>
-#include <boost/foreach.hpp>
 #include <cassert>
 #include <cstdint>
 #include <string>
@@ -403,7 +402,7 @@ int RFC1751::etob (std::string& strData, std::vector<std::string> vsHuman)
     memset (b, 0, sizeof (b));
 
     p = 0;
-    BOOST_FOREACH (std::string & strWord, vsHuman)
+    for (auto& strWord : vsHuman)
     {
         l = strWord.length ();
 

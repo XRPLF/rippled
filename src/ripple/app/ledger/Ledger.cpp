@@ -1264,7 +1264,7 @@ void Ledger::visitAccountItems (
         if (!ownerDir || (ownerDir->getType () != ltDIR_NODE))
             return;
 
-        for (auto const& node : ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
         {
             func (getSLEi (node));
         }
@@ -1621,13 +1621,13 @@ Ledger::LedgerHashes Ledger::getLedgerHashes () const
 
 std::vector<uint256> Ledger::getLedgerAmendments () const
 {
-    std::vector<uint256> usAmendments;
+    std::vector<uint256> amendments;
     SLE::pointer sleAmendments = getSLEi (getLedgerAmendmentIndex ());
 
     if (sleAmendments)
-        usAmendments = sleAmendments->getFieldV256 (sfAmendments).peekValue ();
+        amendments = static_cast<decltype(amendments)> (sleAmendments->getFieldV256 (sfAmendments));
 
-    return usAmendments;
+    return amendments;
 }
 
 bool Ledger::walkLedger () const
@@ -1701,7 +1701,7 @@ void Ledger::updateSkipList ()
         if (!skipList)
             skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
         else
-            hashes = skipList->getFieldV256 (sfHashes).peekValue ();
+            hashes = static_cast<decltype(hashes)> (skipList->getFieldV256 (sfHashes));
 
         assert (hashes.size () <= 256);
         hashes.push_back (mParentHash);
@@ -1722,13 +1722,9 @@ void Ledger::updateSkipList ()
     std::vector <uint256> hashes;
 
     if (!skipList)
-    {
         skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
-    }
     else
-    {
-        hashes = skipList->getFieldV256 (sfHashes).peekValue ();
-    }
+        hashes = static_cast<decltype(hashes)>(skipList->getFieldV256 (sfHashes));
 
     assert (hashes.size () <= 256);
 

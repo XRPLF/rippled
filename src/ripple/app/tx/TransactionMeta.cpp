@@ -22,7 +22,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>
-#include <boost/foreach.hpp>
 #include <string>
 
 namespace ripple {
@@ -51,10 +50,11 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledge
 
 bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
 {
-    BOOST_FOREACH (const STObject & it, mNodes)
-
-    if (it.getFieldH256 (sfLedgerIndex) == node)
-        return true;
+    for (auto const& n : mNodes)
+    {
+        if (n.getFieldH256 (sfLedgerIndex) == node)
+            return true;
+    }
 
     return false;
 }
@@ -63,12 +63,12 @@ void TransactionMetaSet::setAffectedNode (uint256 const& node, SField::ref type,
                                           std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
-    BOOST_FOREACH (STObject & it, mNodes)
+    for (auto& n : mNodes)
     {
-        if (it.getFieldH256 (sfLedgerIndex) == node)
+        if (n.getFieldH256 (sfLedgerIndex) == node)
         {
-            it.setFName (type);
-            it.setFieldU16 (sfLedgerEntryType, nodeType);
+            n.setFName (type);
+            n.setFieldU16 (sfLedgerEntryType, nodeType);
             return;
         }
     }
@@ -83,10 +83,11 @@ void TransactionMetaSet::setAffectedNode (uint256 const& node, SField::ref type,
 
 static void addIfUnique (std::vector<RippleAddress>& vector, RippleAddress const& address)
 {
-    BOOST_FOREACH (const RippleAddress & a, vector)
-
-    if (a == address)
-        return;
+    for (auto const& a : vector)
+    {
+        if (a == address)
+            return;
+    }
 
     vector.push_back (address);
 }
@@ -98,7 +99,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
 
     // This code should match the behavior of the JS method:
     // Meta#getAffectedAccounts
-    BOOST_FOREACH (const STObject & it, mNodes)
+    for (auto const& it : mNodes)
     {
         int index = it.getFieldIndex ((it.getFName () == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
@@ -108,7 +109,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
 
             if (inner)
             {
-                BOOST_FOREACH (const STBase & field, inner->peekData ())
+                for (auto const& field : inner->peekData ())
                 {
                     const STAccount* sa = dynamic_cast<const STAccount*> (&field);
 
@@ -148,10 +149,10 @@ STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField::ref type)
 {
     assert (&type);
     uint256 index = node->getIndex ();
-    BOOST_FOREACH (STObject & it, mNodes)
+    for (auto& n : mNodes)
     {
-        if (it.getFieldH256 (sfLedgerIndex) == index)
-            return it;
+        if (n.getFieldH256 (sfLedgerIndex) == index)
+            return n;
     }
     mNodes.push_back (STObject (type));
     STObject& obj = mNodes.back ();
@@ -165,10 +166,10 @@ STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField::ref type)
 
 STObject& TransactionMetaSet::getAffectedNode (uint256 const& node)
 {
-    BOOST_FOREACH (STObject & it, mNodes)
+    for (auto& n : mNodes)
     {
-        if (it.getFieldH256 (sfLedgerIndex) == node)
-            return it;
+        if (n.getFieldH256 (sfLedgerIndex) == node)
+            return n;
     }
     assert (false);
     throw std::runtime_error ("Affected node not found");
@@ -176,10 +177,11 @@ STObject& TransactionMetaSet::getAffectedNode (uint256 const& node)
 
 const STObject& TransactionMetaSet::peekAffectedNode (uint256 const& node) const
 {
-    BOOST_FOREACH (const STObject & it, mNodes)
-
-    if (it.getFieldH256 (sfLedgerIndex) == node)
-        return it;
+    for (auto const& n : mNodes)
+    {
+        if (n.getFieldH256 (sfLedgerIndex) == node)
+            return n;
+    }
 
     throw std::runtime_error ("Affected node not found");
 }

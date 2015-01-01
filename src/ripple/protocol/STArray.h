@@ -42,40 +42,45 @@ public:
     typedef vector::size_type              size_type;
 
 public:
-    STArray ()
-    {
-        ;
-    }
-    explicit STArray (int n)
+    STArray () = default;
+
+    explicit
+    STArray (int n)
     {
         value.reserve (n);
     }
-    explicit STArray (SField::ref f) : STBase (f)
-    {
-        ;
-    }
-    STArray (SField::ref f, int n) : STBase (f)
+
+    explicit
+    STArray (SField::ref f)
+        : STBase (f)
+    { }
+
+    STArray (SField::ref f, int n)
+        : STBase (f)
     {
         value.reserve (n);
     }
-    STArray (SField::ref f, const vector & v) : STBase (f), value (v)
-    {
-        ;
-    }
-    explicit STArray (vector & v) : value (v)
-    {
-        ;
-    }
 
-    virtual ~STArray () { }
+    STArray (SField::ref f, const vector& v)
+        : STBase (f), value (v)
+    { }
 
-    static std::unique_ptr<STBase>
+    explicit
+    STArray (vector & v)
+        : value (v)
+    { }
+
+    virtual ~STArray () = default;
+
+    static
+    std::unique_ptr<STBase>
     deserialize (SerializerIterator & sit, SField::ref name);
 
     const vector& getValue () const
     {
         return value;
     }
+
     vector& getValue ()
     {
         return value;
@@ -197,10 +202,10 @@ public:
         return value.empty ();
     }
 
-private:
-    virtual STArray* duplicate () const override
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return new STArray (*this);
+        return std::make_unique<STArray>(*this);
     }
 
 private:

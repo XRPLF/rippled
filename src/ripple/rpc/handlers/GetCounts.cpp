@@ -23,7 +23,6 @@
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/nodestore/Database.h>
-#include <boost/foreach.hpp>
 
 namespace ripple {
 
@@ -43,7 +42,7 @@ Json::Value doGetCounts (RPC::Context& context)
 
     Json::Value ret (Json::objectValue);
 
-    BOOST_FOREACH (CountedObjects::Entry& it, objectCounts)
+    for (auto const& it : objectCounts)
     {
         ret [it.first] = it.second;
     }

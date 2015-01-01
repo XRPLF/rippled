@@ -22,7 +22,6 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/UptimeTimer.h>
-#include <boost/foreach.hpp>
 #include <map>
 #include <mutex>
 
@@ -146,8 +145,8 @@ HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& crea
 
     if ((it != mSuppressionTimes.end ()) && (it->first <= expireTime))
     {
-        BOOST_FOREACH (uint256 const& lit, it->second)
-        mSuppressionMap.erase (lit);
+        for(auto const& lit : it->second)
+            mSuppressionMap.erase (lit);
         mSuppressionTimes.erase (it);
     }
 

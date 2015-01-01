@@ -125,7 +125,7 @@ public:
 
     int addObject (const STBase & t)
     {
-        mData.push_back (t.clone ().release ());
+        mData.push_back (t.duplicate ().release ());
         return mData.size () - 1;
     }
     int giveObject (std::unique_ptr<STBase> t)
@@ -317,12 +317,13 @@ public:
         return ! (*this == o);
     }
 
-private:
-    virtual STObject* duplicate () const override
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return new STObject (*this);
+        return std::make_unique<STObject>(*this);
     }
 
+private:
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString

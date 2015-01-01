@@ -373,7 +373,6 @@ void STObject::add (Serializer& s, bool withSigningFields) const
         }
     }
 
-    typedef std::map<int, const STBase*>::value_type field_iterator;
     for (auto const& mapEntry : fields)
     {
         // insert them in sorted order
@@ -741,13 +740,13 @@ Blob STObject::getFieldVL (SField::ref field) const
 
 STAmount const& STObject::getFieldAmount (SField::ref field) const
 {
-    static STAmount const empty;
+    static STAmount const empty{};
     return getFieldByConstRef <STAmount> (field, empty);
 }
 
 const STArray& STObject::getFieldArray (SField::ref field) const
 {
-    static STArray const empty;
+    static STArray const empty{};
     return getFieldByConstRef <STArray> (field, empty);
 }
 

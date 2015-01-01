@@ -23,7 +23,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/resource/Fees.h>
-#include <boost/foreach.hpp>
 
 namespace ripple {
 
@@ -77,7 +76,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 
     do
     {
-        BOOST_FOREACH (PathRequest::wref wRequest, requests)
+        for (auto& wRequest : requests)
         {
             if (shouldCancel())
                 break;

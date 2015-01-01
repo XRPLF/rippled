@@ -28,7 +28,6 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/streams/debug_ostream.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <fstream>
@@ -79,7 +78,7 @@ parseIniFile (std::string const& strInput, const bool bTrim)
     secResult[strSection]   = IniFileSections::mapped_type ();
 
     // Parse each line.
-    BOOST_FOREACH (std::string & strValue, vLines)
+    for (auto& strValue : vLines)
     {
         if (strValue.empty () || strValue[0] == '#')
         {
@@ -448,7 +447,7 @@ void Config::load ()
             {
                 RPC_STARTUP = Json::arrayValue;
 
-                BOOST_FOREACH (std::string const& strJson, *smtTmp)
+                for (auto const& strJson : *smtTmp)
                 {
                     Json::Reader    jrReader;
                     Json::Value     jvCommand;

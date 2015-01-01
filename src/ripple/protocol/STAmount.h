@@ -38,7 +38,8 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount : public STBase
+class STAmount final
+    : public STBase
 {
 public:
     typedef std::uint64_t mantissa_type;
@@ -109,6 +110,9 @@ private:
     static
     std::unique_ptr<STAmount>
     construct (SerializerIterator&, SField::ref name);
+
+    void
+    setSNValue (std::int64_t);
 
 public:
     static
@@ -213,9 +217,6 @@ public:
     // VFALCO TODO Remove this, it is only called from the unit test
     void roundSelf();
 
-    void setNValue (std::uint64_t v);
-    void setSNValue (std::int64_t);
-
     void negate()
     {
         if (*this != zero)
@@ -288,9 +289,11 @@ public:
         return (mValue == 0) && mIsNative;
     }
 
-private:
-    STAmount*
-    duplicate() const override;
+    std::unique_ptr<STBase>
+    duplicate () const override
+    {
+        return std::make_unique<STAmount>(*this);
+    }
 
     void canonicalize();
     void set (std::int64_t v);

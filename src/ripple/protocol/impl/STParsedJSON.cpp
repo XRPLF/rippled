@@ -695,10 +695,8 @@ static bool parseObject (
     boost::ptr_vector<STBase> data;
     Json::Value::Members members (json.getMemberNames ());
 
-    for (Json::Value::Members::iterator it (members.begin ());
-        it != members.end (); ++it)
+    for (auto const& fieldName : members)
     {
-        std::string const& fieldName = *it;
         Json::Value const& value = json [fieldName];
 
         SField::ref field = SField::getField (fieldName);

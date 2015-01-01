@@ -32,7 +32,6 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/nodestore/Database.h>
-#include <boost/foreach.hpp>
 
 namespace ripple {
 
@@ -604,9 +603,9 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                     if (!nodeIDs.empty ())
                     {
                         tmGL.set_itype (protocol::liAS_NODE);
-                        BOOST_FOREACH (SHAMapNodeID const& it, nodeIDs)
+                        for (auto const& id : nodeIDs)
                         {
-                            * (tmGL.add_nodeids ()) = it.getRawString ();
+                            * (tmGL.add_nodeids ()) = id.getRawString ();
                         }
                         if (m_journal.trace) m_journal.trace <<
                             "Sending AS node " << nodeIDs.size () <<
@@ -675,9 +674,9 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 if (!nodeIDs.empty ())
                 {
                     tmGL.set_itype (protocol::liTX_NODE);
-                    BOOST_FOREACH (SHAMapNodeID const& it, nodeIDs)
+                    for (auto const& id : nodeIDs)
                     {
-                        * (tmGL.add_nodeids ()) = it.getRawString ();
+                        * (tmGL.add_nodeids ()) = id.getRawString ();
                     }
                     if (m_journal.trace) m_journal.trace <<
                         "Sending TX node " << nodeIDs.size () <<
@@ -716,7 +715,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
 
     int dupCount = 0;
 
-    BOOST_FOREACH(SHAMapNodeID const& nodeID, nodeIDs)
+    for(auto const& nodeID : nodeIDs)
     {
         if (recentNodes.count (nodeID) != 0)
         {
@@ -769,7 +768,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
         nodeHashes.resize (max);
     }
 
-    BOOST_FOREACH (const SHAMapNodeID & n, nodeIDs)
+    for (auto const& n : nodeIDs)
     {
         recentNodes.insert (n);
     }
