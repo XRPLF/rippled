@@ -22,7 +22,6 @@
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
-#include <boost/foreach.hpp>
 
 namespace ripple {
 
@@ -84,7 +83,7 @@ void AcceptedLedgerTx::buildJson ()
     if (!mAffected.empty ())
     {
         Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
-        BOOST_FOREACH (const RippleAddress & ra, mAffected)
+        for (auto const& ra : mAffected)
         {
             affected.append (ra.humanAccountID ());
         }

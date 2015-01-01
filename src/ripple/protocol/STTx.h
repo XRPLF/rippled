@@ -34,7 +34,7 @@ namespace ripple {
 #define TXN_SQL_INCLUDED    'I'
 #define TXN_SQL_UNKNOWN     'U'
 
-class STTx
+class STTx final
     : public STObject
     , public CountedObject <STTx>
 {
@@ -57,11 +57,11 @@ public:
     explicit STTx (STObject const& object);
 
     // STObject functions
-    SerializedTypeID getSType () const
+    SerializedTypeID getSType () const override
     {
         return STI_TRANSACTION;
     }
-    std::string getFullText () const;
+    std::string getFullText () const override;
 
     // outer transaction functions / signature functions
     Blob getSignature () const;
@@ -105,7 +105,7 @@ public:
 
     uint256 getTransactionID () const;
 
-    virtual Json::Value getJson (int options) const;
+    virtual Json::Value getJson (int options) const override;
     virtual Json::Value getJson (int options, bool binary) const;
 
     void sign (RippleAddress const& private_key);
@@ -143,12 +143,13 @@ public:
         char status,
         std::string const& escapedMetaData) const;
 
-private:
-    STTx* duplicate () const override
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return new STTx (*this);
+        return std::make_unique<STTx>(*this);
     }
 
+private:
     TxType tx_type_;
 
     mutable boost::tribool sig_state_;

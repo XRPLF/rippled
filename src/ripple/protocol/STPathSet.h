@@ -28,7 +28,6 @@
 
 namespace ripple {
 
-// VFALCO Why isn't this derived from STBase?
 class STPathElement
 {
 public:
@@ -82,35 +81,46 @@ public:
         hash_value_ = get_hash (*this);
     }
 
-    int getNodeType () const
+    int
+    getNodeType () const
     {
         return mType;
     }
-    bool isOffer () const
+
+    bool
+    isOffer () const
     {
         return is_offer_;
     }
-    bool isAccount () const
+
+    bool
+    isAccount () const
     {
         return !isOffer ();
     }
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
-    Account const& getAccountID () const
+    Account const&
+    getAccountID () const
     {
         return mAccountID;
     }
-    Currency const& getCurrency () const
+
+    Currency const&
+    getCurrency () const
     {
         return mCurrencyID;
     }
-    Account const& getIssuerID () const
+
+    Account const&
+    getIssuerID () const
     {
         return mIssuerID;
     }
 
-    bool operator== (const STPathElement& t) const
+    bool
+    operator== (const STPathElement& t) const
     {
         return (mType & typeAccount) == (t.mType & typeAccount) &&
             hash_value_ == t.hash_value_ &&
@@ -162,9 +172,13 @@ public:
         mPath.emplace_back (std::forward<Args> (args)...);
     }
 
-    bool hasSeen (Account const& account, Currency const& currency,
-                  Account const& issuer) const;
-    Json::Value getJson (int) const;
+    bool
+    hasSeen (
+        Account const& account, Currency const& currency,
+        Account const& issuer) const;
+
+    Json::Value
+    getJson (int) const;
 
     std::vector<STPathElement>::const_iterator
     begin () const
@@ -178,7 +192,8 @@ public:
         return mPath.end ();
     }
 
-    bool operator== (STPath const& t) const
+    bool
+    operator== (STPath const& t) const
     {
         return mPath == t.mPath;
     }
@@ -202,7 +217,8 @@ private:
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
-class STPathSet : public STBase
+class STPathSet final
+    : public STBase
 {
 public:
     STPathSet () = default;
@@ -213,91 +229,77 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name)
+    deserialize (SerializerIterator& sit, SField::ref name);
+
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return std::unique_ptr<STBase> (construct (sit, name));
+        return std::make_unique<STPathSet>(*this);
     }
 
-    void add (Serializer& s) const;
-    virtual Json::Value getJson (int) const;
+    void
+    add (Serializer& s) const override;
 
-    SerializedTypeID getSType () const
+    Json::Value
+    getJson (int) const override;
+
+    SerializedTypeID
+    getSType () const override
     {
         return STI_PATHSET;
     }
-    std::vector<STPath>::size_type
-    size () const
-    {
-        return value.size ();
-    }
 
-    bool empty () const
-    {
-        return value.empty ();
-    }
+    bool
+    assembleAdd(STPath const& base, STPathElement const& tail);
 
-    void push_back (STPath const& e)
-    {
-        value.push_back (e);
-    }
-
-    bool assembleAdd(STPath const& base, STPathElement const& tail)
-    { // assemble base+tail and add it to the set if it's not a duplicate
-        value.push_back (base);
-
-        std::vector<STPath>::reverse_iterator it = value.rbegin ();
-
-        STPath& newPath = *it;
-        newPath.push_back (tail);
-
-        while (++it != value.rend ())
-        {
-            if (*it == newPath)
-            {
-                value.pop_back ();
-                return false;
-            }
-        }
-        return true;
-    }
-
-    virtual bool isEquivalent (const STBase& t) const;
-    virtual bool isDefault () const
+    bool
+    isEquivalent (const STBase& t) const override;
+    
+    bool
+    isDefault () const override
     {
         return value.empty ();
     }
 
+    // std::vector like interface:
     std::vector<STPath>::const_reference
     operator[] (std::vector<STPath>::size_type n) const
     {
         return value[n];
     }
 
-    std::vector<STPath>::const_iterator begin () const
+    std::vector<STPath>::const_iterator
+    begin () const
     {
         return value.begin ();
     }
 
-    std::vector<STPath>::const_iterator end () const
+    std::vector<STPath>::const_iterator
+    end () const
     {
         return value.end ();
     }
 
-private:
-    std::vector<STPath> value;
-
-    STPathSet (SField::ref n, const std::vector<STPath>& v)
-        : STBase (n), value (v)
-    { }
-
-    STPathSet* duplicate () const
+    std::vector<STPath>::size_type
+    size () const
     {
-        return new STPathSet (*this);
+        return value.size ();
     }
 
-    static
-    STPathSet*
-    construct (SerializerIterator&, SField::ref);
+    bool
+    empty () const
+    {
+        return value.empty ();
+    }
+
+    void
+    push_back (STPath const& e)
+    {
+        value.push_back (e);
+    }
+
+private:
+    std::vector<STPath> value;
 };
 
 } // ripple

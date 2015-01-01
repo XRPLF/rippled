@@ -29,17 +29,14 @@ STBlob::STBlob (SerializerIterator& st, SField::ref name)
     value = st.getVL ();
 }
 
-std::string STBlob::getText () const
+std::string
+STBlob::getText () const
 {
     return strHex (value);
 }
 
-STBlob* STBlob::construct (SerializerIterator& u, SField::ref name)
-{
-    return new STBlob (name, u.getVL ());
-}
-
-bool STBlob::isEquivalent (const STBase& t) const
+bool
+STBlob::isEquivalent (const STBase& t) const
 {
     const STBlob* v = dynamic_cast<const STBlob*> (&t);
     return v && (value == v->value);

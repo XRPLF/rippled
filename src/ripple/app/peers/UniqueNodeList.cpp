@@ -35,7 +35,6 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <fstream>
@@ -74,6 +73,20 @@ namespace ripple {
 // YYY Move to config file.
 #define REFERRAL_VALIDATORS_MAX 50
 #define REFERRAL_IPS_MAX        50
+
+template<class Iterator>
+std::string
+strJoin (Iterator first, Iterator last, std::string strSeperator)
+{
+    std::ostringstream ossValues;
+
+    for (Iterator start = first; first != last; first++)
+    {
+        ossValues << str (boost::format ("%s%s") % (start == first ? "" : strSeperator) % *first);
+    }
+
+    return ossValues.str ();
+}
 
 // VFALCO TODO move all function definitions inlined into the class.
 class UniqueNodeListImp
@@ -114,10 +127,6 @@ private:
         std::string         strValidator;   // The public key.
         std::vector<int>    viReferrals;
     };
-
-    typedef hash_map<std::string, int> strIndex;
-    typedef std::pair<std::string, int> IPAndPortNumber;
-    typedef hash_map<std::pair< std::string, int>, score>   epScore;
 
 public:
     explicit UniqueNodeListImp (Stoppable& parent)
@@ -705,7 +714,7 @@ private:
     void trustedLoad ()
     {
         boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-        BOOST_FOREACH (std::string const& c, getConfig ().CLUSTER_NODES)
+        for (auto const& c : getConfig ().CLUSTER_NODES)
         {
             boost::smatch match;
 
@@ -743,7 +752,7 @@ private:
         bool    bDist   = false;
 
         // For each node, distribute roundSeed to roundScores.
-        BOOST_FOREACH (scoreNode & sn, vsnNodes)
+        for (auto& sn : vsnNodes)
         {
             int     iEntries    = sn.viReferrals.size ();
 
@@ -752,7 +761,8 @@ private:
                 score   iTotal  = (iEntries + 1) * iEntries / 2;
                 score   iBase   = sn.iRoundSeed * iEntries / iTotal;
 
-                // Distribute the current entires' seed score to validators prioritized by mention order.
+                // Distribute the current entires' seed score to validators
+                // prioritized by mention order.
                 for (int i = 0; i != iEntries; i++)
                 {
                     score   iPoints = iBase * (iEntries - i) / iEntries;
@@ -765,7 +775,7 @@ private:
         if (ShouldLog (lsTRACE, UniqueNodeList))
         {
             WriteLog (lsTRACE, UniqueNodeList) << "midway: ";
-            BOOST_FOREACH (scoreNode & sn, vsnNodes)
+            for (auto& sn : vsnNodes)
             {
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("%s| %d, %d, %d: [%s]")
                                                    % sn.strValidator
@@ -778,7 +788,7 @@ private:
 
         // Add roundScore to score.
         // Make roundScore new roundSeed.
-        BOOST_FOREACH (scoreNode & sn, vsnNodes)
+        for (auto& sn : vsnNodes)
         {
             if (!bDist && sn.iRoundScore)
                 bDist   = true;
@@ -791,7 +801,7 @@ private:
         if (ShouldLog (lsTRACE, UniqueNodeList))
         {
             WriteLog (lsTRACE, UniqueNodeList) << "finish: ";
-            BOOST_FOREACH (scoreNode & sn, vsnNodes)
+            for (auto& sn : vsnNodes)
             {
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("%s| %d, %d, %d: [%s]")
                                                    % sn.strValidator
@@ -813,8 +823,8 @@ private:
     //
     void scoreCompute ()
     {
-        strIndex                umPulicIdx;     // Map of public key to index.
-        strIndex                umDomainIdx;    // Map of domain to index.
+        hash_map<std::string, int> umPulicIdx;     // Map of public key to index.
+        hash_map<std::string, int> umDomainIdx;    // Map of domain to index.
         std::vector<scoreNode>  vsnNodes;       // Index to scoring node.
 
         auto db = getApp().getWalletDB ().getDB ();
@@ -836,7 +846,7 @@ private:
                     std::string strPublicKey    = db->getStrBinary ("PublicKey");
                     std::string strSource       = db->getStrBinary ("Source");
                     int         iScore          = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
-                    strIndex::iterator  siOld   = umPulicIdx.find (strPublicKey);
+                    auto siOld   = umPulicIdx.find (strPublicKey);
 
                     if (siOld == umPulicIdx.end ())
                     {
@@ -882,7 +892,7 @@ private:
                 std::string strPublicKey    = db->getStrBinary ("PublicKey");
                 std::string strSource       = db->getStrBinary ("Source");
                 int         iScore          = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
-                strIndex::iterator  siOld   = umPulicIdx.find (strPublicKey);
+                auto siOld   = umPulicIdx.find (strPublicKey);
 
                 if (siOld == umPulicIdx.end ())
                 {
@@ -919,7 +929,7 @@ private:
         // For debugging, print out initial scores.
         if (ShouldLog (lsTRACE, UniqueNodeList))
         {
-            BOOST_FOREACH (scoreNode & sn, vsnNodes)
+            for (auto& sn : vsnNodes)
             {
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("%s| %d, %d, %d")
                                                    % sn.strValidator
@@ -947,14 +957,12 @@ private:
                 std::string strReferral = db->getStrBinary ("Referral");
                 int         iReferral;
 
-                strIndex::iterator  itEntry;
-
                 RippleAddress       na;
 
                 if (na.setNodePublic (strReferral))
                 {
                     // Referring a public key.
-                    itEntry     = umPulicIdx.find (strReferral);
+                    auto itEntry = umPulicIdx.find (strReferral);
 
                     if (itEntry == umPulicIdx.end ())
                     {
@@ -977,19 +985,14 @@ private:
                     {
                         iReferral   =  itEntry->second;
                     }
-
-                    // WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s: Public=%s iReferral=%d") % strValidator % strReferral % iReferral);
-
                 }
                 else
                 {
                     // Referring a domain.
-                    itEntry     = umDomainIdx.find (strReferral);
+                    auto itEntry = umDomainIdx.find (strReferral);
                     iReferral   = itEntry == umDomainIdx.end ()
                                   ? -1            // We ignore domains we can't find entires for.
                                   : itEntry->second;
-
-                    // WriteLog (lsTRACE, UniqueNodeList) << str(boost::format("%s: Domain=%s iReferral=%d") % strValidator % strReferral % iReferral);
                 }
 
                 if (iReferral >= 0 && iNode != iReferral)
@@ -1008,7 +1011,7 @@ private:
         if (ShouldLog (lsTRACE, UniqueNodeList))
         {
             WriteLog (lsTRACE, UniqueNodeList) << "Scored:";
-            BOOST_FOREACH (scoreNode & sn, vsnNodes)
+            for (auto& sn : vsnNodes)
             {
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("%s| %d, %d, %d: [%s]")
                                                    % sn.strValidator
@@ -1094,14 +1097,13 @@ private:
 
         // For each validator, get each referral and add its score to ip's score.
         // map of pair<IP,Port> :: score
-        epScore umScore;
+        hash_map<std::pair<std::string, int>, score> umScore;
 
-        typedef hash_map<std::string, int>::value_type vcType;
-        BOOST_FOREACH (vcType & vc, umValidators)
+        for (auto& vc : umValidators)
         {
             std::string strValidator    = vc.first;
 
-            strIndex::iterator  itIndex = umPulicIdx.find (strValidator);
+            auto itIndex = umPulicIdx.find (strValidator);
 
             if (itIndex != umPulicIdx.end ())
             {
@@ -1121,7 +1123,7 @@ private:
 
                     std::pair< std::string, int>    ep  = std::make_pair (db->getStrBinary ("IP"), iPort);
 
-                    epScore::iterator   itEp    = umScore.find (ep);
+                    auto itEp    = umScore.find (ep);
 
                     umScore[ep] = itEp == umScore.end () ? iPoints :  itEp->second + iPoints;
                     iEntry++;
@@ -1590,7 +1592,7 @@ private:
             vstrValues.resize (std::min ((int) pmtVecStrIps->size (), REFERRAL_IPS_MAX));
 
             int iValues = 0;
-            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrIps)
+            for (auto const& strReferral : *pmtVecStrIps)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;
@@ -1664,7 +1666,7 @@ private:
 
             vstrValues.reserve (std::min ((int) pmtVecStrValidators->size (), REFERRAL_VALIDATORS_MAX));
 
-            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrValidators)
+            for (auto const& strReferral : *pmtVecStrValidators)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;

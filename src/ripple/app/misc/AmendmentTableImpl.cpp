@@ -23,6 +23,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <boost/format.hpp>
+#include <algorithm>
 
 namespace ripple {
 
@@ -429,16 +430,19 @@ void
 AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
     STObject& baseValidation)
 {
-    amendmentList_t lAmendments = getDesired();
+    auto lAmendments = getDesired();
 
     if (lAmendments.empty())
         return;
 
-    STVector256 vAmendments (sfAmendments);
-    for (auto const& uAmendment : lAmendments)
-        vAmendments.push_back (uAmendment);
-    vAmendments.sort ();
-    baseValidation.setFieldV256 (sfAmendments, vAmendments);
+    STVector256 amendments (sfAmendments);
+
+    for (auto const& id : lAmendments)
+        amendments.push_back (id);
+
+    std::sort (amendments.begin (), amendments.end ());
+
+    baseValidation.setFieldV256 (sfAmendments, amendments);
 }
 
 void

@@ -23,6 +23,7 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ostream>
+#include <beast/cxx14/memory.h> // <memory>
 #include <string>
 #include <typeinfo>
 
@@ -126,9 +127,6 @@ public:
     SField::ref
     getFName() const;
 
-    std::unique_ptr<STBase>
-    clone() const;
-
     void
     addFieldID (Serializer& s) const;
 
@@ -136,17 +134,15 @@ public:
     std::unique_ptr <STBase>
     deserialize (SField::ref name);
 
+    virtual
+    std::unique_ptr<STBase>
+    duplicate () const
+    {
+        return std::make_unique<STBase>(*fName);
+    }
+
 protected:
     SField::ptr fName;
-
-private:
-    // VFALCO TODO Return std::unique_ptr <STBase>
-    virtual
-    STBase*
-    duplicate() const
-    {
-        return new STBase (*fName);
-    }
 };
 
 //------------------------------------------------------------------------------

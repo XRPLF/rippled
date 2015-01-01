@@ -59,7 +59,6 @@
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>
-#include <boost/foreach.hpp>
 #include <tuple>
 
 namespace ripple {
@@ -1738,9 +1737,10 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->getParentHash ();
 
+    // Why do we make a copy of the peer list here?
     std::vector <Peer::ptr> peerList = getApp().overlay ().getActivePeers ();
 
-    BOOST_FOREACH (Peer::ptr const& it, peerList)
+    for (auto const& it : peerList)
     {
         if (it && (it->getClosedLedgerHash () == deadLedger))
         {
@@ -2582,7 +2582,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
     }
 
     // Don't lock since pubAcceptedTransaction is locking.
-    BOOST_FOREACH (const AcceptedLedger::value_type & vt, alpAccepted->getMap ())
+    for (auto const& vt : alpAccepted->getMap ())
     {
         m_journal.trace << "pubAccepted: " << vt.second->getJson ();
         pubValidatedTransaction (lpAccepted, *vt.second);
@@ -2775,7 +2775,7 @@ void NetworkOPsImp::pubAccountTransaction (
 
         std::string sObj = to_string (jvObj);
 
-        BOOST_FOREACH (InfoSub::ref isrListener, notify)
+        for (InfoSub::ref isrListener : notify)
         {
             isrListener->send (jvObj, sObj, true);
         }
@@ -2793,7 +2793,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
     // For the connection, monitor each account.
-    BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
+    for (auto const& naAccountID : vnaAccountIDs)
     {
         m_journal.trace << "subAccount:"
             " account: " << naAccountID.humanAccountID ();
@@ -2803,7 +2803,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
 
     ScopedLockType sl (mLock);
 
-    BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
+    for (auto const& naAccountID : vnaAccountIDs)
     {
         auto simIterator = subMap.find (naAccountID.getAccountID ());
         if (simIterator == subMap.end ())

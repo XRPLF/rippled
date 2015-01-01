@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-class STLedgerEntry
+class STLedgerEntry final
     : public STObject
     , public CountedObject <STLedgerEntry>
 {
@@ -41,13 +41,13 @@ public:
     STLedgerEntry (LedgerEntryType type, uint256 const& index);
     STLedgerEntry (const STObject & object, uint256 const& index);
 
-    SerializedTypeID getSType () const
+    SerializedTypeID getSType () const override
     {
         return STI_LEDGERENTRY;
     }
-    std::string getFullText () const;
-    std::string getText () const;
-    Json::Value getJson (int options) const;
+    std::string getFullText () const override;
+    std::string getText () const override;
+    Json::Value getJson (int options) const override;
 
     uint256 const& getIndex () const
     {
@@ -94,12 +94,13 @@ public:
                  std::uint32_t & prevLedgerID);
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
-private:
-    STLedgerEntry* duplicate () const
+    std::unique_ptr<STBase>
+    duplicate () const override
     {
-        return new STLedgerEntry (*this);
+        return std::make_unique<STLedgerEntry>(*this);
     }
 
+private:
     /** Make STObject comply with the template for this SLE type
         Can throw
     */

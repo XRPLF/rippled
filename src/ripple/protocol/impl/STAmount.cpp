@@ -28,12 +28,17 @@
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <beast/cxx14/iterator.h> // <iterator>
+#include <beast/cxx14/memory.h> // <memory>
+#include <iostream>
 
 namespace ripple {
 
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
 static const std::uint64_t tenTo17 = tenTo14 * 1000;
+
+STAmount const saZero (noIssue(), 0u);
+STAmount const saOne (noIssue(), 1u);
 
 //------------------------------------------------------------------------------
 
@@ -495,14 +500,6 @@ std::string STAmount::getHumanCurrency () const
 }
 
 void
-STAmount::setNValue (std::uint64_t v)
-{
-    if (!mIsNative)
-        throw std::runtime_error ("not native");
-    mValue = v;
-}
-
-void
 STAmount::setSNValue (std::int64_t v)
 {
     if (!mIsNative) throw std::runtime_error ("not native");
@@ -750,12 +747,6 @@ STAmount::isEquivalent (const STBase& t) const
 {
     const STAmount* v = dynamic_cast<const STAmount*> (&t);
     return v && (*v == *this);
-}
-
-STAmount*
-STAmount::duplicate () const
-{
-    return new STAmount (*this);
 }
 
 //------------------------------------------------------------------------------
