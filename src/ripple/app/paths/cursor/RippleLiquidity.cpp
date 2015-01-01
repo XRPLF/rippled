@@ -207,8 +207,8 @@ rippleQuality (
     Account const& destination,
     Account const& source,
     Currency const& currency,
-    SField::ref sfLow,
-    SField::ref sfHigh)
+    SFieldU32 const& sfLow,
+    SFieldU32 const& sfHigh)
 {
     std::uint32_t uQuality (QUALITY_ONE);
 
@@ -221,7 +221,7 @@ rippleQuality (
 
         if (sleRippleState)
         {
-            SField::ref sfField = destination < source ? sfLow : sfHigh;
+            SFieldU32 const& sfField = destination < source ? sfLow : sfHigh;
 
             uQuality = sleRippleState->isFieldPresent (sfField)
                 ? sleRippleState->getFieldU32 (sfField)

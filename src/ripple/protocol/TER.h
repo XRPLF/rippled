@@ -235,6 +235,10 @@ std::string
 transToken (TER code);
 
 extern
+std::ostream&
+operator<< (std::ostream& os, TER code);
+
+extern
 std::string
 transHuman (TER code);
 

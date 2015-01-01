@@ -659,42 +659,42 @@ std::string STObject::getFieldString (SField::ref field) const
     return rf->getText ();
 }
 
-unsigned char STObject::getFieldU8 (SField::ref field) const
+unsigned char STObject::getFieldU8 (SFieldU8 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STUInt8> (field);
 }
 
-std::uint16_t STObject::getFieldU16 (SField::ref field) const
+std::uint16_t STObject::getFieldU16 (SFieldU16 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STUInt16> (field);
 }
 
-std::uint32_t STObject::getFieldU32 (SField::ref field) const
+std::uint32_t STObject::getFieldU32 (SFieldU32 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STUInt32> (field);
 }
 
-std::uint64_t STObject::getFieldU64 (SField::ref field) const
+std::uint64_t STObject::getFieldU64 (SFieldU64 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STUInt64> (field);
 }
 
-uint128 STObject::getFieldH128 (SField::ref field) const
+uint128 STObject::getFieldH128 (SFieldH128 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STHash128> (field);
 }
 
-uint160 STObject::getFieldH160 (SField::ref field) const
+uint160 STObject::getFieldH160 (SFieldH160 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STHash160> (field);
 }
 
-uint256 STObject::getFieldH256 (SField::ref field) const
+uint256 STObject::getFieldH256 (SFieldH256 const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STHash256> (field);
 }
 
-RippleAddress STObject::getFieldAccount (SField::ref field) const
+RippleAddress STObject::getFieldAccount (SFieldAccount const& /*SField::ref*/ field) const
 {
     const STBase* rf = peekAtPField (field);
 
@@ -713,7 +713,7 @@ RippleAddress STObject::getFieldAccount (SField::ref field) const
     return cf->getValueNCA ();
 }
 
-Account STObject::getFieldAccount160 (SField::ref field) const
+Account STObject::getFieldAccount160 (SFieldAccount const& /*SField::ref*/ field) const
 {
     auto rf = peekAtPField (field);
     if (!rf)
@@ -733,71 +733,71 @@ Account STObject::getFieldAccount160 (SField::ref field) const
     return account;
 }
 
-Blob STObject::getFieldVL (SField::ref field) const
+Blob STObject::getFieldVL (SFieldVL const& /*SField::ref*/ field) const
 {
     return getFieldByValue <STBlob> (field);
 }
 
-STAmount const& STObject::getFieldAmount (SField::ref field) const
+STAmount const& STObject::getFieldAmount (SFieldAmount const& /*SField::ref*/ field) const
 {
     static STAmount const empty{};
     return getFieldByConstRef <STAmount> (field, empty);
 }
 
-const STArray& STObject::getFieldArray (SField::ref field) const
+const STArray& STObject::getFieldArray (SFieldArray const& /*SField::ref*/ field) const
 {
     static STArray const empty{};
     return getFieldByConstRef <STArray> (field, empty);
 }
 
-STPathSet const& STObject::getFieldPathSet (SField::ref field) const
+STPathSet const& STObject::getFieldPathSet (SFieldPathSet const& /*SField::ref*/ field) const
 {
     static STPathSet const empty{};
     return getFieldByConstRef <STPathSet> (field, empty);
 }
 
-const STVector256& STObject::getFieldV256 (SField::ref field) const
+const STVector256& STObject::getFieldV256 (SFieldV256 const& /*SField::ref*/ field) const
 {
     static STVector256 const empty{};
     return getFieldByConstRef <STVector256> (field, empty);
 }
 
-void STObject::setFieldU8 (SField::ref field, unsigned char v)
+void STObject::setFieldU8 (SFieldU8 const& field, unsigned char v)
 {
     setFieldUsingSetValue <STUInt8> (field, v);
 }
 
-void STObject::setFieldU16 (SField::ref field, std::uint16_t v)
+void STObject::setFieldU16 (SFieldU16 const& field, std::uint16_t v)
 {
     setFieldUsingSetValue <STUInt16> (field, v);
 }
 
-void STObject::setFieldU32 (SField::ref field, std::uint32_t v)
+void STObject::setFieldU32 (SFieldU32 const& field, std::uint32_t v)
 {
     setFieldUsingSetValue <STUInt32> (field, v);
 }
 
-void STObject::setFieldU64 (SField::ref field, std::uint64_t v)
+void STObject::setFieldU64 (SFieldU64 const& field, std::uint64_t v)
 {
     setFieldUsingSetValue <STUInt64> (field, v);
 }
 
-void STObject::setFieldH128 (SField::ref field, uint128 const& v)
+void STObject::setFieldH128 (SFieldH128 const& field, uint128 const& v)
 {
     setFieldUsingSetValue <STHash128> (field, v);
 }
 
-void STObject::setFieldH256 (SField::ref field, uint256 const& v)
+void STObject::setFieldH256 (SFieldH256 const& field, uint256 const& v)
 {
     setFieldUsingSetValue <STHash256> (field, v);
 }
 
-void STObject::setFieldV256 (SField::ref field, STVector256 const& v)
+void STObject::setFieldV256 (SFieldV256 const& field, STVector256 const& v)
 {
     setFieldUsingSetValue <STVector256> (field, v);
 }
 
-void STObject::setFieldAccount (SField::ref field, Account const& v)
+void STObject::setFieldAccount (SFieldAccount const& field, Account const& v)
 {
     STBase* rf = getPField (field, true);
 
@@ -815,22 +815,22 @@ void STObject::setFieldAccount (SField::ref field, Account const& v)
     cf->setValueH160 (v);
 }
 
-void STObject::setFieldVL (SField::ref field, Blob const& v)
+void STObject::setFieldVL (SFieldVL const& field, Blob const& v)
 {
     setFieldUsingSetValue <STBlob> (field, v);
 }
 
-void STObject::setFieldAmount (SField::ref field, STAmount const& v)
+void STObject::setFieldAmount (SFieldAmount const& field, STAmount const& v)
 {
     setFieldUsingAssignment (field, v);
 }
 
-void STObject::setFieldPathSet (SField::ref field, STPathSet const& v)
+void STObject::setFieldPathSet (SFieldPathSet const& field, STPathSet const& v)
 {
     setFieldUsingAssignment (field, v);
 }
 
-void STObject::setFieldArray (SField::ref field, STArray const& v)
+void STObject::setFieldArray (SFieldArray const& field, STArray const& v)
 {
     setFieldUsingAssignment (field, v);
 }

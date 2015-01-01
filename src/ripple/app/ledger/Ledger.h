@@ -131,7 +131,8 @@ public:
             std::uint32_t ledgerSeq, bool & loaded);
     // used for database ledgers
 
-    Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
+    // Used by parseLedgerFromJSON
+    Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime, uint256 const&);
     Ledger (Blob const & rawLedger, bool hasPrefix);
     Ledger (std::string const& rawLedger, bool hasPrefix);
     Ledger (bool dummy, Ledger & previous); // ledger after this one
@@ -498,6 +499,8 @@ private:
 
     static std::set<std::uint32_t>  sPendingSaves;
 };
+
+Ledger::pointer parseLedgerFromJSON(Json::Value& jLedger);
 
 inline LedgerStateParms operator| (
     const LedgerStateParms& l1, const LedgerStateParms& l2)

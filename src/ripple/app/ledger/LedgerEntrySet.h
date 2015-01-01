@@ -46,6 +46,10 @@ enum TransactionEngineParams
 
     // Transaction came from a privileged source
     tapADMIN            = 0x400,
+
+    // Don't clear the LedgerEntrySet etc after txn application so can get
+    // access to the set for subsequent inspection inside tests.
+    tapNO_RESET         = 0x800,
 };
 
 enum LedgerEntryAction
