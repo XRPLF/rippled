@@ -89,13 +89,13 @@ Server.prototype._serverSpawnSync = function() {
 
   var rippledpath = this.config.rippled_path;
   // Override the config with command line if provided
-  if(process.env["npm_config_rippled"]) {
+  if (process.env["npm_config_rippled"]) {
     rippledpath = path.resolve(process.cwd(),
         process.env["npm_config_rippled"]);
   } else {
-    for(var i = process.argv.length-1; i >= 0; --i) {
+    for (var i = process.argv.length-1; i >= 0; --i) {
       arg = process.argv[i].split("=", 2);
-      if(arg.length === 2 && arg[0] === "--rippled") {
+      if (arg.length === 2 && arg[0] === "--rippled") {
         rippledpath = path.resolve(process.cwd(), arg[1]);
         break;
       }
