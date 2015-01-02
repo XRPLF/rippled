@@ -94,6 +94,12 @@ void hash_append (Hasher& h, BookType<ByValue> const& b)
     hash_append (h, b.in, b.out);
 }
 
+template <bool ByValue>
+BookType<ByValue> reversed (BookType<ByValue> const& book)
+{
+    return BookType<ByValue> (book.out, book.in);
+}
+
 /** Ordered comparison. */
 template <bool LhsByValue, bool RhsByValue>
 int compare (BookType <LhsByValue> const& lhs,
