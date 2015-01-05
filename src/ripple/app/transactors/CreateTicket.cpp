@@ -132,7 +132,11 @@ transact_CreateTicket (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
+#if RIPPLE_ENABLE_TICKETS
     return CreateTicket (txn, params, engine).apply ();
+#else
+    return temDISABLED;
+#endif
 }
 
 }
