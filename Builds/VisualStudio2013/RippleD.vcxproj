@@ -2379,9 +2379,6 @@
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DatabaseRotating.h">

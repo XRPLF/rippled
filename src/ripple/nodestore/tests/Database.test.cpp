@@ -203,12 +203,12 @@ public:
     {
         testImport ("leveldb", "leveldb", seedValue);
 
-    #if RIPPLE_ROCKSDB_AVAILABLE
-        testImport ("rocksdb", "rocksdb", seedValue);
-    #endif
-
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
+    #endif
+
+    #if RIPPLE_ROCKSDB_AVAILABLE
+        testImport ("rocksdb", "rocksdb", seedValue);
     #endif
 
     #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS

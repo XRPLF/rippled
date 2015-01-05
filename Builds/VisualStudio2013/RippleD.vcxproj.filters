@@ -3378,9 +3378,6 @@
     <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.cpp">
-      <Filter>ripple\nodestore\backend</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>

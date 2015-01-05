@@ -26,7 +26,6 @@
 #include <ripple/core/Config.h> // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/BatchWriter.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/threads/Thread.h>
@@ -86,7 +85,6 @@ public:
 
 class RocksDBBackend
     : public Backend
-    , public BatchWriter::Callback
 {
 private:
     std::atomic <bool> m_deletePath;
@@ -94,8 +92,6 @@ private:
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
-    Scheduler& m_scheduler;
-    BatchWriter m_batch;
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
 
@@ -104,98 +100,71 @@ public:
         : m_deletePath (false)
         , m_journal (journal)
         , m_keyBytes (keyBytes)
-        , m_scheduler (scheduler)
-        , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty())
             throw std::runtime_error ("Missing path in RocksDBFactory backend");
 
+        // Defaults
+        std::uint64_t budget = 512 * 1024 * 1024;  // 512MB
+        std::string style("level");
+        std::uint64_t threads=4;
+
+        if (!keyValues["budget"].isEmpty())
+            budget = keyValues["budget"].getIntValue();
+
+        if (!keyValues["style"].isEmpty())
+            style = keyValues["style"].toStdString();
+
+        if (!keyValues["threads"].isEmpty())
+            threads = keyValues["threads"].getIntValue();
+
+
+        // Set options
         rocksdb::Options options;
-        rocksdb::BlockBasedTableOptions table_options;
         options.create_if_missing = true;
         options.env = env;
 
-        if (keyValues["cache_mb"].isEmpty())
-        {
-            table_options.block_cache = rocksdb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-        }
-        else
-        {
-            table_options.block_cache = rocksdb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
-        }
+        if (style == "level")
+            options.OptimizeLevelStyleCompaction(budget);
 
-        if (keyValues["filter_bits"].isEmpty())
-        {
-            if (getConfig ().NODE_SIZE >= 2)
-                table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (10));
-        }
-        else if (keyValues["filter_bits"].getIntValue() != 0)
-        {
-            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue()));
-        }
+        if (style == "universal")
+            options.OptimizeUniversalStyleCompaction(budget);
 
-        if (! keyValues["open_files"].isEmpty())
-        {
-            options.max_open_files = keyValues["open_files"].getIntValue();
-        }
+        if (style == "point")
+            options.OptimizeForPointLookup(budget / 1024 / 1024);  // In MB
 
-        if (! keyValues["file_size_mb"].isEmpty())
-        {
-            options.target_file_size_base = 1024 * 1024 * keyValues["file_size_mb"].getIntValue();
-            options.max_bytes_for_level_base = 5 * options.target_file_size_base;
-            options.write_buffer_size = 2 * options.target_file_size_base;
-        }
+        options.IncreaseParallelism(threads);
 
-        if (! keyValues["file_size_mult"].isEmpty())
-        {
-            options.target_file_size_multiplier = keyValues["file_size_mult"].getIntValue();
-        }
+        // Allows hash indexes in blocks
+        options.prefix_extractor.reset(rocksdb::NewNoopTransform());
 
-        if (! keyValues["bg_threads"].isEmpty())
-        {
-            options.env->SetBackgroundThreads
-                (keyValues["bg_threads"].getIntValue(), rocksdb::Env::LOW);
-        }
+        // overrride OptimizeLevelStyleCompaction
+        options.min_write_buffer_number_to_merge = 1;
+        
+        rocksdb::BlockBasedTableOptions table_options;
+        // Use hash index
+        table_options.index_type =
+            rocksdb::BlockBasedTableOptions::kHashSearch;
+        table_options.filter_policy.reset(
+            rocksdb::NewBloomFilterPolicy(10));
+        options.table_factory.reset(
+            NewBlockBasedTableFactory(table_options));
+        
+        // Higher values make reads slower
+        // table_options.block_size = 4096;
 
-        if (! keyValues["high_threads"].isEmpty())
-        {
-            auto const highThreads = keyValues["high_threads"].getIntValue();
-            options.env->SetBackgroundThreads (highThreads, rocksdb::Env::HIGH);
+        // No point when DatabaseImp has a cache
+        // table_options.block_cache =
+        //     rocksdb::NewLRUCache(64 * 1024 * 1024);
 
-            // If we have high-priority threads, presumably we want to
-            // use them for background flushes
-            if (highThreads > 0)
-                options.max_background_flushes = highThreads;
-        }
-
-        if (! keyValues["compression"].isEmpty ())
-        {
-            if (keyValues["compression"].getIntValue () == 0)
-            {
-                options.compression = rocksdb::kNoCompression;
-            }
-        }
-
-        if (! keyValues["block_size"].isEmpty ())
-        {
-            table_options.block_size = keyValues["block_size"].getIntValue ();
-        }
-
-        if (! keyValues["universal_compaction"].isEmpty ())
-        {
-            if (keyValues["universal_compaction"].getIntValue () != 0)
-            {
-                options.compaction_style = rocksdb:: kCompactionStyleUniversal;
-                options.min_write_buffer_number_to_merge = 2;
-                options.max_write_buffer_number = 6;
-                options.write_buffer_size = 6 * options.target_file_size_base;
-            }
-        }
-
-        options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+        options.memtable_factory.reset(rocksdb::NewHashSkipListRepFactory());
+        // Alternative:
+        // options.memtable_factory.reset(
+        //     rocksdb::NewHashCuckooRepFactory(options.write_buffer_size));
 
         rocksdb::DB* db = nullptr;
+
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
             throw std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString());
@@ -274,29 +243,32 @@ public:
     void
     store (NodeObject::ref object)
     {
-        m_batch.store (object);
+        storeBatch(Batch{object});
     }
 
     void
     storeBatch (Batch const& batch)
     {
         rocksdb::WriteBatch wb;
-
+ 
         EncodedBlob encoded;
 
         for (auto const& e : batch)
         {
             encoded.prepare (e);
 
-            wb.Put (
-                rocksdb::Slice (reinterpret_cast <char const*> (
-                    encoded.getKey ()), m_keyBytes),
-                rocksdb::Slice (reinterpret_cast <char const*> (
-                    encoded.getData ()), encoded.getSize ()));
+            wb.Put(
+                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()),
+                               m_keyBytes),
+                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getData()),
+                               encoded.getSize()));
         }
 
-        rocksdb::WriteOptions const options;
+        rocksdb::WriteOptions options;
 
+        // Crucial to ensure good write speed and non-blocking writes to memtable
+        options.disableWAL = true;
+        
         auto ret = m_db->Write (options, &wb);
 
         if (!ret.ok ())
@@ -342,7 +314,7 @@ public:
     int
     getWriteLoad ()
     {
-        return m_batch.getWriteLoad ();
+        return 0;
     }
 
     void
@@ -367,12 +339,12 @@ class RocksDBFactory : public Factory
 public:
     RocksDBEnv m_env;
 
-    RocksDBFactory ()
+    RocksDBFactory()
     {
         Manager::instance().insert(*this);
     }
 
-    ~RocksDBFactory ()
+    ~RocksDBFactory()
     {
         Manager::instance().erase(*this);
     }
