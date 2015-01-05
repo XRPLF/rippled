@@ -226,9 +226,9 @@ class Ledger_test : public beast::unit_test::suite
         applyTransactions(set, newLCL, newLCL, retriableTransactions, false);
         newLCL->updateSkipList();
         newLCL->setClosed();
-        int asf = newLCL->peekAccountStateMap()->flushDirty(hotACCOUNT_NODE,
+        newLCL->peekAccountStateMap()->flushDirty(hotACCOUNT_NODE,
                                                         newLCL->getLedgerSeq());
-        int tmf = newLCL->peekTransactionMap()->flushDirty(hotTRANSACTION_NODE,
+        newLCL->peekTransactionMap()->flushDirty(hotTRANSACTION_NODE,
                                                         newLCL->getLedgerSeq());
         using namespace std::chrono;
         auto const epoch_offset = days(10957);  // 2000-01-01
