@@ -32,6 +32,13 @@ class Ledger_test : public beast::unit_test::suite
 
     struct Amount
     {
+        Amount (double value_, std::string currency_, TestAccount issuer_)
+            : value(value_)
+            , currency(currency_)
+            , issuer(issuer_)
+        {
+        }
+
         double value;
         std::string currency;
         TestAccount issuer;
@@ -56,7 +63,7 @@ class Ledger_test : public beast::unit_test::suite
         std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
         expect(sopTrans != nullptr);
         sopTrans->setFieldVL(sfSigningPubKey, account.first.getAccountPublic());
-        return STTx{*sopTrans};
+        return STTx(*sopTrans);
     }
 
     // Helper function to apply a transaction to a ledger
@@ -149,7 +156,7 @@ class Ledger_test : public beast::unit_test::suite
     {
         Json::Value tx_json;
         tx_json["Account"] = from.first.humanAccountID();
-        tx_json["Amount"] = Amount{std::stod(amount), currency, to}.getJson();
+        tx_json["Amount"] = Amount(std::stod(amount), currency, to).getJson();
         tx_json["Destination"] = to.first.humanAccountID();
         tx_json["TransactionType"] = "Payment";
         tx_json["Fee"] = std::to_string(10);
@@ -212,7 +219,7 @@ class Ledger_test : public beast::unit_test::suite
     close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
     {
         SHAMap::pointer set = ledger->peekTransactionMap();
-        CanonicalTXSet retriableTransactions{set->getHash()};
+        CanonicalTXSet retriableTransactions(set->getHash());
         Ledger::pointer newLCL = std::make_shared<Ledger>(false, *LCL);
         // Set up to write SHAMap changes to our database,
         //   perform updates, extract changes
@@ -224,11 +231,11 @@ class Ledger_test : public beast::unit_test::suite
         int tmf = newLCL->peekTransactionMap()->flushDirty(hotTRANSACTION_NODE,
                                                         newLCL->getLedgerSeq());
         using namespace std::chrono;
-        auto const epoch_offset = days{10957};  // 2000-01-01
+        auto const epoch_offset = days(10957);  // 2000-01-01
         std::uint32_t closeTime = time_point_cast<seconds>  // now
                                          (system_clock::now()-epoch_offset).
                                          time_since_epoch().count();
-        int CloseResolution = seconds{LEDGER_TIME_ACCURACY}.count();
+        int CloseResolution = seconds(LEDGER_TIME_ACCURACY).count();
         bool closeTimeCorrect = true;
         newLCL->setAccepted(closeTime, CloseResolution, closeTimeCorrect);
         return newLCL;
@@ -285,8 +292,8 @@ class Ledger_test : public beast::unit_test::suite
         LCL = close_and_advance(ledger, LCL);
         ledger = std::make_shared<Ledger>(false, *LCL);
 
-        createOffer(mark, Amount{1, "FOO", gw1}, Amount{1, "FOO", gw2}, ledger);
-        createOffer(mark, Amount{1, "FOO", gw2}, Amount{1, "FOO", gw3}, ledger);
+        createOffer(mark, Amount(1, "FOO", gw1), Amount(1, "FOO", gw2), ledger);
+        createOffer(mark, Amount(1, "FOO", gw2), Amount(1, "FOO", gw3), ledger);
         cancelOffer(mark, ledger);
         freezeAccount(alice, ledger);
 
