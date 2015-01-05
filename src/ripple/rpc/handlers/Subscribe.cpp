@@ -305,34 +305,35 @@ Json::Value doSubscribe (RPC::Context& context)
                 if (lpLedger)
                 {
                     const Json::Value jvMarker = Json::Value (Json::nullValue);
+                    Json::Value jvOffers (Json::objectValue);
+
+                    auto add = [&](Json::StaticString field)
+                    {
+                        context.netOps.getBookPage (context.role == Role::ADMIN,
+                            lpLedger, field == jss::asks ? reversed (book) : book,
+                            raTakerID.getAccountID(), false, 0, jvMarker,
+                            jvOffers);
+
+                        if (jvResult.isMember (field))
+                        {
+                            Json::Value& results (jvResult[field]);
+                            for (auto const& e : jvOffers[jss::offers])
+                                results.append (e);
+                        }
+                        else
+                        {
+                            jvResult[field] = jvOffers[jss::offers];
+                        }
+                    };
 
                     if (bBoth)
                     {
-                        Json::Value jvBids (Json::objectValue);
-                        Json::Value jvAsks (Json::objectValue);
-
-                        context.netOps.getBookPage (
-                            context.role == Role::ADMIN,
-                            lpLedger, book, raTakerID.getAccountID (), false, 0,
-                            jvMarker, jvBids);
-
-                        if (jvBids.isMember (jss::offers))
-                            jvResult[jss::bids] = jvBids[jss::offers];
-
-                        context.netOps.getBookPage (
-                            context.role == Role::ADMIN,
-                            lpLedger, reverse (book), raTakerID.getAccountID (),
-                            false, 0, jvMarker, jvAsks);
-
-                        if (jvAsks.isMember (jss::offers))
-                            jvResult[jss::asks] = jvAsks[jss::offers];
+                        add (jss::bids);
+                        add (jss::asks);
                     }
                     else
                     {
-                        context.netOps.getBookPage (
-                            context.role == Role::ADMIN,
-                            lpLedger, book, raTakerID.getAccountID (), false, 0,
-                            jvMarker, jvResult);
+                        add (jss::offers);
                     }
                 }
             }
