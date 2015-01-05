@@ -33,7 +33,7 @@ var submit_transaction_factory = function(remote) {
 
 /* ---------------------------------- TESTS --------------------------------- */
 
-suite("Ticket tests", function() {
+suite.skip("Ticket tests", function() {
   var $ = { };
   var submit_tx;
 

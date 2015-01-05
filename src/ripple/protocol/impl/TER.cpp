@@ -116,7 +116,8 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { temREDUNDANT_SEND_MAX,    "temREDUNDANT_SEND_MAX",    "Send max is redundant."                                        },
         { temRIPPLE_EMPTY,          "temRIPPLE_EMPTY",          "PathSet with no paths."                                        },
         { temUNCERTAIN,             "temUNCERTAIN",             "In process of determining result. Never returned."             },
-        { temUNKNOWN,               "temUNKNOWN",               "The transactions requires logic not implemented yet."          },
+        { temUNKNOWN,               "temUNKNOWN",               "The transaction requires logic that is not implemented yet."   },
+        { temDISABLED,              "temDISABLED",              "The transaction requires logic that is currently disabled."    },
 
         { terRETRY,                 "terRETRY",                 "Retry transaction."                                            },
         { terFUNDS_SPENT,           "terFUNDS_SPENT",           "Can't set password, password set funds already spent."         },
