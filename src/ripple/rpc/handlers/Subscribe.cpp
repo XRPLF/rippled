@@ -322,7 +322,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
                         context.netOps.getBookPage (
                             context.role == Role::ADMIN,
-                            lpLedger, book, raTakerID.getAccountID (),
+                            lpLedger, reversed (book), raTakerID.getAccountID (),
                             false, 0, jvMarker, jvAsks);
 
                         if (jvAsks.isMember (jss::offers))
