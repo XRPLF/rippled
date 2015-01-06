@@ -338,12 +338,6 @@ def config_env(toolchain, variant, env):
                 '-fno-strict-aliasing'
                 ])
 
-        if toolchain != 'msvc':
-            git = Beast.Git(env)
-            if git.exists:
-                id = '%s+%s.%s' % (git.tags, git.user, git.branch)
-                env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '\'"%s"\'' % id })
-
         if toolchain == 'clang':
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
@@ -557,7 +551,6 @@ for toolchain in all_toolchains:
 
         object_builder = ObjectBuilder(env, variant_dirs)
         object_builder.add_source_files(
-            'app.cpp',
             'app1.cpp',
             'app2.cpp',
             'app3.cpp',
@@ -585,9 +578,19 @@ for toolchain in all_toolchains:
             'websocket.cpp',
         )
 
+        git_commit_tag = {}
+        if toolchain != 'msvc':
+            git = Beast.Git(env)
+            if git.exists:
+                id = '%s+%s.%s' % (git.tags, git.user, git.branch)
+                git_commit_tag = {'CPPDEFINES':
+                                  {'GIT_COMMIT_ID' : '\'"%s"\'' % id }}
+
+
+        object_builder.add_source_files('app.cpp', **git_commit_tag)
         object_builder.add_source_files(
             'beastc.c',
-            CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
+            CCFLAGS=([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
 
         object_builder.add_source_files(
             'nodestore.cpp',
