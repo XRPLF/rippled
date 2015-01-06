@@ -40,11 +40,8 @@ public:
         seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
         seed2.SetHex ("CF0C3BE4485961858C4198515AE5B965");
 
-        openssl::ec_key root1 = GenerateRootDeterministicKey (seed1);
-        openssl::ec_key root2 = GenerateRootDeterministicKey (seed2);
-
-        uint256 const priv1 = root1.get_private_key();
-        uint256 const priv2 = root2.get_private_key();
+        uint256 const priv1 = GenerateRootDeterministicPrivateKey (seed1);
+        uint256 const priv2 = GenerateRootDeterministicPrivateKey (seed2);
 
         unexpected (to_string (priv1) != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8",
             "Incorrect private key for generator");
@@ -57,4 +54,3 @@ public:
 BEAST_DEFINE_TESTSUITE(CKey,ripple_data,ripple);
 
 } // ripple
-

@@ -568,7 +568,7 @@ STPathSet Pathfinder::getBestPaths (
         bool useExtraPath = false;
 
         if (pathsIterator == mPathRanks.end())
-	    useExtraPath = true;
+            useExtraPath = true;
         else if (extraPathsIterator == extraPathRanks.end())
             usePath = true;
         else if (extraPathsIterator->quality < pathsIterator->quality)

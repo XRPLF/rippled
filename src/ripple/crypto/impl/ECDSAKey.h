@@ -17,20 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CRYPTO_ECIES_H_INCLUDED
-#define RIPPLE_CRYPTO_ECIES_H_INCLUDED
+#ifndef RIPPLE_ECDSAKEY_H
+#define RIPPLE_ECDSAKEY_H
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
+#include <ripple/crypto/impl/ec_key.h>
 
 namespace ripple {
 
-// ECIES functions. These throw on failure
+openssl::ec_key ECDSAPrivateKey (uint256 const& serialized);
+openssl::ec_key ECDSAPublicKey  (Blob    const& serialized);
 
-// encrypt/decrypt functions with integrity checking.
-// Note that the other side must somehow know what keys to use
-Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& plaintext);
-Blob decryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& ciphertext);
+openssl::ec_key ECDSAPublicKey (std::uint8_t const* data, std::size_t size);
 
 } // ripple
 
