@@ -23,62 +23,69 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <BeastConfig.h>
-#include <ripple/crypto/ec_key.h>
-#include <ripple/crypto/ECDSA.h>
-#include <ripple/crypto/ECDSACanonical.h>
 #include <ripple/crypto/ECDSAKey.h>
 #include <openssl/ec.h>
-#include <openssl/ecdsa.h>
-#include <openssl/hmac.h>
 
 namespace ripple  {
 
 using openssl::ec_key;
 
-static Blob ECDSASign (uint256 const& hash, const openssl::ec_key& key)
+static EC_KEY* new_initialized_EC_KEY()
 {
-    Blob result;
+    EC_KEY* key = EC_KEY_new_by_curve_name (NID_secp256k1);
 
-    unsigned char sig[128];
-    unsigned int  siglen = sizeof sig - 1;
-
-    const unsigned char* p = hash.begin();
-
-    if (ECDSA_sign (0, p, hash.size(), sig, &siglen, (EC_KEY*) key.get()))
+    if (key == nullptr)
     {
-        size_t newlen = siglen;
-
-        makeCanonicalECDSASig (sig, newlen);
-
-        result.resize (newlen);
-        memcpy (&result[0], sig, newlen);
+        throw std::runtime_error ("new_initialized_EC_KEY() : EC_KEY_new_by_curve_name failed");
     }
 
-    return result;
+    EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
+
+    return key;
 }
 
-Blob ECDSASign (uint256 const& hash, uint256 const& key)
+ec_key ECDSAPrivateKey (uint256 const& serialized)
 {
-    return ECDSASign (hash, ECDSAPrivateKey (key));
+    BIGNUM* bn = BN_bin2bn (serialized.begin(), serialized.size(), nullptr);
+
+    if (bn == nullptr)
+    {
+        throw std::runtime_error ("ec_key::ec_key: BN_bin2bn failed");
+    }
+
+    EC_KEY* key = new_initialized_EC_KEY();
+
+    const bool ok = EC_KEY_set_private_key (key, bn);
+
+    BN_clear_free (bn);
+
+    if (! ok)
+    {
+        EC_KEY_free (key);
+    }
+
+    return ec_key::acquire ((ec_key::pointer_t) key);
 }
 
-static bool ECDSAVerify (uint256 const& hash, uint8 const* sig, size_t sigLen, EC_KEY* key)
+ec_key ECDSAPublicKey (uint8 const* data, std::size_t size)
 {
-    // -1 = error, 0 = bad sig, 1 = good
-    return ECDSA_verify (0, hash.begin(), hash.size(), sig, sigLen, key) > 0;
+    EC_KEY* key = new_initialized_EC_KEY();
+
+    if (o2i_ECPublicKey (&key, &data, size) != nullptr)
+    {
+        EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
+    }
+    else
+    {
+        EC_KEY_free (key);
+    }
+
+    return ec_key::acquire ((ec_key::pointer_t) key);
 }
 
-static bool ECDSAVerify (uint256 const& hash, Blob const& sig, const openssl::ec_key& key)
+ec_key ECDSAPublicKey (Blob const& serialized)
 {
-    return ECDSAVerify (hash, sig.data(), sig.size(), (EC_KEY*) key.get());
-}
-
-bool ECDSAVerify (uint256 const& hash,
-                  Blob const& sig,
-                  uint8 const* key_data,
-                  std::size_t key_size)
-{
-    return ECDSAVerify (hash, sig, ECDSAPublicKey (key_data, key_size));
+    return ECDSAPublicKey (&serialized[0], serialized.size());
 }
 
 } // ripple

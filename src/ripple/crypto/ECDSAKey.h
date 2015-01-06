@@ -17,20 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ECDSA_H
-#define RIPPLE_ECDSA_H
+#ifndef RIPPLE_ECDSAKEY_H
+#define RIPPLE_ECDSAKEY_H
 
+#include <ripple/crypto/ec_key.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
 
 namespace ripple {
 
-Blob ECDSASign (uint256 const& hash, uint256 const& key);
+openssl::ec_key ECDSAPrivateKey (uint256 const& serialized);
+openssl::ec_key ECDSAPublicKey  (Blob    const& serialized);
 
-bool ECDSAVerify (uint256 const& hash,
-                  Blob const& sig,
-                  uint8 const* key_data,
-                  std::size_t key_size);
+openssl::ec_key ECDSAPublicKey (uint8 const* data, std::size_t size);
 
 } // ripple
 

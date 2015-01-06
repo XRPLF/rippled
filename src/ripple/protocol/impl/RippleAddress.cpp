@@ -73,9 +73,7 @@ static bool verifySignature (Blob const& pubkey, uint256 const& hash, Blob const
         return false;
     }
 
-    openssl::ec_key key = ECDSAPublicKey (pubkey);
-
-    return key.valid() && ECDSAVerify (hash, sig, key);
+    return ECDSAVerify (hash, sig, &pubkey[0], pubkey.size());
 }
 
 RippleAddress::RippleAddress ()
@@ -302,9 +300,7 @@ void RippleAddress::setNodePrivate (uint256 hash256)
 
 void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
 {
-    openssl::ec_key key = ECDSAPrivateKey (getNodePrivate());
-
-    vchSig = ECDSASign (hash, key);
+    vchSig = ECDSASign (hash, getNodePrivate());
 
     if (vchSig.empty())
         throw std::runtime_error ("Signing failed.");
@@ -579,18 +575,7 @@ void RippleAddress::setAccountPrivate (
 
 bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) const
 {
-    openssl::ec_key key = ECDSAPrivateKey (getAccountPrivate());
-
-    if (!key.valid())
-    {
-        // Bad private key.
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateSign: Bad private key.";
-
-        return false;
-    }
-
-    vucSig = ECDSASign (uHash, key);
+    vucSig = ECDSASign (uHash, getAccountPrivate());
     const bool ok = !vucSig.empty();
 
     CondLog (!ok, lsWARNING, RippleAddress)
@@ -602,22 +587,10 @@ bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) cons
 Blob RippleAddress::accountPrivateEncrypt (
     RippleAddress const& naPublicTo, Blob const& vucPlainText) const
 {
-    openssl::ec_key secretKey = ECDSAPrivateKey (getAccountPrivate());
-    openssl::ec_key publicKey = ECDSAPublicKey (naPublicTo.getAccountPublic());
+    uint256 secretKey = getAccountPrivate();
+    Blob    publicKey = naPublicTo.getAccountPublic();
 
     Blob vucCipherText;
-
-    if (! publicKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateEncrypt: Bad public key.";
-    }
-
-    if (! secretKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateEncrypt: Bad private key.";
-    }
 
     {
         try
@@ -635,22 +608,10 @@ Blob RippleAddress::accountPrivateEncrypt (
 Blob RippleAddress::accountPrivateDecrypt (
     RippleAddress const& naPublicFrom, Blob const& vucCipherText) const
 {
-    openssl::ec_key secretKey = ECDSAPrivateKey (getAccountPrivate());
-    openssl::ec_key publicKey = ECDSAPublicKey (naPublicFrom.getAccountPublic());
+    uint256 secretKey = getAccountPrivate();
+    Blob    publicKey = naPublicFrom.getAccountPublic();
 
     Blob    vucPlainText;
-
-    if (! publicKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateDecrypt: Bad public key.";
-    }
-
-    if (! secretKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateDecrypt: Bad private key.";
-    }
 
     {
         try
