@@ -3225,6 +3225,10 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\crypto.cpp">
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\git_id.cpp">
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\unity\git_id.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

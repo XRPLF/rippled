@@ -4389,6 +4389,12 @@
     <ClCompile Include="..\..\src\ripple\unity\crypto.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\git_id.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\unity\git_id.h">
+      <Filter>ripple\unity</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

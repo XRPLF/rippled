@@ -340,12 +340,6 @@ def config_env(toolchain, variant, env):
                 '-fno-strict-aliasing'
                 ])
 
-        if toolchain != 'msvc':
-            git = Beast.Git(env)
-            if git.exists:
-                id = '%s+%s.%s' % (git.tags, git.user, git.branch)
-                env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '\'"%s"\'' % id })
-
         if toolchain == 'clang':
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
@@ -625,13 +619,26 @@ for tu_style in ['classic', 'unity']:
                     'src/ripple/unity/protocol.cpp',
                     'src/ripple/unity/shamap.cpp',
                 )
+
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',
                     CPPPATH=[
-                        'src/leveldb/include',
+                         'src/leveldb/include',
                         #'src/hyperleveldb/include', # hyper
                         'src/rocksdb2/include',
                     ])
+
+            git_commit_tag = {}
+            if toolchain != 'msvc':
+                git = Beast.Git(env)
+                if git.exists:
+                    id = '%s+%s.%s' % (git.tags, git.user, git.branch)
+                    git_commit_tag = {'CPPDEFINES':
+                                      {'GIT_COMMIT_ID' : '\'"%s"\'' % id }}
+
+            object_builder.add_source_files(
+                'src/ripple/unity/git_id.cpp',
+                **git_commit_tag)
 
             object_builder.add_source_files(
                 'src/ripple/unity/beast.cpp',

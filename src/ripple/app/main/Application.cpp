@@ -59,6 +59,7 @@
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/validators/make_Manager.h>
+#include <ripple/unity/git_id.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/asio/signal_set.hpp>
@@ -782,11 +783,7 @@ public:
 
     void onStart ()
     {
-#ifdef GIT_COMMIT_ID
-        m_journal.info << "Application starting. Build is " << GIT_COMMIT_ID;
-#else
-        m_journal.info << "Application starting.";
-#endif
+        m_journal.info << "Application starting. Build is " << gitCommitID();
 
         m_sweepTimer.setExpiration (10);
 
