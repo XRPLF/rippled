@@ -19,23 +19,38 @@
 
 #include <BeastConfig.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
-#include <ripple/crypto/Base58.h>
-#include <ripple/crypto/CBigNum.h>
+#include <ripple/crypto/impl/ec_key.h>
+#include <ripple/crypto/impl/openssl.h>
 #include <array>
 #include <string>
-#include <openssl/ec.h>
 #include <openssl/pem.h>
 #include <openssl/sha.h>
 
 namespace ripple {
 
-using openssl::ec_key;
+namespace openssl {
+
+static EC_GROUP const* const secp256k1_group = EC_GROUP_new_by_curve_name (NID_secp256k1);
+static bignum          const secp256k1_order = get_order (secp256k1_group);
+
+}  // namespace openssl
+
+using namespace openssl;
+
+static Blob serialize_ec_point (ec_point const& point)
+{
+    Blob result (33);
+
+    serialize_ec_point (point, &result[0]);
+
+    return result;
+}
 
 uint256
 getSHA512Half (void const* data, std::size_t bytes)
 {
     uint256 j[2];
-    SHA512 (reinterpret_cast<unsigned char const*>(data), bytes, 
+    SHA512 (reinterpret_cast<unsigned char const*>(data), bytes,
         reinterpret_cast<unsigned char*> (j));
     return j[0];
 }
@@ -56,43 +71,12 @@ copy_uint32 (FwdIt out, std::uint32_t v)
 
 // --> seed
 // <-- private root generator + public root generator
-ec_key GenerateRootDeterministicKey (uint128 const& seed)
+static bignum GenerateRootDeterministicKey (uint128 const& seed)
 {
-    BN_CTX* ctx = BN_CTX_new ();
-
-    if (!ctx) return ec_key::invalid;
-
-    EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
-
-    if (!pkey)
-    {
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
-
-    EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-    BIGNUM* order = BN_new ();
-
-    if (!order)
-    {
-        BN_CTX_free (ctx);
-        EC_KEY_free (pkey);
-        return ec_key::invalid;
-    }
-
-    if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
-    {
-        assert (false);
-        BN_free (order);
-        EC_KEY_free (pkey);
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
-
     // find non-zero private key less than the curve's order
-    BIGNUM* privKey = nullptr;
+    bignum privKey;
     std::uint32_t seq = 0;
+
     do
     {
         // buf: 0                seed               16  seq  20
@@ -102,114 +86,54 @@ ec_key GenerateRootDeterministicKey (uint128 const& seed)
         copy_uint32 (buf.begin() + 16, seq++);
         uint256 root = getSHA512Half (buf.data(), buf.size());
         std::fill (buf.begin(), buf.end(), 0); // security erase
-        privKey = BN_bin2bn ((const unsigned char*) &root, sizeof (root), privKey);
-        if (privKey == nullptr)
-        {
-            EC_KEY_free (pkey);
-            BN_free (order);
-            BN_CTX_free (ctx);
-            return ec_key::invalid;
-        }
+        privKey.assign ((unsigned char const*) &root, sizeof (root));
 
         root.zero(); // security erase
     }
-    while (BN_is_zero (privKey) || (BN_cmp (privKey, order) >= 0));
+    while (privKey.is_zero()  ||  privKey >= secp256k1_order);
 
-    BN_free (order);
+    return privKey;
+}
 
-    if (!EC_KEY_set_private_key (pkey, privKey))
-    {
-        // set the random point as the private key
-        assert (false);
-        EC_KEY_free (pkey);
-        BN_clear_free (privKey);
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
+// --> seed
+// <-- private root generator + public root generator
+Blob GenerateRootDeterministicPublicKey (uint128 const& seed)
+{
+    bn_ctx ctx;
 
-    EC_POINT* pubKey = EC_POINT_new (EC_KEY_get0_group (pkey));
+    bignum privKey = GenerateRootDeterministicKey (seed);
 
-    if (!EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, nullptr, nullptr, ctx))
-    {
-        // compute the corresponding public key point
-        assert (false);
-        BN_clear_free (privKey);
-        EC_POINT_free (pubKey);
-        EC_KEY_free (pkey);
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
+    // compute the corresponding public key point
+    ec_point pubKey = multiply (secp256k1_group, privKey, ctx);
 
-    BN_clear_free (privKey);
+    privKey.clear();  // security erase
 
-    if (!EC_KEY_set_public_key (pkey, pubKey))
-    {
-        assert (false);
-        EC_POINT_free (pubKey);
-        EC_KEY_free (pkey);
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
+    return serialize_ec_point (pubKey);
+}
 
-    EC_POINT_free (pubKey);
+uint256 GenerateRootDeterministicPrivateKey (uint128 const& seed)
+{
+    bignum key = GenerateRootDeterministicKey (seed);
 
-    BN_CTX_free (ctx);
-
-#ifdef EC_DEBUG
-    assert (EC_KEY_check_key (pkey) == 1); // CAUTION: This check is *very* expensive
-#endif
-    return ec_key::acquire ((ec_key::pointer_t) pkey);
+    return uint256_from_bignum_clear (key);
 }
 
 // Take ripple address.
 // --> root public generator (consumes)
 // <-- root public generator in EC format
-static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator)
+static ec_point GenerateRootPubKey (bignum&& pubGenerator)
 {
-    if (pubGenerator == nullptr)
-    {
-        assert (false);
-        return nullptr;
-    }
+    ec_point pubPoint = bn2point (secp256k1_group, pubGenerator.get());
 
-    EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
-
-    if (!pkey)
-    {
-        BN_free (pubGenerator);
-        return nullptr;
-    }
-
-    EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-    EC_POINT* pubPoint = EC_POINT_bn2point (EC_KEY_get0_group (pkey), pubGenerator, nullptr, nullptr);
-    BN_free (pubGenerator);
-
-    if (!pubPoint)
-    {
-        assert (false);
-        EC_KEY_free (pkey);
-        return nullptr;
-    }
-
-    if (!EC_KEY_set_public_key (pkey, pubPoint))
-    {
-        assert (false);
-        EC_POINT_free (pubPoint);
-        EC_KEY_free (pkey);
-        return nullptr;
-    }
-
-    EC_POINT_free (pubPoint);
-
-    return pkey;
+    return pubPoint;
 }
 
 // --> public generator
-static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
+static bignum makeHash (Blob const& pubGen, int seq, bignum const& order)
 {
     int subSeq = 0;
-    BIGNUM* ret = nullptr;
+
+    bignum result;
 
     assert(pubGen.size() == 33);
     do
@@ -222,167 +146,51 @@ static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
         copy_uint32 (buf.begin() + 37, subSeq++);
         uint256 root = getSHA512Half (buf.data(), buf.size());
         std::fill(buf.begin(), buf.end(), 0); // security erase
-        ret = BN_bin2bn ((const unsigned char*) &root, sizeof (root), ret);
-        if (!ret) return nullptr;
+        result.assign ((unsigned char const*) &root, sizeof (root));
         root.zero(); // security erase
     }
-    while (BN_is_zero (ret) || (BN_cmp (ret, order) >= 0));
+    while (result.is_zero()  ||  result >= order);
 
-    return ret;
+    return result;
 }
 
 // --> public generator
-ec_key GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
+Blob GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-    BIGNUM* generator = BN_bin2bn (
-        pubGen.data(),
-        pubGen.size(),
-        nullptr);
+    ec_point rootPubKey = GenerateRootPubKey (bignum (pubGen));
 
-    if (generator == nullptr)
-        return ec_key::invalid;
-
-    EC_KEY*         rootKey     = GenerateRootPubKey (generator);
-    const EC_POINT* rootPubKey  = EC_KEY_get0_public_key (rootKey);
-    BN_CTX*         ctx         = BN_CTX_new ();
-    EC_KEY*         pkey        = EC_KEY_new_by_curve_name (NID_secp256k1);
-    EC_POINT*       newPoint    = 0;
-    BIGNUM*         order       = 0;
-    BIGNUM*         hash        = 0;
-    bool            success     = true;
-
-    if (!ctx || !pkey)  success = false;
-
-    if (success)
-        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-    if (success)
-    {
-        newPoint    = EC_POINT_new (EC_KEY_get0_group (pkey));
-
-        if (!newPoint)   success = false;
-    }
-
-    if (success)
-    {
-        order       = BN_new ();
-
-        if (!order || !EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
-            success = false;
-    }
+    bn_ctx ctx;
 
     // Calculate the private additional key.
-    if (success)
-    {
-        hash        = makeHash (pubGen, seq, order);
+    bignum hash = makeHash (pubGen, seq, secp256k1_order);
 
-        if (!hash)   success = false;
-    }
+    // Calculate the corresponding public key.
+    ec_point newPoint = multiply (secp256k1_group, hash, ctx);
 
-    if (success)
-    {
-        // Calculate the corresponding public key.
-        EC_POINT_mul (EC_KEY_get0_group (pkey), newPoint, hash, nullptr, nullptr, ctx);
+    // Add the master public key and set.
+    add_to (secp256k1_group, rootPubKey, newPoint, ctx);
 
-        // Add the master public key and set.
-        EC_POINT_add (EC_KEY_get0_group (pkey), newPoint, newPoint, rootPubKey, ctx);
-        EC_KEY_set_public_key (pkey, newPoint);
-    }
-
-    if (order)              BN_free (order);
-
-    if (hash)               BN_free (hash);
-
-    if (newPoint)           EC_POINT_free (newPoint);
-
-    if (ctx)                BN_CTX_free (ctx);
-
-    if (rootKey)            EC_KEY_free (rootKey);
-
-    if (pkey && !success)   EC_KEY_free (pkey);
-
-    return success ? ec_key::acquire ((ec_key::pointer_t) pkey) : ec_key::invalid;
+    return serialize_ec_point (newPoint);
 }
 
 // --> root private key
-ec_key GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
+uint256 GeneratePrivateDeterministicKey (Blob const& pubGen, uint128 const& seed, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
-    BN_CTX* ctx = BN_CTX_new ();
+    bignum rootPrivKey = GenerateRootDeterministicKey (seed);
 
-    if (ctx == nullptr) return ec_key::invalid;
-
-    EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
-
-    if (pkey == nullptr)
-    {
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
-
-    EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-    BIGNUM* order = BN_new ();
-
-    if (order == nullptr)
-    {
-        BN_CTX_free (ctx);
-        EC_KEY_free (pkey);
-        return ec_key::invalid;
-    }
-
-    if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
-    {
-        BN_free (order);
-        BN_CTX_free (ctx);
-        EC_KEY_free (pkey);
-        return ec_key::invalid;
-    }
+    bn_ctx ctx;
 
     // calculate the private additional key
-    BIGNUM* privKey = makeHash (pubGen, seq, order);
-
-    if (privKey == nullptr)
-    {
-        BN_free (order);
-        BN_CTX_free (ctx);
-        EC_KEY_free (pkey);
-        return ec_key::invalid;
-    }
+    bignum privKey = makeHash (pubGen, seq, secp256k1_order);
 
     // calculate the final private key
-    BN_mod_add (privKey, privKey, rootPrivKey, order, ctx);
-    BN_free (order);
-    EC_KEY_set_private_key (pkey, privKey);
+    add_to (rootPrivKey, privKey, secp256k1_order, ctx);
 
-    // compute the corresponding public key
-    EC_POINT* pubKey = EC_POINT_new (EC_KEY_get0_group (pkey));
+    rootPrivKey.clear();  // security erase
 
-    if (!pubKey)
-    {
-        BN_clear_free (privKey);
-        BN_CTX_free (ctx);
-        EC_KEY_free (pkey);
-        return ec_key::invalid;
-    }
-
-    if (EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, nullptr, nullptr, ctx) == 0)
-    {
-        BN_clear_free (privKey);
-        EC_POINT_free (pubKey);
-        EC_KEY_free (pkey);
-        BN_CTX_free (ctx);
-        return ec_key::invalid;
-    }
-
-    BN_clear_free (privKey);
-    EC_KEY_set_public_key (pkey, pubKey);
-
-    EC_POINT_free (pubKey);
-    BN_CTX_free (ctx);
-
-    return ec_key::acquire ((ec_key::pointer_t) pkey);
+    return uint256_from_bignum_clear (privKey);
 }
 
 } // ripple

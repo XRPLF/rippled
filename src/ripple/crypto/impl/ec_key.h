@@ -67,14 +67,6 @@ public:
     }
 
     bool valid() const  { return ptr != nullptr; }
-
-    uint256 get_private_key() const;
-
-    static std::size_t get_public_key_max_size()  { return 33; }
-
-    std::size_t get_public_key_size() const;
-
-    std::uint8_t get_public_key (std::uint8_t* buffer) const;
 };
 
 } // openssl

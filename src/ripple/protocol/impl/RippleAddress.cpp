@@ -30,17 +30,10 @@
 #include <ripple/protocol/RipplePublicKey.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/ripemd.h>
-#include <openssl/bn.h>
 #include <openssl/pem.h>
 #include <mutex>
 
 namespace ripple {
-
-static BIGNUM* GetSecretBN (const openssl::ec_key& keypair)
-{
-	// DEPRECATED
-	return BN_dup (EC_KEY_get0_private_key ((EC_KEY*) keypair.get()));
-}
 
 // <-- seed
 static uint128 PassPhraseToKey (std::string const& passPhrase)
@@ -57,25 +50,14 @@ static uint128 PassPhraseToKey (std::string const& passPhrase)
     return ret;
 }
 
-static Blob getPublicKey (openssl::ec_key const& key)
-{
-	Blob result (33);
-	
-	key.get_public_key (&result[0]);
-	
-	return result;
-}
-
 static bool verifySignature (Blob const& pubkey, uint256 const& hash, Blob const& sig, ECDSA fullyCanonical)
 {
-	if (! isCanonicalECDSASig (sig, fullyCanonical))
-	{
-		return false;
-	}
-	
-	openssl::ec_key key = ECDSAPublicKey (pubkey);
-	
-	return key.valid() && ECDSAVerify (hash, sig, key);
+    if (! isCanonicalECDSASig (sig, fullyCanonical))
+    {
+        return false;
+    }
+
+    return ECDSAVerify (hash, sig, &pubkey[0], pubkey.size());
 }
 
 RippleAddress::RippleAddress ()
@@ -116,7 +98,7 @@ RippleAddress RippleAddress::createNodePublic (RippleAddress const& naSeed)
     RippleAddress   naNew;
 
     // YYY Should there be a GetPubKey() equiv that returns a uint256?
-    naNew.setNodePublic (getPublicKey (GenerateRootDeterministicKey (naSeed.getSeed())));
+    naNew.setNodePublic (GenerateRootDeterministicPublicKey (naSeed.getSeed()));
 
     return naNew;
 }
@@ -229,7 +211,7 @@ RippleAddress RippleAddress::createNodePrivate (RippleAddress const& naSeed)
 {
     RippleAddress   naNew;
 
-    naNew.setNodePrivate (GenerateRootDeterministicKey (naSeed.getSeed()).get_private_key());
+    naNew.setNodePrivate (GenerateRootDeterministicPrivateKey (naSeed.getSeed()));
 
     return naNew;
 }
@@ -302,9 +284,7 @@ void RippleAddress::setNodePrivate (uint256 hash256)
 
 void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
 {
-    openssl::ec_key key = ECDSAPrivateKey (getNodePrivate());
-    
-    vchSig = ECDSASign (hash, key);
+    vchSig = ECDSASign (hash, getNodePrivate());
 
     if (vchSig.empty())
         throw std::runtime_error ("Signing failed.");
@@ -502,7 +482,7 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
 
 void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
 {
-    setAccountPublic (getPublicKey (GeneratePublicDeterministicKey (generator.getGenerator(), seq)));
+    setAccountPublic (GeneratePublicDeterministicKey (generator.getGenerator(), seq));
 }
 
 bool RippleAddress::accountPublicVerify (
@@ -571,30 +551,18 @@ void RippleAddress::setAccountPrivate (uint256 hash256)
 void RippleAddress::setAccountPrivate (
     RippleAddress const& generator, RippleAddress const& naSeed, int seq)
 {
-    openssl::ec_key publicKey = GenerateRootDeterministicKey (naSeed.getSeed());
-    openssl::ec_key secretKey = GeneratePrivateDeterministicKey (generator.getGenerator(), GetSecretBN (publicKey), seq);
-    
-    setAccountPrivate (secretKey.get_private_key());
+    uint256 secretKey = GeneratePrivateDeterministicKey (generator.getGenerator(), naSeed.getSeed(), seq);
+
+    setAccountPrivate (secretKey);
 }
 
 bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) const
 {
-    openssl::ec_key key = ECDSAPrivateKey (getAccountPrivate());
-    
-    if (!key.valid())
-    {
-        // Bad private key.
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateSign: Bad private key.";
-        
-        return false;
-    }
-    
-    vucSig = ECDSASign (uHash, key);
+    vucSig = ECDSASign (uHash, getAccountPrivate());
     const bool ok = !vucSig.empty();
-    
-	CondLog (!ok, lsWARNING, RippleAddress)
-			<< "accountPrivateSign: Signing failed.";
+
+    CondLog (!ok, lsWARNING, RippleAddress)
+            << "accountPrivateSign: Signing failed.";
 
     return ok;
 }
@@ -602,22 +570,10 @@ bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) cons
 Blob RippleAddress::accountPrivateEncrypt (
     RippleAddress const& naPublicTo, Blob const& vucPlainText) const
 {
-    openssl::ec_key secretKey = ECDSAPrivateKey (getAccountPrivate());
-    openssl::ec_key publicKey = ECDSAPublicKey (naPublicTo.getAccountPublic());
-    
-    Blob vucCipherText;
+    uint256 secretKey = getAccountPrivate();
+    Blob    publicKey = naPublicTo.getAccountPublic();
 
-    if (! publicKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateEncrypt: Bad public key.";
-    }
-    
-    if (! secretKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateEncrypt: Bad private key.";
-    }
+    Blob vucCipherText;
 
     {
         try
@@ -635,22 +591,10 @@ Blob RippleAddress::accountPrivateEncrypt (
 Blob RippleAddress::accountPrivateDecrypt (
     RippleAddress const& naPublicFrom, Blob const& vucCipherText) const
 {
-    openssl::ec_key secretKey = ECDSAPrivateKey (getAccountPrivate());
-    openssl::ec_key publicKey = ECDSAPublicKey (naPublicFrom.getAccountPublic());
-    
-    Blob    vucPlainText;
+    uint256 secretKey = getAccountPrivate();
+    Blob    publicKey = naPublicFrom.getAccountPublic();
 
-    if (! publicKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateDecrypt: Bad public key.";
-    }
-    
-    if (! secretKey.valid())
-    {
-        WriteLog (lsWARNING, RippleAddress)
-                << "accountPrivateDecrypt: Bad private key.";
-    }
+    Blob    vucPlainText;
 
     {
         try
@@ -710,7 +654,7 @@ void RippleAddress::setGenerator (Blob const& vPublic)
 RippleAddress RippleAddress::createGeneratorPublic (RippleAddress const& naSeed)
 {
     RippleAddress   naNew;
-    naNew.setGenerator (getPublicKey (GenerateRootDeterministicKey (naSeed.getSeed())));
+    naNew.setGenerator (GenerateRootDeterministicPublicKey (naSeed.getSeed()));
     return naNew;
 }
 

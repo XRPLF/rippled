@@ -23,7 +23,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <BeastConfig.h>
-#include <ripple/crypto/ec_key.h>
+#include <ripple/crypto/impl/ec_key.h>
 #include <openssl/ec.h>
 
 namespace ripple  {
@@ -61,54 +61,6 @@ void ec_key::destroy()
         EC_KEY_free (get_EC_KEY (*this));
         ptr = nullptr;
     }
-}
-
-uint256 ec_key::get_private_key() const
-{
-    uint256 result;
-    result.zero();
-
-    if (valid())
-    {
-        const BIGNUM* bn = EC_KEY_get0_private_key (get_EC_KEY (*this));
-
-        if (bn == nullptr)
-        {
-            throw std::runtime_error ("ec_key::get_private_key: EC_KEY_get0_private_key failed");
-        }
-
-        BN_bn2bin (bn, result.end() - BN_num_bytes (bn));
-    }
-
-    return result;
-}
-
-std::size_t ec_key::get_public_key_size() const
-{
-    int const size = i2o_ECPublicKey (get_EC_KEY (*this), nullptr);
-
-    if (size == 0)
-    {
-        throw std::runtime_error ("ec_key::get_public_key_size() : i2o_ECPublicKey failed");
-    }
-
-    if (size > get_public_key_max_size())
-    {
-        throw std::runtime_error ("ec_key::get_public_key_size() : i2o_ECPublicKey() result too big");
-    }
-
-    return size;
-}
-
-std::uint8_t ec_key::get_public_key (std::uint8_t* buffer) const
-{
-    std::uint8_t* begin = buffer;
-
-    int const size = i2o_ECPublicKey (get_EC_KEY (*this), &begin);
-
-    assert (size == get_public_key_size());
-
-    return std::uint8_t (size);
 }
 
 } // openssl
