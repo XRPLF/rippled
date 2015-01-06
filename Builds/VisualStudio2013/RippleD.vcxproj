@@ -2006,9 +2006,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\shamap\TreeNodeCache.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

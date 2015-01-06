@@ -2907,9 +2907,6 @@
     <ClInclude Include="..\..\src\ripple\app\shamap\TreeNodeCache.h">
       <Filter>ripple\app\shamap</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
-      <Filter>ripple\app\transactors</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>

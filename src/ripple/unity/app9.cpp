@@ -31,7 +31,6 @@
 #include <ripple/app/transactors/Payment.cpp>
 #include <ripple/app/transactors/SetRegularKey.cpp>
 #include <ripple/app/transactors/SetAccount.cpp>
-#include <ripple/app/transactors/AddWallet.cpp>
 #include <ripple/app/transactors/SetTrust.cpp>
 #include <ripple/app/transactors/CreateOffer.cpp>
 #include <ripple/app/transactors/CreateOfferDirect.cpp>

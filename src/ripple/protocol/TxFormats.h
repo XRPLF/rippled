@@ -36,7 +36,7 @@ enum TxType
 
     ttPAYMENT           = 0,
     ttCLAIM             = 1, // open
-    ttWALLET_ADD        = 2,
+    ttWALLET_ADD        = 2, // unused
     ttACCOUNT_SET       = 3,
     ttPASSWORD_FUND     = 4, // open
     ttREGULAR_KEY_SET   = 5,
