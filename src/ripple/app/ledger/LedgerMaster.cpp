@@ -966,6 +966,14 @@ public:
                                             getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                                     nextLedger->getLedgerSeq() - 1,
                                                                                     InboundLedger::fcHISTORY);
+                                        if (!acq)
+                                        {
+                                            // On system shutdown, findCreate may return a nullptr
+                                            WriteLog (lsTRACE, LedgerMaster)
+                                                    << "findCreate failed to return an inbound ledger";
+                                            return;
+                                        }
+
                                         if (acq->isComplete() && !acq->isFailed())
                                             ledger = acq->getLedger();
                                         else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
@@ -1117,8 +1125,15 @@ public:
                         InboundLedger::pointer acq =
                             getApp().getInboundLedgers ().findCreate (hash, seq, InboundLedger::fcGENERIC);
 
-                        if (!acq->isDone ())
+                        if (!acq)
                         {
+                            // On system shutdown, findCreate may return a nullptr
+                            WriteLog (lsTRACE, LedgerMaster)
+                                << "findCreate failed to return an inbound ledger";
+                            return {};
+                        }
+
+                        if (!acq->isDone()) {
                         }
                         else if (acq->isComplete () && !acq->isFailed ())
                         {
@@ -1129,6 +1144,15 @@ public:
                             WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                             getApp().getInboundLedgers().dropLedger(hash);
                             acq = getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
+
+                            if (!acq)
+                            {
+                                // On system shutdown, findCreate may return a nullptr
+                                WriteLog (lsTRACE, LedgerMaster)
+                                    << "findCreate failed to return an inbound ledger";
+                                return {};
+                            }
+
                             if (acq->isComplete())
                             {
                                 if (acq->isFailed())
