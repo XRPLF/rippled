@@ -38,7 +38,7 @@ enum SHANodeFormat
     snfHASH     = 3, // just the hash
 };
 
-class SHAMapTreeNode
+class SHAMapTreeNode final
     : public CountedObject <SHAMapTreeNode>
 {
 public:
@@ -175,9 +175,7 @@ public:
         mFullBelowGen = gen;
     }
 
-    // VFALCO Why is this virtual?
-    virtual void dump (SHAMapNodeID const&, beast::Journal journal);
-    virtual std::string getString (SHAMapNodeID const&) const;
+    std::string getString (SHAMapNodeID const&) const;
 
     SHAMapTreeNode* getChildPointer (int branch);
     SHAMapTreeNode::pointer getChild (int branch);

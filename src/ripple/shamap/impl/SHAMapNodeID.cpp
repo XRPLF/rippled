@@ -177,10 +177,4 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
     return branch;
 }
 
-void SHAMapNodeID::dump (beast::Journal journal) const
-{
-    if (journal.debug) journal.debug <<
-        getString ();
-}
-
 } // ripple
