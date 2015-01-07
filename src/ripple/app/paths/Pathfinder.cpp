@@ -1185,8 +1185,9 @@ void fillPaths (Pathfinder::PaymentType type, PathCostList const& costs)
 void Pathfinder::initPathTable ()
 {
     // CAUTION: Do not include rules that build default paths
-    fillPaths(
-        pt_XRP_to_XRP, {});
+
+    mPathTable.clear();
+    fillPaths (pt_XRP_to_XRP, {});
 
     fillPaths(
         pt_XRP_to_nonXRP, {
