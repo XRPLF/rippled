@@ -291,6 +291,7 @@ public:
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY;
+    std::uint32_t                      LEDGER_HISTORY_INDEX;
     std::uint32_t                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
@@ -310,7 +311,7 @@ public:
 public:
     Config ();
 
-    int getSize (SizedItemName);
+    int getSize (SizedItemName) const;
     void setup (std::string const& strConf, bool bQuiet);
     void load ();
 };

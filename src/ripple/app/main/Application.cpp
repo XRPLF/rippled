@@ -291,9 +291,7 @@ public:
         , m_pathRequests (new PathRequests (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
-        , m_ledgerMaster (make_LedgerMaster (getConfig ().RUN_STANDALONE,
-            getConfig ().FETCH_DEPTH, getConfig ().LEDGER_HISTORY,
-            getConfig ().getSize (siLedgerFetch), *m_jobQueue,
+        , m_ledgerMaster (make_LedgerMaster (getConfig (), *m_jobQueue,
             m_collectorManager->collector (), m_logs.journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due

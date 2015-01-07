@@ -249,6 +249,7 @@ Config::Config ()
     FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
     LEDGER_HISTORY          = 256;
+    LEDGER_HISTORY_INDEX    = 0;
     FETCH_DEPTH             = 1000000000;
 
     // An explanation of these magical values would be nice.
@@ -584,6 +585,11 @@ void Config::load ()
                 else
                     LEDGER_HISTORY = beast::lexicalCastThrow <std::uint32_t> (strTemp);
             }
+            if (getSingleSection(secConfig, SECTION_LEDGER_HISTORY_INDEX, strTemp))
+            {
+                LEDGER_HISTORY_INDEX = beast::lexicalCastThrow <std::uint32_t>(strTemp);
+            }
+
             if (getSingleSection (secConfig, SECTION_FETCH_DEPTH, strTemp))
             {
                 boost::to_lower (strTemp);
@@ -628,7 +634,7 @@ void Config::load ()
     }
 }
 
-int Config::getSize (SizedItemName item)
+int Config::getSize (SizedItemName item) const
 {
     SizedItem sizeTable[] =   //    tiny    small   medium  large       huge
     {
