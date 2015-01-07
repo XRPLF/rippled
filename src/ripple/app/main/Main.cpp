@@ -40,6 +40,7 @@
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>
+#include <thread>
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
 #include <sys/resource.h>
@@ -154,9 +155,35 @@ setupConfigForUnitTests (Config* config)
     config->importNodeDatabase = beast::StringPairArray ();
 }
 
-static
-int
-runUnitTests(std::string const& pattern, std::string const& argument)
+static int runShutdownTests ()
+{
+    // Shutdown tests can not be part of the normal unit tests in 'runUnitTests'
+    // because it needs to create and destroy an application object.
+    int const numShutdownIterations = 20;
+    // Give it enough time to sync and run a bit while synced.
+    std::chrono::seconds const serverUptimePerIteration (4 * 60);
+    for (int i = 0; i < numShutdownIterations; ++i)
+    {
+        std::cerr << "\n\nStarting server. Iteration: " << i << "\n"
+                  << std::endl;
+        std::unique_ptr<Application> app (make_Application (deprecatedLogs()));
+        auto shutdownApp = [&app](std::chrono::seconds sleepTime, int iteration)
+        {
+            std::this_thread::sleep_for (sleepTime);
+            std::cerr << "\n\nStopping server. Iteration: " << iteration << "\n"
+                      << std::endl;
+            app->signalStop();
+        };
+        std::thread shutdownThread (shutdownApp, serverUptimePerIteration, i);
+        setupServer();
+        startServer();
+        shutdownThread.join();
+    }
+    return EXIT_SUCCESS;
+}
+
+static int runUnitTests (std::string const& pattern,
+                         std::string const& argument)
 {
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (&getConfig ());
@@ -208,6 +235,7 @@ int run (int argc, char** argv)
     ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
+    ("shutdowntest", po::value <std::string> ()->implicit_value (""), "Perform shutdown tests.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("unittest-arg", po::value <std::string> ()->implicit_value (""), "Supplies argument to unit tests.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
@@ -269,6 +297,7 @@ int run (int argc, char** argv)
         && !vm.count ("parameters")
         && !vm.count ("fg")
         && !vm.count ("standalone")
+        && !vm.count ("shutdowntest")
         && !vm.count ("unittest"))
     {
         std::string logMe = DoSustain (getConfig ().getDebugLogFile ().string());
@@ -382,6 +411,11 @@ int run (int argc, char** argv)
             if (getConfig ().VALIDATION_QUORUM < 0)
                 iResult = 1;
         }
+    }
+
+    if (vm.count ("shutdowntest"))
+    {
+        return runShutdownTests ();
     }
 
     if (iResult == 0)
