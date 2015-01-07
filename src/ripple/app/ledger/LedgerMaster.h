@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
+#include <ripple/core/Config.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
@@ -149,8 +150,9 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t currentLedgerID,
-                               std::uint32_t ledgerHistory, std::uint32_t targetLedger);
+    static bool shouldAcquire (std::uint32_t currentLedgerID, 
+        std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
+        std::uint32_t targetLedger);
 
     virtual void clearPriorLedgers (LedgerIndex seq) = 0;
 
@@ -158,8 +160,7 @@ public:
 };
 
 std::unique_ptr <LedgerMaster>
-make_LedgerMaster (bool standalone, std::uint32_t fetch_depth,
-    std::uint32_t ledger_history, int ledger_fetch_size, beast::Stoppable& parent,
+make_LedgerMaster (Config const& config, beast::Stoppable& parent,
     beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 } // ripple

@@ -344,6 +344,7 @@ int run (int argc, char** argv)
         {
             getConfig ().RUN_STANDALONE = true;
             getConfig ().LEDGER_HISTORY = 0;
+            getConfig ().LEDGER_HISTORY_INDEX = 0;
         }
     }
 
