@@ -23,6 +23,7 @@
 #include <beast/net/IPAddressV4.h>
 #include <beast/net/IPAddressV6.h>
 #include <beast/container/hash_append.h>
+#include <beast/utility/noexcept.h>
 
 #include <boost/functional/hash.hpp>
 
@@ -126,7 +127,6 @@ public:
         return m_v4;
     }
 
-
     /** Returns the IPv6 address.
         Precondition:
             is_v6() == `true`
@@ -142,13 +142,13 @@ public:
     template <class Hasher>
     friend
     void
-    hash_append(Hasher& h, Address const& addr)
+    hash_append(Hasher& h, Address const& addr) noexcept
     {
         using beast::hash_append;
         if (addr.is_v4 ())
-            hash_append(h, addr.to_v4 ());
-        else
-            hash_append(h, addr.to_v6 ());
+            hash_append(h, addr.m_v4);
+        else if (addr.is_v6 ())
+            hash_append(h, addr.m_v6);
     }
 
     /** Arithmetic comparison. */
