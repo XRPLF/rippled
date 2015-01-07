@@ -140,7 +140,7 @@ struct AddressV4
 
     Proxy <true> operator[] (std::size_t index) const;
     Proxy <false> operator[] (std::size_t index);
-    /** @{ */
+    /** @} */
 
     /** The value as a 32 bit unsigned. */
     std::uint32_t value;
