@@ -331,6 +331,48 @@ public:
         STTx::ref stTxn, TER terResult) = 0;
 };
 
+//------------------------------------------------------------------------------
+
+namespace paging {
+    typedef std::pair<Transaction::pointer,TransactionMetaSet::pointer>
+            TxResult;
+
+    typedef std::tuple<std::string, std::string, std::uint32_t>
+            TxResultHex;
+
+    void
+    accountTxPage (
+        DatabaseCon& database,
+        std::function<void (std::uint32_t)> const& onUnsavedLedger,
+        std::function<void (std::uint32_t ledger_index,
+                            std::string const& status, // sql Status column
+                            Blob const& txn,
+                            Blob const& meta)> const&,
+        RippleAddress const& account,
+        std::int32_t minLedger,
+        std::int32_t maxLedger,
+        bool forward,
+        Json::Value& token,
+        int limit,
+        bool bAdmin,
+        std::uint32_t pageLength = 200);
+
+    void
+    convertBlobsToTxResult ( std::vector<TxResult>& to,
+                             std::uint32_t ledger_index,
+                             std::string const& status,
+                             Blob const& txBlob,
+                             Blob const& meta);
+    void
+    convertBlobsToTxResultHex ( std::vector<TxResultHex>& to,
+                                std::uint32_t ledger_index,
+                                std::string const& status,
+                                Blob const& txBlob,
+                                Blob const& meta);
+}
+
+//------------------------------------------------------------------------------
+
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs (NetworkOPs::clock_type& clock, bool standalone,
     std::size_t network_quorum, JobQueue& job_queue, LedgerMaster& ledgerMaster,
