@@ -103,14 +103,14 @@ public:
 
     /** Returns `true` if this address represents an IPv4 address. */
     bool
-    is_v4 () const
+    is_v4 () const noexcept
     {
         return m_type == ipv4;
     }
 
     /** Returns `true` if this address represents an IPv6 address. */
     bool
-    is_v6() const
+    is_v6() const noexcept
     {
         return m_type == ipv6;
     }
@@ -146,9 +146,9 @@ public:
     {
         using beast::hash_append;
         if (addr.is_v4 ())
-            hash_append(h, addr.m_v4);
+            hash_append(h, addr.to_v4 ());
         else if (addr.is_v6 ())
-            hash_append(h, addr.m_v6);
+            hash_append(h, addr.to_v6 ());
     }
 
     /** Arithmetic comparison. */
