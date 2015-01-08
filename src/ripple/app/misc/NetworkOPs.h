@@ -321,6 +321,8 @@ public:
         STTx::ref stTxn, TER terResult) = 0;
 };
 
+//------------------------------------------------------------------------------
+
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs (NetworkOPs::clock_type& clock, bool standalone,
     std::size_t network_quorum, JobQueue& job_queue, LedgerMaster& ledgerMaster,

@@ -107,6 +107,24 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
     mInLedger   = lseq;
 }
 
+TransStatus Transaction::sqlTransactionStatus(
+    boost::optional<std::string> const& status)
+{
+    char const c = (status) ? (*status)[0] : TXN_SQL_UNKNOWN;
+
+    switch (c)
+    {
+    case TXN_SQL_NEW:       return NEW;
+    case TXN_SQL_CONFLICT:  return CONFLICTED;
+    case TXN_SQL_HELD:      return HELD;
+    case TXN_SQL_VALIDATED: return COMMITTED;
+    case TXN_SQL_INCLUDED:  return INCLUDED;
+    }
+
+    assert (c == TXN_SQL_UNKNOWN);
+    return INVALID;
+}
+
 Transaction::pointer Transaction::transactionFromSQL (
     boost::optional<std::uint64_t> const& ledgerSeq,
     boost::optional<std::string> const& status,
@@ -121,40 +139,7 @@ Transaction::pointer Transaction::transactionFromSQL (
     std::string reason;
     auto tr = std::make_shared<Transaction> (txn, validate, reason);
 
-    TransStatus st (INVALID);
-
-    char const statusChar = status ? (*status)[0] : TXN_SQL_UNKNOWN;
-
-    switch (statusChar)
-    {
-    case TXN_SQL_NEW:
-        st = NEW;
-        break;
-
-    case TXN_SQL_CONFLICT:
-        st = CONFLICTED;
-        break;
-
-    case TXN_SQL_HELD:
-        st = HELD;
-        break;
-
-    case TXN_SQL_VALIDATED:
-        st = COMMITTED;
-        break;
-
-    case TXN_SQL_INCLUDED:
-        st = INCLUDED;
-        break;
-
-    case TXN_SQL_UNKNOWN:
-        break;
-
-    default:
-        assert (false);
-    }
-
-    tr->setStatus (st);
+    tr->setStatus (sqlTransactionStatus (status));
     tr->setLedger (inLedger);
     return tr;
 }

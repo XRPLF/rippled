@@ -25,3 +25,5 @@
 #include <ripple/app/tx/LocalTxs.cpp>
 #include <ripple/app/tx/InboundTransactions.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>
+#include <ripple/app/misc/impl/AccountTxPaging.cpp>
+#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>

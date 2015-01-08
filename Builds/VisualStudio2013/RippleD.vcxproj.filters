@@ -280,6 +280,9 @@
     <Filter Include="ripple\app\misc">
       <UniqueIdentifier>{5A1509B2-871B-A7AC-1E60-544D3F398741}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\misc\impl">
+      <UniqueIdentifier>{C4BDB9F8-7DB7-E304-D286-098085D5D16E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\misc\tests">
       <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
     </Filter>
@@ -2379,6 +2382,12 @@
     <ClInclude Include="..\..\src\ripple\app\misc\IHashRouter.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.h">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2397,6 +2406,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\tests\AccountTxPaging.test.cpp">
+      <Filter>ripple\app\misc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
       <Filter>ripple\app\misc\tests</Filter>
     </ClCompile>
