@@ -19,24 +19,24 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/data/DatabaseCon.h>
+#include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
 
 namespace ripple {
-
 /** Track the list of "amendments"
 
-    An "amendment" is an option that can affect transaction processing
-    rules that is identified by a 256-bit amendment identifier
-    and adopted, or rejected, by the network.
+   An "amendment" is an option that can affect transaction processing rules.
+   Amendments are proposed and then adopted or rejected by the network. An
+   Amendment is uniquely identified by its AmendmentID, a 256-bit key.
 */
-class AmendmentTableImpl : public AmendmentTable
+template<class AppApiFacade>
+class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
     typedef hash_map<uint256, AmendmentState> amendmentMap_t;
-    typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
     typedef hash_set<uint256> amendmentList_t;
 
     typedef RippleMutex LockType;
@@ -49,14 +49,18 @@ protected:
     core::Clock::time_point m_firstReport; // close time of first majority report
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
+    AppApiFacade m_appApiFacade;
 
-    AmendmentState* getCreate (uint256 const& amendment, bool create);
+    AmendmentState& getCreate (uint256 const& amendment);
+    AmendmentState* getExisting (uint256 const& amendment);
     bool shouldEnable (std::uint32_t closeTime, const AmendmentState& fs);
     void setJson (Json::Value& v, const AmendmentState&);
 
 public:
-    AmendmentTableImpl (std::chrono::seconds majorityTime, int majorityFraction,
-            beast::Journal journal)
+    AmendmentTableImpl (
+        std::chrono::seconds majorityTime,
+        int majorityFraction,
+        beast::Journal journal)
         : m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
         , m_firstReport (0)
@@ -65,10 +69,10 @@ public:
     {
     }
 
-    void addInitial () override;
+    void addInitial (Section const& section) override;
 
-    AmendmentState* addKnown (const char* amendmentID, const char* friendlyName,
-        bool veto) override;
+    void addKnown (AmendmentName const& name) override;
+
     uint256 get (std::string const& name) override;
 
     bool veto (uint256 const& amendment) override;
@@ -97,51 +101,114 @@ public:
     amendmentList_t getDesired();    // amendments we support, do not veto, are not enabled
 };
 
-void
-AmendmentTableImpl::addInitial ()
+namespace detail
 {
-    // For each amendment this version supports, construct the AmendmentState object by calling
-    // addKnown. Set any vetoes or defaults. A pointer to the AmendmentState can be stashed
+/** preEnabledAmendments is a static collection of amendments that are are
+   enabled at build time.
+
+   Add amendments to this collection at build time to enable them on this
+   server.
+*/
+
+std::vector<AmendmentName> const preEnabledAmendments;
 }
 
-AmendmentState*
-AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
+template<class AppApiFacade>
+void
+AmendmentTableImpl<AppApiFacade>::addInitial (Section const& section)
+{
+    for (auto const& a : detail::preEnabledAmendments)
+    {
+        if (!a.valid ())
+        {
+            std::string const errorMsg =
+                (boost::format (
+                     "preEnabledAmendments contains an invalid hash (expected "
+                     "a hex number). Value was: %1%") %
+                 a.hexString ()).str ();
+            throw std::runtime_error (errorMsg);
+        }
+    }
+
+    std::vector<AmendmentName> toAdd (detail::preEnabledAmendments);
+
+    {
+        // add the amendments from the config file
+        int const numExpectedToks = 2;
+        for (auto const& line : section.lines ())
+        {
+            boost::tokenizer<> tokenizer (line);
+            std::vector<std::string> tokens (tokenizer.begin (),
+                                             tokenizer.end ());
+            if (tokens.size () != numExpectedToks)
+            {
+                std::string const errorMsg =
+                    (boost::format (
+                         "The %1% section in the config file expects %2% "
+                         "items. Found %3%. Line was: %4%") %
+                     SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
+                     line).str ();
+                throw std::runtime_error (errorMsg);
+            }
+
+            toAdd.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
+            if (!toAdd.back ().valid ())
+            {
+                std::string const errorMsg =
+                    (boost::format (
+                         "%1% is not a valid hash. Expected a hex "
+                         "number. In config setcion: %2%. Line was: "
+                         "%3%") %
+                     toAdd.back ().hexString () % SECTION_AMENDMENTS %
+                     line).str ();
+                throw std::runtime_error (errorMsg);
+            }
+        }
+    }
+
+    for (auto const& a : toAdd)
+    {
+        addKnown (a);
+        enable (a.id ());
+    }
+}
+
+template<class AppApiFacade>
+AmendmentState&
+AmendmentTableImpl<AppApiFacade>::getCreate (uint256 const& amendmentHash)
 {
     // call with the mutex held
     auto iter (m_amendmentMap.find (amendmentHash));
 
     if (iter == m_amendmentMap.end())
     {
-        if (!create)
-            return nullptr;
-
-        AmendmentState* amendment = & (m_amendmentMap[amendmentHash]);
-
-        {
-            std::string query = "SELECT FirstMajority,LastMajority FROM Features WHERE hash='";
-            query.append (to_string (amendmentHash));
-            query.append ("';");
-
-            auto sl (getApp().getWalletDB ().lock ());
-            auto db = getApp().getWalletDB ().getDB ();
-
-            if (db->executeSQL (query) && db->startIterRows ())
-            {
-                amendment->m_firstMajority = db->getBigInt("FirstMajority");
-                amendment->m_lastMajority = db->getBigInt("LastMajority");
-                db->endIterRows ();
-            }
-        }
-
+        AmendmentState& amendment = m_amendmentMap[amendmentHash];
+        m_appApiFacade.setMajorityTimesFromDBToState (amendment, amendmentHash);
         return amendment;
     }
+
+    return iter->second;
+}
+
+template<class AppApiFacade>
+AmendmentState*
+AmendmentTableImpl<AppApiFacade>::getExisting (uint256 const& amendmentHash)
+{
+    // call with the mutex held
+    auto iter (m_amendmentMap.find (amendmentHash));
+
+    if (iter == m_amendmentMap.end())
+        return nullptr;
 
     return & (iter->second);
 }
 
+template<class AppApiFacade>
 uint256
-AmendmentTableImpl::get (std::string const& name)
+AmendmentTableImpl<AppApiFacade>::get (std::string const& name)
 {
+    ScopedLockType sl (mLock);
+
     for (auto const& e : m_amendmentMap)
     {
         if (name == e.second.mFriendlyName)
@@ -151,48 +218,50 @@ AmendmentTableImpl::get (std::string const& name)
     return uint256 ();
 }
 
-AmendmentState*
-AmendmentTableImpl::addKnown (const char* amendmentID, const char* friendlyName,
-    bool veto)
+template<class AppApiFacade>
+void
+AmendmentTableImpl<AppApiFacade>::addKnown (AmendmentName const& name)
 {
-    uint256 hash;
-    hash.SetHex (amendmentID);
-
-    if (hash.isZero ())
+    if (!name.valid ())
     {
-        assert (false);
-        return nullptr;
+        std::string const errorMsg =
+            (boost::format (
+                 "addKnown was given an invalid hash (expected a hex number). "
+                 "Value was: %1%") %
+             name.hexString ()).str ();
+        throw std::runtime_error (errorMsg);
     }
 
-    AmendmentState* f = getCreate (hash, true);
+    ScopedLockType sl (mLock);
+    AmendmentState& amendment = getCreate (name.id ());
 
-    if (friendlyName != nullptr)
-        f->setFriendlyName (friendlyName);
+    if (!name.friendlyName ().empty ())
+        amendment.setFriendlyName (name.friendlyName ());
 
-    f->mVetoed = veto;
-    f->mSupported = true;
-
-    return f;
+    amendment.mVetoed = false;
+    amendment.mSupported = true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::veto (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::veto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, true);
+    AmendmentState& s = getCreate (amendment);
 
-    if (s->mVetoed)
+    if (s.mVetoed)
         return false;
 
-    s->mVetoed = true;
+    s.mVetoed = true;
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::unVeto (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::unVeto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mVetoed)
         return false;
@@ -201,24 +270,26 @@ AmendmentTableImpl::unVeto (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::enable (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::enable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, true);
+    AmendmentState& s = getCreate (amendment);
 
-    if (s->mEnabled)
+    if (s.mEnabled)
         return false;
 
-    s->mEnabled = true;
+    s.mEnabled = true;
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::disable (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::disable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mEnabled)
         return false;
@@ -227,24 +298,27 @@ AmendmentTableImpl::disable (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::isEnabled (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::isEnabled (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
     return s && s->mEnabled;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::isSupported (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::isSupported (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
     return s && s->mSupported;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getVetoed ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getVetoed ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -256,8 +330,9 @@ AmendmentTableImpl::getVetoed ()
     return ret;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getEnabled ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getEnabled ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -269,8 +344,9 @@ AmendmentTableImpl::getEnabled ()
     return ret;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
+AmendmentTableImpl<AppApiFacade>::shouldEnable (std::uint32_t closeTime,
     const AmendmentState& fs)
 {
     if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.m_lastMajority != m_lastReport))
@@ -286,8 +362,9 @@ AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
     return (fs.m_lastMajority - fs.m_firstMajority) > m_majorityTime.count();
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getToEnable (core::Clock::time_point closeTime)
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getToEnable (core::Clock::time_point closeTime)
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -304,8 +381,9 @@ AmendmentTableImpl::getToEnable (core::Clock::time_point closeTime)
     return ret;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getDesired ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getDesired ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -319,8 +397,9 @@ AmendmentTableImpl::getDesired ()
     return ret;
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::reportValidations (const AmendmentSet& set)
+AmendmentTableImpl<AppApiFacade>::reportValidations (const AmendmentSet& set)
 {
     if (set.mTrustedValidations == 0)
         return;
@@ -335,7 +414,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
         m_firstReport = set.mCloseTime;
 
     std::vector<uint256> changedAmendments;
-    changedAmendments.resize(set.mVotes.size());
+    changedAmendments.reserve (set.mVotes.size());
 
     for (auto const& e : set.mVotes)
     {
@@ -378,27 +457,15 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        auto sl (getApp().getWalletDB ().lock ());
-        auto db = getApp().getWalletDB ().getDB ();
-
-        db->executeSQL ("BEGIN TRANSACTION;");
-        for (auto const& hash : changedAmendments)
-        {
-            AmendmentState& fState = m_amendmentMap[hash];
-            db->executeSQL (boost::str (boost::format (
-                "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';") %
-                fState.m_firstMajority % to_string (hash)));
-            db->executeSQL (boost::str (boost::format (
-                "UPDATE Features SET LastMajority = %d WHERE Hash = '%s';") %
-                fState.m_lastMajority % to_string(hash)));
-        }
-        db->executeSQL ("END TRANSACTION;");
-        changedAmendments.clear();
+        m_appApiFacade.setMajorityTimesFromStateToDB (changedAmendments,
+                                                      m_amendmentMap);
+        changedAmendments.clear ();
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
+AmendmentTableImpl<AppApiFacade>::setEnabled (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
     for (auto& e : m_amendmentMap)
@@ -411,8 +478,9 @@ AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
+AmendmentTableImpl<AppApiFacade>::setSupported (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
     for (auto &e : m_amendmentMap)
@@ -425,8 +493,9 @@ AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
+AmendmentTableImpl<AppApiFacade>::doValidation (Ledger::ref lastClosedLedger,
     STObject& baseValidation)
 {
     amendmentList_t lAmendments = getDesired();
@@ -441,8 +510,9 @@ AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
     baseValidation.setFieldV256 (sfAmendments, vAmendments);
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
+AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
     SHAMap::ref initialPosition)
 {
 
@@ -452,7 +522,8 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
     AmendmentSet amendmentSet (lastClosedLedger->getParentCloseTimeNC ());
 
     // get validations for ledger before flag ledger
-    ValidationSet valSet = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
+    ValidationSet valSet = m_appApiFacade.getValidations (
+        lastClosedLedger->getParentHash ());
     for (auto const& entry : valSet)
     {
         auto const& val = *entry.second;
@@ -500,8 +571,9 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
     }
 }
 
+template<class AppApiFacade>
 Json::Value
-AmendmentTableImpl::getJson (int)
+AmendmentTableImpl<AppApiFacade>::getJson (int)
 {
     Json::Value ret(Json::objectValue);
     {
@@ -514,8 +586,9 @@ AmendmentTableImpl::getJson (int)
     return ret;
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
+AmendmentTableImpl<AppApiFacade>::setJson (Json::Value& v, const AmendmentState& fs)
 {
     if (!fs.mFriendlyName.empty())
         v["name"] = fs.mFriendlyName;
@@ -560,8 +633,9 @@ AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
         v["veto"] = true;
 }
 
+template<class AppApiFacade>
 Json::Value
-AmendmentTableImpl::getJson (uint256 const& amendmentID)
+AmendmentTableImpl<AppApiFacade>::getJson (uint256 const& amendmentID)
 {
     Json::Value ret = Json::objectValue;
     Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
@@ -569,19 +643,108 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
     {
         ScopedLockType sl(mLock);
 
-        AmendmentState *amendmentState = getCreate (amendmentID, true);
-        setJson (jAmendment, *amendmentState);
+        AmendmentState& amendmentState = getCreate (amendmentID);
+        setJson (jAmendment, amendmentState);
     }
 
     return ret;
 }
 
-std::unique_ptr<AmendmentTable>
-make_AmendmentTable (std::chrono::seconds majorityTime, int majorityFraction,
-    beast::Journal journal)
+namespace detail
 {
-    return std::make_unique<AmendmentTableImpl> (majorityTime, majorityFraction,
-        journal);
+class AppApiFacadeImpl final
+{
+public:
+    void setMajorityTimesFromDBToState (AmendmentState& toUpdate,
+                                        uint256 const& amendmentHash) const;
+    void setMajorityTimesFromStateToDB (
+        std::vector<uint256> const& changedAmendments,
+        hash_map<uint256, AmendmentState>& amendmentMap) const;
+    ValidationSet getValidations (uint256 const& hash) const;
+};
+
+class AppApiFacadeMock final
+{
+public:
+    void setMajorityTimesFromDBToState (AmendmentState& toUpdate,
+                                        uint256 const& amendmentHash) const {};
+    void setMajorityTimesFromStateToDB (
+        std::vector<uint256> const& changedAmendments,
+        hash_map<uint256, AmendmentState>& amendmentMap) const {};
+    ValidationSet getValidations (uint256 const& hash) const
+    {
+        return ValidationSet ();
+    };
+};
+
+void AppApiFacadeImpl::setMajorityTimesFromDBToState (
+    AmendmentState& toUpdate,
+    uint256 const& amendmentHash) const
+{
+    std::string query =
+        "SELECT FirstMajority,LastMajority FROM Features WHERE hash='";
+    query.append (to_string (amendmentHash));
+    query.append ("';");
+
+    auto& walletDB (getApp ().getWalletDB ());
+    auto sl (walletDB.lock ());
+    auto db (walletDB.getDB ());
+
+    if (db->executeSQL (query) && db->startIterRows ())
+    {
+        toUpdate.m_firstMajority = db->getBigInt ("FirstMajority");
+        toUpdate.m_lastMajority = db->getBigInt ("LastMajority");
+        db->endIterRows ();
+    }
 }
 
-} // ripple
+void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
+    std::vector<uint256> const& changedAmendments,
+    hash_map<uint256, AmendmentState>& amendmentMap) const
+{
+    if (changedAmendments.empty ())
+        return;
+
+    auto& walletDB (getApp ().getWalletDB ());
+    auto sl (walletDB.lock ());
+    auto db (walletDB.getDB ());
+
+    db->executeSQL ("BEGIN TRANSACTION;");
+    for (auto const& hash : changedAmendments)
+    {
+        AmendmentState const& fState = amendmentMap[hash];
+        db->executeSQL (boost::str (boost::format (
+                                        "UPDATE Features SET FirstMajority "
+                                        "= %d WHERE Hash = '%s';") %
+                                    fState.m_firstMajority % to_string (hash)));
+        db->executeSQL (boost::str (boost::format (
+                                        "UPDATE Features SET LastMajority "
+                                        "= %d WHERE Hash = '%s';") %
+                                    fState.m_lastMajority % to_string (hash)));
+    }
+    db->executeSQL ("END TRANSACTION;");
+}
+
+ValidationSet AppApiFacadeImpl::getValidations (uint256 const& hash) const
+{
+    return getApp ().getValidations ().getValidations (hash);
+}
+}  // detail
+
+std::unique_ptr<AmendmentTable> make_AmendmentTable (
+    std::chrono::seconds majorityTime,
+    int majorityFraction,
+    beast::Journal journal,
+    bool useMockFacade)
+{
+    if (useMockFacade)
+    {
+        return std::make_unique<AmendmentTableImpl<detail::AppApiFacadeMock>>(
+            majorityTime, majorityFraction, std::move (journal));
+    }
+
+    return std::make_unique<AmendmentTableImpl<detail::AppApiFacadeImpl>>(
+        majorityTime, majorityFraction, std::move (journal));
+}
+
+}  // ripple
