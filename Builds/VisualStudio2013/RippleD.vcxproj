@@ -916,6 +916,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h" />
     <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\Debug.h">

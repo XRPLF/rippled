@@ -5443,4 +5443,9 @@
       <Filter>websocket\src</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
