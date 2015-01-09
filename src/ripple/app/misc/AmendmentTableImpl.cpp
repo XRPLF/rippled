@@ -22,9 +22,22 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/data/DatabaseCon.h>
+#include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
 
 namespace ripple {
+
+namespace detail
+{
+/** Amendments that are "compiled into" this app
+
+    Add amendments to this collection at build time to enable them on this
+   server. The first element of the pair is the id, the second element is
+   the "friendly name".
+*/
+std::set<std::pair<std::string, std::string>> PreEnabledAmendments;
+}
 
 /** Track the list of "amendments"
 
@@ -67,8 +80,9 @@ public:
 
     void addInitial () override;
 
-    AmendmentState* addKnown (const char* amendmentID, const char* friendlyName,
-        bool veto) override;
+    AmendmentState* addKnown (uint256 const& amendmentID,
+                              std::string const& friendlyName,
+                              bool veto) override;
     uint256 get (std::string const& name) override;
 
     bool veto (uint256 const& amendment) override;
@@ -100,8 +114,60 @@ public:
 void
 AmendmentTableImpl::addInitial ()
 {
-    // For each amendment this version supports, construct the AmendmentState object by calling
-    // addKnown. Set any vetoes or defaults. A pointer to the AmendmentState can be stashed
+    // For each amendment this version supports, construct the AmendmentState
+    // object by calling addKnown. Set any vetoes or defaults. A pointer to the
+    // AmendmentState can be stashed
+
+    std::set<std::pair<uint256, std::string>> toAdd;
+
+    for (auto const& _ : detail::PreEnabledAmendments)
+    {
+        toAdd.emplace (uint256 (_.first), _.second);
+    }
+
+    {
+        // add the amendments from the config file
+        auto const& section = getConfig ().section (SECTION_AMENDMENTS);
+        int const numExpectedToks = 2;
+        for (auto const& _ : section.lines ())
+        {
+            boost::tokenizer<> tokenizer (_);
+            int numToks = 0;
+            uint256 id;
+            std::string friendlyName;
+            for(auto const& curTok : tokenizer)
+            {
+                ++numToks;
+                if (numToks > numExpectedToks)
+                {
+                    continue;  // continue counting so can report number in the
+                               // error
+                }
+
+                if (numToks == 1)
+                    id.SetHex (curTok);
+                else
+                    friendlyName = curTok;
+            }
+
+            if (numToks != numExpectedToks)
+            {
+                std::string const errorMsg =
+                    (boost::format (
+                         "The %1% section in the config file expects %2% "
+                         "items. Found %3%") %
+                     SECTION_AMENDMENTS % numExpectedToks % numToks).str ();
+                throw std::runtime_error (errorMsg);
+            }
+            toAdd.emplace (id, friendlyName);
+        }
+    }
+
+    for (auto const& _ : toAdd)
+    {
+        addKnown (_.first, _.second, /*veto*/ false);
+        enable (_.first);
+    }
 }
 
 AmendmentState*
@@ -151,28 +217,26 @@ AmendmentTableImpl::get (std::string const& name)
     return uint256 ();
 }
 
-AmendmentState*
-AmendmentTableImpl::addKnown (const char* amendmentID, const char* friendlyName,
-    bool veto)
+AmendmentState* AmendmentTableImpl::addKnown (uint256 const& hash,
+                                              std::string const& friendlyName,
+                                              bool veto)
 {
-    uint256 hash;
-    hash.SetHex (amendmentID);
-
     if (hash.isZero ())
     {
         assert (false);
         return nullptr;
     }
 
-    AmendmentState* f = getCreate (hash, true);
+    ScopedLockType sl (mLock);
+    AmendmentState* s = getCreate (hash, true);
 
-    if (friendlyName != nullptr)
-        f->setFriendlyName (friendlyName);
+    if (!friendlyName.empty ())
+        s->setFriendlyName (friendlyName);
 
-    f->mVetoed = veto;
-    f->mSupported = true;
+    s->mVetoed = veto;
+    s->mSupported = true;
 
-    return f;
+    return s;
 }
 
 bool
