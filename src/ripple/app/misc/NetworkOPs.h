@@ -346,8 +346,8 @@ namespace paging {
         std::function<void (std::uint32_t)> const& onUnsavedLedger,
         std::function<void (std::uint32_t ledger_index,
                             std::string const& status, // sql Status column
-                            Blob const& txn,
-                            Blob const& meta)> const&,
+                            Serializer& rawTxn,
+                            Serializer& rawMeta)> const&,
         RippleAddress const& account,
         std::int32_t minLedger,
         std::int32_t maxLedger,
@@ -355,20 +355,20 @@ namespace paging {
         Json::Value& token,
         int limit,
         bool bAdmin,
-        std::uint32_t pageLength = 200);
+        std::uint32_t pageLength);
 
     void
     convertBlobsToTxResult ( std::vector<TxResult>& to,
                              std::uint32_t ledger_index,
                              std::string const& status,
-                             Blob const& txBlob,
-                             Blob const& meta);
+                             Serializer& rawTxn,
+                             Serializer& rawMeta);
     void
     convertBlobsToTxResultHex ( std::vector<TxResultHex>& to,
                                 std::uint32_t ledger_index,
                                 std::string const& status,
-                                Blob const& txBlob,
-                                Blob const& meta);
+                                Serializer& rawTxn,
+                                Serializer& rawMeta);
 }
 
 //------------------------------------------------------------------------------

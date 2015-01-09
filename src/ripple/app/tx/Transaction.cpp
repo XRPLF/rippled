@@ -89,32 +89,8 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
     mInLedger   = lseq;
 }
 
-Transaction::pointer Transaction::transactionFromSQL (
-    Database* db, Validate validate)
+TransStatus Transaction::sqlTransactionStatus(const std::string& status)
 {
-    Serializer rawTxn;
-    std::string status;
-    std::uint32_t inLedger;
-
-    int txSize = 2048;
-    rawTxn.resize (txSize);
-
-    db->getStr ("Status", status);
-    inLedger = db->getInt ("LedgerSeq");
-    txSize = db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-
-    if (txSize > rawTxn.getLength ())
-    {
-        rawTxn.resize (txSize);
-        db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-    }
-
-    rawTxn.resize (txSize);
-
-    SerializerIterator it (rawTxn);
-    auto txn = std::make_shared<STTx> (it);
-    auto tr = std::make_shared<Transaction> (txn, validate);
-
     TransStatus st (INVALID);
 
     switch (status[0])
@@ -146,7 +122,36 @@ Transaction::pointer Transaction::transactionFromSQL (
         assert (false);
     }
 
-    tr->setStatus (st);
+    return st;
+}
+
+Transaction::pointer Transaction::transactionFromSQL (
+    Database* db, Validate validate)
+{
+    Serializer rawTxn;
+    std::string status;
+    std::uint32_t inLedger;
+
+    int txSize = 2048;
+    rawTxn.resize (txSize);
+
+    db->getStr ("Status", status);
+    inLedger = db->getInt ("LedgerSeq");
+    txSize = db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
+
+    if (txSize > rawTxn.getLength ())
+    {
+        rawTxn.resize (txSize);
+        db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
+    }
+
+    rawTxn.resize (txSize);
+
+    SerializerIterator it (rawTxn);
+    auto txn = std::make_shared<STTx> (it);
+    auto tr = std::make_shared<Transaction> (txn, validate);
+
+    tr->setStatus (Transaction::sqlTransactionStatus(status));
     tr->setLedger (inLedger);
     return tr;
 }

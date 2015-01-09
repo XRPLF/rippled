@@ -65,6 +65,7 @@ public:
 
     static Transaction::pointer sharedTransaction (Blob const&, Validate);
     static Transaction::pointer transactionFromSQL (Database*, Validate);
+    static TransStatus sqlTransactionStatus(const std::string& status);
 
     bool checkSign () const;
 

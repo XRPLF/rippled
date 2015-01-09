@@ -65,29 +65,28 @@
 
 namespace ripple {
 
+// TODO: Where should this go?
 namespace paging {
     void
     convertBlobsToTxResult (
         std::vector<TxResult>& to,
         std::uint32_t ledger_index,
         std::string const& status, // the sql Status column
-        Blob const& txBlob,
-        Blob const& meta ) {
+        Serializer& rawTxn,
+        Serializer& rawMeta) {
 
-        Serializer rawTxn (txBlob);
-        Serializer rawMeta (meta);
         SerializerIterator it (rawTxn);
         STTx::pointer txn = std::make_shared<STTx> (it);
         auto tr = std::make_shared<Transaction> (txn, Validate::NO);
 
-        // TODO:
-        // tr->setStatus (status[0]);
+        tr->setStatus (Transaction::sqlTransactionStatus(status));
         tr->setLedger (ledger_index);
 
         to.emplace_back(
             std::make_pair(std::move(tr),
                            std::make_shared<TransactionMetaSet> (
                                 tr->getID (), tr->getLedger (),
+                                    // TODO: peekData() ?
                                     rawMeta.getData ())
         ));
     };
@@ -97,13 +96,15 @@ namespace paging {
         std::vector<TxResultHex>& to,
         std::uint32_t ledger_index,
         std::string const& status, // the sql Status column
-        Blob const& txBlob,
-        Blob const& meta) {
-        to.emplace_back (
-            strHex(txBlob), strHex (meta), ledger_index);
+        Serializer& rawTxn,
+        Serializer& rawMeta) {
+        to.emplace_back (strHex(rawTxn.peekData()),
+                         strHex (rawMeta.peekData()),
+                         ledger_index);
     };
 
-    static auto onUnsavedLedger = [] (std::uint32_t seq) {
+    void
+    saveLedgerAsync (std::uint32_t seq) {
         Ledger::pointer ledger = getApp().getOPs().getLedgerBySeq(seq);
         if (ledger)
             ledger->pendSaveValidated(false, false);
@@ -115,8 +116,8 @@ namespace paging {
         std::function<void (std::uint32_t)> const& onUnsavedLedger,
         std::function<void (std::uint32_t,
                             std::string const&,
-                            Blob const&,
-                            Blob const&)> const& onPage,
+                            Serializer& rawTxn,
+                            Serializer& rawMeta)> const& onTransaction,
         RippleAddress const& account,
         std::int32_t minLedger,
         std::int32_t maxLedger,
@@ -170,8 +171,8 @@ namespace paging {
         static std::string const& prefix (
             R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
               Status,RawTxn,TxnMeta 
-              FROM AccountTransactions INNER JOIN Transactions 
-              ON Transactions.TransID = AccountTransactions.TransID 
+              FROM AccountTransactions INNER JOIN Transactions
+              ON Transactions.TransID = AccountTransactions.TransID
               AND AccountTransactions.Account = '%s' WHERE
               )");
 
@@ -185,7 +186,7 @@ namespace paging {
                 prefix +
                 (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
                  ORDER BY AccountTransactions.LedgerSeq ASC,
-                 AccountTransactions.TxnSeq ASC, AccountTransactions.TransID ASC
+                 AccountTransactions.TxnSeq ASC
                  LIMIT %u;)"))
                 % account.humanAccountID()
                 % minLedger
@@ -197,16 +198,11 @@ namespace paging {
             sql = boost::str (boost::format(
                 prefix +
                 (R"(
-                (
-                  AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR 
-                  (
-                    (AccountTransactions.LedgerSeq = '%u') AND 
-                     (AccountTransactions.TxnSeq >= '%u') 
-                  )
-                )
+                AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
+                ( AccountTransactions.LedgerSeq = '%u' AND 
+                  AccountTransactions.TxnSeq >= '%u' )
                 ORDER BY AccountTransactions.LedgerSeq ASC,
-                AccountTransactions.TxnSeq ASC,
-                AccountTransactions.TransID ASC
+                AccountTransactions.TxnSeq ASC
                 LIMIT %u;
                 )"))
             % account.humanAccountID()
@@ -222,8 +218,7 @@ namespace paging {
                 prefix +
                 (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
                  ORDER BY AccountTransactions.LedgerSeq DESC,
-                 AccountTransactions.TxnSeq DESC,
-                 AccountTransactions.TransID DESC
+                 AccountTransactions.TxnSeq DESC
                  LIMIT %u;)"))
                 % account.humanAccountID()
                 % minLedger
@@ -235,10 +230,8 @@ namespace paging {
             sql = boost::str (boost::format(
                 prefix +
                 (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
-                 (
-                    (AccountTransactions.LedgerSeq = '%u') AND
-                    (AccountTransactions.TxnSeq <= '%u')
-                 ) 
+                 (AccountTransactions.LedgerSeq = '%u' AND
+                  AccountTransactions.TxnSeq <= '%u') 
                  ORDER BY AccountTransactions.LedgerSeq DESC,
                  AccountTransactions.TxnSeq DESC
                  LIMIT %u;)"))
@@ -280,8 +273,8 @@ namespace paging {
                 if (!lookingForMarker)
                 {
                     static const size_t blobSize (2048);
-                    auto readBlob = [db](Blob& blob, const char* n) {
-                        auto read = db->getBinary (n, &blob[0], blob.size ());
+                    auto readBlob = [db](Serializer& blob, const char* n) {
+                        auto read = db->getBinary (n, &*blob.begin(), blob.size ());
 
                         if (read > blob.size ())
                         {
@@ -292,8 +285,8 @@ namespace paging {
                             blob.resize (read);
                     };
 
-                    Blob rawMeta (blobSize);
-                    Blob rawTxn (blobSize);
+                    Serializer rawMeta (blobSize);
+                    Serializer rawTxn (blobSize);
 
                     readBlob(rawTxn, "RawTxn");
                     readBlob(rawMeta, "TxnMeta");
@@ -306,7 +299,7 @@ namespace paging {
                     std::string status;
                     db->getStr ("Status", status);
 
-                    onPage(db->getInt ("LedgerSeq"), status,
+                    onTransaction(db->getInt ("LedgerSeq"), status,
                               rawTxn, rawMeta);
                     --numberOfResults;
                 }
@@ -2268,7 +2261,7 @@ NetworkOPsImp::getTxsAccount (
     std::vector<TxResult> ret;
     auto bound (std::bind(convertBlobsToTxResult,
                           std::ref(ret), _1, _2, _3, _4));
-    accountTxPage(connection, onUnsavedLedger, bound, account, minLedger,
+    accountTxPage(connection, saveLedgerAsync, bound, account, minLedger,
                    maxLedger, forward, token, limit, bAdmin, page_length);
     return ret;
 }
@@ -2286,7 +2279,7 @@ NetworkOPsImp::getTxsAccountB (
     std::vector<TxResultHex> ret;
     auto bound (std::bind(convertBlobsToTxResultHex,
                           std::ref(ret), _1, _2, _3, _4));
-    accountTxPage(connection, onUnsavedLedger, bound, account,
+    accountTxPage(connection, saveLedgerAsync, bound, account,
                    minLedger, maxLedger, forward,
                    token, limit, bAdmin, page_length);
     return ret;
@@ -3644,7 +3637,6 @@ make_NetworkOPs (NetworkOPs::clock_type& clock, bool standalone,
         job_queue, ledgerMaster, parent, journal);
 }
 
-
 //------------------------------------------------------------------------------
 
 struct AccountTxPager_test : TestSuite
@@ -3685,7 +3677,8 @@ struct AccountTxPager_test : TestSuite
 
         std::int32_t min_ledger(3),
                      max_ledger(9),
-                     limit(1);
+                     limit(1),
+                     page_length(200);
 
         std::vector<TxResult> txs;
         auto bound (std::bind(convertBlobsToTxResult,
@@ -3693,17 +3686,18 @@ struct AccountTxPager_test : TestSuite
 
         auto next = [&]() {
             txs.clear();
-            accountTxPage (
-                connection, ([](std::uint32_t){}), bound,
-                    account, min_ledger, max_ledger,
-                       forward, token, limit, admin);
+            accountTxPage(connection, [](std::uint32_t){}, bound, account,
+                          min_ledger, max_ledger,
+                          forward, token, limit, admin, page_length);
             return txs.size();
         };
 
-        // It was pointed out could just use lambdas, but the problem is you
-        // don't get line numbers, so using the tests while developing isn't as
-        // effective.  You could just run gdb, and catch exceptions, but again
-        // gdb takes ages to load symbols, and slows dev.
+        // Get off my back :)
+        // It was pointed out that lambdas could be used instead of macros, but
+        // they can't get correct line numbers in the error messages, so using
+        // the tests while developing isn't as effective. You can run
+        // gdb, and catch exceptions, but gdb takes ages to load symbols,
+        // and slows dev.
         #define EXPECT_TX(ix, ledger_index, txn_index) \
             EXPECT_EQ(txs[ix].second->getLgrSeq(), ledger_index); \
             EXPECT_EQ(txs[ix].second->getIndex(), txn_index);
