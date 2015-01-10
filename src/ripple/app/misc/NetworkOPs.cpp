@@ -61,8 +61,254 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/foreach.hpp>
 #include <tuple>
+#include <ripple/basics/TestSuite.h>
 
 namespace ripple {
+
+// TODO: Where should this go?
+namespace paging {
+    void
+    convertBlobsToTxResult (
+        std::vector<TxResult>& to,
+        std::uint32_t ledger_index,
+        std::string const& status, // the sql Status column
+        Serializer& rawTxn,
+        Serializer& rawMeta) {
+
+        SerializerIterator it (rawTxn);
+        STTx::pointer txn = std::make_shared<STTx> (it);
+        auto tr = std::make_shared<Transaction> (txn, Validate::NO);
+
+        tr->setStatus (Transaction::sqlTransactionStatus(status));
+        tr->setLedger (ledger_index);
+
+        to.emplace_back(
+            std::make_pair(std::move(tr),
+                           std::make_shared<TransactionMetaSet> (
+                                tr->getID (), tr->getLedger (),
+                                    // TODO: peekData() ?
+                                    rawMeta.getData ())
+        ));
+    };
+
+    void
+    convertBlobsToTxResultHex (
+        std::vector<TxResultHex>& to,
+        std::uint32_t ledger_index,
+        std::string const& status, // the sql Status column
+        Serializer& rawTxn,
+        Serializer& rawMeta) {
+        to.emplace_back (strHex(rawTxn.peekData()),
+                         strHex (rawMeta.peekData()),
+                         ledger_index);
+    };
+
+    void
+    saveLedgerAsync (std::uint32_t seq) {
+        Ledger::pointer ledger = getApp().getOPs().getLedgerBySeq(seq);
+        if (ledger)
+            ledger->pendSaveValidated(false, false);
+    };
+
+    void
+    accountTxPage (
+        DatabaseCon& connection,
+        std::function<void (std::uint32_t)> const& onUnsavedLedger,
+        std::function<void (std::uint32_t,
+                            std::string const&,
+                            Serializer& rawTxn,
+                            Serializer& rawMeta)> const& onTransaction,
+        RippleAddress const& account,
+        std::int32_t minLedger,
+        std::int32_t maxLedger,
+        bool forward,
+        Json::Value& token,
+        int limit,
+        bool bAdmin,
+        std::uint32_t page_length)
+    {
+        bool lookingForMarker =  !token.isNull() &&
+                                  token.isObject();
+
+        std::uint32_t numberOfResults, queryLimit;
+
+        if (limit <= 0 || (limit > page_length && !bAdmin))
+            numberOfResults = page_length;
+        else
+            numberOfResults = limit;
+
+        /*
+        As an account could have many thousands of transactions, there is a
+        `limit` placed on the amount of transactions returned.
+
+        If the limit has been reached, before the result set has been exhausted
+        (we always query for one more than the limit), then we return a marker
+        to be supplied in a subsequent query. Note that this function `return`s
+        the marker, by setting values on the `token` reference.
+         */
+        queryLimit = numberOfResults + 1;
+        std::uint32_t findLedger = 0, findSeq = 0;
+
+        if (lookingForMarker)
+        {
+            try
+            {
+                if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
+                    return;
+                findLedger = token[jss::ledger].asInt();
+                findSeq = token[jss::seq].asInt();
+            }
+            catch (...)
+            {
+                return;
+            }
+        }
+
+        // ST NOTE We're using the token reference both for passing inputs and
+        //         outputs, so we need to clear it in between.
+        token = Json::nullValue;
+
+        static std::string const& prefix (
+            R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+              Status,RawTxn,TxnMeta 
+              FROM AccountTransactions INNER JOIN Transactions
+              ON Transactions.TransID = AccountTransactions.TransID
+              AND AccountTransactions.Account = '%s' WHERE
+              )");
+
+        std::string sql;
+
+        // SQL's BETWEEN uses a closed interval ([a,b])
+
+        if (forward && (findLedger == 0))
+        {
+            sql = boost::str (boost::format(
+                prefix +
+                (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
+                 ORDER BY AccountTransactions.LedgerSeq ASC,
+                 AccountTransactions.TxnSeq ASC
+                 LIMIT %u;)"))
+                % account.humanAccountID()
+                % minLedger
+                % maxLedger
+                % queryLimit);
+        }
+        else if (forward && (findLedger != 0))
+        {
+            sql = boost::str (boost::format(
+                prefix +
+                (R"(
+                AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
+                ( AccountTransactions.LedgerSeq = '%u' AND 
+                  AccountTransactions.TxnSeq >= '%u' )
+                ORDER BY AccountTransactions.LedgerSeq ASC,
+                AccountTransactions.TxnSeq ASC
+                LIMIT %u;
+                )"))
+            % account.humanAccountID()
+            % (findLedger + 1)
+            % maxLedger
+            % findLedger
+            % findSeq
+            % queryLimit);
+        }
+        else if (!forward && (findLedger == 0))
+        {
+            sql = boost::str (boost::format(
+                prefix +
+                (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
+                 ORDER BY AccountTransactions.LedgerSeq DESC,
+                 AccountTransactions.TxnSeq DESC
+                 LIMIT %u;)"))
+                % account.humanAccountID()
+                % minLedger
+                % maxLedger
+                % queryLimit);
+        }
+        else if (!forward && (findLedger != 0))
+        {
+            sql = boost::str (boost::format(
+                prefix +
+                (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
+                 (AccountTransactions.LedgerSeq = '%u' AND
+                  AccountTransactions.TxnSeq <= '%u') 
+                 ORDER BY AccountTransactions.LedgerSeq DESC,
+                 AccountTransactions.TxnSeq DESC
+                 LIMIT %u;)"))
+                % account.humanAccountID()
+                % minLedger
+                % (findLedger - 1)
+                % findLedger
+                % findSeq
+                % queryLimit);
+        }
+        else
+        {
+            assert (false);
+            // sql is empty
+            return;
+        }
+
+        {
+            auto lock (connection.lock());
+            auto db (connection.getDB());
+
+            SQL_FOREACH (db, sql)
+            {
+                if (lookingForMarker)
+                {
+                    if (findLedger == db->getInt("LedgerSeq") &&
+                        findSeq    == db->getInt("TxnSeq")) {
+                        lookingForMarker = false;
+                    }
+                }
+                else if (numberOfResults == 0)
+                {
+                    token = Json::objectValue;
+                    token[jss::ledger] = db->getInt("LedgerSeq");
+                    token[jss::seq] = db->getInt("TxnSeq");
+                    break;
+                }
+
+                if (!lookingForMarker)
+                {
+                    static const size_t blobSize (2048);
+                    auto readBlob = [db](Serializer& blob, const char* n) {
+                        auto read = db->getBinary (n, &*blob.begin(), blob.size ());
+
+                        if (read > blob.size ())
+                        {
+                            blob.resize (read);
+                            db->getBinary (n, &*blob.begin (), blob.size ());
+                        }
+                        else
+                            blob.resize (read);
+                    };
+
+                    Serializer rawMeta (blobSize);
+                    Serializer rawTxn (blobSize);
+
+                    readBlob(rawTxn, "RawTxn");
+                    readBlob(rawMeta, "TxnMeta");
+
+                    // Work around a bug that could leave the metadata missing
+                    if (rawMeta.size() == 0)
+                        onUnsavedLedger(static_cast<std::uint32_t>(
+                                              db->getBigInt("LedgerSeq")));
+
+                    std::string status;
+                    db->getStr ("Status", status);
+
+                    onTransaction(db->getInt ("LedgerSeq"), status,
+                              rawTxn, rawMeta);
+                    --numberOfResults;
+                }
+            }
+        }
+
+        return;
+    }
+}
 
 class NetworkOPsImp
     : public NetworkOPs
@@ -2002,245 +2248,42 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     return ret;
 }
 
-
-NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
+NetworkOPsImp::AccountTxs
+NetworkOPsImp::getTxsAccount (
     RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger, bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
-    AccountTxs ret;
-
-    std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    std::uint32_t EXTRA_LENGTH = 100;
-
-    bool foundResume = token.isNull() || !token.isObject();
-
-    std::uint32_t numberOfResults, queryLimit;
-    if (limit <= 0)
-        numberOfResults = NONBINARY_PAGE_LENGTH;
-    else if (!bAdmin && (limit > NONBINARY_PAGE_LENGTH))
-        numberOfResults = NONBINARY_PAGE_LENGTH;
-    else
-        numberOfResults = limit;
-    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
-
-    std::uint32_t findLedger = 0, findSeq = 0;
-    if (!foundResume)
-    {
-        try
-        {
-            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
-                return ret;
-            findLedger = token[jss::ledger].asInt();
-            findSeq = token[jss::seq].asInt();
-        }
-        catch (...)
-        {
-            return ret;
-        }
-    }
-
-    // ST NOTE We're using the token reference both for passing inputs and
-    //         outputs, so we need to clear it in between.
-    token = Json::nullValue;
-
-    std::string sql = boost::str (boost::format
-        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,"
-         "Status,RawTxn,TxnMeta "
-         "FROM AccountTransactions INNER JOIN Transactions "
-         "ON Transactions.TransID = AccountTransactions.TransID "
-         "WHERE AccountTransactions.Account = '%s' "
-         "AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
-         "ORDER BY AccountTransactions.LedgerSeq %s, "
-         "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-         "LIMIT %u;")
-             % account.humanAccountID()
-             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
-             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % queryLimit);
-    {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
-
-        SQL_FOREACH (db, sql)
-        {
-            if (!foundResume)
-            {
-                foundResume = (findLedger == db->getInt("LedgerSeq") &&
-                               findSeq == db->getInt("TxnSeq"));
-            }
-            else if (numberOfResults == 0)
-            {
-                token = Json::objectValue;
-                token[jss::ledger] = db->getInt("LedgerSeq");
-                token[jss::seq] = db->getInt("TxnSeq");
-                break;
-            }
-
-            if (foundResume)
-            {
-                auto txn = Transaction::transactionFromSQL (db, Validate::NO);
-
-                Serializer rawMeta;
-                int metaSize = 2048;
-                rawMeta.resize (metaSize);
-                metaSize = db->getBinary (
-                    "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-
-                if (metaSize > rawMeta.getLength ())
-                {
-                    rawMeta.resize (metaSize);
-                    db->getBinary (
-                        "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-                }
-                else
-                    rawMeta.resize (metaSize);
-
-                if (rawMeta.getLength() == 0)
-                {
-                    // Work around a bug that could leave the metadata missing
-                    auto seq = static_cast<std::uint32_t>(
-                        db->getBigInt("LedgerSeq"));
-                    m_journal.warning << "Recovering ledger " << seq
-                                      << ", txn " << txn->getID();
-                    Ledger::pointer ledger = getLedgerBySeq(seq);
-                    if (ledger)
-                        ledger->pendSaveValidated(false, false);
-                }
-
-                --numberOfResults;
-
-                ret.emplace_back (std::move (txn),
-                    std::make_shared<TransactionMetaSet> (
-                        txn->getID (), txn->getLedger (), rawMeta.getData ()));
-            }
-        }
-    }
-
+    using namespace paging;
+    using namespace std::placeholders;
+    static const std::uint32_t page_length (200);
+    DatabaseCon& connection = getApp().getTxnDB ();
+    std::vector<TxResult> ret;
+    auto bound (std::bind(convertBlobsToTxResult,
+                          std::ref(ret), _1, _2, _3, _4));
+    accountTxPage(connection, saveLedgerAsync, bound, account, minLedger,
+                   maxLedger, forward, token, limit, bAdmin, page_length);
     return ret;
 }
 
-NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
+NetworkOPsImp::MetaTxsList
+NetworkOPsImp::getTxsAccountB (
     RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger,  bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
-    MetaTxsList ret;
-
-    std::uint32_t BINARY_PAGE_LENGTH = 500;
-    std::uint32_t EXTRA_LENGTH = 100;
-
-    bool foundResume = token.isNull() || !token.isObject();
-
-    std::uint32_t numberOfResults, queryLimit;
-    if (limit <= 0)
-        numberOfResults = BINARY_PAGE_LENGTH;
-    else if (!bAdmin && (limit > BINARY_PAGE_LENGTH))
-        numberOfResults = BINARY_PAGE_LENGTH;
-    else
-        numberOfResults = limit;
-    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
-
-    std::uint32_t findLedger = 0, findSeq = 0;
-    if (!foundResume)
-    {
-        try
-        {
-            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
-                return ret;
-            findLedger = token[jss::ledger].asInt();
-            findSeq = token[jss::seq].asInt();
-        }
-        catch (...)
-        {
-            return ret;
-        }
-    }
-
-    token = Json::nullValue;
-
-    std::string sql = boost::str (boost::format
-        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,"
-         "Status,RawTxn,TxnMeta "
-         "FROM AccountTransactions INNER JOIN Transactions "
-         "ON Transactions.TransID = AccountTransactions.TransID "
-         "WHERE AccountTransactions.Account = '%s' "
-         "AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
-         "ORDER BY AccountTransactions.LedgerSeq %s, "
-         "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-         "LIMIT %u;")
-             % account.humanAccountID()
-             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
-             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % queryLimit);
-    {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
-
-        SQL_FOREACH (db, sql)
-        {
-            if (!foundResume)
-            {
-                if (findLedger == db->getInt("LedgerSeq") &&
-                    findSeq == db->getInt("TxnSeq"))
-                {
-                    foundResume = true;
-                }
-            }
-            else if (numberOfResults == 0)
-            {
-                token = Json::objectValue;
-                token[jss::ledger] = db->getInt("LedgerSeq");
-                token[jss::seq] = db->getInt("TxnSeq");
-                break;
-            }
-
-            if (foundResume)
-            {
-                int txnSize = 2048;
-                Blob rawTxn (txnSize);
-                txnSize = db->getBinary ("RawTxn", &rawTxn[0], rawTxn.size ());
-
-                if (txnSize > rawTxn.size ())
-                {
-                    rawTxn.resize (txnSize);
-                    db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.size ());
-                }
-                else
-                    rawTxn.resize (txnSize);
-
-                int metaSize = 2048;
-                Blob rawMeta (metaSize);
-                metaSize = db->getBinary (
-                    "TxnMeta", &rawMeta[0], rawMeta.size ());
-
-                if (metaSize > rawMeta.size ())
-                {
-                    rawMeta.resize (metaSize);
-                    db->getBinary (
-                        "TxnMeta", &*rawMeta.begin (), rawMeta.size ());
-                }
-                else
-                {
-                    rawMeta.resize (metaSize);
-                }
-
-                ret.emplace_back (strHex (rawTxn), strHex (rawMeta),
-                                  db->getInt ("LedgerSeq"));
-                --numberOfResults;
-            }
-        }
-    }
-
+    using namespace paging;
+    using namespace std::placeholders;
+    static const std::uint32_t page_length (500);
+    DatabaseCon& connection = getApp().getTxnDB ();
+    std::vector<TxResultHex> ret;
+    auto bound (std::bind(convertBlobsToTxResultHex,
+                          std::ref(ret), _1, _2, _3, _4));
+    accountTxPage(connection, saveLedgerAsync, bound, account,
+                   minLedger, maxLedger, forward,
+                   token, limit, bAdmin, page_length);
     return ret;
 }
-
 
 std::vector<RippleAddress>
 NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
@@ -3593,5 +3636,193 @@ make_NetworkOPs (NetworkOPs::clock_type& clock, bool standalone,
     return std::make_unique<NetworkOPsImp> (clock, standalone, network_quorum,
         job_queue, ledgerMaster, parent, journal);
 }
+
+//------------------------------------------------------------------------------
+
+struct AccountTxPager_test : TestSuite
+{
+    void run() override
+    {
+        const char* path = std::getenv("TEST_FIXTURES");
+
+        if (path == nullptr)
+        {
+            fail("TEST_FIXTURES environment var not declared");
+        }
+        else
+        {
+            testAccountTxPager(to_string(path) + "/");
+        }
+    }
+
+    void
+    testAccountTxPager (std::string const& fixturesPath)
+    {
+        std::string const& fixtureName ("account-tx-transactions.db");
+
+        DatabaseCon::Setup dbConf;
+        dbConf.dataDir = fixturesPath;
+        const char* initStrings[] = {};
+        DatabaseCon connection (dbConf, fixtureName, initStrings, 0);
+
+        using namespace paging;
+        using namespace std::placeholders;
+
+        RippleAddress account;
+        account.setAccountID("rfu6L5p3azwPzQZsbTafuVk884N9YoKvVG");
+
+        Json::Value token;
+        bool forward(true),
+             admin(true);
+
+        std::int32_t min_ledger(3),
+                     max_ledger(9),
+                     limit(1),
+                     page_length(200);
+
+        std::vector<TxResult> txs;
+        auto bound (std::bind(convertBlobsToTxResult,
+                              std::ref(txs), _1, _2, _3, _4));
+
+        auto next = [&]() {
+            txs.clear();
+            accountTxPage(connection, [](std::uint32_t){}, bound, account,
+                          min_ledger, max_ledger,
+                          forward, token, limit, admin, page_length);
+            return txs.size();
+        };
+
+        // Get off my back :)
+        // It was pointed out that lambdas could be used instead of macros, but
+        // they can't get correct line numbers in the error messages, so using
+        // the tests while developing isn't as effective. You can run
+        // gdb, and catch exceptions, but gdb takes ages to load symbols,
+        // and slows dev.
+        #define EXPECT_TX(ix, ledger_index, txn_index) \
+            EXPECT_EQ(txs[ix].second->getLgrSeq(), ledger_index); \
+            EXPECT_EQ(txs[ix].second->getIndex(), txn_index);
+
+        #define EXPECT_TOKEN(ledger_index, txn_index) \
+            EXPECT_EQ(token["ledger"].asInt(),  ledger_index); \
+            EXPECT_EQ(token["seq"].asInt(),     txn_index);
+
+        /*
+        Transaction.db for account contains transactions with ledger/seq
+
+         3|5
+         4|4
+         4|10
+         5|4
+         5|7
+         6|1
+         6|5
+         6|6
+         6|7
+         6|8
+         6|9
+         6|10
+         6|11
+
+        */
+
+        EXPECT_EQ(next(),  1);
+        EXPECT_TX(0, 3, 5);
+        EXPECT_TOKEN(4, 4);
+
+        EXPECT_EQ(next(),  1);
+        EXPECT_TX(0, 4, 4);
+        EXPECT_TOKEN(4, 10);
+
+        EXPECT_EQ(next(),  1);
+        EXPECT_TX(0, 4, 10);
+        EXPECT_TOKEN(5, 4);
+
+        limit = 3;
+
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 5, 4);
+        EXPECT_TX(1, 5, 7);
+        EXPECT_TX(2, 6, 1);
+        EXPECT_TOKEN(6, 5);
+
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 6, 5);
+        EXPECT_TX(1, 6, 6);
+        EXPECT_TX(2, 6, 7);
+        EXPECT_TOKEN(6, 8);
+
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 6, 8);
+        EXPECT_TX(1, 6, 9);
+        EXPECT_TX(2, 6, 10);
+
+        EXPECT_TOKEN(6, 11);
+        EXPECT_EQ(next(),  1);
+        EXPECT_TX(0, 6, 11);
+        EXPECT(token["ledger"].isNull());
+        EXPECT(token["seq"].isNull());
+
+        /*
+        sqlite> select LedgerSeq, TxnSeq from AccountTransactions where
+                Account = 'rfu6L5p3azwPzQZsbTafuVk884N9YoKvVG'
+                ORDER BY AccountTransactions.LedgerSeq DESC,
+                AccountTransactions.TxnSeq DESC;
+        6|11
+        6|10
+        6|9
+        6|8
+        6|7
+        6|6
+        6|5
+        6|1
+        5|7
+        5|4
+        4|10
+        4|4
+        3|5
+        */
+
+        token = Json::nullValue;
+        forward = false;
+        limit = 2;
+
+        EXPECT_EQ(next(),  2);
+        EXPECT_TX(0, 6, 11);
+        EXPECT_TX(1, 6, 10);
+        EXPECT_TOKEN(6, 9);
+
+        EXPECT_EQ(next(),  2);
+        EXPECT_TX(0, 6, 9);
+        EXPECT_TX(1, 6, 8);
+        EXPECT_TOKEN(6, 7);
+
+        limit = 3;
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 6, 7);
+        EXPECT_TX(1, 6, 6);
+        EXPECT_TX(2, 6, 5);
+        EXPECT_TOKEN(6, 1);
+
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 6, 1);
+        EXPECT_TX(1, 5, 7);
+        EXPECT_TX(2, 5, 4);
+        EXPECT_TOKEN(4, 10);
+
+        EXPECT_EQ(next(),  3);
+        EXPECT_TX(0, 4, 10);
+        EXPECT_TX(1, 4, 4);
+        EXPECT_TX(2, 3, 5);
+
+        EXPECT(token["ledger"].isNull());
+        EXPECT(token["seq"].isNull());
+
+        #undef EXPECT_TX
+        #undef EXPECT_TOKEN
+
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(AccountTxPager,ripple_app,ripple);
 
 } // ripple
