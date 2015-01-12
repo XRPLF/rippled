@@ -94,6 +94,8 @@ public:
     {
         int const seedValue = 50;
 
+        testBackend ("nudb", seedValue);
+
         testBackend ("leveldb", seedValue);
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE

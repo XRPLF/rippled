@@ -147,7 +147,7 @@ public:
         missingNodePercent = 20
     };
 
-    std::size_t const default_repeat = 1;
+    std::size_t const default_repeat = 3;
 #ifndef NDEBUG
     std::size_t const default_items = 10000;
 #else
@@ -708,10 +708,7 @@ public:
 
         */
         std::string default_args =
-        #ifdef _MSC_VER
-            "type=leveldb"
-        #endif
-            //"type=nudb"
+            "type=nudb"
         #if RIPPLE_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
                 "file_size_mb=8,file_size_mult=2"

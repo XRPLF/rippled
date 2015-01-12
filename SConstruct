@@ -616,8 +616,9 @@ for tu_style in ['classic', 'unity']:
                     *list_sources('src/ripple/nodestore', '.cpp'),
                     CPPPATH=[
                         'src/leveldb/include',
-                        #'src/hyperleveldb/include', # hyper
                         'src/rocksdb2/include',
+                        'src/snappy/snappy',
+                        'src/snappy/config',
                     ])
             else:
                 object_builder.add_source_files(
@@ -645,9 +646,10 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',
                     CPPPATH=[
-                         'src/leveldb/include',
-                        #'src/hyperleveldb/include', # hyper
+                        'src/leveldb/include',
                         'src/rocksdb2/include',
+                        'src/snappy/snappy',
+                        'src/snappy/config',
                     ])
 
             git_commit_tag = {}

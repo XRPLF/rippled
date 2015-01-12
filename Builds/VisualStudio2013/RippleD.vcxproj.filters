@@ -169,6 +169,15 @@
     <Filter Include="beast\net\tests">
       <UniqueIdentifier>{EADD6FA3-A535-01B1-8B05-B6363E6AE41E}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\nudb">
+      <UniqueIdentifier>{D20F5803-9150-FD61-2E8F-973EB53E8674}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\nudb\detail">
+      <UniqueIdentifier>{5CE9DE06-3D47-E45D-4D84-C2FEF2E1D821}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\nudb\tests">
+      <UniqueIdentifier>{ACEF9E32-BEA2-86E3-BDE3-E772564EA55B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="beast\random">
       <UniqueIdentifier>{94B0990A-9ABE-B1EC-C220-83FD8C2F529F}</UniqueIdentifier>
     </Filter>
@@ -1461,6 +1470,96 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\create.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\arena.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\bucket.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffers.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\bulkio.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\cache.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\config.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\field.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\format.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\gentex.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\pool.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\posix_file.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\win32_file.h">
+      <Filter>beast\nudb\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\mode.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">
+      <Filter>beast\nudb</Filter>
+    </ClCompile>
+    <None Include="..\..\src\beast\beast\nudb\README.md">
+      <Filter>beast\nudb</Filter>
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\nudb\recover.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\store.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\callgrind_test.cpp">
+      <Filter>beast\nudb\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\tests\common.h">
+      <Filter>beast\nudb\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\tests\fail_file.h">
+      <Filter>beast\nudb\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\recover_test.cpp">
+      <Filter>beast\nudb\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\store_test.cpp">
+      <Filter>beast\nudb\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\verify_test.cpp">
+      <Filter>beast\nudb\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\verify.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\visit.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
       <Filter>beast\random</Filter>
     </ClInclude>
@@ -3496,6 +3595,9 @@
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\NuDBFactory.cpp">
       <Filter>ripple\nodestore\backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
