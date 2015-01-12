@@ -121,7 +121,7 @@ public:
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
         NodeStore::DummyScheduler scheduler;
         auto db = NodeStore::Manager::instance().make_Database (
-            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory"));
+            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory|path=FetchPack"));
 
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
             smtFREE, fullBelowCache, treeNodeCache, *db, Handler(), beast::Journal()));

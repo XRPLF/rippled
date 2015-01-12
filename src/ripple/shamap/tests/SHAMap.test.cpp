@@ -62,7 +62,7 @@ public:
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
         NodeStore::DummyScheduler scheduler;
         auto db = NodeStore::Manager::instance().make_Database (
-            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory"));
+            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory|Path=SHAMap_test"));
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;

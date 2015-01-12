@@ -56,7 +56,8 @@ exports.servers = {
                            'admin = allow',
                            'protocol = ws'),
 
-    'node_db': 'type=memory'
+    'node_db': lines('type=memory',
+                     'path=integration')
   }
 };
 

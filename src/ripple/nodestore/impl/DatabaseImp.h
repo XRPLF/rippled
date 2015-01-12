@@ -109,6 +109,21 @@ public:
         return m_backend->getName ();
     }
 
+    void
+    close() override
+    {
+        if (m_backend)
+        {
+            m_backend->close();
+            m_backend = nullptr;
+        }
+        if (m_fastBackend)
+        {
+            m_fastBackend->close();
+            m_fastBackend = nullptr;
+        }
+    }
+
     //------------------------------------------------------------------------------
 
     bool asyncFetch (uint256 const& hash, NodeObject::pointer& object)

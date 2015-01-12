@@ -21,390 +21,735 @@
 #include <ripple/nodestore/tests/Base.test.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
+#include <ripple/basics/BasicConfig.h>
+#include <ripple/unity/rocksdb.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <beast/random/xor_shift_engine.h>
+#include <beast/unit_test/suite.h>
+#include <beast/unit_test/thread.h>
+#include <boost/algorithm/string.hpp>
+#include <atomic>
+#include <chrono>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <thread>
+#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <utility>
+
+#ifndef NODESTORE_TIMING_DO_VERIFY
+#define NODESTORE_TIMING_DO_VERIFY 0
+#endif
 
 namespace ripple {
 namespace NodeStore {
 
-class NodeStoreTiming_test : public TestBase
+// Fill memory with random bits
+template <class Generator>
+static
+void
+rngcpy (void* buffer, std::size_t bytes, Generator& g)
 {
-public:
-    // Simple and fast RNG based on:
-    // http://xorshift.di.unimi.it/xorshift128plus.c
-    // does not accept seed==0
-    class XORShiftEngine{
-       public:
-        using result_type = std::uint64_t;
-        
-        static const result_type default_seed = 1977u;
-
-        explicit XORShiftEngine(result_type val = default_seed) { seed(val); }
-
-        void seed(result_type const seed)
-        {
-            if (seed==0)
-                throw std::range_error("zero seed supplied");
-            s[0] = murmurhash3(seed);
-            s[1] = murmurhash3(s[0]);
-        }
-
-        result_type operator()()
-        {
-            result_type s1 = s[0];
-            const result_type s0 = s[1];
-            s[0] = s0;
-            s1 ^= s1 << 23;
-            return (s[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0;
-        }
-
-        static BEAST_CONSTEXPR result_type min()
-        {
-            return std::numeric_limits<result_type>::min();
-        }
-
-        static BEAST_CONSTEXPR result_type max()
-        {
-            return std::numeric_limits<result_type>::max();
-        }
-
-       private:
-        result_type s[2];
-
-        static result_type murmurhash3(result_type x)
-        {
-            x ^= x >> 33;
-            x *= 0xff51afd7ed558ccdULL;
-            x ^= x >> 33;
-            x *= 0xc4ceb9fe1a85ec53ULL;
-            return x ^= x >> 33;
-        }
-    };
-
-    class NodeFactory
+    using result_type = typename Generator::result_type;
+    while (bytes >= sizeof(result_type))
     {
-        enum
-        {
-            minLedger = 1,
-            maxLedger = 10000000,
-            minValueLength = 128,  // Must be a multiple of 8
-            maxValueLength = 256   // Will be multiplied by 8
-        };
-
-        public : NodeFactory(std::int64_t seed,
-                                         std::int64_t numObjects,
-                                         std::int64_t minKey,
-                                         std::int64_t maxKey)
-            : seed_(seed),
-              numObjects_(numObjects),
-              count_(0),
-              rng_(seed),
-              key_(minKey+1, maxKey+1),
-              value_(minValueLength, maxValueLength),
-              type_(hotLEDGER, hotTRANSACTION_NODE),
-              ledger_(minLedger, maxLedger)
-        {
-        }
-
-        NodeObject::Ptr next()
-        {
-            // Stop when done
-            if (count_ == numObjects_)
-                return nullptr;
-            count_++;
-
-            // Seed from range between minKey and maxKey to ensure repeatability
-            r_.seed(key_(rng_));
-
-            uint256 hash;
-            std::generate_n(reinterpret_cast<uint64_t*>(hash.begin()),
-                            hash.size() / sizeof(std::uint64_t),
-                            std::bind(filler_, r_));
-
-            Blob data(value_(r_)*8);
-            std::generate_n(reinterpret_cast<uint64_t*>(data.data()),
-                            data.size() / sizeof(std::uint64_t),
-                            std::bind(filler_, r_));
-
-            NodeObjectType nodeType(static_cast<NodeObjectType>(type_(r_)));
-            return NodeObject::createObject(nodeType, ledger_(r_),
-                                            std::move(data), hash);
-        }
-
-        bool fillBatch(Batch& batch,std::int64_t batchSize)
-        {
-            batch.clear();
-            for (std::uint64_t i = 0; i < batchSize; i++)
-            {
-                auto node = next();
-                if (!node)
-                    return false;
-                batch.emplace_back(node);
-            }
-            return true;
-        }
-
-        void reset()
-        {
-            count_ = 0;
-            rng_.seed(seed_);
-        }
-
-       private:
-        std::int64_t seed_;
-        std::int64_t numObjects_;
-        std::int64_t count_;
-        std::mt19937_64 rng_;
-        XORShiftEngine r_;
-        std::uniform_int_distribution<std::uint64_t> key_;
-        std::uniform_int_distribution<std::uint64_t> value_;
-        std::uniform_int_distribution<std::uint32_t> type_;
-        std::uniform_int_distribution<std::uint32_t> ledger_;
-        std::uniform_int_distribution<std::uint64_t> filler_;
-    };  // end NodeFactory
-
-    // Checks NodeFactory
-    void testNodeFactory(std::int64_t const seedValue)
-    {
-        testcase("repeatableObject");
-
-        NodeFactory factory(seedValue, 10000, 0, 99);
-
-        std::set<NodeObject::Ptr, NodeObject::LessThan> out;
-
-        while (auto node = factory.next())
-        {
-            auto it = out.find(node);
-            if (it == out.end())
-            {
-                out.insert(node);
-            }
-            else
-            {
-                expect(it->get()->isCloneOf(node), "Should be clones");
-            }
-        }
-        expect(out.size() == 100, "Too many objects created");
+        auto const v = g();
+        memcpy(buffer, &v, sizeof(v));
+        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
+        bytes -= sizeof(v);
     }
 
-    class Stopwatch
+    if (bytes > 0)
     {
-    public:
-     Stopwatch() {}
+        auto const v = g();
+        memcpy(buffer, &v, bytes);
+    }
+}
 
-     void start() { m_startTime = beast::Time::getHighResolutionTicks(); }
-
-     double getElapsed()
-     {
-         std::int64_t const now = beast::Time::getHighResolutionTicks();
-
-         return beast::Time::highResolutionTicksToSeconds(now - m_startTime);
-     }
-
-    private:
-        std::int64_t m_startTime;
-    };
-
-    //--------------------------------------------------------------------------
-
+// Instance of node factory produces a deterministic sequence
+// of random NodeObjects within the given
+class Sequence
+{
+private:
     enum
     {
-        batchSize = 128
+        minLedger = 1,
+        maxLedger = 1000000,
+        minSize = 250,
+        maxSize = 1250
     };
 
-    using check_func = std::function<bool(Status const)>;
-    using backend_ptr = std::unique_ptr<Backend>;
-    using result_type = std::vector<std::pair<std::string, double>>;
+    beast::xor_shift_engine gen_;
+    std::uint8_t prefix_;
+    std::uniform_int_distribution<std::uint32_t> d_seq_;
+    std::uniform_int_distribution<std::uint32_t> d_type_;
+    std::uniform_int_distribution<std::uint32_t> d_size_;
 
-    static bool checkNotFound(Status const status)
+public:
+    explicit
+    Sequence(std::uint8_t prefix)
+        : prefix_ (prefix)
+        , d_seq_ (minLedger, maxLedger)
+        , d_type_ (hotLEDGER, hotTRANSACTION_NODE)
+        , d_size_ (minSize, maxSize)
     {
-        return status == notFound;
+    }
+
+    // Returns the n-th key
+    uint256
+    key (std::size_t n)
+    {
+        gen_.seed(n+1);
+        uint256 result;
+        rngcpy (&*result.begin(), result.size(), gen_);
+        return result;
+    }
+
+    // Returns the n-th complete NodeObject
+    NodeObject::Ptr
+    obj (std::size_t n)
+    {
+        gen_.seed(n+1);
+        uint256 key;
+        auto const data = 
+            static_cast<std::uint8_t*>(&*key.begin());
+        *data = prefix_;
+        rngcpy (data + 1, key.size() - 1, gen_);
+        Blob value(d_size_(gen_));
+        rngcpy (&value[0], value.size(), gen_);
+        return NodeObject::createObject (
+            static_cast<NodeObjectType>(d_type_(gen_)),
+                d_seq_(gen_), std::move(value), key);
+    }
+
+    // returns a batch of NodeObjects starting at n
+    void
+    batch (std::size_t n, Batch& b, std::size_t size)
+    {
+        b.clear();
+        b.reserve (size);
+        while(size--)
+            b.emplace_back(obj(n++));
+    }
+};
+
+//----------------------------------------------------------------------------------
+
+class Timing_test : public beast::unit_test::suite
+{
+public:
+    enum
+    {
+        // percent of fetches for missing nodes
+        missingNodePercent = 20
     };
 
-    static bool checkOk(Status const status) { return status == ok; };
+    std::size_t const default_repeat = 1;
+#ifndef NDEBUG
+    std::size_t const default_items = 10000;
+#else
+    std::size_t const default_items = 100000; // release
+#endif
 
-    static bool checkOkOrNotFound(Status const status)
+    using clock_type = std::chrono::steady_clock;
+    using duration_type = std::chrono::milliseconds;
+
+    struct Params
     {
-        return (status == ok) || (status == notFound);
+        std::size_t items;
+        std::size_t threads;
     };
 
-    void testFetch(backend_ptr& backend, NodeFactory& factory,
-                   check_func f)
+    static
+    std::string
+    to_string (Section const& config)
     {
-        factory.reset();
-        while (auto expected = factory.next())
-        {
-            NodeObject::Ptr got;
-
-            Status const status =
-                backend->fetch(expected->getHash().cbegin(), &got);
-            expect(f(status),
-                   "Wrong status for: " + to_string(expected->getHash()));
-            if (status == ok)
-            {
-                expect(got != nullptr, "Should not be null");
-                expect(got->isCloneOf(expected), "Should be clones");
-            }
-        }
+        std::string s;
+        for (auto iter = config.begin(); iter != config.end(); ++iter)
+            s += (iter != config.begin() ? "," : "") +
+                iter->first + "=" + iter->second;
+        return s;
     }
 
-    static void testInsert(backend_ptr& backend, NodeFactory& factory)
+    static
+    std::string
+    to_string (duration_type const& d)
     {
-        factory.reset();
-        while (auto node = factory.next()) backend->store(node);
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(3) <<
+            (d.count() / 1000.) << "s";
+        return ss.str();
     }
 
-    static void testBatchInsert(backend_ptr& backend, NodeFactory& factory)
+    static
+    Section
+    parse (std::string s)
     {
-        factory.reset();
-        Batch batch;
-        while (factory.fillBatch(batch, batchSize)) backend->storeBatch(batch);
-    }
-
-    result_type benchmarkBackend(beast::StringPairArray const& params,
-                                 std::int64_t const seedValue,
-                                 std::int64_t const numObjects)
-    {
-        Stopwatch t;
-        result_type results;
-
-        DummyScheduler scheduler;
-        beast::Journal j;
-
-        auto backend = Manager::instance().make_Backend(params, scheduler, j);
-
-        NodeFactory insertFactory(seedValue, numObjects, 0, numObjects);
-        NodeFactory batchFactory(seedValue, numObjects, numObjects * 10,
-                                 numObjects * 11);
-
-        // Twice the range of insert
-        NodeFactory mixedFactory(seedValue, numObjects, numObjects,
-                                 numObjects * 2);
-        // Same as batch, different order
-        NodeFactory randomFactory(seedValue + 1, numObjects, numObjects * 10,
-                                  numObjects * 11);
-        // Don't exist
-        NodeFactory missingFactory(seedValue, numObjects, numObjects * 3,
-                                   numObjects * 4);
-
-        t.start();
-        testInsert(backend, insertFactory);
-        results.emplace_back("Inserts", t.getElapsed());
-
-        t.start();
-        testBatchInsert(backend, batchFactory);
-        results.emplace_back("Batch Insert", t.getElapsed());
-
-        t.start();
-        testFetch(backend, mixedFactory, checkOkOrNotFound);
-        results.emplace_back("Fetch 50/50", t.getElapsed());
-
-        t.start();
-        testFetch(backend, insertFactory, checkOk);
-        results.emplace_back("Ordered Fetch", t.getElapsed());
-
-        t.start();
-        testFetch(backend, randomFactory, checkOkOrNotFound);
-        results.emplace_back("Fetch Random", t.getElapsed());
-
-        t.start();
-        testFetch(backend, missingFactory, checkNotFound);
-        results.emplace_back("Fetch Missing", t.getElapsed());
-
-        return results;
+        Section section;
+        std::vector <std::string> v;
+        boost::split (v, s,
+            boost::algorithm::is_any_of (","));
+        section.append(v);
+        return section;
     }
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    // Workaround for GCC's parameter pack expansion in lambdas
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47226
+    template <class Body>
+    class parallel_for_lambda
     {
-        int const seedValue = 50;
+    private:
+        std::size_t const n_;
+        std::atomic<std::size_t>& c_;
+
+    public:
+        parallel_for_lambda (std::size_t n,
+                std::atomic<std::size_t>& c)
+            : n_ (n)
+            , c_ (c)
+        {
+        }
+
+        template <class... Args>
+        void
+        operator()(Args&&... args)
+        {
+            Body body(args...);
+            for(;;)
+            {
+                auto const i = c_++;
+                if (i >= n_)
+                    break;
+                body (i);
+            }
+        }
+    };
+
+    /*  Execute parallel-for loop.
+
+        Constructs `number_of_threads` instances of `Body`
+        with `args...` parameters and runs them on individual threads
+        with unique loop indexes in the range [0, n).
+    */
+    template <class Body, class... Args>
+    void
+    parallel_for (std::size_t const n,
+        std::size_t number_of_threads, Args const&... args)
+    {
+        std::atomic<std::size_t> c(0);
+        std::vector<beast::unit_test::thread> t;
+        t.reserve(number_of_threads);
+        for (std::size_t id = 0; id < number_of_threads; ++id)
+            t.emplace_back(*this,
+                parallel_for_lambda<Body>(n, c),
+                    args...);
+        for (auto& _ : t)
+            _.join();
+    }
+
+    template <class Body, class... Args>
+    void
+    parallel_for_id (std::size_t const n,
+        std::size_t number_of_threads, Args const&... args)
+    {
+        std::atomic<std::size_t> c(0);
+        std::vector<beast::unit_test::thread> t;
+        t.reserve(number_of_threads);
+        for (std::size_t id = 0; id < number_of_threads; ++id)
+            t.emplace_back(*this,
+                parallel_for_lambda<Body>(n, c),
+                    id, args...);
+        for (auto& _ : t)
+            _.join();
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Insert only
+    void
+    do_insert (Section const& config, Params const& params)
+    {
+        beast::Journal journal;
+        DummyScheduler scheduler;
+        auto backend = make_Backend (config, scheduler, journal);
+        expect (backend != nullptr);
+
+        class Body
+        {
+        private:
+            suite& suite_;
+            Backend& backend_;
+            Sequence seq_;
+
+        public:
+            explicit
+            Body (suite& s, Backend& backend)
+                : suite_ (s)
+                , backend_ (backend)
+                , seq_(1)
+            {
+            }
+
+            void
+            operator()(std::size_t i)
+            {
+                try
+                {
+                    backend_.store(seq_.obj(i));
+                }
+                catch(std::exception const& e)
+                {
+                    suite_.fail(e.what());
+                }
+            }
+        };
+
+        try
+        {
+            parallel_for<Body>(params.items,
+                params.threads, std::ref(*this), std::ref(*backend));
+        }
+        catch(...)
+        {
+        #if NODESTORE_TIMING_DO_VERIFY
+            backend->verify();
+        #endif
+            throw;
+        }
+        backend->close();
+    }
+
+    // Fetch existing keys
+    void
+    do_fetch (Section const& config, Params const& params)
+    {
+        beast::Journal journal;
+        DummyScheduler scheduler;
+        auto backend = make_Backend (config, scheduler, journal);
+        expect (backend != nullptr);
+
+        class Body
+        {
+        private:
+            suite& suite_;
+            Backend& backend_;
+            Sequence seq1_;
+            beast::xor_shift_engine gen_;
+            std::uniform_int_distribution<std::size_t> dist_;
+
+        public:
+            Body (std::size_t id, suite& s,
+                    Params const& params, Backend& backend)
+                : suite_(s)
+                , backend_ (backend)
+                , seq1_ (1)
+                , gen_ (id + 1)
+                , dist_ (0, params.items - 1)
+            {
+            }
+
+            void
+            operator()(std::size_t i)
+            {
+                try
+                {
+                    NodeObject::Ptr obj;
+                    NodeObject::Ptr result;
+                    obj = seq1_.obj(dist_(gen_));
+                    backend_.fetch(obj->getHash().data(), &result);
+                    suite_.expect (result && result->isCloneOf(obj));
+                }
+                catch(std::exception const& e)
+                {
+                    suite_.fail(e.what());
+                }
+            }
+        };
+        try
+        {
+            parallel_for_id<Body>(params.items, params.threads,
+                std::ref(*this), std::ref(params), std::ref(*backend));
+        }
+        catch(...)
+        {
+        #if NODESTORE_TIMING_DO_VERIFY
+            backend->verify();
+        #endif
+            throw;
+        }
+        backend->close();
+    }
+
+    // Perform lookups of non-existent keys
+    void
+    do_missing (Section const& config, Params const& params)
+    {
+        beast::Journal journal;
+        DummyScheduler scheduler;
+        auto backend = make_Backend (config, scheduler, journal);
+        expect (backend != nullptr);
+
+        class Body
+        {
+        private:
+            suite& suite_;
+            //Params const& params_;
+            Backend& backend_;
+            Sequence seq2_;
+            beast::xor_shift_engine gen_;
+            std::uniform_int_distribution<std::size_t> dist_;
+
+        public:
+            Body (std::size_t id, suite& s,
+                    Params const& params, Backend& backend)
+                : suite_ (s)
+                //, params_ (params)
+                , backend_ (backend)
+                , seq2_ (2)
+                , gen_ (id + 1)
+                , dist_ (0, params.items - 1)
+            {
+            }
+
+            void
+            operator()(std::size_t i)
+            {
+                try
+                {
+                    auto const key = seq2_.key(i);
+                    NodeObject::Ptr result;
+                    backend_.fetch(key.data(), &result);
+                    suite_.expect (! result);
+                }
+                catch(std::exception const& e)
+                {
+                    suite_.fail(e.what());
+                }
+            }
+        };
+
+        try
+        {
+            parallel_for_id<Body>(params.items, params.threads,
+                std::ref(*this), std::ref(params), std::ref(*backend));
+        }
+        catch(...)
+        {
+        #if NODESTORE_TIMING_DO_VERIFY
+            backend->verify();
+        #endif
+            throw;
+        }
+        backend->close();
+    }
+
+    // Fetch with present and missing keys
+    void
+    do_mixed (Section const& config, Params const& params)
+    {
+        beast::Journal journal;
+        DummyScheduler scheduler;
+        auto backend = make_Backend (config, scheduler, journal);
+        expect (backend != nullptr);
+
+        class Body
+        {
+        private:
+            suite& suite_;
+            //Params const& params_;
+            Backend& backend_;
+            Sequence seq1_;
+            Sequence seq2_;
+            beast::xor_shift_engine gen_;
+            std::uniform_int_distribution<std::uint32_t> rand_;
+            std::uniform_int_distribution<std::size_t> dist_;
+
+        public:
+            Body (std::size_t id, suite& s,
+                    Params const& params, Backend& backend)
+                : suite_ (s)
+                //, params_ (params)
+                , backend_ (backend)
+                , seq1_ (1)
+                , seq2_ (2)
+                , gen_ (id + 1)
+                , rand_ (0, 99)
+                , dist_ (0, params.items - 1)
+            {
+            }
+
+            void
+            operator()(std::size_t i)
+            {
+                try
+                {
+                    if (rand_(gen_) < missingNodePercent)
+                    {
+                        auto const key = seq2_.key(dist_(gen_));
+                        NodeObject::Ptr result;
+                        backend_.fetch(key.data(), &result);
+                        suite_.expect (! result);
+                    }
+                    else
+                    {
+                        NodeObject::Ptr obj;
+                        NodeObject::Ptr result;
+                        obj = seq1_.obj(dist_(gen_));
+                        backend_.fetch(obj->getHash().data(), &result);
+                        suite_.expect (result && result->isCloneOf(obj));
+                    }
+                }
+                catch(std::exception const& e)
+                {
+                    suite_.fail(e.what());
+                }
+            }
+        };
         
-        testNodeFactory(seedValue);
-
-        // Expects a semi-colon delimited list of backend configurations.
-        // Each configuration is a comma delimited list of key-value pairs.
-        // Each pair is separated by a '='.
-        // 'type' defaults to 'rocksdb'
-        // 'num_objects' defaults to '100000'
-        // 'num_runs' defaults to '3'
-        // defaultArguments serves as an example.
-
-        std::string defaultArguments =
-            "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256"
-            "file_size_mb=8,file_size_mult=2,num_objects=100000,num_runs=3;"
-            "type=hyperleveldb,num_objects=100000,num_runs=3";
-
-        auto args = arg();
-
-        if (args.empty()) args = defaultArguments;
-
-        std::vector<std::string> configs;
-        boost::split (configs, args, boost::algorithm::is_any_of (";"));
-
-        std::map<std::string, std::vector<result_type>> results;
-
-        for (auto& config : configs)
+        try
         {
-            auto params = parseDelimitedKeyValueString(config, ',');
+            parallel_for_id<Body>(params.items, params.threads,
+                std::ref(*this), std::ref(params), std::ref(*backend));
+        }
+        catch(...)
+        {
+        #if NODESTORE_TIMING_DO_VERIFY
+            backend->verify();
+        #endif
+            throw;
+        }
+        backend->close();
+    }
 
-            // Defaults
-            std::int64_t numRuns = 3;
-            std::int64_t numObjects = 100000;
+    // Simulate a rippled workload:
+    // Each thread randomly:
+    //      inserts a new key
+    //      fetches an old key
+    //      fetches recent, possibly non existent data
+    void
+    do_work (Section const& config, Params const& params)
+    {
+        beast::Journal journal;
+        DummyScheduler scheduler;
+        auto backend = make_Backend (config, scheduler, journal);
+        backend->setDeletePath();
+        expect (backend != nullptr);
 
-            if (!params["num_objects"].isEmpty())
-                numObjects = params["num_objects"].getIntValue();
+        class Body
+        {
+        private:
+            suite& suite_;
+            Params const& params_;
+            Backend& backend_;
+            Sequence seq1_;
+            beast::xor_shift_engine gen_;
+            std::uniform_int_distribution<std::uint32_t> rand_;
+            std::uniform_int_distribution<std::size_t> recent_;
+            std::uniform_int_distribution<std::size_t> older_;
 
-            if (!params["num_runs"].isEmpty())
-                numRuns = params["num_runs"].getIntValue();
-
-            if (params["type"].isEmpty())
-                params.set("type", "rocksdb");
-
-            for (std::int64_t i = 0; i < numRuns; i++)
+        public:
+            Body (std::size_t id, suite& s,
+                    Params const& params, Backend& backend)
+                : suite_ (s)
+                , params_ (params)
+                , backend_ (backend)
+                , seq1_ (1)
+                , gen_ (id + 1)
+                , rand_ (0, 99)
+                , recent_ (params.items, params.items * 2 - 1)
+                , older_ (0, params.items - 1)
             {
-                beast::UnitTestUtilities::TempDirectory path("node_db");
-                params.set("path", path.getFullPathName());
-                results[config].emplace_back(
-                    benchmarkBackend(params, seedValue + i, numObjects));
             }
+
+            void
+            operator()(std::size_t i)
+            {
+                try
+                {
+                    if (rand_(gen_) < 200)
+                    {
+                        // historical lookup
+                        NodeObject::Ptr obj;
+                        NodeObject::Ptr result;
+                        auto const j = older_(gen_);
+                        obj = seq1_.obj(j);
+                        NodeObject::Ptr result1;
+                        backend_.fetch(obj->getHash().data(), &result);
+                        suite_.expect (result != nullptr,
+                            "object " + std::to_string(j) + " missing");
+                        suite_.expect (result->isCloneOf(obj),
+                            "object " + std::to_string(j) + " not a clone");
+                    }
+
+                    char p[2];
+                    p[0] = rand_(gen_) < 50 ? 0 : 1;
+                    p[1] = 1 - p[0];
+                    for (int q = 0; q < 2; ++q)
+                    {
+                        switch (p[q])
+                        {
+                        case 0:
+                        {
+                            // fetch recent
+                            NodeObject::Ptr obj;
+                            NodeObject::Ptr result;
+                            auto const j = recent_(gen_);
+                            obj = seq1_.obj(j);
+                            backend_.fetch(obj->getHash().data(), &result);
+                            suite_.expect(! result || result->isCloneOf(obj));
+                            break;
+                        }
+
+                        case 1:
+                        {
+                            // insert new
+                            auto const j = i + params_.items;
+                            backend_.store(seq1_.obj(j));
+                            break;
+                        }
+                        }
+                    }
+                }
+                catch(std::exception const& e)
+                {
+                    suite_.fail(e.what());
+                }
+            }
+        };
+
+        try
+        {
+            parallel_for_id<Body>(params.items, params.threads,
+                std::ref(*this), std::ref(params), std::ref(*backend));
+        }
+        catch(...)
+        {
+        #if NODESTORE_TIMING_DO_VERIFY
+            backend->verify();
+        #endif
+            throw;
+        }
+        backend->close();
+    }
+
+    //--------------------------------------------------------------------------
+
+    using test_func = void (Timing_test::*)(Section const&, Params const&);
+    using test_list = std::vector <std::pair<std::string, test_func>>;
+
+    duration_type
+    do_test (test_func f,
+        Section const& config, Params const& params)
+    {
+        auto const start = clock_type::now();
+        (this->*f)(config, params);
+        return std::chrono::duration_cast<duration_type> (
+            clock_type::now() - start);
+    }
+
+    void
+    do_tests (std::size_t threads, test_list const& tests,
+        std::vector<std::string> const& config_strings)
+    {
+        using std::setw;
+        int w = 8;
+        for (auto const& test : tests)
+            if (w < test.first.size())
+                w = test.first.size();
+        log <<
+            "\n" <<
+            threads << " Thread" << (threads > 1 ? "s" : "") << ", " <<
+            default_items << " Objects";
+        {
+            std::stringstream ss;
+            ss << std::left << setw(10) << "Backend" << std::right;
+            for (auto const& test : tests)
+                ss << " " << setw(w) << test.first;
+            log << ss.str();
         }
 
-        std::stringstream header;
-        std::stringstream stats;
-        std::stringstream legend;
-
-        auto firstRun = results.begin()->second.begin();
-        header << std::setw(7) << "Config" << std::setw(4) << "Run";
-        for (auto const& title : *firstRun)
-            header << std::setw(14) << title.first;
-
-        stats << std::setprecision(2) << std::fixed;
-
-        std::int64_t resultCount = 0;
-        for (auto const& result : results)
+        for (auto const& config_string : config_strings)
         {
-            std::int64_t runCount = 0;
-            for (auto const& run : result.second)
+            Params params;
+            params.items = default_items;
+            params.threads = threads;
+            for (auto i = default_repeat; i--;)
             {
-                stats << std::setw(7) << resultCount << std::setw(4)
-                      << runCount;
-                for (auto const& item : run)
-                    stats << std::setw(14) << item.second;
-                runCount++;
-                stats << std::endl;
-
+                Section config = parse(config_string);
+                config.set ("path",
+                    beast::UnitTestUtilities::TempDirectory(
+                        "test_db").getFullPathName().toStdString());
+                std::stringstream ss;
+                ss << std::left << setw(10) <<
+                    get(config, "type", std::string()) << std::right;
+                for (auto const& test : tests)
+                    ss << " " << setw(w) << to_string(
+                        do_test (test.second, config, params));
+                ss << "   " << to_string(config);
+                log << ss.str();
             }
-            legend << std::setw(2) << resultCount << ": " << result.first
-                   << std::endl;
-            resultCount++;
         }
-        log << header.str() << std::endl << stats.str() << std::endl
-            << "Configs:" << std::endl << legend.str();
+    }
+
+    void
+    run() override
+    {
+        testcase ("Timing", suite::abort_on_fail);
+
+        /*  Parameters:
+
+            repeat          Number of times to repeat each test
+            items           Number of objects to create in the database
+
+        */
+        std::string default_args =
+        #ifdef _MSC_VER
+            "type=leveldb"
+        #endif
+            //"type=nudb"
+        #if RIPPLE_ROCKSDB_AVAILABLE
+            ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
+                "file_size_mb=8,file_size_mult=2"
+        #endif
+        #if 0
+            ";type=memory|path=NodeStore"
+        #endif
+            ;
+
+        test_list const tests =
+            {
+                 { "Insert",    &Timing_test::do_insert }
+                ,{ "Fetch",     &Timing_test::do_fetch }
+                ,{ "Missing",   &Timing_test::do_missing }
+                ,{ "Mixed",     &Timing_test::do_mixed }
+                ,{ "Work",      &Timing_test::do_work }
+            };
+
+        auto args = arg().empty() ? default_args : arg();
+        std::vector <std::string> config_strings;
+        boost::split (config_strings, args,
+            boost::algorithm::is_any_of (";"));
+        for (auto iter = config_strings.begin();
+                iter != config_strings.end();)
+            if (iter->empty())
+                iter = config_strings.erase (iter);
+            else
+                ++iter;
+
+        do_tests ( 1, tests, config_strings);
+        do_tests ( 4, tests, config_strings);
+        do_tests ( 8, tests, config_strings);
+        //do_tests (16, tests, config_strings);
     }
 };
-BEAST_DEFINE_TESTSUITE_MANUAL(NodeStoreTiming,bench,ripple);
 
-}  // namespace Nodestore
+BEAST_DEFINE_TESTSUITE_MANUAL(Timing,NodeStore,ripple);
+
 }
+}
+

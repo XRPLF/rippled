@@ -54,6 +54,11 @@ public:
         or paths used by the underlying backend.
     */
     virtual std::string getName () const = 0;
+    
+    /** Close the database.
+        This allows the caller to catch exceptions.
+    */
+    virtual void close() = 0;
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the

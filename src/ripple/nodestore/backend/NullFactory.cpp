@@ -42,6 +42,11 @@ public:
         return std::string ();
     }
 
+    void
+    close() override
+    {
+    }
+
     Status
     fetch (void const*, NodeObject::Ptr*)
     {
@@ -70,7 +75,14 @@ public:
     }
 
     void
-    setDeletePath() override {}
+    setDeletePath() override
+    {
+    }
+
+    void
+    verify() override
+    {
+    }
 
 private:
 };

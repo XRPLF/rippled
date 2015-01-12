@@ -101,18 +101,27 @@ public:
 
     ~HyperDBBackend ()
     {
-        if (m_deletePath)
-        {
-            m_db.reset();
-            boost::filesystem::path dir = m_name;
-            boost::filesystem::remove_all (dir);
-        }
+        close();
     }
 
     std::string
     getName()
     {
         return m_name;
+    }
+
+    void
+    close() override
+    {
+        if (m_db)
+        {
+            m_db.reset();
+            if (m_deletePath)
+            {
+                boost::filesystem::path dir = m_name;
+                boost::filesystem::remove_all (dir);
+            }
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -250,6 +259,11 @@ public:
     writeBatch (Batch const& batch)
     {
         storeBatch (batch);
+    }
+
+    void
+    verify() override
+    {
     }
 };
 

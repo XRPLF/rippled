@@ -100,7 +100,7 @@ public:
         testBackend ("hyperleveldb", seedValue);
     #endif
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+    #if RIPPLE_ROCKSDB_AVAILABLE
         testBackend ("rocksdb", seedValue);
     #endif
 

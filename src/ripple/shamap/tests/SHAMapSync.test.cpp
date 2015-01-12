@@ -114,7 +114,7 @@ public:
         TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
         NodeStore::DummyScheduler scheduler;
         auto db = NodeStore::Manager::instance().make_Database (
-            "test", scheduler, j, 1, parseDelimitedKeyValueString("type=memory"));
+            "test", scheduler, j, 1, parseDelimitedKeyValueString("type=memory|path=SHAMapSync_test"));
 
         SHAMap source (smtFREE, fullBelowCache, treeNodeCache,
             *db, Handler(), beast::Journal());

@@ -794,6 +794,8 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedObject.h">
@@ -916,7 +918,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h" />
+    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\Debug.h">

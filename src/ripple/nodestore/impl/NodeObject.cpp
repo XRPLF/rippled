@@ -38,7 +38,8 @@ NodeObject::NodeObject (
     mData = std::move (data);
 }
 
-NodeObject::Ptr NodeObject::createObject (
+NodeObject::Ptr
+NodeObject::createObject (
     NodeObjectType type,
     LedgerIndex ledgerIndex,
     Blob&& data,

@@ -50,6 +50,11 @@ public:
     */
     virtual std::string getName() = 0;
 
+    /** Close the backend.
+        This allows the caller to catch exceptions.
+    */
+    virtual void close() = 0;
+
     /** Fetch a single object.
         If the object is not found or an error is encountered, the
         result will indicate the condition.
@@ -87,6 +92,9 @@ public:
 
     /** Remove contents on disk upon destruction. */
     virtual void setDeletePath() = 0;
+
+    /** Perform consistency checks on database .*/
+    virtual void verify() = 0;
 };
 
 }

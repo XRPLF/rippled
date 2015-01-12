@@ -163,6 +163,9 @@
     <Filter Include="beast\net\tests">
       <UniqueIdentifier>{EADD6FA3-A535-01B1-8B05-B6363E6AE41E}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\random">
+      <UniqueIdentifier>{94B0990A-9ABE-B1EC-C220-83FD8C2F529F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="beast\smart_ptr">
       <UniqueIdentifier>{C8013957-E624-4A24-C0F8-CBAAC144AF09}</UniqueIdentifier>
     </Filter>
@@ -1431,6 +1434,9 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
+      <Filter>beast\random</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1594,6 +1600,9 @@
       <Filter>beast\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
       <Filter>beast\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
@@ -5441,11 +5450,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
       <Filter>websocket\src</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
-      <Filter>beast\unit_test</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -32,7 +32,7 @@ Section::Section (std::string const& name)
 void
 Section::set (std::string const& key, std::string const& value)
 {
-    auto const result = map_.emplace (key, value);
+    auto const result = cont().emplace (key, value);
     if (! result.second)
         result.first->second = value;
 }
@@ -68,14 +68,14 @@ Section::append (std::vector <std::string> const& lines)
 bool
 Section::exists (std::string const& name) const
 {
-    return map_.find (name) != map_.end();
+    return cont().find (name) != cont().end();
 }
 
 std::pair <std::string, bool>
 Section::find (std::string const& name) const
 {
-    auto const iter = map_.find (name);
-    if (iter == map_.end())
+    auto const iter = cont().find (name);
+    if (iter == cont().end())
         return {{}, false};
     return {iter->second, true};
 }
@@ -83,7 +83,7 @@ Section::find (std::string const& name) const
 std::ostream&
 operator<< (std::ostream& os, Section const& section)
 {
-    for (auto const& kv : section.map_)
+    for (auto const& kv : section.cont())
         os << kv.first << "=" << kv.second << "\n";
     return os;
 }
@@ -113,7 +113,7 @@ BasicConfig::remap (std::string const& legacy_section,
     auto const iter = map_.find (legacy_section);
     if (iter == map_.end())
         return;
-    if (iter->second.keys() != 0)
+    if (iter->second.size() != 0)
         return;
     if (iter->second.lines().size() != 1)
         return;

@@ -21,6 +21,7 @@
 #include <ripple/nodestore/impl/ManagerImp.h>
 #include <ripple/nodestore/impl/DatabaseImp.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
+#include <ripple/basics/StringUtilities.h>
 #include <beast/utility/ci_char_traits.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <stdexcept>
@@ -158,6 +159,19 @@ Manager&
 Manager::instance()
 {
     return ManagerImp::instance();
+}
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Backend>
+make_Backend (Section const& config,
+    Scheduler& scheduler, beast::Journal journal)
+{
+    beast::StringPairArray v;
+    for (auto const& _ : config)
+        v.set (_.first, _.second);
+    return Manager::instance().make_Backend (
+        v, scheduler, journal);
 }
 
 }

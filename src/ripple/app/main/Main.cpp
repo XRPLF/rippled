@@ -149,7 +149,7 @@ static
 void
 setupConfigForUnitTests (Config* config)
 {
-    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory");
+    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory|path=main");
     config->ephemeralNodeDatabase = beast::StringPairArray ();
     config->importNodeDatabase = beast::StringPairArray ();
 }

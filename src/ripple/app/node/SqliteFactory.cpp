@@ -73,6 +73,13 @@ public:
         return m_name;
     }
 
+    void
+    close() override
+    {
+        // VFALCO how do we do this?
+        assert(false);
+    }
+
     //--------------------------------------------------------------------------
 
     NodeStore::Status fetch (void const* key, NodeObject::Ptr* pObject)
@@ -219,6 +226,11 @@ public:
             }
         }
         return type;
+    }
+
+    void
+    verify() override
+    {
     }
 
 private:

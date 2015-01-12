@@ -22,6 +22,8 @@
 
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/DatabaseRotating.h>
+#include <ripple/basics/BasicConfig.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -97,6 +99,13 @@ public:
                 std::unique_ptr <Backend> fastBackend,
                     beast::Journal journal) = 0;
 };
+
+//------------------------------------------------------------------------------
+
+/** Create a Backend. */
+std::unique_ptr <Backend>
+make_Backend (Section const& config,
+    Scheduler& scheduler, beast::Journal journal);
 
 }
 }

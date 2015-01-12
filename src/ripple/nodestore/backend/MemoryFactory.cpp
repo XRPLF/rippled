@@ -20,37 +20,93 @@
 #include <BeastConfig.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
+#include <beast/utility/ci_char_traits.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <map>
+#include <mutex>
 
 namespace ripple {
 namespace NodeStore {
 
+struct MemoryDB
+{
+    std::mutex mutex;
+    bool open = false;
+    std::map <uint256 const, NodeObject::Ptr> table;
+};
+
+class MemoryFactory : public Factory
+{
+private:
+    std::mutex mutex_;
+    std::map <std::string, MemoryDB, beast::ci_less> map_;
+
+public:
+    MemoryFactory();
+    ~MemoryFactory();
+
+    std::string
+    getName() const;
+
+    std::unique_ptr <Backend>
+    createInstance (
+        size_t keyBytes,
+        Parameters const& keyValues,
+        Scheduler& scheduler,
+        beast::Journal journal);
+
+    MemoryDB&
+    open (std::string const& path)
+    {
+        std::lock_guard<std::mutex> _(mutex_);
+        auto const result = map_.emplace (std::piecewise_construct,
+            std::make_tuple(path), std::make_tuple());
+        MemoryDB& db = result.first->second;
+        if (db.open)
+            throw std::runtime_error("already open");
+        return db;
+    }
+};
+
+static MemoryFactory memoryFactory;
+
+//------------------------------------------------------------------------------
+
 class MemoryBackend : public Backend
 {
-public:
-    typedef std::map <uint256 const, NodeObject::Ptr> Map;
-    beast::Journal m_journal;
-    size_t const m_keyBytes;
-    Map m_map;
-    Scheduler& m_scheduler;
+private:
+    using Map = std::map <uint256 const, NodeObject::Ptr>;
 
+    std::string name_;
+    beast::Journal journal_;
+    MemoryDB* db_;
+
+public:
     MemoryBackend (size_t keyBytes, Parameters const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
-        : m_journal (journal)
-        , m_keyBytes (keyBytes)
-        , m_scheduler (scheduler)
+        : name_ (keyValues ["path"].toStdString ())
+        , journal_ (journal)
     {
+        if (name_.empty())
+            throw std::runtime_error ("Missing path in Memory backend");
+        db_ = &memoryFactory.open(name_);
     }
 
     ~MemoryBackend ()
     {
+        close();
     }
 
     std::string
     getName ()
     {
-        return "memory";
+        return name_;
+    }
+
+    void
+    close() override
+    {
+        db_ = nullptr;
     }
 
     //--------------------------------------------------------------------------
@@ -60,29 +116,23 @@ public:
     {
         uint256 const hash (uint256::fromVoid (key));
 
-        Map::iterator iter = m_map.find (hash);
+        std::lock_guard<std::mutex> _(db_->mutex);
 
-        if (iter != m_map.end ())
+        Map::iterator iter = db_->table.find (hash);
+        if (iter == db_->table.end())
         {
-            *pObject = iter->second;
+            pObject->reset();
+            return notFound;
         }
-        else
-        {
-            pObject->reset ();
-        }
-
+        *pObject = iter->second;
         return ok;
     }
 
     void
     store (NodeObject::ref object)
     {
-        Map::iterator iter = m_map.find (object->getHash ());
-
-        if (iter == m_map.end ())
-        {
-            m_map.insert (std::make_pair (object->getHash (), object));
-        }
+        std::lock_guard<std::mutex> _(db_->mutex);
+        db_->table.emplace (object->getHash(), object);
     }
 
     void
@@ -95,56 +145,55 @@ public:
     void
     for_each (std::function <void(NodeObject::Ptr)> f)
     {
-        for (auto const& e : m_map)
+        for (auto const& e : db_->table)
             f (e.second);
     }
 
     int
-    getWriteLoad ()
+    getWriteLoad()
     {
         return 0;
     }
 
     void
-    setDeletePath() override {}
+    setDeletePath() override
+    {
+    }
+
+    void
+    verify() override
+    {
+    }
 };
 
 //------------------------------------------------------------------------------
 
-class MemoryFactory : public Factory
+MemoryFactory::MemoryFactory()
 {
-public:
-    MemoryFactory()
-    {
-        Manager::instance().insert(*this);
-    }
+    Manager::instance().insert(*this);
+}
 
-    ~MemoryFactory()
-    {
-        Manager::instance().erase(*this);
-    }
+MemoryFactory::~MemoryFactory()
+{
+    Manager::instance().erase(*this);
+}
 
-    std::string
-    getName () const
-    {
-        return "Memory";
-    }
+std::string
+MemoryFactory::getName() const
+{
+    return "Memory";
+}
 
-    std::unique_ptr <Backend>
-    createInstance (
-        size_t keyBytes,
-        Parameters const& keyValues,
-        Scheduler& scheduler,
-        beast::Journal journal)
-    {
-        return std::make_unique <MemoryBackend> (
-            keyBytes, keyValues, scheduler, journal);
-    }
-};
-
-//------------------------------------------------------------------------------
-
-static MemoryFactory memoryFactory;
+std::unique_ptr <Backend>
+MemoryFactory::createInstance (
+    size_t keyBytes,
+    Parameters const& keyValues,
+    Scheduler& scheduler,
+    beast::Journal journal)
+{
+    return std::make_unique <MemoryBackend> (
+        keyBytes, keyValues, scheduler, journal);
+}
 
 }
 }

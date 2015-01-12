@@ -85,6 +85,13 @@ public:
         return getWritableBackend()->getName();
     }
 
+    void
+    close() override
+    {
+        // VFALCO TODO How do we close everything?
+        assert(false);
+    }
+
     std::int32_t getWriteLoad() const override
     {
         return getWritableBackend()->getWriteLoad();
