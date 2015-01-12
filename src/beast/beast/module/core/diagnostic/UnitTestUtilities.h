@@ -21,7 +21,8 @@
 #define BEAST_UNITTESTUTILITIES_H_INCLUDED
 
 #include <beast/module/core/files/File.h>
-    
+#include <beast/module/core/maths/Random.h>
+
 namespace beast {
 namespace UnitTestUtilities {
 

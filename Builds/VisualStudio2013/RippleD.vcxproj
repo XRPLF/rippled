@@ -320,6 +320,8 @@
     <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_speed_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\uhash.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\xxhasher.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
