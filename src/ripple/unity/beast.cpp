@@ -40,6 +40,7 @@
 #include <beast/http/HTTP.unity.cpp>
 #include <beast/insight/Insight.unity.cpp>
 #include <beast/net/Net.unity.cpp>
+//#include <beast/nudb/nudb.cpp>
 #include <beast/streams/streams.unity.cpp>
 #include <beast/strings/Strings.unity.cpp>
 #include <beast/threads/Threads.unity.cpp>

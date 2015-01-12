@@ -807,6 +807,71 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\create.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\arena.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\bucket.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\bulkio.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\cache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\config.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\field.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\format.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\gentex.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\pool.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\posix_file.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\win32_file.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\mode.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <None Include="..\..\src\beast\beast\nudb\README.md">
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\nudb\recover.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\store.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\callgrind_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\tests\common.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\tests\fail_file.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\recover_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\store_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\verify_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\verify.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\visit.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
@@ -2450,6 +2515,9 @@
     <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\NuDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3324,8 +3392,8 @@
     <ClCompile Include="..\..\src\ripple\unity\net.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
     </ClCompile>

@@ -26,7 +26,7 @@
 namespace ripple {
 namespace NodeStore {
 
-class NodeStoreDatabase_test : public TestBase
+class Database_test : public TestBase
 {
 public:
     void testImport (std::string const& destBackendType,
@@ -182,6 +182,8 @@ public:
 
     void runBackendTests (bool useEphemeralDatabase, std::int64_t const seedValue)
     {
+        testNodeStore ("nudb", useEphemeralDatabase, true, seedValue);
+
         testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
@@ -201,8 +203,10 @@ public:
 
     void runImportTests (std::int64_t const seedValue)
     {
-        testImport ("leveldb", "leveldb", seedValue);
+        testImport ("nudb", "nudb", seedValue);
 
+        testImport ("leveldb", "leveldb", seedValue);
+        
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
     #endif
@@ -232,7 +236,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreDatabase,ripple_core,ripple);
+BEAST_DEFINE_TESTSUITE(Database,NodeStore,ripple);
 
 }
 }
