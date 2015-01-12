@@ -163,6 +163,19 @@ public:
         // options.memtable_factory.reset(
         //     rocksdb::NewHashCuckooRepFactory(options.write_buffer_size));
 
+        if (! keyValues["open_files"].isEmpty())
+        {
+            options.max_open_files = keyValues["open_files"].getIntValue();
+        }
+ 
+        if (! keyValues["compression"].isEmpty ())  
+        {
+            if (keyValues["compression"].getIntValue () == 0)
+            {
+                options.compression = rocksdb::kNoCompression;
+            }
+        }
+
         rocksdb::DB* db = nullptr;
 
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
