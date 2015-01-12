@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#ifndef _MSC_VER
 #include <sys/param.h>
 #undef ALIGN
+#endif
 #include <ed25519.c>
