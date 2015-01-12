@@ -456,7 +456,7 @@ void Config::load ()
                     if (!jrReader.parse (strJson, jvCommand))
                         throw std::runtime_error (
                             boost::str (boost::format (
-                                "Couldn't parse [" + SECTION_RPC_STARTUP + "] command: %s") % strJson));
+                                "Couldn't parse [" SECTION_RPC_STARTUP "] command: %s") % strJson));
 
                     RPC_STARTUP.append (jvCommand);
                 }

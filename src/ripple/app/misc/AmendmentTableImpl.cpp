@@ -45,7 +45,7 @@ std::set<std::pair<std::string, std::string>> PreEnabledAmendments;
     rules that is identified by a 256-bit amendment identifier
     and adopted, or rejected, by the network.
 */
-class AmendmentTableImpl : public AmendmentTable
+class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
     typedef hash_map<uint256, AmendmentState> amendmentMap_t;
