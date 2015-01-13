@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/crypto/ec_key.h>
 #include <ripple/crypto/ECIES.h>
+#include <ripple/crypto/impl/ECDSAKey.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
@@ -97,6 +99,14 @@ static void getECIESSecret (const openssl::ec_key& secretKey, const openssl::ec_
     memset (hbuf, 0, ECIES_KEY_LENGTH);
 }
 
+static void getECIESSecret (uint256 const& secretKey,
+                            Blob const& publicKey,
+                            ECIES_ENC_KEY_TYPE& enc_key,
+                            ECIES_HMAC_KEY_TYPE& hmac_key)
+{
+    getECIESSecret (ECDSAPrivateKey (secretKey), ECDSAPublicKey (publicKey), enc_key, hmac_key);
+}
+
 static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& data)
 {
     HMAC_CTX ctx;
@@ -129,7 +139,7 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
     return ret;
 }
 
-Blob encryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& plaintext)
+Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& plaintext)
 {
 
     ECIES_ENC_IV_TYPE iv;
@@ -204,7 +214,7 @@ Blob encryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publ
     return out;
 }
 
-Blob decryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& ciphertext)
+Blob decryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& ciphertext)
 {
     // minimum ciphertext = IV + HMAC + 1 block
     if (ciphertext.size () < ((2 * ECIES_ENC_BLK_SIZE) + ECIES_HMAC_SIZE) )

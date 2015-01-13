@@ -2311,6 +2311,11 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSAKey.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\crypto\impl\ECDSAKey.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECIES.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
