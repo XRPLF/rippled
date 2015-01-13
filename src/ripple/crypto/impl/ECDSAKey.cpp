@@ -23,7 +23,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <BeastConfig.h>
-#include <ripple/crypto/ECDSAKey.h>
+#include <ripple/crypto/impl/ECDSAKey.h>
 #include <openssl/ec.h>
 #include <openssl/hmac.h>
 

@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/crypto/ec_key.h>
-#include <ripple/crypto/ECDSAKey.h>
 #include <ripple/crypto/ECIES.h>
+#include <ripple/crypto/impl/ECDSAKey.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>

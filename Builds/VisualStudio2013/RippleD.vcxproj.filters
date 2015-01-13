@@ -3204,9 +3204,6 @@
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\ECDSAKey.h">
-      <Filter>ripple\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
@@ -3237,6 +3234,9 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSAKey.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\crypto\impl\ECDSAKey.h">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECIES.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>

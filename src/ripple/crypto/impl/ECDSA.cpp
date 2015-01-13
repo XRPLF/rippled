@@ -26,7 +26,7 @@
 #include <ripple/crypto/ec_key.h>
 #include <ripple/crypto/ECDSA.h>
 #include <ripple/crypto/ECDSACanonical.h>
-#include <ripple/crypto/ECDSAKey.h>
+#include <ripple/crypto/impl/ECDSAKey.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/hmac.h>
