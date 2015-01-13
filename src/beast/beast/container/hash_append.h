@@ -21,15 +21,13 @@
 #ifndef BEAST_CONTAINER_HASH_APPEND_H_INCLUDED
 #define BEAST_CONTAINER_HASH_APPEND_H_INCLUDED
 
-#include <beast/utility/meta.h>
-
+#include <beast/container/siphash.h>
 #include <beast/container/impl/spookyv2.h>
-
+#include <beast/utility/meta.h>
+#include <beast/utility/noexcept.h>
 #if BEAST_USE_BOOST_FEATURES
 #include <boost/shared_ptr.hpp>
 #endif
-
-#include <beast/utility/noexcept.h>
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -656,30 +654,6 @@ hash_append (Hasher& h, T0 const& t0, T1 const& t1, T const& ...t) noexcept
     hash_append (h, t1, t...);
 }
 
-// See http://www.isthe.com/chongo/tech/comp/fnv/
-class fnv1a
-{
-    std::uint64_t state_ = 14695981039346656037ULL;
-public:
-
-    using result_type = std::size_t;
-
-    void
-    append (void const* key, std::size_t len) noexcept
-    {
-        unsigned char const* p = static_cast<unsigned char const*>(key);
-        unsigned char const* const e = p + len;
-        for (; p < e; ++p)
-            state_ = (state_ ^ *p) * 1099511628211ULL;
-    }
-
-    explicit
-    operator std::size_t() noexcept
-    {
-        return static_cast<std::size_t>(state_);
-    }
-};
-
 // See http://burtleburtle.net/bob/hash/spooky.html
 class spooky
 {
@@ -705,29 +679,6 @@ public:
         state_.Final (&h1, &h2);
         return static_cast <std::size_t> (h1);
     }
-};
-
-// See https://131002.net/siphash/
-class siphash
-{
-    std::uint64_t v0_ = 0x736f6d6570736575ULL;
-    std::uint64_t v1_ = 0x646f72616e646f6dULL;
-    std::uint64_t v2_ = 0x6c7967656e657261ULL;
-    std::uint64_t v3_ = 0x7465646279746573ULL;
-    unsigned char buf_[8];
-    unsigned bufsize_ = 0;
-    unsigned total_length_ = 0;
-public:
-    using result_type = std::size_t;
-
-    siphash() = default;
-    explicit siphash(std::uint64_t k0, std::uint64_t k1 = 0) noexcept;
-
-    void
-    append (void const* key, std::size_t len) noexcept;
-
-    explicit
-    operator std::size_t() noexcept;
 };
 
 template <class Hasher = spooky>
