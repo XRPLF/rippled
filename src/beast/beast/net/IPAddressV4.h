@@ -20,7 +20,7 @@
 #ifndef BEAST_NET_IPADDRESSV4_H_INCLUDED
 #define BEAST_NET_IPADDRESSV4_H_INCLUDED
 
-#include <beast/container/hash_append.h>
+#include <beast/hash/hash_append.h>
 
 #include <cstdint>
 #include <functional>

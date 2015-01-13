@@ -17,21 +17,15 @@
 */
 //==============================================================================
 
-// MODULES: ../impl/spookyv2.cpp
-
 #if BEAST_INCLUDE_BEASTCONFIG
 #include <BeastConfig.h>
 #endif
 
-#include <beast/container/tests/hash_metrics.h>
-
-#include <beast/container/hash_append.h>
-#include <beast/container/impl/spookyv2.h>
-
+#include <beast/hash/tests/hash_metrics.h>
+#include <beast/hash/hash_append.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/unit_test/suite.h>
 #include <beast/utility/type_name.h>
-
 #include <array>
 #include <algorithm>
 #include <cstring>
@@ -39,8 +33,6 @@
 #include <random>
 
 namespace beast {
-
-//------------------------------------------------------------------------------
 
 template <class Block, class Derived>
 class block_stream
