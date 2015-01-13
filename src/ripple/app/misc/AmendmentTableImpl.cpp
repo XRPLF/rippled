@@ -122,7 +122,18 @@ AmendmentTableImpl::addInitial ()
 
     for (auto const& _ : detail::PreEnabledAmendments)
     {
-        toAdd.emplace (uint256 (_.first), _.second);
+        uint256 hash;
+        if (!hash.SetHex (_.first))
+        {
+            std::string const errorMsg =
+                (boost::format (
+                     "PreEnabledAmendments contains an invalid hash (expected "
+                     "a hex number). Value was: %1%") %
+                 _.first).str ();
+            throw std::runtime_error (errorMsg);
+        }
+
+        toAdd.emplace (hash, _.second);
     }
 
     {
@@ -145,7 +156,17 @@ AmendmentTableImpl::addInitial ()
                 }
 
                 if (numToks == 1)
-                    id.SetHex (curTok);
+                {
+                    
+                    if (!id.SetHex (curTok))
+                    {
+                        std::string const errorMsg =
+                                (boost::format (
+                                 "%1% is not a valid hash. Expected a hex number. In config setcion: %2%. Line was: %3%")
+                             % curTok % SECTION_AMENDMENTS % _).str();
+                        throw std::runtime_error (errorMsg);
+                    }
+                }
                 else
                     friendlyName = curTok;
             }
@@ -155,8 +176,8 @@ AmendmentTableImpl::addInitial ()
                 std::string const errorMsg =
                     (boost::format (
                          "The %1% section in the config file expects %2% "
-                         "items. Found %3%") %
-                     SECTION_AMENDMENTS % numExpectedToks % numToks).str ();
+                         "items. Found %3%. Line was: %4%") %
+                     SECTION_AMENDMENTS % numExpectedToks % numToks % _).str ();
                 throw std::runtime_error (errorMsg);
             }
             toAdd.emplace (id, friendlyName);
