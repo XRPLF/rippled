@@ -32,6 +32,12 @@ Handler::Method<Json::Value> byRef (Function const& f)
     return [f] (Context& context, Json::Value& result)
     {
         result = f (context);
+        if (result.type() != Json::objectValue)
+        {
+            assert (false);
+            result = RPC::makeObjectValue (result);
+        }
+
         return Status();
     };
 }
