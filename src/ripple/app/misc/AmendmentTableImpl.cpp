@@ -115,9 +115,6 @@ public:
 void
 AmendmentTableImpl::addInitial ()
 {
-    // For each amendment this version supports, construct the AmendmentState
-    // object by calling addKnown. Set any vetoes or defaults.
-
     std::set<std::pair<uint256, std::string>> toAdd;
 
     for (auto const& _ : detail::PreEnabledAmendments)
