@@ -51,7 +51,8 @@ protected:
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
 
-    AmendmentState* getCreate (uint256 const& amendment, bool create);
+    AmendmentState& getCreate (uint256 const& amendment);
+    AmendmentState* getExisting (uint256 const& amendment);
     bool shouldEnable (std::uint32_t closeTime, const AmendmentState& fs);
     void setJson (Json::Value& v, const AmendmentState&);
 
@@ -170,17 +171,14 @@ AmendmentTableImpl::addInitial ()
     }
 }
 
-AmendmentState*
-AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
+AmendmentState&
+AmendmentTableImpl::getCreate (uint256 const& amendmentHash)
 {
     // call with the mutex held
     auto iter (m_amendmentMap.find (amendmentHash));
 
     if (iter == m_amendmentMap.end())
     {
-        if (!create)
-            return nullptr;
-
         AmendmentState* amendment = & (m_amendmentMap[amendmentHash]);
 
         {
@@ -199,8 +197,20 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
             }
         }
 
-        return amendment;
+        return *amendment;
     }
+
+    return iter->second;
+}
+
+AmendmentState*
+AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
+{
+    // call with the mutex held
+    auto iter (m_amendmentMap.find (amendmentHash));
+
+    if (iter == m_amendmentMap.end())
+        return nullptr;
 
     return & (iter->second);
 }
@@ -227,18 +237,13 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
     }
 
     ScopedLockType sl (mLock);
-    AmendmentState* amendment = getCreate (name.id (), true);
-    if (!amendment)
-    {
-        assert (false);
-        return false;
-    }
+    AmendmentState& amendment = getCreate (name.id ());
 
     if (!name.friendlyName ().empty ())
-        amendment->setFriendlyName (name.friendlyName ());
+        amendment.setFriendlyName (name.friendlyName ());
 
-    amendment->mVetoed = false;
-    amendment->mSupported = true;
+    amendment.mVetoed = false;
+    amendment.mSupported = true;
 
     return true;
 }
@@ -247,12 +252,12 @@ bool
 AmendmentTableImpl::veto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, true);
+    AmendmentState& s = getCreate (amendment);
 
-    if (s->mVetoed)
+    if (s.mVetoed)
         return false;
 
-    s->mVetoed = true;
+    s.mVetoed = true;
     return true;
 }
 
@@ -260,7 +265,7 @@ bool
 AmendmentTableImpl::unVeto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mVetoed)
         return false;
@@ -273,12 +278,12 @@ bool
 AmendmentTableImpl::enable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, true);
+    AmendmentState& s = getCreate (amendment);
 
-    if (s->mEnabled)
+    if (s.mEnabled)
         return false;
 
-    s->mEnabled = true;
+    s.mEnabled = true;
     return true;
 }
 
@@ -286,7 +291,7 @@ bool
 AmendmentTableImpl::disable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mEnabled)
         return false;
@@ -299,7 +304,7 @@ bool
 AmendmentTableImpl::isEnabled (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
     return s && s->mEnabled;
 }
 
@@ -307,7 +312,7 @@ bool
 AmendmentTableImpl::isSupported (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (amendment, false);
+    AmendmentState* s = getExisting (amendment);
     return s && s->mSupported;
 }
 
@@ -637,8 +642,8 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
     {
         ScopedLockType sl(mLock);
 
-        AmendmentState *amendmentState = getCreate (amendmentID, true);
-        setJson (jAmendment, *amendmentState);
+        AmendmentState& amendmentState = getCreate (amendmentID);
+        setJson (jAmendment, amendmentState);
     }
 
     return ret;
