@@ -100,7 +100,6 @@ ec_key GenerateRootDeterministicKey (uint128 const& seed)
         std::array<std::uint8_t, 20> buf;
         std::copy(seed.begin(), seed.end(), buf.begin());
         copy_uint32 (buf.begin() + 16, seq++);
-        ++seq;
         uint256 root = getSHA512Half (buf.data(), buf.size());
         std::fill (buf.begin(), buf.end(), 0); // security erase
         privKey = BN_bin2bn ((const unsigned char*) &root, sizeof (root), privKey);
