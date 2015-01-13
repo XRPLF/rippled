@@ -27,23 +27,11 @@
 #include <boost/tokenizer.hpp>
 
 namespace ripple {
-
-namespace detail
-{
-/** Amendments that are "compiled into" this app
-
-    Add amendments to this collection at build time to enable them on this
-   server. The first element of the pair is the id, the second element is
-   the "friendly name".
-*/
-std::set<std::pair<std::string, std::string>> PreEnabledAmendments;
-}
-
 /** Track the list of "amendments"
 
-    An "amendment" is an option that can affect transaction processing
-    rules that is identified by a 256-bit amendment identifier
-    and adopted, or rejected, by the network.
+   An "amendment" is an option that can affect transaction processing rules.
+   Amendments are proposed and then adopted or rejected by the network. An
+   Amendment is uniquely identified by its AmendmentID, a 256-bit key.
 */
 class AmendmentTableImpl final : public AmendmentTable
 {
@@ -112,80 +100,111 @@ public:
     amendmentList_t getDesired();    // amendments we support, do not veto, are not enabled
 };
 
+namespace detail
+{
+class AmendmentName final
+{
+private:
+    uint256 mId;
+    // Keep the hex string around for error reporting
+    std::string mHexString;
+    std::string mFriendlyName;
+    bool mValid{false};
+
+public:
+    AmendmentName () = default;
+    AmendmentName (AmendmentName const& rhs) = default;
+    // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
+    AmendmentName (std::string id, std::string friendlyName)
+        : mHexString (std::move (id)), mFriendlyName (std::move (friendlyName))
+    {
+        mValid = mId.SetHex (mHexString);
+    }
+    bool valid () const
+    {
+        return mValid;
+    }
+    uint256 const& id () const
+    {
+        return mId;
+    }
+    std::string const& hexString () const
+    {
+        return mHexString;
+    }
+    std::string const& friendlyName () const
+    {
+        return mFriendlyName;
+    }
+};
+
+using PreEnabledAmendmentsCollection = std::vector<AmendmentName>;
+
+/** preEnabledAmendments is a static collection of amendments are are enabled at build time.
+
+   Add amendments to this collection at build time to enable them on this server.
+*/
+
+PreEnabledAmendmentsCollection const preEnabledAmendments;
+}
+
 void
 AmendmentTableImpl::addInitial ()
 {
-    std::set<std::pair<uint256, std::string>> toAdd;
+    detail::PreEnabledAmendmentsCollection toAdd (detail::preEnabledAmendments);
 
-    for (auto const& _ : detail::PreEnabledAmendments)
+    for (auto const& a : detail::preEnabledAmendments)
     {
-        uint256 hash;
-        if (!hash.SetHex (_.first))
+        if (!a.valid ())
         {
             std::string const errorMsg =
                 (boost::format (
-                     "PreEnabledAmendments contains an invalid hash (expected "
+                     "preEnabledAmendments contains an invalid hash (expected "
                      "a hex number). Value was: %1%") %
-                 _.first).str ();
+                 a.hexString ()).str ();
             throw std::runtime_error (errorMsg);
         }
-
-        toAdd.emplace (hash, _.second);
     }
 
     {
         // add the amendments from the config file
         auto const& section = getConfig ().section (SECTION_AMENDMENTS);
         int const numExpectedToks = 2;
-        for (auto const& _ : section.lines ())
+        for (auto const& line : section.lines ())
         {
-            boost::tokenizer<> tokenizer (_);
-            int numToks = 0;
-            uint256 id;
-            std::string friendlyName;
-            for (auto const& curTok : tokenizer)
-            {
-                ++numToks;
-                if (numToks > numExpectedToks)
-                {
-                    continue;  // continue counting so can report number in the
-                               // error
-                }
-
-                if (numToks == 1)
-                {
-                    if (!id.SetHex (curTok))
-                    {
-                        std::string const errorMsg =
-                            (boost::format (
-                                 "%1% is not a valid hash. Expected a hex "
-                                 "number. In config setcion: %2%. Line was: "
-                                 "%3%") %
-                             curTok % SECTION_AMENDMENTS % _).str ();
-                        throw std::runtime_error (errorMsg);
-                    }
-                }
-                else
-                    friendlyName = curTok;
-            }
-
-            if (numToks != numExpectedToks)
+            boost::tokenizer<> tokenizer (line);
+            std::vector<std::string> tokens (tokenizer.begin (),
+                                             tokenizer.end ());
+            if (tokens.size () != numExpectedToks)
             {
                 std::string const errorMsg =
                     (boost::format (
                          "The %1% section in the config file expects %2% "
                          "items. Found %3%. Line was: %4%") %
-                     SECTION_AMENDMENTS % numExpectedToks % numToks % _).str ();
+                     SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
+                     line).str ();
                 throw std::runtime_error (errorMsg);
             }
-            toAdd.emplace (id, friendlyName);
+
+            toAdd.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
+            if (!toAdd.back ().valid ())
+            {
+                std::string const errorMsg =
+                    (boost::format (
+                         "%1% is not a valid hash. Expected a hex "
+                         "number. In config setcion: %2%. Line was: "
+                         "%3%") %
+                     toAdd.back ().hexString () % SECTION_AMENDMENTS %
+                     line).str ();
+                throw std::runtime_error (errorMsg);
+            }
         }
     }
 
-    for (auto const& _ : toAdd)
+    for (auto const& a : toAdd)
     {
-        addKnown (_.first, _.second, /*veto*/ false);
-        enable (_.first);
+        addKnown (a.id (), a.friendlyName (), /*veto*/ false);
+        enable (a.id ());
     }
 }
 
@@ -248,13 +267,18 @@ AmendmentTableImpl::addKnown (uint256 const& hash,
     }
 
     ScopedLockType sl (mLock);
-    AmendmentState* s = getCreate (hash, true);
+    AmendmentState* amendment = getCreate (hash, true);
+    if (!amendment)
+    {
+        assert (false);
+        return false;
+    }
 
     if (!friendlyName.empty ())
-        s->setFriendlyName (friendlyName);
+        amendment->setFriendlyName (friendlyName);
 
-    s->mVetoed = veto;
-    s->mSupported = true;
+    amendment->mVetoed = veto;
+    amendment->mSupported = true;
 
     return true;
 }

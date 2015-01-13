@@ -125,6 +125,14 @@ public:
 
     virtual void addInitial () = 0;
 
+    /** Add an amendment to the AmendmentTable
+
+        @param amendmentId hash identifying the amendment to add.
+        @param friendlyName human readable name for the amendment.
+        @param veto set to true to veto this amendment.
+
+        @return true if the amendment was added to the table, otherwise false.
+    */
     virtual bool addKnown (uint256 const& amendmentID,
                            std::string const& friendlyName,
                            bool veto) = 0;
