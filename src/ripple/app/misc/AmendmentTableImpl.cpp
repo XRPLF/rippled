@@ -80,9 +80,10 @@ public:
 
     void addInitial () override;
 
-    AmendmentState* addKnown (uint256 const& amendmentID,
-                              std::string const& friendlyName,
-                              bool veto) override;
+    bool addKnown (uint256 const& amendmentID,
+                   std::string const& friendlyName,
+                   bool veto) override;
+
     uint256 get (std::string const& name) override;
 
     bool veto (uint256 const& amendment) override;
@@ -115,8 +116,7 @@ void
 AmendmentTableImpl::addInitial ()
 {
     // For each amendment this version supports, construct the AmendmentState
-    // object by calling addKnown. Set any vetoes or defaults. A pointer to the
-    // AmendmentState can be stashed
+    // object by calling addKnown. Set any vetoes or defaults.
 
     std::set<std::pair<uint256, std::string>> toAdd;
 
@@ -146,7 +146,7 @@ AmendmentTableImpl::addInitial ()
             int numToks = 0;
             uint256 id;
             std::string friendlyName;
-            for(auto const& curTok : tokenizer)
+            for (auto const& curTok : tokenizer)
             {
                 ++numToks;
                 if (numToks > numExpectedToks)
@@ -157,13 +157,14 @@ AmendmentTableImpl::addInitial ()
 
                 if (numToks == 1)
                 {
-                    
                     if (!id.SetHex (curTok))
                     {
                         std::string const errorMsg =
-                                (boost::format (
-                                 "%1% is not a valid hash. Expected a hex number. In config setcion: %2%. Line was: %3%")
-                             % curTok % SECTION_AMENDMENTS % _).str();
+                            (boost::format (
+                                 "%1% is not a valid hash. Expected a hex "
+                                 "number. In config setcion: %2%. Line was: "
+                                 "%3%") %
+                             curTok % SECTION_AMENDMENTS % _).str ();
                         throw std::runtime_error (errorMsg);
                     }
                 }
@@ -238,14 +239,15 @@ AmendmentTableImpl::get (std::string const& name)
     return uint256 ();
 }
 
-AmendmentState* AmendmentTableImpl::addKnown (uint256 const& hash,
-                                              std::string const& friendlyName,
-                                              bool veto)
+bool
+AmendmentTableImpl::addKnown (uint256 const& hash,
+                              std::string const& friendlyName,
+                              bool veto)
 {
     if (hash.isZero ())
     {
         assert (false);
-        return nullptr;
+        return false;
     }
 
     ScopedLockType sl (mLock);
@@ -257,7 +259,7 @@ AmendmentState* AmendmentTableImpl::addKnown (uint256 const& hash,
     s->mVetoed = veto;
     s->mSupported = true;
 
-    return s;
+    return true;
 }
 
 bool

@@ -125,9 +125,9 @@ public:
 
     virtual void addInitial () = 0;
 
-    virtual AmendmentState* addKnown (uint256 const& amendmentID,
-                                      std::string const& friendlyName,
-                                      bool veto) = 0;
+    virtual bool addKnown (uint256 const& amendmentID,
+                           std::string const& friendlyName,
+                           bool veto) = 0;
 
     virtual uint256 get (std::string const& name) = 0;
 
