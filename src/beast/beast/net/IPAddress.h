@@ -22,8 +22,8 @@
 
 #include <beast/net/IPAddressV4.h>
 #include <beast/net/IPAddressV6.h>
-#include <beast/container/hash_append.h>
-
+#include <beast/hash/hash_append.h>
+#include <beast/hash/uhash.h>
 #include <boost/functional/hash.hpp>
 
 #include <cstdint>

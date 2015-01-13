@@ -24,7 +24,7 @@
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
-#include <beast/container/hardened_hash.h>
+#include <beast/hash/hardened_hash.h>
 #include <functional>
 #include <mutex>
 #include <vector>

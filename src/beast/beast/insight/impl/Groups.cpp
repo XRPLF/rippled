@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <unordered_map>
-
-#include <beast/cxx14/memory.h>
+#include <beast/hash/uhash.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace beast {
 namespace insight {

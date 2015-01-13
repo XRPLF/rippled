@@ -1,7 +1,8 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>,
+        Vinnie Falco <vinnie.falco@gmail.com
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,9 +18,42 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#ifndef BEAST_HASH_SPOOKY_H_INCLUDED
+#define BEAST_HASH_SPOOKY_H_INCLUDED
 
-#include <beast/container/tests/aged_associative_container.test.cpp>
-#include <beast/container/tests/buffer_view.test.cpp>
+#include <beast/hash/impl/spookyv2.h>
+
+namespace beast {
+
+// See http://burtleburtle.net/bob/hash/spooky.html
+class spooky
+{
+private:
+    SpookyHash state_;
+
+public:
+    using result_type = std::size_t;
+
+    spooky (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
+    {
+        state_.Init (seed1, seed2);
+    }
+
+    void
+    append (void const* key, std::size_t len) noexcept
+    {
+        state_.Update (key, len);
+    }
+
+    explicit
+    operator std::size_t() noexcept
+    {
+        std::uint64_t h1, h2;
+        state_.Final (&h1, &h2);
+        return static_cast <std::size_t> (h1);
+    }
+};
+
+} // beast
+
+#endif

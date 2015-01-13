@@ -600,6 +600,7 @@ for tu_style in ['classic', 'unity']:
                     ])
             else:
                 object_builder.add_source_files(
+                    'src/beast/beast/unity/hash_unity.cpp',
                     'src/ripple/unity/app.cpp',
                     'src/ripple/unity/app1.cpp',
                     'src/ripple/unity/app2.cpp',
