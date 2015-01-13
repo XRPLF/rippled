@@ -212,6 +212,7 @@ def config_base(env):
     env.Append(CPPDEFINES=[
         'OPENSSL_NO_SSL2'
         ,'DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER'
+        ,{'HAVE_USLEEP' : '1'}
         ])
 
     try:
