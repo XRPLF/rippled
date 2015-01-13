@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/hash/xxhasher.h>
+#include <beast/hash/impl/spookyv2.cpp>
 
-#include <beast/container/tests/aged_associative_container.test.cpp>
-#include <beast/container/tests/buffer_view.test.cpp>
+#if ! BEAST_NO_XXHASH
+#include <beast/hash/impl/xxhash.c>
+#endif
+#include <beast/hash/impl/siphash.cpp>
+
+#include <beast/hash/tests/hash_append_test.cpp>
+#include <beast/hash/tests/hash_speed_test.cpp>
