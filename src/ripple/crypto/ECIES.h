@@ -20,6 +20,7 @@
 #ifndef RIPPLE_ECIES_H
 #define RIPPLE_ECIES_H
 
+#include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
 
 namespace ripple {
