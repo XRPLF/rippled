@@ -68,9 +68,7 @@ public:
 
     void addInitial () override;
 
-    bool addKnown (uint256 const& amendmentID,
-                   std::string const& friendlyName,
-                   bool veto) override;
+    bool addKnown (AmendmentName const& name) override;
 
     uint256 get (std::string const& name) override;
 
@@ -102,42 +100,6 @@ public:
 
 namespace detail
 {
-class AmendmentName final
-{
-private:
-    uint256 mId;
-    // Keep the hex string around for error reporting
-    std::string mHexString;
-    std::string mFriendlyName;
-    bool mValid{false};
-
-public:
-    AmendmentName () = default;
-    AmendmentName (AmendmentName const& rhs) = default;
-    // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
-    AmendmentName (std::string id, std::string friendlyName)
-        : mHexString (std::move (id)), mFriendlyName (std::move (friendlyName))
-    {
-        mValid = mId.SetHex (mHexString);
-    }
-    bool valid () const
-    {
-        return mValid;
-    }
-    uint256 const& id () const
-    {
-        return mId;
-    }
-    std::string const& hexString () const
-    {
-        return mHexString;
-    }
-    std::string const& friendlyName () const
-    {
-        return mFriendlyName;
-    }
-};
-
 using PreEnabledAmendmentsCollection = std::vector<AmendmentName>;
 
 /** preEnabledAmendments is a static collection of amendments are are enabled at build time.
@@ -203,7 +165,7 @@ AmendmentTableImpl::addInitial ()
 
     for (auto const& a : toAdd)
     {
-        addKnown (a.id (), a.friendlyName (), /*veto*/ false);
+        addKnown (a);
         enable (a.id ());
     }
 }
@@ -256,28 +218,26 @@ AmendmentTableImpl::get (std::string const& name)
 }
 
 bool
-AmendmentTableImpl::addKnown (uint256 const& hash,
-                              std::string const& friendlyName,
-                              bool veto)
+AmendmentTableImpl::addKnown (AmendmentName const& name)
 {
-    if (hash.isZero ())
+    if (!name.valid ())
     {
         assert (false);
         return false;
     }
 
     ScopedLockType sl (mLock);
-    AmendmentState* amendment = getCreate (hash, true);
+    AmendmentState* amendment = getCreate (name.id (), true);
     if (!amendment)
     {
         assert (false);
         return false;
     }
 
-    if (!friendlyName.empty ())
-        amendment->setFriendlyName (friendlyName);
+    if (!name.friendlyName ().empty ())
+        amendment->setFriendlyName (name.friendlyName ());
 
-    amendment->mVetoed = veto;
+    amendment->mVetoed = false;
     amendment->mSupported = true;
 
     return true;

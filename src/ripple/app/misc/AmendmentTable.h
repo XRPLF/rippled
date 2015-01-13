@@ -46,6 +46,48 @@ public:
     }
 };
 
+/** 256-bit Id and human friendly name of an amendment.
+*/
+class AmendmentName final
+{
+private:
+    uint256 mId;
+    // Keep the hex string around for error reporting
+    std::string mHexString;
+    std::string mFriendlyName;
+    bool mValid{false};
+
+public:
+    AmendmentName () = default;
+    AmendmentName (AmendmentName const& rhs) = default;
+    // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
+    AmendmentName (uint256 const& id, std::string friendlyName)
+        : mId (id), mFriendlyName (friendlyName), mValid (true)
+    {
+    }
+    AmendmentName (std::string id, std::string friendlyName)
+        : mHexString (std::move (id)), mFriendlyName (std::move (friendlyName))
+    {
+        mValid = mId.SetHex (mHexString);
+    }
+    bool valid () const
+    {
+        return mValid;
+    }
+    uint256 const& id () const
+    {
+        return mId;
+    }
+    std::string const& hexString () const
+    {
+        return mHexString;
+    }
+    std::string const& friendlyName () const
+    {
+        return mFriendlyName;
+    }
+};
+
 /** Current state of an amendment.
     Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
@@ -53,19 +95,25 @@ public:
 class AmendmentState
 {
 public:
-    bool mVetoed;   // We don't want this amendment enabled
+    bool mVetoed;  // We don't want this amendment enabled
     bool mEnabled;
     bool mSupported;
     bool mDefault;  // Include in genesis ledger
 
-    core::Clock::time_point m_firstMajority; // First time we saw a majority (close time)
-    core::Clock::time_point m_lastMajority;  // Most recent time we saw a majority (close time)
+    core::Clock::time_point
+        m_firstMajority;  // First time we saw a majority (close time)
+    core::Clock::time_point
+        m_lastMajority;  // Most recent time we saw a majority (close time)
 
     std::string mFriendlyName;
 
     AmendmentState ()
-        : mVetoed (false), mEnabled (false), mSupported (false), mDefault (false),
-          m_firstMajority (0), m_lastMajority (0)
+        : mVetoed (false)
+        , mEnabled (false)
+        , mSupported (false)
+        , mDefault (false)
+        , m_firstMajority (0)
+        , m_lastMajority (0)
     {
         ;
     }
@@ -133,9 +181,7 @@ public:
 
         @return true if the amendment was added to the table, otherwise false.
     */
-    virtual bool addKnown (uint256 const& amendmentID,
-                           std::string const& friendlyName,
-                           bool veto) = 0;
+    virtual bool addKnown (AmendmentName const& name) = 0;
 
     virtual uint256 get (std::string const& name) = 0;
 
