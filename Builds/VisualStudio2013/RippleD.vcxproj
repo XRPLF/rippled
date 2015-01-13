@@ -247,32 +247,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\container\detail\aged_unordered_container.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\hardened_hash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\hash_append.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\container\impl\siphash.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\impl\spookyv2.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\container\impl\spookyv2.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\container\tests\aged_associative_container.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\container\tests\buffer_view.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\hardened_hash.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\hash_append.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
@@ -310,6 +290,37 @@
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\hash_append.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\siphash.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\spookyv2.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\impl\spookyv2.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\xxhash.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\impl\xxhash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\siphash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\spooky.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_append_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\tests\hash_metrics.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_speed_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\xxhasher.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
     </ClInclude>
@@ -794,6 +805,8 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
@@ -891,6 +904,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\amount.h">

@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 #define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 
-#include <beast/container/hash_append.h>
+#include <beast/hash/hash_append.h>
 
 #include <beast/utility/noexcept.h>
 
