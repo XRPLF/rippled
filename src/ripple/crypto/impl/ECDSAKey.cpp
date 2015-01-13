@@ -25,6 +25,7 @@
 #include <BeastConfig.h>
 #include <ripple/crypto/ECDSAKey.h>
 #include <openssl/ec.h>
+#include <openssl/hmac.h>
 
 namespace ripple  {
 
