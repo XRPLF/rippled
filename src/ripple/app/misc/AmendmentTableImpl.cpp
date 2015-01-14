@@ -37,7 +37,6 @@ class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
     typedef hash_map<uint256, AmendmentState> amendmentMap_t;
-    typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
     typedef hash_set<uint256> amendmentList_t;
 
     typedef RippleMutex LockType;

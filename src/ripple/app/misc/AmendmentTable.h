@@ -95,28 +95,19 @@ public:
 class AmendmentState
 {
 public:
-    bool mVetoed;  // We don't want this amendment enabled
-    bool mEnabled;
-    bool mSupported;
-    bool mDefault;  // Include in genesis ledger
+    bool mVetoed{false};  // We don't want this amendment enabled
+    bool mEnabled{false};
+    bool mSupported{false};
+    bool mDefault{false};  // Include in genesis ledger
 
     core::Clock::time_point
-        m_firstMajority;  // First time we saw a majority (close time)
+        m_firstMajority{0};  // First time we saw a majority (close time)
     core::Clock::time_point
-        m_lastMajority;  // Most recent time we saw a majority (close time)
+        m_lastMajority{0};  // Most recent time we saw a majority (close time)
 
     std::string mFriendlyName;
 
-    AmendmentState ()
-        : mVetoed (false)
-        , mEnabled (false)
-        , mSupported (false)
-        , mDefault (false)
-        , m_firstMajority (0)
-        , m_lastMajority (0)
-    {
-        ;
-    }
+    AmendmentState () = default;
 
     void setVeto ()
     {
