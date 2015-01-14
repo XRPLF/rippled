@@ -175,13 +175,9 @@ public:
 
     /** Add an amendment to the AmendmentTable
 
-        @param amendmentId hash identifying the amendment to add.
-        @param friendlyName human readable name for the amendment.
-        @param veto set to true to veto this amendment.
-
-        @return true if the amendment was added to the table, otherwise false.
+        @throw will throw if the name parameter is not valid
     */
-    virtual bool addKnown (AmendmentName const& name) = 0;
+    virtual void addKnown (AmendmentName const& name) = 0;
 
     virtual uint256 get (std::string const& name) = 0;
 

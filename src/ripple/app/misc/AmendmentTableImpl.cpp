@@ -69,7 +69,7 @@ public:
 
     void addInitial () override;
 
-    bool addKnown (AmendmentName const& name) override;
+    void addKnown (AmendmentName const& name) override;
 
     uint256 get (std::string const& name) override;
 
@@ -227,13 +227,17 @@ AmendmentTableImpl::get (std::string const& name)
     return uint256 ();
 }
 
-bool
+void
 AmendmentTableImpl::addKnown (AmendmentName const& name)
 {
     if (!name.valid ())
     {
-        assert (false);
-        return false;
+        std::string const errorMsg =
+            (boost::format (
+                 "addKnown was given an invalid hash (expected a hex number). "
+                 "Value was: %1%") %
+             name.hexString ()).str ();
+        throw std::runtime_error (errorMsg);
     }
 
     ScopedLockType sl (mLock);
@@ -244,8 +248,6 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
 
     amendment.mVetoed = false;
     amendment.mSupported = true;
-
-    return true;
 }
 
 bool
