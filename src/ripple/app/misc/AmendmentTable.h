@@ -62,7 +62,7 @@ public:
     AmendmentName (AmendmentName const& rhs) = default;
     // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
     AmendmentName (uint256 const& id, std::string friendlyName)
-        : mId (id), mFriendlyName (friendlyName), mValid (true)
+        : mId (id), mFriendlyName (std::move (friendlyName)), mValid (true)
     {
     }
     AmendmentName (std::string id, std::string friendlyName)
