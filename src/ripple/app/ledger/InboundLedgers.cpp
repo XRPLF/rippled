@@ -367,7 +367,7 @@ public:
         }
 
         WriteLog (lsDEBUG, InboundLedger) <<
-            "Sweeped " << stuffToSweep.size () <<
+            "Swept " << stuffToSweep.size () <<
             " out of " << total << " inbound ledgers.";
     }
 

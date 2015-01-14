@@ -22,7 +22,7 @@ This ensures that each test is run against the known
 To use a running `rippled`, particularly one running in a debugger, follow
 these steps:
 
-1. Make a copy the example configuration file: `cp -i test/config-example.js test/config.js`
+1. Make a copy of the example configuration file: `cp -i test/config-example.js test/config.js`
 
 2. Edit `test/config.js` to select the "debug" server configuration.
   * Change the existing default server to: `exports.server_default = "debug";`
@@ -30,11 +30,11 @@ these steps:
 
 3. Create a `rippled.cfg` file for the tests.
   1. Run `npm test`. The tests will fail. **This failure is expected.**
-  2. Copy and/or rename the `tmp/server/debug/rippled.cfg` file to somewhere 
+  2. Copy and/or rename the `tmp/server/debug/rippled.cfg` file to somewhere
   convenient.
 
 4. Start `rippled` (in a debugger) with command line options
-`-a -v --conf <rippled-created-above.cfg>`.
+`-av --conf <rippled-created-above.cfg>`.
 
 5. Set any desired breakpoints in the `rippled` source.
 
@@ -48,18 +48,17 @@ If the relevant `.js` file contains more than one test, change `test(` to
 (Note that the tests can be run without the debugger, but there will probably
 be problems with timeouts or reused ledgers).
   1. `node_modules/node-inspector/bin/inspector.js &`
-  2. `mocha --debug --debug-brk test/<testfile.js>`
-  3. Browse to http://127.0.0.1:8080/debug?port=5858 in a browser supported 
+  2. `node node_modules/.bin/mocha --debug --debug-brk test/<testfile.js>`
+  3. Browse to http://127.0.0.1:8080/debug?port=5858 in a browser supported
   by [_node-inspector_][node_inspector] (i.e. Chrome or Safari).
 
 8. To run multiple tests, put a breakpoint in the following function:
   * File `testutils.js` -> function `build_teardown()` -> nested function
   `teardown()` -> nested series function `stop_server()`.
-    * When this breakpoint is
-    hit, stop and restart `rippled`.
+    * When this breakpoint is hit, stop and restart `rippled`.
 
 9. Use the [_node-inspector UI_][node_inspector_ui] to step through and run
-the test(s) until control is handed off to `rippled`. When the request is 
+the test(s) until control is handed off to `rippled`. When the request is
 finished control will be handed back to node-inspector, which may or may not
 stop depending on which breakpoints are set.
 
@@ -76,4 +75,3 @@ default server back to its original value: `exports.server_default = "alpha";`.
 [genesis_ledger]: https://wiki.ripple.com/Genesis_ledger
 [node_inspector]: https://wiki.ripple.com/Rippled_build_instructions#node-inspector
 [node_inspector_ui]: https://github.com/node-inspector/node-inspector/blob/master/README.md
-
