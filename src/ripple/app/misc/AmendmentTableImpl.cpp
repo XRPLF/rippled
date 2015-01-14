@@ -114,8 +114,6 @@ PreEnabledAmendmentsCollection const preEnabledAmendments;
 void
 AmendmentTableImpl::addInitial ()
 {
-    detail::PreEnabledAmendmentsCollection toAdd (detail::preEnabledAmendments);
-
     for (auto const& a : detail::preEnabledAmendments)
     {
         if (!a.valid ())
@@ -128,6 +126,8 @@ AmendmentTableImpl::addInitial ()
             throw std::runtime_error (errorMsg);
         }
     }
+
+    detail::PreEnabledAmendmentsCollection toAdd (detail::preEnabledAmendments);
 
     {
         // add the amendments from the config file
