@@ -164,9 +164,17 @@ public:
         logged if the condition is false.
         @return `true` if the test condition indicates success.
     */
+    template <class Condition, class String>
+    bool
+    expect (Condition shouldBeTrue,
+        String const& reason);
+
     template <class Condition>
     bool
-    expect (Condition shouldBeTrue, std::string const& reason = "");
+    expect (Condition shouldBeTrue)
+    {
+        return expect (shouldBeTrue, "");
+    }
 
     /** Return the argument associated with the runner. */
     std::string const&
@@ -177,9 +185,17 @@ public:
 
     // DEPRECATED
     // @return `true` if the test condition indicates success (a false value)
+    template <class Condition, class String>
+    bool
+    unexpected (Condition shouldBeFalse,
+        String const& reason);
+
     template <class Condition>
     bool
-    unexpected (Condition shouldBeFalse, std::string const& reason = "");
+    unexpected (Condition shouldBeFalse)
+    {
+        return unexpected (shouldBeFalse, "");
+    }
 
     /** Record a successful test condition. */
     template <class = void>
@@ -324,10 +340,11 @@ suite::operator() (runner& r)
     run (r);
 }
 
-template <class Condition>
+template <class Condition, class String>
 inline
 bool
-suite::expect (Condition shouldBeTrue, std::string const& reason)
+suite::expect (Condition shouldBeTrue,
+    String const& reason)
 {
     if (shouldBeTrue)
         pass();
@@ -336,10 +353,11 @@ suite::expect (Condition shouldBeTrue, std::string const& reason)
     return shouldBeTrue;
 }
 
-template <class Condition>
+template <class Condition, class String>
 inline
 bool
-suite::unexpected (Condition shouldBeFalse, std::string const& reason)
+suite::unexpected (Condition shouldBeFalse,
+    String const& reason)
 {
     if (! shouldBeFalse)
         pass();
