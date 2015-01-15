@@ -768,6 +768,9 @@ boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT () const
 
     getApp().getSystemTimeOffset (offset);
 
+    if (std::abs (offset) >= 500)
+        m_journal.warning << "Large system time offset (" << offset << ").";
+
     // VFALCO TODO Replace this with a beast call
     return boost::posix_time::microsec_clock::universal_time () +
             boost::posix_time::seconds (offset);
@@ -806,7 +809,12 @@ void NetworkOPsImp::closeTimeOffset (int offset)
         mCloseTimeOffset = (mCloseTimeOffset * 3) / 4;
 
     if (mCloseTimeOffset != 0)
+    {
         m_journal.info << "Close time offset now " << mCloseTimeOffset;
+
+        if (std::abs (mCloseTimeOffset) >= 500)
+            m_journal.warning << "Large close time offset (" << mCloseTimeOffset << ").";
+    }
 }
 
 std::uint32_t NetworkOPsImp::getLedgerID (uint256 const& hash)
