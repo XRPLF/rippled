@@ -122,7 +122,7 @@ public:
     AddressV4 const&
     to_v4 () const
     {
-        if (m_type != ipv4)
+        if (!is_v4 ())
             throw std::bad_cast();
         return m_v4;
     }
@@ -134,7 +134,7 @@ public:
     AddressV6 const&
     to_v6 () const
     {
-        if (m_type != ipv6)
+        if (!is_v6 ())
             throw std::bad_cast();
         return m_v6;
     }
