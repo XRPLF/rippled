@@ -209,15 +209,17 @@ SHAMapStoreImp::SHAMapStoreImp (Setup const& setup,
 {
     if (setup_.deleteInterval)
     {
-        if (setup_.ledgerHistory > setup_.deleteInterval ||
-                setup_.ledgerHistory < minimumDeletionInterval_)
+        if (setup_.deleteInterval < minimumDeletionInterval_)
         {
-            std::stringstream es;
-            es << "online_delete (" << setup_.deleteInterval
-                    << ") must be at least " << minimumDeletionInterval_
-                    << " and cannot be less than LEDGER_HISTORY ("
-                    << setup_.ledgerHistory << ")";
-            throw std::runtime_error (es.str());
+            throw std::runtime_error ("online_delete must be at least " +
+                std::to_string (minimumDeletionInterval_));
+        }
+
+        if (setup_.ledgerHistory > setup_.deleteInterval)
+        {
+            throw std::runtime_error (
+                "online_delete must be less than ledger_history (currently " +
+                std::to_string (setup_.ledgerHistory) + ")");
         }
 
         state_db_.init (setup_.databasePath, dbName_);
