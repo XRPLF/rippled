@@ -217,6 +217,8 @@ AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
 uint256
 AmendmentTableImpl::get (std::string const& name)
 {
+    ScopedLockType sl (mLock);
+
     for (auto const& e : m_amendmentMap)
     {
         if (name == e.second.mFriendlyName)
