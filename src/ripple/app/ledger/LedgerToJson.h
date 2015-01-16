@@ -167,7 +167,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         if (bFull || bExpand)
         {
             ledger.visitStateItems (
-                [&array, &count, &fill] (SLE::ref sle)
+                [&array, &count] (SLE::ref sle)
                 {
                     count.yield();
                     array.append (sle->getJson(0));
@@ -176,7 +176,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         else
         {
             accountStateMap->visitLeaves(
-                [&array, &count, &fill] (SHAMapItem::ref smi)
+                [&array, &count] (SHAMapItem::ref smi)
                 {
                     count.yield();
                     array.append (to_string(smi->getTag ()));
