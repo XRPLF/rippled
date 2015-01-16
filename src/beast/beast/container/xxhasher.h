@@ -52,7 +52,7 @@ public:
         std::enable_if_t<
             std::is_unsigned<Seed>::value>* = nullptr>
     explicit
-    xxhasher (Seed seed)
+    xxhasher (Seed seed, Seed)
     {
         detail::XXH64_reset (&state_, seed);
     }
