@@ -69,8 +69,10 @@ Json::Value doAccountTx (RPC::Context& context)
         std::int64_t iLedgerMax  = params.isMember ("ledger_index_max")
                 ? params["ledger_index_max"].asInt () : -1;
 
-        uLedgerMin  = iLedgerMin == -1 ? uValidatedMin : iLedgerMin;
-        uLedgerMax  = iLedgerMax == -1 ? uValidatedMax : iLedgerMax;
+        uLedgerMin  = iLedgerMin == -1 ? uValidatedMin :
+            ((iLedgerMin >= uValidatedMin) ? iLedgerMin : uValidatedMin);
+        uLedgerMax  = iLedgerMax == -1 ? uValidatedMax :
+            ((iLedgerMax <= uValidatedMax) ? iLedgerMax : uValidatedMax);
 
         if (uLedgerMax < uLedgerMin)
             return rpcError (rpcLGR_IDXS_INVALID);
