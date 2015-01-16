@@ -21,6 +21,7 @@
 #define RIPPLE_AMENDMENT_TABLE_H
 
 #include <ripple/app/book/Types.h>
+#include <ripple/app/misc/Validations.h>
 
 namespace ripple {
 
@@ -143,6 +144,8 @@ public:
     }
 };
 
+class Section;
+
 /** The amendment table stores the list of enabled and potential amendments.
     Individuals amendments are voted on by validators during the consensus
     process.
@@ -162,7 +165,10 @@ public:
 
     virtual ~AmendmentTable() { }
 
-    virtual void addInitial () = 0;
+    /**
+       @param section the config section of initial amendments
+     */
+    virtual void addInitial (Section const& section) = 0;
 
     /** Add an amendment to the AmendmentTable
 
@@ -197,10 +203,39 @@ public:
     doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
 
-std::unique_ptr<AmendmentTable>
-make_AmendmentTable (std::chrono::seconds majorityTime, int majorityFraction,
-    beast::Journal journal);
+/**
+   AmendmentTableInjections is used to insert moc objects into the amendment
+   table class while unit testing.
+ */
+class AmendmentTableInjections
+{
+public:
+    /** Get the first and last majority from the walletDB and update the
+     * AmendmentState object.
+     */
+    virtual void setMajorityTimesFromDBToState (
+        AmendmentState& toUpdate,
+        uint256 const& amendmentHash) const = 0;
+    /** For eash hash, get the first and last majority from the corresponding
+     * AmendmentState object and update the walletDB.
+     */
+    virtual void setMajorityTimesFromStateToDB (
+        std::vector<uint256> const& changedAmendments,
+        hash_map<uint256, AmendmentState>& amendmentMap) const = 0;
+    virtual ValidationSet getValidations (uint256 const& hash) const = 0;
+};
 
-} // ripple
+// Use for regular system
+std::unique_ptr<AmendmentTableInjections> make_AmendmentTableInjections ();
+// Use for unit testing
+std::unique_ptr<AmendmentTableInjections> make_MOCAmendmentTableInjections ();
+
+std::unique_ptr<AmendmentTable> make_AmendmentTable (
+    std::chrono::seconds majorityTime,
+    int majorityFraction,
+    beast::Journal journal,
+    std::unique_ptr<AmendmentTableInjections> injections);
+
+}  // ripple
 
 #endif

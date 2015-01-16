@@ -50,6 +50,7 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/net/SNTPClient.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -317,8 +318,10 @@ public:
         , m_validators (Validators::make_Manager(*this, get_io_service(),
             getConfig ().getModuleDatabasePath (), m_logs.journal("UVL")))
 
-        , m_amendmentTable (make_AmendmentTable (weeks(2), MAJORITY_FRACTION,
-            m_logs.journal("AmendmentTable")))
+        , m_amendmentTable (make_AmendmentTable
+                            (weeks(2), MAJORITY_FRACTION,
+                             m_logs.journal("AmendmentTable"),
+                             make_AmendmentTableInjections()))
 
         , mFeeTrack (LoadFeeTrack::New (m_logs.journal("LoadManager")))
 
@@ -650,7 +653,8 @@ public:
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
 
-        m_amendmentTable->addInitial();
+        m_amendmentTable->addInitial (
+            getConfig ().section (SECTION_AMENDMENTS));
         initializePathfinding ();
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
