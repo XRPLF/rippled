@@ -21,6 +21,7 @@
 #define RIPPLE_RIPPLELINECACHE_H
 
 #include <ripple/app/paths/RippleState.h>
+#include <ripple/basics/hardened_hash.h>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -59,7 +60,7 @@ private:
 
         AccountKey (Account const& account)
             : account_ (account)
-            , hash_value_ (beast::hardened_hash<>{}(account))
+            , hash_value_ (hardened_hash<>{}(account))
         {
 
         }

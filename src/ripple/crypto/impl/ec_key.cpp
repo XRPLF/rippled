@@ -100,15 +100,15 @@ std::size_t ec_key::get_public_key_size() const
     return size;
 }
 
-uint8_t ec_key::get_public_key (uint8* buffer) const
+std::uint8_t ec_key::get_public_key (std::uint8_t* buffer) const
 {
-    uint8_t* begin = buffer;
+    std::uint8_t* begin = buffer;
 
     int const size = i2o_ECPublicKey (get_EC_KEY (*this), &begin);
 
     assert (size == get_public_key_size());
 
-    return uint8_t (size);
+    return std::uint8_t (size);
 }
 
 } // openssl

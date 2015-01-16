@@ -20,10 +20,10 @@
 #ifndef RIPPLE_VALIDATORS_CONNECTIONIMP_H_INCLUDED
 #define RIPPLE_VALIDATORS_CONNECTIONIMP_H_INCLUDED
 
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/validators/Connection.h>
 #include <ripple/validators/impl/Logic.h>
-#include <beast/hash/hardened_hash.h>
 #include <beast/utility/WrappedSink.h>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>

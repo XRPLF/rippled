@@ -35,6 +35,7 @@
 #include <ripple/basics/impl/UptimeTimer.cpp>
 
 #include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
+#include <ripple/basics/tests/hardened_hash_test.cpp>
 #include <ripple/basics/tests/KeyCache.test.cpp>
 #include <ripple/basics/tests/RangeSet.test.cpp>
 #include <ripple/basics/tests/StringUtilities.test.cpp>

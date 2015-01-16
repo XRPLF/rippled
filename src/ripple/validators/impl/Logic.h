@@ -21,6 +21,7 @@
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/validators/impl/Store.h>
@@ -50,7 +51,7 @@ private:
     {
         std::uint32_t seq_no = 0;
         std::unordered_set<RippleAddress,
-            beast::hardened_hash<>> keys;
+            hardened_hash<>> keys;
     };
 
     class Policy
@@ -70,7 +71,7 @@ private:
 
     Policy policy_;
     beast::aged_unordered_map <LedgerHash, LedgerMeta,
-        std::chrono::steady_clock, beast::hardened_hash<>> ledgers_;
+        std::chrono::steady_clock, hardened_hash<>> ledgers_;
     std::pair<LedgerHash, LedgerMeta> latest_; // last fully validated
     boost::container::flat_set<ConnectionImp*> connections_;
     

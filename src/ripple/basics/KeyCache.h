@@ -20,11 +20,11 @@
 #ifndef RIPPLE_BASICS_KEYCACHE_H_INCLUDED
 #define RIPPLE_BASICS_KEYCACHE_H_INCLUDED
 
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
-#include <beast/hash/hardened_hash.h>
 #include <mutex>
 
 namespace ripple {
@@ -38,7 +38,7 @@ namespace ripple {
 // VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
-    class Hash = beast::hardened_hash <>,
+    class Hash = hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::mutex
