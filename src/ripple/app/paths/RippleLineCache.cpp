@@ -30,7 +30,7 @@ RippleLineCache::RippleLineCache (Ledger::ref l)
 RippleLineCache::RippleStateVector const&
 RippleLineCache::getRippleLines (Account const& accountID)
 {
-    AccountKey key (accountID);
+    AccountKey key (accountID, hasher_ (accountID));
 
     ScopedLockType sl (mLock);
 
