@@ -11,14 +11,17 @@
     all             All available variants
     debug           All available debug variants
     release         All available release variants
+    profile         All available profile variants
 
     clang           All clang variants
     clang.debug     clang debug variant
     clang.release   clang release variant
+    clang.profile   clang profile variant
 
     gcc             All gcc variants
     gcc.debug       gcc debug variant
     gcc.release     gcc release variant
+    gcc.profile     gcc profile variant
 
     msvc            All msvc variants
     msvc.debug      MSVC debug variant
@@ -27,6 +30,11 @@
     vcxproj         Generate Visual Studio 2013 project file
 
     count           Show line count metrics
+
+    Any individual target can also have ".nounity" appended for a classic,
+    non unity build. Example:
+
+        scons gcc.debug.nounity
 
 If the clang toolchain is detected, then the default target will use it, else
 the gcc toolchain will be used. On Windows environments, the MSVC toolchain is
@@ -250,7 +258,7 @@ def config_env(toolchain, variant, env):
     if variant == 'debug':
         env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 
-    elif variant == 'release':
+    elif variant == 'release' or variant == 'profile':
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
@@ -267,6 +275,21 @@ def config_env(toolchain, variant, env):
             '-Wno-format',
             '-g'                        # generate debug symbols
             ])
+
+        env.Append(LINKFLAGS=[
+            '-rdynamic',
+            '-g',
+            ])
+
+        if variant == 'profile':
+            env.Append(CCFLAGS=[
+                '-p',
+                '-pg',
+                ])
+            env.Append(LINKFLAGS=[
+                '-p',
+                '-pg',
+                ])
 
         if toolchain == 'clang':
             env.Append(CCFLAGS=['-Wno-redeclared-class-member'])
@@ -330,10 +353,6 @@ def config_env(toolchain, variant, env):
                 ])
         else:
             env.Append(LIBS=['rt'])
-
-        env.Append(LINKFLAGS=[
-            '-rdynamic'
-            ])
 
         if variant == 'release':
             env.Append(CCFLAGS=[
@@ -481,7 +500,7 @@ base.Append(CPPPATH=[
     ])
 
 # Configure the toolchains, variants, default toolchain, and default target
-variants = ['debug', 'release']
+variants = ['debug', 'release', 'profile']
 all_toolchains = ['clang', 'gcc', 'msvc']
 if Beast.system.osx:
     toolchains = ['clang']
@@ -552,6 +571,8 @@ msvc_configs = []
 for tu_style in ['classic', 'unity']:
     for toolchain in all_toolchains:
         for variant in variants:
+            if variant == 'profile' and toolchain == 'msvc':
+                continue
             # Configure this variant's construction environment
             env = base.Clone()
             config_env(toolchain, variant, env)
