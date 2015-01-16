@@ -21,6 +21,7 @@
 #define RIPPLE_ECKEY_H
 
 #include <ripple/basics/base_uint.h>
+#include <cstdint>
 
 namespace ripple {
 namespace openssl {
@@ -73,7 +74,7 @@ public:
 
     std::size_t get_public_key_size() const;
 
-    uint8_t get_public_key (uint8* buffer) const;
+    std::uint8_t get_public_key (std::uint8_t* buffer) const;
 };
 
 } // openssl

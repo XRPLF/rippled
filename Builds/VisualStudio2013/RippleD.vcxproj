@@ -2146,6 +2146,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\DecayingSample.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\hardened_hash.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\impl\BasicConfig.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2221,6 +2223,9 @@
     <ClInclude Include="..\..\src\ripple\basics\TestSuite.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\tests\hardened_hash_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\KeyCache.test.cpp">

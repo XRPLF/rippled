@@ -28,6 +28,7 @@
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/hmac.h>
+#include <cstdint>
 
 namespace ripple  {
 
@@ -75,7 +76,7 @@ ec_key ECDSAPublicKey (Blob const& serialized)
 {
     EC_KEY* key = new_initialized_EC_KEY();
 
-    uint8_t const* begin = &serialized[0];
+    std::uint8_t const* begin = &serialized[0];
 
     if (o2i_ECPublicKey (&key, &begin, serialized.size()) != nullptr)
     {
@@ -111,7 +112,7 @@ Blob ECDSASign (uint256 const& hash, const openssl::ec_key& key)
     return result;
 }
 
-static bool ECDSAVerify (uint256 const& hash, uint8 const* sig, size_t sigLen, EC_KEY* key)
+static bool ECDSAVerify (uint256 const& hash, std::uint8_t const* sig, size_t sigLen, EC_KEY* key)
 {
     // -1 = error, 0 = bad sig, 1 = good
     return ECDSA_verify (0, hash.begin(), hash.size(), sig, sigLen, key) > 0;
