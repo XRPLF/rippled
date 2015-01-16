@@ -20,11 +20,11 @@
 #ifndef RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
-#include <beast/hash/hardened_hash.h>
 #include <functional>
 #include <mutex>
 #include <vector>
@@ -50,7 +50,7 @@ struct TaggedCacheLog;
 template <
     class Key,
     class T,
-    class Hash = beast::hardened_hash <>,
+    class Hash = hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex

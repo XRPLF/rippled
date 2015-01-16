@@ -3126,6 +3126,9 @@
     <ClInclude Include="..\..\src\ripple\basics\DecayingSample.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\hardened_hash.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\impl\BasicConfig.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3217,6 +3220,9 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
+      <Filter>ripple\basics\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\tests\hardened_hash_test.cpp">
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\KeyCache.test.cpp">

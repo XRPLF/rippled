@@ -28,8 +28,7 @@
 #include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
-
-#include <beast/hash/hardened_hash.h>
+#include <ripple/basics/hardened_hash.h>
 #include <beast/utility/Zero.h>
 
 #include <boost/functional/hash.hpp>
@@ -98,7 +97,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    typedef beast::hardened_hash <> hasher;
+    typedef hardened_hash <> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -537,7 +536,7 @@ struct hash<ripple::base_uint<Bits, Tag>>
     std::size_t
     operator()(argument_type const& u) const
     {
-        return beast::hardened_hash<>{}(u);
+        return ripple::hardened_hash<>{}(u);
     }
 };
 
