@@ -124,11 +124,12 @@ public:
 
     // Our best estimate of current ledger close time
     std::uint32_t getCloseTimeNC () const;
+    std::uint32_t getCloseTimeNC (int& offset) const;
 
     // Use *only* to timestamp our own validation
     std::uint32_t getValidationTimeNC ();
     void closeTimeOffset (int);
-    boost::posix_time::ptime getNetworkTimePT () const;
+    boost::posix_time::ptime getNetworkTimePT (int& offset) const;
     std::uint32_t getLedgerID (uint256 const& hash);
     std::uint32_t getCurrentLedgerID ();
     OperatingMode getOperatingMode () const
@@ -762,13 +763,12 @@ std::string NetworkOPsImp::strOperatingMode () const
     return paStatusToken[mMode];
 }
 
-boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT () const
+boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT (int& offset) const
 {
-    int offset = 0;
-
+    offset = 0;
     getApp().getSystemTimeOffset (offset);
 
-    if (std::abs (offset) >= 500)
+    if (std::abs (offset) >= 60)
         m_journal.warning << "Large system time offset (" << offset << ").";
 
     // VFALCO TODO Replace this with a beast call
@@ -778,12 +778,20 @@ boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT () const
 
 std::uint32_t NetworkOPsImp::getNetworkTimeNC () const
 {
-    return iToSeconds (getNetworkTimePT ());
+    int offset;
+    return iToSeconds (getNetworkTimePT (offset));
 }
 
 std::uint32_t NetworkOPsImp::getCloseTimeNC () const
 {
-    return iToSeconds (getNetworkTimePT () +
+    int offset;
+    return iToSeconds (getNetworkTimePT (offset) +
+                       boost::posix_time::seconds (mCloseTimeOffset));
+}
+
+std::uint32_t NetworkOPsImp::getCloseTimeNC (int& offset) const
+{
+    return iToSeconds (getNetworkTimePT (offset) +
                        boost::posix_time::seconds (mCloseTimeOffset));
 }
 
@@ -812,7 +820,7 @@ void NetworkOPsImp::closeTimeOffset (int offset)
     {
         m_journal.info << "Close time offset now " << mCloseTimeOffset;
 
-        if (std::abs (mCloseTimeOffset) >= 500)
+        if (std::abs (mCloseTimeOffset) >= 60)
             m_journal.warning << "Large close time offset (" << mCloseTimeOffset << ").";
     }
 }
@@ -2428,8 +2436,14 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                     lpClosed->getReserveInc () * baseFee / baseRef))
                     / SYSTEM_CURRENCY_PARTS;
 
-            std::uint32_t closeTime = getCloseTimeNC ();
-            std::uint32_t lCloseTime = lpClosed->getCloseTimeNC ();
+            int offset;
+            std::uint32_t closeTime (getCloseTimeNC (offset));
+            if (std::abs (offset) >= 60)
+                l[jss::system_time_offset] = offset;
+
+            std::uint32_t lCloseTime (lpClosed->getCloseTimeNC ());
+            if (std::abs (mCloseTimeOffset) >= 60)
+                l[jss::close_time_offset] = mCloseTimeOffset;
 
             if (lCloseTime <= closeTime)
             {

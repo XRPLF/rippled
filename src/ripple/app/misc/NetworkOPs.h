@@ -109,7 +109,7 @@ public:
     // Use *only* to timestamp our own validation
     virtual std::uint32_t getValidationTimeNC () = 0;
     virtual void closeTimeOffset (int) = 0;
-    virtual boost::posix_time::ptime getNetworkTimePT () const = 0;
+    virtual boost::posix_time::ptime getNetworkTimePT (int& offset) const = 0;
     virtual std::uint32_t getLedgerID (uint256 const& hash) = 0;
     virtual std::uint32_t getCurrentLedgerID () = 0;
 
