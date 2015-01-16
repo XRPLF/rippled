@@ -405,9 +405,9 @@ public:
     void zero () { *this = beast::zero; }
 };
 
-typedef base_uint<128> uint128;
-typedef base_uint<160> uint160;
-typedef base_uint<256> uint256;
+using uint128 = base_uint<128>;
+using uint160 = base_uint<160> ;
+using uint256 = base_uint<256> ;
 
 template <std::size_t Bits, class Tag>
 inline int compare (

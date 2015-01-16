@@ -152,6 +152,8 @@ public:
     ZeroCopyOutputStream (Streambuf& streambuf,
         std::size_t blockSize);
 
+    ~ZeroCopyOutputStream();
+
     bool
     Next (void** data, int* size) override;
 
@@ -175,6 +177,13 @@ ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
     , buffers_ (streambuf_.prepare(blockSize_))
     , pos_ (buffers_.begin())
 {
+}
+
+template <class Streambuf>
+ZeroCopyOutputStream<Streambuf>::~ZeroCopyOutputStream()
+{
+    if (commit_ != 0)
+        streambuf_.commit(commit_);
 }
 
 template <class Streambuf>

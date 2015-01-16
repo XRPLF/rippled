@@ -21,6 +21,7 @@
 #define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 
 #include <beast/container/hash_append.h>
+#include <beast/container/xxhasher.h>
 #include <beast/cxx14/utility.h> // <utility>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <beast/utility/noexcept.h>
@@ -155,10 +156,10 @@ public:
     see https://131002.net/siphash/#at
 */
 #if BEAST_NO_HARDENED_HASH_INSTANCE_SEED
-template <class HashAlgorithm = siphash>
+template <class HashAlgorithm = xxhasher>
     using hardened_hash = basic_hardened_hash<HashAlgorithm, true>;
 #else
-template <class HashAlgorithm = siphash>
+template <class HashAlgorithm = xxhasher>
     using hardened_hash = basic_hardened_hash<HashAlgorithm, false>;
 #endif
 

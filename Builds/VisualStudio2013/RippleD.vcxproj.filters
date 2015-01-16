@@ -756,6 +756,9 @@
     <ClInclude Include="..\..\src\beast\beast\container\detail\aged_unordered_container.h">
       <Filter>beast\container\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\container\fnv1a.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\container\hardened_hash.h">
       <Filter>beast\container</Filter>
     </ClInclude>
@@ -771,6 +774,15 @@
     <ClInclude Include="..\..\src\beast\beast\container\impl\spookyv2.h">
       <Filter>beast\container\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\container\impl\xxhash.c">
+      <Filter>beast\container\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\container\impl\xxhash.h">
+      <Filter>beast\container\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\container\siphash.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\container\tests\aged_associative_container.test.cpp">
       <Filter>beast\container\tests</Filter>
     </ClCompile>
@@ -785,6 +797,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
       <Filter>beast\container\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\container\tests\hash_speed_test.cpp">
+      <Filter>beast\container\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\container\xxhasher.h">
+      <Filter>beast\container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
       <Filter>beast\crypto</Filter>
@@ -1434,6 +1452,9 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
+      <Filter>beast\random</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
       <Filter>beast\random</Filter>
     </ClInclude>
