@@ -129,7 +129,10 @@ public:
     // Use *only* to timestamp our own validation
     std::uint32_t getValidationTimeNC ();
     void closeTimeOffset (int);
-    boost::posix_time::ptime getNetworkTimePT (int& offset) const;
+
+    /** On return the offset param holds the System time offset in seconds.
+    */
+    boost::posix_time::ptime getNetworkTimePT(int& offset) const;
     std::uint32_t getLedgerID (uint256 const& hash);
     std::uint32_t getCurrentLedgerID ();
     OperatingMode getOperatingMode () const
