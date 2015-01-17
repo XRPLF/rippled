@@ -27,6 +27,7 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <cassert>
 #include <cstdint>
 #include <ios>
 #include <string>
@@ -149,6 +150,8 @@ public:
             hash_append(h, addr.to_v4 ());
         else if (addr.is_v6 ())
             hash_append(h, addr.to_v6 ());
+        else
+            assert (false);
     }
 
     /** Arithmetic comparison. */
