@@ -397,6 +397,39 @@ are occupied by the exchange rate.
 
 ---
 
+# Ledger Publication #
+
+## Overview ##
+
+The Ripple server permits clients to subscribe to a continuous stream of
+fully-validated ledgers. The publication code maintains this stream.
+
+The server attempts to maintain this continuous stream unless it falls
+too far behind, in which case it jumps to the current fully-validated
+ledger and then attempts to resume a continuous stream.
+
+## Implementation ##
+
+The `LedgerMaster` publication ledger advance logic is invoked when work
+may need to be done to publish ledgers to clients.  This code loops until it
+cannot make further progress.
+
+First, a check is made to see if new ledgers need to be published. If the
+last fully-valid ledger's sequence number is greater than the last published
+ledger's sequence number, the missing ledgers are published if available or
+retrieving if not.
+
+If there are no new ledgers to publish, history can be backfilled. If the
+publication is not caught up, backfilling is not attempted to conserve
+resources.
+
+If history can be backfilled, the missing ledger with the highest sequence
+number is retrieved first.  If a historical ledger is retrieved and its
+predecessor is in the database, the fill logic is invoked to update the list
+of resident ledgers based on what's already in the databases.
+
+---
+
 # The Ledger Cleaner #
 
 ## Overview ##
