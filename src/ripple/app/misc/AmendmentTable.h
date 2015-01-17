@@ -187,9 +187,17 @@ public:
     virtual bool isEnabled (uint256 const& amendment) = 0;
     virtual bool isSupported (uint256 const& amendment) = 0;
 
+    /** Enable only the specified amendments.
+        Other amendments in the table will be set to disabled.
+    */
     virtual void setEnabled (const std::vector<uint256>& amendments) = 0;
+    /** Support only the specified amendments.
+        Other amendments in the table will be set to unsupported.
+    */
     virtual void setSupported (const std::vector<uint256>& amendments) = 0;
 
+    /** Update the walletDB with the majority times.
+     */
     virtual void reportValidations (const AmendmentSet&) = 0;
 
     virtual Json::Value getJson (int) = 0;

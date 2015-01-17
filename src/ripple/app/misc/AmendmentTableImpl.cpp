@@ -397,7 +397,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
         m_firstReport = set.mCloseTime;
 
     std::vector<uint256> changedAmendments;
-    changedAmendments.resize(set.mVotes.size());
+    changedAmendments.reserve (set.mVotes.size());
 
     for (auto const& e : set.mVotes)
     {
@@ -663,7 +663,7 @@ public:
         hash_map<uint256, AmendmentState>& amendmentMap) const override{};
     virtual ValidationSet getValidations (uint256 const& hash) const override
     {
-        return {};
+        return ValidationSet();
     };
 };
 

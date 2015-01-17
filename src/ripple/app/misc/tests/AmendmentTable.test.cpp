@@ -25,24 +25,30 @@
 
 namespace ripple
 {
-class AmendmentTable_test : public beast::unit_test::suite
+class AmendmentTable_test final : public beast::unit_test::suite
 {
 public:
     using StringPairVec = std::vector<std::pair<std::string, std::string>>;
 
 private:
+    enum class TablePopulationAlgo
+    {
+        addInitial,
+        addKnown
+    };
+
     // 204/256 about 80%
     static int const majorityFraction{204};
 
-    void populateTable (AmendmentTable& table,
-                        std::vector<std::string> const& configLines)
+    static void populateTable (AmendmentTable& table,
+                               std::vector<std::string> const& configLines)
     {
         Section section (SECTION_AMENDMENTS);
         section.append (configLines);
         table.addInitial (section);
     }
 
-    std::vector<AmendmentName> getAmendmentNames (
+    static std::vector<AmendmentName> getAmendmentNames (
         StringPairVec const& amendmentPairs)
     {
         std::vector<AmendmentName> amendmentNames;
@@ -56,96 +62,150 @@ private:
 
     std::vector<AmendmentName> populateTable (
         AmendmentTable& table,
-        StringPairVec const& amendmentPairs)
+        StringPairVec const& amendmentPairs,
+        TablePopulationAlgo populationAlgo = TablePopulationAlgo::addKnown)
     {
         std::vector<AmendmentName> const amendmentNames (
             getAmendmentNames (amendmentPairs));
-        std::vector<std::string> configLines;
-        configLines.reserve (amendmentPairs.size ());
-        for (auto const& i : amendmentPairs)
+        switch (populationAlgo)
         {
-            configLines.emplace_back (i.first + " " + i.second);
+            case TablePopulationAlgo::addKnown:
+                for (auto const& i : amendmentNames)
+                {
+                    table.addKnown (i);
+                }
+                break;
+            case TablePopulationAlgo::addInitial:
+            {
+                std::vector<std::string> configLines;
+                configLines.reserve (amendmentPairs.size ());
+                for (auto const& i : amendmentPairs)
+                {
+                    configLines.emplace_back (i.first + " " + i.second);
+                }
+                populateTable (table, configLines);
+            }
+            break;
+            default:
+                fail ("Error in test case logic");
         }
-        populateTable (table, configLines);
+
         return amendmentNames;
     }
 
-public:
-    void testAddInitial ()
+    static std::unique_ptr<AmendmentTable> makeTable ()
     {
-        testcase ("addInitial");
+        beast::Journal journal;
+        return make_AmendmentTable (weeks (2),
+                                    majorityFraction,
+                                    journal,
+                                    make_MOCAmendmentTableInjections ());
+    };
 
-        auto makeTable = []()
+    // Create the amendments by string pairs instead of AmendmentNames
+    // as this helps test the AmendmentNames class
+    StringPairVec const m_validAmendmentPairs;
+    StringPairVec const m_notAddedAmendmentPairs;
+
+public:
+    AmendmentTable_test ()
+        : m_validAmendmentPairs (
+              {{"a49f90e7cddbcadfed8fc89ec4d02011", "Added1"},
+               {"ca956ccabf25151a16d773171c485423", "Added2"},
+               {"60dcd528f057711c5d26b57be28e23df", "Added3"},
+               {"da956ccabf25151a16d773171c485423", "Added4"},
+               {"70dcd528f057711c5d26b57be28e23df", "Added5"},
+               {"70dcd528f057711c5d26b57be28e23d0", "Added6"}})
+        , m_notAddedAmendmentPairs (
+              {{"a9f90e7cddbcadfed8fc89ec4d02011c", "NotAdded1"},
+               {"c956ccabf25151a16d773171c485423b", "NotAdded2"},
+               {"6dcd528f057711c5d26b57be28e23dfa", "NotAdded3"}})
+    {
+    }
+
+    void testGet ()
+    {
+        testcase ("get");
+        auto table (makeTable ());
+        std::vector<AmendmentName> const amendmentNames (
+            populateTable (*table, m_validAmendmentPairs));
+        std::vector<AmendmentName> const notAddedAmendmentNames (
+            getAmendmentNames (m_notAddedAmendmentPairs));
+        for (auto const& i : amendmentNames)
         {
-            beast::Journal journal;
-            return make_AmendmentTable (weeks (2),
-                                        majorityFraction,
-                                        journal,
-                                        make_MOCAmendmentTableInjections ());
-        };
-
-        {
-            // test that the amendmens we add are enabled and amendments we
-            // didn't add are not enabled
-
-            // Create the amendments by string pairs instead of AmendmentNames
-            // as this helps test the AmendmentNames class
-            StringPairVec const amendmentPairs (
-                {{"a49f90e7cddbcadfed8fc89ec4d02011", "Added1"},
-                 {"ca956ccabf25151a16d773171c485423", "Added2"},
-                 {"60dcd528f057711c5d26b57be28e23df", "Added3"}});
-
-            StringPairVec const notAddedAmendmentPairs (
-                {{"a9f90e7cddbcadfed8fc89ec4d02011c", "NotAdded1"},
-                 {"c956ccabf25151a16d773171c485423b", "NotAdded2"},
-                 {"6dcd528f057711c5d26b57be28e23dfa", "NotAdded3"}});
-
-            auto table (makeTable ());
-            std::vector<AmendmentName> const amendmentNames (
-                populateTable (*table, amendmentPairs));
-            std::vector<AmendmentName> const notAddedAmendmentNames (
-                getAmendmentNames (notAddedAmendmentPairs));
-
-            for (auto const& i : amendmentNames)
-            {
-                expect (table->isEnabled (i.id ()));
-            }
-
-            for (auto const& i : notAddedAmendmentNames)
-            {
-                expect (!table->isEnabled (i.id ()));
-            }
+            expect (table->get (i.friendlyName ()) == i.id ());
         }
 
+        for (auto const& i : notAddedAmendmentNames)
         {
-            // check that we throw an exception on bad hex pairs
-            StringPairVec const badHexPairs (
-                {{"a9f90e7cddbcadfedm8fc89ec4d02011c", "BadHex1"},
-                 {"c956ccabf25151a16d77T3171c485423b", "BadHex2"},
-                 {"6dcd528f057711c5d2Z6b57be28e23dfa", "BadHex3"}});
+            expect (table->get (i.friendlyName ()) == uint256 ());
+        }
+    }
 
-            // make sure each element throws
-            for (auto const& i : badHexPairs)
+    void testAddInitialAddKnown ()
+    {
+        testcase ("addInitialAddKnown");
+
+        for (auto tablePopulationAlgo :
+             {TablePopulationAlgo::addInitial, TablePopulationAlgo::addKnown})
+        {
             {
-                StringPairVec v ({i});
+                // test that the amendmens we add are enabled and amendments we
+                // didn't add are not enabled
+
                 auto table (makeTable ());
-                try
+                std::vector<AmendmentName> const amendmentNames (populateTable (
+                    *table, m_validAmendmentPairs, tablePopulationAlgo));
+                std::vector<AmendmentName> const notAddedAmendmentNames (
+                    getAmendmentNames (m_notAddedAmendmentPairs));
+
+                for (auto const& i : amendmentNames)
                 {
-                    populateTable (*table, v);
-                    // line above should throw
-                    expect (false);
+                    expect (table->isSupported (i.id ()));
+                    if (tablePopulationAlgo == TablePopulationAlgo::addInitial)
+                        expect (table->isEnabled (i.id ()));
                 }
-                catch (...)
+
+                for (auto const& i : notAddedAmendmentNames)
                 {
+                    expect (!table->isSupported (i.id ()));
+                    expect (!table->isEnabled (i.id ()));
                 }
-                try
+            }
+
+            {
+                // check that we throw an exception on bad hex pairs
+                StringPairVec const badHexPairs (
+                    {{"a9f90e7cddbcadfedm8fc89ec4d02011c", "BadHex1"},
+                     {"c956ccabf25151a16d77T3171c485423b", "BadHex2"},
+                     {"6dcd528f057711c5d2Z6b57be28e23dfa", "BadHex3"}});
+
+                // make sure each element throws
+                for (auto const& i : badHexPairs)
                 {
-                    populateTable (*table, badHexPairs);
-                    // line above should throw
-                    expect (false);
-                }
-                catch (...)
-                {
+                    StringPairVec v ({i});
+                    auto table (makeTable ());
+                    try
+                    {
+                        populateTable (*table, v, tablePopulationAlgo);
+                        // line above should throw
+                        fail ("didn't throw");
+                    }
+                    catch (...)
+                    {
+                        pass ();
+                    }
+                    try
+                    {
+                        populateTable (
+                            *table, badHexPairs, tablePopulationAlgo);
+                        // line above should throw
+                        fail ("didn't throw");
+                    }
+                    catch (...)
+                    {
+                        pass ();
+                    }
                 }
             }
         }
@@ -166,30 +226,165 @@ public:
                 {
                     populateTable (*table, v);
                     // line above should throw
-                    expect (false);
+                    fail ("didn't throw");
                 }
                 catch (...)
                 {
+                    pass ();
                 }
                 try
                 {
                     populateTable (*table, badNumTokensConfigLines);
                     // line above should throw
-                    expect (false);
+                    fail ("didn't throw");
                 }
                 catch (...)
                 {
+                    pass ();
                 }
             }
         }
     }
 
+    void testEnable ()
+    {
+        testcase ("enable");
+        auto table (makeTable ());
+        std::vector<AmendmentName> const amendmentNames (
+            populateTable (*table, m_validAmendmentPairs));
+        {
+            // enable/disable tests
+            for (auto const& i : amendmentNames)
+            {
+                auto id (i.id ());
+                table->enable (id);
+                expect (table->isEnabled (id));
+                table->disable (id);
+                expect (!table->isEnabled (id));
+                table->enable (id);
+                expect (table->isEnabled (id));
+            }
+
+            std::vector<uint256> toEnable;
+            for (auto const& i : amendmentNames)
+            {
+                auto id (i.id ());
+                toEnable.emplace_back (id);
+                table->disable (id);
+                expect (!table->isEnabled (id));
+            }
+            table->setEnabled (toEnable);
+            for (auto const& i : toEnable)
+            {
+                expect (table->isEnabled (i));
+            }
+        }
+    }
+
+    using ATSetter =
+        void (AmendmentTable::*)(const std::vector<uint256>& amendments);
+    using ATGetter = bool (AmendmentTable::*)(uint256 const& amendment);
+    void testVectorSetUnset (ATSetter setter, ATGetter getter)
+    {
+        auto table (makeTable ());
+        // make pointer to ref syntax a little nicer
+        auto& tableRef (*table);
+        std::vector<AmendmentName> const amendmentNames (
+            populateTable (tableRef, m_validAmendmentPairs));
+
+        // they should all be set
+        for (auto const& i : amendmentNames)
+        {
+            expect ((tableRef.*getter)(i.id ()));  // i.e. "isSupported"
+        }
+
+        {
+            // only set every other amendment
+            std::vector<uint256> toSet;
+            toSet.reserve (amendmentNames.size ());
+            for (int i = 0; i < amendmentNames.size (); ++i)
+            {
+                if (i % 2)
+                {
+                    toSet.emplace_back (amendmentNames[i].id ());
+                }
+            }
+            (tableRef.*setter)(toSet);
+            for (int i = 0; i < amendmentNames.size (); ++i)
+            {
+                bool const shouldBeSet = i % 2;
+                expect (shouldBeSet ==
+                        (tableRef.*getter)(
+                            amendmentNames[i].id ()));  // i.e. "isSupported"
+            }
+        }
+    }
+    void testSupported ()
+    {
+        testcase ("supported");
+        testVectorSetUnset (&AmendmentTable::setSupported,
+                            &AmendmentTable::isSupported);
+    }
+    void testEnabled ()
+    {
+        testcase ("enabled");
+        testVectorSetUnset (&AmendmentTable::setEnabled,
+                            &AmendmentTable::isEnabled);
+    }
+    void testSupportedEnabled ()
+    {
+        // Check that supported/enabled aren't the same thing
+        testcase ("supportedEnabled");
+        auto table (makeTable ());
+
+        std::vector<AmendmentName> const amendmentNames (
+            populateTable (*table, m_validAmendmentPairs));
+
+        {
+            // support every even amendment
+            // enable every odd amendment
+            std::vector<uint256> toSupport;
+            toSupport.reserve (amendmentNames.size ());
+            std::vector<uint256> toEnable;
+            toEnable.reserve (amendmentNames.size ());
+            for (int i = 0; i < amendmentNames.size (); ++i)
+            {
+                if (i % 2)
+                {
+                    toSupport.emplace_back (amendmentNames[i].id ());
+                }
+                else
+                {
+                    toEnable.emplace_back (amendmentNames[i].id ());
+                }
+            }
+            table->setEnabled (toEnable);
+            table->setSupported (toSupport);
+            for (int i = 0; i < amendmentNames.size (); ++i)
+            {
+                bool const shouldBeSupported = i % 2;
+                bool const shouldBeEnabled = !(i % 2);
+                expect (shouldBeEnabled ==
+                        (table->isEnabled (amendmentNames[i].id ())));
+                expect (shouldBeSupported ==
+                        (table->isSupported (amendmentNames[i].id ())));
+            }
+        }
+    }
+
+    // TBD: veto/reportValidations/getJson/doValidation/doVoting
+    // Threading test?
+
     void run ()
     {
-        testAddInitial ();
+        testGet ();
+        testAddInitialAddKnown ();
+        testEnable ();
+        testSupported ();
+        testSupportedEnabled ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE (AmendmentTable, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE (AmendmentTable, app, ripple);
 
 }  // ripple
