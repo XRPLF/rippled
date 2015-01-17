@@ -357,12 +357,12 @@ exports.LedgerState = class LedgerState
     incr_reserve_amt = @incr_reserve()
 
     base_reserve = @parse_amount base_reserve_amt
-    inc_reserve = @parse_amount incr_reserve_amt
+    incr_reserve = @parse_amount incr_reserve_amt
 
     @assert base_reserve != null,
            "Base reserve amount #{base_reserve_amt} is invalid"
 
-    @assert base_reserve != null,
+    @assert incr_reserve != null,
            "incremental amount #{incr_reserve_amt} is invalid"
 
     for account_id, account of @declaration.accounts
@@ -380,10 +380,10 @@ exports.LedgerState = class LedgerState
         owner_count += Object.keys(@trusts_by_ci[account_id]).length
 
       owner_count_amount = Amount.from_json(String(owner_count))
-      inc_reserve_n = owner_count_amount.multiply(inc_reserve)
+      inc_reserve_n = owner_count_amount.multiply(incr_reserve)
       total_needed = total_needed.add(inc_reserve_n)
 
-      @assert  @accounts[account_id].compareTo total_needed != - 1,
+      @assert @accounts[account_id].compareTo(total_needed) != - 1,
              "Account #{account_id} needs more XRP for reserve"
 
       @reserves[account_id] = total_needed
@@ -481,12 +481,6 @@ exports.LedgerState = class LedgerState
       tx.offer_create(src, pays, gets)
       tx.set_flags(flags)
 
-      # console.log tx.tx_json
-      # process.exit()
-
-      # tx_json = make_tx_json(src, 'OfferCreate')
-      # tx_json.TakerPays = pays.to_json()
-      # tx_json.TakerGets = gets.to_json()
       lines.push submit_line(src, tx.tx_json)
 
     ledger_accept()

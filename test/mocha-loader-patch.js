@@ -2,6 +2,11 @@ mocha = require("mocha")
 // Stash a reference away to this
 old_loader = mocha.prototype.loadFiles
 
+// Optionally use a more useful (but noisy) logger
+if (process.env.USE_RCONSOLE) {
+  require('rconsole');
+};
+
 if (!old_loader.monkey_patched) {
   // Gee thanks Mocha ...
   mocha.prototype.loadFiles = function() {

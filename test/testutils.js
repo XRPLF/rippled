@@ -245,7 +245,7 @@ function(remote, src, account, amount, callback) {
   // Before creating the account, check if it exists in the ledger.
   // If it does, regardless of the balance, fail the test, because
   // the ledger is not in the expected state.
-  var info = remote.requestAccountInfo(account);
+  var info = remote.requestAccountInfo({account: account});
 
   info.once('success', function(result) {
     // The account exists. Fail by returning an error to callback.

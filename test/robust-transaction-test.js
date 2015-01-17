@@ -59,7 +59,7 @@ make_suite('Robust transaction submission', function() {
         var tx = $.remote.transaction().payment({
           from: 'root',
           to: 'alice',
-          amount: Amount.from_human('1XRP')
+          amount: Amount.from_human('1 XRP')
         });
 
         tx.once('submitted', function(m) {
@@ -72,16 +72,16 @@ make_suite('Robust transaction submission', function() {
         tx.submit();
 
         //Invoke callback immediately
-        callback();
+        callback(null, tx);
       },
 
-      function sendValidTransaction(callback) {
+      function sendValidTransaction(previousTx, callback) {
         self.what = 'Send normal transaction which should succeed';
 
         var tx = $.remote.transaction().payment({
           from:    'root',
           to:      'bob',
-          amount:  Amount.from_human('1XRP')
+          amount:  Amount.from_human('1 XRP')
         });
 
         tx.on('submitted', function(m) {
@@ -99,7 +99,8 @@ make_suite('Robust transaction submission', function() {
         });
 
         tx.once('final', function() {
-          callback();
+          previousTx.once('final', function(){ callback(); });
+          testutils.ledger_wait($.remote, previousTx);
         });
 
         tx.submit();
@@ -121,7 +122,7 @@ make_suite('Robust transaction submission', function() {
 
     ]
 
-    async.series(steps, function(err) {
+    async.waterfall(steps, function(err) {
       assert(!err, self.what + ': ' + err);
       assert(self.resubmitted, 'Transaction failed to resubmit');
       done();
@@ -161,7 +162,7 @@ make_suite('Robust transaction submission', function() {
         var tx = $.remote.transaction().payment({
           from: 'root',
           to: 'alice',
-          amount: Amount.from_human('1XRP')
+          amount: Amount.from_human('1 XRP')
         });
 
         tx.submit();
@@ -241,7 +242,7 @@ make_suite('Robust transaction submission', function() {
         var tx = $.remote.transaction().payment({
           from: 'root',
           to: 'alice',
-          amount: Amount.from_human('1XRP')
+          amount: Amount.from_human('1 XRP')
         });
 
         tx.once('submitted', function(m) {
@@ -334,7 +335,7 @@ make_suite('Robust transaction submission', function() {
         var tx = $.remote.transaction().payment({
           from: 'root',
           to: 'alice',
-          amount: Amount.from_human('1XRP')
+          amount: Amount.from_human('1 XRP')
         });
 
         var timed_out = false;
