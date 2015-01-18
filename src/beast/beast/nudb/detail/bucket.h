@@ -418,9 +418,11 @@ template <class _>
 void
 bucket_t<_>::write (ostream& os) const
 {
-    std::size_t const size = compact_size();
+    // Does not pad up to the block size. This
+    // is called to write to the data file.
+    auto const size = compact_size();
     // Bucket Record
-    std::memcpy(os.data(size), p_, size);
+    std::memcpy (os.data(size), p_, size);
 }
 
 template <class _>
@@ -428,10 +430,12 @@ template <class File>
 void
 bucket_t<_>::write (File& f, std::size_t offset) const
 {
-    // Includes padding up to the block size,
-    // to make the key file size always a multiple
-    // of the block size.
-    //
+    // Includes zero pad up to the block
+    // size, to make the key file size always
+    // a multiple of the block size.
+    auto const size = compact_size();
+    std::memset (p_ + size, 0,
+        block_size_ - size);
     // Bucket Record
     f.write (offset, p_, block_size_);
 }
