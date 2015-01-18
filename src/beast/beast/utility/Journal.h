@@ -179,7 +179,7 @@ public:
         explicit
         operator bool() const
         {
-            return ! m_disabled;
+            return active();
         }
         /** @} */
 
