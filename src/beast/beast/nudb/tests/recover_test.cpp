@@ -25,6 +25,7 @@
 #include <beast/random/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
+#include <cstring>
 #include <memory>
 #include <random>
 #include <utility>
@@ -66,29 +67,16 @@ public:
             auto const v = seq[i];
             db.insert(&v.key, v.data, v.size);
         }
-        std::size_t capacity = 0;
-        std::unique_ptr<std::uint8_t[]> data;
+        storage s;
         for (std::size_t i = 0; i < count; ++i)
         {
             auto const v = seq[i];
-            std::size_t bytes;
-            bool const found = db.fetch (&v.key,
-                [&](std::size_t n)
-                {
-                    if (capacity < n)
-                    {
-                        capacity = nudb::detail::ceil_pow2(n);
-                        data.reset (
-                            new std::uint8_t[capacity]);
-                    }
-                    bytes = n;
-                    return data.get();
-                });
-            if (! expect(found, "found"))
+            if (! expect(db.fetch (&v.key, s),
+                    "fetch"))
                 break;
-            if (! expect(bytes == v.size, "size"))
+            if (! expect(s.size() == v.size, "size"))
                 break;
-            if (! expect(memcmp(data.get(),
+            if (! expect(std::memcmp(s.get(),
                     v.data, v.size) == 0, "data"))
                 break;
         }

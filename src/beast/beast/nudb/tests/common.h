@@ -54,6 +54,10 @@ private:
     std::unique_ptr<std::uint8_t> buf_;
 
 public:
+    storage() = default;
+    storage (storage const&) = delete;
+    storage& operator= (storage const&) = delete;
+
     std::size_t
     size() const
     {

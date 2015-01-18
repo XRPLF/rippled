@@ -26,6 +26,7 @@
 #include <beast/random/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
+#include <cstring>
 #include <memory>
 #include <random>
 #include <utility>
@@ -63,14 +64,26 @@ public:
         for (std::size_t i = 0; i < count; ++i)
         {
             auto const v = seq[i];
-            db.insert(&v.key, v.data, v.size);
+            expect (db.insert(&v.key, v.data, v.size),
+                "insert");
         }
         storage s;
         for (std::size_t i = 0; i < count * 2; ++i)
         {
-            auto const v = seq[
-                (i/2) + (count * (i%2))];
-            db.fetch (&v.key, s);
+            if (! (i%2))
+            {
+                auto const v = seq[i/2];
+                expect (db.fetch (&v.key, s), "fetch");
+                expect (s.size() == v.size, "size");
+                expect (std::memcmp(s.get(),
+                    v.data, v.size) == 0, "data");
+            }
+            else
+            {
+                auto const v = seq[count + i/2];
+                expect (! db.fetch (&v.key, s),
+                    "fetch missing");
+            }
         }
         db.close();
         nudb::native_file::erase (dp);
@@ -87,6 +100,7 @@ public:
             N = 100000
         };
 
+        testcase (abort_on_fail);
         path_type const path =
             beast::UnitTestUtilities::TempDirectory(
                 "nudb").getFullPathName().toStdString();
