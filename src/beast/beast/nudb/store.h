@@ -649,7 +649,6 @@ basic_store<Hasher, File>::split (detail::bucket& b1,
                 detail::bulk_writer<File>& w)
 {
     using namespace detail;
-    b2.clear();
     // Trivial case: split empty bucket
     if (b1.empty())
         return;

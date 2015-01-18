@@ -209,7 +209,8 @@ cache_t<_>::create (std::size_t n)
 {
     auto const p = arena_.alloc (block_size_);
     map_.emplace (n, p);
-    return bucket (key_size_, block_size_, p);
+    return bucket (key_size_, block_size_,
+        p, detail::empty);
 }
 
 template <class _>
