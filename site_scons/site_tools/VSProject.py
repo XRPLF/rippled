@@ -124,9 +124,12 @@ def itemList(items, sep):
         return items
     def gen():
         for item in xsorted(items):
-            if type(item) == dict:
+            if isinstance(item, dict):
                 for k, v in xsorted(item.items()):
                     yield k + '=' + v
+            elif isinstance(item, (tuple, list)):
+                assert len(item) == 2, "Item shoud have exactly two elements: " + str(item)
+                yield '%s=%s' % tuple(item)
             else:
                 yield item
             yield sep
