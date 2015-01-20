@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef WEBSOCKETPP_URI_HPP
@@ -32,12 +32,12 @@
 
 #include <exception>
 
-namespace websocketpp {
+namespace websocketpp_02 {
 
-// WebSocket URI only (not http/etc) 
+// WebSocket URI only (not http/etc)
 
 class uri_exception : public std::exception {
-public: 
+public:
     uri_exception(const std::string& msg) : m_msg(msg) {}
     ~uri_exception() throw() {}
 
@@ -58,7 +58,7 @@ public:
     uri(bool secure, const std::string& host, uint16_t port, const std::string& resource);
     uri(bool secure, const std::string& host, const std::string& resource);
     uri(bool secure, const std::string& host, const std::string& port, const std::string& resource);
-    
+
     bool get_secure() const;
     std::string get_host() const;
     std::string get_host_port() const;
@@ -66,20 +66,20 @@ public:
     std::string get_port_str() const;
     std::string get_resource() const;
     std::string str() const;
-    
+
     // get query?
     // get fragment
-    
+
     // hi <3
-    
+
     // get the string representation of this URI
-    
+
     //std::string base() const; // is this still needed?
-    
+
     // setter methods set some or all (in the case of parse) based on the input.
     // These functions throw a uri_exception on failure.
     /*void set_uri(const std::string& uri);
-    
+
     void set_secure(bool secure);
     void set_host(const std::string& host);
     void set_port(uint16_t port);
@@ -87,7 +87,7 @@ public:
     void set_resource(const std::string& resource);*/
 private:
     uint16_t get_port_from_string(const std::string& port) const;
-    
+
     bool        m_secure;
     std::string m_host;
     uint16_t    m_port;
@@ -96,6 +96,6 @@ private:
 
 typedef boost::shared_ptr<uri> uri_ptr;
 
-} // namespace websocketpp
+} // namespace websocketpp_02
 
 #endif // WEBSOCKETPP_URI_HPP

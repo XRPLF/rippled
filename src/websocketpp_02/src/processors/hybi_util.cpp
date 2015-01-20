@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,14 +22,14 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include "hybi_util.hpp"
 
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace processor {
-namespace hybi_util { 
+namespace hybi_util {
 
 size_t prepare_masking_key(const masking_key_type& key) {
     size_t prepared_key = key.i;
@@ -50,11 +50,11 @@ void word_mask_exact(char* data,size_t length,const masking_key_type& key) {
     size_t prepared_key = prepare_masking_key(key);
     size_t n = length/sizeof(size_t);
     size_t* word_data = reinterpret_cast<size_t*>(data);
-    
+
     for (size_t i = 0; i < n; i++) {
         word_data[i] ^= prepared_key;
     }
-    
+
     for (size_t i = n*sizeof(size_t); i < length; i++) {
         data[i] ^= key.c[i%4];
     }
@@ -62,4 +62,4 @@ void word_mask_exact(char* data,size_t length,const masking_key_type& key) {
 
 } // namespace hybi_util
 } // namespace processor
-} // namespace websocketpp
+} // namespace websocketpp_02

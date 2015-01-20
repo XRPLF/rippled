@@ -24,7 +24,7 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-namespace websocketpp {
+namespace websocketpp_02 {
 
 class SHA1
 {
@@ -84,9 +84,9 @@ class SHA1
 
         bool Computed;                      // Is the digest computed?
         bool Corrupted;                     // Is the message digest corruped?
-    
+
 };
 
-} // namespace websocketpp
-	
+} // namespace websocketpp_02
+
 #endif // _SHA1_H_

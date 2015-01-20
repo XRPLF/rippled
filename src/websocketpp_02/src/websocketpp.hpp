@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef WEBSOCKETPP_HPP
@@ -31,33 +31,33 @@
 #include "common.hpp"
 #include "endpoint.hpp"
 
-namespace websocketpp {
+namespace websocketpp_02 {
 #ifdef WEBSOCKETPP_ROLE_SERVER_HPP
     #ifdef WEBSOCKETPP_SOCKET_PLAIN_HPP
-        typedef websocketpp::endpoint<websocketpp::role::server,
-                                      websocketpp::socket::plain> server;
+        typedef websocketpp_02::endpoint<websocketpp_02::role::server,
+                                      websocketpp_02::socket::plain> server;
     #endif
     #ifdef WEBSOCKETPP_SOCKET_TLS_HPP
-        typedef websocketpp::endpoint<websocketpp::role::server,
-                                      websocketpp::socket::tls> server_tls;
+        typedef websocketpp_02::endpoint<websocketpp_02::role::server,
+                                      websocketpp_02::socket::tls> server_tls;
     #endif
     #ifdef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
-        typedef websocketpp::endpoint<websocketpp::role::server,
-                                      websocketpp::socket::autotls> server_autotls;
+        typedef websocketpp_02::endpoint<websocketpp_02::role::server,
+                                      websocketpp_02::socket::autotls> server_autotls;
     #endif
 #endif
 
 
 #ifdef WEBSOCKETPP_ROLE_CLIENT_HPP
     #ifdef WEBSOCKETPP_SOCKET_PLAIN_HPP
-        typedef websocketpp::endpoint<websocketpp::role::client,
-                                      websocketpp::socket::plain> client;
+        typedef websocketpp_02::endpoint<websocketpp_02::role::client,
+                                      websocketpp_02::socket::plain> client;
     #endif
     #ifdef WEBSOCKETPP_SOCKET_TLS_HPP
-        typedef websocketpp::endpoint<websocketpp::role::client,
-                                      websocketpp::socket::tls> client_tls;
+        typedef websocketpp_02::endpoint<websocketpp_02::role::client,
+                                      websocketpp_02::socket::tls> client_tls;
     #endif
 #endif
-} // namespace websocketpp
+} // namespace websocketpp_02
 
 #endif // WEBSOCKETPP_HPP

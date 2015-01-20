@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef ZS_LOGGER_HPP
@@ -33,15 +33,15 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace log {
 
 namespace alevel {
     typedef uint16_t value;
-    
+
     static const value OFF = 0x0;
-    
-    // A single line on connect with connecting ip, websocket version, 
+
+    // A single line on connect with connecting ip, websocket version,
     // request resource, user agent, and the response code.
     static const value CONNECT = 0x1;
     // A single line on disconnect with wasClean status and local and remote
@@ -58,36 +58,36 @@ namespace alevel {
     static const value MESSAGE_HEADER = 0x40;
     // Adds payloads to message logs. Note these can be long!
     static const value MESSAGE_PAYLOAD = 0x80;
-    
+
     // Notices about internal endpoint operations
     static const value ENDPOINT = 0x100;
-    
+
     // DEBUG values
     static const value DEBUG_HANDSHAKE = 0x8000;
     static const value DEBUG_CLOSE = 0x4000;
     static const value DEVEL = 0x2000;
-    
+
     static const value ALL = 0xFFFF;
 }
 
 namespace elevel {
     typedef uint32_t value; // make these two values different types DJS
-    
+
     static const value OFF = 0x0;
-    
+
     static const value DEVEL = 0x1;     // debugging
     static const value LIBRARY = 0x2;   // library usage exceptions
-    static const value INFO = 0x4;      // 
+    static const value INFO = 0x4;      //
     static const value WARN = 0x8;      //
     static const value RERROR = 0x10;    // recoverable error
     static const value FATAL = 0x20;    // unrecoverable error
-    
+
     static const value ALL = 0xFFFF;
 }
 
 extern void websocketLog(alevel::value, const std::string&);
 extern void websocketLog(elevel::value, const std::string&);
-    
+
 template <typename level_type>
 class logger {
 public:
@@ -96,32 +96,32 @@ public:
             m_oss << a; // For now, make this unconditional DJS
         return *this;
     }
-    
+
     logger<level_type>& operator<<(logger<level_type>& (*f)(logger<level_type>&)) {
         return f(*this);
     }
-    
+
     bool test_level(level_type l) {
         return (m_level & l) != 0;
     }
-    
+
     void set_level(level_type l) {
         m_level |= l;
     }
-    
+
     void set_levels(level_type l1, level_type l2) {
         level_type i = l1;
-        
+
         while (i <= l2) {
             set_level(i);
             i *= 2;
         }
     }
-    
+
     void unset_level(level_type l) {
         m_level &= ~l;
     }
-    
+
     void set_prefix(const std::string& prefix) {
         if (prefix == "") {
             m_prefix = prefix;
@@ -129,13 +129,13 @@ public:
             m_prefix = prefix + " ";
         }
     }
-    
+
     logger<level_type>& print() {
             websocketLog(m_write_level, m_oss.str()); // Hand to our logger DJS
             m_oss.str("");
 #if 0
         if (test_level(m_write_level)) {
-            std::cout << m_prefix << 
+            std::cout << m_prefix <<
                 boost::posix_time::to_iso_extended_string(
                     boost::posix_time::second_clock::local_time()
                 ) << " [" << m_write_level << "] " << m_oss.str() << std::endl;
@@ -144,7 +144,7 @@ public:
 #endif
        return *this;
     }
-    
+
     logger<level_type>& at(level_type l) {
         m_write_level = l;
         return *this;

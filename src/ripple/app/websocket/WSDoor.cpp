@@ -56,7 +56,7 @@ private:
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
     LockType m_endpointLock;
-    std::shared_ptr<websocketpp::server_autotls> m_endpoint;
+    std::shared_ptr<websocketpp_02::server_autotls> m_endpoint;
 
 public:
     WSDoorImp (HTTP::Port const& port, Resource::Manager& resourceManager,
@@ -83,14 +83,14 @@ private:
                 port_->ip.to_string() << ":" << std::to_string(port_->port) <<
                     (port_->allow_admin ? "(Admin)" : "");
 
-        websocketpp::server_autotls::handler::ptr handler (
-            new WSServerHandler <websocketpp::server_autotls> (
+        websocketpp_02::server_autotls::handler::ptr handler (
+            new WSServerHandler <websocketpp_02::server_autotls> (
                 port_, m_resourceManager, m_source));
 
         {
             ScopedLockType lock (m_endpointLock);
 
-            m_endpoint = std::make_shared<websocketpp::server_autotls> (
+            m_endpoint = std::make_shared<websocketpp_02::server_autotls> (
                 handler);
         }
 
@@ -99,24 +99,24 @@ private:
         {
             m_endpoint->listen (port_->ip, port_->port);
         }
-        catch (websocketpp::exception& e)
+        catch (websocketpp_02::exception& e)
         {
-            WriteLog (lsWARNING, WSDoor) << "websocketpp exception: "
+            WriteLog (lsWARNING, WSDoor) << "websocketpp_02 exception: "
                                          << e.what ();
 
-            // temporary workaround for websocketpp throwing exceptions on
+            // temporary workaround for websocketpp_02 throwing exceptions on
             // access/close races
             for (;;)
             {
-                // https://github.com/zaphoyd/websocketpp/issues/98
+                // https://github.com/zaphoyd/websocketpp_02/issues/98
                 try
                 {
                     m_endpoint->get_io_service ().run ();
                     break;
                 }
-                catch (websocketpp::exception& e)
+                catch (websocketpp_02::exception& e)
                 {
-                    WriteLog (lsWARNING, WSDoor) << "websocketpp exception: "
+                    WriteLog (lsWARNING, WSDoor) << "websocketpp_02 exception: "
                                                  << e.what ();
                 }
             }
@@ -133,7 +133,7 @@ private:
 
     void onStop ()
     {
-        std::shared_ptr<websocketpp::server_autotls> endpoint;
+        std::shared_ptr<websocketpp_02::server_autotls> endpoint;
 
         {
             ScopedLockType lock (m_endpointLock);

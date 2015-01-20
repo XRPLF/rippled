@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include "uri.hpp"
@@ -32,7 +32,7 @@
 
 #include <boost/regex.hpp>
 
-using websocketpp::uri;
+using websocketpp_02::uri;
 
 uri::uri(const std::string& uri) {
     // temporary testing non-regex implimentation.
@@ -45,10 +45,10 @@ uri::uri(const std::string& uri) {
         READ_PORT = 5,
         READ_RESOURCE = 6,
     };
-    
+
     state the_state = BEGIN;
     std::string temp;
-    
+
     for (std::string::const_iterator it = uri.begin(); it != uri.end(); it++) {
         switch (the_state) {
             case BEGIN:
@@ -56,9 +56,9 @@ uri::uri(const std::string& uri) {
                 if (temp.size() < 6) {
                     temp.append(1,*it);
                 } else {
-                    throw websocketpp::uri_exception("Scheme is too long");
+                    throw websocketpp_02::uri_exception("Scheme is too long");
                 }
-                                
+
                 if (temp == "ws://") {
                     m_secure = false;
                     the_state = HOST_BEGIN;
@@ -85,11 +85,11 @@ uri::uri(const std::string& uri) {
                     the_state = BEGIN_PORT;
                     break;
                 }
-                
+
                 if (m_host.size() > 45) {
-                    throw websocketpp::uri_exception("IPv6 literal is too long");
+                    throw websocketpp_02::uri_exception("IPv6 literal is too long");
                 }
-                
+
                 if (*it == '.' ||
                     *it == ':' ||
                     (*it >= '0' && *it <= '9') ||
@@ -106,15 +106,15 @@ uri::uri(const std::string& uri) {
                     the_state = BEGIN_PORT;
                     break;
                 }
-                
+
                 if (*it == '/') {
                     it--;
                     the_state = BEGIN_PORT;
                     break;
                 }
-                
+
                 // TODO: max url length?
-                
+
                 // TODO: check valid characters?
                 if (1) {
                     m_host.append(1,*it);
@@ -128,7 +128,7 @@ uri::uri(const std::string& uri) {
                      *it--;
                     the_state = READ_RESOURCE;
                 } else {
-                    throw websocketpp::uri_exception("Error parsing WebSocket URI");
+                    throw websocketpp_02::uri_exception("Error parsing WebSocket URI");
                 }
                 break;
             case READ_PORT:
@@ -136,30 +136,30 @@ uri::uri(const std::string& uri) {
                     if (temp.size() < 5) {
                         temp.append(1,*it);
                     } else {
-                        throw websocketpp::uri_exception("Port is too long");
+                        throw websocketpp_02::uri_exception("Port is too long");
                     }
                 } else if (*it == '/') {
                     m_port = get_port_from_string(temp);
                     temp.clear();
                      *it--;
                     the_state = READ_RESOURCE;
-                    
+
                 } else {
-                    throw websocketpp::uri_exception("Error parsing WebSocket URI");
+                    throw websocketpp_02::uri_exception("Error parsing WebSocket URI");
                 }
                 break;
             case READ_RESOURCE:
                 // max length check?
-                
+
                 if (*it == '#') {
-                    throw websocketpp::uri_exception("WebSocket URIs cannot have fragments");
+                    throw websocketpp_02::uri_exception("WebSocket URIs cannot have fragments");
                 } else {
                     m_resource.append(1,*it);
                 }
                 break;
         }
     }
-    
+
     switch (the_state) {
         case READ_PORT:
             m_port = get_port_from_string(temp);
@@ -167,65 +167,65 @@ uri::uri(const std::string& uri) {
         default:
             break;
     }
-    
+
     if (m_resource == "") {
         m_resource = "/";
     }*/
-    
-    
+
+
     boost::cmatch matches;
     const boost::regex expression("(ws|wss)://([^/:\\[]+|\\[[0-9a-fA-F:.]+\\])(:\\d{1,5})?(/[^#]*)?");
-    
+
     // TODO: should this split resource into path/query?
-    
+
     if (boost::regex_match(uri.c_str(), matches, expression)) {
         m_secure = (matches[1] == "wss");
         m_host = matches[2];
-        
+
         // strip brackets from IPv6 literal URIs
         if (m_host[0] == '[') {
             m_host = m_host.substr(1,m_host.size()-2);
         }
-        
+
         std::string port(matches[3]);
-        
+
         if (port != "") {
             // strip off the :
             // this could probably be done with a better regex.
             port = port.substr(1);
         }
-        
+
         m_port = get_port_from_string(port);
-        
+
         m_resource = matches[4];
-        
+
         if (m_resource == "") {
             m_resource = "/";
         }
-        
+
         return;
     }
-    
-    throw websocketpp::uri_exception("Error parsing WebSocket URI");
-    
+
+    throw websocketpp_02::uri_exception("Error parsing WebSocket URI");
+
 }
 
-uri::uri(bool secure, const std::string& host, uint16_t port, const std::string& resource) 
+uri::uri(bool secure, const std::string& host, uint16_t port, const std::string& resource)
  : m_secure(secure),
-   m_host(host), 
+   m_host(host),
    m_port(port),
    m_resource(resource == "" ? "/" : resource) {}
 
-uri::uri(bool secure, const std::string& host, const std::string& resource) 
+uri::uri(bool secure, const std::string& host, const std::string& resource)
 : m_secure(secure),
-  m_host(host), 
+  m_host(host),
   m_port(m_secure ? URI_DEFAULT_SECURE_PORT : URI_DEFAULT_PORT),
   m_resource(resource == "" ? "/" : resource) {}
 
-uri::uri(bool secure, 
-         const std::string& host, 
-         const std::string& port, 
-         const std::string& resource) 
+uri::uri(bool secure,
+         const std::string& host,
+         const std::string& port,
+         const std::string& resource)
  : m_secure(secure),
    m_host(host),
    m_port(get_port_from_string(port)),
@@ -233,24 +233,24 @@ uri::uri(bool secure,
 
 /* Slightly cleaner C++11 delegated constructor method
 
-uri::uri(bool secure, 
-         const std::string& host, 
-         uint16_t port, 
-         const std::string& resource) 
+uri::uri(bool secure,
+         const std::string& host,
+         uint16_t port,
+         const std::string& resource)
  : m_secure(secure),
-   m_host(host), 
+   m_host(host),
    m_port(port),
    m_resource(resource == "" ? "/" : resource)
 {
     if (m_port > 65535) {
-        throw websocketpp::uri_exception("Port must be less than 65535");
+        throw websocketpp_02::uri_exception("Port must be less than 65535");
     }
 }
 
-uri::uri(bool secure, 
-         const std::string& host, 
-         const std::string& port, 
-         const std::string& resource) 
+uri::uri(bool secure,
+         const std::string& host,
+         const std::string& port,
+         const std::string& resource)
  : uri(secure, host, get_port_from_string(port), resource) {}
 
 */
@@ -271,7 +271,7 @@ std::string uri::get_host_port() const {
         p << m_host << ":" << m_port;
         return p.str();
     }
-    
+
 }
 
 uint16_t uri::get_port() const {
@@ -290,13 +290,13 @@ std::string uri::get_resource() const {
 
 std::string uri::str() const {
     std::stringstream s;
-    
+
     s << "ws" << (m_secure ? "s" : "") << "://" << m_host;
-    
+
     if (m_port != (m_secure ? URI_DEFAULT_SECURE_PORT : URI_DEFAULT_PORT)) {
         s << ":" << m_port;
     }
-    
+
     s << m_resource;
     return s.str();
 }
@@ -305,16 +305,16 @@ uint16_t uri::get_port_from_string(const std::string& port) const {
     if (port == "") {
         return (m_secure ? URI_DEFAULT_SECURE_PORT : URI_DEFAULT_PORT);
     }
-    
+
     unsigned int t_port = atoi(port.c_str());
-            
+
     if (t_port > 65535) {
-        throw websocketpp::uri_exception("Port must be less than 65535");
+        throw websocketpp_02::uri_exception("Port must be less than 65535");
     }
-    
+
     if (t_port == 0) {
-        throw websocketpp::uri_exception("Error parsing port string: "+port);
+        throw websocketpp_02::uri_exception("Error parsing port string: "+port);
     }
-    
+
     return static_cast<uint16_t>(t_port);
 }

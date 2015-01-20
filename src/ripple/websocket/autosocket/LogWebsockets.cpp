@@ -22,14 +22,14 @@
 // VFALCO NOTE this looks like some facility for giving websocket
 //         a way to produce logging output.
 //
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace log {
 
-void websocketLog (websocketpp::log::alevel::value v, std::string const& entry)
+void websocketLog (websocketpp_02::log::alevel::value v, std::string const& entry)
 {
     using namespace ripple;
 
-    if ((v == websocketpp::log::alevel::DEVEL) || (v == websocketpp::log::alevel::DEBUG_CLOSE))
+    if ((v == websocketpp_02::log::alevel::DEVEL) || (v == websocketpp_02::log::alevel::DEBUG_CLOSE))
     {
         WriteLog(lsTRACE, WebSocket) << entry;
     }
@@ -39,19 +39,19 @@ void websocketLog (websocketpp::log::alevel::value v, std::string const& entry)
     }
 }
 
-void websocketLog (websocketpp::log::elevel::value v, std::string const& entry)
+void websocketLog (websocketpp_02::log::elevel::value v, std::string const& entry)
 {
     using namespace ripple;
 
     LogSeverity s = lsDEBUG;
 
-    if ((v & websocketpp::log::elevel::INFO) != 0)
+    if ((v & websocketpp_02::log::elevel::INFO) != 0)
         s = lsINFO;
-    else if ((v & websocketpp::log::elevel::FATAL) != 0)
+    else if ((v & websocketpp_02::log::elevel::FATAL) != 0)
         s = lsFATAL;
-    else if ((v & websocketpp::log::elevel::RERROR) != 0)
+    else if ((v & websocketpp_02::log::elevel::RERROR) != 0)
         s = lsERROR;
-    else if ((v & websocketpp::log::elevel::WARN) != 0)
+    else if ((v & websocketpp_02::log::elevel::WARN) != 0)
         s = lsWARNING;
 
     WriteLog(s, WebSocket) << entry;

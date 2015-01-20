@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef WEBSOCKET_CONSTANTS_HPP
@@ -52,29 +52,29 @@
 #include <boost/shared_ptr.hpp>
 
 // Defaults
-namespace websocketpp {
+namespace websocketpp_02 {
     static const std::string USER_AGENT = "WebSocket++/0.2.1dev";
-    
+
     typedef std::vector<unsigned char> binary_string;
     typedef boost::shared_ptr<binary_string> binary_string_ptr;
-    
+
     typedef std::string utf8_string;
     typedef boost::shared_ptr<utf8_string> utf8_string_ptr;
-    
+
     const uint64_t DEFAULT_MAX_MESSAGE_SIZE = 0xFFFFFF; // ~16MB
-    
+
     const size_t DEFAULT_READ_THRESHOLD = 1; // 512 would be a more sane value for this
     const bool DEFAULT_SILENT_CLOSE = false; // true
-    
+
     const size_t MAX_THREAD_POOL_SIZE = 64;
-    
+
     const uint16_t DEFAULT_PORT = 80;
     const uint16_t DEFAULT_SECURE_PORT = 443;
-    
+
     inline uint16_t default_port(bool secure) {
         return (secure ? DEFAULT_SECURE_PORT : DEFAULT_PORT);
-    }   
-    
+    }
+
     namespace session {
         namespace state {
             enum value {
@@ -85,7 +85,7 @@ namespace websocketpp {
             };
         }
     }
-    
+
     namespace close {
     namespace status {
         enum value {
@@ -110,24 +110,24 @@ namespace websocketpp {
             RSV_END = 2999,
             INVALID_START = 5000
         };
-        
+
         inline bool reserved(value s) {
-            return ((s >= RSV_START && s <= RSV_END) || s == RSV_ADHOC_1 
+            return ((s >= RSV_START && s <= RSV_END) || s == RSV_ADHOC_1
                     || s == RSV_ADHOC_2 || s == RSV_ADHOC_3 || s == RSV_ADHOC_4);
         }
-        
+
         // Codes invalid on the wire
         inline bool invalid(value s) {
-            return ((s <= INVALID_END || s >= INVALID_START) || 
-                    s == NO_STATUS || 
-                    s == ABNORMAL_CLOSE || 
+            return ((s <= INVALID_END || s >= INVALID_START) ||
+                    s == NO_STATUS ||
+                    s == ABNORMAL_CLOSE ||
                     s == TLS_HANDSHAKE);
         }
-        
+
         // TODO functions for application ranges?
     } // namespace status
     } // namespace close
-    
+
     namespace fail {
     namespace status {
         enum value {
@@ -140,7 +140,7 @@ namespace websocketpp {
         };
     } // namespace status
     } // namespace fail
-    
+
     namespace frame {
         // Opcodes are 4 bits
         // See spec section 5.2
@@ -163,28 +163,28 @@ namespace websocketpp {
                 CONTROL_RSVE = 0xE,
                 CONTROL_RSVF = 0xF
             };
-            
+
             inline bool reserved(value v) {
-                return (v >= RSV3 && v <= RSV7) || 
+                return (v >= RSV3 && v <= RSV7) ||
                 (v >= CONTROL_RSVB && v <= CONTROL_RSVF);
             }
-            
+
             inline bool invalid(value v) {
                 return (v > 0xF || v < 0);
             }
-            
+
             inline bool is_control(value v) {
                 return v >= 0x8;
             }
         }
-        
+
         namespace limits {
             static const uint8_t PAYLOAD_SIZE_BASIC = 125;
             static const uint16_t PAYLOAD_SIZE_EXTENDED = 0xFFFF; // 2^16, 65535
             static const uint64_t PAYLOAD_SIZE_JUMBO = 0x7FFFFFFFFFFFFFFFLL;//2^63
         }
     } // namespace frame
-    
+
     // exception class for errors that should be propogated back to the user.
     namespace error {
         enum value {
@@ -199,22 +199,22 @@ namespace websocketpp {
             INVALID_STATE = 7
         };
     }
-    
+
     class exception : public std::exception {
-    public: 
+    public:
         exception(const std::string& msg,
-                  error::value code = error::GENERIC) 
+                  error::value code = error::GENERIC)
         : m_msg(msg),m_code(code) {}
         ~exception() throw() {}
-        
+
         virtual const char* what() const throw() {
             return m_msg.c_str();
         }
-        
+
         error::value code() const throw() {
             return m_code;
         }
-        
+
         std::string m_msg;
         error::value m_code;
     };

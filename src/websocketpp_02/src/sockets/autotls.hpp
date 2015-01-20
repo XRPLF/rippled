@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
@@ -34,7 +34,7 @@
 
 // Note that AutoSocket.h must be included before this file
 
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace socket {
 
 template <typename endpoint_type>
@@ -43,7 +43,7 @@ public:
     typedef autotls<endpoint_type> type;
     typedef AutoSocket autotls_socket;
     typedef boost::shared_ptr<autotls_socket> autotls_socket_ptr;
-    
+
     // should be private friended
     boost::asio::io_service& get_io_service() {
         return m_io_service;
@@ -70,7 +70,7 @@ public:
         virtual bool plain_only() = 0;
         virtual bool secure_only() = 0;
     };
-    
+
     // Connection specific details
     template <typename connection_type>
     class connection {
@@ -79,11 +79,11 @@ public:
         autotls_socket::lowest_layer_type& get_raw_socket() {
             return m_socket_ptr->lowest_layer();
         }
-        
+
         autotls_socket& get_socket() {
             return *m_socket_ptr;
         }
-        
+
         bool is_secure() {
             return m_socket_ptr->isSecure();
         }
@@ -97,7 +97,7 @@ public:
         connection(autotls<endpoint_type>& e)
          : m_endpoint(e)
          , m_connection(static_cast< connection_type& >(*this)) {}
-        
+
         void init() {
             boost::asio::ssl::context& ssl_context (
                 m_connection.get_handler()->get_ssl_context());
@@ -106,17 +106,17 @@ public:
                 m_endpoint.get_io_service(), ssl_context, m_connection.get_handler()->secure_only(),
                     m_connection.get_handler()->plain_only()));
         }
-        
+
         void async_init(boost::function<void(const boost::system::error_code&)> callback)
         {
             m_connection.get_handler()->on_tcp_init();
-            
+
             // wait for TLS handshake
             // TODO: configurable value
             m_connection.register_timeout(5000,
                                           fail::status::TIMEOUT_TLS,
                                           "Timeout on TLS handshake");
-            
+
             m_socket_ptr->async_handshake(
                 m_endpoint.get_handshake_type(),
                 std::bind(
@@ -127,17 +127,17 @@ public:
                 )
             );
         }
-        
+
         void handle_init(socket_init_callback callback,const boost::system::error_code& error) {
             m_connection.cancel_timeout();
             callback(error);
         }
-        
-        // note, this function for some reason shouldn't/doesn't need to be 
+
+        // note, this function for some reason shouldn't/doesn't need to be
         // called for plain HTTP connections. not sure why.
         bool shutdown() {
             boost::system::error_code ignored_ec;
-            
+
             m_socket_ptr->async_shutdown( // Don't block on connection shutdown DJS
                 std::bind(
 		            &autotls<endpoint_type>::handle_shutdown,
@@ -145,7 +145,7 @@ public:
                     beast::asio::placeholders::error
 				)
 			);
-            
+
             if (ignored_ec) {
                 return false;
             } else {
@@ -166,8 +166,8 @@ protected:
 private:
     boost::asio::io_service&    m_io_service;
 };
-    
+
 } // namespace socket
-} // namespace websocketpp
+} // namespace websocketpp_02
 
 #endif // WEBSOCKETPP_SOCKET_AUTOTLS_HPP

@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,14 +22,14 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #include "hybi_header.hpp"
 
 #include <cstring>
 
-using websocketpp::processor::hybi_header;
+using websocketpp_02::processor::hybi_header;
 
 hybi_header::hybi_header() {
     reset();
@@ -46,14 +46,14 @@ void hybi_header::consume(std::istream& input) {
         case STATE_BASIC_HEADER:
             input.read(&m_header[BASIC_HEADER_LENGTH-m_bytes_needed],
                        m_bytes_needed);
-            
+
             m_bytes_needed -= input.gcount();
-            
+
             if (m_bytes_needed == 0) {
                 process_basic_header();
-                
+
                 validate_basic_header();
-                
+
                 if (m_bytes_needed > 0) {
                     m_state = STATE_EXTENDED_HEADER;
                 } else {
@@ -65,9 +65,9 @@ void hybi_header::consume(std::istream& input) {
         case STATE_EXTENDED_HEADER:
             input.read(&m_header[get_header_len()-m_bytes_needed],
                        m_bytes_needed);
-            
+
             m_bytes_needed -= input.gcount();
-            
+
             if (m_bytes_needed == 0) {
                 process_extended_header();
                 m_state = STATE_READY;
@@ -98,7 +98,7 @@ void hybi_header::set_rsv2(bool b) {
 void hybi_header::set_rsv3(bool b) {
     set_header_bit(BPB0_RSV3,0,b);
 }
-void hybi_header::set_opcode(websocketpp::frame::opcode::value op) {
+void hybi_header::set_opcode(websocketpp_02::frame::opcode::value op) {
     m_header[0] &= (0xFF ^ BPB0_OPCODE); // clear op bits
     m_header[0] |= op; // set op bits
 }
@@ -126,7 +126,7 @@ void hybi_header::set_payload_size(uint64_t size) {
         }
         m_payload_size = size;
         *(reinterpret_cast<uint16_t*>(&m_header[BASIC_HEADER_LENGTH])) = htons(static_cast<uint16_t>(size));
-        
+
        /* uint16_t net_size = htons(static_cast<uint16_t>(size));
 		//memcpy(&m_header[BASIC_HEADER_LENGTH], &net_size, sizeof(uint16_t));
 		std::copy(
@@ -148,7 +148,7 @@ void hybi_header::set_payload_size(uint64_t size) {
     } else {
         throw processor::exception("set_payload_size called with value that was too large (>2^63)",processor::error::MESSAGE_TOO_BIG);
     }
-    
+
 }
 void hybi_header::complete() {
     validate_basic_header();
@@ -173,7 +173,7 @@ bool hybi_header::get_rsv2() const {
 bool hybi_header::get_rsv3() const {
     return ((m_header[0] & BPB0_RSV3) == BPB0_RSV3);
 }
-websocketpp::frame::opcode::value hybi_header::get_opcode() const {
+websocketpp_02::frame::opcode::value hybi_header::get_opcode() const {
     return frame::opcode::value(m_header[0] & BPB0_OPCODE);
 }
 bool hybi_header::get_masked() const {
@@ -196,17 +196,17 @@ bool hybi_header::is_control() const {
 // private
 unsigned int hybi_header::get_header_len() const {
     unsigned int temp = 2;
-    
+
     if (get_masked()) {
         temp += 4;
     }
-    
+
     if (get_basic_size() == 126) {
         temp += 2;
     } else if (get_basic_size() == 127) {
         temp += 8;
     }
-    
+
     return temp;
 }
 
@@ -214,27 +214,27 @@ uint8_t hybi_header::get_basic_size() const {
     return m_header[1] & BPB1_PAYLOAD;
 }
 
-void hybi_header::validate_basic_header() const {    
+void hybi_header::validate_basic_header() const {
     // check for control frame size
     if (is_control() && get_basic_size() > frame::limits::PAYLOAD_SIZE_BASIC) {
         throw processor::exception("Control Frame is too large",processor::error::PROTOCOL_VIOLATION);
     }
-    
+
     // check for reserved bits
     if (get_rsv1() || get_rsv2() || get_rsv3()) {
         throw processor::exception("Reserved bit used",processor::error::PROTOCOL_VIOLATION);
     }
-    
+
     // check for reserved opcodes
     if (frame::opcode::reserved(get_opcode())) {
         throw processor::exception("Reserved opcode used",processor::error::PROTOCOL_VIOLATION);
     }
-    
+
     // check for invalid opcodes
     if (frame::opcode::invalid(get_opcode())) {
         throw processor::exception("Invalid opcode used",processor::error::PROTOCOL_VIOLATION);
     }
-    
+
     // check for fragmented control message
     if (is_control() && !get_fin()) {
         throw processor::exception("Fragmented control message",processor::error::PROTOCOL_VIOLATION);
@@ -246,34 +246,34 @@ void hybi_header::process_basic_header() {
 }
 void hybi_header::process_extended_header() {
     uint8_t s = get_basic_size();
-    
+
     if (s <= frame::limits::PAYLOAD_SIZE_BASIC) {
         m_payload_size = s;
-    } else if (s == BASIC_PAYLOAD_16BIT_CODE) {         
+    } else if (s == BASIC_PAYLOAD_16BIT_CODE) {
         // reinterpret the second two bytes as a 16 bit integer in network
         // byte order. Convert to host byte order and store locally.
         m_payload_size = ntohs(*(
             reinterpret_cast<uint16_t*>(&m_header[BASIC_HEADER_LENGTH])
         ));
-        
+
         if (m_payload_size < s) {
             std::stringstream err;
             err << "payload length not minimally encoded. Using 16 bit form for payload size: " << m_payload_size;
             throw processor::exception(err.str(),processor::error::PROTOCOL_VIOLATION);
         }
-        
+
     } else if (s == BASIC_PAYLOAD_64BIT_CODE) {
-        // reinterpret the second eight bytes as a 64 bit integer in 
+        // reinterpret the second eight bytes as a 64 bit integer in
         // network byte order. Convert to host byte order and store.
         m_payload_size = zsutil::ntohll(*(
             reinterpret_cast<uint64_t*>(&m_header[BASIC_HEADER_LENGTH])
         ));
-        
+
         if (m_payload_size <= frame::limits::PAYLOAD_SIZE_EXTENDED) {
             throw processor::exception("payload length not minimally encoded",
                                        processor::error::PROTOCOL_VIOLATION);
         }
-        
+
     } else {
         // TODO: shouldn't be here how to handle?
         throw processor::exception("invalid get_basic_size in process_extended_header");

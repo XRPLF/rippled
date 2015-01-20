@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,19 +22,19 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #ifndef HTTP_CONSTANTS_HPP
 #define HTTP_CONSTANTS_HPP
 
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace http {
     namespace status_code {
         enum value {
             CONTINUE = 100,
             SWITCHING_PROTOCOLS = 101,
-            
+
             OK = 200,
             CREATED = 201,
             ACCEPTED = 202,
@@ -42,7 +42,7 @@ namespace http {
             NO_CONTENT = 204,
             RESET_CONTENT = 205,
             PARTIAL_CONTENT = 206,
-            
+
             MULTIPLE_CHOICES = 300,
             MOVED_PERMANENTLY = 301,
             FOUND = 302,
@@ -50,7 +50,7 @@ namespace http {
             NOT_MODIFIED = 304,
             USE_PROXY = 305,
             TEMPORARY_REDIRECT = 307,
-            
+
             BAD_REQUEST = 400,
             UNAUTHORIZED = 401,
             PAYMENT_REQUIRED = 402,
@@ -74,7 +74,7 @@ namespace http {
             PRECONDITION_REQUIRED = 428,
             TOO_MANY_REQUESTS = 429,
             REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
-            
+
             INTERNAL_SERVER_ERROR = 500,
             NOT_IMPLIMENTED = 501,
             BAD_GATEWAY = 502,
@@ -84,7 +84,7 @@ namespace http {
             NOT_EXTENDED = 510,
             NETWORK_AUTHENTICATION_REQUIRED = 511
         };
-        
+
         // TODO: should this be inline?
         inline std::string get_string(value c) {
             switch (c) {
@@ -185,9 +185,9 @@ namespace http {
             }
         }
     }
-    
+
     class exception : public std::exception {
-    public: 
+    public:
         exception(const std::string& log_msg,
                   status_code::value error_code,
                   const std::string& error_msg = "",
@@ -197,11 +197,11 @@ namespace http {
         m_error_msg(error_msg),
         m_body(body) {}
         ~exception() throw() {}
-        
+
         virtual const char* what() const throw() {
             return m_msg.c_str();
         }
-        
+
         std::string         m_msg;
         status_code::value  m_error_code;
         std::string         m_error_msg;

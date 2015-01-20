@@ -11,10 +11,10 @@
  *     * Neither the name of the WebSocket++ Project nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL PETER THORSON BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -22,7 +22,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 #error Use Auto TLS only
@@ -43,7 +43,7 @@
 #   pragma warning(disable:4355)
 #endif
 
-namespace websocketpp {
+namespace websocketpp_02 {
 namespace socket {
 
 template <typename endpoint_type>
@@ -52,19 +52,19 @@ public:
     boost::asio::io_service& get_io_service() {
         return m_io_service;
     }
-    
+
     bool is_secure() {
         return false;
     }
-    
+
     // hooks that this policy adds to handlers of connections that use it
     class handler_interface {
     public:
     	virtual ~handler_interface() {}
-    	
+
         virtual void on_tcp_init() {};
     };
-    
+
     // Connection specific details
     template <typename connection_type>
     class connection {
@@ -73,11 +73,11 @@ public:
         boost::asio::ip::tcp::socket& get_raw_socket() {
             return m_socket;
         }
-        
+
         boost::asio::ip::tcp::socket& get_socket() {
             return m_socket;
         }
-        
+
         bool is_secure() {
             return false;
         }
@@ -85,25 +85,25 @@ public:
         connection(plain<endpoint_type>& e)
          : m_socket(e.get_io_service())
          , m_connection(static_cast< connection_type& >(*this)) {}
-        
+
         void init() {
-            
+
         }
-        
+
         void async_init(socket_init_callback callback) {
             m_connection.get_handler()->on_tcp_init();
-            
+
             // TODO: make configuration option for NO_DELAY
             m_socket.set_option(boost::asio::ip::tcp::no_delay(true));
-            
+
             // TODO: should this use post()?
             callback(boost::system::error_code());
         }
-        
+
         bool shutdown() {
             boost::system::error_code ignored_ec;
             m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both,ignored_ec);
-            
+
             if (ignored_ec) {
                 return false;
             } else {
@@ -120,9 +120,9 @@ private:
     boost::asio::io_service& m_io_service;
 };
 
-    
+
 } // namespace socket
-} // namespace websocketpp
+} // namespace websocketpp_02
 
 #ifdef _MSC_VER
 #   pragma warning(pop)
