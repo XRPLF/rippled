@@ -29,10 +29,10 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
-#include <websocket/src/common.hpp>
-#include <websocket/src/sockets/socket_base.hpp>
-#include <websocket/src/sockets/autotls.hpp>
-#include <websocket/src/websocketpp.hpp>
-#include <websocket/src/logger/logger.hpp>
+#include <websocketpp_02/src/common.hpp>
+#include <websocketpp_02/src/sockets/socket_base.hpp>
+#include <websocketpp_02/src/sockets/autotls.hpp>
+#include <websocketpp_02/src/websocketpp.hpp>
+#include <websocketpp_02/src/logger/logger.hpp>
 
 #endif

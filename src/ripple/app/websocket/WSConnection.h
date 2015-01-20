@@ -28,6 +28,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/unity/websocket.h>
 #include <beast/asio/placeholders.h>
+#include <websocketpp_02/src/messages/data.hpp>
 #include <memory>
 
 namespace ripple {
@@ -44,7 +45,7 @@ public:
     static char const* getCountedObjectName () { return "WSConnection"; }
 
 protected:
-    typedef websocketpp::message::data::ptr message_ptr;
+    typedef websocketpp_02::message::data::ptr message_ptr;
 
     WSConnection (HTTP::Port const& port,
         Resource::Manager& resourceManager, Resource::Consumer usage,
@@ -174,7 +175,7 @@ public:
         connection_ptr ptr = c.lock ();
 
         if (ptr)
-            ptr->close (websocketpp::close::status::PROTOCOL_ERROR, "overload");
+            ptr->close (websocketpp_02::close::status::PROTOCOL_ERROR, "overload");
     }
 
     bool onPingTimer (std::string&)
