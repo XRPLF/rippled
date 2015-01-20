@@ -362,10 +362,18 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
             "Over resource limit: " << remote_endpoint;
         return;
     }
+    
+    auto const slot = peerFinder().new_outbound_slot(remote_endpoint);
+    if (slot == nullptr)
+    {
+        if (journal_.debug) journal_.debug <<
+            "Connect: No slot for " << remote_endpoint;
+        return;
+    }
 
     auto const p = std::make_shared<ConnectAttempt>(
         io_service_, beast::IPAddressConversion::to_asio_endpoint(remote_endpoint),
-            usage, setup_.context, next_id_++,
+            usage, setup_.context, next_id_++, slot,
                 deprecatedLogs().journal("Peer"), *this);
 
     std::lock_guard<decltype(mutex_)> lock(mutex_);

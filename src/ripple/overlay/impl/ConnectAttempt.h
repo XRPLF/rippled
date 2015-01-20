@@ -75,8 +75,8 @@ public:
     ConnectAttempt (boost::asio::io_service& io_service,
         endpoint_type const& remote_endpoint, Resource::Consumer usage,
             beast::asio::ssl_bundle::shared_context const& context,
-                std::uint32_t id, beast::Journal journal,
-                    OverlayImpl& overlay);
+                std::uint32_t id, PeerFinder::Slot::ptr const& slot,
+                    beast::Journal journal, OverlayImpl& overlay);
 
     ~ConnectAttempt();
 

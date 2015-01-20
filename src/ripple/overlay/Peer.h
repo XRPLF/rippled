@@ -36,7 +36,7 @@ class Charge;
 class Peer
 {
 public:
-    typedef std::shared_ptr <Peer> ptr;
+    using ptr = std::shared_ptr<Peer>;
 
     /** Uniquely identifies a peer.
         This can be stored in tables to find the peer later. Callers
@@ -44,6 +44,8 @@ public:
         adjustments as needed.
     */
     using id_t = std::uint32_t;
+
+    virtual ~Peer() = default;
 
     //
     // Network

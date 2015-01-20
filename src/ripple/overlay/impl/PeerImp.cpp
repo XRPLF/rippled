@@ -636,12 +636,12 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
             return fail("onReadMessage", ec);
         if (! stream_.next_layer().is_open())
             return;
+        if(gracefulClose_)
+            return;
         if (bytes_consumed == 0)
             break;
         read_buffer_.consume (bytes_consumed);
     }
-    if(gracefulClose_)
-        return;
     // Timeout on writes only
     stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::onReadMessage,

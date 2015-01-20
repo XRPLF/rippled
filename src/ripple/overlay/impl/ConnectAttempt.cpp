@@ -28,8 +28,8 @@ namespace ripple {
 ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,
     endpoint_type const& remote_endpoint, Resource::Consumer usage,
         beast::asio::ssl_bundle::shared_context const& context,
-            std::uint32_t id, beast::Journal journal,
-                OverlayImpl& overlay)
+            std::uint32_t id, PeerFinder::Slot::ptr const& slot,
+                beast::Journal journal, OverlayImpl& overlay)
     : Child (overlay)
     , id_ (id)
     , sink_ (journal, OverlayImpl::makePrefix(id))
@@ -49,8 +49,7 @@ ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,
                 boost::asio::buffer(data, size)));
         }
         , response_, false)
-    , slot_(overlay_.peerFinder().new_outbound_slot(
-        beast::IPAddressConversion::from_asio(remote_endpoint)))
+    , slot_ (slot)
 {
     if (journal_.trace) journal_.trace <<
         "Connect " << remote_endpoint;
@@ -75,6 +74,7 @@ ConnectAttempt::stop()
         if (journal_.debug) journal_.debug <<
             "Stop";
     }
+    close();
 }
 
 void
@@ -191,14 +191,13 @@ void
 ConnectAttempt::onHandshake (error_code ec)
 {
     cancelTimer();
-
     if(! stream_.next_layer().is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
-
-    endpoint_type local_endpoint =
-        stream_.next_layer().local_endpoint(ec);
+    endpoint_type local_endpoint;
+    if (! ec)
+        local_endpoint = stream_.next_layer().local_endpoint(ec);
     if(ec)
         return fail("onHandshake", ec);
     if(journal_.trace) journal_.trace <<
