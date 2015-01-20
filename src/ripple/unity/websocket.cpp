@@ -29,18 +29,18 @@
 // Unity build file for websocket
 //
 
-#include <websocket/src/sha1/sha1.h>
+#include <websocketpp_02/src/sha1/sha1.h>
 
 // Must come first to prevent compile errors
-#include <websocket/src/uri.cpp>
+#include <websocketpp_02/src/uri.cpp>
 
-#include <websocket/src/base64/base64.cpp>
-#include <websocket/src/messages/data.cpp>
-#include <websocket/src/processors/hybi_header.cpp>
-#include <websocket/src/processors/hybi_util.cpp>
-#include <websocket/src/md5/md5.c>
-#include <websocket/src/network_utilities.cpp>
-#include <websocket/src/sha1/sha1.cpp>
+#include <websocketpp_02/src/base64/base64.cpp>
+#include <websocketpp_02/src/messages/data.cpp>
+#include <websocketpp_02/src/processors/hybi_header.cpp>
+#include <websocketpp_02/src/processors/hybi_util.cpp>
+#include <websocketpp_02/src/md5/md5.c>
+#include <websocketpp_02/src/network_utilities.cpp>
+#include <websocketpp_02/src/sha1/sha1.cpp>
 
 #include <ripple/websocket/autosocket/AutoSocket.cpp>
 #include <ripple/websocket/autosocket/LogWebsockets.cpp>

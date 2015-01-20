@@ -3985,83 +3985,83 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\base64\base64.h">
+    <ClInclude Include="..\..\src\websocketpp_02\src\base64\base64.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\common.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\common.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\connection.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\connection.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\endpoint.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\endpoint.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\http\constants.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\http\constants.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\http\parser.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\http\parser.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\logger\logger.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\logger\logger.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\md5\md5.c">
+    <ClCompile Include="..\..\src\websocketpp_02\src\md5\md5.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\md5\md5.h">
+    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\md5\md5.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\messages\control.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\messages\control.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\messages\data.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\messages\data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\messages\data.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\messages\data.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\network_utilities.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\network_utilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\network_utilities.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\network_utilities.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\processors\hybi.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\processors\hybi_header.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_header.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\processors\hybi_header.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_header.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\processors\hybi_legacy.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_legacy.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\processors\hybi_util.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_util.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\processors\hybi_util.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_util.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\processors\processor.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\processors\processor.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\rng\blank_rng.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\rng\blank_rng.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\roles\server.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\roles\server.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\sha1\sha1.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\sha1\sha1.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\sha1\sha1.h">
+    <ClInclude Include="..\..\src\websocketpp_02\src\sha1\sha1.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\shared_const_buffer.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\autotls.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\socket_base.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\websocket\src\uri.cpp">
+    <ClCompile Include="..\..\src\websocketpp_02\src\uri.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\websocket\src\uri.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\uri.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\utf8_validator\utf8_validator.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\utf8_validator\utf8_validator.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\websocketpp.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\websocketpp.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
+    <ClInclude Include="..\..\src\websocketpp_02\src\websocket_frame.hpp">
     </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
