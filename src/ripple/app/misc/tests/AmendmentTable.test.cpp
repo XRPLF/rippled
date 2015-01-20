@@ -99,7 +99,7 @@ private:
         return make_AmendmentTable (weeks (2),
                                     majorityFraction,
                                     journal,
-                                    make_MOCAmendmentTableInjections ());
+                                    make_MockAmendmentTableInjections ());
     };
 
     // Create the amendments by string pairs instead of AmendmentNames

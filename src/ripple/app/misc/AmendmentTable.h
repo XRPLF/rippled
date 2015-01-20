@@ -212,7 +212,7 @@ public:
 };
 
 /**
-   AmendmentTableInjections is used to insert moc objects into the amendment
+   AmendmentTableInjections is used to insert mock objects into the amendment
    table class while unit testing.
  */
 class AmendmentTableInjections
@@ -224,7 +224,7 @@ public:
     virtual void setMajorityTimesFromDBToState (
         AmendmentState& toUpdate,
         uint256 const& amendmentHash) const = 0;
-    /** For eash hash, get the first and last majority from the corresponding
+    /** For each hash, get the first and last majority from the corresponding
      * AmendmentState object and update the walletDB.
      */
     virtual void setMajorityTimesFromStateToDB (
@@ -236,7 +236,7 @@ public:
 // Use for regular system
 std::unique_ptr<AmendmentTableInjections> make_AmendmentTableInjections ();
 // Use for unit testing
-std::unique_ptr<AmendmentTableInjections> make_MOCAmendmentTableInjections ();
+std::unique_ptr<AmendmentTableInjections> make_MockAmendmentTableInjections ();
 
 std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,

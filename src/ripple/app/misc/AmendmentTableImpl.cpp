@@ -652,7 +652,7 @@ public:
     virtual ValidationSet getValidations (uint256 const& hash) const override;
 };
 
-class AmendmentTableInjectionsMOC final : public AmendmentTableInjections
+class AmendmentTableInjectionsMock final : public AmendmentTableInjections
 {
 public:
     virtual void setMajorityTimesFromDBToState (
@@ -729,9 +729,9 @@ std::unique_ptr<AmendmentTableInjections> make_AmendmentTableInjections ()
 }
 
 // Use for unit testing
-std::unique_ptr<AmendmentTableInjections> make_MOCAmendmentTableInjections ()
+std::unique_ptr<AmendmentTableInjections> make_MockAmendmentTableInjections ()
 {
-    return std::make_unique<detail::AmendmentTableInjectionsMOC>();
+    return std::make_unique<detail::AmendmentTableInjectionsMock>();
 }
 
 }  // ripple
