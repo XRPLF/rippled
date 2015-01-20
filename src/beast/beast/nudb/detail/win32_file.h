@@ -394,25 +394,25 @@ template <class _>
 std::pair<DWORD, DWORD>
 win32_file<_>::flags (file_mode mode)
 {
-mode = file_mode_write;
+mode = file_mode::write;
     std::pair<DWORD, DWORD> result(0, 0);
     switch (mode)
     {
-    case file_mode_scan:
+    case file_mode::scan:
         result.first =
             GENERIC_READ;
         result.second =
             FILE_FLAG_SEQUENTIAL_SCAN;
         break;
 
-    case file_mode_read:
+    case file_mode::read:
         result.first =
             GENERIC_READ;
         result.second =
             FILE_FLAG_RANDOM_ACCESS;
         break;
 
-    case file_mode_append:
+    case file_mode::append:
         result.first =
             GENERIC_READ | GENERIC_WRITE;
         result.second =
@@ -422,7 +422,7 @@ mode = file_mode_write;
             ;
         break;
 
-    case file_mode_write:
+    case file_mode::write:
         result.first =
             GENERIC_READ | GENERIC_WRITE;
         result.second =

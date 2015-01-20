@@ -93,10 +93,10 @@ verify (
     using File = native_file;
     File df;
     File kf;
-    if (! df.open (file_mode_scan, dat_path))
+    if (! df.open (file_mode::scan, dat_path))
         throw store_corrupt_error(
             "no data file");
-    if (! kf.open (file_mode_read, key_path))
+    if (! kf.open (file_mode::read, key_path))
         throw store_corrupt_error(
             "no key file");
     key_file_header kh;

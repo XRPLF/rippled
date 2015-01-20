@@ -371,11 +371,11 @@ basic_store<Hasher, File>::open (
     File df(std::forward<Args>(args)...);
     File kf(std::forward<Args>(args)...);
     File lf(std::forward<Args>(args)...);
-    if (! df.open (file_mode_append, dat_path))
+    if (! df.open (file_mode::append, dat_path))
         return false;
-    if (! kf.open (file_mode_write, key_path))
+    if (! kf.open (file_mode::write, key_path))
         return false;
-    if (! lf.create (file_mode_append, log_path))
+    if (! lf.create (file_mode::append, log_path))
         return false;
     dat_file_header dh;
     key_file_header kh;

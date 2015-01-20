@@ -54,7 +54,7 @@ visit(
     using namespace detail;
     using File = native_file;
     File df;
-    df.open (file_mode_scan, path);
+    df.open (file_mode::scan, path);
     dat_file_header dh;
     read (df, dh);
     verify (dh);

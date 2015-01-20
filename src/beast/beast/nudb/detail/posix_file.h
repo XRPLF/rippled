@@ -314,7 +314,7 @@ posix_file<_>::flags (file_mode mode)
     std::pair<int, int> result;
     switch(mode)
     {
-    case file_mode_scan:
+    case file_mode::scan:
         result.first =
             O_RDONLY;
 #ifndef __APPLE__
@@ -322,7 +322,7 @@ posix_file<_>::flags (file_mode mode)
             POSIX_FADV_SEQUENTIAL;
 #endif
         break;
-    case file_mode_read:
+    case file_mode::read:
         result.first =
             O_RDONLY;
 #ifndef __APPLE__
@@ -330,7 +330,7 @@ posix_file<_>::flags (file_mode mode)
             POSIX_FADV_RANDOM;
 #endif
         break;
-    case file_mode_append:
+    case file_mode::append:
         result.first =
             O_RDWR |
             O_APPEND;
@@ -339,7 +339,7 @@ posix_file<_>::flags (file_mode mode)
             POSIX_FADV_RANDOM;
 #endif
         break;
-    case file_mode_write:
+    case file_mode::write:
         result.first =
             O_RDWR;
 #ifndef __APPLE__

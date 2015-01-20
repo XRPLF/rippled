@@ -26,12 +26,12 @@
 namespace beast {
 namespace nudb {
 
-enum file_mode
+enum class file_mode
 {
-    file_mode_scan,         // read sequential
-    file_mode_read,         // read random
-    file_mode_append,       // read random, write append
-    file_mode_write         // read random, write random
+    scan,         // read sequential
+    read,         // read random
+    append,       // read random, write append
+    write         // read random, write random
 };
 
 // This sort of doesn't belong here

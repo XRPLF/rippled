@@ -77,13 +77,13 @@ create (
     for(;;)
     {
         if (df.create(
-            file_mode_append, dat_path))
+            file_mode::append, dat_path))
         {
             if (kf.create (
-                file_mode_append, key_path))
+                file_mode::append, key_path))
             {
                 if (lf.create(
-                        file_mode_append, log_path))
+                        file_mode::append, log_path))
                     break;
                 File::erase (dat_path);
             }
