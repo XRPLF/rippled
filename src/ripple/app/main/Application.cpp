@@ -320,8 +320,7 @@ public:
 
         , m_amendmentTable (make_AmendmentTable
                             (weeks(2), MAJORITY_FRACTION,
-                             m_logs.journal("AmendmentTable"),
-                             make_AmendmentTableInjections()))
+                             m_logs.journal("AmendmentTable")))
 
         , mFeeTrack (LoadFeeTrack::New (m_logs.journal("LoadManager")))
 

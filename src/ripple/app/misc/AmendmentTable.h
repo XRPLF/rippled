@@ -242,7 +242,8 @@ std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    std::unique_ptr<AmendmentTableInjections> injections);
+    std::unique_ptr<AmendmentTableInjections> injections =
+        make_AmendmentTableInjections ());
 
 }  // ripple
 
