@@ -1987,6 +1987,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
