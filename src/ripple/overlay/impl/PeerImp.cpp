@@ -92,6 +92,9 @@ PeerImp::~PeerImp ()
 void
 PeerImp::run()
 {
+    if(! strand_.running_in_this_thread())
+        return strand_.post(std::bind (
+            &PeerImp::run, shared_from_this()));
     if (m_inbound)
     {
         if (read_buffer_.size() > 0)
