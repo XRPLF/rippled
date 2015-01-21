@@ -287,6 +287,7 @@ JSS ( reserve_base );               // out: NetworkOPs
 JSS ( reserve_base_xrp );           // out: NetworkOPs
 JSS ( reserve_inc );                // out: NetworkOPs
 JSS ( reserve_inc_xrp );            // out: NetworkOPs
+JSS ( response );                   // websocket
 JSS ( result );                     // RPC
 JSS ( ripple_lines );               // out: NetworkOPs
 JSS ( ripple_state );               // in: LedgerEntr

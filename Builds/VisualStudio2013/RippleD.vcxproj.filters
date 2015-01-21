@@ -463,9 +463,6 @@
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\websocket\autosocket">
-      <UniqueIdentifier>{400881DE-C875-8CE8-E61F-A7992E624248}</UniqueIdentifier>
-    </Filter>
     <Filter Include="rocksdb2">
       <UniqueIdentifier>{15B4B65A-0F03-7BA9-38CD-42A5712392CB}</UniqueIdentifier>
     </Filter>
@@ -2640,21 +2637,6 @@
     <ClCompile Include="..\..\src\ripple\app\websocket\WSConnection.cpp">
       <Filter>ripple\app\websocket</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\websocket\WSConnection.h">
-      <Filter>ripple\app\websocket</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\websocket\WSDoor.cpp">
-      <Filter>ripple\app\websocket</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\websocket\WSDoor.h">
-      <Filter>ripple\app\websocket</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\websocket\WSServerHandler.cpp">
-      <Filter>ripple\app\websocket</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\websocket\WSServerHandler.h">
-      <Filter>ripple\app\websocket</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -4194,9 +4176,6 @@
     <ClCompile Include="..\..\src\ripple\unity\websocket.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\websocket.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\Connection.h">
       <Filter>ripple\validators</Filter>
     </ClInclude>
@@ -4236,15 +4215,24 @@
     <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
       <Filter>ripple\validators\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\websocket\autosocket\AutoSocket.cpp">
-      <Filter>ripple\websocket\autosocket</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\autosocket\AutoSocket.h">
-      <Filter>ripple\websocket\autosocket</Filter>
+    <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
+      <Filter>ripple\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\autosocket\LogWebsockets.cpp">
-      <Filter>ripple\websocket\autosocket</Filter>
+    <ClInclude Include="..\..\src\ripple\websocket\Connection.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\websocket\Handler.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\websocket\LogWebsockets.cpp">
+      <Filter>ripple\websocket</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\websocket\MakeServer.cpp">
+      <Filter>ripple\websocket</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <Filter>rocksdb2\db</Filter>
     </ClCompile>

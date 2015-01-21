@@ -18,9 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/websocket/WSDoor.h>
-#include <ripple/app/websocket/WSServerHandler.h>
-#include <ripple/unity/websocket.h>
+#include <ripple/websocket/MakeServer.h>
+#include <ripple/websocket/Handler.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>

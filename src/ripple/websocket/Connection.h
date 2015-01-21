@@ -20,14 +20,24 @@
 #ifndef RIPPLE_APP_WEBSOCKET_WSCONNECTION_H_INCLUDED
 #define RIPPLE_APP_WEBSOCKET_WSCONNECTION_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/resource/Manager.h>
+#include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Port.h>
 #include <ripple/json/to_string.h>
-#include <ripple/unity/websocket.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/server/Role.h>
+#include <boost/asio.hpp>
 #include <beast/asio/placeholders.h>
 #include <memory>
 
@@ -60,7 +70,7 @@ protected:
 
     virtual void preDestroy () = 0;
     virtual void disconnect () = 0;
-    
+
     virtual void recordMetrics (RPC::Context const&) const = 0;
 
 public:
@@ -225,6 +235,204 @@ public:
         }
     }
 };
+
+//------------------------------------------------------------------------------
+// This next code will become templated in the next change so these methods are
+// brought here to simplify diffs.
+
+inline
+WSConnection::WSConnection (HTTP::Port const& port,
+    Resource::Manager& resourceManager, Resource::Consumer usage,
+        InfoSub::Source& source, bool isPublic,
+            beast::IP::Endpoint const& remoteAddress,
+                boost::asio::io_service& io_service)
+    : InfoSub (source, usage)
+    , port_(port)
+    , m_resourceManager (resourceManager)
+    , m_isPublic (isPublic)
+    , m_remoteAddress (remoteAddress)
+    , m_netOPs (getApp ().getOPs ())
+    , m_pingTimer (io_service)
+    , m_sentPing (false)
+    , m_receiveQueueRunning (false)
+    , m_isDead (false)
+    , m_io_service (io_service)
+{
+    WriteLog (lsDEBUG, WSConnection) <<
+        "Websocket connection from " << remoteAddress;
+}
+
+inline
+WSConnection::~WSConnection ()
+{
+}
+
+inline
+void WSConnection::onPong (std::string const&)
+{
+    m_sentPing = false;
+}
+
+inline
+void WSConnection::rcvMessage (
+    message_ptr msg, bool& msgRejected, bool& runQueue)
+{
+    ScopedLockType sl (m_receiveQueueMutex);
+
+    if (m_isDead)
+    {
+        msgRejected = false;
+        runQueue = false;
+        return;
+    }
+
+    if ((m_receiveQueue.size () >= 1000) ||
+        (msg->get_payload().size() > 1000000))
+    {
+        msgRejected = true;
+        runQueue = false;
+    }
+    else
+    {
+        msgRejected = false;
+        m_receiveQueue.push_back (msg);
+
+        if (m_receiveQueueRunning)
+            runQueue = false;
+        else
+        {
+            runQueue = true;
+            m_receiveQueueRunning = true;
+        }
+    }
+}
+
+inline
+bool WSConnection::checkMessage ()
+{
+    ScopedLockType sl (m_receiveQueueMutex);
+
+    assert (m_receiveQueueRunning);
+
+    if (m_isDead || m_receiveQueue.empty ())
+    {
+        m_receiveQueueRunning = false;
+        return false;
+    }
+
+    return true;
+}
+
+inline
+WSConnection::message_ptr WSConnection::getMessage ()
+{
+    ScopedLockType sl (m_receiveQueueMutex);
+
+    if (m_isDead || m_receiveQueue.empty ())
+    {
+        m_receiveQueueRunning = false;
+        return message_ptr ();
+    }
+
+    message_ptr m = m_receiveQueue.front ();
+    m_receiveQueue.pop_front ();
+    return m;
+}
+
+inline
+void WSConnection::returnMessage (message_ptr ptr)
+{
+    ScopedLockType sl (m_receiveQueueMutex);
+
+    if (!m_isDead)
+    {
+        m_receiveQueue.push_front (ptr);
+        m_receiveQueueRunning = false;
+    }
+}
+
+inline
+Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
+{
+    if (getConsumer().disconnect ())
+    {
+        disconnect ();
+        return rpcError (rpcSLOW_DOWN);
+    }
+
+    // Requests without "command" are invalid.
+    //
+    if (!jvRequest.isMember (jss::command))
+    {
+        Json::Value jvResult (Json::objectValue);
+
+        jvResult[jss::type]    = jss::response;
+        jvResult[jss::status]  = jss::error;
+        jvResult[jss::error]   = jss::missingCommand;
+        jvResult[jss::request] = jvRequest;
+
+        if (jvRequest.isMember (jss::id))
+        {
+            jvResult[jss::id]  = jvRequest[jss::id];
+        }
+
+        getConsumer().charge (Resource::feeInvalidRPC);
+
+        return jvResult;
+    }
+
+    Resource::Charge loadType = Resource::feeReferenceRPC;
+    Json::Value jvResult (Json::objectValue);
+
+    auto required = RPC::roleRequired (jvRequest[jss::command].asString());
+    Role const role = requestRole (required, port_, jvRequest, m_remoteAddress,
+                                   getConfig().RPC_ADMIN_ALLOW);
+
+    if (Role::FORBID == role)
+    {
+        jvResult[jss::result]  = rpcError (rpcFORBIDDEN);
+    }
+    else
+    {
+        RPC::Context context {
+            jvRequest, loadType, m_netOPs, role,
+            std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ())};
+        RPC::doCommand (context, jvResult[jss::result]);
+    }
+
+    getConsumer().charge (loadType);
+    if (getConsumer().warn ())
+    {
+        jvResult[jss::warning] = jss::load;
+    }
+
+    // Currently we will simply unwrap errors returned by the RPC
+    // API, in the future maybe we can make the responses
+    // consistent.
+    //
+    // Regularize result. This is duplicate code.
+    if (jvResult[jss::result].isMember (jss::error))
+    {
+        jvResult               = jvResult[jss::result];
+        jvResult[jss::status]  = jss::error;
+        jvResult[jss::request] = jvRequest;
+
+    }
+    else
+    {
+        jvResult[jss::status] = jss::success;
+    }
+
+    if (jvRequest.isMember (jss::id))
+    {
+        jvResult[jss::id] = jvRequest[jss::id];
+    }
+
+    jvResult[jss::type] = jss::response;
+
+    return jvResult;
+}
+
 
 } // ripple
 

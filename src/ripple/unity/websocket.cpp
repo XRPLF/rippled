@@ -24,23 +24,24 @@
 #endif
 #include <stdint.h>
 
-#include <ripple/unity/websocket.h>
+#include <beast/module/core/text/LexicalCast.h>
 
-// Unity build file for websocket
-//
-
-#include <websocketpp_02/src/sha1/sha1.h>
-
-// Must come first to prevent compile errors
+// Must come first to prevent compilation errors.
 #include <websocketpp_02/src/uri.cpp>
 
+#include <websocketpp_02/src/sockets/socket_base.hpp>
+#include <websocketpp_02/src/websocketpp.hpp>
 #include <websocketpp_02/src/base64/base64.cpp>
 #include <websocketpp_02/src/messages/data.cpp>
 #include <websocketpp_02/src/processors/hybi_header.cpp>
 #include <websocketpp_02/src/processors/hybi_util.cpp>
-#include <websocketpp_02/src/md5/md5.c>
 #include <websocketpp_02/src/network_utilities.cpp>
+#include <websocketpp_02/src/sha1/sha1.h>
 #include <websocketpp_02/src/sha1/sha1.cpp>
 
-#include <ripple/websocket/autosocket/AutoSocket.cpp>
-#include <ripple/websocket/autosocket/LogWebsockets.cpp>
+#include <ripple/websocket/MakeServer.cpp>
+
+#include <ripple/websocket/LogWebsockets.cpp>
+
+// Must come last to prevent compilation errors.
+#include <websocketpp_02/src/md5/md5.c>

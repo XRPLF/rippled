@@ -40,7 +40,6 @@
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/peers/UniqueNodeList.h>
 #include <ripple/app/tx/TransactionMaster.h>
-#include <ripple/app/websocket/WSDoor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/ResolverAsio.h>
@@ -62,6 +61,7 @@
 #include <ripple/shamap/Family.h>
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
+#include <ripple/websocket/MakeServer.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>

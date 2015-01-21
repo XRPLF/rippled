@@ -22,11 +22,10 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/CollectorManager.h>
-#include <ripple/app/websocket/WSConnection.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/unity/websocket.h>
+#include <ripple/websocket/Connection.h>
 #include <memory>
 #include <unordered_map>
 
@@ -436,7 +435,7 @@ public:
                 if (jCmd.isString())
                     job.rename (std::string ("WSClient::") + jCmd.asString());
             }
-            
+
             auto const start (std::chrono::high_resolution_clock::now ());
             Json::Value const jvObj (conn->invokeCommand (jvRequest));
             std::string const buffer (to_string (jvObj));
