@@ -30,6 +30,7 @@
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 #include <boost/format.hpp>
+#include <cctype>
 
 namespace ripple {
 
@@ -307,12 +308,47 @@ isMemoOkay (STObject const& st, std::string& reason)
 
         for (auto const& memoElement : *memoObj)
         {
-            if ((memoElement.getFName() != sfMemoType) &&
-                (memoElement.getFName() != sfMemoData) &&
-                (memoElement.getFName() != sfMemoFormat))
+            auto const& name = memoElement.getFName();
+
+            if (name != sfMemoType &&
+                name != sfMemoData &&
+                name != sfMemoFormat)
             {
-                reason = "A memo may contain only MemoType, MemoData or MemoFormat fields.";
+                reason = "A memo may contain only MemoType, MemoData or "
+                         "MemoFormat fields.";
                 return false;
+            }
+
+            // The raw data is stored as hex-octets, which we want to decode.
+            auto data = strUnHex (memoElement.getText ());
+
+            if (!data.second)
+            {
+                reason = "The MemoType, MemoData and MemoFormat fields may "
+                         "only contain hex-encoded data.";
+                return false;
+            }
+
+            if (name == sfMemoData)
+                continue;
+
+            // The only allowed characters for MemoType and MemoFormat are the
+            // characters allowed in URLs per RFC 3986: alphanumerics and the
+            // following symbols:
+            static std::string const allowed_symbols ("-._~:/?#[]@!$&'()*+,;=%");
+
+            for (auto c : data.first)
+            {
+                if (isalnum (c))
+                    continue;
+
+                if (allowed_symbols.find (c) == std::string::npos)
+                {
+                    reason = "The MemoType and MemoFormat fields may only "
+                             "contain characters that are allowed in URLs "
+                             "under RFC 3986.";
+                    return false;
+                }
             }
         }
     }
