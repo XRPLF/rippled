@@ -23,9 +23,11 @@
 #include <beast/net/IPAddressV4.h>
 #include <beast/net/IPAddressV6.h>
 #include <beast/container/hash_append.h>
+#include <beast/utility/noexcept.h>
 
 #include <boost/functional/hash.hpp>
 
+#include <cassert>
 #include <cstdint>
 #include <ios>
 #include <string>
@@ -102,14 +104,14 @@ public:
 
     /** Returns `true` if this address represents an IPv4 address. */
     bool
-    is_v4 () const
+    is_v4 () const noexcept
     {
         return m_type == ipv4;
     }
 
     /** Returns `true` if this address represents an IPv6 address. */
     bool
-    is_v6() const
+    is_v6() const noexcept
     {
         return m_type == ipv6;
     }
@@ -121,11 +123,10 @@ public:
     AddressV4 const&
     to_v4 () const
     {
-        if (m_type != ipv4)
+        if (!is_v4 ())
             throw std::bad_cast();
         return m_v4;
     }
-
 
     /** Returns the IPv6 address.
         Precondition:
@@ -134,7 +135,7 @@ public:
     AddressV6 const&
     to_v6 () const
     {
-        if (m_type != ipv6)
+        if (!is_v6 ())
             throw std::bad_cast();
         return m_v6;
     }
@@ -142,13 +143,15 @@ public:
     template <class Hasher>
     friend
     void
-    hash_append(Hasher& h, Address const& addr)
+    hash_append(Hasher& h, Address const& addr) noexcept
     {
         using beast::hash_append;
         if (addr.is_v4 ())
             hash_append(h, addr.to_v4 ());
-        else
+        else if (addr.is_v6 ())
             hash_append(h, addr.to_v6 ());
+        else
+            assert (false);
     }
 
     /** Arithmetic comparison. */
