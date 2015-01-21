@@ -155,7 +155,11 @@
 
 const char* rocksdb_build_git_sha = "<none>";
 const char* rocksdb_build_git_datetime = "<none>";
-const char* rocksdb_build_compile_date = __DATE__;
-const char* rocksdb_build_compile_time = __TIME__;
+// Don't use __DATE__ and __TIME__, otherwise
+// builds will be nondeterministic.
+const char* rocksdb_build_compile_date = "Ripple Labs";
+const char* rocksdb_build_compile_time = "C++ Team";
+//const char* rocksdb_build_compile_date = __DATE__;
+//const char* rocksdb_build_compile_time = __TIME__;
 
 #endif
