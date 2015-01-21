@@ -28,8 +28,7 @@
 #include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
-
-#include <beast/container/hardened_hash.h>
+#include <ripple/basics/hardened_hash.h>
 #include <beast/utility/Zero.h>
 
 #include <boost/functional/hash.hpp>
@@ -98,7 +97,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    typedef beast::hardened_hash <> hasher;
+    typedef hardened_hash <> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -405,9 +404,9 @@ public:
     void zero () { *this = beast::zero; }
 };
 
-typedef base_uint<128> uint128;
-typedef base_uint<160> uint160;
-typedef base_uint<256> uint256;
+using uint128 = base_uint<128>;
+using uint160 = base_uint<160> ;
+using uint256 = base_uint<256> ;
 
 template <std::size_t Bits, class Tag>
 inline int compare (
@@ -537,7 +536,7 @@ struct hash<ripple::base_uint<Bits, Tag>>
     std::size_t
     operator()(argument_type const& u) const
     {
-        return beast::hardened_hash<>{}(u);
+        return ripple::hardened_hash<>{}(u);
     }
 };
 

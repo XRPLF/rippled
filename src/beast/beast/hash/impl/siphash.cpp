@@ -24,18 +24,15 @@
 // 
 //------------------------------------------------------------------------------
 
-#include <beast/container/hash_append.h>
+#include <beast/hash/siphash.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 
 // namespace acme is used to demonstrate example code.  It is not proposed.
 
-namespace beast
-{
-
-namespace
-{
+namespace beast {
+namespace detail {
 
 typedef std::uint64_t u64;
 typedef std::uint32_t u32;
@@ -82,7 +79,7 @@ sipround(u64& v0, u64& v1, u64& v2, u64& v3)
     v2 = rotl(v2, 32);
 }
 
-}  // unnamed
+} // detail
 
 siphash::siphash(std::uint64_t k0, std::uint64_t k1) noexcept
 {
@@ -95,6 +92,7 @@ siphash::siphash(std::uint64_t k0, std::uint64_t k1) noexcept
 void
 siphash::append (void const* key, std::size_t inlen) noexcept
 {
+    using namespace detail;
     u8 const* in = static_cast<const u8*>(key);
     total_length_ += inlen;
     if (bufsize_ + inlen < 8)
@@ -130,6 +128,7 @@ siphash::append (void const* key, std::size_t inlen) noexcept
 
 siphash::operator std::size_t() noexcept
 {
+    using namespace detail;
     std::size_t b = static_cast<u64>(total_length_) << 56;
     switch(bufsize_)
     {
@@ -163,4 +162,4 @@ siphash::operator std::size_t() noexcept
     return b;
 }
 
-}  // beast
+} // beast

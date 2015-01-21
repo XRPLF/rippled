@@ -21,6 +21,7 @@
 #define RIPPLE_RIPPLELINECACHE_H
 
 #include <ripple/app/paths/RippleState.h>
+#include <ripple/basics/hardened_hash.h>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -50,6 +51,7 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
+    ripple::hardened_hash<> hasher_;
     Ledger::pointer mLedger;
 
     struct AccountKey
@@ -57,31 +59,19 @@ private:
         Account account_;
         std::size_t hash_value_;
 
-        AccountKey (Account const& account)
+        AccountKey (Account const& account, std::size_t hash)
             : account_ (account)
-            , hash_value_ (beast::hardened_hash<>{}(account))
-        {
+            , hash_value_ (hash)
+        { }
 
-        }
+        AccountKey (AccountKey const& other) = default;
 
-        AccountKey (AccountKey const& other)
-            : account_ (other.account_)
-            , hash_value_ (other.hash_value_)
-        {
-
-        }
-
-        AccountKey& operator=(AccountKey const& other)
-        {
-            account_ = other.account_;
-            hash_value_ = other.hash_value_;
-            return *this;
-        }
+        AccountKey&
+        operator=(AccountKey const& other) = default;
 
         bool operator== (AccountKey const& lhs) const
         {
-            return hash_value_ == lhs.hash_value_ &&
-                account_ == lhs.account_;
+            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_;
         }
 
         std::size_t

@@ -17,18 +17,11 @@
 */
 //==============================================================================
 
-// MODULES: ../../crypto/impl/Sha256.cpp ../../container/impl/spookyv2.cpp
-
-#if BEAST_INCLUDE_BEASTCONFIG
 #include <BeastConfig.h>
-#endif
-
-#include <beast/container/hardened_hash.h>
+#include <ripple/basics/hardened_hash.h>
 #include <beast/unit_test/suite.h>
-
 #include <beast/crypto/Sha256.h>
 #include <boost/functional/hash.hpp>
-
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -36,7 +29,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace beast {
+namespace ripple {
 namespace detail {
 
 template <class T>
@@ -80,11 +73,11 @@ public:
 };
 
 } // detail
-} // beast
+} // ripple
 
 //------------------------------------------------------------------------------
 
-namespace beast {
+namespace ripple {
 
 namespace detail {
 
@@ -104,7 +97,7 @@ template <class T>
 using test_hardened_unordered_multimap =
     std::unordered_multimap <T, int, hardened_hash <>>;
 
-} // beast
+} // detail
 
 template <std::size_t Bits, class UInt = std::uint64_t>
 class unsigned_integer
@@ -181,14 +174,14 @@ typedef unsigned_integer <256, std::size_t> sha256_t;
 static_assert (sha256_t::bits == 256,
     "sha256_t must have 256 bits");
 
-} // beast
+} // ripple
 
 //------------------------------------------------------------------------------
 
-namespace beast {
+namespace ripple {
 
 class hardened_hash_test
-    : public unit_test::suite
+    : public beast::unit_test::suite
 {
 public:
     template <class T>
@@ -269,7 +262,7 @@ public:
 };
 
 class hardened_hash_sha256_test
-    : public unit_test::suite
+    : public beast::unit_test::suite
 {
 public:
     void
@@ -284,8 +277,8 @@ public:
         for (int i = 0; i < 100; ++i)
         {
             sha256_t v (sha256_t::from_number (i));
-            Sha256::digest_type d;
-            Sha256::hash (v.data(), sha256_t::bytes, d);
+            beast::Sha256::digest_type d;
+            beast::Sha256::hash (v.data(), sha256_t::bytes, d);
             sha256_t d_;
             memcpy (d_.data(), d.data(), sha256_t::bytes);
             std::size_t result (h (d_));
@@ -307,7 +300,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(hardened_hash,utility,beast);
-BEAST_DEFINE_TESTSUITE_MANUAL(hardened_hash_sha256,utility,beast);
+BEAST_DEFINE_TESTSUITE(hardened_hash,basics,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(hardened_hash_sha256,basics,ripple);
 
-} // beast
+} // ripple

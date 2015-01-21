@@ -37,9 +37,6 @@
     <Filter Include="beast\container\detail">
       <UniqueIdentifier>{B3ABC912-8DA0-AA35-302C-A0C614EDFDCE}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\container\impl">
-      <UniqueIdentifier>{3B2EC044-6A81-F182-B783-B6D14DED827C}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\container\tests">
       <UniqueIdentifier>{558F281D-B411-3676-A0DE-4B8C0D3B53A0}</UniqueIdentifier>
     </Filter>
@@ -60,6 +57,15 @@
     </Filter>
     <Filter Include="beast\cxx14\tests">
       <UniqueIdentifier>{96F8CA0B-80D3-8AEA-EE13-B39EE1CF91B0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\hash">
+      <UniqueIdentifier>{FE3C8FFD-FEE1-BDEA-DE7F-24A8DEDCAD20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\hash\impl">
+      <UniqueIdentifier>{5D0A694C-9709-709C-EDCB-4332E2457AE4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\hash\tests">
+      <UniqueIdentifier>{2B06CD3F-1F3C-7832-DB4E-112BDCE74C94}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\http">
       <UniqueIdentifier>{7138D215-DA65-98D5-EF7D-C9896685201E}</UniqueIdentifier>
@@ -186,6 +192,9 @@
     </Filter>
     <Filter Include="beast\threads\impl">
       <UniqueIdentifier>{E8A9A46E-3151-7072-ADF1-C230D86E9791}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\unity">
+      <UniqueIdentifier>{40FDA51E-20C4-4A72-83C3-A4B08C596A82}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\unit_test">
       <UniqueIdentifier>{2762284D-66E5-8B48-1F8E-67116DB1FC6B}</UniqueIdentifier>
@@ -756,36 +765,12 @@
     <ClInclude Include="..\..\src\beast\beast\container\detail\aged_unordered_container.h">
       <Filter>beast\container\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\hardened_hash.h">
-      <Filter>beast\container</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\hash_append.h">
-      <Filter>beast\container</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\container\impl\siphash.cpp">
-      <Filter>beast\container\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\impl\spookyv2.cpp">
-      <Filter>beast\container\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\container\impl\spookyv2.h">
-      <Filter>beast\container\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\container\tests\aged_associative_container.test.cpp">
       <Filter>beast\container\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\container\tests\buffer_view.test.cpp">
       <Filter>beast\container\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\hardened_hash.test.cpp">
-      <Filter>beast\container\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\hash_append.test.cpp">
-      <Filter>beast\container\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
-      <Filter>beast\container\tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
@@ -833,6 +818,45 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
+      <Filter>beast\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\hash_append.h">
+      <Filter>beast\hash</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\siphash.cpp">
+      <Filter>beast\hash\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\spookyv2.cpp">
+      <Filter>beast\hash\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\impl\spookyv2.h">
+      <Filter>beast\hash\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\impl\xxhash.c">
+      <Filter>beast\hash\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\impl\xxhash.h">
+      <Filter>beast\hash\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\siphash.h">
+      <Filter>beast\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\spooky.h">
+      <Filter>beast\hash</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_append_test.cpp">
+      <Filter>beast\hash\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\tests\hash_metrics.h">
+      <Filter>beast\hash\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_speed_test.cpp">
+      <Filter>beast\hash\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\hash\xxhasher.h">
+      <Filter>beast\hash</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
       <Filter>beast</Filter>
@@ -1434,6 +1458,9 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
+      <Filter>beast\random</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
       <Filter>beast\random</Filter>
     </ClInclude>
@@ -1563,6 +1590,9 @@
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
+      <Filter>beast\unity</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -3096,6 +3126,9 @@
     <ClInclude Include="..\..\src\ripple\basics\DecayingSample.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\hardened_hash.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\impl\BasicConfig.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3187,6 +3220,9 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
+      <Filter>ripple\basics\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\tests\hardened_hash_test.cpp">
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\KeyCache.test.cpp">

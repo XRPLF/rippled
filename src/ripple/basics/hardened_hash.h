@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
-#define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
+#ifndef RIPPLE_BASICS_HARDENED_HASH_H_INCLUDED
+#define RIPPLE_BASICS_HARDENED_HASH_H_INCLUDED
 
-#include <beast/container/hash_append.h>
+#include <beast/hash/hash_append.h>
+#include <beast/hash/xxhasher.h>
 #include <beast/cxx14/utility.h> // <utility>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <beast/utility/noexcept.h>
@@ -36,21 +37,23 @@
 // When set to 1, makes the seed per-process instead
 // of per default-constructed instance of hardened_hash
 //
-#ifndef BEAST_NO_HARDENED_HASH_INSTANCE_SEED
+#ifndef RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED
 # ifdef __GLIBCXX__
-#  define BEAST_NO_HARDENED_HASH_INSTANCE_SEED 1
+#  define RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED 1
 # else
-#  define BEAST_NO_HARDENED_HASH_INSTANCE_SEED 0
+#  define RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED 0
 # endif
 #endif
 
-namespace beast {
+namespace ripple {
+
+namespace detail {
 
 using seed_pair = std::pair<std::uint64_t, std::uint64_t>;
 
 template <bool = true>
 seed_pair
-get_seed_pair() noexcept
+make_seed_pair() noexcept
 {
     struct state_t
     {
@@ -63,9 +66,11 @@ get_seed_pair() noexcept
         // state_t(state_t const&) = delete;
         // state_t& operator=(state_t const&) = delete;
     };
-    static static_initializer <state_t> state;
+    static beast::static_initializer <state_t> state;
     std::lock_guard <std::mutex> lock (state->mutex);
     return {state->dist(state->gen), state->dist(state->gen)};
+}
+
 }
 
 template <class HashAlgorithm, bool ProcessSeeded>
@@ -75,14 +80,16 @@ class basic_hardened_hash;
  * Seed functor once per process
 */
 template <class HashAlgorithm>
-class basic_hardened_hash<HashAlgorithm, true>
+class basic_hardened_hash <HashAlgorithm, true>
 {
+private:
     static
-    seed_pair const&
+    detail::seed_pair const&
     init_seed_pair()
     {
-        static static_initializer <seed_pair, basic_hardened_hash> const
-                                                           p(get_seed_pair<>());
+        static beast::static_initializer <detail::seed_pair,
+            basic_hardened_hash> const p (
+                detail::make_seed_pair<>());
         return *p;
     }
 
@@ -108,12 +115,14 @@ public:
 template <class HashAlgorithm>
 class basic_hardened_hash<HashAlgorithm, false>
 {
-    seed_pair m_seeds;
+private:
+    detail::seed_pair m_seeds;
+
 public:
     using result_type = typename HashAlgorithm::result_type;
 
     basic_hardened_hash()
-        : m_seeds(get_seed_pair<>())
+        : m_seeds (detail::make_seed_pair<>())
     {}
 
     template <class T>
@@ -154,14 +163,14 @@ public:
     template parameter (the hashing algorithm).  For details
     see https://131002.net/siphash/#at
 */
-#if BEAST_NO_HARDENED_HASH_INSTANCE_SEED
-template <class HashAlgorithm = siphash>
+#if RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED
+template <class HashAlgorithm = beast::xxhasher>
     using hardened_hash = basic_hardened_hash<HashAlgorithm, true>;
 #else
-template <class HashAlgorithm = siphash>
+template <class HashAlgorithm = beast::xxhasher>
     using hardened_hash = basic_hardened_hash<HashAlgorithm, false>;
 #endif
 
-} // beast
+} // ripple
 
 #endif
