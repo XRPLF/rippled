@@ -51,7 +51,7 @@ ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,
         , response_, false)
     , slot_ (slot)
 {
-    if (journal_.trace) journal_.trace <<
+    if (journal_.debug) journal_.debug <<
         "Connect " << remote_endpoint;
 }
 

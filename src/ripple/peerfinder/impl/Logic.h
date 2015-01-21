@@ -485,6 +485,9 @@ public:
     /** Create new outbound connection attempts as needed.
         This implements PeerFinder's "Outbound Connection Strategy"
     */
+    // VFALCO TODO This should add the returned addresses to the
+    //             squelch list in one go once the list is built,
+    //             rather than having each module add to the squelch list.
     std::vector <beast::IP::Endpoint>
     autoconnect()
     {
@@ -510,7 +513,7 @@ public:
         //
         if (state->counts.fixed_active() < state->fixed.size ())
         {
-            get_fixed (needed, h.list(), state);
+            get_fixed (needed, h.list(), m_squelches, state);
 
             if (! h.list().empty ())
             {
@@ -964,6 +967,7 @@ public:
     /** Adds eligible Fixed addresses for outbound attempts. */
     template <class Container>
     void get_fixed (std::size_t needed, Container& c,
+        typename ConnectHandouts::Squelches& squelches,
         typename SharedState::Access& state)
     {
         auto const now (m_clock.now());
@@ -971,13 +975,15 @@ public:
             needed && iter != state->fixed.end (); ++iter)
         {
             auto const& address (iter->first.address());
-            if (iter->second.when() <= now && std::none_of (
-                state->slots.cbegin(), state->slots.cend(),
+            if (iter->second.when() <= now && squelches.find(address) ==
+                    squelches.end() && std::none_of (
+                        state->slots.cbegin(), state->slots.cend(),
                     [address](Slots::value_type const& v)
                     {
                         return address == v.first.address();
                     }))
             {
+                squelches.insert(iter->first.address());
                 c.push_back (iter->first);
                 --needed;
             }
