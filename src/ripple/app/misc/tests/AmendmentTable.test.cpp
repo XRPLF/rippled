@@ -96,10 +96,11 @@ private:
     static std::unique_ptr<AmendmentTable> makeTable ()
     {
         beast::Journal journal;
-        return make_AmendmentTable (weeks (2),
-                                    majorityFraction,
-                                    journal,
-                                    make_MockAmendmentTableInjections ());
+        return make_AmendmentTable (
+            weeks (2),
+            majorityFraction,
+            journal,
+            AmendmentTableDetail::make_MockAppApiFacade ());
     };
 
     // Create the amendments by string pairs instead of AmendmentNames

@@ -211,11 +211,13 @@ public:
     doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
 
+namespace AmendmentTableDetail
+{
 /**
-   AmendmentTableInjections is used to insert mock objects into the amendment
+   AppApiFacade is used to insert mock objects into the amendment
    table class while unit testing.
  */
-class AmendmentTableInjections
+class AppApiFacade
 {
 public:
     /** Get the first and last majority from the walletDB and update the
@@ -234,16 +236,17 @@ public:
 };
 
 // Use for regular system
-std::unique_ptr<AmendmentTableInjections> make_AmendmentTableInjections ();
+std::unique_ptr<AppApiFacade> make_AppApiFacade ();
 // Use for unit testing
-std::unique_ptr<AmendmentTableInjections> make_MockAmendmentTableInjections ();
+std::unique_ptr<AppApiFacade> make_MockAppApiFacade ();
+}  // AmendmentTableDetail
 
 std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    std::unique_ptr<AmendmentTableInjections> injections =
-        make_AmendmentTableInjections ());
+    std::unique_ptr<AmendmentTableDetail::AppApiFacade> facade =
+        AmendmentTableDetail::make_AppApiFacade ());
 
 }  // ripple
 

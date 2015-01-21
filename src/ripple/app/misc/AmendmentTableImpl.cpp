@@ -48,7 +48,7 @@ protected:
     core::Clock::time_point m_firstReport; // close time of first majority report
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
-    std::unique_ptr<AmendmentTableInjections> m_injections;
+    std::unique_ptr<AmendmentTableDetail::AppApiFacade> m_appApiFacade;
 
     AmendmentState& getCreate (uint256 const& amendment);
     AmendmentState* getExisting (uint256 const& amendment);
@@ -56,16 +56,17 @@ protected:
     void setJson (Json::Value& v, const AmendmentState&);
 
 public:
-    AmendmentTableImpl (std::chrono::seconds majorityTime,
-                        int majorityFraction,
-                        beast::Journal journal,
-                        std::unique_ptr<AmendmentTableInjections> injections)
+    AmendmentTableImpl (
+        std::chrono::seconds majorityTime,
+        int majorityFraction,
+        beast::Journal journal,
+        std::unique_ptr<AmendmentTableDetail::AppApiFacade> appApiFacade)
         : m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
         , m_firstReport (0)
         , m_lastReport (0)
-        , m_journal (std::move(journal))
-        , m_injections(std::move(injections))
+        , m_journal (std::move (journal))
+        , m_appApiFacade (std::move (appApiFacade))
     {
     }
 
@@ -181,7 +182,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash)
     if (iter == m_amendmentMap.end())
     {
         AmendmentState& amendment = m_amendmentMap[amendmentHash];
-        m_injections->setMajorityTimesFromDBToState (amendment, amendmentHash);
+        m_appApiFacade->setMajorityTimesFromDBToState (amendment, amendmentHash);
         return amendment;
     }
 
@@ -440,7 +441,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        m_injections->setMajorityTimesFromStateToDB (changedAmendments,
+        m_appApiFacade->setMajorityTimesFromStateToDB (changedAmendments,
                                                      m_amendmentMap);
         changedAmendments.clear ();
     }
@@ -501,7 +502,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
     AmendmentSet amendmentSet (lastClosedLedger->getParentCloseTimeNC ());
 
     // get validations for ledger before flag ledger
-    ValidationSet valSet = m_injections->getValidations (
+    ValidationSet valSet = m_appApiFacade->getValidations (
         lastClosedLedger->getParentHash ());
     for (auto const& entry : valSet)
     {
@@ -630,17 +631,17 @@ std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    std::unique_ptr<AmendmentTableInjections> injections)
+    std::unique_ptr<AmendmentTableDetail::AppApiFacade> appApiFacade)
 {
     return std::make_unique<AmendmentTableImpl>(majorityTime,
                                                 majorityFraction,
                                                 std::move (journal),
-                                                std::move (injections));
+                                                std::move (appApiFacade));
 }
 
-namespace detail
+namespace AmendmentTableDetail
 {
-class AmendmentTableInjectionsDB final : public AmendmentTableInjections
+class AppApiFacadeImpl final : public AppApiFacade
 {
 public:
     virtual void setMajorityTimesFromDBToState (
@@ -652,7 +653,7 @@ public:
     virtual ValidationSet getValidations (uint256 const& hash) const override;
 };
 
-class AmendmentTableInjectionsMock final : public AmendmentTableInjections
+class AppApiFacadeMock final : public AppApiFacade
 {
 public:
     virtual void setMajorityTimesFromDBToState (
@@ -663,11 +664,11 @@ public:
         hash_map<uint256, AmendmentState>& amendmentMap) const override{};
     virtual ValidationSet getValidations (uint256 const& hash) const override
     {
-        return ValidationSet();
+        return ValidationSet ();
     };
 };
 
-void AmendmentTableInjectionsDB::setMajorityTimesFromDBToState (
+void AppApiFacadeImpl::setMajorityTimesFromDBToState (
     AmendmentState& toUpdate,
     uint256 const& amendmentHash) const
 {
@@ -688,7 +689,7 @@ void AmendmentTableInjectionsDB::setMajorityTimesFromDBToState (
     }
 }
 
-void AmendmentTableInjectionsDB::setMajorityTimesFromStateToDB (
+void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
     std::vector<uint256> const& changedAmendments,
     hash_map<uint256, AmendmentState>& amendmentMap) const
 {
@@ -715,23 +716,22 @@ void AmendmentTableInjectionsDB::setMajorityTimesFromStateToDB (
     db->executeSQL ("END TRANSACTION;");
 }
 
-ValidationSet AmendmentTableInjectionsDB::getValidations (
-    uint256 const& hash) const
+ValidationSet AppApiFacadeImpl::getValidations (uint256 const& hash) const
 {
     return getApp ().getValidations ().getValidations (hash);
 }
 
-}  // detail
-
-std::unique_ptr<AmendmentTableInjections> make_AmendmentTableInjections ()
+std::unique_ptr<AppApiFacade>
+make_AppApiFacade ()
 {
-    return std::make_unique<detail::AmendmentTableInjectionsDB>();
+    return std::make_unique<AppApiFacadeImpl>();
 }
 
 // Use for unit testing
-std::unique_ptr<AmendmentTableInjections> make_MockAmendmentTableInjections ()
+std::unique_ptr<AppApiFacade> make_MockAppApiFacade ()
 {
-    return std::make_unique<detail::AmendmentTableInjectionsMock>();
+    return std::make_unique<AppApiFacadeMock>();
 }
+}  // AmendmentTableDetail
 
 }  // ripple
