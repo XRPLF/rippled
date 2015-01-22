@@ -26,6 +26,7 @@
 #include <boost/format.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/format.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -54,14 +55,14 @@ void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
         ;
 
     std::int64_t count = 0;
-    soci::statement st = (session_.prepare <<
-            "SELECT COUNT(Key) FROM DbState WHERE Key = 1;"
-            , soci::into (count)
-            );
-    st.execute ();
-    if (!st.fetch ())
     {
-        throw std::runtime_error("Failed to fetch Key Count from DbState.");
+        boost::optional<std::int64_t> countO;
+        session_ <<
+                "SELECT COUNT(Key) FROM DbState WHERE Key = 1;"
+                , soci::into (countO);
+        if (!countO)
+            throw std::runtime_error("Failed to fetch Key Count from DbState.");
+        count = *countO;
     }
 
     if (!count)
@@ -70,14 +71,15 @@ void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
                 "INSERT INTO DbState VALUES (1, '', '', 0);";
     }
 
-    st = (session_.prepare <<
-          "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;"
-          , soci::into (count)
-          );
-    st.execute ();
-    if (!st.fetch ())
+    
     {
-        throw std::runtime_error ("Failed to fetch Key Count from CanDelete.");
+        boost::optional<std::int64_t> countO;
+        session_ <<
+                "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;"
+                , soci::into (countO);
+        if (!countO)
+            throw std::runtime_error("Failed to fetch Key Count from CanDelete.");
+        count = *countO;
     }
 
     if (!count)
@@ -507,14 +509,16 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
         std::string const& deleteQuery)
 {
     LedgerIndex min = std::numeric_limits <LedgerIndex>::max();
-    Database* db = database.getDB();
 
-    std::unique_lock <std::recursive_mutex> lock (database.peekMutex());
-    if (!db->executeSQL (minQuery) || !db->startIterRows())
-        return;
-    min = db->getBigInt (0);
-    db->endIterRows ();
-    lock.unlock();
+    {
+        auto db = database.checkoutDb ();
+        boost::optional<std::uint64_t> m;
+        *db << minQuery, soci::into(m);
+        if (!m)
+            return;
+        min = *m;
+    }
+
     if (health() != Health::ok)
         return;
 
@@ -526,9 +530,10 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
     {
         min = (min + setup_.deleteBatch >= lastRotated) ? lastRotated :
             min + setup_.deleteBatch;
-        lock.lock();
-        db->executeSQL (boost::str (formattedDeleteQuery % min));
-        lock.unlock();
+        {
+            auto db =  database.checkoutDb ();
+            *db << boost::str (formattedDeleteQuery % min);
+        }
         if (health())
             return;
         if (min < lastRotated)

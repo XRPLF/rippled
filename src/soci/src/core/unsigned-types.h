@@ -33,7 +33,7 @@ struct type_conversion<unsigned char>
         const base_type min = (std::numeric_limits<unsigned char>::min)();
         if (in < min || in > max)
         {
-            throw soci_error("Value outside of allowed range.");
+            /* throw soci_error("Value outside of allowed range."); */
         }
 
         out = static_cast<unsigned char>(in);
@@ -64,7 +64,7 @@ struct type_conversion<unsigned short>
         const long long min = (std::numeric_limits<unsigned short>::min)();
         if (in < min || in > max)
         {
-            throw soci_error("Value outside of allowed range.");
+            /* throw soci_error("Value outside of allowed range."); */
         }
 
         out = static_cast<unsigned short>(in);
@@ -95,7 +95,7 @@ struct type_conversion<unsigned int>
         const long long min = (std::numeric_limits<unsigned int>::min)();
         if (in < min || in > max)
         {
-            throw soci_error("Value outside of allowed range.");
+            /* throw soci_error("Value outside of allowed range."); */
         }
 
         out = static_cast<unsigned int>(in);

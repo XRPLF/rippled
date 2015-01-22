@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/JsonFields.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -91,26 +92,13 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 }
 
 Transaction::pointer Transaction::transactionFromSQL (
-    Database* db, Validate validate)
+    boost::optional<std::uint64_t> const& ledgerSeq,
+    boost::optional<std::string> const& status,
+    Blob const& rawTxn,
+    Validate validate)
 {
-    Serializer rawTxn;
-    std::string status;
-    std::uint32_t inLedger;
-
-    int txSize = 2048;
-    rawTxn.resize (txSize);
-
-    db->getStr ("Status", status);
-    inLedger = db->getInt ("LedgerSeq");
-    txSize = db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-
-    if (txSize > rawTxn.getLength ())
-    {
-        rawTxn.resize (txSize);
-        db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-    }
-
-    rawTxn.resize (txSize);
+    std::uint32_t const inLedger =
+        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
 
     SerialIter it (rawTxn);
     auto txn = std::make_shared<STTx> (it);
@@ -118,7 +106,9 @@ Transaction::pointer Transaction::transactionFromSQL (
 
     TransStatus st (INVALID);
 
-    switch (status[0])
+    char const statusChar = status ? (*status)[0] : TXN_SQL_UNKNOWN;
+
+    switch (statusChar)
     {
     case TXN_SQL_NEW:
         st = NEW;
@@ -151,79 +141,6 @@ Transaction::pointer Transaction::transactionFromSQL (
     tr->setLedger (inLedger);
     return tr;
 }
-
-// DAVID: would you rather duplicate this code or keep the lock longer?
-Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
-{
-    Serializer rawTxn;
-    std::string status;
-    std::uint32_t inLedger;
-
-    int txSize = 2048;
-    rawTxn.resize (txSize);
-
-    {
-        auto sl (getApp().getTxnDB ().lock ());
-        auto db = getApp().getTxnDB ().getDB ();
-
-        if (!db->executeSQL (sql, true) || !db->startIterRows ())
-            return Transaction::pointer ();
-
-        db->getStr ("Status", status);
-        inLedger = db->getInt ("LedgerSeq");
-        txSize = db->getBinary (
-            "RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-
-        if (txSize > rawTxn.getLength ())
-        {
-            rawTxn.resize (txSize);
-            db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
-        }
-
-        db->endIterRows ();
-    }
-    rawTxn.resize (txSize);
-
-    SerialIter it (rawTxn);
-    auto txn = std::make_shared<STTx> (it);
-    auto tr = std::make_shared<Transaction> (txn, Validate::YES);
-
-    TransStatus st (INVALID);
-
-    switch (status[0])
-    {
-    case TXN_SQL_NEW:
-        st = NEW;
-        break;
-
-    case TXN_SQL_CONFLICT:
-        st = CONFLICTED;
-        break;
-
-    case TXN_SQL_HELD:
-        st = HELD;
-        break;
-
-    case TXN_SQL_VALIDATED:
-        st = COMMITTED;
-        break;
-
-    case TXN_SQL_INCLUDED:
-        st = INCLUDED;
-        break;
-
-    case TXN_SQL_UNKNOWN:
-        break;
-
-    default:
-        assert (false);
-    }
-
-    tr->setStatus (st);
-    tr->setLedger (inLedger);
-    return tr;
-}
-
 
 Transaction::pointer Transaction::load (uint256 const& id)
 {
@@ -231,7 +148,23 @@ Transaction::pointer Transaction::load (uint256 const& id)
             "FROM Transactions WHERE TransID='";
     sql.append (to_string (id));
     sql.append ("';");
-    return transactionFromSQL (sql);
+
+    boost::optional<std::uint64_t> ledgerSeq;
+    boost::optional<std::string> status;
+    Blob rawTxn;
+    {
+        auto db = getApp().getTxnDB ().checkoutDb ();
+        soci::blob sociRawTxnBlob (*db);
+        soci::indicator rti;
+
+        *db << sql, soci::into (ledgerSeq), soci::into (status),
+                soci::into (sociRawTxnBlob, rti);
+        if (db->got_data () && soci::i_ok == rti)
+            convert(sociRawTxnBlob, rawTxn);
+    }
+
+    return Transaction::transactionFromSQL (
+        ledgerSeq, status, rawTxn, Validate::YES);
 }
 
 // options 1 to include the date of the transaction

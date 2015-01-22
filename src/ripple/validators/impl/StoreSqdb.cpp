@@ -38,9 +38,8 @@ StoreSqdb::~StoreSqdb ()
 void
 StoreSqdb::open (SociConfig const& sociConfig)
 {
-    sociConfig.open (m_session);
-
     m_journal.info << "Opening " << sociConfig.connectionString ();
+    sociConfig.open (m_session);
 }
 
 }

@@ -26,7 +26,7 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SqliteDatabase.h>
+#include <ripple/app/data/SociDB.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -44,6 +44,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -694,18 +695,17 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        auto sl (getApp().getLedgerDB ().lock ());
-        getApp().getLedgerDB ().getDB ()->executeSQL (
-            boost::str (deleteLedger % mLedgerSeq));
+        auto db = getApp().getLedgerDB ().checkoutDb();
+        *db << boost::str (deleteLedger % mLedgerSeq);
     }
 
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto dbLock (getApp().getTxnDB ().lock ());
-        db->executeSQL ("BEGIN TRANSACTION;");
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
-        db->executeSQL (boost::str (deleteTrans2 % getLedgerSeq ()));
+        soci::transaction tr(*db);
+
+        *db << boost::str (deleteTrans1 % getLedgerSeq ());
+        *db << boost::str (deleteTrans2 % getLedgerSeq ());
 
         std::string const ledgerSeq (std::to_string (getLedgerSeq ()));
 
@@ -719,7 +719,7 @@ bool Ledger::saveValidatedLedger (bool current)
             std::string const txnId (to_string (transactionID));
             std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
 
-            db->executeSQL (boost::str (deleteAcctTrans % transactionID));
+            *db << boost::str (deleteAcctTrans % transactionID);
 
             auto const& accts = vt.second->getAffected ();
 
@@ -758,30 +758,31 @@ bool Ledger::saveValidatedLedger (bool current)
                 {
                     WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
                 }
-                db->executeSQL (sql);
+                *db << sql;
             }
             else
                 WriteLog (lsWARNING, Ledger)
                     << "Transaction in ledger " << mLedgerSeq
                     << " affects no accounts";
 
-            db->executeSQL (
-                STTx::getMetaSQLInsertReplaceHeader () +
+            *db << 
+               (STTx::getMetaSQLInsertReplaceHeader () +
                 vt.second->getTxn ()->getMetaSQL (
                     getLedgerSeq (), vt.second->getEscMeta ()) + ";");
         }
-        db->executeSQL ("COMMIT TRANSACTION;");
+
+        tr.commit ();
     }
 
     {
-        auto sl (getApp().getLedgerDB ().lock ());
+        auto db (getApp().getLedgerDB ().checkoutDb ());
 
         // TODO(tom): ARG!
-        getApp().getLedgerDB ().getDB ()->executeSQL (boost::str (addLedger %
-                to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
-                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
-                mParentCloseTime % mCloseResolution % mCloseFlags %
-                to_string (mAccountHash) % to_string (mTransHash)));
+        *db << boost::str (addLedger %
+                           to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
+                           beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
+                           mParentCloseTime % mCloseResolution % mCloseFlags %
+                           to_string (mAccountHash) % to_string (mTransHash));
     }
 
     {
@@ -793,207 +794,127 @@ bool Ledger::saveValidatedLedger (bool current)
     return true;
 }
 
-#ifndef NO_SQLITE3_PREPARE
-
-Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
+/*
+ * Load a ledger from the database.
+ *
+ * @param sqlSuffix: Additional string to append to the sql query.
+ *        (typically a where clause).
+ * @return The ledger, ledger sequence, and ledger hash.
+ */
+std::tuple<Ledger::pointer, std::uint32_t, uint256>
+loadHelper(std::string const& sqlSuffix)
 {
     Ledger::pointer ledger;
+    uint256 ledgerHash;
+    std::uint32_t ledgerSeq{0};
+
+    auto db = getApp ().getLedgerDB ().checkoutDb ();
+
+    boost::optional<std::string> sLedgerHash, sPrevHash, sAccountHash,
+        sTransHash;
+    boost::optional<std::uint64_t> totCoins, closingTime, prevClosingTime,
+        closeResolution, closeFlags, ledgerSeq64;
+
+    std::string const sql =
+            "SELECT "
+            "LedgerHash, PrevHash, AccountSetHash, TransSetHash, "
+            "TotalCoins,"
+            "ClosingTime, PrevClosingTime, CloseTimeRes, CloseFlags,"
+            "LedgerSeq from Ledgers " +
+            sqlSuffix + ";";
+
+    *db << sql,
+            soci::into(sLedgerHash),
+            soci::into(sPrevHash),
+            soci::into(sAccountHash),
+            soci::into(sTransHash),
+            soci::into(totCoins),
+            soci::into(closingTime),
+            soci::into(prevClosingTime),
+            soci::into(closeResolution),
+            soci::into(closeFlags),
+            soci::into(ledgerSeq64);
+
+    if (!db->got_data ())
     {
-        auto db = getApp().getLedgerDB ().getDB ();
-        auto sl (getApp().getLedgerDB ().lock ());
-
-        SqliteStatement pSt (
-            db->getSqliteDB (), "SELECT "
-            "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
-            "ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
-            " from Ledgers WHERE LedgerSeq = ?;");
-
-        pSt.bind (1, ledgerIndex);
-        ledger = getSQL1 (&pSt);
+        std::stringstream s;
+        WriteLog (lsINFO, Ledger) << "Ledger not found: " << sqlSuffix;
+        return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
     }
 
-    if (ledger)
-    {
-        Ledger::getSQL2 (ledger);
-        ledger->setFull ();
-    }
+    ledgerSeq =
+        rangeCheckedCast<std::uint32_t>(ledgerSeq64.value_or (0));
 
-    return ledger;
-}
+    uint256 prevHash, accountHash, transHash;
+    ledgerHash.SetHexExact (sLedgerHash.value_or(""));
+    prevHash.SetHexExact (sPrevHash.value_or(""));
+    accountHash.SetHexExact (sAccountHash.value_or(""));
+    transHash.SetHexExact (sTransHash.value_or(""));
 
-Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
-{
-    Ledger::pointer ledger;
-    {
-        auto db = getApp().getLedgerDB ().getDB ();
-        auto sl (getApp().getLedgerDB ().lock ());
-
-        SqliteStatement pSt (
-            db->getSqliteDB (), "SELECT "
-            "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
-            "ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
-            " from Ledgers WHERE LedgerHash = ?;");
-
-        pSt.bind (1, to_string (ledgerHash));
-        ledger = getSQL1 (&pSt);
-    }
-
-    if (ledger)
-    {
-        assert (ledger->getHash () == ledgerHash);
-        Ledger::getSQL2 (ledger);
-        ledger->setFull ();
-    }
-
-    return ledger;
-}
-
-#else
-
-Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
-{
-    // This is a low-level function with no caching.
-    std::string sql = "SELECT * from Ledgers WHERE LedgerSeq='";
-    sql.append (beast::lexicalCastThrow <std::string> (ledgerIndex));
-    sql.append ("';");
-    return getSQL (sql);
-}
-
-Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
-{
-    // This is a low-level function with no caching and only gets accepted
-    // ledgers.
-    std::string sql = "SELECT * from Ledgers WHERE LedgerHash='";
-    sql.append (to_string (ledgerHash));
-    sql.append ("';");
-    return getSQL (sql);
-}
-
-#endif
-
-Ledger::pointer Ledger::getSQL (std::string const& sql)
-{
-    // only used with sqlite3 prepared statements not used
-    uint256 ledgerHash, prevHash, accountHash, transHash;
-    std::uint64_t totCoins;
-    std::uint32_t closingTime, prevClosingTime, ledgerSeq;
-    int closeResolution;
-    unsigned closeFlags;
-    std::string hash;
-
-    {
-        auto db = getApp().getLedgerDB ().getDB ();
-        auto sl (getApp().getLedgerDB ().lock ());
-
-        if (!db->executeSQL (sql) || !db->startIterRows ())
-            return Ledger::pointer ();
-
-        db->getStr ("LedgerHash", hash);
-        ledgerHash.SetHexExact (hash);
-        db->getStr ("PrevHash", hash);
-        prevHash.SetHexExact (hash);
-        db->getStr ("AccountSetHash", hash);
-        accountHash.SetHexExact (hash);
-        db->getStr ("TransSetHash", hash);
-        transHash.SetHexExact (hash);
-        totCoins = db->getBigInt ("TotalCoins");
-        closingTime = db->getBigInt ("ClosingTime");
-        prevClosingTime = db->getBigInt ("PrevClosingTime");
-        closeResolution = db->getBigInt ("CloseTimeRes");
-        closeFlags = db->getBigInt ("CloseFlags");
-        ledgerSeq = db->getBigInt ("LedgerSeq");
-        db->endIterRows ();
-    }
-
-    // CAUTION: code below appears in two places
-    bool loaded;
-    Ledger::pointer ret (new Ledger (
-        prevHash, transHash, accountHash, totCoins, closingTime,
-        prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
+    bool loaded = false;
+    ledger = std::make_shared<Ledger>(prevHash,
+                                      transHash,
+                                      accountHash,
+                                      totCoins.value_or(0),
+                                      closingTime.value_or(0),
+                                      prevClosingTime.value_or(0),
+                                      closeFlags.value_or(0),
+                                      closeResolution.value_or(0),
+                                      ledgerSeq,
+                                      loaded);
 
     if (!loaded)
-        return Ledger::pointer ();
+        return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
 
-    ret->setClosed ();
-
-    if (getApp().getOPs ().haveLedger (ledgerSeq))
-    {
-        ret->setAccepted ();
-        ret->setValidated ();
-    }
-
-    if (ret->getHash () != ledgerHash)
-    {
-        if (ShouldLog (lsERROR, Ledger))
-        {
-            WriteLog (lsERROR, Ledger) << "Failed on ledger";
-            Json::Value p;
-            addJson (p, {*ret, LedgerFill::full});
-            WriteLog (lsERROR, Ledger) << p;
-        }
-
-        assert (false);
-        return Ledger::pointer ();
-    }
-
-    WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
-    return ret;
+    return std::make_tuple (ledger, ledgerSeq, ledgerHash);
 }
 
-Ledger::pointer Ledger::getSQL1 (SqliteStatement* stmt)
+void finishLoadByIndexOrHash(Ledger::pointer& ledger)
 {
-    int iRet = stmt->step ();
+    if (!ledger)
+        return;
 
-    if (stmt->isDone (iRet))
-        return Ledger::pointer ();
+    ledger->setClosed ();
+    ledger->setImmutable ();
 
-    if (!stmt->isRow (iRet))
-    {
-        WriteLog (lsINFO, Ledger)
-                << "Ledger not found: " << iRet
-                << " = " << stmt->getError (iRet);
-        return Ledger::pointer ();
-    }
-
-    uint256 ledgerHash, prevHash, accountHash, transHash;
-    std::uint64_t totCoins;
-    std::uint32_t closingTime, prevClosingTime, ledgerSeq;
-    int closeResolution;
-    unsigned closeFlags;
-
-    ledgerHash.SetHexExact (stmt->peekString (0));
-    prevHash.SetHexExact (stmt->peekString (1));
-    accountHash.SetHexExact (stmt->peekString (2));
-    transHash.SetHexExact (stmt->peekString (3));
-    totCoins = stmt->getInt64 (4);
-    closingTime = stmt->getUInt32 (5);
-    prevClosingTime = stmt->getUInt32 (6);
-    closeResolution = stmt->getUInt32 (7);
-    closeFlags = stmt->getUInt32 (8);
-    ledgerSeq = stmt->getUInt32 (9);
-
-    // CAUTION: code below appears in two places
-    bool loaded;
-    Ledger::pointer ret (new Ledger (
-        prevHash, transHash, accountHash, totCoins, closingTime,
-        prevClosingTime, closeFlags, closeResolution, ledgerSeq, loaded));
-
-    if (!loaded)
-        return Ledger::pointer ();
-
-    return ret;
-}
-
-void Ledger::getSQL2 (Ledger::ref ret)
-{
-    ret->setClosed ();
-    ret->setImmutable ();
-
-    if (getApp().getOPs ().haveLedger (ret->getLedgerSeq ()))
-        ret->setAccepted ();
+    if (getApp ().getOPs ().haveLedger (ledger->getLedgerSeq ()))
+        ledger->setAccepted ();
 
     WriteLog (lsTRACE, Ledger)
-            << "Loaded ledger: " << to_string (ret->getHash ());
+        << "Loaded ledger: " << to_string (ledger->getHash ());
+
+    ledger->setFull ();
+}
+
+Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
+{
+    Ledger::pointer ledger;
+    {
+        std::ostringstream s;
+        s << "WHERE LedgerSeq = " << ledgerIndex;
+        std::tie (ledger, std::ignore, std::ignore) =
+            loadHelper (s.str ());
+    }
+
+    finishLoadByIndexOrHash (ledger);
+    return ledger;
+}
+
+Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
+{
+    Ledger::pointer ledger;
+    {
+        std::ostringstream s;
+        s << "WHERE LedgerHash = '" << ledgerHash << "'";
+        std::tie (ledger, std::ignore, std::ignore) =
+            loadHelper (s.str ());
+    }
+
+    finishLoadByIndexOrHash (ledger);
+
+    assert (!ledger || ledger->getHash () == ledgerHash);
+
+    return ledger;
 }
 
 uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
@@ -1007,14 +928,18 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
 
     std::string hash;
     {
-        auto db = getApp().getLedgerDB ().getDB ();
-        auto sl (getApp().getLedgerDB ().lock ());
+        auto db = getApp().getLedgerDB ().checkoutDb ();
 
-        if (!db->executeSQL (sql) || !db->startIterRows ())
+        boost::optional<std::string> lh;
+        *db << sql,
+                soci::into (lh);
+
+        if (!db->got_data () || !lh)
             return ret;
 
-        db->getStr ("LedgerHash", hash);
-        db->endIterRows ();
+        hash = *lh;
+        if (hash.empty ())
+            return ret;
     }
 
     ret.SetHexExact (hash);
@@ -1024,66 +949,26 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
 bool Ledger::getHashesByIndex (
     std::uint32_t ledgerIndex, uint256& ledgerHash, uint256& parentHash)
 {
-#ifndef NO_SQLITE3_PREPARE
+    auto db = getApp().getLedgerDB ().checkoutDb ();
 
-    auto& con = getApp().getLedgerDB ();
-    auto sl (con.lock ());
+    boost::optional <std::string> lhO, phO;
+    
+    *db << "SELECT LedgerHash,PrevHash FROM Ledgers "
+            "INDEXED BY SeqLedger Where LedgerSeq = :ls;",
+            soci::into (lhO),
+            soci::into (phO),
+            soci::use (ledgerIndex);
 
-    SqliteStatement pSt (con.getDB ()->getSqliteDB (),
-                         "SELECT LedgerHash,PrevHash FROM Ledgers "
-                         "INDEXED BY SeqLedger Where LedgerSeq = ?;");
-
-    pSt.bind (1, ledgerIndex);
-
-    int ret = pSt.step ();
-
-    if (pSt.isDone (ret))
+    if (!lhO || !phO)
     {
         WriteLog (lsTRACE, Ledger) << "Don't have ledger " << ledgerIndex;
         return false;
     }
 
-    if (!pSt.isRow (ret))
-    {
-        assert (false);
-        WriteLog (lsFATAL, Ledger) << "Unexpected statement result " << ret;
-        return false;
-    }
-
-    ledgerHash.SetHexExact (pSt.peekString (0));
-    parentHash.SetHexExact (pSt.peekString (1));
+    ledgerHash.SetHexExact (*lhO);
+    parentHash.SetHexExact (*phO);
 
     return true;
-
-#else
-
-    std::string sql =
-            "SELECT LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq='";
-    sql.append (beast::lexicalCastThrow <std::string> (ledgerIndex));
-    sql.append ("';");
-
-    std::string hash, prevHash;
-    {
-        auto db = getApp().getLedgerDB ().getDB ();
-        auto sl (getApp().getLedgerDB ().lock ());
-
-        if (!db->executeSQL (sql) || !db->startIterRows ())
-            return false;
-
-        db->getStr ("LedgerHash", hash);
-        db->getStr ("PrevHash", prevHash);
-        db->endIterRows ();
-    }
-
-    ledgerHash.SetHexExact (hash);
-    parentHash.SetHexExact (prevHash);
-
-    assert (ledgerHash.isNonZero () &&
-            (ledgerIndex == 0 || parentHash.isNonZero ());
-
-    return true;
-
-#endif
 }
 
 std::map< std::uint32_t, std::pair<uint256, uint256> >
@@ -1098,16 +983,29 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
     sql.append (beast::lexicalCastThrow <std::string> (maxSeq));
     sql.append (";");
 
-    auto& con = getApp().getLedgerDB ();
-    auto sl (con.lock ());
+    auto db = getApp().getLedgerDB ().checkoutDb ();
 
-    SqliteStatement pSt (con.getDB ()->getSqliteDB (), sql);
+    std::uint64_t ls;
+    std::string lh;
+    boost::optional<std::string> ph;
+    soci::statement st =
+        (db->prepare << sql,
+         soci::into (ls),
+         soci::into (lh),
+         soci::into (ph));
 
-    while (pSt.isRow (pSt.step ()))
+    st.execute ();
+    while (st.fetch ())
     {
-        std::pair<uint256, uint256>& hashes = ret[pSt.getUInt32 (0)];
-        hashes.first.SetHexExact (pSt.peekString (1));
-        hashes.second.SetHexExact (pSt.peekString (2));
+        std::pair<uint256, uint256>& hashes =
+                ret[rangeCheckedCast<std::uint32_t>(ls)];
+        hashes.first.SetHexExact (lh);
+        hashes.second.SetHexExact (ph.value_or (""));
+        if (!ph)
+        {
+            WriteLog (lsWARNING, Ledger)
+                << "Null prev hash for ledger seq: " << ls;
+        }
     }
 
     return ret;
@@ -1117,7 +1015,39 @@ Ledger::pointer Ledger::getLastFullLedger ()
 {
     try
     {
-        return getSQL ("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+        Ledger::pointer ledger;
+        std::uint32_t ledgerSeq;
+        uint256 ledgerHash;
+        std::tie (ledger, ledgerSeq, ledgerHash) =
+                loadHelper ("order by LedgerSeq desc limit 1");
+
+        if (!ledger)
+            return ledger;
+    
+        ledger->setClosed ();
+
+        if (getApp().getOPs ().haveLedger (ledgerSeq))
+        {
+            ledger->setAccepted ();
+            ledger->setValidated ();
+        }
+
+        if (ledger->getHash () != ledgerHash)
+        {
+            if (ShouldLog (lsERROR, Ledger))
+            {
+                WriteLog (lsERROR, Ledger) << "Failed on ledger";
+                Json::Value p;
+                addJson (p, {*ledger, LedgerFill::full});
+                WriteLog (lsERROR, Ledger) << p;
+            }
+
+            assert (false);
+            return Ledger::pointer ();
+        }
+
+        WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
+        return ledger;
     }
     catch (SHAMapMissingNode& sn)
     {

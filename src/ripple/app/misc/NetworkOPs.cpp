@@ -60,6 +60,7 @@
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <boost/optional.hpp>
 #include <tuple>
 
 namespace ripple {
@@ -1933,32 +1934,42 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
         minLedger, maxLedger, descending, offset, limit, false, false, bAdmin);
 
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        SQL_FOREACH (db, sql)
+        boost::optional<std::uint64_t> ledgerSeq;
+        boost::optional<std::string> status;
+        soci::blob sociTxnBlob (*db), sociTxnMetaBlob (*db);
+        soci::indicator rti, tmi;
+        Blob rawTxn, txnMeta;
+
+        soci::statement st =
+                (db->prepare << sql,
+                 soci::into(ledgerSeq),
+                 soci::into(status),
+                 soci::into(sociTxnBlob, rti),
+                 soci::into(sociTxnMetaBlob, tmi));
+
+        st.execute ();
+        while (st.fetch ())
         {
-            auto txn = Transaction::transactionFromSQL (db, Validate::NO);
-
-            Serializer rawMeta;
-            int metaSize = 2048;
-            rawMeta.resize (metaSize);
-            metaSize = db->getBinary (
-                "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-
-            if (metaSize > rawMeta.getLength ())
-            {
-                rawMeta.resize (metaSize);
-                db->getBinary (
-                    "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-            }
+            if (soci::i_ok == rti)
+                convert(sociTxnBlob, rawTxn);
             else
-                rawMeta.resize (metaSize);
+                rawTxn.clear ();
 
-            if (rawMeta.getLength() == 0)
+            if (soci::i_ok == tmi)
+                convert (sociTxnMetaBlob, txnMeta);
+            else
+                txnMeta.clear ();
+
+            auto txn = Transaction::transactionFromSQL (
+                ledgerSeq, status, rawTxn, Validate::NO);
+
+            
+            if (txnMeta.empty ())
             { // Work around a bug that could leave the metadata missing
-                auto seq = static_cast<std::uint32_t>(
-                    db->getBigInt("LedgerSeq"));
+                auto const seq = rangeCheckedCast<std::uint32_t>(
+                    ledgerSeq.value_or (0));
                 m_journal.warning << "Recovering ledger " << seq
                                   << ", txn " << txn->getID();
                 Ledger::pointer ledger = getLedgerBySeq(seq);
@@ -1967,7 +1978,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
             }
 
             ret.emplace_back (txn, std::make_shared<TransactionMetaSet> (
-                txn->getID (), txn->getLedger (), rawMeta.getData ()));
+                txn->getID (), txn->getLedger (), txnMeta));
         }
     }
 
@@ -1988,37 +1999,35 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
         bAdmin);
 
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        SQL_FOREACH (db, sql)
+        boost::optional<std::uint64_t> ledgerSeq;
+        boost::optional<std::string> status;
+        soci::blob sociTxnBlob (*db), sociTxnMetaBlob (*db);
+        soci::indicator rti, tmi;
+
+        soci::statement st =
+                (db->prepare << sql,
+                 soci::into(ledgerSeq),
+                 soci::into(status),
+                 soci::into(sociTxnBlob, rti),
+                 soci::into(sociTxnMetaBlob, tmi));
+
+        st.execute ();
+        while (st.fetch ())
         {
-            int txnSize = 2048;
-            Blob rawTxn (txnSize);
-            txnSize = db->getBinary ("RawTxn", &rawTxn[0], rawTxn.size ());
+            Blob rawTxn;
+            if (soci::i_ok == rti)
+                convert (sociTxnBlob, rawTxn);
+            Blob txnMeta;
+            if (soci::i_ok == tmi)
+                convert (sociTxnMetaBlob, txnMeta);
 
-            if (txnSize > rawTxn.size ())
-            {
-                rawTxn.resize (txnSize);
-                db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.size ());
-            }
-            else
-                rawTxn.resize (txnSize);
-
-            int metaSize = 2048;
-            Blob rawMeta (metaSize);
-            metaSize = db->getBinary ("TxnMeta", &rawMeta[0], rawMeta.size ());
-
-            if (metaSize > rawMeta.size ())
-            {
-                rawMeta.resize (metaSize);
-                db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
-            }
-            else
-                rawMeta.resize (metaSize);
+            auto const seq =
+                rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
 
             ret.emplace_back (
-                strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq"));
+                strHex (rawTxn), strHex (txnMeta), seq);
         }
     }
 
@@ -2085,51 +2094,63 @@ NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
              % (forward ? "ASC" : "DESC")
              % queryLimit);
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        SQL_FOREACH (db, sql)
+        boost::optional<std::uint64_t> ledgerSeq64;
+        boost::optional<std::int32_t> txnSeq;
+        boost::optional<std::string> status;
+        soci::blob sociTxnBlob (*db), sociTxnMetaBlob (*db);
+        soci::indicator rti, tmi;
+        Blob rawTxn, txnMeta;
+
+        soci::statement st =
+                (db->prepare << sql,
+                 soci::into(ledgerSeq64),
+                 soci::into(txnSeq),
+                 soci::into(status),
+                 soci::into(sociTxnBlob, rti),
+                 soci::into(sociTxnMetaBlob, tmi));
+
+        st.execute ();
+        while (st.fetch ())
         {
+            if (soci::i_ok == rti)
+                convert(sociTxnBlob, rawTxn);
+            else
+                rawTxn.clear ();
+
+            if (soci::i_ok == tmi)
+                convert (sociTxnMetaBlob, txnMeta);
+            else
+                txnMeta.clear ();
+
+            auto const ledgerSeq = rangeCheckedCast<std::uint32_t>(
+                ledgerSeq64.value_or (0));
+
             if (!foundResume)
             {
-                foundResume = (findLedger == db->getInt("LedgerSeq") &&
-                               findSeq == db->getInt("TxnSeq"));
+                foundResume = (findLedger == ledgerSeq &&
+                               findSeq == txnSeq.value_or (0));
             }
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token[jss::ledger] = db->getInt("LedgerSeq");
-                token[jss::seq] = db->getInt("TxnSeq");
+                token[jss::ledger] = ledgerSeq;
+                token[jss::seq] = txnSeq.value_or (0);
                 break;
             }
 
             if (foundResume)
             {
-                auto txn = Transaction::transactionFromSQL (db, Validate::NO);
+                auto txn = Transaction::transactionFromSQL (
+                    ledgerSeq64, status, rawTxn, Validate::NO);
 
-                Serializer rawMeta;
-                int metaSize = 2048;
-                rawMeta.resize (metaSize);
-                metaSize = db->getBinary (
-                    "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-
-                if (metaSize > rawMeta.getLength ())
-                {
-                    rawMeta.resize (metaSize);
-                    db->getBinary (
-                        "TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
-                }
-                else
-                    rawMeta.resize (metaSize);
-
-                if (rawMeta.getLength() == 0)
+                if (txnMeta.empty ())
                 {
                     // Work around a bug that could leave the metadata missing
-                    auto seq = static_cast<std::uint32_t>(
-                        db->getBigInt("LedgerSeq"));
-                    m_journal.warning << "Recovering ledger " << seq
+                    m_journal.warning << "Recovering ledger " << ledgerSeq
                                       << ", txn " << txn->getID();
-                    Ledger::pointer ledger = getLedgerBySeq(seq);
+                    Ledger::pointer ledger = getLedgerBySeq(ledgerSeq);
                     if (ledger)
                         ledger->pendSaveValidated(false, false);
                 }
@@ -2138,7 +2159,7 @@ NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
 
                 ret.emplace_back (std::move (txn),
                     std::make_shared<TransactionMetaSet> (
-                        txn->getID (), txn->getLedger (), rawMeta.getData ()));
+                        txn->getID (), txn->getLedger (), txnMeta));
             }
         }
     }
@@ -2203,15 +2224,30 @@ NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
              % (forward ? "ASC" : "DESC")
              % queryLimit);
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        SQL_FOREACH (db, sql)
+        boost::optional<std::int64_t> ledgerSeq;
+        boost::optional<std::int32_t> txnSeq;
+        boost::optional<std::string> status;
+        soci::blob sociTxnBlob (*db);
+        soci::indicator rtI;
+        soci::blob sociTxnMetaBlob (*db);
+        soci::indicator tmI;
+
+        soci::statement st = (db->prepare << sql,
+                              soci::into (ledgerSeq),
+                              soci::into (txnSeq),
+                              soci::into (status),
+                              soci::into (sociTxnBlob, rtI),
+                              soci::into (sociTxnMetaBlob, tmI));
+
+        st.execute ();
+        while (st.fetch ())
         {
             if (!foundResume)
             {
-                if (findLedger == db->getInt("LedgerSeq") &&
-                    findSeq == db->getInt("TxnSeq"))
+                if (findLedger == ledgerSeq.value_or (0) &&
+                    findSeq == txnSeq.value_or (0))
                 {
                     foundResume = true;
                 }
@@ -2219,43 +2255,25 @@ NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token[jss::ledger] = db->getInt("LedgerSeq");
-                token[jss::seq] = db->getInt("TxnSeq");
+                token[jss::ledger] = rangeCheckedCast<std::int32_t>(
+                    ledgerSeq.value_or(0));
+                token[jss::seq] = txnSeq.value_or(0);
                 break;
             }
 
             if (foundResume)
             {
-                int txnSize = 2048;
-                Blob rawTxn (txnSize);
-                txnSize = db->getBinary ("RawTxn", &rawTxn[0], rawTxn.size ());
+                Blob rawTxn;
+                if (soci::i_ok == rtI)
+                    convert (sociTxnBlob, rawTxn);
+                Blob txnMeta;
+                if (soci::i_ok == tmI)
+                    convert (sociTxnMetaBlob, txnMeta);
 
-                if (txnSize > rawTxn.size ())
-                {
-                    rawTxn.resize (txnSize);
-                    db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.size ());
-                }
-                else
-                    rawTxn.resize (txnSize);
-
-                int metaSize = 2048;
-                Blob rawMeta (metaSize);
-                metaSize = db->getBinary (
-                    "TxnMeta", &rawMeta[0], rawMeta.size ());
-
-                if (metaSize > rawMeta.size ())
-                {
-                    rawMeta.resize (metaSize);
-                    db->getBinary (
-                        "TxnMeta", &*rawMeta.begin (), rawMeta.size ());
-                }
-                else
-                {
-                    rawMeta.resize (metaSize);
-                }
-
-                ret.emplace_back (strHex (rawTxn), strHex (rawMeta),
-                                  db->getInt ("LedgerSeq"));
+                ret.emplace_back (
+                    strHex (rawTxn.begin (), rawTxn.size ()),
+                    strHex (txnMeta.begin (), txnMeta.size ()),
+                    rangeCheckedCast<std::int32_t>(ledgerSeq.value_or (0)));
                 --numberOfResults;
             }
         }
@@ -2275,11 +2293,20 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
                            % ledgerSeq);
     RippleAddress acct;
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
-        SQL_FOREACH (db, sql)
+        auto db = getApp().getTxnDB ().checkoutDb ();
+        soci::blob accountBlob(*db);
+        soci::indicator bi;
+        soci::statement st = (db->prepare << sql, soci::into(accountBlob, bi));
+        st.execute ();
+        std::string accountStr;
+        while (st.fetch ())
         {
-            if (acct.setAccountID (db->getStrBinary ("Account")))
+            if (soci::i_ok == bi)
+                convert (accountBlob, accountStr);
+            else
+                accountStr.clear ();
+            
+            if (acct.setAccountID (accountStr))
                 accounts.push_back (acct);
         }
     }
