@@ -112,7 +112,7 @@ public:
         return port_->allow_admin;
     };
 
-    static void ssend (connection_ptr cpClient, message_ptr mpMessage)
+    void send (connection_ptr cpClient, message_ptr mpMessage)
     {
         try
         {
@@ -125,8 +125,8 @@ public:
         }
     }
 
-    static void ssendb (connection_ptr cpClient, std::string const& strMessage,
-                        bool broadcast)
+    void send (connection_ptr cpClient, std::string const& strMessage,
+               bool broadcast)
     {
         try
         {
@@ -140,23 +140,6 @@ public:
             cpClient->close (websocketpp_02::close::status::value (crTooSlow),
                              std::string ("Client is too slow."));
         }
-    }
-
-    void send (connection_ptr cpClient, message_ptr mpMessage)
-    {
-        cpClient->get_strand ().post (
-            std::bind (
-                &WSServerHandler<endpoint_type>::ssend,
-                cpClient, mpMessage));
-    }
-
-    void send (connection_ptr cpClient, std::string const& strMessage,
-               bool broadcast)
-    {
-        cpClient->get_strand ().post (
-            std::bind (
-                &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage,
-                broadcast));
     }
 
     void send (connection_ptr cpClient, Json::Value const& jvObj, bool broadcast)
