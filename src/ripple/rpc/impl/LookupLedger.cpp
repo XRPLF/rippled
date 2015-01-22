@@ -23,9 +23,90 @@
 namespace ripple {
 namespace RPC {
 
-static const int LEDGER_CURRENT = -1;
-static const int LEDGER_CLOSED = -2;
-static const int LEDGER_VALIDATED = -3;
+namespace {
+
+Status ledgerFromRequest (
+    Json::Value const& params,
+    Ledger::pointer& ledger,
+    NetworkOPs& netOps)
+{
+    ledger.reset();
+
+    auto indexValue = params[jss::ledger_index];
+    auto hashValue = params[jss::ledger_hash];
+
+    // We need to support the legacy "ledger" field.
+    auto& legacyLedger = params[jss::ledger];
+    if (!legacyLedger.empty())
+    {
+        auto legacyIsHash = legacyLedger.asString().size () > 12;
+        (legacyIsHash ? hashValue : indexValue) = legacyLedger;
+    }
+
+    if (!hashValue.empty())
+    {
+        uint256 ledgerHash;
+        if (hashValue.isString() && ledgerHash.SetHex (hashValue.asString ()))
+            ledger = netOps.getLedgerByHash (ledgerHash);
+        else
+            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+    }
+    else if (indexValue.isNumeric())
+    {
+        ledger = netOps.getLedgerBySeq (indexValue.asInt());
+    }
+    else
+    {
+        auto index = indexValue.asString();
+        auto isCurrent = index.empty() || index == "current";
+        if (isCurrent)
+            ledger = netOps.getCurrentLedger ();
+        else if (index == "closed")
+            ledger = getApp().getLedgerMaster ().getClosedLedger ();
+        else if (index == "validated")
+            ledger = netOps.getValidatedLedger ();
+        else
+            return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+
+        assert (ledger->isImmutable());
+        assert (ledger->isClosed() == !isCurrent);
+    }
+
+    if (!ledger)
+        return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
+
+    return Status::OK;
+}
+
+bool isValidated (Ledger& ledger)
+{
+    if (ledger.isValidated ())
+        return true;
+
+    if (!ledger.isClosed ())
+        return false;
+
+    try
+    {
+        // Use the skip list in the last validated ledger to see if ledger
+        // comes before the last validated ledger (and thus has been
+        // validated).
+        auto seq = ledger.getLedgerSeq();
+        auto next = getApp().getLedgerMaster ().walkHashBySeq (seq);
+        if (ledger.getHash() != next)
+            return false;
+    }
+    catch (SHAMapMissingNode const&)
+    {
+        return false;
+    }
+
+    // Mark ledger as validated to save time if we see it again.
+    ledger.setValidated();
+    return true;
+}
+
+} // namespace
 
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
@@ -52,145 +133,19 @@ Status lookupLedger (
     NetworkOPs& netOps,
     Json::Value& jsonResult)
 {
-    using RPC::make_error;
-    ledger.reset();
-
-    auto jsonHash = params.get (jss::ledger_hash, Json::Value ("0"));
-    auto jsonIndex = params.get (jss::ledger_index, Json::Value ("current"));
-
-    // Support for DEPRECATED "ledger" - attempt to deduce our input
-    if (params.isMember (jss::ledger))
-    {
-        if (params[jss::ledger].asString ().size () > 12)
-        {
-            jsonHash = params[jss::ledger];
-            jsonIndex = Json::Value ("");
-        }
-        else
-        {
-            jsonIndex = params[jss::ledger];
-            jsonHash = Json::Value ("0");
-        }
-    }
-
-    uint256 ledgerHash;
-
-    if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
-        return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
-
-    std::int32_t ledgerIndex = LEDGER_CURRENT;
-
-    // We only try to parse a ledger index if we have not already
-    // determined that we have a ledger hash.
-    if (ledgerHash == zero)
-    {
-        if (jsonIndex.isNumeric ())
-        {
-            ledgerIndex = jsonIndex.asInt ();
-        }
-        else
-        {
-            std::string index = jsonIndex.asString ();
-
-            if (index == "current")
-                ledgerIndex = LEDGER_CURRENT;
-            else if (index == "closed")
-                ledgerIndex = LEDGER_CLOSED;
-            else if (index == "validated")
-                ledgerIndex = LEDGER_VALIDATED;
-            else
-                return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
-        }
-    }
-    else
-    {
-        ledger = netOps.getLedgerByHash (ledgerHash);
-
-        if (!ledger)
-            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
-
-        ledgerIndex = ledger->getLedgerSeq ();
-    }
-
-    int ledgerRequest = 0;
-
-    if (ledgerIndex <= 0) {
-        switch (ledgerIndex)
-        {
-        case LEDGER_CURRENT:
-            ledger = netOps.getCurrentLedger ();
-            break;
-
-        case LEDGER_CLOSED:
-            ledger = getApp().getLedgerMaster ().getClosedLedger ();
-            break;
-
-        case LEDGER_VALIDATED:
-            ledger = netOps.getValidatedLedger ();
-            break;
-
-        default:
-            return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
-        }
-
-        assert (ledger->isImmutable());
-        assert (ledger->isClosed() == (ledgerIndex != LEDGER_CURRENT));
-        ledgerRequest = ledgerIndex;
-        ledgerIndex = ledger->getLedgerSeq ();
-    }
-
-    if (!ledger)
-    {
-        ledger = netOps.getLedgerBySeq (ledgerIndex);
-
-        if (!ledger)
-            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
-    }
+    if (auto status = ledgerFromRequest (params, ledger, netOps))
+        return status;
 
     if (ledger->isClosed ())
     {
-        if (ledgerHash != zero)
-            jsonResult[jss::ledger_hash] = to_string (ledgerHash);
-
-        jsonResult[jss::ledger_index] = ledgerIndex;
+        jsonResult[jss::ledger_hash] = to_string (ledger->getHash());
+        jsonResult[jss::ledger_index] = ledger->getLedgerSeq();
     }
     else
     {
-        jsonResult[jss::ledger_current_index] = ledgerIndex;
+        jsonResult[jss::ledger_current_index] = ledger->getLedgerSeq();
     }
-
-    if (ledger->isValidated ())
-    {
-        jsonResult[jss::validated] = true;
-    }
-    else if (!ledger->isClosed ())
-    {
-        jsonResult[jss::validated] = false;
-    }
-    else
-    {
-        try
-        {
-            // Use the skip list in the last validated ledger to see if ledger
-            // comes after the last validated ledger (and thus has been
-            // validated).
-            auto next = getApp().getLedgerMaster ().walkHashBySeq (ledgerIndex);
-            if (ledgerHash == next)
-            {
-                ledger->setValidated();
-                jsonResult[jss::validated] = true;
-            }
-            else
-            {
-                jsonResult[jss::validated] = false;
-            }
-        }
-        catch (SHAMapMissingNode const&)
-        {
-            jsonResult[jss::validated] = false;
-        }
-    }
-
+    jsonResult[jss::validated] = isValidated (*ledger);
     return Status::OK;
 }
 
