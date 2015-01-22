@@ -756,9 +756,6 @@
     <ClInclude Include="..\..\src\beast\beast\container\aged_unordered_set.h">
       <Filter>beast\container</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\buffer_view.h">
-      <Filter>beast\container</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\container\const_container.h">
       <Filter>beast\container</Filter>
     </ClInclude>
@@ -778,9 +775,6 @@
       <Filter>beast\container\detail</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\container\tests\aged_associative_container.test.cpp">
-      <Filter>beast\container\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\buffer_view.test.cpp">
       <Filter>beast\container\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
