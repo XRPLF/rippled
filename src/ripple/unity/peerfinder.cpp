@@ -42,6 +42,7 @@
 #include <ripple/peerfinder/sim/Tests.cpp>
 
 #include <ripple/peerfinder/tests/Livecache.test.cpp>
+#include <ripple/peerfinder/tests/PeerFinder_test.cpp>
 
 #if DOXYGEN
 #include <ripple/peerfinder/README.md>
