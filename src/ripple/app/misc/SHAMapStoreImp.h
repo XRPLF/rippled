@@ -23,9 +23,9 @@
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/data/SociDB.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-#include <beast/module/sqdb/sqdb.h>
 #include <iostream>
 #include <condition_variable>
 #include <thread>

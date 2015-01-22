@@ -35,19 +35,12 @@ StoreSqdb::~StoreSqdb ()
 {
 }
 
-beast::Error
-StoreSqdb::open (beast::File const& file)
+void
+StoreSqdb::open (SociConfig const& sociConfig)
 {
-    beast::Error error (m_session.open (file.getFullPathName ()));
+    sociConfig.open (m_session);
 
-    m_journal.info <<
-        "Opening " << file.getFullPathName();
-
-    if (error)
-        m_journal.error <<
-            "Failed opening database: " << error.what();
-
-    return error;
+    m_journal.info << "Opening " << sociConfig.connectionString ();
 }
 
 }
