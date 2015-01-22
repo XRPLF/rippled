@@ -164,7 +164,7 @@ public:
         stored in a file named after the module (e.g. "peerfinder.sqlite") that
         is inside that directory.
     */
-    beast::File const& getModuleDatabasePath ();
+    beast::File const& getModuleDatabasePath () const;
 
     //--------------------------------------------------------------------------
 

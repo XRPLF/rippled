@@ -24,7 +24,7 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-#include <beast/module/sqdb/sqdb.h>
+#include <ripple/app/data/SociDB.h>
 
 #include <iostream>
 #include <condition_variable>
@@ -53,7 +53,7 @@ private:
     class SavedStateDB
     {
     public:
-        beast::sqdb::session session_;
+        soci::session session_;
         std::mutex mutex_;
         beast::Journal journal_;
 
@@ -61,19 +61,18 @@ private:
         // configured
         SavedStateDB() = default;
 
-        // opens SQLite database and, if necessary, creates & initializes its tables.
-        void init (std::string const& databasePath, std::string const& dbName);
+        // opens database and, if necessary, creates & initializes its tables.
+        void init (std::unique_ptr<SociConfig> const& sociConfig);
         // get/set the ledger index that we can delete up to and including
         LedgerIndex getCanDelete();
         LedgerIndex setCanDelete (LedgerIndex canDelete);
         SavedState getState();
         void setState (SavedState const& state);
         void setLastRotated (LedgerIndex seq);
-        void checkError (beast::Error const& error);
     };
 
-    // name of sqlite state database
-    std::string const dbName_ = "state.db";
+    // name of state database
+    std::string const dbName_ = "state";
     // prefix of on-disk nodestore backend instances
     std::string const dbPrefix_ = "rippledb";
     // check health/stop status as records are copied
@@ -111,7 +110,8 @@ public:
             NodeStore::Scheduler& scheduler,
             beast::Journal journal,
             beast::Journal nodeStoreJournal,
-            TransactionMaster& transactionMaster);
+            TransactionMaster& transactionMaster,
+            BasicConfig const& config);
 
     ~SHAMapStoreImp()
     {

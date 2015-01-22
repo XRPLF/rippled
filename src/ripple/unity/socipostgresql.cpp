@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,32 +17,32 @@
 */
 //==============================================================================
 
+#if defined(ENABLE_SOCI_POSTGRESQL) && ENABLE_SOCI_POSTGRESQL
+
+#if BEAST_INCLUDE_BEASTCONFIG
 #include <BeastConfig.h>
-#include <ripple/validators/impl/StoreSqdb.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/utility/Debug.h>
-#include <boost/regex.hpp>
+#endif
 
-namespace ripple {
-namespace Validators {
+#include <algorithm>
 
-StoreSqdb::StoreSqdb (beast::Journal journal)
-    : m_journal (journal)
-{
-}
+#if BEAST_MSVC
+#define SOCI_LIB_PREFIX ""
+#define SOCI_LIB_SUFFIX ".dll"
+#else
+#define SOCI_LIB_PREFIX "lib"
+#define SOCI_LIB_SUFFIX ".so"
+#endif
 
-StoreSqdb::~StoreSqdb ()
-{
-}
+#include<backends/postgresql/blob.cpp>
+#include<backends/postgresql/common.cpp>
+#include<backends/postgresql/error.cpp>
+#include<backends/postgresql/factory.cpp>
+#include<backends/postgresql/row-id.cpp>
+#include<backends/postgresql/session.cpp>
+#include<backends/postgresql/standard-into-type.cpp>
+#include<backends/postgresql/standard-use-type.cpp>
+#include<backends/postgresql/statement.cpp>
+#include<backends/postgresql/vector-into-type.cpp>
+#include<backends/postgresql/vector-use-type.cpp>
 
-void
-StoreSqdb::open (soci::backend_factory const& factory,
-                 std::string const& connectionString)
-{
-    m_session.open (factory, connectionString);
-
-    m_journal.info << "Opening " << connectionString;
-}
-
-}
-}
+#endif // ENABLE_SOCI_POSTGRESQL

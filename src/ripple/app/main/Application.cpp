@@ -254,7 +254,7 @@ public:
         , m_shaMapStore (make_SHAMapStore (setup_SHAMapStore (
                 getConfig()), *this, m_nodeStoreScheduler,
                 m_logs.journal ("SHAMapStore"), m_logs.journal ("NodeObject"),
-                    m_txMaster))
+                m_txMaster, getConfig()))
 
         , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
 
@@ -317,7 +317,7 @@ public:
         , m_sntpClient (SNTPClient::New (*this))
 
         , m_validators (Validators::make_Manager(*this, get_io_service(),
-            getConfig ().getModuleDatabasePath (), m_logs.journal("UVL")))
+            m_logs.journal("UVL"), getConfig ()))
 
         , m_amendmentTable (make_AmendmentTable
                             (weeks(2), MAJORITY_FRACTION,
@@ -726,9 +726,8 @@ public:
         //
         //             if (!getConfig ().RUN_STANDALONE)
         m_overlay = make_Overlay (setup_Overlay(getConfig()), *m_jobQueue,
-            *serverHandler_, *m_resourceManager,
-                getConfig ().getModuleDatabasePath (), *m_resolver,
-                    get_io_service());
+            *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
+            getConfig());
         add (*m_overlay); // add to PropertyStream
 
         {

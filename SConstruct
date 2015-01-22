@@ -227,6 +227,17 @@ def config_base(env):
     except KeyError:
         pass
 
+    try:
+        POSTGRESQL_ROOT = os.path.normpath(os.environ['POSTGRESQL_ROOT'])
+        env.Append(LIBS=['pq'])
+        env.Append(LIBPATH=[
+            os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq')
+            ])
+        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '1'})
+        env['POSTGRESQL_ROOT'] = POSTGRESQL_ROOT
+    except KeyError:
+        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '0'})
+
     if Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
@@ -624,7 +635,6 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     'src/ripple/unity/app.cpp',
                     'src/ripple/unity/app1.cpp',
-                    'src/ripple/unity/app2.cpp',
                     'src/ripple/unity/app3.cpp',
                     'src/ripple/unity/app4.cpp',
                     'src/ripple/unity/app5.cpp',
@@ -637,11 +647,32 @@ for tu_style in ['classic', 'unity']:
                     'src/ripple/unity/crypto.cpp',
                     'src/ripple/unity/net.cpp',
                     'src/ripple/unity/overlay.cpp',
-                    'src/ripple/unity/peerfinder.cpp',
                     'src/ripple/unity/json.cpp',
                     'src/ripple/unity/protocol.cpp',
                     'src/ripple/unity/shamap.cpp',
                 )
+
+                soci_postgres_cpppath = []
+                POSTGRESQL_ROOT = None
+                try:
+                    POSTGRESQL_ROOT = env['POSTGRESQL_ROOT']
+                except KeyError:
+                    pass
+                if POSTGRESQL_ROOT:
+                    soci_postgres_cpppath = [
+                        os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq'),
+                        os.path.join(POSTGRESQL_ROOT, 'src', 'include'),
+                        ]
+                object_builder.add_source_files(
+                    'src/ripple/unity/app2.cpp',
+                    'src/ripple/unity/peerfinder.cpp',
+                    'src/ripple/unity/soci.cpp',
+                    'src/ripple/unity/socipostgresql.cpp',
+                    CPPPATH=[
+                         'src/soci/src',
+                         'src/soci/src/core',
+                         'src/ripple/app/data',] + soci_postgres_cpppath
+                    )
 
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',
@@ -671,9 +702,15 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/resource.cpp',
                 'src/ripple/unity/rpcx.cpp',
                 'src/ripple/unity/server.cpp',
-                'src/ripple/unity/validators.cpp',
                 'src/ripple/unity/websocket.cpp'
             )
+            object_builder.add_source_files(
+                'src/ripple/unity/validators.cpp',
+                CPPPATH=[
+                    'src/soci/src',
+                    'src/soci/src/core',
+                    'src/ripple/app/data',
+            ])
 
             object_builder.add_source_files(
                 'src/ripple/unity/beastc.c',
