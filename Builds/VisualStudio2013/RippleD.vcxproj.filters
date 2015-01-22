@@ -4116,6 +4116,9 @@
     <ClCompile Include="..\..\src\ripple\resource\tests\Logic.test.cpp">
       <Filter>ripple\resource\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\Context.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
@@ -4306,9 +4309,6 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Accounts.h">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\Context.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
