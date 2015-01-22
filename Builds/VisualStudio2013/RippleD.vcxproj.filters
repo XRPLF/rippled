@@ -3852,6 +3852,9 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\tests\Livecache.test.cpp">
       <Filter>ripple\peerfinder\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\tests\PeerFinder_test.cpp">
+      <Filter>ripple\peerfinder\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\Book.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>

@@ -2714,6 +2714,9 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\tests\Livecache.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\tests\PeerFinder_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\Book.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\BuildInfo.h">
