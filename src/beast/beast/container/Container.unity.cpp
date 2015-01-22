@@ -22,4 +22,3 @@
 #endif
 
 #include <beast/container/tests/aged_associative_container.test.cpp>
-#include <beast/container/tests/buffer_view.test.cpp>
