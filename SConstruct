@@ -40,6 +40,26 @@ If the clang toolchain is detected, then the default target will use it, else
 the gcc toolchain will be used. On Windows environments, the MSVC toolchain is
 also detected.
 
+The following environment variables modify the build environment:
+    CLANG_CC
+    CLANG_CXX
+    CLANG_LINK
+      If set, a clang toolchain will be used. These must all be set together.
+
+    GNU_CC
+    GNU_CXX
+    GNU_LINK
+      If set, a gcc toolchain will be used (unless a clang toolchain is
+      detected first). These must all be set together.
+
+    CXX
+      If set, used to detect a toolchain.
+
+    BOOST_ROOT
+      Path to the boost directory. 
+    OPENSSL_ROOT
+      Path to the openssl directory.
+
 '''
 #
 '''

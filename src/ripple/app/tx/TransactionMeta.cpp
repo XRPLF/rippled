@@ -28,10 +28,12 @@ namespace ripple {
 
 // VFALCO TODO rename class to TransactionMeta
 
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledger, Blob const& vec) :
+template<class T>
+TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledger, T const& data,
+                                        CtorHelper) :
     mTransactionID (txid), mLedger (ledger), mNodes (sfAffectedNodes, 32)
 {
-    Serializer s (vec);
+    Serializer s (data);
     SerialIter sit (s);
 
     std::unique_ptr<STBase> pobj = STObject::deserialize (sit, sfMetadata);
@@ -46,6 +48,20 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledge
 
     if (obj->isFieldPresent (sfDeliveredAmount))
         setDeliveredAmount (obj->getFieldAmount (sfDeliveredAmount));
+}
+
+TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+                                        std::uint32_t ledger,
+                                        Blob const& vec)
+    : TransactionMetaSet (txid, ledger, vec, CtorHelper ())
+{
+}
+
+TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+                                        std::uint32_t ledger,
+                                        std::string const& data)
+    : TransactionMetaSet (txid, ledger, data, CtorHelper ())
+{
 }
 
 bool TransactionMetaSet::isNodeAffected (uint256 const& node) const

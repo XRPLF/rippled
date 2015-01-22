@@ -291,6 +291,24 @@ get (Section const& section,
     return defaultValue;
 }
 
+inline
+std::string
+get (Section const& section,
+    std::string const& name, const char* defaultValue)
+{
+    auto const result = section.find (name);
+    if (! result.second)
+        return defaultValue;
+    try
+    {
+        return boost::lexical_cast <std::string> (result.first);
+    }
+    catch(...)
+    {
+    }
+    return defaultValue;
+}
+
 template <class T>
 bool
 get_if_exists (Section const& section,

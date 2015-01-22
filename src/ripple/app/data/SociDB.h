@@ -28,13 +28,37 @@
     This module requires the @ref beast_sqlite external module.
 */
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning( \
-    disable : 4355)  // 'this' : used in base member initializer list
-#endif
-
+#include <ripple/basics/Log.h>
+#include <ripple/core/JobQueue.h>
+#include <beast/threads/Thread.h>
+#define SOCI_USE_BOOST
 #include <core/soci.h>
+// #include <core/unsigned-types.h>
+#include <string>
+#include <cstdint>
+#include <vector>
+
+namespace sqlite_api {
+    class sqlite3;
+}
+
+namespace ripple {
+template <class T, class C>
+T rangeCheckedCast (C c)
+{
+    if ((c > std::numeric_limits<T>::max ()) ||
+        (!std::numeric_limits<T>::is_signed && c < 0) ||
+        (std::numeric_limits<T>::is_signed &&
+         std::numeric_limits<C>::is_signed &&
+         c < std::numeric_limits<T>::lowest ()))
+    {
+        WriteLog (lsERROR, RangeCheckedCast)
+            << "Range error. Min: " << std::numeric_limits<T>::lowest ()
+            << " Max: " << std::numeric_limits<T>::max () << " Got: " << c;
+    }
+    return static_cast<T>(c);
+}
+}
 
 namespace ripple {
 class BasicConfig;
@@ -44,7 +68,7 @@ class BasicConfig;
  *  parsing the config parameters. If a client want to open a session immediately,
  *  use the free function "open" below.
  */
-class SociConfig final
+class SociConfig
 {
     std::string connectionString_;
     soci::backend_factory const& backendFactory_;
@@ -70,10 +94,57 @@ void open(soci::session& s,
           BasicConfig const& config,
           std::string const& dbName);
 
-}
+/**
+ *  Open a soci session.
+ *
+ *  @param s Session to open.
+ *  @param beName Backend name.
+ *  @param connectionString Connection string to forward to soci::open.
+ *         see the soci::open documentation for how to use this.
+ *
+ */
+void open(soci::session& s,
+          std::string const& beName,
+          std::string const& connectionString);
 
-#if _MSC_VER
-#pragma warning(pop)
-#endif
+size_t getKBUsedAll (soci::session& s);
+size_t getKBUsedDB (soci::session& s);
+
+void convert(soci::blob& from, std::vector<std::uint8_t>& to);
+void convert(soci::blob& from, std::string& to);
+void convert(std::vector<std::uint8_t> const& from, soci::blob& to);
+
+/** Run a thread to checkpoint the write ahead log (wal) for
+    the given soci::session every 1000 pages. This is only implemented
+    for sqlite databases.
+
+    Note: According to: https://www.sqlite.org/wal.html#ckpt this
+    is the default behavior of sqlite. We may be able to remove this
+    class.
+*/
+class WALCheckpointer
+        :private beast::Thread
+{
+    friend int SqliteWALHook (void* s, sqlite_api::sqlite3*,
+                              const char* dbName, int walSize);
+public:
+    WALCheckpointer (std::shared_ptr<soci::session> const& s,
+                     JobQueue* q);
+    ~WALCheckpointer ();
+private:
+    void doHook (const char* db, int walSize);
+    void setupCheckpointing (JobQueue*);
+    void run ();
+    void runWal ();
+
+    std::shared_ptr<soci::session> session_;
+    sqlite_api::sqlite3* conn_ = nullptr;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard<LockType>;
+    LockType mutex_;
+    JobQueue* q_ = nullptr;
+    bool running_ = false;
+};
+}
 
 #endif

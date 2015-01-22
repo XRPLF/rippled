@@ -693,15 +693,17 @@ void AppApiFacadeImpl::setMajorityTimesFromDBToState (
     query.append (to_string (amendmentHash));
     query.append ("';");
 
-    auto& walletDB (getApp ().getWalletDB ());
-    auto sl (walletDB.lock ());
-    auto db (walletDB.getDB ());
+    auto db (getApp ().getWalletDB ().checkoutDb ());
 
-    if (db->executeSQL (query) && db->startIterRows ())
+    boost::optional<std::uint64_t> fm, lm;
+    soci::statement st = (db->prepare << query,
+                          soci::into(fm),
+                          soci::into(lm));
+    st.execute ();
+    while (st.fetch ())
     {
-        toUpdate.m_firstMajority = db->getBigInt ("FirstMajority");
-        toUpdate.m_lastMajority = db->getBigInt ("LastMajority");
-        db->endIterRows ();
+        toUpdate.m_firstMajority = fm.value_or (0);
+        toUpdate.m_lastMajority = lm.value_or (0);
     }
 }
 
@@ -712,24 +714,22 @@ void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
     if (changedAmendments.empty ())
         return;
 
-    auto& walletDB (getApp ().getWalletDB ());
-    auto sl (walletDB.lock ());
-    auto db (walletDB.getDB ());
+    auto db (getApp ().getWalletDB ().checkoutDb ());
 
-    db->executeSQL ("BEGIN TRANSACTION;");
+    soci::transaction tr(*db);
+    
     for (auto const& hash : changedAmendments)
     {
         AmendmentState const& fState = amendmentMap[hash];
-        db->executeSQL (boost::str (boost::format (
-                                        "UPDATE Features SET FirstMajority "
-                                        "= %d WHERE Hash = '%s';") %
-                                    fState.m_firstMajority % to_string (hash)));
-        db->executeSQL (boost::str (boost::format (
-                                        "UPDATE Features SET LastMajority "
-                                        "= %d WHERE Hash = '%s';") %
-                                    fState.m_lastMajority % to_string (hash)));
+        *db << boost::str (boost::format ("UPDATE Features SET FirstMajority "
+                                          "= %d WHERE Hash = '%s';") %
+                           fState.m_firstMajority % to_string (hash));
+        *db << boost::str (boost::format ("UPDATE Features SET LastMajority "
+                                          "= %d WHERE Hash = '%s';") %
+                           fState.m_lastMajority % to_string (hash));
     }
-    db->executeSQL ("END TRANSACTION;");
+
+    tr.commit ();
 }
 
 ValidationSet AppApiFacadeImpl::getValidations (uint256 const& hash) const

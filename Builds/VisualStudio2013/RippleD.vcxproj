@@ -4305,8 +4305,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\backends\postgresql\soci-postgresql.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

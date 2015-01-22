@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-/** Stub functions for soci dynamic backends.
+/*  Stub functions for soci dynamic backends.
 
     Ripple does not use dynamic backends, and inclduing soci's
     dynamic backends compilcates the build (it requires a generated
-    header file and some macros to be defines.)
+    header file and some macros to be defined.)
 */
 
 #include <BeastConfig.h>
@@ -35,8 +35,6 @@ namespace dynamic_backends {
 backend_factory const& get (std::string const& name)
 {
     throw std::runtime_error ("Not Supported");
-    backend_factory* nullBF{nullptr};
-    return *nullBF;  // deref nullptr - but we already threw
 };
 
 // provided for advanced user-level management

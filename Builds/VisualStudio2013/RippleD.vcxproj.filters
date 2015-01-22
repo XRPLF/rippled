@@ -535,9 +535,6 @@
     <Filter Include="soci\src\backends">
       <UniqueIdentifier>{AA927DBA-1AF8-6600-04B7-D1C1EBFB4103}</UniqueIdentifier>
     </Filter>
-    <Filter Include="soci\src\backends\postgresql">
-      <UniqueIdentifier>{5D2927A9-CC6E-DDE0-1654-5316177082DD}</UniqueIdentifier>
-    </Filter>
     <Filter Include="soci\src\backends\sqlite3">
       <UniqueIdentifier>{75E6832F-A6F7-8360-FA3A-7427A06A9959}</UniqueIdentifier>
     </Filter>
@@ -5039,9 +5036,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
       <Filter>snappy\snappy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\backends\postgresql\soci-postgresql.h">
-      <Filter>soci\src\backends\postgresql</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>

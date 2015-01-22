@@ -38,6 +38,7 @@
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
+#include <boost/optional.hpp>
 #include <fstream>
 
 namespace ripple {
@@ -87,6 +88,73 @@ strJoin (Iterator first, Iterator last, std::string strSeperator)
     }
 
     return ossValues.str ();
+}
+
+template <size_t I, class String>
+void selectBlobsIntoStrings (
+    soci::session& s,
+    String&& sql,
+    std::vector<std::array<boost::optional<std::string>, I>>& columns)
+{
+    columns.clear ();
+    columns.reserve (32);
+
+    std::vector<soci::blob> blobs;
+    blobs.reserve (I);
+    for (int i = 0; i < I; ++i)
+        blobs.emplace_back (s);
+    std::array<soci::indicator, I> indicators;
+    std::string str;
+    soci::statement st = [&]
+    {
+        auto&& tmp = s.prepare << sql;
+        for (int i = 0; i < I; ++i)
+            tmp.operator, (soci::into (blobs[i], indicators[i]));
+        return tmp;
+    }();
+
+    st.execute ();
+    while (st.fetch ())
+    {
+        columns.emplace_back ();
+        for (int i = 0; i < I; ++i)
+        {
+            if (soci::i_ok == indicators[i])
+            {
+                convert (blobs[i], str);
+                columns.back ()[i] = str;
+            }
+        }
+    }
+}
+
+template<class TOther, class String>
+void selectBlobsIntoStrings (
+    soci::session& s,
+    String&& sql,
+    std::vector<std::tuple<boost::optional<std::string>, boost::optional<TOther>>>& columns)
+{
+    columns.clear ();
+    columns.reserve (32);
+
+    soci::blob blob(s);
+    soci::indicator ind;
+    boost::optional<TOther> other;
+    std::string str;
+    soci::statement st =
+            (s.prepare << sql, soci::into(blob, ind), soci::into(other));
+
+    st.execute ();
+    while (st.fetch ())
+    {
+        columns.emplace_back ();
+        if (soci::i_ok == ind)
+        {
+            convert (blob, str);
+            get<0>(columns.back ()) = str;
+        }
+        get<1>(columns.back ()) = other;
+    }
 }
 
 // VFALCO TODO move all function definitions inlined into the class.
@@ -295,11 +363,14 @@ public:
     void nodeRemovePublic (RippleAddress const& naNodePublic)
     {
         {
-            auto db = getApp().getWalletDB ().getDB ();
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            db->executeSQL (str (boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
-            db->executeSQL (str (boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
+            *db << str (
+                boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") %
+                sqlEscape (naNodePublic.humanNodePublic ()));
+            *db << str (
+                boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") %
+                sqlEscape (naNodePublic.humanNodePublic ()));
         }
 
         // YYY Only dirty on successful delete.
@@ -317,10 +388,9 @@ public:
         boost::to_lower (strDomain);
 
         {
-            auto db = getApp().getWalletDB ().getDB ();
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            db->executeSQL (str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain)));
+            *db << str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain));
         }
 
         // YYY Only dirty on successful delete.
@@ -332,13 +402,10 @@ public:
     void nodeReset ()
     {
         {
-            auto db = getApp().getWalletDB ().getDB ();
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            auto sl (getApp().getWalletDB ().lock ());
-
-            // XXX Check results.
-            db->executeSQL ("DELETE FROM SeedDomains");
-            db->executeSQL ("DELETE FROM SeedNodes");
+            *db << "DELETE FROM SeedDomains";
+            *db << "DELETE FROM SeedNodes";
         }
 
         fetchDirty ();
@@ -606,17 +673,22 @@ public:
 
     Json::Value getUnlJson ()
     {
-        auto db = getApp().getWalletDB ().getDB ();
 
         Json::Value ret (Json::arrayValue);
 
-        auto sl (getApp().getWalletDB ().lock ());
-        SQL_FOREACH (db, "SELECT * FROM TrustedNodes;")
+        auto db = getApp().getWalletDB ().checkoutDb ();
+
+        
+        std::vector<std::array<boost::optional<std::string>, 2>> columns;
+        selectBlobsIntoStrings(*db,
+                               "SELECT PublicKey, Comment FROM TrustedNodes;",
+                               columns);
+        for(auto const& strArray : columns)
         {
             Json::Value node (Json::objectValue);
 
-            node["publicKey"]   = db->getStrBinary ("PublicKey");
-            node["comment"]     = db->getStrBinary ("Comment");
+            node["publicKey"]   = strArray[0].value_or("");
+            node["comment"]     = strArray[1].value_or("");
 
             ret.append (node);
         }
@@ -673,22 +745,18 @@ private:
     // Load information about when we last updated.
     bool miscLoad ()
     {
-        auto sl (getApp().getWalletDB ().lock ());
-        auto db = getApp().getWalletDB ().getDB ();
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;"))
+        boost::optional<int> suO, fuO;
+
+        *db << "SELECT ScoreUpdated, FetchUpdated FROM Misc WHERE Magic=1;",
+                soci::into(suO), soci::into(fuO);
+
+        if (!db->got_data() )
             return false;
-
-        bool const bAvail  = db->startIterRows ();
-
-        mtpFetchUpdated = ptFromSeconds (bAvail
-            ? db->getInt ("FetchUpdated")
-            : -1);
-        mtpScoreUpdated = ptFromSeconds (bAvail
-            ? db->getInt ("ScoreUpdated")
-            : -1);
-
-        db->endIterRows ();
+        
+        mtpFetchUpdated = ptFromSeconds (fuO.value_or(-1));
+        mtpScoreUpdated = ptFromSeconds (suO.value_or(-1));
 
         trustedLoad ();
 
@@ -700,12 +768,11 @@ private:
     // Persist update information.
     bool miscSave ()
     {
-        auto db = getApp().getWalletDB ().getDB ();
-        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        db->executeSQL (str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
-                             % iToSeconds (mtpFetchUpdated)
-                             % iToSeconds (mtpScoreUpdated)));
+        *db << str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
+                    % iToSeconds (mtpFetchUpdated)
+                    % iToSeconds (mtpScoreUpdated));
 
         return true;
     }
@@ -730,16 +797,18 @@ private:
                 WriteLog (lsWARNING, UniqueNodeList) << "Entry in cluster list invalid: '" << c << "'";
         }
 
-        auto db = getApp().getWalletDB ().getDB ();
-        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
         ScopedUNLLockType slUNL (mUNLLock);
 
         mUNL.clear ();
 
-        // XXX Needs to limit by quanity and quality.
-        SQL_FOREACH (db, "SELECT PublicKey FROM TrustedNodes WHERE Score != 0;")
+        std::vector<std::array<boost::optional<std::string>, 1>> columns;
+        selectBlobsIntoStrings(*db,
+                                "SELECT PublicKey FROM TrustedNodes WHERE Score != 0;",
+                               columns);
+        for(auto const& strArray : columns)
         {
-            mUNL.insert (db->getStrBinary ("PublicKey"));
+            mUNL.insert (strArray[0].value_or(""));
         }
     }
 
@@ -828,56 +897,58 @@ private:
         hash_map<std::string, int> umDomainIdx;    // Map of domain to index.
         std::vector<scoreNode>  vsnNodes;       // Index to scoring node.
 
-        auto db = getApp().getWalletDB ().getDB ();
-
         // For each entry in SeedDomains with a PublicKey:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            SQL_FOREACH (db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
+            std::vector<std::array<boost::optional<std::string>, 3>> columns;
+            selectBlobsIntoStrings(*db,
+                                   "SELECT Domain,PublicKey,Source FROM SeedDomains;",
+                                   columns);
+            for(auto const& strArray : columns)
             {
-                if (db->getNull ("PublicKey"))
-                {
+                if (!strArray[1])
                     // We ignore entries we don't have public keys for.
+                    continue;
+
+                std::string const strDomain = strArray[0].value_or("");
+                std::string const strPublicKey = *strArray[1];
+                std::string const strSource = strArray[2].value_or("");
+
+                assert (!strSource.empty ());
+                
+                int         const iScore       = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
+                auto siOld   = umPulicIdx.find (strPublicKey);
+
+                if (siOld == umPulicIdx.end ())
+                {
+                    // New node
+                    int         iNode       = vsnNodes.size ();
+
+                    umPulicIdx[strPublicKey]    = iNode;
+                    umDomainIdx[strDomain]      = iNode;
+
+                    scoreNode   snCurrent;
+
+                    snCurrent.strValidator  = strPublicKey;
+                    snCurrent.iScore        = iScore;
+                    snCurrent.iRoundSeed    = snCurrent.iScore;
+                    snCurrent.iRoundScore   = 0;
+                    snCurrent.iSeen         = -1;
+
+                    vsnNodes.push_back (snCurrent);
                 }
                 else
                 {
-                    std::string strDomain       = db->getStrBinary ("Domain");
-                    std::string strPublicKey    = db->getStrBinary ("PublicKey");
-                    std::string strSource       = db->getStrBinary ("Source");
-                    int         iScore          = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
-                    auto siOld   = umPulicIdx.find (strPublicKey);
+                    scoreNode&  snOld   = vsnNodes[siOld->second];
 
-                    if (siOld == umPulicIdx.end ())
+                    if (snOld.iScore < iScore)
                     {
-                        // New node
-                        int         iNode       = vsnNodes.size ();
+                        // Update old node
 
-                        umPulicIdx[strPublicKey]    = iNode;
-                        umDomainIdx[strDomain]      = iNode;
-
-                        scoreNode   snCurrent;
-
-                        snCurrent.strValidator  = strPublicKey;
-                        snCurrent.iScore        = iScore;
-                        snCurrent.iRoundSeed    = snCurrent.iScore;
-                        snCurrent.iRoundScore   = 0;
-                        snCurrent.iSeen         = -1;
-
-                        vsnNodes.push_back (snCurrent);
-                    }
-                    else
-                    {
-                        scoreNode&  snOld   = vsnNodes[siOld->second];
-
-                        if (snOld.iScore < iScore)
-                        {
-                            // Update old node
-
-                            snOld.iScore        = iScore;
-                            snOld.iRoundSeed    = snOld.iScore;
-                        }
+                        snOld.iScore        = iScore;
+                        snOld.iRoundSeed    = snOld.iScore;
                     }
                 }
             }
@@ -886,12 +957,17 @@ private:
         // For each entry in SeedNodes:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            SQL_FOREACH (db, "SELECT PublicKey,Source FROM SeedNodes;")
+            std::vector<std::array<boost::optional<std::string>, 2>> columns;
+            selectBlobsIntoStrings(*db,
+                                   "SELECT PublicKey,Source FROM SeedNodes;",
+                                   columns);
+            for(auto const& strArray : columns)
             {
-                std::string strPublicKey    = db->getStrBinary ("PublicKey");
-                std::string strSource       = db->getStrBinary ("Source");
+                std::string strPublicKey    = strArray[0].value_or("");
+                std::string strSource       = strArray[1].value_or("");
+                assert (!strSource.empty ());
                 int         iScore          = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
                 auto siOld   = umPulicIdx.find (strPublicKey);
 
@@ -950,12 +1026,20 @@ private:
             std::string&        strValidator    = sn.strValidator;
             std::vector<int>&   viReferrals     = sn.viReferrals;
 
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            SQL_FOREACH (db, boost::str (boost::format ("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
-                                         % sqlEscape (strValidator)))
+            std::vector<std::array<boost::optional<std::string>, 1>> columns;
+            selectBlobsIntoStrings(*db,
+                                   boost::str (boost::format (
+                                       "SELECT Referral FROM ValidatorReferrals "
+                                       "WHERE Validator=%s ORDER BY Entry;") %
+                                               sqlEscape (strValidator)),
+                                   columns);
+            std::string strReferral;
+            for(auto const& strArray : columns)
             {
-                std::string strReferral = db->getStrBinary ("Referral");
+                strReferral = strArray[0].value_or("");
+                
                 int         iReferral;
 
                 RippleAddress       na;
@@ -1024,10 +1108,10 @@ private:
         }
 
         // Persist validator scores.
-        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        db->executeSQL ("BEGIN;");
-        db->executeSQL ("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
+        soci::transaction tr(*db);
+        *db << "UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;";
 
         if (!vsnNodes.empty ())
         {
@@ -1041,10 +1125,25 @@ private:
                 vstrPublicKeys[iNode]   = sqlEscape (vsnNodes[iNode].strValidator);
             }
 
-            SQL_FOREACH (db, str (boost::format ("SELECT PublicKey,Seen FROM TrustedNodes WHERE PublicKey IN (%s);")
-                                  % strJoin (vstrPublicKeys.begin (), vstrPublicKeys.end (), ",")))
+            // Iterate through the result rows with a fectch b/c putting a
+            // column of type DATETIME into a boost::tuple can throw when the
+            // datetime column is invalid (even if the value as int is valid).
+            std::vector<std::tuple<boost::optional<std::string>,
+                                   boost::optional<int>>> columns;
+            selectBlobsIntoStrings (
+                *db,
+                str (boost::format (
+                         "SELECT PublicKey,Seen FROM TrustedNodes WHERE "
+                         "PublicKey IN (%s);") %
+                     strJoin (
+                         vstrPublicKeys.begin (), vstrPublicKeys.end (), ",")),
+                columns);
+            std::string pk;
+            for(auto const& col : columns)
             {
-                vsnNodes[umPulicIdx[db->getStrBinary ("PublicKey")]].iSeen   = db->getNull ("Seen") ? -1 : db->getInt ("Seen");
+                pk = get<0>(col).value_or ("");
+                
+                vsnNodes[umPulicIdx[pk]].iSeen   = get<1>(col).value_or (-1);
             }
         }
 
@@ -1070,8 +1169,8 @@ private:
                 usUNL.insert (sn.strValidator);
             }
 
-            db->executeSQL (str (boost::format ("REPLACE INTO TrustedNodes (PublicKey,Score,Seen) VALUES %s;")
-                                 % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
+            *db << str (boost::format ("REPLACE INTO TrustedNodes (PublicKey,Score,Seen) VALUES %s;")
+                        % strJoin (vstrValues.begin (), vstrValues.end (), ","));
         }
 
         {
@@ -1085,12 +1184,17 @@ private:
 
         if (!vsnNodes.empty ())
         {
-            std::vector<std::string> vstrPublicKeys;
-
             // For every IpReferral add a score for the IP and PORT.
-            SQL_FOREACH (db, "SELECT Validator,COUNT(*) AS Count FROM IpReferrals GROUP BY Validator;")
+            std::vector<std::tuple<boost::optional<std::string>,
+                                   boost::optional<std::int32_t>>> columns;
+            selectBlobsIntoStrings (
+                *db,
+                "SELECT Validator,COUNT(*) AS Count FROM "
+                "IpReferrals GROUP BY Validator;",
+                columns);
+            for(auto const& col : columns)
             {
-                umValidators[db->getStrBinary ("Validator")] = db->getInt ("Count");
+                umValidators[get<0>(col).value_or("")] = get<1>(col).value_or(0);
 
                 // WriteLog (lsTRACE, UniqueNodeList) << strValidator << ":" << db->getInt("Count");
             }
@@ -1114,15 +1218,23 @@ private:
                 score       iBase           = iSeed * iEntries / iTotal;
                 int         iEntry          = 0;
 
-                SQL_FOREACH (db, str (boost::format ("SELECT IP,Port FROM IpReferrals WHERE Validator=%s ORDER BY Entry;")
-                                      % sqlEscape (strValidator)))
+                std::vector<std::tuple<boost::optional<std::string>,
+                                       boost::optional<std::int32_t>>> columns;
+                selectBlobsIntoStrings (
+                    *db,
+                    str (boost::format (
+                        "SELECT IP,Port FROM IpReferrals WHERE "
+                        "Validator=%s ORDER BY Entry;") %
+                         sqlEscape (strValidator)),
+                    columns);
+                for(auto const& col : columns)
                 {
                     score       iPoints = iBase * (iEntries - iEntry) / iEntries;
                     int         iPort;
 
-                    iPort       = db->getNull ("Port") ? -1 : db->getInt ("Port");
+                    iPort       = get<1>(col).value_or(0);
 
-                    std::pair< std::string, int>    ep  = std::make_pair (db->getStrBinary ("IP"), iPort);
+                    std::pair< std::string, int>    ep  = std::make_pair (get<0>(col).value_or(""), iPort);
 
                     auto itEp    = umScore.find (ep);
 
@@ -1132,7 +1244,7 @@ private:
             }
         }
 
-        db->executeSQL ("COMMIT;");
+        tr.commit ();
     }
 
     //--------------------------------------------------------------------------
@@ -1305,20 +1417,28 @@ private:
             boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
             boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
-            auto sl (getApp().getWalletDB ().lock ());
-            auto db = getApp().getWalletDB ().getDB ();
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
-                    && db->startIterRows ())
+
             {
-                int iNext (db->getInt ("Next"));
+                soci::blob b(*db);
+                soci::indicator ind;
+                boost::optional<int> nO;
+                *db << "SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;",
+                        soci::into(b, ind),
+                        soci::into(nO);
+                if (nO)
+                {
+                    int iNext (*nO);
 
-                tpNext  = ptFromSeconds (iNext);
+                    tpNext  = ptFromSeconds (iNext);
 
-                WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow);
-                strDomain = db->getStrBinary ("Domain");
-
-                db->endIterRows ();
+                    WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow);
+                    if (soci::i_ok == ind)
+                        convert (b, strDomain);
+                    else
+                        strDomain.clear ();
+                }
             }
 
             if (!strDomain.empty ())
@@ -1557,8 +1677,6 @@ private:
     // --> naNodePublic: public key of the validating node.
     void processIps (std::string const& strSite, RippleAddress const& naNodePublic, IniFileSections::mapped_type* pmtVecStrIps)
     {
-        auto db = getApp().getWalletDB ().getDB ();
-
         std::string strEscNodePublic    = sqlEscape (naNodePublic.humanNodePublic ());
 
         WriteLog (lsDEBUG, UniqueNodeList)
@@ -1567,9 +1685,8 @@ private:
 
         // Remove all current Validator's entries in IpReferrals
         {
-            auto sl (getApp().getWalletDB ().lock ());
-            db->executeSQL (str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
-            // XXX Check result.
+            auto db = getApp().getWalletDB ().checkoutDb ();
+            *db << str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic);
         }
 
         // Add new referral entries.
@@ -1610,9 +1727,9 @@ private:
             {
                 vstrValues.resize (iValues);
 
-                auto sl (getApp().getWalletDB ().lock ());
-                db->executeSQL (str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
-                                     % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
+                auto db = getApp().getWalletDB ().checkoutDb ();
+                *db << str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
+                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
                 // XXX Check result.
             }
         }
@@ -1629,7 +1746,6 @@ private:
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
     int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type* pmtVecStrValidators)
     {
-        auto db              = getApp().getWalletDB ().getDB ();
         std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
         int         iValues         = 0;
 
@@ -1641,9 +1757,9 @@ private:
 
         // Remove all current Validator's entries in ValidatorReferrals
         {
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            db->executeSQL (str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
+            *db << str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic);
             // XXX Check result.
         }
 
@@ -1712,9 +1828,9 @@ private:
                 std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-                auto sl (getApp().getWalletDB ().lock ());
+                auto db = getApp().getWalletDB ().checkoutDb ();
 
-                db->executeSQL (strSql);
+                *db << strSql;
                 // XXX Check result.
             }
         }
@@ -1759,57 +1875,79 @@ private:
     // Retrieve a SeedDomain from DB.
     bool getSeedDomains (std::string const& strDomain, seedDomain& dstSeedDomain)
     {
-        bool        bResult;
-        auto db = getApp().getWalletDB ().getDB ();
+        bool        bResult = false;
 
-        std::string strSql  = boost::str (boost::format ("SELECT * FROM SeedDomains WHERE Domain=%s;")
-                                          % sqlEscape (strDomain));
+        std::string strSql = boost::str (
+            boost::format (
+                "SELECT Domain, PublicKey, Source, Next, Scan, Fetch, Sha256, "
+                "Comment FROM SeedDomains WHERE Domain=%s;") %
+            sqlEscape (strDomain));
 
-        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        bResult = db->executeSQL (strSql) && db->startIterRows ();
+        // Iterate through the result rows with a fectch b/c putting a
+        // column of type DATETIME into a boost::tuple can throw when the
+        // datetime column is invalid (even if the value as int is valid).
+        soci::blob                       domainBlob(*db);
+        soci::indicator                  di;
+        boost::optional<std::string>     strPublicKey;
+        soci:: blob                      sourceBlob(*db);
+        soci::indicator                  si;
+        std::string                      strSource;
+        boost::optional<int>             iNext;
+        boost::optional<int>             iScan;
+        boost::optional<int>             iFetch;
+        boost::optional<std::string>     strSha256;
+        soci::blob                       commentBlob(*db);
+        soci::indicator                  ci;
+        boost::optional<std::string>     strComment;
 
-        if (bResult)
+        soci::statement st = (db->prepare << strSql,
+                              soci::into (domainBlob, di),
+                              soci::into (strPublicKey),
+                              soci::into (sourceBlob, si),
+                              soci::into (iNext),
+                              soci::into (iScan),
+                              soci::into (iFetch),
+                              soci::into (strSha256),
+                              soci::into (commentBlob, ci));
+
+        st.execute ();
+        while (st.fetch ())
         {
-            std::string     strPublicKey;
-            int             iNext;
-            int             iScan;
-            int             iFetch;
-            std::string     strSha256;
+            bResult = true;
 
-            dstSeedDomain.strDomain = db->getStrBinary ("Domain");
+            if (soci::i_ok == di)
+                convert (domainBlob, dstSeedDomain.strDomain);
 
-            if (!db->getNull ("PublicKey") && db->getStr ("PublicKey", strPublicKey))
-            {
-                dstSeedDomain.naPublicKey.setNodePublic (strPublicKey);
-            }
+            if (strPublicKey && !strPublicKey->empty ())
+                dstSeedDomain.naPublicKey.setNodePublic (*strPublicKey);
             else
-            {
                 dstSeedDomain.naPublicKey.clear ();
-            }
 
-            std::string     strSource   = db->getStrBinary ("Source");
-            dstSeedDomain.vsSource  = static_cast<ValidatorSource> (strSource[0]);
-
-            iNext   = db->getInt ("Next");
-            dstSeedDomain.tpNext    = ptFromSeconds (iNext);
-            iScan   = db->getInt ("Scan");
-            dstSeedDomain.tpScan    = ptFromSeconds (iScan);
-            iFetch  = db->getInt ("Fetch");
-            dstSeedDomain.tpFetch   = ptFromSeconds (iFetch);
-
-            if (!db->getNull ("Sha256") && db->getStr ("Sha256", strSha256))
+            if (soci::i_ok == si)
             {
-                dstSeedDomain.iSha256.SetHex (strSha256);
+                convert (sourceBlob, strSource);
+                dstSeedDomain.vsSource  = static_cast<ValidatorSource> (strSource[0]);
             }
             else
             {
-                dstSeedDomain.iSha256.zero ();
+                assert (0);
             }
 
-            dstSeedDomain.strComment    = db->getStrBinary ("Comment");
+            dstSeedDomain.tpNext    = ptFromSeconds (iNext.value_or (0));
+            dstSeedDomain.tpScan    = ptFromSeconds (iScan.value_or (0));
+            dstSeedDomain.tpFetch   = ptFromSeconds (iFetch.value_or (0));
 
-            db->endIterRows ();
+            if (strSha256 && !strSha256->empty ())
+                dstSeedDomain.iSha256.SetHex (*strSha256);
+            else
+                dstSeedDomain.iSha256.zero ();
+
+            if (soci::i_ok == ci)
+                convert (commentBlob, dstSeedDomain.strComment);
+            else
+                dstSeedDomain.strComment.clear ();
         }
 
         return bResult;
@@ -1820,8 +1958,6 @@ private:
     // Persist a SeedDomain.
     void setSeedDomains (const seedDomain& sdSource, bool bNext)
     {
-        auto db = getApp().getWalletDB ().getDB ();
-
         int     iNext   = iToSeconds (sdSource.tpNext);
         int     iScan   = iToSeconds (sdSource.tpScan);
         int     iFetch  = iToSeconds (sdSource.tpFetch);
@@ -1839,12 +1975,16 @@ private:
                                           % sqlEscape (sdSource.strComment)
                                          );
 
-        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        if (!db->executeSQL (strSql))
+        try
+        {
+            *db << strSql;
+        }
+        catch (soci::soci_error& e)
         {
             // XXX Check result.
-            WriteLog (lsWARNING, UniqueNodeList) << "setSeedDomains: failed.";
+            WriteLog (lsWARNING, UniqueNodeList) << "setSeedDomains: failed. Error: " << e.what();
         }
 
         if (bNext && (mtpFetchNext.is_not_a_date_time () || mtpFetchNext > sdSource.tpNext))
@@ -1860,59 +2000,65 @@ private:
     // Retrieve a SeedNode from DB.
     bool getSeedNodes (RippleAddress const& naNodePublic, seedNode& dstSeedNode)
     {
-        bool        bResult;
-        auto db = getApp().getWalletDB ().getDB ();
+        std::string strSql =
+                str (boost::format (
+                    "SELECT PublicKey, Source, Next, Scan, Fetch, Sha256, "
+                    "Comment FROM SeedNodes WHERE PublicKey='%s';") %
+                     naNodePublic.humanNodePublic ());
 
-        std::string strSql  = str (boost::format ("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
-                                   % naNodePublic.humanNodePublic ());
+        auto db = getApp().getWalletDB ().checkoutDb ();
 
-        auto sl (getApp().getWalletDB ().lock ());
+        std::string                      strPublicKey;
+        std::string                      strSource;
+        soci::blob                       sourceBlob(*db);
+        soci::indicator                  si;
+        boost::optional<int>             iNext;
+        boost::optional<int>             iScan;
+        boost::optional<int>             iFetch;
+        boost::optional<std::string>     strSha256;
+        soci::blob                       commentBlob(*db);
+        soci::indicator                  ci;
 
-        bResult = db->executeSQL (strSql) && db->startIterRows ();
+        *db << strSql,
+                soci::into (strPublicKey),
+                soci::into (sourceBlob, si),
+                soci::into (iNext),
+                soci::into (iScan),
+                soci::into (iFetch),
+                soci::into (strSha256),
+                soci::into (commentBlob, ci);
 
-        if (bResult)
+        if (!db->got_data ())
+            return false;
+
+        if (!strPublicKey.empty ())
+            dstSeedNode.naPublicKey.setNodePublic (strPublicKey);
+        else
+            dstSeedNode.naPublicKey.clear ();
+
+        if (soci::i_ok == si)
         {
-            std::string     strPublicKey;
-            std::string     strSource;
-            int             iNext;
-            int             iScan;
-            int             iFetch;
-            std::string     strSha256;
-
-            if (!db->getNull ("PublicKey") && db->getStr ("PublicKey", strPublicKey))
-            {
-                dstSeedNode.naPublicKey.setNodePublic (strPublicKey);
-            }
-            else
-            {
-                dstSeedNode.naPublicKey.clear ();
-            }
-
-            strSource   = db->getStrBinary ("Source");
+            convert (sourceBlob, strSource);
             dstSeedNode.vsSource    = static_cast<ValidatorSource> (strSource[0]);
-
-            iNext   = db->getInt ("Next");
-            dstSeedNode.tpNext  = ptFromSeconds (iNext);
-            iScan   = db->getInt ("Scan");
-            dstSeedNode.tpScan  = ptFromSeconds (iScan);
-            iFetch  = db->getInt ("Fetch");
-            dstSeedNode.tpFetch = ptFromSeconds (iFetch);
-
-            if (!db->getNull ("Sha256") && db->getStr ("Sha256", strSha256))
-            {
-                dstSeedNode.iSha256.SetHex (strSha256);
-            }
-            else
-            {
-                dstSeedNode.iSha256.zero ();
-            }
-
-            dstSeedNode.strComment  = db->getStrBinary ("Comment");
-
-            db->endIterRows ();
         }
+        else
+            assert (0);
 
-        return bResult;
+        dstSeedNode.tpNext  = ptFromSeconds (iNext.value_or(0));
+        dstSeedNode.tpScan  = ptFromSeconds (iScan.value_or(0));
+        dstSeedNode.tpFetch = ptFromSeconds (iFetch.value_or(0));
+
+        if (strSha256 && !strSha256->empty ())
+            dstSeedNode.iSha256.SetHex (*strSha256);
+        else
+            dstSeedNode.iSha256.zero ();
+
+        if (soci::i_ok == ci)
+            convert (commentBlob, dstSeedNode.strComment);
+        else
+            dstSeedNode.strComment.clear ();
+
+        return true;
     }
 
     //--------------------------------------------------------------------------
@@ -1921,8 +2067,6 @@ private:
     // <-- bNext: true, to do fetching if needed.
     void setSeedNodes (const seedNode& snSource, bool bNext)
     {
-        auto db = getApp().getWalletDB ().getDB ();
-
         int     iNext   = iToSeconds (snSource.tpNext);
         int     iScan   = iToSeconds (snSource.tpScan);
         int     iFetch  = iToSeconds (snSource.tpFetch);
@@ -1942,12 +2086,15 @@ private:
                                   );
 
         {
-            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().checkoutDb ();
 
-            if (!db->executeSQL (strSql))
+            try
             {
-                // XXX Check result.
-                WriteLog (lsTRACE, UniqueNodeList) << "setSeedNodes: failed.";
+                *db << strSql;
+            }
+            catch(soci::soci_error& e)
+            {
+                WriteLog (lsTRACE, UniqueNodeList) << "setSeedNodes: failed. Error: " << e.what ();
             }
         }
 

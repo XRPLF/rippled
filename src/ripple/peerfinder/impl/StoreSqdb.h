@@ -22,6 +22,7 @@
 
 #include <ripple/app/data/SociDB.h>
 #include <beast/utility/Debug.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace PeerFinder {
@@ -103,26 +104,29 @@ public:
         soci::transaction tr (m_session);
         m_session <<
             "DELETE FROM PeerFinder_BootstrapCache";
-        std::string s;
-        int valence;
 
-        soci::statement st = (m_session.prepare <<
-            "INSERT INTO PeerFinder_BootstrapCache ( "
-            "  address, "
-            "  valence "
-            ") VALUES ( "
-            "  :s, :valence "
-            ");"
-            , soci::use (s)
-            , soci::use (valence)
-            );
-
-        for (auto const& e : v)
+        if (!v.empty ())
         {
-            s = to_string (e.endpoint);
-            valence = e.valence;
-            st.execute ();
-            st.fetch ();
+            std::vector<std::string> s;
+            std::vector<int> valence;
+            s.reserve (v.size ());
+            valence.reserve (v.size ());
+
+            for (auto const& e : v)
+            {
+                s.emplace_back (to_string (e.endpoint));
+                valence.emplace_back (e.valence);
+            }
+
+            m_session <<
+                    "INSERT INTO PeerFinder_BootstrapCache ( "
+                    "  address, "
+                    "  valence "
+                    ") VALUES ( "
+                    "  :s, :valence "
+                    ");"
+                    , soci::use (s)
+                    , soci::use (valence);
         }
 
         tr.commit ();
@@ -136,16 +140,16 @@ public:
         // get version
         int version (0);
         {
+            boost::optional<int> vO;
             m_session <<
                 "SELECT "
                 "  version "
                 "FROM SchemaVersion WHERE "
                 "  name = 'PeerFinder'"
-                , soci::into (version)
+                , soci::into (vO)
                 ;
 
-            if (!m_session.got_data ())
-                version = 0;
+            version = vO.value_or (0);
 
             m_journal.info <<
                 "Opened version " << version << " database";
@@ -222,10 +226,21 @@ public:
                 }
             }
 
+            if (!list.empty ())
             {
-                std::string s;
-                int valence;
-                soci::statement st = (m_session.prepare <<
+                std::vector<std::string> s;
+                std::vector<int> valence;
+                s.reserve (list.size ());
+                valence.reserve (list.size ());
+
+                for (auto iter (list.cbegin ());
+                     iter != list.cend (); ++iter)
+                {
+                    s.emplace_back (to_string (iter->endpoint));
+                    valence.emplace_back (iter->valence);
+                }
+
+                m_session <<
                     "INSERT INTO PeerFinder_BootstrapCache_Next ( "
                     "  address, "
                     "  valence "
@@ -234,16 +249,8 @@ public:
                     ");"
                     , soci::use (s)
                     , soci::use (valence)
-                    );
+                    ;
 
-                for (auto iter (list.cbegin ());
-                     iter != list.cend (); ++iter)
-                {
-                    s = to_string (iter->endpoint);
-                    valence = iter->valence;
-                    st.execute ();
-                    st.fetch ();
-                }
             }
 
             m_session <<
