@@ -85,7 +85,7 @@ private:
     NodeStore::Scheduler& scheduler_;
     beast::Journal journal_;
     beast::Journal nodeStoreJournal_;
-    NodeStore::DatabaseRotating* database_;
+    NodeStore::DatabaseRotating* database_ = nullptr;
     SavedStateDB state_db_;
     std::thread thread_;
     bool stop_ = false;
@@ -95,6 +95,7 @@ private:
     Ledger::pointer newLedger_;
     Ledger::pointer validatedLedger_;
     TransactionMaster& transactionMaster_;
+    std::atomic <LedgerIndex> canDelete_;
     // these do not exist upon SHAMapStore creation, but do exist
     // as of onPrepare() or before
     NetworkOPs* netOPs_ = nullptr;
@@ -131,6 +132,7 @@ public:
     LedgerIndex
     setCanDelete (LedgerIndex seq) override
     {
+        canDelete_ = seq;
         return state_db_.setCanDelete (seq);
     }
 
@@ -149,7 +151,7 @@ public:
     LedgerIndex
     getCanDelete() override
     {
-        return state_db_.getCanDelete();
+        return canDelete_;
     }
 
     void onLedgerClosed (Ledger::pointer validatedLedger) override;
