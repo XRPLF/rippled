@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,34 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
-#define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
+#if ENABLE_SOCI_POSTGRESQL
 
-#include <ripple/server/ServerHandler.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/resource/Manager.h>
-#include <ripple/basics/Resolver.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/module/core/files/File.h>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/ssl/context.hpp>
-
-namespace ripple {
-
-Overlay::Setup
-setup_Overlay (BasicConfig const& config);
-
-/** Creates the implementation of Overlay. */
-std::unique_ptr <Overlay>
-make_Overlay (
-    Overlay::Setup const& setup,
-    beast::Stoppable& parent,
-    ServerHandler& serverHandler,
-    Resource::Manager& resourceManager,
-    Resolver& resolver,
-    boost::asio::io_service& io_service,
-    BasicConfig const& config);
-
-} // ripple
-
+#if BEAST_INCLUDE_BEASTCONFIG
+#include <BeastConfig.h>
 #endif
+
+#include <algorithm>
+
+#if BEAST_MSVC
+#define SOCI_LIB_PREFIX ""
+#define SOCI_LIB_SUFFIX ".dll"
+#else
+#define SOCI_LIB_PREFIX "lib"
+#define SOCI_LIB_SUFFIX ".so"
+#endif
+
+#include<backends/postgresql/blob.cpp>
+#include<backends/postgresql/common.cpp>
+#include<backends/postgresql/error.cpp>
+#include<backends/postgresql/factory.cpp>
+#include<backends/postgresql/row-id.cpp>
+#include<backends/postgresql/session.cpp>
+#include<backends/postgresql/standard-into-type.cpp>
+#include<backends/postgresql/standard-use-type.cpp>
+#include<backends/postgresql/statement.cpp>
+#include<backends/postgresql/vector-into-type.cpp>
+#include<backends/postgresql/vector-use-type.cpp>
+
+#endif // ENABLE_SOCI_POSTGRESQL
