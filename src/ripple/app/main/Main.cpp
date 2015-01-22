@@ -149,11 +149,12 @@ void printHelp (const po::options_description& desc)
 
 static
 void
-setupConfigForUnitTests (Config* config)
+setupConfigForUnitTests (Config& config)
 {
-    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory|path=main");
-    config->ephemeralNodeDatabase = beast::StringPairArray ();
-    config->importNodeDatabase = beast::StringPairArray ();
+    config.nodeDatabase = parseDelimitedKeyValueString ("type=memory|path=main");
+    config.ephemeralNodeDatabase = beast::StringPairArray ();
+    config.importNodeDatabase = beast::StringPairArray ();
+    config.legacy("database_path", "DummyForUnitTests");
 }
 
 static int runShutdownTests ()
@@ -187,7 +188,7 @@ static int runUnitTests (std::string const& pattern,
                          std::string const& argument)
 {
     // Config needs to be set up before creating Application
-    setupConfigForUnitTests (&getConfig ());
+    setupConfigForUnitTests (getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
     std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
     using namespace beast::unit_test;

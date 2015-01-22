@@ -30,8 +30,7 @@ namespace PeerFinder {
 /** Create a new Manager. */
 std::unique_ptr<Manager>
 make_Manager (beast::Stoppable& parent, boost::asio::io_service& io_service,
-    beast::File const& pathToDbFileOrDirectory,
-        clock_type& clock, beast::Journal journal);
+        clock_type& clock, beast::Journal journal, BasicConfig const& config);
 
 }
 }

@@ -121,9 +121,9 @@ OverlayImpl::OverlayImpl (
     Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
-    beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
-    boost::asio::io_service& io_service)
+    boost::asio::io_service& io_service,
+    BasicConfig const& config)
     : Overlay (parent)
     , io_service_ (io_service)
     , work_ (boost::in_place(std::ref(io_service_)))
@@ -133,8 +133,7 @@ OverlayImpl::OverlayImpl (
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        pathToDbFileOrDirectory, get_seconds_clock(),
-            deprecatedLogs().journal("PeerFinder")))
+        get_seconds_clock(), deprecatedLogs().journal("PeerFinder"), config))
     , m_resolver (resolver)
     , next_id_(1)
 {
@@ -781,12 +780,12 @@ make_Overlay (
     beast::Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
-    beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
-    boost::asio::io_service& io_service)
+    boost::asio::io_service& io_service,
+    BasicConfig const& config)
 {
     return std::make_unique <OverlayImpl> (setup, parent, serverHandler,
-        resourceManager, pathToDbFileOrDirectory, resolver, io_service);
+        resourceManager, resolver, io_service, config);
 }
 
 }

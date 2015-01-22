@@ -85,7 +85,8 @@ make_SHAMapStore(SHAMapStore::Setup const& s,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
         beast::Journal nodeStoreJournal,
-        TransactionMaster& transactionMaster);
+        TransactionMaster& transactionMaster,
+        BasicConfig const& conf);
 }
 
 #endif

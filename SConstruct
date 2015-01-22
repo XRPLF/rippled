@@ -40,6 +40,28 @@ If the clang toolchain is detected, then the default target will use it, else
 the gcc toolchain will be used. On Windows environments, the MSVC toolchain is
 also detected.
 
+The following environment variables modify the build environment:
+    CLANG_CC
+    CLANG_CXX
+    CLANG_LINK
+      If set, a clang toolchain will be used. These must all be set together.
+
+    GNU_CC
+    GNU_CXX
+    GNU_LINK
+      If set, a gcc toolchain will be used (unless a clang toolchain is
+      detected first). These must all be set together.
+
+    CXX
+      If set, used to detect a toolchain.
+
+    BOOST_ROOT
+      Path to the boost directory. 
+    OPENSSL_ROOT
+      Path to the openssl directory.
+    POSTGRESQL_ROOT
+      Path to the postgresql directory. Setting this also enables the optional postgresql support.
+
 '''
 #
 '''
@@ -226,6 +248,17 @@ def config_base(env):
         env['BOOST_ROOT'] = BOOST_ROOT
     except KeyError:
         pass
+
+    try:
+        POSTGRESQL_ROOT = os.path.normpath(os.environ['POSTGRESQL_ROOT'])
+        env.Append(LIBS=['pq'])
+        env.Append(LIBPATH=[
+            os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq')
+            ])
+        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '1'})
+        env['POSTGRESQL_ROOT'] = POSTGRESQL_ROOT
+    except KeyError:
+        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '0'})
 
     if Beast.system.windows:
         try:
@@ -498,6 +531,7 @@ base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
     os.path.join(build_dir, 'proto'),
+    os.path.join('src','soci','src'),
     ])
 
 # Configure the toolchains, variants, default toolchain, and default target
@@ -565,6 +599,30 @@ def list_sources(base, suffixes):
                     yield os.path.normpath(path)
     return list(_iter(base))
 
+def add_soci_sources(env, object_builder, is_unity):
+    soci_postgres_cpppath = []
+    POSTGRESQL_ROOT = None
+    try:
+        POSTGRESQL_ROOT = env['POSTGRESQL_ROOT']
+    except KeyError:
+        pass
+    if POSTGRESQL_ROOT:
+        soci_postgres_cpppath = [
+            os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq'),
+            os.path.join(POSTGRESQL_ROOT, 'src', 'include'),
+            ]
+    cpp_path = [
+        'src/soci/src/core',
+        'src/sqlite',] + soci_postgres_cpppath
+    object_builder.add_source_files(
+        'src/ripple/unity/soci.cpp',
+        'src/ripple/unity/socipostgresql.cpp',
+        CPPPATH = cpp_path)
+    if is_unity:
+        object_builder.add_source_files(
+            'src/ripple/unity/soci_ripple.cpp',
+            CPPPATH = cpp_path)
+
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
@@ -594,7 +652,11 @@ for tu_style in ['classic', 'unity']:
 
             if tu_style == 'classic':
                 object_builder.add_source_files(
-                    *list_sources('src/ripple/app', '.cpp'))
+                    *list_sources('src/ripple/app', '.cpp'),
+                    CPPPATH=[
+                         'src/soci/src/core',
+                         'src/sqlite',]
+                )
                 object_builder.add_source_files(
                     *list_sources('src/ripple/basics', '.cpp'))
                 object_builder.add_source_files(
@@ -620,6 +682,7 @@ for tu_style in ['classic', 'unity']:
                         'src/snappy/snappy',
                         'src/snappy/config',
                     ])
+                add_soci_sources(env, object_builder, is_unity = False)
             else:
                 object_builder.add_source_files(
                     'src/ripple/unity/app.cpp',
@@ -642,6 +705,8 @@ for tu_style in ['classic', 'unity']:
                     'src/ripple/unity/protocol.cpp',
                     'src/ripple/unity/shamap.cpp',
                 )
+
+                add_soci_sources(env, object_builder, is_unity = True)
 
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',
@@ -672,8 +737,8 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/resource.cpp',
                 'src/ripple/unity/rpcx.cpp',
                 'src/ripple/unity/server.cpp',
+                'src/ripple/unity/websocket.cpp',
                 'src/ripple/unity/validators.cpp',
-                'src/ripple/unity/websocket.cpp'
             )
 
             object_builder.add_source_files(
