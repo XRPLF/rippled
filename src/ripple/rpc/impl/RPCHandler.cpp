@@ -21,7 +21,6 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/WriteJson.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -33,7 +32,6 @@
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/impl/Context.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {

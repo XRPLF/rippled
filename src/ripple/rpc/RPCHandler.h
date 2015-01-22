@@ -22,8 +22,8 @@
 
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
-#include <ripple/rpc/impl/Context.h>
 
 namespace ripple {
 namespace RPC {
