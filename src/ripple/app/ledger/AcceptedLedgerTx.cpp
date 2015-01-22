@@ -25,11 +25,11 @@
 
 namespace ripple {
 
-AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit)
+AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit)
     : mLedger (ledger)
 {
     Serializer          txnSer (sit.getVL ());
-    SerializerIterator  txnIt (txnSer);
+    SerialIter  txnIt (txnSer);
 
     mTxn =      std::make_shared<STTx> (std::ref (txnIt));
     mRawMeta =  sit.getVL ();

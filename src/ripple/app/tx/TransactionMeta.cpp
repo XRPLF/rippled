@@ -32,7 +32,7 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledge
     mTransactionID (txid), mLedger (ledger), mNodes (sfAffectedNodes, 32)
 {
     Serializer s (vec);
-    SerializerIterator sit (s);
+    SerialIter sit (s);
 
     std::unique_ptr<STBase> pobj = STObject::deserialize (sit, sfMetadata);
     STObject* obj = static_cast<STObject*> (pobj.get ());

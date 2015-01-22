@@ -37,7 +37,7 @@ public:
 
 public:
     STLedgerEntry (const Serializer & s, uint256 const& index);
-    STLedgerEntry (SerializerIterator & sit, uint256 const& index);
+    STLedgerEntry (SerialIter & sit, uint256 const& index);
     STLedgerEntry (LedgerEntryType type, uint256 const& index);
     STLedgerEntry (const STObject & object, uint256 const& index);
 

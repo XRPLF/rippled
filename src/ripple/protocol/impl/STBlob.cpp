@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-STBlob::STBlob (SerializerIterator& st, SField::ref name)
+STBlob::STBlob (SerialIter& st, SField::ref name)
     : STBase (name)
 {
     value = st.getVL ();

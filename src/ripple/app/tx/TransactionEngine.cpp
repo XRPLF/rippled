@@ -95,7 +95,7 @@ TER TransactionEngine::applyTransaction (
     {
         Serializer ser;
         txn.add (ser);
-        SerializerIterator sit (ser);
+        SerialIter sit (ser);
         STTx s2 (sit);
 
         if (!s2.isEquivalent (txn))

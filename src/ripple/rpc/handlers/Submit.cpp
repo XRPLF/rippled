@@ -47,7 +47,7 @@ Json::Value doSubmit (RPC::Context& context)
         return rpcError (rpcINVALID_PARAMS);
 
     Serializer                  sTrans (ret.first);
-    SerializerIterator          sitTrans (sTrans);
+    SerialIter          sitTrans (sTrans);
 
     STTx::pointer stpTrans;
 

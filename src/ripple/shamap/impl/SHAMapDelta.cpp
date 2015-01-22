@@ -143,11 +143,11 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
         if (ourNode->isLeaf () && otherNode->isLeaf ())
         {
             // two leaves
-            if (ourNode->getTag () == otherNode->getTag ())
+            if (ourNode->peekItem()->getTag () == otherNode->peekItem()->getTag ())
             {
-                if (ourNode->peekData () != otherNode->peekData ())
+                if (ourNode->peekItem()->peekData () != otherNode->peekItem()->peekData ())
                 {
-                    differences.insert (std::make_pair (ourNode->getTag (),
+                    differences.insert (std::make_pair (ourNode->peekItem()->getTag (),
                                                  DeltaRef (ourNode->peekItem (),
                                                  otherNode->peekItem ())));
                     if (--maxCount <= 0)
@@ -156,13 +156,13 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
             }
             else
             {
-                differences.insert (std::make_pair(ourNode->getTag (),
+                differences.insert (std::make_pair(ourNode->peekItem()->getTag (),
                                                    DeltaRef(ourNode->peekItem(),
                                                    SHAMapItem::pointer ())));
                 if (--maxCount <= 0)
                     return false;
 
-                differences.insert(std::make_pair(otherNode->getTag (),
+                differences.insert(std::make_pair(otherNode->peekItem()->getTag (),
                                                   DeltaRef(SHAMapItem::pointer(),
                                                   otherNode->peekItem ())));
                 if (--maxCount <= 0)

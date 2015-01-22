@@ -3213,9 +3213,6 @@
     <ClInclude Include="..\..\src\ripple\basics\ByteOrder.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\byte_view.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>

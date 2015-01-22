@@ -185,7 +185,7 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
 
         if (prefix == HashPrefix::transactionID)
         {
-            mItem = std::make_shared<SHAMapItem> (Serializer::getSHA512Half (rawNode), s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (getSHA512Half (rawNode), s.peekData ());
             mType = tnTRANSACTION_NM;
         }
         else if (prefix == HashPrefix::leafNode)
@@ -286,7 +286,7 @@ bool SHAMapTreeNode::updateHash ()
     }
     else if (mType == tnACCOUNT_STATE)
     {
-        Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
+        Serializer s (mItem->size() + (256 + 32) / 8);
         s.add32 (HashPrefix::leafNode);
         s.addRaw (mItem->peekData ());
         s.add256 (mItem->getTag ());
@@ -294,7 +294,7 @@ bool SHAMapTreeNode::updateHash ()
     }
     else if (mType == tnTRANSACTION_MD)
     {
-        Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
+        Serializer s (mItem->size() + (256 + 32) / 8);
         s.add32 (HashPrefix::txNode);
         s.addRaw (mItem->peekData ());
         s.add256 (mItem->getTag ());
@@ -475,11 +475,11 @@ std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
             ret += ",leaf\n";
 
         ret += "  Tag=";
-        ret += to_string (getTag ());
+        ret += to_string (peekItem()->getTag ());
         ret += "\n  Hash=";
         ret += to_string (mHash);
         ret += "/";
-        ret += beast::lexicalCast <std::string> (mItem->peekSerializer ().getDataLength ());
+        ret += beast::lexicalCast <std::string> (mItem->size());
     }
 
     return ret;

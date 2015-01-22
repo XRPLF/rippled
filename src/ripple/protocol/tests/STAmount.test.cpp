@@ -33,7 +33,7 @@ public:
         Serializer ser;
         s.add (ser);
 
-        SerializerIterator sit (ser);
+        SerialIter sit (ser);
         return STAmount::deserialize (sit);
     }
 

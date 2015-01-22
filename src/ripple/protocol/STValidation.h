@@ -46,7 +46,7 @@ public:
     };
 
     // These throw if the object is not valid
-    STValidation (SerializerIterator & sit, bool checkSignature = true);
+    STValidation (SerialIter & sit, bool checkSignature = true);
 
     // Does not sign the validation
     STValidation (uint256 const& ledgerHash, std::uint32_t signTime,

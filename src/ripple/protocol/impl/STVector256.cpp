@@ -26,7 +26,7 @@
 namespace ripple {
 
 std::unique_ptr<STBase>
-STVector256::deserialize (SerializerIterator& sit, SField::ref name)
+STVector256::deserialize (SerialIter& sit, SField::ref name)
 {
     auto vec = std::make_unique<STVector256> (name);
 

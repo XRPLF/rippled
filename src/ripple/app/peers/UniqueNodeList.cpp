@@ -1244,7 +1244,7 @@ private:
                 assert (bFound);
                 (void) bFound;
 
-                uint256     iSha256     = Serializer::getSHA512Half (strSiteFile);
+                uint256     iSha256     = getSHA512Half (strSiteFile);
                 bool        bChangedB   = sdCurrent.iSha256 != iSha256;
 
                 sdCurrent.strDomain     = strDomain;

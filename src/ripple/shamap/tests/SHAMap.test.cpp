@@ -30,6 +30,11 @@
 
 namespace ripple {
 
+inline bool operator== (SHAMapItem const& a, SHAMapItem const& b) { return a.getTag() == b.getTag(); }
+inline bool operator!= (SHAMapItem const& a, SHAMapItem const& b) { return a.getTag() != b.getTag(); }
+inline bool operator== (SHAMapItem const& a, uint256 const& b) { return a.getTag() == b; }
+inline bool operator!= (SHAMapItem const& a, uint256 const& b) { return a.getTag() != b; }
+
 class SHAMap_test : public beast::unit_test::suite
 {
 public:

@@ -56,7 +56,7 @@ Transaction::pointer Transaction::sharedTransaction (
     try
     {
         Serializer s (vucTransaction);
-        SerializerIterator sit (s);
+        SerialIter sit (s);
 
         return std::make_shared<Transaction> (
             std::make_shared<STTx> (sit),
@@ -111,7 +111,7 @@ Transaction::pointer Transaction::transactionFromSQL (
 
     rawTxn.resize (txSize);
 
-    SerializerIterator it (rawTxn);
+    SerialIter it (rawTxn);
     auto txn = std::make_shared<STTx> (it);
     auto tr = std::make_shared<Transaction> (txn, validate);
 
@@ -183,7 +183,7 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
     }
     rawTxn.resize (txSize);
 
-    SerializerIterator it (rawTxn);
+    SerialIter it (rawTxn);
     auto txn = std::make_shared<STTx> (it);
     auto tr = std::make_shared<Transaction> (txn, Validate::YES);
 
