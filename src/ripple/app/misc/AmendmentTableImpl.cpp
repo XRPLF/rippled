@@ -65,7 +65,7 @@ public:
         , mMajorityFraction (majorityFraction)
         , m_firstReport (0)
         , m_lastReport (0)
-        , m_journal (std::move (journal))
+        , m_journal (journal)
     {
     }
 
@@ -103,14 +103,14 @@ public:
 
 namespace detail
 {
-using PreEnabledAmendmentsCollection = std::vector<AmendmentName>;
+/** preEnabledAmendments is a static collection of amendments that are are
+   enabled at build time.
 
-/** preEnabledAmendments is a static collection of amendments are are enabled at build time.
-
-   Add amendments to this collection at build time to enable them on this server.
+   Add amendments to this collection at build time to enable them on this
+   server.
 */
 
-PreEnabledAmendmentsCollection const preEnabledAmendments;
+std::vector<AmendmentName> const preEnabledAmendments;
 }
 
 template<class AppApiFacade>
@@ -130,7 +130,7 @@ AmendmentTableImpl<AppApiFacade>::addInitial (Section const& section)
         }
     }
 
-    detail::PreEnabledAmendmentsCollection toAdd (detail::preEnabledAmendments);
+    std::vector<AmendmentName> toAdd (detail::preEnabledAmendments);
 
     {
         // add the amendments from the config file
@@ -650,7 +650,7 @@ AmendmentTableImpl<AppApiFacade>::getJson (uint256 const& amendmentID)
     return ret;
 }
 
-namespace AmendmentTableDetail
+namespace detail
 {
 class AppApiFacadeImpl final
 {
@@ -725,34 +725,26 @@ void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
     db->executeSQL ("END TRANSACTION;");
 }
 
-ValidationSet AppApiFacadeImpl::getValidations (
-    uint256 const& hash) const
+ValidationSet AppApiFacadeImpl::getValidations (uint256 const& hash) const
 {
     return getApp ().getValidations ().getValidations (hash);
 }
-}  // AmendmentTableDetail
+}  // detail
 
 std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    AmendmentTableDetail::AppApiFacade appApiFacade)
+    bool useMockFacade)
 {
-    switch (appApiFacade)
+    if (useMockFacade)
     {
-        case AmendmentTableDetail::AppApiFacade::useApp:
-            return std::make_unique<
-                AmendmentTableImpl<AmendmentTableDetail::AppApiFacadeImpl>>(
-                majorityTime, majorityFraction, std::move (journal));
-            break;
-        case AmendmentTableDetail::AppApiFacade::useMock:
-            return std::make_unique<
-                AmendmentTableImpl<AmendmentTableDetail::AppApiFacadeMock>>(
-                majorityTime, majorityFraction, std::move (journal));
-            break;
-        default:
-            throw std::runtime_error ("Unsupported AppApiFacade value.");
+        return std::make_unique<AmendmentTableImpl<detail::AppApiFacadeMock>>(
+            majorityTime, majorityFraction, std::move (journal));
     }
+
+    return std::make_unique<AmendmentTableImpl<detail::AppApiFacadeImpl>>(
+        majorityTime, majorityFraction, std::move (journal));
 }
 
 }  // ripple

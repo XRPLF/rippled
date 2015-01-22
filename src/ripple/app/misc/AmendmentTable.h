@@ -211,25 +211,11 @@ public:
     doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
 
-namespace AmendmentTableDetail
-{
-/**
-   AppApiFacade is used to insert mock objects into the amendment
-   table class while unit testing.
- */
-enum class AppApiFacade
-{
-    useApp,
-    useMock
-};
-}  // AmendmentTableDetail
-
 std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    AmendmentTableDetail::AppApiFacade apiFacade =
-        AmendmentTableDetail::AppApiFacade::useApp);
+    bool useMockFacade = false);
 
 }  // ripple
 

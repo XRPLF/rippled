@@ -100,7 +100,7 @@ private:
             weeks (2),
             majorityFraction,
             journal,
-            AmendmentTableDetail::AppApiFacade::useMock);
+            /*useMock*/ true);
     };
 
     // Create the amendments by string pairs instead of AmendmentNames
@@ -151,7 +151,7 @@ public:
              {TablePopulationAlgo::addInitial, TablePopulationAlgo::addKnown})
         {
             {
-                // test that the amendmens we add are enabled and amendments we
+                // test that the amendments we add are enabled and amendments we
                 // didn't add are not enabled
 
                 auto table (makeTable ());
