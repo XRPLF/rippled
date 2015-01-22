@@ -17,29 +17,24 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
 // VFALCO NOTE this looks like some facility for giving websocket
 //         a way to produce logging output.
 //
 namespace websocketpp_02 {
 namespace log {
 
-void websocketLog (websocketpp_02::log::alevel::value v, std::string const& entry)
+void websocketLog (
+    websocketpp_02::log::alevel::value v, std::string const& entry)
 {
     using namespace ripple;
+    auto isTrace = v == websocketpp_02::log::alevel::DEVEL ||
+            v == websocketpp_02::log::alevel::DEBUG_CLOSE;
 
-    if ((v == websocketpp_02::log::alevel::DEVEL) || (v == websocketpp_02::log::alevel::DEBUG_CLOSE))
-    {
-        WriteLog(lsTRACE, WebSocket) << entry;
-    }
-    else
-    {
-        WriteLog(lsDEBUG, WebSocket) << entry;
-    }
+    WriteLog(isTrace ? lsTRACE : lsDEBUG, WebSocket) << entry;
 }
 
-void websocketLog (websocketpp_02::log::elevel::value v, std::string const& entry)
+void websocketLog (
+    websocketpp_02::log::elevel::value v, std::string const& entry)
 {
     using namespace ripple;
 

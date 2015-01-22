@@ -39,8 +39,8 @@
 #include <websocketpp_02/src/sha1/sha1.h>
 #include <websocketpp_02/src/sha1/sha1.cpp>
 
+#include <ripple/websocket/WebSocket02.cpp>
 #include <ripple/websocket/MakeServer.cpp>
-
 #include <ripple/websocket/LogWebsockets.cpp>
 
 // Must come last to prevent compilation errors.

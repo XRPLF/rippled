@@ -4233,6 +4233,18 @@
     <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\websocket\Server.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\websocket\WebSocket.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\websocket\WebSocket02.cpp">
+      <Filter>ripple\websocket</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
+      <Filter>ripple\websocket</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <Filter>rocksdb2\db</Filter>
     </ClCompile>

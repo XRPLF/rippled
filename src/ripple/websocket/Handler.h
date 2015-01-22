@@ -22,41 +22,48 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/CollectorManager.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/websocket/Connection.h>
+#include <ripple/websocket/WebSocket.h>
+
 #include <memory>
-#include <unordered_map>
 
 namespace ripple {
 
 extern bool serverOkay (std::string& reason);
 
-template <typename endpoint_type>
-class WSConnectionType;
+namespace websocket {
 
 // CAUTION: on_* functions are called by the websocket code while holding a lock
-
-struct WSServerHandlerLog;
-
-// This tag helps with mutex tracking
-struct WSServerHandlerBase
-{
-};
 
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
 
-template <typename endpoint_type>
-class WSServerHandler
-    : public WSServerHandlerBase
-    , public endpoint_type::handler
+/** Make a beast endpoint from a boost::asio endpoint. */
+inline
+beast::IP::Endpoint makeBeastEndpoint (boost::asio::ip::tcp::endpoint const& e)
+{
+    return beast::IP::from_asio (e);
+}
+
+/** Make a beast endpoint from itself. */
+inline
+beast::IP::Endpoint makeBeastEndpoint (beast::IP::Endpoint const& e)
+{
+    return e;
+}
+
+template <class WebSocket>
+class HandlerImpl
+    : public WebSocket::Handler
 {
 public:
-    typedef typename endpoint_type::handler::connection_ptr     connection_ptr;
-    typedef typename endpoint_type::handler::message_ptr        message_ptr;
-    typedef std::shared_ptr< WSConnectionType <endpoint_type> >    wsc_ptr;
+    using connection_ptr = typename WebSocket::ConnectionPtr;
+    using message_ptr = typename WebSocket::MessagePtr;
+    using wsc_ptr = std::shared_ptr <ConnectionImpl <WebSocket> > ;
 
     // Private reasons to close.
     enum
@@ -65,89 +72,80 @@ public:
     };
 
 private:
-    std::shared_ptr<HTTP::Port> port_;
-    Resource::Manager& m_resourceManager;
-    InfoSub::Source& m_source;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_io_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
+    ServerDescription desc_;
 
 protected:
     // VFALCO TODO Make this private.
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    LockType mLock;
+    std::mutex mLock;
 
     // For each connection maintain an associated object to track subscriptions.
-    using MapType = hash_map <connection_ptr, wsc_ptr>;
+    typedef hash_map <connection_ptr, wsc_ptr> MapType;
     MapType mMap;
 
 public:
-    WSServerHandler (std::shared_ptr<HTTP::Port> const& port,
-        Resource::Manager& resourceManager, InfoSub::Source& source,
-            CollectorManager& cm)
-        : port_(port)
-        , m_resourceManager (resourceManager)
-        , m_source (source)
+    HandlerImpl (ServerDescription const& desc) : desc_ (desc)
     {
-        auto const& group (cm.group ("rpc"));
+        auto const& group (desc_.collectorManager.group ("rpc"));
         rpc_requests_ = group->make_counter ("requests");
         rpc_io_ = group->make_event ("io");
         rpc_size_ = group->make_event ("size");
         rpc_time_ = group->make_event ("time");
     }
 
-    WSServerHandler(WSServerHandler const&) = delete;
-    WSServerHandler& operator= (WSServerHandler const&) = delete;
+    HandlerImpl(HandlerImpl const&) = delete;
+    HandlerImpl& operator= (HandlerImpl const&) = delete;
 
     HTTP::Port const&
     port() const
     {
-        return *port_;
+        return desc_.port;
     }
 
     bool getPublic()
     {
-        return port_->allow_admin;
+        return port().allow_admin;
     };
 
-    void send (connection_ptr cpClient, message_ptr mpMessage)
+    void send (connection_ptr const& cpClient, message_ptr const& mpMessage)
     {
         try
         {
-            cpClient->send (mpMessage->get_payload (), mpMessage->get_opcode ());
+            cpClient->send (
+                mpMessage->get_payload (), mpMessage->get_opcode ());
         }
         catch (...)
         {
-            cpClient->close (websocketpp_02::close::status::value (crTooSlow),
-                             std::string ("Client is too slow."));
+            WebSocket::closeTooSlowClient (*cpClient, crTooSlow);
         }
     }
 
-    void send (connection_ptr cpClient, std::string const& strMessage,
+    void send (connection_ptr const& cpClient, std::string const& strMessage,
                bool broadcast)
     {
         try
         {
-            WriteLog (broadcast ? lsTRACE : lsDEBUG, WSServerHandlerLog)
+            WriteLog (broadcast ? lsTRACE : lsDEBUG, HandlerLog)
                     << "Ws:: Sending '" << strMessage << "'";
 
             cpClient->send (strMessage);
         }
         catch (...)
         {
-            cpClient->close (websocketpp_02::close::status::value (crTooSlow),
-                             std::string ("Client is too slow."));
+            WebSocket::closeTooSlowClient (*cpClient, crTooSlow);
         }
     }
 
-    void send (connection_ptr cpClient, Json::Value const& jvObj, bool broadcast)
+    void send (connection_ptr const& cpClient, Json::Value const& jvObj,
+               bool broadcast)
     {
         send (cpClient, to_string (jvObj), broadcast);
     }
 
-    void pingTimer (connection_ptr cpClient)
+    void pingTimer (connection_ptr const& cpClient)
     {
         wsc_ptr ptr;
         {
@@ -163,12 +161,13 @@ public:
 
         if (ptr->onPingTimer (data))
         {
-            cpClient->terminate (false);
+            cpClient->terminate ({});
             try
             {
-                WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                WriteLog (lsDEBUG, HandlerLog) <<
                     "Ws:: ping_out(" <<
-                     cpClient->get_socket ().remote_endpoint ().to_string () <<
+                    // TODO(tom): re-enable this logging.
+                    // cpClient->get_socket ().remote_endpoint ().to_string ()
                      ")";
             }
             catch (...)
@@ -179,7 +178,7 @@ public:
             cpClient->ping (data);
     }
 
-    void on_send_empty (connection_ptr cpClient)
+    void on_send_empty (connection_ptr cpClient) override
     {
         wsc_ptr ptr;
         {
@@ -195,31 +194,33 @@ public:
         ptr->onSendEmpty ();
     }
 
-    void on_open (connection_ptr cpClient)
+    void on_open (connection_ptr cpClient) override
     {
         ScopedLockType   sl (mLock);
 
         try
         {
-            std::pair <typename MapType::iterator, bool> const result (
-                mMap.emplace (cpClient,
-                    std::make_shared < WSConnectionType <endpoint_type> > (
-                        std::ref(m_resourceManager),
-                        std::ref (m_source),
-                        std::ref(*this),
-                        std::cref(cpClient))));
+            auto remoteEndpoint = cpClient->get_socket ().remote_endpoint ();
+            auto connection = std::make_shared <ConnectionImpl <WebSocket> > (
+                desc_.resourceManager,
+                desc_.source,
+                *this,
+                cpClient,
+                makeBeastEndpoint (remoteEndpoint),
+                WebSocket::getStrand (*cpClient).get_io_service ());
+            auto result = mMap.emplace (cpClient, std::move (connection));
+
             assert (result.second);
             (void) result.second;
-            WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: on_open(" <<
-                cpClient->get_socket ().remote_endpoint() << ")";
+            WriteLog (lsDEBUG, HandlerLog) <<
+                "Ws:: on_open(" << remoteEndpoint << ")";
         }
         catch (...)
         {
         }
     }
 
-    void on_pong (connection_ptr cpClient, std::string data)
+    void on_pong (connection_ptr cpClient, std::string data) override
     {
         wsc_ptr ptr;
         {
@@ -233,7 +234,7 @@ public:
         }
         try
         {
-            WriteLog (lsDEBUG, WSServerHandlerLog) <<
+            WriteLog (lsDEBUG, HandlerLog) <<
            "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (...)
@@ -242,12 +243,12 @@ public:
         ptr->onPong (data);
     }
 
-    void on_close (connection_ptr cpClient)
+    void on_close (connection_ptr cpClient) override
     {
         doClose (cpClient, "on_close");
     }
 
-    void on_fail (connection_ptr cpClient)
+    void on_fail (connection_ptr cpClient) override
     {
         doClose (cpClient, "on_fail");
     }
@@ -265,7 +266,7 @@ public:
             {
                 try
                 {
-                    WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                    WriteLog (lsDEBUG, HandlerLog) <<
                         "Ws:: " << reason << "(" <<
                            cpClient->get_socket ().remote_endpoint() <<
                            ") not found";
@@ -277,14 +278,14 @@ public:
             }
 
             ptr = it->second;
-            // prevent the WSConnection from being destroyed until we release
+            // prevent the ConnectionImpl from being destroyed until we release
             // the lock
             mMap.erase (it);
         }
         ptr->preDestroy (); // Must be done before we return
         try
         {
-            WriteLog (lsDEBUG, WSServerHandlerLog) <<
+            WriteLog (lsDEBUG, HandlerLog) <<
                 "Ws:: " << reason << "(" <<
                    cpClient->get_socket ().remote_endpoint () << ") found";
         }
@@ -296,10 +297,10 @@ public:
         getApp().getJobQueue ().addJob (
             jtCLIENT,
             "WSClient::destroy",
-            std::bind (&WSConnectionType <endpoint_type>::destroy, ptr));
+            std::bind (&ConnectionImpl <WebSocket>::destroy, ptr));
     }
 
-    void on_message (connection_ptr cpClient, message_ptr mpMessage)
+    void on_message (connection_ptr cpClient, message_ptr mpMessage) override
     {
         wsc_ptr ptr;
         {
@@ -319,7 +320,7 @@ public:
         {
             try
             {
-                WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                WriteLog (lsDEBUG, HandlerLog) <<
                     "Ws:: Rejected(" <<
                     cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
@@ -331,11 +332,11 @@ public:
 
         if (bRunQ)
             getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
-                      std::bind (&WSServerHandler<endpoint_type>::do_messages,
+                      std::bind (&HandlerImpl <WebSocket>::do_messages,
                                  this, std::placeholders::_1, cpClient));
     }
 
-    void do_messages (Job& job, connection_ptr cpClient)
+    void do_messages (Job& job, connection_ptr const& cpClient)
     {
         wsc_ptr ptr;
         {
@@ -369,7 +370,7 @@ public:
         if (ptr->checkMessage ())
             getApp().getJobQueue ().addJob (
                 jtCLIENT, "WSClient::more",
-                std::bind (&WSServerHandler<endpoint_type>::do_messages, this,
+                std::bind (&HandlerImpl <WebSocket>::do_messages, this,
                            std::placeholders::_1, cpClient));
     }
 
@@ -381,15 +382,16 @@ public:
 
         try
         {
-            WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: Receiving(" << cpClient->get_socket ().remote_endpoint () <<
-                ") '" << mpMessage->get_payload () << "'";
+            WriteLog (lsDEBUG, HandlerLog)
+                    << "Ws:: Receiving("
+                    << cpClient->get_socket ().remote_endpoint ()
+                    << ") '" << mpMessage->get_payload () << "'";
         }
         catch (...)
         {
         }
 
-        if (mpMessage->get_opcode () != websocketpp_02::frame::opcode::TEXT)
+        if (!WebSocket::isTextMessage (*mpMessage))
         {
             Json::Value jvResult (Json::objectValue);
 
@@ -437,23 +439,21 @@ public:
     boost::asio::ssl::context&
     get_ssl_context ()
     {
-        return *port_->context;
+        return *port().context;
     }
 
-    bool
-    plain_only()
+    bool plain_only()
     {
-        return port_->protocol.count("wss") == 0;
+        return port().protocol.count("wss") == 0;
     }
 
-    bool
-    secure_only()
+    bool secure_only()
     {
-        return port_->protocol.count("ws") == 0;
+        return port().protocol.count("ws") == 0;
     }
 
     // Respond to http requests.
-    bool http (connection_ptr cpClient)
+    bool http (connection_ptr cpClient) override
     {
         std::string reason;
 
@@ -468,7 +468,8 @@ public:
         cpClient->set_body (
             "<!DOCTYPE html><html><head><title>" + systemName () +
             " Test</title></head>" + "<body><h1>" + systemName () +
-            " Test</h1><p>This page shows http(s) connectivity is working.</p></body></html>");
+            " Test</h1><p>This page shows http(s) connectivity is working."
+            "</p></body></html>");
         return true;
     }
 
@@ -479,6 +480,7 @@ public:
     }
 };
 
+} // websocket
 } // ripple
 
 #endif

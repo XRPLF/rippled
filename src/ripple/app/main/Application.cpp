@@ -292,7 +292,7 @@ public:
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
     std::unique_ptr <Overlay> m_overlay;
-    std::vector <std::unique_ptr<WSDoor>> wsDoors_;
+    std::vector <std::unique_ptr<beast::Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
     beast::WaitableEvent m_stop;
@@ -804,20 +804,21 @@ public:
             serverHandler_->setup (setup, m_journal);
         }
 
-        // Create websocket doors
+        // Create websocket servers.
         for (auto const& port : serverHandler_->setup().ports)
         {
             if (! port.websockets())
                 continue;
-            auto door (make_WSDoor (port, *m_resourceManager, getOPs (),
-                *m_collectorManager));
-            if (door == nullptr)
+            auto server = websocket::makeServer (
+                {port, *m_resourceManager, getOPs(), m_journal,
+                 *m_collectorManager});
+            if (!server)
             {
                 m_journal.fatal << "Could not create Websocket for [" <<
                     port.name << "]";
                 throw std::exception();
             }
-            wsDoors_.emplace_back(std::move(door));
+            websocketServers_.emplace_back (std::move (server));
         }
 
         //----------------------------------------------------------------------

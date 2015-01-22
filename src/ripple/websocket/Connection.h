@@ -37,246 +37,123 @@
 #include <ripple/json/to_string.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Role.h>
+#include <ripple/websocket/WebSocket.h>
+
 #include <boost/asio.hpp>
 #include <beast/asio/placeholders.h>
 #include <memory>
 
 namespace ripple {
+namespace websocket {
+
+template <class WebSocket>
+class HandlerImpl;
 
 /** A Ripple WebSocket connection handler.
-    This handles everything that is independent of the endpint_type.
 */
-class WSConnection
-    : public std::enable_shared_from_this <WSConnection>
+template <class WebSocket>
+class ConnectionImpl
+    : public std::enable_shared_from_this <ConnectionImpl <WebSocket> >
     , public InfoSub
-    , public CountedObject <WSConnection>
+    , public CountedObject <ConnectionImpl <WebSocket>>
 {
 public:
-    static char const* getCountedObjectName () { return "WSConnection"; }
+    static char const* getCountedObjectName () { return "ConnectionImpl"; }
 
-protected:
-    typedef websocketpp_02::message::data::ptr message_ptr;
+    using message_ptr = typename WebSocket::MessagePtr;
+    using connection = typename WebSocket::Connection;
+    using connection_ptr = typename WebSocket::ConnectionPtr;
+    using weak_connection_ptr = typename WebSocket::ConnectionWeakPtr;
+    using handler_type = HandlerImpl <WebSocket>;
 
-    WSConnection (HTTP::Port const& port,
-        Resource::Manager& resourceManager, Resource::Consumer usage,
-            InfoSub::Source& source, bool isPublic,
-                beast::IP::Endpoint const& remoteAddress,
-                    boost::asio::io_service& io_service);
+    ConnectionImpl (
+        Resource::Manager& resourceManager,
+        InfoSub::Source& source,
+        handler_type& handler,
+        connection_ptr const& cpConnection,
+        beast::IP::Endpoint const& remoteAddress,
+        boost::asio::io_service& io_service);
 
-    WSConnection(WSConnection const&) = delete;
-    WSConnection& operator= (WSConnection const&) = delete;
+    void preDestroy ();
 
-    virtual ~WSConnection ();
+    static void destroy (std::shared_ptr <ConnectionImpl <WebSocket> >)
+    {
+        // Just discards the reference
+    }
 
-    virtual void preDestroy () = 0;
-    virtual void disconnect () = 0;
+    void send (Json::Value const& jvObj, bool broadcast);
 
-    virtual void recordMetrics (RPC::Context const&) const = 0;
+    void disconnect ();
+    static void handle_disconnect(weak_connection_ptr c);
 
-public:
+    bool onPingTimer (std::string&);
+    void pingTimer (typename WebSocket::ErrorCode const& e);
+
     void onPong (std::string const&);
-    void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue);
+    void rcvMessage (message_ptr const&, bool& msgRejected, bool& runQueue);
     message_ptr getMessage ();
     bool checkMessage ();
-    void returnMessage (message_ptr ptr);
+    void returnMessage (message_ptr const&);
     Json::Value invokeCommand (Json::Value& jvRequest);
 
-protected:
+    // Generically implemented per version.
+    void setPingTimer ();
+
+private:
     HTTP::Port const& port_;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     bool const m_isPublic;
     beast::IP::Endpoint const m_remoteAddress;
-    LockType m_receiveQueueMutex;
+    std::mutex m_receiveQueueMutex;
     std::deque <message_ptr> m_receiveQueue;
     NetworkOPs& m_netOPs;
-    boost::asio::deadline_timer m_pingTimer;
-    bool m_sentPing;
-    bool m_receiveQueueRunning;
-    bool m_isDead;
     boost::asio::io_service& m_io_service;
-};
+    boost::asio::deadline_timer m_pingTimer;
 
-//------------------------------------------------------------------------------
+    bool m_sentPing = false;
+    bool m_receiveQueueRunning = false;
+    bool m_isDead = false;
 
-template <typename endpoint_type>
-class WSServerHandler;
-
-/** A Ripple WebSocket connection handler for a specific endpoint_type.
-*/
-template <typename endpoint_type>
-class WSConnectionType
-    : public WSConnection
-{
-public:
-    typedef typename endpoint_type::connection_type connection;
-    typedef typename boost::shared_ptr<connection> connection_ptr;
-    typedef typename boost::weak_ptr<connection> weak_connection_ptr;
-    typedef WSServerHandler <endpoint_type> server_type;
-
-private:
-    server_type& m_serverHandler;
+    handler_type& m_handler;
     weak_connection_ptr m_connection;
-
-public:
-    WSConnectionType (Resource::Manager& resourceManager,
-                      InfoSub::Source& source,
-                      server_type& serverHandler,
-                      connection_ptr const& cpConnection)
-        : WSConnection (
-            serverHandler.port(),
-            resourceManager,
-            resourceManager.newInboundEndpoint (
-                cpConnection->get_socket ().remote_endpoint ()),
-            source,
-            serverHandler.getPublic (),
-            cpConnection->get_socket ().remote_endpoint (),
-            cpConnection->get_io_service ())
-        , m_serverHandler (serverHandler)
-        , m_connection (cpConnection)
-    {
-        setPingTimer ();
-    }
-
-    void preDestroy ()
-    {
-        // sever connection
-        m_pingTimer.cancel ();
-        m_connection.reset ();
-
-        {
-            ScopedLockType sl (m_receiveQueueMutex);
-            m_isDead = true;
-        }
-    }
-
-    static void destroy (std::shared_ptr <WSConnectionType <endpoint_type> >)
-    {
-        // Just discards the reference
-    }
-
-    void recordMetrics (RPC::Context const& context) const override
-    {
-        m_serverHandler.recordMetrics (context);
-    }
-
-    // Implement overridden functions from base class:
-    void send (Json::Value const& jvObj, bool broadcast)
-    {
-        connection_ptr ptr = m_connection.lock ();
-
-        if (ptr)
-            m_serverHandler.send (ptr, jvObj, broadcast);
-    }
-
-    void send (Json::Value const& jvObj, std::string const& sObj, bool broadcast)
-    {
-        connection_ptr ptr = m_connection.lock ();
-
-        if (ptr)
-            m_serverHandler.send (ptr, sObj, broadcast);
-    }
-
-    void disconnect ()
-    {
-        connection_ptr ptr = m_connection.lock ();
-
-        if (ptr)
-            m_io_service.dispatch (ptr->get_strand ().wrap (std::bind (
-                &WSConnectionType <endpoint_type>::handle_disconnect,
-                    m_connection)));
-    }
-
-    static void handle_disconnect(weak_connection_ptr c)
-    {
-        connection_ptr ptr = c.lock ();
-
-        if (ptr)
-            ptr->close (websocketpp_02::close::status::PROTOCOL_ERROR, "overload");
-    }
-
-    bool onPingTimer (std::string&)
-    {
-        if (m_sentPing)
-            return true; // causes connection to close
-
-        m_sentPing = true;
-        setPingTimer ();
-        return false; // causes ping to be sent
-    }
-
-    //--------------------------------------------------------------------------
-
-    static void pingTimer (weak_connection_ptr c, server_type* h,
-        boost::system::error_code const& e)
-    {
-        if (e)
-            return;
-
-        connection_ptr ptr = c.lock ();
-
-        if (ptr)
-            h->pingTimer (ptr);
-    }
-
-    void setPingTimer ()
-    {
-        connection_ptr ptr = m_connection.lock ();
-
-        if (ptr)
-        {
-            m_pingTimer.expires_from_now (boost::posix_time::seconds
-                (getConfig ().WEBSOCKET_PING_FREQ));
-
-            m_pingTimer.async_wait (ptr->get_strand ().wrap (
-                std::bind (&WSConnectionType <endpoint_type>::pingTimer,
-                    m_connection, &m_serverHandler,
-                           beast::asio::placeholders::error)));
-        }
-    }
 };
 
-//------------------------------------------------------------------------------
-// This next code will become templated in the next change so these methods are
-// brought here to simplify diffs.
-
-inline
-WSConnection::WSConnection (HTTP::Port const& port,
-    Resource::Manager& resourceManager, Resource::Consumer usage,
-        InfoSub::Source& source, bool isPublic,
-            beast::IP::Endpoint const& remoteAddress,
-                boost::asio::io_service& io_service)
-    : InfoSub (source, usage)
-    , port_(port)
-    , m_resourceManager (resourceManager)
-    , m_isPublic (isPublic)
-    , m_remoteAddress (remoteAddress)
-    , m_netOPs (getApp ().getOPs ())
-    , m_pingTimer (io_service)
-    , m_sentPing (false)
-    , m_receiveQueueRunning (false)
-    , m_isDead (false)
-    , m_io_service (io_service)
+template <class WebSocket>
+ConnectionImpl <WebSocket>::ConnectionImpl (
+    Resource::Manager& resourceManager,
+    InfoSub::Source& source,
+    handler_type& handler,
+    connection_ptr const& cpConnection,
+    beast::IP::Endpoint const& remoteAddress,
+    boost::asio::io_service& io_service)
+        : InfoSub (source, // usage
+                   resourceManager.newInboundEndpoint (remoteAddress))
+        , port_ (handler.port())
+        , m_resourceManager (resourceManager)
+        , m_isPublic (handler.getPublic ())
+        , m_remoteAddress (remoteAddress)
+        , m_netOPs (getApp ().getOPs ())
+        , m_io_service (io_service)
+        , m_pingTimer (io_service)
+        , m_handler (handler)
+        , m_connection (cpConnection)
 {
-    WriteLog (lsDEBUG, WSConnection) <<
-        "Websocket connection from " << remoteAddress;
+    setPingTimer ();
 }
 
-inline
-WSConnection::~WSConnection ()
-{
-}
-
-inline
-void WSConnection::onPong (std::string const&)
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::onPong (std::string const&)
 {
     m_sentPing = false;
 }
 
-inline
-void WSConnection::rcvMessage (
-    message_ptr msg, bool& msgRejected, bool& runQueue)
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::rcvMessage (
+    message_ptr const& msg, bool& msgRejected, bool& runQueue)
 {
+    WriteLog (lsWARNING, ConnectionImpl)
+            << "WebSocket: rcvMessage";
     ScopedLockType sl (m_receiveQueueMutex);
 
     if (m_isDead)
@@ -307,8 +184,8 @@ void WSConnection::rcvMessage (
     }
 }
 
-inline
-bool WSConnection::checkMessage ()
+template <class WebSocket>
+bool ConnectionImpl <WebSocket>::checkMessage ()
 {
     ScopedLockType sl (m_receiveQueueMutex);
 
@@ -323,8 +200,8 @@ bool WSConnection::checkMessage ()
     return true;
 }
 
-inline
-WSConnection::message_ptr WSConnection::getMessage ()
+template <class WebSocket>
+typename WebSocket::MessagePtr ConnectionImpl <WebSocket>::getMessage ()
 {
     ScopedLockType sl (m_receiveQueueMutex);
 
@@ -339,8 +216,8 @@ WSConnection::message_ptr WSConnection::getMessage ()
     return m;
 }
 
-inline
-void WSConnection::returnMessage (message_ptr ptr)
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::returnMessage (message_ptr const& ptr)
 {
     ScopedLockType sl (m_receiveQueueMutex);
 
@@ -351,8 +228,8 @@ void WSConnection::returnMessage (message_ptr ptr)
     }
 }
 
-inline
-Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
+template <class WebSocket>
+Json::Value ConnectionImpl <WebSocket>::invokeCommand (Json::Value& jvRequest)
 {
     if (getConsumer().disconnect ())
     {
@@ -433,7 +310,79 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     return jvResult;
 }
 
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::preDestroy ()
+{
+    // sever connection
+    this->m_pingTimer.cancel ();
+    m_connection.reset ();
 
+    {
+        ScopedLockType sl (this->m_receiveQueueMutex);
+        this->m_isDead = true;
+    }
+}
+
+// Implement overridden functions from base class:
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
+{
+    WriteLog (lsWARNING, ConnectionImpl)
+            << "WebSocket: sending '" << to_string (jvObj);
+    connection_ptr ptr = m_connection.lock ();
+
+    if (ptr)
+        m_handler.send (ptr, jvObj, broadcast);
+}
+
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::disconnect ()
+{
+    WriteLog (lsWARNING, ConnectionImpl)
+            << "WebSocket: disconnecting";
+    connection_ptr ptr = m_connection.lock ();
+
+    if (ptr)
+        this->m_io_service.dispatch (WebSocket::getStrand (*ptr).wrap (std::bind (
+            &ConnectionImpl <WebSocket>::handle_disconnect,
+                m_connection)));
+}
+
+// static
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::handle_disconnect(weak_connection_ptr c)
+{
+    connection_ptr ptr = c.lock ();
+
+    if (ptr)
+        WebSocket::handleDisconnect (*ptr);
+}
+
+template <class WebSocket>
+bool ConnectionImpl <WebSocket>::onPingTimer (std::string&)
+{
+    if (this->m_sentPing)
+        return true; // causes connection to close
+
+    this->m_sentPing = true;
+    setPingTimer ();
+    return false; // causes ping to be sent
+}
+
+//--------------------------------------------------------------------------
+
+template <class WebSocket>
+void ConnectionImpl <WebSocket>::pingTimer (
+    typename WebSocket::ErrorCode const& e)
+{
+    if (!e)
+    {
+        if (auto ptr = this->m_connection.lock ())
+            this->m_handler.pingTimer (ptr);
+    }
+}
+
+} // websocket
 } // ripple
 
 #endif

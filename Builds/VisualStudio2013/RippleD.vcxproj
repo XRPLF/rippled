@@ -3507,6 +3507,15 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\websocket\Server.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\websocket\WebSocket.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\websocket\WebSocket02.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

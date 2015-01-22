@@ -17,31 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_WEBSOCKET_MAKESERVER_H
-#define RIPPLED_RIPPLE_WEBSOCKET_MAKESERVER_H
+#ifndef RIPPLED_RIPPLE_WEBSOCKET_WEBSOCKET_H
+#define RIPPLED_RIPPLE_WEBSOCKET_WEBSOCKET_H
 
-#include <ripple/app/main/CollectorManager.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/server/Port.h>
-
-namespace beast { class Stoppable; }
+#include <ripple/websocket/MakeServer.h>
+#include <beast/asio/IPAddressConversion.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
-
-namespace Resource { class Manager; }
-
 namespace websocket {
 
-struct ServerDescription
-{
-    HTTP::Port port;
-    Resource::Manager& resourceManager;
-    InfoSub::Source& source;
-    beast::Journal& journal;
-    CollectorManager& collectorManager;
-};
+using ScopedLockType = std::lock_guard <std::mutex>;
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const&);
+std::unique_ptr<beast::Stoppable> makeServer02 (ServerDescription const&);
+std::unique_ptr<beast::Stoppable> makeServer04 (ServerDescription const&);
 
 } // websocket
 } // ripple
