@@ -685,7 +685,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
     if (root->isLeaf ())
     {
         if (includeLeaves &&
-                (!have || !have->hasLeafNode (root->getTag (), root->getNodeHash ())))
+                (!have || !have->hasLeafNode (root->peekItem()->getTag (), root->getNodeHash ())))
         {
             Serializer s;
             root->addRaw (s, snfPREFIX);
@@ -728,7 +728,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                     if (!have || !have->hasInnerNode (childID, childHash))
                         stack.push ({next, childID});
                 }
-                else if (includeLeaves && (!have || !have->hasLeafNode (next->getTag(), childHash)))
+                else if (includeLeaves && (!have || !have->hasLeafNode (next->peekItem()->getTag(), childHash)))
                 {
                     Serializer s;
                     next->addRaw (s, snfPREFIX);

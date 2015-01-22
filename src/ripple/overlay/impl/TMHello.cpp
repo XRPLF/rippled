@@ -97,7 +97,7 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
 
     // Finally, derive the actual cookie for the values that
     // we have calculated.
-    result.first = Serializer::getSHA512Half (sha1, sizeof(sha1));
+    result.first = getSHA512Half (sha1, sizeof(sha1));
     result.second = true;
     return result;
 }

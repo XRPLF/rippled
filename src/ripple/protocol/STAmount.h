@@ -109,7 +109,7 @@ public:
 private:
     static
     std::unique_ptr<STAmount>
-    construct (SerializerIterator&, SField::ref name);
+    construct (SerialIter&, SField::ref name);
 
     void
     setSNValue (std::int64_t);
@@ -122,14 +122,14 @@ public:
     static
     std::unique_ptr <STBase>
     deserialize (
-        SerializerIterator& sit, SField::ref name)
+        SerialIter& sit, SField::ref name)
     {
         return construct (sit, name);
     }
 
     static
     STAmount
-    deserialize (SerializerIterator&);
+    deserialize (SerialIter&);
 
     //--------------------------------------------------------------------------
     //

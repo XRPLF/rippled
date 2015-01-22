@@ -326,7 +326,7 @@ public:
                 std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert (hash == Serializer::getSHA512Half (data));
+        assert (hash == getSHA512Half (data));
         #endif
 
         m_cache.canonicalize (hash, object, true);

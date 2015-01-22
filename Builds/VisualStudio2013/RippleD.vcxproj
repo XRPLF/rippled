@@ -1775,8 +1775,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ByteOrder.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\byte_view.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CountedObject.h">

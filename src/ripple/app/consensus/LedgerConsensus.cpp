@@ -1145,7 +1145,7 @@ private:
                         WriteLog (lsDEBUG, LedgerConsensus)
                             << "Test applying disputed transaction that did"
                             << " not get in";
-                        SerializerIterator sit (it.second->peekTransaction ());
+                        SerialIter sit (it.second->peekTransaction ());
                         STTx::pointer txn
                             = std::make_shared<STTx>(sit);
 
@@ -2091,7 +2091,7 @@ void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
                     "Processing candidate transaction: " << item->getTag ();
                 try
                 {
-                    SerializerIterator sit (item->peekSerializer ());
+                    SerialIter sit (item->peekSerializer ());
                     STTx::pointer txn
                         = std::make_shared<STTx>(sit);
                     if (applyTransaction (engine, txn,

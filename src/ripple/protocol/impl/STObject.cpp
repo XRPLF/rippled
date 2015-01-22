@@ -94,7 +94,7 @@ STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 // VFALCO TODO Remove the 'depth' parameter
 std::unique_ptr<STBase>
 STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
-        SerializerIterator& sit, int depth)
+        SerialIter& sit, int depth)
 {
     switch (id)
     {
@@ -259,7 +259,7 @@ bool STObject::isFieldAllowed (SField::ref field)
 }
 
 // return true = terminated with end-of-object
-bool STObject::set (SerializerIterator& sit, int depth)
+bool STObject::set (SerialIter& sit, int depth)
 {
     bool reachedEndOfObject = false;
 
@@ -313,7 +313,7 @@ bool STObject::set (SerializerIterator& sit, int depth)
 
 
 std::unique_ptr<STBase>
-STObject::deserialize (SerializerIterator& sit, SField::ref name)
+STObject::deserialize (SerialIter& sit, SField::ref name)
 {
     std::unique_ptr <STObject> object (std::make_unique <STObject> (name));
     object->set (sit, 1);

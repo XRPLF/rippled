@@ -184,7 +184,7 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id)
         nodeID = nodeID.getChildNodeID (branch);
     }
 
-    return (inNode->getTag () == id) ? inNode : nullptr;
+    return (inNode->peekItem()->getTag () == id) ? inNode : nullptr;
 }
 
 SHAMapTreeNode::pointer SHAMap::fetchNodeFromDB (uint256 const& hash)
@@ -1100,7 +1100,7 @@ bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeF
         nodeID = nodeID.getChildNodeID (branch);
     }
 
-    if (inNode->getTag () != index) // path leads to different leaf
+    if (inNode->peekItem()->getTag () != index) // path leads to different leaf
         return false;
 
     // path leads to the requested leaf

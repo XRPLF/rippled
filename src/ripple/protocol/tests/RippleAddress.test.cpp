@@ -46,7 +46,7 @@ public:
 
         // Check node signing.
         Blob vucTextSrc = strCopy ("Hello, nurse!");
-        uint256 uHash   = Serializer::getSHA512Half (vucTextSrc);
+        uint256 uHash   = getSHA512Half (vucTextSrc);
         Blob vucTextSig;
 
         naNodePrivate.signNodePrivate (uHash, vucTextSig);

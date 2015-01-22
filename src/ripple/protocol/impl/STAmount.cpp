@@ -138,7 +138,7 @@ STAmount::STAmount (Issue const& issue,
 }
 
 std::unique_ptr<STAmount>
-STAmount::construct (SerializerIterator& sit, SField::ref name)
+STAmount::construct (SerialIter& sit, SField::ref name)
 {
     std::uint64_t value = sit.get64 ();
 
@@ -202,7 +202,7 @@ STAmount::createFromInt64 (SField::ref name, std::int64_t value)
            : STAmount (name, static_cast<std::uint64_t> (-value), true);
 }
 
-STAmount STAmount::deserialize (SerializerIterator& it)
+STAmount STAmount::deserialize (SerialIter& it)
 {
     auto s = construct (it, sfGeneric);
 

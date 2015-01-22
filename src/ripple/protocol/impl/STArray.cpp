@@ -25,7 +25,7 @@
 namespace ripple {
 
 std::unique_ptr<STBase>
-STArray::deserialize (SerializerIterator& sit, SField::ref field)
+STArray::deserialize (SerialIter& sit, SField::ref field)
 {
     std::unique_ptr <STArray> ret (std::make_unique <STArray> (field));
     vector& value (ret->getValue ());

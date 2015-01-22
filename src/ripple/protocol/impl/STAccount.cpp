@@ -35,7 +35,7 @@ std::string STAccount::getText () const
 }
 
 STAccount*
-STAccount::construct (SerializerIterator& u, SField::ref name)
+STAccount::construct (SerialIter& u, SField::ref name)
 {
     return new STAccount (name, u.getVL ());
 }

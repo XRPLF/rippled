@@ -74,14 +74,17 @@ public:
     {
         return mSeq;
     }
+
     void setSeq (std::uint32_t s)
     {
         mSeq = s;
     }
+
     uint256 const& getNodeHash () const
     {
         return mHash;
     }
+
     TNType getType () const
     {
         return mType;
@@ -93,27 +96,33 @@ public:
         return (mType == tnTRANSACTION_NM) || (mType == tnTRANSACTION_MD) ||
                (mType == tnACCOUNT_STATE);
     }
+
     bool isInner () const
     {
         return mType == tnINNER;
     }
+
     bool isInBounds (SHAMapNodeID const &id) const
     {
         // Nodes at depth 64 must be leaves
         return (!isInner() || (id.getDepth() < 64));
     }
+
     bool isValid () const
     {
         return mType != tnERROR;
     }
+
     bool isTransaction () const
     {
         return (mType == tnTRANSACTION_NM) || (mType == tnTRANSACTION_MD);
     }
+
     bool hasMetaData () const
     {
         return mType == tnTRANSACTION_MD;
     }
+
     bool isAccountState () const
     {
         return mType == tnACCOUNT_STATE;
@@ -135,9 +144,13 @@ public:
     {
         return (mIsBranch & (1 << m)) == 0;
     }
+
     bool isEmpty () const;
+
     int getBranchCount () const;
+
     void makeInner ();
+
     uint256 const& getChildHash (int m) const
     {
         assert ((m >= 0) && (m < 16) && (mType == tnINNER));
@@ -149,38 +162,33 @@ public:
     {
         return bool(mItem);
     }
-    SHAMapItem::ref peekItem ()
+
+    SHAMapItem::ref peekItem () const
     {
-        // CAUTION: Do not modify the item TODO(tom): a comment in the code does
-        // nothing - this should return a const reference.
         return mItem;
     }
+
     bool setItem (SHAMapItem::ref i, TNType type);
-    uint256 const& getTag () const
-    {
-        return mItem->getTag ();
-    }
-    Blob const& peekData ()
-    {
-        return mItem->peekData ();
-    }
 
     // sync functions
     bool isFullBelow (std::uint32_t generation) const
     {
         return mFullBelowGen == generation;
     }
+    
     void setFullBelowGen (std::uint32_t gen)
     {
         mFullBelowGen = gen;
     }
 
-    // VFALCO Why is this virtual?
+    // VFALCO Why are these virtual?
     virtual void dump (SHAMapNodeID const&, beast::Journal journal);
     virtual std::string getString (SHAMapNodeID const&) const;
 
     SHAMapTreeNode* getChildPointer (int branch);
+
     SHAMapTreeNode::pointer getChild (int branch);
+    
     void canonicalizeChild (int branch, SHAMapTreeNode::pointer& node);
 
 private:

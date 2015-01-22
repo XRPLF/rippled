@@ -47,7 +47,7 @@ public:
     {
         ;
     }
-    static std::unique_ptr<STBase> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<STBase> deserialize (SerialIter& sit, SField::ref name)
     {
         return std::unique_ptr<STBase> (construct (sit, name));
     }
@@ -87,7 +87,7 @@ public:
     }
 
 private:
-    static STAccount* construct (SerializerIterator&, SField::ref);
+    static STAccount* construct (SerialIter&, SField::ref);
 };
 
 } // ripple
