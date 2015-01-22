@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CORE_CONFIGSECTIONS_H_INCLUDED
 #define RIPPLE_CORE_CONFIGSECTIONS_H_INCLUDED
 
+#include <string>
+
 namespace ripple {
 
 // VFALCO DEPRECATED in favor of the BasicConfig interface
