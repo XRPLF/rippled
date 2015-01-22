@@ -23,6 +23,7 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -64,7 +65,11 @@ public:
     Transaction (STTx::ref, Validate);
 
     static Transaction::pointer sharedTransaction (Blob const&, Validate);
-    static Transaction::pointer transactionFromSQL (Database*, Validate);
+    static Transaction::pointer transactionFromSQL (
+        boost::optional<std::uint64_t> const& ledgerSeq,
+        boost::optional<std::string> const& status,
+        Blob const& rawTxn,
+        Validate validate);
 
     bool checkSign () const;
 
@@ -115,9 +120,6 @@ public:
     static Transaction::pointer load (uint256 const& id);
 
     static bool isHexTxID (std::string const&);
-
-protected:
-    static Transaction::pointer transactionFromSQL (std::string const&);
 
 private:
     uint256         mTransactionID;

@@ -26,6 +26,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/Config.h>
+#include <boost/optional.hpp>
 #include <iostream>
 
 namespace ripple {
@@ -53,21 +54,21 @@ void LocalCredentials::start ()
 // Retrieve network identity.
 bool LocalCredentials::nodeIdentityLoad ()
 {
-    auto db = getApp().getWalletDB ().getDB ();
-    auto sl (getApp().getWalletDB ().lock ());
+    auto db = getApp().getWalletDB ().checkoutDb ();
     bool        bSuccess    = false;
 
-    if (db->executeSQL ("SELECT * FROM NodeIdentity;") && db->startIterRows ())
+    soci::rowset<soci::row> rs = (db->prepare << "SELECT * FROM NodeIdentity;");
+    for (auto const& r : rs)
     {
         std::string strPublicKey, strPrivateKey;
 
-        db->getStr ("PublicKey", strPublicKey);
-        db->getStr ("PrivateKey", strPrivateKey);
+        
+        strPublicKey = r.get<std::string>("PublicKey", "");
+        strPrivateKey = r.get<std::string>("PrivateKey", "");
 
         mNodePublicKey.setNodePublic (strPublicKey);
         mNodePrivateKey.setNodePrivate (strPrivateKey);
 
-        db->endIterRows ();
         bSuccess    = true;
     }
 
@@ -101,15 +102,13 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     // Store the node information
     //
-    auto db = getApp().getWalletDB ().getDB ();
+    auto db = getApp().getWalletDB ().checkoutDb ();
 
-    auto sl (getApp().getWalletDB ().lock ());
-    db->executeSQL (str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
+    *db << str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
                          % naNodePublic.humanNodePublic ()
                          % naNodePrivate.humanNodePrivate ()
                          % sqlEscape (strDh512)
-                         % sqlEscape (strDh1024)));
-    // XXX Check error result.
+                         % sqlEscape (strDh1024));
 
     if (!getConfig ().QUIET)
         std::cerr << "NodeIdentity: Created." << std::endl;
@@ -119,30 +118,27 @@ bool LocalCredentials::nodeIdentityCreate ()
 
 bool LocalCredentials::dataDelete (std::string const& strKey)
 {
-    auto db = getApp().getRpcDB ().getDB ();
+    auto db = getApp().getRpcDB ().checkoutDb ();
 
-    auto sl (getApp().getRpcDB ().lock ());
-
-    return db->executeSQL (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
-                                % sqlEscape (strKey)));
+    *db << (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
+                 % sqlEscape (strKey)));
+    return true;
 }
 
 bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strValue)
 {
-    auto db = getApp().getRpcDB ().getDB ();
-
-    auto sl (getApp().getRpcDB ().lock ());
+    auto db = getApp().getRpcDB ().checkoutDb ();
 
     bool        bSuccess    = false;
 
-    if (db->executeSQL (str (boost::format ("SELECT Value FROM RPCData WHERE Key=%s;")
-                             % sqlEscape (strKey))) && db->startIterRows ())
+    boost::optional<std::string> value;
+    *db << str (boost::format ("SELECT Value FROM RPCData WHERE Key=%s;")
+                % sqlEscape (strKey)),
+            soci::into(value);
+
+    if (value)
     {
-        Blob vucData    = db->getBinary ("Value");
-        strValue.assign (vucData.begin (), vucData.end ());
-
-        db->endIterRows ();
-
+        strValue = *value;
         bSuccess    = true;
     }
 
@@ -151,14 +147,12 @@ bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strVal
 
 bool LocalCredentials::dataStore (std::string const& strKey, std::string const& strValue)
 {
-    auto db = getApp().getRpcDB ().getDB ();
+    auto db = getApp().getRpcDB ().checkoutDb ();
 
-    auto sl (getApp().getRpcDB ().lock ());
-
-    return (db->executeSQL (str (boost::format ("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
-                                 % sqlEscape (strKey)
-                                 % sqlEscape (strValue)
-                                )));
+    *db << (str (boost::format ("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
+                 % sqlEscape (strKey)
+                 % sqlEscape (strValue)));
+    return true;
 }
 
 } // ripple

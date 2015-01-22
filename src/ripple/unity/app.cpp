@@ -26,7 +26,6 @@
 #include <ripple/app/websocket/WSServerHandler.cpp>
 #include <ripple/app/websocket/WSConnection.cpp>
 #include <ripple/app/websocket/WSDoor.cpp>
-#include <ripple/app/node/SqliteFactory.cpp>
 #include <ripple/app/main/Application.cpp>
 #include <ripple/app/main/Main.cpp>
 #include <ripple/resource/Manager.h>

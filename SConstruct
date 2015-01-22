@@ -59,8 +59,6 @@ The following environment variables modify the build environment:
       Path to the boost directory. 
     OPENSSL_ROOT
       Path to the openssl directory.
-    POSTGRESQL_ROOT
-      Path to the postgresql directory. Setting this also enables the optional postgresql support.
 
 '''
 #
@@ -248,17 +246,6 @@ def config_base(env):
         env['BOOST_ROOT'] = BOOST_ROOT
     except KeyError:
         pass
-
-    try:
-        POSTGRESQL_ROOT = os.path.normpath(os.environ['POSTGRESQL_ROOT'])
-        env.Append(LIBS=['pq'])
-        env.Append(LIBPATH=[
-            os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq')
-            ])
-        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '1'})
-        env['POSTGRESQL_ROOT'] = POSTGRESQL_ROOT
-    except KeyError:
-        env.Append(CPPDEFINES={'ENABLE_SOCI_POSTGRESQL' : '0'})
 
     if Beast.system.windows:
         try:
@@ -600,23 +587,11 @@ def list_sources(base, suffixes):
     return list(_iter(base))
 
 def add_soci_sources(env, object_builder, is_unity):
-    soci_postgres_cpppath = []
-    POSTGRESQL_ROOT = None
-    try:
-        POSTGRESQL_ROOT = env['POSTGRESQL_ROOT']
-    except KeyError:
-        pass
-    if POSTGRESQL_ROOT:
-        soci_postgres_cpppath = [
-            os.path.join(POSTGRESQL_ROOT, 'src', 'interfaces', 'libpq'),
-            os.path.join(POSTGRESQL_ROOT, 'src', 'include'),
-            ]
     cpp_path = [
         'src/soci/src/core',
-        'src/sqlite',] + soci_postgres_cpppath
+        'src/sqlite',]
     object_builder.add_source_files(
         'src/ripple/unity/soci.cpp',
-        'src/ripple/unity/socipostgresql.cpp',
         CPPPATH = cpp_path)
     if is_unity:
         object_builder.add_source_files(

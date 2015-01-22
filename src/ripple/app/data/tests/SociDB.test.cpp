@@ -39,20 +39,6 @@ private:
             config.legacy ("database_path", value);
     }
 
-    static void setupPostgresqlConfig (BasicConfig& config,
-                                       std::string const& host,
-                                       std::string const& user,
-                                       std::string const& port)
-    {
-        config.overwrite ("sqdb", "backend", "postgresql");
-        if (!host.empty ())
-            config.overwrite ("sqdb", "host", host);
-        if (!user.empty ())
-            config.overwrite ("sqdb", "user", user);
-        if (!port.empty ())
-            config.overwrite ("sqdb", "port", port);
-    }
-
     static void cleanupDatabaseDir (boost::filesystem::path const& dbPath)
     {
         using namespace boost::filesystem;
@@ -181,10 +167,118 @@ public:
                 remove (dbPath);
         }
     }
+
+    void testSQLiteSelect ()
+    {
+        testcase ("select");
+        BasicConfig c;
+        setupSQLiteConfig (c, getDatabasePath ());
+        SociConfig sc (c, "SociTestDB");
+        std::vector<std::uint64_t> const ubid (
+            {(std::uint64_t)std::numeric_limits<std::int64_t>::max (), 20, 30});
+        std::vector<std::int64_t> const bid ({-10, -20, -30});
+        std::vector<std::uint32_t> const uid (
+            {std::numeric_limits<std::uint32_t>::max (), 2, 3});
+        std::vector<std::int32_t> const id ({-1, -2, -3});
+
+        {
+            soci::session s;
+            sc.open (s);
+
+            s << "DROP TABLE IF EXISTS STT;";
+
+            s << "CREATE TABLE STT ("
+                 "  I              INTEGER,"
+                 "  UI             INTEGER UNSIGNED,"
+                 "  BI             BIGINT,"
+                 "  UBI            BIGINT UNSIGNED"
+                 ");";
+
+            s << "INSERT INTO STT (I, UI, BI, UBI) VALUES "
+                 "(:id, :idu, :bid, :bidu);",
+                soci::use (id), soci::use (uid), soci::use (bid),
+                soci::use (ubid);
+
+            try
+            {
+                std::int32_t ig = 0;
+                std::uint32_t uig = 0;
+                std::int64_t big = 0;
+                std::uint64_t ubig = 0;
+                soci::row r;
+                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
+                ig = r.get<std::int32_t>(0);
+                uig = r.get<std::uint32_t>(1);
+                big = r.get<std::int64_t>(2);
+                ubig = r.get<std::uint64_t>(3);
+                expect (ig == id[0] && uig == uid[0] && big == bid[0] && ubig == ubid[0]);
+            }
+            catch (std::exception&)
+            {
+                fail ();
+            }
+            try
+            {
+                std::int32_t ig = 0;
+                std::uint32_t uig = 0;
+                std::int64_t big = 0;
+                std::uint64_t ubig = 0;
+                soci::row r;
+                s << "SELECT I, UI, BI, UBI from STT", soci::into (r);
+                ig = r.get<std::int32_t>("I");
+                uig = r.get<std::uint32_t>("UI");
+                big = r.get<std::int64_t>("BI");
+                ubig = r.get<std::uint64_t>("UBI");
+                expect (ig == id[0] && uig == uid[0] && big == bid[0] && ubig == ubid[0]);
+            }
+            catch (std::exception&)
+            {
+                fail ();
+            }
+            try
+            {
+                boost::tuple<std::int32_t,
+                             std::uint32_t,
+                             std::int64_t,
+                             std::uint64_t> d;
+                s << "SELECT I, UI, BI, UBI from STT", soci::into (d);
+                expect (get<0> (d) == id[0] && get<1> (d) == uid[0] && get<2> (d) == bid[0] && get<3> (d) == ubid[0]);
+            }
+            catch (std::exception&)
+            {
+                fail ();
+            }
+            try
+            {
+                std::int32_t ig = 0;
+                std::uint32_t uig = 0;
+                std::int64_t big = 0;
+                std::uint64_t ubig = 0;
+                s << "SELECT I, UI, BI, UBI from STT",
+                        soci::into (ig),
+                        soci::into (uig),
+                        soci::into (big),
+                        soci::into (ubig);
+                expect (ig == id[0] && uig == uid[0] && big == bid[0] && ubig == ubid[0]);
+            }
+            catch (std::exception&)
+            {
+                fail ();
+            }
+        }
+        {
+            using namespace boost::filesystem;
+            // Remove the database
+            path dbPath (sc.connectionString ());
+            if (is_regular_file (dbPath))
+                remove (dbPath);
+        }
+    }
     void testSQLite ()
     {
         testSQLiteFileNames ();
         testSQLiteSession ();
+        testSQLiteSelect ();
     }
     void run ()
     {

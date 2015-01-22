@@ -283,9 +283,6 @@
     <Filter Include="ripple\app\misc\tests">
       <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\node">
-      <UniqueIdentifier>{0FCD3973-E9A6-7172-C8A3-C3401E1A03DD}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\paths">
       <UniqueIdentifier>{03533509-DAC6-636F-9F7E-288894549E95}</UniqueIdentifier>
     </Filter>
@@ -531,9 +528,6 @@
     </Filter>
     <Filter Include="soci\src\backends">
       <UniqueIdentifier>{AA927DBA-1AF8-6600-04B7-D1C1EBFB4103}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="soci\src\backends\postgresql">
-      <UniqueIdentifier>{5D2927A9-CC6E-DDE0-1654-5316177082DD}</UniqueIdentifier>
     </Filter>
     <Filter Include="soci\src\backends\sqlite3">
       <UniqueIdentifier>{75E6832F-A6F7-8360-FA3A-7427A06A9959}</UniqueIdentifier>
@@ -2337,12 +2331,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\node\SqliteFactory.cpp">
-      <Filter>ripple\app\node</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\node\SqliteFactory.h">
-      <Filter>ripple\app\node</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
       <Filter>ripple\app\paths</Filter>
     </ClCompile>
@@ -4074,9 +4062,6 @@
     <ClCompile Include="..\..\src\ripple\unity\soci.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\socipostgresql.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4887,45 +4872,6 @@
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
       <Filter>snappy\snappy</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\blob.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\common.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\backends\postgresql\common.h">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\error.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\factory.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\row-id.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\session.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\backends\postgresql\soci-postgresql.h">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\standard-into-type.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\standard-use-type.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\statement.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\vector-into-type.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\postgresql\vector-use-type.cpp">
-      <Filter>soci\src\backends\postgresql</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>

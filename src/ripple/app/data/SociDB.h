@@ -34,7 +34,118 @@
     disable : 4355)  // 'this' : used in base member initializer list
 #endif
 
+#include <ripple/basics/Log.h>
+#define SOCI_USE_BOOST
 #include <core/soci.h>
+#include <string>
+#include <cstdint>
+#include <vector>
+
+namespace ripple {
+template <class T, class C>
+T rangeCheckedCast (C c)
+{
+    if ((c > std::numeric_limits<T>::max ()) ||
+        (!std::numeric_limits<T>::is_signed && c < 0) ||
+        (std::numeric_limits<T>::is_signed && 
+         std::numeric_limits<C>::is_signed && 
+         c < std::numeric_limits<T>::lowest ()))
+    {
+        WriteLog (lsERROR, RangeCheckedCast)
+            << "Range error. Min: " << std::numeric_limits<T>::lowest ()
+            << " Max: " << std::numeric_limits<T>::max () << " Got: " << c;
+    }
+    return static_cast<T>(c);
+}
+}
+
+namespace soci {
+template <>
+inline std::uint8_t row::get<std::uint8_t>(std::size_t pos) const
+{
+    using xt = std::int32_t;
+    xt const r = get<xt>(pos);
+    return ripple::rangeCheckedCast<std::uint8_t>(r);
+}
+
+template <>
+inline std::uint8_t row::get<std::uint8_t>(std::size_t pos,
+                                           std::uint8_t const& nullValue) const
+{
+    assert (holders_.size () >= pos + 1);
+
+    if (i_null == *indicators_[pos])
+    {
+        return nullValue;
+    }
+    return get<std::uint8_t>(pos);
+}
+
+template <>
+inline std::uint16_t row::get<std::uint16_t>(std::size_t pos) const
+{
+    using xt = std::int32_t;
+    xt const r = get<xt>(pos);
+    return ripple::rangeCheckedCast<std::uint16_t>(r);
+}
+
+template <>
+inline std::uint16_t row::get<std::uint16_t>(
+    std::size_t pos,
+    std::uint16_t const& nullValue) const
+{
+    assert (holders_.size () >= pos + 1);
+
+    if (i_null == *indicators_[pos])
+    {
+        return nullValue;
+    }
+    return get<std::uint16_t>(pos);
+}
+
+template <>
+inline std::uint32_t row::get<std::uint32_t>(std::size_t pos) const
+{
+    using xt = std::int32_t;
+    // can't check range for int
+    return get<xt>(pos);
+}
+
+template <>
+inline std::uint32_t row::get<std::uint32_t>(
+    std::size_t pos,
+    std::uint32_t const& nullValue) const
+{
+    assert (holders_.size () >= pos + 1);
+
+    if (i_null == *indicators_[pos])
+    {
+        return nullValue;
+    }
+    return get<std::uint32_t>(pos);
+}
+
+template <>
+inline std::uint64_t row::get<std::uint64_t>(std::size_t pos) const
+{
+    using xt = std::int64_t;
+    return get<xt>(pos);
+}
+
+template <>
+inline std::uint64_t row::get<std::uint64_t>(
+    std::size_t pos,
+    std::uint64_t const& nullValue) const
+{
+    assert (holders_.size () >= pos + 1);
+
+    if (i_null == *indicators_[pos])
+    {
+        return nullValue;
+    }
+    return get<std::uint64_t>(pos);
+}
+}
 
 namespace ripple {
 class BasicConfig;
@@ -70,7 +181,27 @@ void open(soci::session& s,
           BasicConfig const& config,
           std::string const& dbName);
 
+/**
+ *  Open a soci session.
+ *
+ *  @param s Session to open.
+ *  @param beName Backend name.
+ *  @param connectionString Connection string to forward to soci::open.
+ *         see the soci::open documentation for how to use this.
+ *
+ */
+void open(soci::session& s,
+          std::string const& beName,
+          std::string const& connectionString);
+
+size_t getKBUsedAll (soci::session& s);
+size_t getKBUsedDB (soci::session& s);
+
+void convert(soci::blob /*const*/& from, std::vector<std::uint8_t>& to);
+void convert(soci::blob /*const*/& from, std::string& to);
+void convert(std::vector<std::uint8_t> const& from, soci::blob& to);
 }
+
 
 #if _MSC_VER
 #pragma warning(pop)

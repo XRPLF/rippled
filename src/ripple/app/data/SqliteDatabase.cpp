@@ -24,22 +24,22 @@
 
 namespace ripple {
 
-SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
+SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql)
 {
     assert (db);
 
-    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
+    sqlite3* conn = db->peekConnection ();
     int j = sqlite3_prepare_v2 (conn, sql, strlen (sql) + 1, &statement, nullptr);
 
     if (j != SQLITE_OK)
         throw j;
 }
 
-SqliteStatement::SqliteStatement (SqliteDatabase* db, std::string const& sql, bool aux)
+SqliteStatement::SqliteStatement (SqliteDatabase* db, std::string const& sql)
 {
     assert (db);
 
-    sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
+    sqlite3* conn = db->peekConnection ();
     int j = sqlite3_prepare_v2 (conn, sql.c_str (), sql.size () + 1, &statement, nullptr);
 
     if (j != SQLITE_OK)
@@ -62,7 +62,6 @@ SqliteDatabase::SqliteDatabase (const char* host)
     startThread ();
 
     mConnection     = nullptr;
-    mAuxConnection  = nullptr;
     mCurrentStmt    = nullptr;
 }
 
@@ -85,38 +84,10 @@ void SqliteDatabase::connect ()
     }
 }
 
-sqlite3* SqliteDatabase::getAuxConnection ()
-{
-    ScopedLockType sl (m_walMutex);
-
-    if (mAuxConnection == nullptr)
-    {
-        int rc = sqlite3_open_v2 (mHost.c_str (), &mAuxConnection,
-                    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
-
-        if (rc)
-        {
-            WriteLog (lsFATAL, SqliteDatabase) << "Can't aux open " << mHost << " " << rc;
-            assert ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
-
-            if (mAuxConnection != nullptr)
-            {
-                sqlite3_close (mConnection);
-                mAuxConnection = nullptr;
-            }
-        }
-    }
-
-    return mAuxConnection;
-}
-
 void SqliteDatabase::disconnect ()
 {
     sqlite3_finalize (mCurrentStmt);
     sqlite3_close (mConnection);
-
-    if (mAuxConnection != nullptr)
-        sqlite3_close (mAuxConnection);
 }
 
 // returns true if the query went ok

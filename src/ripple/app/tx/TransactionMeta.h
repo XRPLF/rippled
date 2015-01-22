@@ -33,6 +33,11 @@ public:
     typedef std::shared_ptr<TransactionMetaSet> pointer;
     typedef const pointer& ref;
 
+private:
+    struct CtorHelper{};
+    template<class T>
+    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, T const& data,
+                        CtorHelper);
 public:
     TransactionMetaSet ()
         : mLedger (0)
@@ -50,6 +55,7 @@ public:
     }
 
     TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, Blob const&);
+    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, std::string const&);
 
     void init (uint256 const& transactionID, std::uint32_t ledger);
     void clear ()

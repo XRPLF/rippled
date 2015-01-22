@@ -709,13 +709,13 @@ public:
             exitWithCode(3);
         }
 
-        getApp().getLedgerDB ().getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                (getConfig ().getSize (siLgrDBCache) * 1024)));
-        getApp().getTxnDB ().getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                (getConfig ().getSize (siTxnDBCache) * 1024)));
+        getApp ().getLedgerDB ().getSession ()
+            << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                           (getConfig ().getSize (siLgrDBCache) * 1024));
 
-        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue.get());
-        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue.get());
+        getApp().getTxnDB ().getSession ()
+                << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                               (getConfig ().getSize (siTxnDBCache) * 1024));
 
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
@@ -1336,15 +1336,17 @@ bool serverOkay (std::string& reason)
 static std::vector<std::string> getSchema (DatabaseCon& dbc, std::string const& dbName)
 {
     std::vector<std::string> schema;
+    schema.reserve(32);
 
     std::string sql = "SELECT sql FROM sqlite_master WHERE tbl_name='";
     sql += dbName;
     sql += "';";
 
-    SQL_FOREACH (dbc.getDB (), sql)
+    soci::rowset<std::string> rs = (dbc.getSession ().prepare << sql);
+
+    for(auto const& r : rs)
     {
-        dbc.getDB ()->getStr ("sql", sql);
-        schema.push_back (sql);
+        schema.emplace_back (r);
     }
 
     return schema;
@@ -1370,7 +1372,7 @@ static void addTxnSeqField ()
 
     WriteLog (lsWARNING, Application) << "Transaction sequence field is missing";
 
-    auto db = getApp().getTxnDB ().getDB ();
+    auto& session = getApp().getTxnDB ().getSession ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
@@ -1378,32 +1380,37 @@ static void addTxnSeqField ()
     WriteLog (lsINFO, Application) << "Parsing transactions";
     int i = 0;
     uint256 transID;
-    SQL_FOREACH (db, "SELECT TransID,TxnMeta FROM Transactions;")
+
+    boost::optional<std::string> strTransId;
+    soci::blob sociTxnMetaBlob(session);
+    soci::indicator tmi;
+    Blob txnMeta;
+
+    soci::statement st =
+            (session.prepare << 
+             "SELECT TransID, TxnMeta FROM Transactions;",
+             soci::into(strTransId),
+             soci::into(sociTxnMetaBlob, tmi));
+
+    st.execute ();
+    while (st.fetch ())
     {
-        Blob rawMeta;
-        int metaSize = 2048;
-        rawMeta.resize (metaSize);
-        metaSize = db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
+        if (soci::i_ok == tmi)
+            convert (sociTxnMetaBlob, txnMeta);
+        else
+            txnMeta.clear ();
 
-        if (metaSize > static_cast<int> (rawMeta.size ()))
-        {
-            rawMeta.resize (metaSize);
-            db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
-        }
-        else rawMeta.resize (metaSize);
-
-        std::string tid;
-        db->getStr ("TransID", tid);
+        std::string tid = strTransId.value_or("");
         transID.SetHex (tid, true);
 
-        if (rawMeta.size () == 0)
+        if (txnMeta.size () == 0)
         {
             txIDs.push_back (std::make_pair (transID, -1));
             WriteLog (lsINFO, Application) << "No metadata for " << transID;
         }
         else
         {
-            TransactionMetaSet m (transID, 0, rawMeta);
+            TransactionMetaSet m (transID, 0, txnMeta);
             txIDs.push_back (std::make_pair (transID, m.getIndex ()));
         }
 
@@ -1415,19 +1422,19 @@ static void addTxnSeqField ()
 
     WriteLog (lsINFO, Application) << "All " << i << " transactions read";
 
-    db->executeSQL ("BEGIN TRANSACTION;");
+    soci::transaction tr(session);
 
     WriteLog (lsINFO, Application) << "Dropping old index";
-    db->executeSQL ("DROP INDEX AcctTxIndex;");
+    session << "DROP INDEX AcctTxIndex;";
 
     WriteLog (lsINFO, Application) << "Altering table";
-    db->executeSQL ("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
+    session << "ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;";
 
     boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
     i = 0;
     for (auto& t : txIDs)
     {
-        db->executeSQL (boost::str (fmt % t.second % to_string (t.first)));
+        session << boost::str (fmt % t.second % to_string (t.first));
 
         if ((++i % 1000) == 0)
         {
@@ -1436,8 +1443,9 @@ static void addTxnSeqField ()
     }
 
     WriteLog (lsINFO, Application) << "Building new index";
-    db->executeSQL ("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
-    db->executeSQL ("END TRANSACTION;");
+    session << "CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);";
+
+    tr.commit ();
 }
 
 void ApplicationImp::updateTables ()

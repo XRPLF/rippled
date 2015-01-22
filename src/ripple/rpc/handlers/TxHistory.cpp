@@ -44,16 +44,34 @@ Json::Value doTxHistory (RPC::Context& context)
 
     std::string sql =
         boost::str (boost::format (
-            "SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
+            "SELECT LedgerSeq, Status, RawTxn "
+            "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
                     % startIndex);
 
     {
-        auto db = getApp().getTxnDB ().getDB ();
-        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().checkoutDb ();
 
-        SQL_FOREACH (db, sql)
+        boost::optional<std::uint64_t> ledgerSeq;
+        boost::optional<std::string> status;
+        soci::blob sociRawTxnBlob (*db);
+        soci::indicator rti;
+        Blob rawTxn;
+
+        soci::statement st = (db->prepare << sql,
+                              soci::into (ledgerSeq),
+                              soci::into (status),
+                              soci::into (sociRawTxnBlob, rti));
+
+        st.execute ();
+        while (st.fetch ())
         {
-            if (auto trans = Transaction::transactionFromSQL (db, Validate::NO))
+            if (soci::i_ok == rti)
+                convert(sociRawTxnBlob, rawTxn);
+            else
+                rawTxn.clear ();
+
+            if (auto trans = Transaction::transactionFromSQL (
+                    ledgerSeq, status, rawTxn, Validate::NO))
                 txs.append (trans->getJson (0));
         }
     }

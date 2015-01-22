@@ -19,7 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SqliteDatabase.h>
+#include <ripple/app/data/SociDB.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
@@ -36,26 +37,28 @@ DatabaseCon::DatabaseCon (Setup const& setup,
     boost::filesystem::path pPath = useTempFiles
         ? "" : (setup.dataDir / strName);
 
-    mDatabase = new SqliteDatabase (pPath.string ().c_str ());
-    mDatabase->connect ();
+    open(session_, "sqlite", pPath.string());
 
     for (int i = 0; i < initCount; ++i)
-        mDatabase->executeSQL (initStrings[i], true);
+    {
+        try
+        {
+            session_ << initStrings[i];
+        }
+        catch (soci::soci_error& e)
+        {
+            WriteLog (lsWARNING, DatabaseCon)
+                << "Error executing initial statements for: " << strName
+                << " error: " << e.what () << "\n"
+                << " statement: " << initStrings[i];
+        }
+    }
 }
 
-DatabaseCon::~DatabaseCon ()
-{
-    mDatabase->disconnect ();
-    delete mDatabase;
-}
-
-DatabaseCon::Setup
-setup_DatabaseCon (Config const& c)
+DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 {
     DatabaseCon::Setup setup;
 
-    if (c.nodeDatabase["online_delete"].isNotEmpty())
-        setup.onlineDelete = c.nodeDatabase["online_delete"].getIntValue();
     setup.startUp = c.START_UP;
     setup.standAlone = c.RUN_STANDALONE;
     setup.dataDir = c.legacy ("database_path");

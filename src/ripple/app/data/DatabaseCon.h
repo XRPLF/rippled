@@ -20,24 +20,65 @@
 #ifndef RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 #define RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 
-#include <ripple/app/data/Database.h>
 #include <ripple/core/Config.h>
+#include <ripple/app/data/SociDB.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <string>
 
+
+namespace soci {
+    class session;
+}
+
 namespace ripple {
 
-class Database;
+template<class T, class TMutex>
+class LockedPointer
+{
+public:
+    using mutex = TMutex;
+private:
+    T* it_;
+    std::unique_lock<mutex> lock_;
 
-// VFALCO NOTE This looks like a pointless class. Figure out
-//         what purpose it is really trying to serve and do it better.
+public:
+    LockedPointer (T* it, mutex& m) : it_ (it), lock_ (m)
+    {
+    }
+    LockedPointer (LockedPointer&& rhs) noexcept
+        : it_ (rhs.it_), lock_ (std::move (rhs.lock_))
+    {
+    }
+    LockedPointer () = delete;
+    LockedPointer (LockedPointer const& rhs) = delete;
+    LockedPointer& operator=(LockedPointer const& rhs) = delete;
+
+    T* get ()
+    {
+        return it_;
+    }
+    T& operator*()
+    {
+        return *it_;
+    }
+    T* operator->()
+    {
+        return it_;
+    }
+    explicit operator bool() const
+    {
+        return bool(it_);
+    }
+};
+
+using LockedSociSession = LockedPointer<soci::session, std::recursive_mutex>;
+
 class DatabaseCon
 {
 public:
     struct Setup
     {
-        bool onlineDelete = false;
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
@@ -47,31 +88,21 @@ public:
             std::string const& name,
             const char* initString[],
             int countInit);
-    ~DatabaseCon ();
 
-    Database* getDB ()
+    soci::session& getSession()
     {
-        return mDatabase;
+        return session_;
     }
 
-    typedef std::recursive_mutex mutex;
-
-    std::unique_lock<mutex> lock ()
+    LockedSociSession checkoutDb()
     {
-        return std::unique_lock<mutex>(mLock);
-    }
-
-    mutex& peekMutex()
-    {
-        return mLock;
+        return LockedSociSession(&session_, mLock);
     }
 
 private:
-    Database* mDatabase;
-    mutex  mLock;
+    soci::session session_;
+    LockedSociSession::mutex mLock;
 };
-
-//------------------------------------------------------------------------------
 
 DatabaseCon::Setup
 setup_DatabaseCon (Config const& c);
