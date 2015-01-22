@@ -32,6 +32,7 @@ namespace ripple {
    Amendments are proposed and then adopted or rejected by the network. An
    Amendment is uniquely identified by its AmendmentID, a 256-bit key.
 */
+template<class AppApiFacade>
 class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
@@ -48,7 +49,7 @@ protected:
     core::Clock::time_point m_firstReport; // close time of first majority report
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
-    std::unique_ptr<AmendmentTableDetail::AppApiFacade> m_appApiFacade;
+    AppApiFacade m_appApiFacade;
 
     AmendmentState& getCreate (uint256 const& amendment);
     AmendmentState* getExisting (uint256 const& amendment);
@@ -59,14 +60,12 @@ public:
     AmendmentTableImpl (
         std::chrono::seconds majorityTime,
         int majorityFraction,
-        beast::Journal journal,
-        std::unique_ptr<AmendmentTableDetail::AppApiFacade> appApiFacade)
+        beast::Journal journal)
         : m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
         , m_firstReport (0)
         , m_lastReport (0)
         , m_journal (std::move (journal))
-        , m_appApiFacade (std::move (appApiFacade))
     {
     }
 
@@ -114,8 +113,9 @@ using PreEnabledAmendmentsCollection = std::vector<AmendmentName>;
 PreEnabledAmendmentsCollection const preEnabledAmendments;
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::addInitial (Section const& section)
+AmendmentTableImpl<AppApiFacade>::addInitial (Section const& section)
 {
     for (auto const& a : detail::preEnabledAmendments)
     {
@@ -173,8 +173,9 @@ AmendmentTableImpl::addInitial (Section const& section)
     }
 }
 
+template<class AppApiFacade>
 AmendmentState&
-AmendmentTableImpl::getCreate (uint256 const& amendmentHash)
+AmendmentTableImpl<AppApiFacade>::getCreate (uint256 const& amendmentHash)
 {
     // call with the mutex held
     auto iter (m_amendmentMap.find (amendmentHash));
@@ -182,15 +183,16 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash)
     if (iter == m_amendmentMap.end())
     {
         AmendmentState& amendment = m_amendmentMap[amendmentHash];
-        m_appApiFacade->setMajorityTimesFromDBToState (amendment, amendmentHash);
+        m_appApiFacade.setMajorityTimesFromDBToState (amendment, amendmentHash);
         return amendment;
     }
 
     return iter->second;
 }
 
+template<class AppApiFacade>
 AmendmentState*
-AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
+AmendmentTableImpl<AppApiFacade>::getExisting (uint256 const& amendmentHash)
 {
     // call with the mutex held
     auto iter (m_amendmentMap.find (amendmentHash));
@@ -201,8 +203,9 @@ AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
     return & (iter->second);
 }
 
+template<class AppApiFacade>
 uint256
-AmendmentTableImpl::get (std::string const& name)
+AmendmentTableImpl<AppApiFacade>::get (std::string const& name)
 {
     ScopedLockType sl (mLock);
 
@@ -215,8 +218,9 @@ AmendmentTableImpl::get (std::string const& name)
     return uint256 ();
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::addKnown (AmendmentName const& name)
+AmendmentTableImpl<AppApiFacade>::addKnown (AmendmentName const& name)
 {
     if (!name.valid ())
     {
@@ -238,8 +242,9 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
     amendment.mSupported = true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::veto (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::veto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState& s = getCreate (amendment);
@@ -251,8 +256,9 @@ AmendmentTableImpl::veto (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::unVeto (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::unVeto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState* s = getExisting (amendment);
@@ -264,8 +270,9 @@ AmendmentTableImpl::unVeto (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::enable (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::enable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState& s = getCreate (amendment);
@@ -277,8 +284,9 @@ AmendmentTableImpl::enable (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::disable (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::disable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState* s = getExisting (amendment);
@@ -290,24 +298,27 @@ AmendmentTableImpl::disable (uint256 const& amendment)
     return true;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::isEnabled (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::isEnabled (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState* s = getExisting (amendment);
     return s && s->mEnabled;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::isSupported (uint256 const& amendment)
+AmendmentTableImpl<AppApiFacade>::isSupported (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
     AmendmentState* s = getExisting (amendment);
     return s && s->mSupported;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getVetoed ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getVetoed ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -319,8 +330,9 @@ AmendmentTableImpl::getVetoed ()
     return ret;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getEnabled ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getEnabled ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -332,8 +344,9 @@ AmendmentTableImpl::getEnabled ()
     return ret;
 }
 
+template<class AppApiFacade>
 bool
-AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
+AmendmentTableImpl<AppApiFacade>::shouldEnable (std::uint32_t closeTime,
     const AmendmentState& fs)
 {
     if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.m_lastMajority != m_lastReport))
@@ -349,8 +362,9 @@ AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
     return (fs.m_lastMajority - fs.m_firstMajority) > m_majorityTime.count();
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getToEnable (core::Clock::time_point closeTime)
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getToEnable (core::Clock::time_point closeTime)
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -367,8 +381,9 @@ AmendmentTableImpl::getToEnable (core::Clock::time_point closeTime)
     return ret;
 }
 
-AmendmentTableImpl::amendmentList_t
-AmendmentTableImpl::getDesired ()
+template<class AppApiFacade>
+typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
+AmendmentTableImpl<AppApiFacade>::getDesired ()
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);
@@ -382,8 +397,9 @@ AmendmentTableImpl::getDesired ()
     return ret;
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::reportValidations (const AmendmentSet& set)
+AmendmentTableImpl<AppApiFacade>::reportValidations (const AmendmentSet& set)
 {
     if (set.mTrustedValidations == 0)
         return;
@@ -441,14 +457,15 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        m_appApiFacade->setMajorityTimesFromStateToDB (changedAmendments,
-                                                     m_amendmentMap);
+        m_appApiFacade.setMajorityTimesFromStateToDB (changedAmendments,
+                                                      m_amendmentMap);
         changedAmendments.clear ();
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
+AmendmentTableImpl<AppApiFacade>::setEnabled (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
     for (auto& e : m_amendmentMap)
@@ -461,8 +478,9 @@ AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
+AmendmentTableImpl<AppApiFacade>::setSupported (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
     for (auto &e : m_amendmentMap)
@@ -475,8 +493,9 @@ AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
     }
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
+AmendmentTableImpl<AppApiFacade>::doValidation (Ledger::ref lastClosedLedger,
     STObject& baseValidation)
 {
     amendmentList_t lAmendments = getDesired();
@@ -491,8 +510,9 @@ AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
     baseValidation.setFieldV256 (sfAmendments, vAmendments);
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
+AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
     SHAMap::ref initialPosition)
 {
 
@@ -502,7 +522,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
     AmendmentSet amendmentSet (lastClosedLedger->getParentCloseTimeNC ());
 
     // get validations for ledger before flag ledger
-    ValidationSet valSet = m_appApiFacade->getValidations (
+    ValidationSet valSet = m_appApiFacade.getValidations (
         lastClosedLedger->getParentHash ());
     for (auto const& entry : valSet)
     {
@@ -551,8 +571,9 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
     }
 }
 
+template<class AppApiFacade>
 Json::Value
-AmendmentTableImpl::getJson (int)
+AmendmentTableImpl<AppApiFacade>::getJson (int)
 {
     Json::Value ret(Json::objectValue);
     {
@@ -565,8 +586,9 @@ AmendmentTableImpl::getJson (int)
     return ret;
 }
 
+template<class AppApiFacade>
 void
-AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
+AmendmentTableImpl<AppApiFacade>::setJson (Json::Value& v, const AmendmentState& fs)
 {
     if (!fs.mFriendlyName.empty())
         v["name"] = fs.mFriendlyName;
@@ -611,8 +633,9 @@ AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
         v["veto"] = true;
 }
 
+template<class AppApiFacade>
 Json::Value
-AmendmentTableImpl::getJson (uint256 const& amendmentID)
+AmendmentTableImpl<AppApiFacade>::getJson (uint256 const& amendmentID)
 {
     Json::Value ret = Json::objectValue;
     Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
@@ -627,42 +650,28 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
     return ret;
 }
 
-std::unique_ptr<AmendmentTable> make_AmendmentTable (
-    std::chrono::seconds majorityTime,
-    int majorityFraction,
-    beast::Journal journal,
-    std::unique_ptr<AmendmentTableDetail::AppApiFacade> appApiFacade)
-{
-    return std::make_unique<AmendmentTableImpl>(majorityTime,
-                                                majorityFraction,
-                                                std::move (journal),
-                                                std::move (appApiFacade));
-}
-
 namespace AmendmentTableDetail
 {
-class AppApiFacadeImpl final : public AppApiFacade
+class AppApiFacadeImpl final
 {
 public:
-    virtual void setMajorityTimesFromDBToState (
-        AmendmentState& toUpdate,
-        uint256 const& amendmentHash) const override;
-    virtual void setMajorityTimesFromStateToDB (
+    void setMajorityTimesFromDBToState (AmendmentState& toUpdate,
+                                        uint256 const& amendmentHash) const;
+    void setMajorityTimesFromStateToDB (
         std::vector<uint256> const& changedAmendments,
-        hash_map<uint256, AmendmentState>& amendmentMap) const override;
-    virtual ValidationSet getValidations (uint256 const& hash) const override;
+        hash_map<uint256, AmendmentState>& amendmentMap) const;
+    ValidationSet getValidations (uint256 const& hash) const;
 };
 
-class AppApiFacadeMock final : public AppApiFacade
+class AppApiFacadeMock final
 {
 public:
-    virtual void setMajorityTimesFromDBToState (
-        AmendmentState& toUpdate,
-        uint256 const& amendmentHash) const override{};
-    virtual void setMajorityTimesFromStateToDB (
+    void setMajorityTimesFromDBToState (AmendmentState& toUpdate,
+                                        uint256 const& amendmentHash) const {};
+    void setMajorityTimesFromStateToDB (
         std::vector<uint256> const& changedAmendments,
-        hash_map<uint256, AmendmentState>& amendmentMap) const override{};
-    virtual ValidationSet getValidations (uint256 const& hash) const override
+        hash_map<uint256, AmendmentState>& amendmentMap) const {};
+    ValidationSet getValidations (uint256 const& hash) const
     {
         return ValidationSet ();
     };
@@ -716,22 +725,34 @@ void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
     db->executeSQL ("END TRANSACTION;");
 }
 
-ValidationSet AppApiFacadeImpl::getValidations (uint256 const& hash) const
+ValidationSet AppApiFacadeImpl::getValidations (
+    uint256 const& hash) const
 {
     return getApp ().getValidations ().getValidations (hash);
 }
-
-std::unique_ptr<AppApiFacade>
-make_AppApiFacade ()
-{
-    return std::make_unique<AppApiFacadeImpl>();
-}
-
-// Use for unit testing
-std::unique_ptr<AppApiFacade> make_MockAppApiFacade ()
-{
-    return std::make_unique<AppApiFacadeMock>();
-}
 }  // AmendmentTableDetail
+
+std::unique_ptr<AmendmentTable> make_AmendmentTable (
+    std::chrono::seconds majorityTime,
+    int majorityFraction,
+    beast::Journal journal,
+    AmendmentTableDetail::AppApiFacade appApiFacade)
+{
+    switch (appApiFacade)
+    {
+        case AmendmentTableDetail::AppApiFacade::useApp:
+            return std::make_unique<
+                AmendmentTableImpl<AmendmentTableDetail::AppApiFacadeImpl>>(
+                majorityTime, majorityFraction, std::move (journal));
+            break;
+        case AmendmentTableDetail::AppApiFacade::useMock:
+            return std::make_unique<
+                AmendmentTableImpl<AmendmentTableDetail::AppApiFacadeMock>>(
+                majorityTime, majorityFraction, std::move (journal));
+            break;
+        default:
+            throw std::runtime_error ("Unsupported AppApiFacade value.");
+    }
+}
 
 }  // ripple

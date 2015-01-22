@@ -217,36 +217,19 @@ namespace AmendmentTableDetail
    AppApiFacade is used to insert mock objects into the amendment
    table class while unit testing.
  */
-class AppApiFacade
+enum class AppApiFacade
 {
-public:
-    /** Get the first and last majority from the walletDB and update the
-     * AmendmentState object.
-     */
-    virtual void setMajorityTimesFromDBToState (
-        AmendmentState& toUpdate,
-        uint256 const& amendmentHash) const = 0;
-    /** For each hash, get the first and last majority from the corresponding
-     * AmendmentState object and update the walletDB.
-     */
-    virtual void setMajorityTimesFromStateToDB (
-        std::vector<uint256> const& changedAmendments,
-        hash_map<uint256, AmendmentState>& amendmentMap) const = 0;
-    virtual ValidationSet getValidations (uint256 const& hash) const = 0;
+    useApp,
+    useMock
 };
-
-// Use for regular system
-std::unique_ptr<AppApiFacade> make_AppApiFacade ();
-// Use for unit testing
-std::unique_ptr<AppApiFacade> make_MockAppApiFacade ();
 }  // AmendmentTableDetail
 
 std::unique_ptr<AmendmentTable> make_AmendmentTable (
     std::chrono::seconds majorityTime,
     int majorityFraction,
     beast::Journal journal,
-    std::unique_ptr<AmendmentTableDetail::AppApiFacade> facade =
-        AmendmentTableDetail::make_AppApiFacade ());
+    AmendmentTableDetail::AppApiFacade apiFacade =
+        AmendmentTableDetail::AppApiFacade::useApp);
 
 }  // ripple
 

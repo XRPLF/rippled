@@ -100,7 +100,7 @@ private:
             weeks (2),
             majorityFraction,
             journal,
-            AmendmentTableDetail::make_MockAppApiFacade ());
+            AmendmentTableDetail::AppApiFacade::useMock);
     };
 
     // Create the amendments by string pairs instead of AmendmentNames
