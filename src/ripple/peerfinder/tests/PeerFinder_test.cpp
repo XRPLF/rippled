@@ -49,7 +49,8 @@ public:
         {
         }
 
-        void wait()
+        void
+        wait()
         {
         }
 
@@ -68,23 +69,26 @@ public:
     {
         auto const seconds = 10000;
         testcase("backoff 1");
-        Config c;
         TestStore store;
         TestChecker checker;
         beast::manual_clock <std::chrono::steady_clock> clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
-        c.autoConnect = false;
-        c.listeningPort = 1024;
-        logic.config(c);
+        {
+            Config c;
+            c.autoConnect = false;
+            c.listeningPort = 1024;
+            logic.config(c);
+        }
         std::size_t n = 0;
         for (std::size_t i = 0; i < seconds; ++i)
         {
-            auto const v = logic.autoconnect();
-            if (v.size() > 0)
+            auto const list = logic.autoconnect();
+            if (! list.empty())
             {
-                auto const slot = logic.new_outbound_slot(v[0]);
+                expect (list.size() == 1);
+                auto const slot = logic.new_outbound_slot(list.front());
                 expect (logic.onConnected(slot,
                     beast::IP::Endpoint::from_string("65.0.0.2:5")));
                 logic.on_closed(slot);
@@ -93,6 +97,7 @@ public:
             clock.advance(std::chrono::seconds(1));
             logic.once_per_second();
         }
+        // Less than 20 attempts
         expect (n < 20, "backoff");
     }
 
@@ -102,25 +107,28 @@ public:
     {
         auto const seconds = 10000;
         testcase("backoff 2");
-        Config c;
         TestStore store;
         TestChecker checker;
         beast::manual_clock <std::chrono::steady_clock> clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
-        c.autoConnect = false;
-        c.listeningPort = 1024;
-        logic.config(c);
+        {
+            Config c;
+            c.autoConnect = false;
+            c.listeningPort = 1024;
+            logic.config(c);
+        }
         std::size_t n = 0;
         std::array<std::uint8_t, 33> key;
         key.fill(0);
         for (std::size_t i = 0; i < seconds; ++i)
         {
-            auto const v = logic.autoconnect();
-            if (v.size() > 0)
+            auto const list = logic.autoconnect();
+            if (! list.empty())
             {
-                auto const slot = logic.new_outbound_slot(v[0]);
+                expect (list.size() == 1);
+                auto const slot = logic.new_outbound_slot(list.front());
                 if (! expect (logic.onConnected(slot,
                         beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
