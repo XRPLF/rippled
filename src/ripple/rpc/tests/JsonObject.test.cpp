@@ -78,28 +78,12 @@ public:
             "\"temperature\":98.6}");
     }
 
-    void testSimpleShort ()
-    {
-        setup ("simpleShort");
-        makeRoot()
-                .set ("hello", "world")
-                .set ("skidoo", 23)
-                .set ("awake", false)
-                .set ("temperature", 98.6);
-
-        expectResult (
-            "{\"hello\":\"world\","
-            "\"skidoo\":23,"
-            "\"awake\":false,"
-            "\"temperature\":98.6}");
-    }
-
     void testOneSub ()
     {
         setup ("oneSub");
         {
             auto& root = makeRoot();
-            root.makeArray ("ar");
+            root.setArray ("ar");
         }
         expectResult ("{\"ar\":[]}");
     }
@@ -112,7 +96,7 @@ public:
 
             {
                 // Add an array with three entries.
-                auto array = root.makeArray ("ar");
+                auto array = root.setArray ("ar");
                 array.append (23);
                 array.append (false);
                 array.append (23.5);
@@ -120,22 +104,30 @@ public:
 
             {
                 // Add an object with one entry.
-                auto obj = root.makeObject ("obj");
+                auto obj = root.setObject ("obj");
                 obj["hello"] = "world";
             }
 
             {
                 // Add another object with two entries.
-                auto obj = root.makeObject ("obj2");
-                obj["h"] = "w";
-                obj["f"] = false;
+                Json::Value value;
+                value["h"] = "w";
+                value["f"] = false;
+                root["obj2"] = value;
             }
         }
 
-        expectResult (
-            "{\"ar\":[23,false,23.5],"
-            "\"obj\":{\"hello\":\"world\"},"
-            "\"obj2\":{\"h\":\"w\",\"f\":false}}");
+        // Json::Value has an unstable order...
+        auto case1 = "{\"ar\":[23,false,23.5],"
+                "\"obj\":{\"hello\":\"world\"},"
+                "\"obj2\":{\"h\":\"w\",\"f\":false}}";
+        auto case2 = "{\"ar\":[23,false,23.5],"
+                "\"obj\":{\"hello\":\"world\"},"
+                "\"obj2\":{\"f\":false,\"h\":\"w\"}}";
+        writerObject_.reset();
+        expect (output_ == case1 || output_ == case2,
+                "Got wrong object:\n  " + output_ + "\nShould be either\n  " +
+                case1 + "\nor\n  " + case2);
     }
 
     void testSubsShort ()
@@ -145,21 +137,24 @@ public:
         {
             auto& root = makeRoot();
 
-            // Add an array with three entries.
-            root.makeArray ("ar")
-                    .append (23)
-                    .append (false)
-                    .append (23.5);
+            {
+                // Add an array with three entries.
+                auto array = root.setArray ("ar");
+                array.append (23);
+                array.append (false);
+                array.append (23.5);
+            }
 
             // Add an object with one entry.
-            root.makeObject ("obj")["hello"] = "world";
+            root.setObject ("obj")["hello"] = "world";
 
-            // Add another object with two entries.
-            root.makeObject ("obj2")
-                    .set("h", "w")
-                    .set("f", false);
+            {
+                // Add another object with two entries.
+                auto object = root.setObject ("obj2");
+                object.set("h", "w");
+                object.set("f", false);
+            }
         }
-
         expectResult (
             "{\"ar\":[23,false,23.5],"
             "\"obj\":{\"hello\":\"world\"},"
@@ -171,20 +166,20 @@ public:
         {
             setup ("object failure assign");
             auto& root = makeRoot();
-            auto obj = root.makeObject ("o1");
+            auto obj = root.setObject ("o1");
             expectException ([&]() { root["fail"] = "complete"; });
         }
         {
             setup ("object failure object");
             auto& root = makeRoot();
-            auto obj = root.makeObject ("o1");
-            expectException ([&] () { root.makeObject ("o2"); });
+            auto obj = root.setObject ("o1");
+            expectException ([&] () { root.setObject ("o2"); });
         }
         {
             setup ("object failure Array");
             auto& root = makeRoot();
-            auto obj = root.makeArray ("o1");
-            expectException ([&] () { root.makeArray ("o2"); });
+            auto obj = root.setArray ("o1");
+            expectException ([&] () { root.setArray ("o2"); });
         }
     }
 
@@ -193,25 +188,25 @@ public:
         {
             setup ("array failure append");
             auto& root = makeRoot();
-            auto array = root.makeArray ("array");
-            auto subarray = array.makeArray ();
+            auto array = root.setArray ("array");
+            auto subarray = array.appendArray ();
             auto fail = [&]() { array.append ("fail"); };
             expectException (fail);
         }
         {
-            setup ("array failure makeArray");
+            setup ("array failure appendArray");
             auto& root = makeRoot();
-            auto array = root.makeArray ("array");
-            auto subarray = array.makeArray ();
-            auto fail = [&]() { array.makeArray (); };
+            auto array = root.setArray ("array");
+            auto subarray = array.appendArray ();
+            auto fail = [&]() { array.appendArray (); };
             expectException (fail);
         }
         {
-            setup ("array failure makeObject");
+            setup ("array failure appendObject");
             auto& root = makeRoot();
-            auto array = root.makeArray ("array");
-            auto subarray = array.makeArray ();
-            auto fail = [&]() { array.makeObject (); };
+            auto array = root.setArray ("array");
+            auto subarray = array.appendArray ();
+            auto fail = [&]() { array.appendObject (); };
             expectException (fail);
         }
     }
@@ -221,8 +216,8 @@ public:
 #ifdef DEBUG
         setup ("repeating keys");
         auto& root = makeRoot();
-        root.set ("foo", "bar")
-            .set ("baz", 0);
+        root.set ("foo", "bar");
+        root.set ("baz", 0);
         auto fail = [&]() { root.set ("foo", "bar"); };
         expectException (fail);
 #endif
@@ -232,7 +227,6 @@ public:
     {
         testTrivial ();
         testSimple ();
-        testSimpleShort ();
 
         testOneSub ();
         testSubs ();
