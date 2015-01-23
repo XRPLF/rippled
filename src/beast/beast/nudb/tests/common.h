@@ -51,7 +51,7 @@ class storage
 private:
     std::size_t size_ = 0;
     std::size_t capacity_ = 0;
-    std::unique_ptr<std::uint8_t> buf_;
+    std::unique_ptr<std::uint8_t[]> buf_;
 
 public:
     storage() = default;
