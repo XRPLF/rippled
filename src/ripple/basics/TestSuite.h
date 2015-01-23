@@ -25,6 +25,13 @@
 
 namespace ripple {
 
+#define FILE_POSITION() to_string(__FILE__) + ":" + to_string(__LINE__)
+#define ANNOTATE_MSG(msg) "`" + to_string(#msg) + "` @ " + FILE_POSITION()
+#define EXPECT2(expr, msg) expect((expr), (ANNOTATE_MSG(expr)) + ": " + #msg);
+#define EXPECT_EQ3(a, b, msg) expectEquals(a, b, (ANNOTATE_MSG(a == b)) + ": " + #msg);
+#define EXPECT(expr) EXPECT2((expr), );
+#define EXPECT_EQ(a, b) EXPECT_EQ3(a, b, );
+
 class TestSuite : public beast::unit_test::suite
 {
 public:

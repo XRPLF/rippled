@@ -30,68 +30,41 @@
 #include <ripple/basics/TestSuite.h>
 
 // Added
+#include <boost/algorithm/string.hpp>
 #include <ripple/json/json_reader.h>
 #include <fstream>
 #include <ripple/app/paths/RippleState.h>
 
-// These are undefined at the end of the file. At first they were defined in the
-// scope of a function, but of course, as useful as they are, I missed them,
-// soon as I started writing a test for something else. There's a certain
-// gravity towards defining them (or something like them) available to all
-// tests.
-
-#define FILE_POSITION() to_string(__FILE__) + ":" + to_string(__LINE__)
-#define ANNOTATE_MSG(msg) "`" + to_string(#msg) + "` @ " + FILE_POSITION()
-// #2 failed: `!c.makePayment(root, gw2, xrp(4000))` @ src/ripple/app/ledger/Ledger.test.cpp:392:
-
-// With message passing ability, using 2,3 etc, to refer to number of args.
-#define EXPECT2(expr, msg) expect((expr), (ANNOTATE_MSG(expr)) + ": " + #msg);
-#define EXPECT_EQ3(a, b, msg) expectEquals(a, b, (ANNOTATE_MSG(a == b)) + ": " + #msg);
-
-// Note the trailing comma! Silent msg
-#define EXPECT(expr) EXPECT2((expr), );
-// #13 failed: `aliceLimit.getText() == "12"` @ src/ripple/app/ledger/Ledger.test.cpp:423:
-// Actual: 1
-// Expected: 12
-#define EXPECT_EQ(a, b) EXPECT_EQ3(a, b, );
-
 /* -------------------------------------------------------------------------- */
 
-// DSL implemented in C++. What? You think some custom lang is going to be less
-// prone to errors??? You wanna messe around with json declarations ??? and
-// constantly wondering if the darn thing is buggy. This is pretty simple to
-// understand, is `just C++` and gives useful source specific error messages.
-
-// TODO: some way of defining/undefining per test
 #define AFFECTED(name, index, is_type) EXPECT(nodes.contains(index));\
         Affected& name = nodes[index];\
         EXPECT(name.is_type);
 
-#define CHANGEDP(affected, fieldName, prop, beforeValue, afterValue) \
+#define CHANGED_PROP(affected, fieldName, prop, beforeValue, afterValue) \
         EXPECT(!affected.is_created) \
-        EXPECT_EQ((affected.b4()[fieldName])prop, (beforeValue)) \
-        EXPECT_EQ((affected.aft()[fieldName])prop, (afterValue));
+        EXPECT_EQ((affected.before()[fieldName])prop, (beforeValue)) \
+        EXPECT_EQ((affected.after()[fieldName])prop, (afterValue));
 
-// Note the `, ,` empty prop value forwarded to CHANGEDP
 #define CHANGED(affected, fieldName, beforeValue, afterValue) \
-        CHANGEDP(affected, fieldName, ,beforeValue, afterValue);
+        CHANGED_PROP(affected, fieldName, ,beforeValue, afterValue);
+        // Note the `, ,` empty prop value forwarded to CHANGED_PROP
 
 #define UNCHANGED(affected, fieldName) \
         EXPECT(!affected.is_created) \
-        EXPECT_EQ(affected.b4()[fieldName], affected.aft()[fieldName]);
+        EXPECT_EQ(affected.before()[fieldName], affected.after()[fieldName]);
 
 #define NEW(affected, fieldName, value) \
         EXPECT(affected.is_created) \
-        EXPECT_EQ(affected.aft()[fieldName], (value));
+        EXPECT_EQ(affected.after()[fieldName], (value));
 
-// Repeating the `name` 3 times is a pain.
 #define TRANSACTOR_TEST(name, block) \
         class name##_test : public TestSuite, public test::TestContext {\
             void \
             run () \
             { \
                 using namespace test; \
-                auto restore (logSuppressor()); \
+                LogSuppressor restore; \
                 testcase(#name); \
                 block \
             } \
@@ -107,34 +80,19 @@ typedef std::function<void (STTx& ref)> TxConfigurator;
 
 static const TxConfigurator NOOPCONF = [](STTx& c){};
 
-std::vector<std::string>
-split(std::string const & s, char delim)
-{
-  std::stringstream ss(s);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim))
-  {
-    elems.push_back(item);
-  }
-  return elems;
-}
-
-struct SeverityRestorator
+struct LogSuppressor
 {
     beast::Journal::Severity to;
-    ~SeverityRestorator() {
+    ~LogSuppressor() 
+    {
         deprecatedLogs().severity(to);
     }
+    LogSuppressor(beast::Journal::Severity allowed = beast::Journal::kFatal)
+    {
+        auto to = deprecatedLogs().severity();
+        deprecatedLogs().severity(allowed);
+    }
 };
-
-SeverityRestorator
-logSuppressor(beast::Journal::Severity allowed = beast::Journal::kFatal)
-{
-    auto to = deprecatedLogs().severity();
-    deprecatedLogs().severity(allowed);
-    return {to};
-}
 
 STAmount
 xrp(double n)
@@ -154,7 +112,7 @@ struct LESIView
     LedgerEntryAction action() {return it.second.mAction; }
 };
 
-// Create genesis ledger from a start amount in drops, and the public
+// Create genesis ledger from a start amount in drops, and a public
 // root RippleAddress
 Ledger::pointer
 createGenesisLedger(std::uint64_t start_amount_drops,
@@ -232,7 +190,6 @@ struct TestAccount
     std::string idHuman;
     Blob pubKey;
     uint256 ledgerIndex;
-    // TODO: secretKey, regularKey, sign etc
 
     TestAccount(RippleAddress ad,
                std::string al) :
@@ -253,9 +210,10 @@ struct TestAccount
     STAmount
     amount(std::string const& valueAndCurrency) const
     {
-        auto parts = test::split(valueAndCurrency, '/');
+        std::vector<std::string> parts;
+        boost::split(parts, valueAndCurrency, boost::is_any_of("/"));
         assert(parts.size() == 2);
-        auto amt = STAmount(issue(parts[1]), 0, 0);
+        STAmount amt = STAmount(issue(parts[1]), 0, 0);
         amt.setValue(parts[0]);
         return amt;
     }
@@ -291,30 +249,30 @@ public:
     LedgerEntryType type;
     uint256 index;
 private:
-    SLE::pointer aft_ /*er the transaction */;
-    SLE::pointer b4_ /* the transaction, possibly nullptr */;
+    SLE::pointer after_ /*er the transaction */;
+    SLE::pointer before_ /* the transaction, possibly nullptr */;
 
 public:
     SLE&
-    b4()
+    before()
     {
         if (is_created)
         {
             throw std::runtime_error(
                 "tried to access LES state b4 transaction of new entry");
         }
-        return *b4_;
+        return *before_;
     }
 
     SLE&
-    aft()
+    after()
     {
-        return *aft_;
+        return *after_;
     }
 
     Affected() : is_created(false), is_modified(false), is_deleted(false),
                  type(ltINVALID), index(uint256(0)),
-                 aft_(nullptr), b4_(nullptr) {}
+                 after_(nullptr), before_(nullptr) {}
 
     /*Owners of SLE::ref must outlast Affected*/
     Affected (SLE::ref b4,
@@ -325,8 +283,8 @@ public:
                 is_deleted ( action_ == taaDELETE),
                 type (aft->getType()),
                 index (aft->getIndex()),
-                aft_ (aft),
-                b4_ (b4)
+                after_ (aft),
+                before_ (b4)
     {
     }
 };
@@ -434,7 +392,6 @@ struct TxResult {
 class TestContext
 {
 public:
-    /*Members*/
     TestAccount rootAccount;
     Ledger::pointer LCL;
     Ledger::pointer ledger;
@@ -476,7 +433,7 @@ public:
     {
         // Adds the Account, Sequence fields etc
         populateMissing(tx, account);
-        // Here the configurator can override certain fields
+        // Here the configurator can override fields
         configure(tx);
         return applyTransaction(tx);
     }
@@ -492,7 +449,7 @@ public:
                                                tapOPEN_LEDGER |
                                                tapNO_CHECK_SIGN ), didApply);
 
-        return {std::make_shared<STTx>(tx), /* TODO: unique ?*/
+        return {std::make_shared<STTx>(tx),
                 std::make_shared<LedgerEntrySet>(engine.view()),
                 b4TxApplied,
                 r,
@@ -594,18 +551,10 @@ public:
         return applyTransaction(tx, from, conf);
     }
 
-    // TODO: rename to something less getThisJavaEsquE
     SLE&
     entry(uint256 const& index)
     {
-        // We use getSLEi, as it may give us a tiny performance boost, we never
-        // mess with the entries internals, only inspect them, and also, it
-        // allows us to return a reference, as the sle cache maintains owner
-        // ship of the pointer. If we tried to return a derefd getSLE it would
-        // blow up in our faaaa-eeee-sssce [1]
-
-        // ([1]: http://www.adultswim.com/videos/xavier-renegade-angel/)
-
+        // The SLEi cache is the owner, we just borrow.
         return *ledger->getSLEi(index);
     }
 
@@ -619,15 +568,12 @@ public:
 
     TestContext () :
         rootAccount(createAccount("masterpassphrase")),
-        // Create genesis ledger
         LCL(createGenesisLedger(100000000000000000ull, rootAccount.address)),
-        // Create open scratch ledger
         ledger(std::make_shared<Ledger>(false, *LCL)) {}
 
     TestContext (Ledger::ref lcl) :
         rootAccount(createAccount("masterpassphrase")),
         LCL(lcl),
-        // Create open scratch ledger
         ledger(std::make_shared<Ledger>(false, *LCL)) {}
 };
 
@@ -645,7 +591,6 @@ public:
     loadTransaction(std::string const& txString)
     {
 
-        // Parse the transaction json string
         Json::Value tx_json;
         EXPECT2(parseJsonObject(txString, tx_json),
               "failed to parse json string from: " + txString);
@@ -661,7 +606,7 @@ public:
         {
             std::string id (to_string(tx.getTransactionID()));
             EXPECT_EQ3(id, tx_json["hash"].asString(),
-                        "computed tx hash different than expected");
+                       "computed tx hash different than expected");
         }
 
         return tx;
@@ -735,7 +680,7 @@ class DiscrepancyTestExample_test : public test::LedgerDumpSuite
     testDiscrepancyInHistoricalTransaction ()
     {
         using namespace test;
-        auto restore (logSuppressor());
+        LogSuppressor restore;
 
         testcase ("testDiscrepancyInHistoricalTransaction");
 
@@ -844,7 +789,7 @@ TRANSACTOR_TEST(Tickets, {
        {
            AFFECTED(dir, root.ownerDirIndex(), is_created);
            NEW(dir, sfOwner, root.id);
-           auto& indexes = dir.aft()[sfIndexes];
+           auto& indexes = dir.after()[sfIndexes];
            EXPECT_EQ(indexes.size(), 1);
            EXPECT_EQ(indexes[0], ticketID);
        }
@@ -884,7 +829,7 @@ TRANSACTOR_TEST(Tickets, {
        // The owner directory is deleted
        {
            AFFECTED(dir, root.ownerDirIndex(), is_deleted);
-           CHANGEDP(dir, sfIndexes, .size(), 1, 0);
+           CHANGED_PROP(dir, sfIndexes, .size(), 1, 0);
        }
        // Nothing weird going on here
        EXPECT_EQ(nodes.size(), 4);
@@ -907,7 +852,7 @@ class Ledger_test : public TestSuite
     test_TestContext ()
     {
         using namespace test;
-        auto restore (logSuppressor());
+        LogSuppressor restore;
         TestContext c;
         auto& root = c.rootAccount;
 
@@ -965,8 +910,6 @@ class Ledger_test : public TestSuite
 
         // gw2 pays mark with FOO
         EXPECT(c.makePayment(gw2, mark, "0.1/FOO", [](STTx& tx){
-            // This is just a configurator lambda, so can configure non standard
-            // stuff and junk. Is this a sensible API or crackheaded?
             tx(sfFlags, tfPartialPayment);
         }));
 
@@ -1075,14 +1018,12 @@ class Ledger_test : public TestSuite
         // For DirectoryNode's that enumerate available Offer's, the pays/gets
         // Issue pair are used to create this index. However, rather than dump
         // all offers of a pair in just the one DirectoryNode, the last (right
-        // most) 64 bits has a quality overlayed (so as to store offers of the
-        // same quality in the same DirectoryNode(s). (Actually, the directory
-        // nodes are paginated, with only 32 entries per page, and IndexNext,
-        // IndexPrev pointers to other nodes. Only the root directory for each
-        // quality has the common prefix.))
+        // most) 64 bits has a quality overlayed so as to group offers by
+        // rate.
 
         // This quality is essentially TakerPays/TakerGets, i.e. how much you
-        // must put `in` of TakerPays issue to get one of TakerGets issue `out`.
+        // must put `in` of TakerPays issue to get one unit of TakerGets issue
+        // `out`.
 
         // This allows easy walking of offers for a given Issue pair, with ever
         // worse rates for the taker, via using a tree.findNextIndex(after) api.
@@ -1114,14 +1055,8 @@ BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
 
 #undef AFFECTED
 #undef UNCHANGED
-#undef CHANGEDP
+#undef CHANGED_PROP
 #undef CHANGED
 #undef NEW
-#undef EXPECT
-#undef EXPECT2
-#undef EXPECT_EQ
-#undef EXPECT_EQ3
-#undef ANNOTATE_MSG
-#undef FILE_POSITION
 
 } // ripple
