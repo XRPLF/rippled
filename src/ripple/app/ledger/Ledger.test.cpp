@@ -402,11 +402,11 @@ public:
         // TODO: for somethings we need to check sig
         static const Blob sig {0x11, 0x22, 0x33, 0x44};
 
-        tx(sfSigningPubKey, account.pubKey);
-        tx(sfAccount,       account.id);
-        tx(sfFee,           10);
-        tx(sfSequence,      ++account.sequence);
-        tx(sfTxnSignature,  sig);
+        tx.set(sfSigningPubKey, account.pubKey);
+        tx.set(sfAccount,       account.id);
+        tx.set(sfFee,           10);
+        tx.set(sfSequence,      ++account.sequence);
+        tx.set(sfTxnSignature,  sig);
 
         // TODO: check format properly somehow
         if (!tx.isValidForType())
@@ -470,7 +470,7 @@ public:
     freezeAccount(TestAccount& account, TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttACCOUNT_SET);
-        tx(sfSetFlag, asfGlobalFreeze);
+        tx.set(sfSetFlag, asfGlobalFreeze);
         return applyTransaction(tx, account, conf);
     }
 
@@ -478,7 +478,7 @@ public:
     unfreezeAccount(TestAccount& account, TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttACCOUNT_SET);
-        tx(sfClearFlag, asfGlobalFreeze);
+        tx.set(sfClearFlag, asfGlobalFreeze);
         return applyTransaction(tx, account, conf);
     }
 
@@ -487,8 +487,8 @@ public:
                 STAmount const& amount, TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttPAYMENT);
-        tx(sfAmount, amount);
-        tx(sfDestination, to.id);
+        tx.set(sfAmount, amount);
+        tx.set(sfDestination, to.id);
         return applyTransaction(tx, from, conf);
     }
 
@@ -498,8 +498,8 @@ public:
                 TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttPAYMENT);
-        tx(sfAmount, to.amount(valueAndCurrency));
-        tx(sfDestination, to.id);
+        tx.set(sfAmount, to.amount(valueAndCurrency));
+        tx.set(sfDestination, to.id);
         return applyTransaction(tx, from, conf);
     }
 
@@ -510,8 +510,8 @@ public:
                 TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttOFFER_CREATE);
-        tx(sfTakerPays, in);
-        tx(sfTakerGets, out);
+        tx.set(sfTakerPays, in);
+        tx.set(sfTakerGets, out);
         return applyTransaction(tx, creator, conf);
     }
 
@@ -529,7 +529,7 @@ public:
                  TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttTICKET_CANCEL);
-        tx(sfTicketID, ticketID);
+        tx.set(sfTicketID, ticketID);
         return applyTransaction(tx, account, conf);
     }
 
@@ -538,7 +538,7 @@ public:
                 TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttOFFER_CANCEL);
-        tx(sfOfferSequence, offerSequence);
+        tx.set(sfOfferSequence, offerSequence);
         return applyTransaction(tx, from, conf);
     }
 
@@ -547,7 +547,7 @@ public:
                  TxConfigurator const& conf = NOOPCONF)
     {
         STTx tx (ttTRUST_SET);
-        tx(sfLimitAmount, limitAmount);
+        tx.set(sfLimitAmount, limitAmount);
         return applyTransaction(tx, from, conf);
     }
 
@@ -770,7 +770,7 @@ TRANSACTOR_TEST(Tickets, {
    // The TxResult has a bool () operator
    EXPECT(r = createTicket(root, [&](STTx& tx) {
        // we use typed fields and operator() hack
-       tx(sfExpiration, rippleTime + 40);
+       tx.set(sfExpiration, rippleTime + 40);
    }));
 
    uint256 ticketID = getTicketIndex(root.id, root.sequence);
@@ -910,7 +910,7 @@ class Ledger_test : public TestSuite
 
         // gw2 pays mark with FOO
         EXPECT(c.makePayment(gw2, mark, "0.1/FOO", [](STTx& tx){
-            tx(sfFlags, tfPartialPayment);
+            tx.set(sfFlags, tfPartialPayment);
         }));
 
         // gw3 pays mark with FOO
@@ -926,8 +926,8 @@ class Ledger_test : public TestSuite
         // Example of using TxConfigurator
         EXPECT(c.createOffer(mark, /*in*/  gw2.amount("1/FOO"),
                                    /*out*/ gw3.amount("1/FOO"),  [](STTx& tx){
-            tx(sfFee, 12000 /*drops*/);
-            tx(sfFlags, tfSell);
+            tx.set(sfFee, 12000 /*drops*/);
+            tx.set(sfFlags, tfSell);
         }));
 
         EXPECT(c.cancelOffer(mark, mark.sequence));

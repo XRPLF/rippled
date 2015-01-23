@@ -264,61 +264,61 @@ public:
     }
 */
 
-    void operator () (SFieldU8 const& f, unsigned char v)
+    void set (SFieldU8 const& f, unsigned char v)
     {
         setFieldU8(f, v);
     }
-    void operator () (SFieldU16 const& f, std::uint16_t v)
+    void set (SFieldU16 const& f, std::uint16_t v)
     {
         setFieldU16(f, v);
     }
-    void operator () (SFieldU32 const& f, std::uint32_t v)
+    void set (SFieldU32 const& f, std::uint32_t v)
     {
         setFieldU32(f, v);
     }
-    void operator () (SFieldU64 const& f, std::uint64_t v)
+    void set (SFieldU64 const& f, std::uint64_t v)
     {
         setFieldU64(f, v);
     }
-    void operator () (SFieldH128 const& f, uint128 const& v)
+    void set (SFieldH128 const& f, uint128 const& v)
     {
         setFieldH128(f, v);
     }
-    void operator () (SFieldH256 const& f, uint256 const& v)
+    void set (SFieldH256 const& f, uint256 const& v)
     {
         setFieldH256(f, v);
     }
-    void operator () (SFieldVL const& f, Blob const& v)
+    void set (SFieldVL const& f, Blob const& v)
     {
         setFieldVL(f, v);
     }
-    void operator () (SFieldAccount const& f, Account const& v)
+    void set (SFieldAccount const& f, Account const& v)
     {
         setFieldAccount(f, v);
     }
-    void operator () (SFieldAccount const& f, RippleAddress const& v)
+    void set (SFieldAccount const& f, RippleAddress const& v)
     {
         setFieldAccount(f, v);
     }
-    void operator () (SFieldAmount const& f, STAmount const& v)
+    void set (SFieldAmount const& f, STAmount const& v)
     {
         setFieldAmount(f, v);
     }
-    void operator () (SFieldPathSet const& f, STPathSet const& v)
+    void set (SFieldPathSet const& f, STPathSet const& v)
     {
         setFieldPathSet(f, v);
     }
-    void operator () (SFieldV256 const& f, STVector256 const& v)
+    void set (SFieldV256 const& f, STVector256 const& v)
     {
         setFieldV256(f, v);
     }
-    void operator () (SFieldArray const& f, STArray const& v)
+    void set (SFieldArray const& f, STArray const& v)
     {
         setFieldArray(f, v);
     }
 
     template <class Tag>
-    void operator () (SFieldH160 const& f, base_uint<160, Tag> const& v)
+    void set (SFieldH160 const& f, base_uint<160, Tag> const& v)
     {
         setFieldH160(f, v);
     }
