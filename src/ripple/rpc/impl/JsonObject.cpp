@@ -75,16 +75,16 @@ Object::Root::Root (Writer& w) : Object (nullptr, &w)
     writer_->startRoot (Writer::object);
 }
 
-Object Object::makeObject (std::string const& key)
+Object Object::setObject (std::string const& key)
 {
-    checkWritable ("Object::makeObject");
+    checkWritable ("Object::setObject");
     if (writer_)
         writer_->startSet (Writer::object, key);
     return Object (this, writer_);
 }
 
-Array Object::makeArray (std::string const& key) {
-    checkWritable ("Object::makeArray");
+Array Object::setArray (std::string const& key) {
+    checkWritable ("Object::setArray");
     if (writer_)
         writer_->startSet (Writer::array, key);
     return Array (this, writer_);
@@ -92,15 +92,15 @@ Array Object::makeArray (std::string const& key) {
 
 //------------------------------------------------------------------------------
 
-Object Array::makeObject ()
+Object Array::appendObject ()
 {
-    checkWritable ("Array::makeObject");
+    checkWritable ("Array::appendObject");
     if (writer_)
         writer_->startAppend (Writer::object);
     return Object (this, writer_);
 }
 
-Array Array::makeArray ()
+Array Array::appendArray ()
 {
     checkWritable ("Array::makeArray");
     if (writer_)
@@ -131,6 +131,7 @@ namespace {
 template <class Object>
 void doCopyFrom (Object& to, Json::Value const& from)
 {
+    assert (from.isObject());
     auto members = from.getMemberNames();
     for (auto& m: members)
         to[m] = from[m];
@@ -150,7 +151,6 @@ void copyFrom (Object& to, Json::Value const& from)
 {
     doCopyFrom (to, from);
 }
-
 
 WriterObject stringWriterObject (std::string& s)
 {

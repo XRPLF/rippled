@@ -197,10 +197,10 @@ public:
     /*** Output a literal constant or C string. */
     void output (char const*);
 
-    /*** Output a literal constant or C string. */
+    /*** Output a Json::Value. */
     void output (Json::Value const&);
 
-    /** Output numbers, booleans, or nullptr. */
+    /** Output numbers or booleans. */
     template <typename Type>
     void output (Type t)
     {

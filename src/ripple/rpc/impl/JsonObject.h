@@ -84,7 +84,7 @@ namespace RPC {
         {
             Object::Root root (writer);
             {
-               auto array = root.makeArray ("hands");
+               auto array = root.setArray ("hands");
                array.append ("left");
                array.append ("right");
             }
@@ -94,7 +94,7 @@ namespace RPC {
         // Same, using chaining.
         {
             Object::Root (writer)
-                .makeArray ("hands")
+                .setArray ("hands")
                 .append ("left")
                 .append ("right");
         }
@@ -104,7 +104,7 @@ namespace RPC {
         {
             Object::Root root (writer);
             {
-               auto object = root.makeObject ("hands");
+               auto object = root.setObject ("hands");
                object["left"] = false;
                object["right"] = true;
             }
@@ -114,7 +114,7 @@ namespace RPC {
         // Same, using chaining.
         {
             Object::Root (writer)
-                .makeObject ("hands")
+                .setObject ("hands")
                 .set ("left", false)
                 .set ("right", true);
             }
@@ -135,14 +135,14 @@ namespace RPC {
 
         // Open a subcollection, then set something else.
         {
-            auto object = root.makeObject ("foo");
+            auto object = root.setObject ("foo");
             root ["hello"] = "world";  // THROWS!
         }
 
         // Open two subcollections at a time.
         {
-            auto object = root.makeObject ("foo");
-            auto array = root.makeArray ("bar");  // THROWS!!
+            auto object = root.setObject ("foo");
+            auto array = root.setArray ("bar");  // THROWS!!
         }
 
    For more examples, check the unit tests.
@@ -193,7 +193,9 @@ public:
         An operator[] is provided to allow writing `object["key"] = scalar;`.
      */
     template <typename Scalar>
-    Object& set (std::string const& key, Scalar const&);
+    void set (std::string const& key, Scalar const&);
+
+    void set (std::string const& key, Json::Value const&);
 
     // Detail class and method used to implement operator[].
     class Proxy;
@@ -206,14 +208,14 @@ public:
         This Object is disabled until that sub-object is destroyed.
         Throws an exception if this Object was already disabled.
      */
-    Object makeObject (std::string const& key);
+    Object setObject (std::string const& key);
 
     /** Make a new Array at a key and return it.
 
         This Object is disabled until that sub-array is destroyed.
         Throws an exception if this Object was already disabled.
      */
-    Array makeArray (std::string const& key);
+    Array setArray (std::string const& key);
 
 protected:
     friend class Array;
@@ -239,21 +241,27 @@ public:
         its sub-collections is enabled).
     */
     template <typename Scalar>
-    Array& append (const Scalar&);
+    void append (Scalar const&);
+
+    /**
+       Appends a Json::Value to an array.
+       Throws an exception if this Array was disabled.
+     */
+    void append (Json::Value const&);
 
     /** Append a new Object and return it.
 
         This Array is disabled until that sub-object is destroyed.
-        Throws an exception if this Array was already disabled.
+        Throws an exception if this Array was disabled.
      */
-    Object makeObject ();
+    Object appendObject ();
 
     /** Append a new Array and return it.
 
         This Array is disabled until that sub-array is destroyed.
         Throws an exception if this Array was already disabled.
      */
-    Array makeArray ();
+    Array appendArray ();
 
   protected:
     friend class Object;
@@ -266,10 +274,11 @@ public:
 // interoperate.
 
 /** Add a new subarray at a named key in a Json object. */
-Json::Value& addArray (Json::Value&, Json::StaticString const& key);
+Json::Value& setArray (Json::Value&, Json::StaticString const& key);
 
 /** Add a new subarray at a named key in a Json object. */
-Array addArray (Object&, Json::StaticString const& key);
+Array setArray (Object&, Json::StaticString const& key);
+
 
 /** Add a new subobject at a named key in a Json object. */
 Json::Value& addObject (Json::Value&, Json::StaticString const& key);
@@ -277,11 +286,27 @@ Json::Value& addObject (Json::Value&, Json::StaticString const& key);
 /** Add a new subobject at a named key in a Json object. */
 Object addObject (Object&, Json::StaticString const& key);
 
+
+/** Append a new subarray to a Json array. */
+Json::Value& appendArray (Json::Value&);
+
+/** Append a new subarray to a Json array. */
+Array appendArray (Array&);
+
+
+/** Append a new subobject to a Json object. */
+Json::Value& appendObject (Json::Value&);
+
+/** Append a new subobject to a Json object. */
+Object appendObject (Array&);
+
+
 /** Copy all the keys and values from one object into another. */
 void copyFrom (Json::Value& to, Json::Value const& from);
 
 /** Copy all the keys and values from one object into another. */
 void copyFrom (Object& to, Json::Value const& from);
+
 
 /** An Object that contains its own Writer. */
 class WriterObject
@@ -332,43 +357,100 @@ public:
     Proxy (Object& object, std::string const& key);
 
     template <class T>
-    Object& operator= (T const& t)
+    void operator= (T const& t)
     {
         object_.set (key_, t);
-        return object_;
     }
 };
 
 //------------------------------------------------------------------------------
 
 template <typename Scalar>
-Array& Array::append (Scalar const& value)
+void Array::append (Scalar const& value)
 {
     checkWritable ("append");
     if (writer_)
         writer_->append (value);
-    return *this;
+}
+
+inline void Array::append (Json::Value const& v)
+{
+    auto t = v.type();
+    switch (t)
+    {
+    case Json::nullValue:    return append (nullptr);
+    case Json::intValue:     return append (v.asInt());
+    case Json::uintValue:    return append (v.asUInt());
+    case Json::realValue:    return append (v.asDouble());
+    case Json::stringValue:  return append (v.asString());
+    case Json::booleanValue: return append (v.asBool());
+
+    case Json::objectValue:
+    {
+        auto object = appendObject ();
+        copyFrom (object, v);
+        return;
+    }
+
+    case Json::arrayValue:
+    {
+        auto array = appendArray ();
+        for (auto& item: v)
+            array.append (item);
+        return;
+    }
+    }
+    assert (false);  // Can't get here.
 }
 
 template <typename Scalar>
-Object& Object::set (std::string const& key, Scalar const& value)
+void Object::set (std::string const& key, Scalar const& value)
 {
     checkWritable ("set");
     if (writer_)
         writer_->set (key, value);
-    return *this;
+}
+
+inline void Object::set (std::string const& k, Json::Value const& v)
+{
+    auto t = v.type();
+    switch (t)
+    {
+    case Json::nullValue:    return set (k, nullptr);
+    case Json::intValue:     return set (k, v.asInt());
+    case Json::uintValue:    return set (k, v.asUInt());
+    case Json::realValue:    return set (k, v.asDouble());
+    case Json::stringValue:  return set (k, v.asString());
+    case Json::booleanValue: return set (k, v.asBool());
+
+    case Json::objectValue:
+    {
+        auto object = setObject (k);
+        copyFrom (object, v);
+        return;
+    }
+
+    case Json::arrayValue:
+    {
+        auto array = setArray (k);
+        for (auto& item: v)
+            array.append (item);
+        return;
+    }
+    }
+    assert (false);  // Can't get here.
 }
 
 inline
-Json::Value& addArray (Json::Value& json, Json::StaticString const& key)
+Json::Value& setArray (Json::Value& json, Json::StaticString const& key)
 {
     return (json[key] = Json::arrayValue);
 }
 
 inline
-Array addArray (Object& json, Json::StaticString const& key)
+Array setArray (Object& json, Json::StaticString const& key)
 {
-    return json.makeArray (std::string (key));
+    return json.setArray (std::string (key));
 }
 
 inline
@@ -380,7 +462,31 @@ Json::Value& addObject (Json::Value& json, Json::StaticString const& key)
 inline
 Object addObject (Object& object, Json::StaticString const& key)
 {
-    return object.makeObject (std::string (key));
+    return object.setObject (std::string (key));
+}
+
+inline
+Json::Value& appendArray (Json::Value& json)
+{
+    return json.append (Json::arrayValue);
+}
+
+inline
+Array appendArray (Array& json)
+{
+    return json.appendArray ();
+}
+
+inline
+Json::Value& appendObject (Json::Value& json)
+{
+    return json.append (Json::objectValue);
+}
+
+inline
+Object appendObject (Array& json)
+{
+    return json.appendObject ();
 }
 
 } // RPC
