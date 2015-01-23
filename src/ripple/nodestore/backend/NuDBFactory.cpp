@@ -257,7 +257,7 @@ public:
     insert2 (void const* key, void const* data,
         std::size_t size)
     {
-        std::unique_ptr<char> buf (
+        std::unique_ptr<char[]> buf (
             new char[snappy::MaxCompressedLength(size)]);
         std::size_t actual;
         snappy::RawCompress ((char const*)data, size,
