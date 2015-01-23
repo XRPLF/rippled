@@ -177,6 +177,9 @@ public:
     beast::Journal m_journal;
     Application::LockType m_masterMutex;
 
+    // Required by the SHAMapStore
+    TransactionMaster m_txMaster;
+
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <SHAMapStore> m_shaMapStore;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
@@ -186,7 +189,6 @@ public:
     TreeNodeCache m_treeNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
-    TransactionMaster m_txMaster;
 
     std::unique_ptr <CollectorManager> m_collectorManager;
     std::unique_ptr <Resource::Manager> m_resourceManager;
