@@ -208,7 +208,14 @@ private:
     size() override;
 
     Json::Value
+    crawl() override;
+
+    Json::Value
     json() override;
+
+    bool
+    processRequest (beast::http::message const& req,
+        Handoff& handoff);
 
     //--------------------------------------------------------------------------
 
