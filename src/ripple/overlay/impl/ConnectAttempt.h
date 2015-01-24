@@ -106,7 +106,8 @@ private:
 
     static
     beast::http::message
-    makeRequest (boost::asio::ip::address const& remote_address);
+    makeRequest (bool crawl,
+        boost::asio::ip::address const& remote_address);
 
     template <class Streambuf>
     void processResponse (beast::http::message const& m,

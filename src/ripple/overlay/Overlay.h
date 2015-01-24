@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
+#include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/server/Handoff.h>
 #include <beast/asio/ssl_bundle.h>
@@ -100,6 +101,11 @@ public:
     virtual
     std::size_t
     size () = 0;
+
+    /** Returns information reported to the crawl cgi command. */
+    virtual
+    Json::Value
+    crawl() = 0;
 
     /** Return diagnostics on the status of all peers.
         @deprecated This is superceded by PropertyStream
