@@ -94,6 +94,12 @@ public:
         m_logic.config (config);
     }
 
+    Config
+    config() override
+    {
+        return m_logic.config();
+    }
+
     void addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses) override
     {

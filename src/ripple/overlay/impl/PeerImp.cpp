@@ -187,6 +187,15 @@ PeerImp::charge (Resource::Charge const& fee)
 
 //------------------------------------------------------------------------------
 
+bool
+PeerImp::crawl() const
+{
+    auto const iter = http_message_.headers.find("Crawl");
+    if (iter == http_message_.headers.end())
+        return false;
+    return beast::ci_equal(iter->second, "public");
+}
+
 Json::Value
 PeerImp::json()
 {
@@ -407,28 +416,6 @@ PeerImp::makePrefix(id_t id)
     return ss.str();
 }
 
-beast::http::message
-PeerImp::makeRequest(boost::asio::ip::address const& remote_address)
-{
-    beast::http::message m;
-    m.method (beast::http::method_t::http_get);
-    m.url ("/");
-    m.version (1, 1);
-    m.headers.append ("User-Agent", BuildInfo::getFullVersionString());
-    m.headers.append ("Upgrade", "RTXP/1.3");
-        //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
-    m.headers.append ("Connection", "Upgrade");
-    m.headers.append ("Connect-As", "Peer");
-    //m.headers.append ("Connect-As", "Leaf, Peer");
-    //m.headers.append ("Accept-Encoding", "identity");
-    //m.headers.append ("Local-Address", stream_.
-    //m.headers.append ("X-Try-IPs", "192.168.0.1:51234");
-    //m.headers.append ("X-Try-IPs", "208.239.114.74:51234");
-    //m.headers.append ("A", "BC");
-    //m.headers.append ("Content-Length", "0");
-    return m;
-}
-
 void
 PeerImp::onTimer (error_code const& ec)
 {
@@ -497,7 +484,9 @@ void PeerImp::doAccept()
 
     // TODO Apply headers to connection state.
 
-    auto resp = makeResponse(http_message_, sharedValue);
+    auto resp = makeResponse(
+        ! overlay_.peerFinder().config().peerPrivate,
+            http_message_, sharedValue);
     beast::http::write (write_buffer_, resp);
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
@@ -536,8 +525,8 @@ void PeerImp::doAccept()
 }
 
 beast::http::message
-PeerImp::makeResponse (beast::http::message const& req,
-    uint256 const& sharedValue)
+PeerImp::makeResponse (bool crawl,
+    beast::http::message const& req, uint256 const& sharedValue)
 {
     beast::http::message resp;
     resp.request(false);
@@ -548,6 +537,7 @@ PeerImp::makeResponse (beast::http::message const& req,
     resp.headers.append("Upgrade", "RTXP/1.2");
     resp.headers.append("Connect-AS", "Peer");
     resp.headers.append("Server", BuildInfo::getFullVersionString());
+    resp.headers.append ("Crawl", crawl ? "public" : "private");
     protocol::TMHello hello = buildHello(sharedValue, getApp());
     appendHello(resp, hello);
     return resp;
