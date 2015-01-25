@@ -616,7 +616,6 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     *list_sources('src/ripple/nodestore', '.cpp'),
                     CPPPATH=[
-                        'src/leveldb/include',
                         'src/rocksdb2/include',
                         'src/snappy/snappy',
                         'src/snappy/config',
@@ -647,7 +646,6 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     'src/ripple/unity/nodestore.cpp',
                     CPPPATH=[
-                        'src/leveldb/include',
                         'src/rocksdb2/include',
                         'src/snappy/snappy',
                         'src/snappy/config',
@@ -691,27 +689,6 @@ for tu_style in ['classic', 'unity']:
                 CPPPATH=[
                     'src/ed25519-donna',
                 ]
-            )
-
-            object_builder.add_source_files(
-                'src/ripple/unity/leveldb.cpp',
-                CPPPATH=[
-                    'src/leveldb/',
-                    'src/leveldb/include',
-                    'src/snappy/snappy',
-                    'src/snappy/config',
-                ],
-                **no_uninitialized_warning
-            )
-
-            object_builder.add_source_files(
-                'src/ripple/unity/hyperleveldb.cpp',
-                CPPPATH=[
-                    'src/hyperleveldb',
-                    'src/snappy/snappy',
-                    'src/snappy/config',
-                ],
-                **no_uninitialized_warning
             )
 
             object_builder.add_source_files(

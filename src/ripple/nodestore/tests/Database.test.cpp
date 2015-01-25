@@ -184,12 +184,6 @@ public:
     {
         testNodeStore ("nudb", useEphemeralDatabase, true, seedValue);
 
-        testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
-
-    #if RIPPLE_HYPERLEVELDB_AVAILABLE
-        testNodeStore ("hyperleveldb", useEphemeralDatabase, true, seedValue);
-    #endif
-
     #if RIPPLE_ROCKSDB_AVAILABLE
         testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
     #endif
@@ -204,12 +198,6 @@ public:
     void runImportTests (std::int64_t const seedValue)
     {
         testImport ("nudb", "nudb", seedValue);
-
-        testImport ("leveldb", "leveldb", seedValue);
-        
-    #if RIPPLE_HYPERLEVELDB_AVAILABLE
-        testImport ("hyperleveldb", "hyperleveldb", seedValue);
-    #endif
 
     #if RIPPLE_ROCKSDB_AVAILABLE
         testImport ("rocksdb", "rocksdb", seedValue);

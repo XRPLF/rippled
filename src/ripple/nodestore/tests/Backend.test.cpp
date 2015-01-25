@@ -96,12 +96,6 @@ public:
 
         testBackend ("nudb", seedValue);
 
-        testBackend ("leveldb", seedValue);
-
-    #if RIPPLE_HYPERLEVELDB_AVAILABLE
-        testBackend ("hyperleveldb", seedValue);
-    #endif
-
     #if RIPPLE_ROCKSDB_AVAILABLE
         testBackend ("rocksdb", seedValue);
     #endif
