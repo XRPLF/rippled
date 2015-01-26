@@ -2940,6 +2940,8 @@
     <ClCompile Include="..\..\src\ripple\resource\tests\Logic.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\Context.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrencies.cpp">
@@ -3126,8 +3128,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Accounts.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\Context.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
