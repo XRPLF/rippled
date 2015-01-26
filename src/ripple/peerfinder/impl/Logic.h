@@ -181,6 +181,15 @@ public:
 
     void
     addFixedPeer (std::string const& name,
+        beast::IP::Endpoint const& ep)
+    {
+        std::vector<beast::IP::Endpoint> v;
+        v.push_back(ep);
+        addFixedPeer (name, v);
+    }
+
+    void
+    addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses)
     {
         typename SharedState::Access state (m_state);
