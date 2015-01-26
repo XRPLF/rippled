@@ -188,7 +188,8 @@ config = testutils.init_config()
 #################################### HELPERS ###################################
 
 get_lines = (remote, acc, done) ->
-  remote.request_account_lines acc, null, 'validated', (err, lines) ->
+  args = {account: acc, ledger: 'validated'}
+  remote.request_account_lines args, (err, lines) ->
     done(lines)
 
 account_set_factory = (remote, ledger, alias_for) ->
@@ -844,7 +845,7 @@ execute_if_enabled (suite, enforced) ->
 
         test_if enforced, 'offer was removed by offer_create', (done) ->
           args = { account: 'A4', ledger: 'validated' }
-          
+
           remote.request_account_offers args, (err, res) ->
             assert res.offers.length == 0
             done()

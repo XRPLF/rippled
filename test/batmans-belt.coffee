@@ -101,6 +101,9 @@ exports.submit_for_final = (tx, done) ->
   accept so the transaction will finalize.
 
   '''
-  tx.on 'proposed', -> tx.remote.ledger_accept()
+  tx.on 'submitted', (m) ->
+    ter = (m.engine_result ? '').slice(0, 3)
+    if ter in ['tes', 'tec']
+      tx.remote.ledger_accept()
   tx.on 'final', (m) -> done(m)
   tx.submit()
