@@ -28,7 +28,19 @@ get_server_config =
 function(config, host) {
   config = config || init_config();
   host = host || config.server_default;
-  return extend({}, config.default_server_config, config.servers[host]);
+  // Override the config with the command line if provided.
+  local = {};
+  if (process.env["npm_config_noserver"]) {
+    local["no_server"] = true;
+  } else {
+    for (var i = 0; i < process.argv.length; ++i) {
+      if (process.argv[i] === "--noserver") {
+        local["no_server"] = true;
+        break;
+      }
+    }
+  }
+  return extend(local, config.default_server_config, config.servers[host]);
 }
 
 function prepare_tests(tests, fn) {
