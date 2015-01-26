@@ -27,56 +27,87 @@
 
 namespace ripple {
 
-class STVector256 : public STBase
+class STVector256 final
+    : public STBase
 {
 public:
     STVector256 () = default;
+
     explicit STVector256 (SField::ref n)
         : STBase (n)
     { }
+
     explicit STVector256 (std::vector<uint256> const& vector)
         : mValue (vector)
     { }
 
-    SerializedTypeID getSType () const
+    SerializedTypeID
+    getSType () const override
     {
         return STI_VECTOR256;
     }
-    void add (Serializer& s) const;
+    
+    void
+    add (Serializer& s) const override;
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<STBase> (construct (sit, name));
-    }
+    deserialize (SerializerIterator& sit, SField::ref name);
 
-    const std::vector<uint256>&
-    peekValue () const
-    {
-        return mValue;
-    }
+    Json::Value
+    getJson (int) const override;
 
-    std::vector<uint256>&
-    peekValue ()
-    {
-        return mValue;
-    }
-
-    virtual bool isEquivalent (const STBase& t) const;
-    virtual bool isDefault () const
+    bool
+    isEquivalent (const STBase& t) const override;
+    
+    bool
+    isDefault () const override
     {
         return mValue.empty ();
     }
 
+    void
+    setValue (const STVector256& v)
+    {
+        mValue = v.mValue;
+    }
+
+    std::unique_ptr<STBase>
+    duplicate () const override
+    {
+        return std::make_unique<STVector256>(*this);
+    }
+
+    /** Retrieve a copy of the vector we contain */
+    explicit
+    operator std::vector<uint256> () const
+    {
+        return mValue;
+    }
+
+    // std::vector<uint256> interface:
     std::vector<uint256>::size_type
     size () const
     {
         return mValue.size ();
     }
-    bool empty () const
+
+    void
+    resize (std::vector<uint256>::size_type n)
+    {
+        return mValue.resize (n);
+    }
+
+    bool
+    empty () const
     {
         return mValue.empty ();
+    }
+
+    std::vector<uint256>::reference
+    operator[] (std::vector<uint256>::size_type n)
+    {
+        return mValue[n];
     }
 
     std::vector<uint256>::const_reference
@@ -85,42 +116,50 @@ public:
         return mValue[n];
     }
 
-    void setValue (const STVector256& v)
-    {
-        mValue = v.mValue;
-    }
-
-    void push_back (uint256 const& v)
+    void
+    push_back (uint256 const& v)
     {
         mValue.push_back (v);
     }
 
-    void sort ()
+    std::vector<uint256>::iterator
+    begin()
     {
-        std::sort (mValue.begin (), mValue.end ());
+        return mValue.begin ();
     }
-
-    Json::Value getJson (int) const;
 
     std::vector<uint256>::const_iterator
     begin() const
     {
         return mValue.begin ();
     }
+
+    std::vector<uint256>::iterator
+    end()
+    {
+        return mValue.end ();
+    }
+
     std::vector<uint256>::const_iterator
     end() const
     {
         return mValue.end ();
     }
 
+    std::vector<uint256>::iterator
+    erase (std::vector<uint256>::iterator position)
+    {
+        return mValue.erase (position);
+    }
+
+    void
+    clear () noexcept
+    {
+        return mValue.clear ();
+    }
+
 private:
     std::vector<uint256>    mValue;
-
-    STVector256* duplicate () const
-    {
-        return new STVector256 (*this);
-    }
-    static STVector256* construct (SerializerIterator&, SField::ref);
 };
 
 } // ripple

@@ -23,7 +23,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
-#include <boost/foreach.hpp>
 #include <cassert>
 
 namespace ripple {
@@ -35,10 +34,9 @@ namespace ripple {
 void TransactionEngine::txnWrite ()
 {
     // Write back the account states
-    typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
-    BOOST_FOREACH (u256_LES_pair & it, mNodes)
+    for (auto& it : mNodes)
     {
-        SLE::ref    sleEntry    = it.second.mEntry;
+        SLE::ref sleEntry = it.second.mEntry;
 
         switch (it.second.mAction)
         {
@@ -51,7 +49,8 @@ void TransactionEngine::txnWrite ()
 
         case taaCREATE:
         {
-            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaCREATE: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) <<
+                "applyTransaction: taaCREATE: " << sleEntry->getText ();
 
             if (mLedger->writeBack (lepCREATE, sleEntry) & lepERROR)
                 assert (false);
@@ -60,7 +59,8 @@ void TransactionEngine::txnWrite ()
 
         case taaMODIFY:
         {
-            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaMODIFY: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) <<
+                "applyTransaction: taaMODIFY: " << sleEntry->getText ();
 
             if (mLedger->writeBack (lepNONE, sleEntry) & lepERROR)
                 assert (false);
@@ -69,7 +69,8 @@ void TransactionEngine::txnWrite ()
 
         case taaDELETE:
         {
-            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaDELETE: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) <<
+                "applyTransaction: taaDELETE: " << sleEntry->getText ();
 
             if (!mLedger->peekAccountStateMap ()->delItem (it.first))
                 assert (false);

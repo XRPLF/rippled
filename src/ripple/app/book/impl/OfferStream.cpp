@@ -54,10 +54,9 @@ OfferStream::erase (LedgerView& view)
     }
 
     auto v (p->getFieldV256 (sfIndexes));
-    auto& x (v.peekValue());
-    auto it (std::find (x.begin(), x.end(), m_tip.index()));
+    auto it (std::find (v.begin(), v.end(), m_tip.index()));
 
-    if (it == x.end())
+    if (it == v.end())
     {
         if (m_journal.error) m_journal.error <<
             "Missing offer " << m_tip.index() <<
@@ -65,7 +64,7 @@ OfferStream::erase (LedgerView& view)
         return;
     }
 
-    x.erase (it);
+    v.erase (it);
     p->setFieldV256 (sfIndexes, v);
     view.entryModify (p);
 

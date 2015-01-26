@@ -25,70 +25,79 @@
 namespace ripple {
 
 template <typename Integer>
-class STInteger : public STBase
+class STInteger
+    : public STBase
 {
 public:
-    explicit STInteger (Integer v) : value_ (v)
-    {
-    }
+    explicit
+    STInteger (Integer v) 
+        : value_ (v)
+    { }
 
-    STInteger (SField::ref n, Integer v = 0) : STBase (n), value_ (v)
-    {
-    }
+    STInteger (SField::ref n, Integer v = 0)
+        : STBase (n), value_ (v)
+    { }
 
-    static std::unique_ptr<STBase> deserialize (
-        SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<STBase> (construct (sit, name));
-    }
+    static
+    std::unique_ptr<STBase>
+    deserialize (SerializerIterator& sit, SField::ref name);
 
-    SerializedTypeID getSType () const
-    {
-        return STI_UINT8;
-    }
+    SerializedTypeID
+    getSType () const override;
 
-    Json::Value getJson (int) const;
-    std::string getText () const;
+    Json::Value
+    getJson (int) const override;
 
-    void add (Serializer& s) const
+    std::string
+    getText () const override;
+
+    void
+    add (Serializer& s) const override
     {
         assert (fName->isBinary ());
         assert (fName->fieldType == getSType ());
         s.addInteger (value_);
     }
 
-    Integer getValue () const
+    Integer
+    getValue () const
     {
         return value_;
     }
-    void setValue (Integer v)
+
+    void
+    setValue (Integer v)
     {
         value_ = v;
     }
 
-    operator Integer () const
+    operator
+    Integer () const
     {
         return value_;
     }
-    virtual bool isDefault () const
+
+    virtual
+    bool isDefault () const override
     {
         return value_ == 0;
     }
 
-    bool isEquivalent (const STBase& t) const
+    bool
+    isEquivalent (const STBase& t) const override
     {
         const STInteger* v = dynamic_cast<const STInteger*> (&t);
         return v && (value_ == v->value_);
     }
 
+    std::unique_ptr<STBase>
+    duplicate () const override
+    {
+        return std::make_unique<STInteger>(*this);
+    }
+
 private:
     Integer value_;
-
-    STInteger* duplicate () const
-    {
-        return new STInteger (*this);
-    }
-    static STInteger* construct (SerializerIterator&, SField::ref f);
 };
 
 using STUInt8 = STInteger<unsigned char>;

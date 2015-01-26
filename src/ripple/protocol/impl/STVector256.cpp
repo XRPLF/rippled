@@ -22,56 +22,53 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/STAmount.h>
 
 namespace ripple {
 
-const STAmount saZero (noIssue(), 0u);
-const STAmount saOne (noIssue(), 1u);
-
-//
-// STVector256
-//
-
-// Return a new object from a SerializerIterator.
-STVector256* STVector256::construct (SerializerIterator& u, SField::ref name)
+std::unique_ptr<STBase>
+STVector256::deserialize (SerializerIterator& sit, SField::ref name)
 {
-    Blob data = u.getVL ();
-    Blob ::iterator begin = data.begin ();
+    auto vec = std::make_unique<STVector256> (name);
 
-    std::unique_ptr<STVector256> vec (new STVector256 (name));
+    Blob data = sit.getVL ();
 
-    int count = data.size () / (256 / 8);
+    auto const count = data.size () / (256 / 8);
+
     vec->mValue.reserve (count);
 
-    unsigned int    uStart  = 0;
+    Blob::iterator begin = data.begin ();
+    unsigned int uStart  = 0;
 
     for (unsigned int i = 0; i != count; i++)
     {
         unsigned int    uEnd    = uStart + (256 / 8);
 
-        // This next line could be optimized to construct a default uint256 in the vector and then copy into it
+        // This next line could be optimized to construct a default uint256
+        // in the vector and then copy into it
         vec->mValue.push_back (uint256 (Blob (begin + uStart, begin + uEnd)));
         uStart  = uEnd;
     }
 
-    return vec.release ();
+    return std::move (vec);
 }
 
-void STVector256::add (Serializer& s) const
+void
+STVector256::add (Serializer& s) const
 {
     assert (fName->isBinary ());
     assert (fName->fieldType == STI_VECTOR256);
     s.addVL (mValue.empty () ? nullptr : mValue[0].begin (), mValue.size () * (256 / 8));
 }
 
-bool STVector256::isEquivalent (const STBase& t) const
+bool
+STVector256::isEquivalent (const STBase& t) const
 {
     const STVector256* v = dynamic_cast<const STVector256*> (&t);
     return v && (mValue == v->mValue);
 }
 
-Json::Value STVector256::getJson (int) const
+Json::Value
+STVector256::getJson (int) const
 {
     Json::Value ret (Json::arrayValue);
 

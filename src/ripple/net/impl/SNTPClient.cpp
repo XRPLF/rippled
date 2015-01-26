@@ -24,7 +24,6 @@
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
-#include <boost/foreach.hpp>
 #include <mutex>
 
 namespace ripple {
@@ -143,8 +142,8 @@ public:
             return;
         }
 
-        BOOST_FOREACH (std::string const& it, servers)
-        addServer (it);
+        for (auto const& it : servers)
+            addServer (it);
         queryAll ();
     }
 
