@@ -114,7 +114,6 @@ public:
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
-    typedef hash_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash> NodeMap;
 
     typedef std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> SharedPtrNodeStack;
 

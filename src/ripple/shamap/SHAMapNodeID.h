@@ -138,21 +138,6 @@ inline std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node)
     return out << node.getString ();
 }
 
-//------------------------------------------------------------------------------
-
-class SHAMapNode_hash
-{
-public:
-    typedef ripple::SHAMapNodeID argument_type;
-    typedef std::size_t result_type;
-
-    result_type
-    operator() (argument_type const& key) const noexcept
-    {
-        return key.getMHash ();
-    }
-};
-
 } // ripple
 
 #endif
