@@ -22,6 +22,10 @@ This ensures that each test is run against the known
 To use a running `rippled`, particularly one running in a debugger, follow
 these steps:
 
+#### Setup
+
+##### Using configuration files
+
 1. Make a copy of the example configuration file: `cp -i test/config-example.js test/config.js`
 
 2. Edit `test/config.js` to select the "debug" server configuration.
@@ -33,36 +37,47 @@ these steps:
   2. Copy and/or rename the `tmp/server/debug/rippled.cfg` file to somewhere
   convenient.
 
-4. Start `rippled` (in a debugger) with command line options
+##### Using the command line
+
+1. Create a `rippled.cfg` file for the tests.
+  1. Run `npm test --noserver`. The tests will fail. **This failure is expected.**
+  2. Copy and/or rename the `tmp/server/alpha/rippled.cfg` file to somewhere
+  convenient.
+
+#### Running the tests.
+
+1. Start `rippled` (in a debugger) with command line options
 `-av --conf <rippled-created-above.cfg>`.
 
-5. Set any desired breakpoints in the `rippled` source.
+2. Set any desired breakpoints in the `rippled` source.
 
-6. Running one test per [_genesis ledger_][genesis_ledger] is highly recommended.
+3. Running one test per [_genesis ledger_][genesis_ledger] is highly recommended.
 If the relevant `.js` file contains more than one test, change `test(` to
 `test.only(` for the single desired test.
   * To run multiple tests, change `test(` to `test.skip(` for any undesired tests
   in the .js file.
 
-7. Start test(s) in the [_node-inspector_][node_inspector] debugger.
-(Note that the tests can be run without the debugger, but there will probably
+4. Start test(s) in the [_node-inspector_][node_inspector] debugger.
+(The tests can be run without the debugger, but there will probably
 be problems with timeouts or reused ledgers).
   1. `node_modules/node-inspector/bin/inspector.js &`
   2. `node node_modules/.bin/mocha --debug --debug-brk test/<testfile.js>`
   3. Browse to http://127.0.0.1:8080/debug?port=5858 in a browser supported
   by [_node-inspector_][node_inspector] (i.e. Chrome or Safari).
 
-8. To run multiple tests, put a breakpoint in the following function:
+5. To run multiple tests (not recommended), put a breakpoint in the following function:
   * File `testutils.js` -> function `build_teardown()` -> nested function
   `teardown()` -> nested series function `stop_server()`.
     * When this breakpoint is hit, stop and restart `rippled`.
 
-9. Use the [_node-inspector UI_][node_inspector_ui] to step through and run
+6. Use the [_node-inspector UI_][node_inspector_ui] to step through and run
 the test(s) until control is handed off to `rippled`. When the request is
 finished control will be handed back to node-inspector, which may or may not
 stop depending on which breakpoints are set.
 
-### After debugging
+### After debugging using configuration files.
+
+With the command line `--noserver` flag, this step is unnecessary.
 
 1. To return to the default behavior, edit `test/config.js` and change the
 default server back to its original value: `exports.server_default = "alpha";`.
