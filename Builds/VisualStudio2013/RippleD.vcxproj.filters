@@ -325,6 +325,9 @@
     <Filter Include="ripple\app\misc">
       <UniqueIdentifier>{5A1509B2-871B-A7AC-1E60-544D3F398741}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\misc\tests">
+      <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\node">
       <UniqueIdentifier>{0FCD3973-E9A6-7172-C8A3-C3401E1A03DD}</UniqueIdentifier>
     </Filter>
@@ -2961,6 +2964,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
+      <Filter>ripple\app\misc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>

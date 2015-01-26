@@ -30,3 +30,4 @@
 #include <ripple/app/paths/FindPaths.cpp>
 #include <ripple/app/paths/Pathfinder.cpp>
 #include <ripple/app/misc/AmendmentTableImpl.cpp>
+#include <ripple/app/misc/tests/AmendmentTable.test.cpp>
