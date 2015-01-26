@@ -174,6 +174,9 @@ Status lookupLedger (
             // Use the skip list in the last validated ledger to see if ledger
             // comes after the last validated ledger (and thus has been
             // validated).
+            if (ledgerHash == zero)
+                ledgerHash = ledger->getHash();
+
             auto next = getApp().getLedgerMaster ().walkHashBySeq (ledgerIndex);
             if (ledgerHash == next)
             {
