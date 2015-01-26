@@ -1982,6 +1982,8 @@
     </None>
     <ClInclude Include="..\..\src\ripple\crypto\RFC1751.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\SignatureAlgorithm.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\tests\CKey.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

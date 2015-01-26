@@ -18,7 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/crypto/SignatureAlgorithm.h>
+#include <ripple/protocol/Seed.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
+#include <ed25519-donna/ed25519.h>
 
 namespace ripple {
 
@@ -35,14 +38,54 @@ Json::Value WalletPropose (Json::Value const& params)
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (!params.isMember ("passphrase"))
-        naSeed.setSeedRandom ();
+    SignatureAlgorithm a = secp256k1;
 
-    else if (!naSeed.setSeedGeneric (params["passphrase"].asString ()))
+    bool const has_algorithm  = params.isMember ("algorithm");
+    bool const has_passphrase = params.isMember ("passphrase");
+
+    if (has_algorithm)
+    {
+        // `algorithm` must be valid if present.
+
+        a = AlgorithmFromString (params["algorithm"].asString());
+
+        if (isInvalid (a))
+        {
+            return rpcError (rpcBAD_SEED);
+        }
+
+        naSeed = GetSeedFromRPC (params);
+    }
+    else if (has_passphrase)
+    {
+        naSeed.setSeedGeneric (params["passphrase"].asString());
+    }
+    else
+    {
+        naSeed.setSeedRandom();
+    }
+
+    if (!naSeed.isSet())
+    {
         return rpcError(rpcBAD_SEED);
+    }
 
-    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
-    naAccount.setAccountPublic (naGenerator, 0);
+    if (a == secp256k1)
+    {
+        RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
+        naAccount.setAccountPublic (naGenerator, 0);
+    }
+    else
+    {
+        uint256 secretkey = KeyFromSeed (naSeed.getSeed());
+
+        Blob publickey (33);
+        publickey[0] = 0xED;
+        ed25519_publickey (secretkey.data(), &publickey[1]);
+        secretkey.zero();  // security erase
+
+        naAccount.setAccountPublic (publickey);
+    }
 
     Json::Value obj (Json::objectValue);
 

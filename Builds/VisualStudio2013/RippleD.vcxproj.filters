@@ -2907,6 +2907,9 @@
     <ClInclude Include="..\..\src\ripple\crypto\RFC1751.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\SignatureAlgorithm.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\tests\CKey.test.cpp">
       <Filter>ripple\crypto\tests</Filter>
     </ClCompile>
