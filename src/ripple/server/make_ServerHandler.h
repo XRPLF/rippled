@@ -33,7 +33,8 @@ class NetworkOPs;
 
 std::unique_ptr <ServerHandler>
 make_ServerHandler (beast::Stoppable& parent, boost::asio::io_service& io_service,
-    JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager);
+    JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+        CollectorManager& cm);
 
 } // ripple
 

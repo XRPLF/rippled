@@ -69,6 +69,10 @@ private:
     std::shared_ptr<HTTP::Port> port_;
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
+    beast::insight::Counter rpc_requests_;
+    beast::insight::Event rpc_io_;
+    beast::insight::Event rpc_size_;
+    beast::insight::Event rpc_time_;
 
 protected:
     // VFALCO TODO Make this private.
@@ -82,11 +86,17 @@ protected:
 
 public:
     WSServerHandler (std::shared_ptr<HTTP::Port> const& port,
-        Resource::Manager& resourceManager, InfoSub::Source& source)
+        Resource::Manager& resourceManager, InfoSub::Source& source,
+            CollectorManager& cm)
         : port_(port)
         , m_resourceManager (resourceManager)
         , m_source (source)
     {
+        auto const& group (cm.group ("rpc"));
+        rpc_requests_ = group->make_counter ("requests");
+        rpc_io_ = group->make_event ("io");
+        rpc_size_ = group->make_event ("size");
+        rpc_time_ = group->make_event ("time");
     }
 
     WSServerHandler(WSServerHandler const&) = delete;
@@ -426,8 +436,17 @@ public:
                 if (jCmd.isString())
                     job.rename (std::string ("WSClient::") + jCmd.asString());
             }
-
-            send (cpClient, conn->invokeCommand (jvRequest), false);
+            
+            auto const start (std::chrono::high_resolution_clock::now ());
+            Json::Value const jvObj (conn->invokeCommand (jvRequest));
+            std::string const buffer (to_string (jvObj));
+            rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
+                std::chrono::duration_cast <std::chrono::milliseconds> (
+                    std::chrono::high_resolution_clock::now () - start)));
+            ++rpc_requests_;
+            rpc_size_.notify (static_cast <beast::insight::Event::value_type>
+                (buffer.size ()));
+            send (cpClient, buffer, false);
         }
 
         return true;
@@ -469,6 +488,12 @@ public:
             " Test</title></head>" + "<body><h1>" + systemName () +
             " Test</h1><p>This page shows http(s) connectivity is working.</p></body></html>");
         return true;
+    }
+
+    void recordMetrics (RPC::Context const& context) const
+    {
+        rpc_io_.notify (static_cast <beast::insight::Event::value_type> (
+            context.metrics.fetches));
     }
 };
 

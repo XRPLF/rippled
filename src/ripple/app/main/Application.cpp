@@ -308,9 +308,8 @@ public:
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
-        , serverHandler_ (make_ServerHandler (*m_networkOPs,
-            get_io_service(), *m_jobQueue, *m_networkOPs,
-                *m_resourceManager))
+        , serverHandler_ (make_ServerHandler (*m_networkOPs, get_io_service (),
+            *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
 
         , m_sntpClient (SNTPClient::New (*this))
 
@@ -738,7 +737,8 @@ public:
         {
             if (! port.websockets())
                 continue;
-            auto door = make_WSDoor(port, *m_resourceManager, getOPs());
+            auto door (make_WSDoor (port, *m_resourceManager, getOPs (),
+                *m_collectorManager));
             if (door == nullptr)
             {
                 m_journal.fatal << "Could not create Websocket for [" <<

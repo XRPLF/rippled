@@ -2565,6 +2565,9 @@
     <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\ScopedMetrics.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
@@ -2572,6 +2575,8 @@
     <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\ScopedMetrics.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
     </ClInclude>

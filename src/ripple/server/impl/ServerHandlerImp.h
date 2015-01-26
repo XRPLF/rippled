@@ -25,6 +25,7 @@
 #include <ripple/server/Session.h>
 #include <ripple/rpc/Output.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/app/main/CollectorManager.h>
 
 namespace ripple {
 
@@ -41,11 +42,15 @@ private:
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
     Setup setup_;
+    beast::insight::Counter rpc_requests_;
+    beast::insight::Event rpc_io_;
+    beast::insight::Event rpc_size_;
+    beast::insight::Event rpc_time_;
 
 public:
     ServerHandlerImp (Stoppable& parent, boost::asio::io_service& io_service,
         JobQueue& jobQueue, NetworkOPs& networkOPs,
-            Resource::Manager& resourceManager);
+            Resource::Manager& resourceManager, CollectorManager& cm);
 
     ~ServerHandlerImp();
 

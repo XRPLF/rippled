@@ -17,36 +17,43 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
-
-#include <ripple/core/Config.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/rpc/Yield.h>
-#include <ripple/server/Role.h>
 #include <ripple/nodestore/ScopedMetrics.h>
+#include <boost/thread/tss.hpp>
 
 namespace ripple {
+namespace NodeStore {
 
-class NetworkOPs;
-
-namespace RPC {
-
-/** The context of information needed to call an RPC. */
-struct Context
+static
+void
+cleanup (ScopedMetrics*)
 {
-    Json::Value params;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    Role role;
-    InfoSub::pointer infoSub;
-    RPC::Yield yield;
-    NodeStore::ScopedMetrics metrics;
-};
+}
 
-} // RPC
-} // ripple
+static
+boost::thread_specific_ptr<ScopedMetrics> scopedMetricsPtr (&cleanup);
 
+ScopedMetrics::ScopedMetrics () : prev_ (scopedMetricsPtr.get ())
+{
+    scopedMetricsPtr.reset (this);
+}
 
+ScopedMetrics::~ScopedMetrics ()
+{
+    scopedMetricsPtr.reset (prev_);
+}
 
-#endif
+ScopedMetrics*
+ScopedMetrics::get ()
+{
+    return scopedMetricsPtr.get ();
+}
+
+void
+ScopedMetrics::incrementThreadFetches ()
+{
+    if (scopedMetricsPtr.get ())
+        ++scopedMetricsPtr.get ()->fetches;
+}
+
+}
+}

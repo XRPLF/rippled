@@ -32,6 +32,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Coroutine.h>
 #include <beast/crypto/base64.h>
+#include <ripple/rpc/RPCHandler.h> 
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
@@ -53,7 +54,8 @@ ServerHandler::ServerHandler (Stoppable& parent)
 
 ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
-        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            CollectorManager& cm)
     : ServerHandler (parent)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
@@ -62,6 +64,11 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))
 {
+    auto const& group (cm.group ("rpc"));
+    rpc_requests_ = group->make_counter ("requests");
+    rpc_io_ = group->make_event ("io");
+    rpc_size_ = group->make_event ("size");
+    rpc_time_ = group->make_event ("time");
 }
 
 ServerHandlerImp::~ServerHandlerImp()
@@ -362,6 +369,7 @@ ServerHandlerImp::processRequest (
     WriteLog (lsTRACE, RPCHandler)
         << "doRpcCommand:" << strMethod << ":" << params;
 
+    auto const start (std::chrono::high_resolution_clock::now ());
     RPC::Context context {params, loadType, m_networkOPs, role, nullptr, yield};
     std::string response;
 
@@ -393,6 +401,15 @@ ServerHandlerImp::processRequest (
         response = to_string (reply);
     }
 
+    rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
+        std::chrono::duration_cast <std::chrono::milliseconds> (
+            std::chrono::high_resolution_clock::now () - start)));
+    ++rpc_requests_;
+    rpc_io_.notify (static_cast <beast::insight::Event::value_type> (
+        context.metrics.fetches));
+    rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
+        response.size ()));
+    
     response += '\n';
     usage.charge (loadType);
 
@@ -814,11 +831,12 @@ setup_ServerHandler (BasicConfig const& config, std::ostream& log)
 
 std::unique_ptr <ServerHandler>
 make_ServerHandler (beast::Stoppable& parent,
-    boost::asio::io_service& io_service, JobQueue& jobQueue,
-        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+    boost::asio::io_service& io_service, JobQueue& jobQueue, 
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            CollectorManager& cm)
 {
     return std::make_unique <ServerHandlerImp> (parent, io_service,
-        jobQueue, networkOPs, resourceManager);
+        jobQueue, networkOPs, resourceManager, cm);
 }
 
 }
