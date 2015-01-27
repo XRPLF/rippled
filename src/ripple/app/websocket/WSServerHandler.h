@@ -21,6 +21,7 @@
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/main/CollectorManager.h>
 #include <ripple/app/websocket/WSConnection.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>

@@ -31,6 +31,7 @@
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Source.h>
 #include <ripple/peerfinder/impl/Store.h>
+#include <beast/asio/IPAddressConversion.h>
 #include <beast/container/aged_container_utility.h>
 #include <beast/smart_ptr/SharedPtr.h>
 #include <functional>

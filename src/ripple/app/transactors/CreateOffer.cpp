@@ -23,6 +23,7 @@
 #include <ripple/app/book/Types.h>
 #include <ripple/app/book/Amounts.h>
 #include <ripple/app/book/Quality.h>
+#include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 
