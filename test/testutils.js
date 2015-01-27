@@ -56,7 +56,7 @@ function(config, host) {
       }
     };
   }
-  return extend(local, config.default_server_config, config.servers[host]);
+  return extend({}, config.default_server_config, config.servers[host], local);
 }
 
 function prepare_tests(tests, fn) {
