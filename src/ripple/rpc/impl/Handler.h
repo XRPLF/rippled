@@ -24,10 +24,12 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Status.h>
 
+namespace Json {
+class Object;
+}
+
 namespace ripple {
 namespace RPC {
-
-class Object;
 
 // Under what condition can we call this RPC?
 enum Condition {
@@ -46,7 +48,7 @@ struct Handler
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
-    Method<Object> objectMethod_;
+    Method<Json::Object> objectMethod_;
 };
 
 const Handler* getHandler (std::string const&);

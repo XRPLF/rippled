@@ -31,11 +31,10 @@ class Value;
 
 /** \brief Abstract class for writers.
  */
-class Writer
+class WriterBase
 {
 public:
-    virtual ~Writer ();
-
+    virtual ~WriterBase () {}
     virtual std::string write ( const Value& root ) = 0;
 };
 
@@ -45,7 +44,8 @@ public:
  * but may be usefull to support feature such as RPC where bandwith is limited.
  * \sa Reader, Value
  */
-class FastWriter : public Writer
+
+class FastWriter : public WriterBase
 {
 public:
     FastWriter ();
@@ -78,7 +78,7 @@ private:
  *
  * \sa Reader, Value, Value::setComment()
  */
-class StyledWriter: public Writer
+class StyledWriter: public WriterBase
 {
 public:
     StyledWriter ();

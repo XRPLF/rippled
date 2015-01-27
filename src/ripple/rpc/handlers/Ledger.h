@@ -22,13 +22,15 @@
 
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/core/LoadFeeTrack.h>
-#include <ripple/rpc/impl/JsonObject.h>
+#include <ripple/json/Object.h>
 #include <ripple/server/Role.h>
+
+namespace Json {
+class Object;
+}
 
 namespace ripple {
 namespace RPC {
-
-class Object;
 
 // ledger [id|index|current|closed] [full]
 // {
@@ -77,7 +79,7 @@ void LedgerHandler::writeResult (Object& value)
 {
     if (ledger_)
     {
-        RPC::copyFrom (value, result_);
+        Json::copyFrom (value, result_);
         addJson (value, {*ledger_, options_, context_.yield});
     }
     else
@@ -85,11 +87,11 @@ void LedgerHandler::writeResult (Object& value)
         auto& master = getApp().getLedgerMaster ();
         auto& yield = context_.yield;
         {
-            auto&& closed = RPC::addObject (value, jss::closed);
+            auto&& closed = Json::addObject (value, jss::closed);
             addJson (closed, {*master.getClosedLedger(), 0, yield});
         }
         {
-            auto&& open = RPC::addObject (value, jss::open);
+            auto&& open = Json::addObject (value, jss::open);
             addJson (open, {*master.getCurrentLedger(), 0, yield});
         }
     }

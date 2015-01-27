@@ -18,13 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/WriteJson.h>
+#include <ripple/json/Output.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
-struct WriteJson_test : TestOutputSuite
+struct Output_test : ripple::RPC::TestOutputSuite
 {
     void runTest (std::string const& name, std::string const& valueDesc)
     {
@@ -32,7 +31,7 @@ struct WriteJson_test : TestOutputSuite
         Json::Value value;
         expect (Json::Reader().parse (valueDesc, value));
         auto out = stringOutput (output_);
-        writeJson (value, out);
+        outputJson (value, out);
 
         // Compare with the original version.
         auto expected = Json::FastWriter().write (value);
@@ -63,7 +62,6 @@ struct WriteJson_test : TestOutputSuite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WriteJson, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(Output, ripple_basics, ripple);
 
-} // RPC
-} // ripple
+} // Json

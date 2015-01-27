@@ -32,7 +32,8 @@ struct Yield_test : TestOutputSuite
         std::string lastYield;
 
         auto yield = [&]() { lastYield = output_; };
-        auto output = chunkedYieldingOutput (stringOutput (output_), yield, 5);
+        auto output = chunkedYieldingOutput (
+            Json::stringOutput (output_), yield, 5);
         output ("hello");
         expectResult ("hello");
         expectEquals (lastYield, "");

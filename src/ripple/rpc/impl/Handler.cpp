@@ -85,11 +85,11 @@ class HandlerTable {
         assert (table_.find(HandlerImpl::name()) == table_.end());
 
         Handler h;
-        h.name_ = HandlerImpl::name(),
-        h.valueMethod_ = &handle<Json::Value, HandlerImpl>,
-        h.role_ = HandlerImpl::role(),
-        h.condition_ = HandlerImpl::condition(),
-        h.objectMethod_ = &handle<Object, HandlerImpl>;
+        h.name_ = HandlerImpl::name();
+        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
+        h.role_ = HandlerImpl::role();
+        h.condition_ = HandlerImpl::condition();
+        h.objectMethod_ = &handle<Json::Object, HandlerImpl>;
 
         table_[HandlerImpl::name()] = h;
     };

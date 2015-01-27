@@ -22,12 +22,12 @@
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Handler.h>
-#include <ripple/rpc/impl/WriteJson.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/json/Object.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
@@ -190,7 +190,7 @@ template <class Method, class Object>
 void getResult (
     Context& context, Method method, Object& object, std::string const& name)
 {
-    auto&& result = addObject (object, jss::result);
+    auto&& result = Json::addObject (object, jss::result);
     if (auto status = callMethod (context, method, name, result))
     {
         WriteLog (lsDEBUG, RPCErr) << "rpcError: " << status.toString();
@@ -228,13 +228,13 @@ void executeRPC (
     boost::optional <Handler const&> handler;
     if (auto error = fillHandler (context, handler))
     {
-        auto wo = stringWriterObject (output);
-        auto&& sub = addObject (*wo, jss::result);
+        auto wo = Json::stringWriterObject (output);
+        auto&& sub = Json::addObject (*wo, jss::result);
         inject_error (error, sub);
     }
     else if (auto method = handler->objectMethod_)
     {
-        auto wo = stringWriterObject (output);
+        auto wo = Json::stringWriterObject (output);
         getResult (context, method, *wo, handler->name_);
     }
     else if (auto method = handler->valueMethod_)
@@ -250,7 +250,7 @@ void executeRPC (
     {
         // Can't ever get here.
         assert (false);
-        throw RPC::JsonException ("RPC handler with no method");
+        throw Json::JsonException ("RPC handler with no method");
     }
 }
 

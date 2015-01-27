@@ -22,7 +22,7 @@
 
 #include <beast/module/core/diagnostic/SemanticVersion.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/impl/JsonObject.h>
+#include <ripple/json/Object.h>
 
 namespace ripple {
 namespace RPC {
