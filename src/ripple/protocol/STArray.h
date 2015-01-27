@@ -183,11 +183,11 @@ public:
 
     void sort (bool (*compare) (const STObject & o1, const STObject & o2));
 
-    bool operator== (const STArray & s)
+    bool operator== (const STArray & s) const
     {
         return value == s.value;
     }
-    bool operator!= (const STArray & s)
+    bool operator!= (const STArray & s) const
     {
         return value != s.value;
     }

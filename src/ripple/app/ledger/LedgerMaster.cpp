@@ -212,6 +212,7 @@ public:
         mValidLedgerSeq = l->getLedgerSeq();
         getApp().getOPs().updateLocalTx (l);
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
+        mLedgerHistory.validatedLedger (l);
 
     #if RIPPLE_HOOK_VALIDATORS
         getApp().getValidators().onLedgerClosed (l->getLedgerSeq(),

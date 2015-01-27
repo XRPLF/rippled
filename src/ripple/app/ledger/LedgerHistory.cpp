@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
+#include <ripple/json/to_string.h>
 
 namespace ripple {
 
@@ -128,12 +129,59 @@ Ledger::pointer LedgerHistory::getLedgerByHash (uint256 const& hash)
     return ret;
 }
 
-static void addLeaf (std::vector <uint256> &vec, SHAMapItem::ref item)
+static
+void
+log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 {
-    vec.push_back (item->getTag ());
+    TransactionMetaSet::pointer metaData;
+    ledger->getTransactionMeta(tx, metaData);
+    if (metaData != nullptr)
+    {
+        WriteLog (lsERROR, LedgerMaster) <<
+            "MISMATCH " << msg << " without " << tx <<
+            " metadata is " << metaData->getJson(0);
+    }
+    else
+    {
+        WriteLog (lsERROR, LedgerMaster) <<
+            "MISMATCH " << msg << " without " << tx;
+    }
 }
 
-void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash  const& valid)
+static
+void
+log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger,
+                        uint256 const& tx)
+{
+    TransactionMetaSet::pointer validMetaData;
+    validLedger->getTransactionMeta(tx, validMetaData);
+    TransactionMetaSet::pointer builtMetaData;
+    builtLedger->getTransactionMeta(tx, builtMetaData);
+    assert(validMetaData != nullptr || builtMetaData != nullptr);
+    if (validMetaData != nullptr && builtMetaData != nullptr)
+    {
+        WriteLog (lsERROR, LedgerMaster) <<
+            "MISMATCH tx differ in metadata only " << tx <<
+            " : built metadata is " << builtMetaData->getJson(0) <<
+            " : valid metadata is " << validMetaData->getJson(0);
+    }
+    else if (validMetaData != nullptr)
+    {
+        // builtMetaData == nullptr
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ in metadata only " <<
+            tx << " : built has no metadata but valid metadata is " <<
+            validMetaData->getJson(0);
+    }
+    else // builtMetaData != nullptr
+    {
+        // validMetaData == nullptr
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ in metadata only " <<
+            tx << " : valid has no metadata but built metadata is " <<
+            builtMetaData->getJson(0);
+    }
+}
+
+void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& valid)
 {
     assert (built != valid);
     ++mismatch_counter_;
@@ -160,47 +208,75 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash  const& 
         }
         else
         {
-            std::vector <uint256> builtTx, validTx;
+            // Find differences between built and valid ledgers
+            using SHAMapItemInfo = std::pair<uint256, Blob>;
+            std::vector <SHAMapItemInfo> builtTx, validTx;
+            // Get built ledger hashes and metadata
             builtLedger->peekTransactionMap()->visitLeaves(
-                std::bind (&addLeaf, std::ref (builtTx), std::placeholders::_1));
+                [&builtTx](SHAMapItem::ref item)
+                {
+                    builtTx.push_back({item->getTag(), item->peekData()});
+                });
+            // Get valid ledger hashes and metadata
             validLedger->peekTransactionMap()->visitLeaves(
-                std::bind (&addLeaf, std::ref (validTx), std::placeholders::_1));
-            std::sort (builtTx.begin(), builtTx.end());
-            std::sort (validTx.begin(), validTx.end());
+                [&validTx](SHAMapItem::ref item)
+                {
+                    validTx.push_back({item->getTag(), item->peekData()});
+                });
+            // Sort both by hash
+            std::sort (builtTx.begin(), builtTx.end(),
+                            [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
+                                {return x.first < y.first;});
+            std::sort (validTx.begin(), validTx.end(),
+                            [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
+                                {return x.first < y.first;});
 
             if (builtTx == validTx)
             {
-                // Disagreement with same prior ledger, close time, and transactions
-                // indicates a transaction processing difference
                 WriteLog (lsERROR, LedgerMaster) <<
                     "MISMATCH with same " << builtTx.size() << " tx";
             }
             else
             {
-                std::vector <uint256> notBuilt, notValid;
-                std::set_difference (
-                    validTx.begin(), validTx.end(),
-                    builtTx.begin(), builtTx.end(),
-                    std::inserter (notBuilt, notBuilt.begin()));
-                std::set_difference (
-                    builtTx.begin(), builtTx.end(),
-                    validTx.begin(), validTx.end(),
-                    std::inserter (notValid, notValid.begin()));
-
-                // This can be either a disagreement over the consensus
-                // set or difference in which transactions were rejected
-                // as invalid
-
                 WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ "
                     << builtTx.size() << " built, " << validTx.size() << " valid";
-                for (auto const& t : notBuilt)
+                // Log all differences between built and valid ledgers
+                auto b = builtTx.cbegin();
+                auto be = builtTx.cend();
+                auto v = validTx.cbegin();
+                auto ve = validTx.cend();
+                while (b != be && v != ve)
                 {
-                    WriteLog (lsERROR, LedgerMaster) << "MISMATCH built without " << t;
+                    if (b->first < v->first)
+                    {
+                        // b->first in built but not in valid
+                        log_one(builtLedger, b->first, "valid");
+                        ++b;
+                    }
+                    else if (v->first < b->first)
+                    {
+                        // v->first in valid but not in built
+                        log_one(validLedger, v->first, "built");
+                        ++v;
+                    }
+                    else  // b->first == v->first, same transaction
+                    {
+                        if (b->second != v->second)
+                        {
+                            // Same transaction with different metadata
+                            log_metadata_difference(builtLedger, validLedger,
+                                                                  b->first);
+                        }
+                        ++b;
+                        ++v;
+                    }
                 }
-                for (auto const& t : notValid)
-                {
-                    WriteLog (lsERROR, LedgerMaster) << "MISMATCH valid without " << t;
-                }
+                // all of these are in built but not in valid
+                for (; b != be; ++b)
+                    log_one(builtLedger, b->first, "valid");
+                // all of these are in valid but not in built
+                for (; v != ve; ++v)
+                    log_one(validLedger, v->first, "built");
             }
         }
     }
@@ -221,22 +297,13 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
 
     if (entry->first != hash)
     {
-        bool mismatch (false);
-
-        if (entry->first.isNonZero() && (entry->first != hash))
-        {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " then:" << hash;
-            mismatch = true;
-        }
         if (entry->second.isNonZero() && (entry->second != hash))
         {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " accepted:" << hash;
-            mismatch = true;
-        }
-
-        if (mismatch)
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index
+                << " validated:" << entry->second
+                << " then:" << hash;
             handleMismatch (hash, entry->first);
-
+        }
         entry->first = hash;
     }
 }
@@ -254,22 +321,13 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
 
     if (entry->second != hash)
     {
-        bool mismatch (false);
-
-        if (entry->second.isNonZero() && (entry->second != hash))
-        {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " then:" << hash;
-            mismatch = true;
-        }
-
         if (entry->first.isNonZero() && (entry->first != hash))
         {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " validated:" << hash;
-            mismatch = true;
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index
+                << " built:" << entry->first
+                << " then:" << hash;
+            handleMismatch (entry->first, hash);
         }
-
-        if (mismatch)
-            handleMismatch (entry->second, hash);
 
         entry->second = hash;
     }
