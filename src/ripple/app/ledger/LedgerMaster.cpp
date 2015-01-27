@@ -103,8 +103,6 @@ public:
 
     // How much history do we want to keep
     std::uint32_t const ledger_history_;
-    // Acquire past ledgers down to this ledger index
-    std::uint32_t const ledger_history_index_;
 
     int const ledger_fetch_size_;
 
@@ -133,18 +131,8 @@ public:
         , standalone_ (config.RUN_STANDALONE)
         , fetch_depth_ (getApp ().getSHAMapStore ().clampFetchDepth (config.FETCH_DEPTH))
         , ledger_history_ (config.LEDGER_HISTORY)
-        , ledger_history_index_ (config.LEDGER_HISTORY_INDEX)
         , ledger_fetch_size_ (config.getSize (siLedgerFetch))
     {
-        if (ledger_history_index_ != 0 &&
-            config.nodeDatabase["online_delete"].isNotEmpty () &&
-            config.nodeDatabase["online_delete"].getIntValue () > 0)
-        {
-            std::stringstream ss;
-            ss << "[node_db] online_delete option and [ledger_history_index]"
-                " cannot be configured at the same time.";
-            throw std::runtime_error (ss.str ());
-        }
     }
 
     ~LedgerMasterImp ()
@@ -959,7 +947,7 @@ public:
                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                     if ((missing != RangeSet::absent) && (missing > 0) &&
                         shouldAcquire (mValidLedgerSeq, ledger_history_,
-                            ledger_history_index_, missing) &&
+                            getApp ().getSHAMapStore ().getCanDelete (), missing) &&
                         ((mFillInProgress == 0) || (missing > mFillInProgress)))
                     {
                         WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
@@ -1558,12 +1546,13 @@ LedgerMaster::~LedgerMaster ()
 {
 }
 
-bool LedgerMaster::shouldAcquire (std::uint32_t currentLedger,
-    std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
-    std::uint32_t candidateLedger)
+bool LedgerMaster::shouldAcquire (std::uint32_t const currentLedger,
+    std::uint32_t const ledgerHistory, std::uint32_t const ledgerHistoryIndex,
+    std::uint32_t const candidateLedger)
 {
     bool ret (candidateLedger >= currentLedger ||
-        (ledgerHistoryIndex != 0 && candidateLedger >= ledgerHistoryIndex) ||
+        (ledgerHistoryIndex != std::numeric_limits <LedgerIndex>::max () &&
+            candidateLedger > ledgerHistoryIndex) ||
         (currentLedger - candidateLedger) <= ledgerHistory);
 
     WriteLog (lsTRACE, LedgerMaster)

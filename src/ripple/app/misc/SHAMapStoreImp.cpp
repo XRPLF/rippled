@@ -326,8 +326,6 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
             state_db_.setLastRotated (lastRotated);
         }
-        if (setup_.advisoryDelete)
-            canDelete_ = state_db_.getCanDelete();
 
         // will delete up to (not including) lastRotated)
         if (validatedSeq >= lastRotated + setup_.deleteInterval
