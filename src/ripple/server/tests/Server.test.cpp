@@ -68,26 +68,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    class TestSink : public beast::Journal::Sink
-    {
-        beast::unit_test::suite& suite_;
-
-    public:
-        TestSink (beast::unit_test::suite& suite)
-            : suite_ (suite)
-        {
-        }
-
-        void
-        write (beast::Journal::Severity level,
-            std::string const& text) override
-        {
-            suite_.log << text;
-        }
-    };
-
-    //--------------------------------------------------------------------------
-
     struct TestHandler : Handler
     {
         void

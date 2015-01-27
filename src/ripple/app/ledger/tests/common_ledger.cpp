@@ -28,6 +28,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 namespace ripple {
 namespace test {
 
+// Put this in a constant because it's duplicated in a few different default parameters.
+const std::uint32_t DefaultFee = 10;
+
 Json::Value
 TestJson::getJson() const
 {
@@ -210,11 +213,11 @@ createAndFundAccountsWithFlags(TestAccount& from,
 }
 
 Json::Value
-getCommonTransactionJson(TestAccount& account)
+getCommonTransactionJson(TestAccount& account, Json::Value feeJson = std::to_string(DefaultFee))
 {
     Json::Value tx_json;
     tx_json[jss::Account] = account.pk.humanAccountID();
-    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Fee] = feeJson;
     tx_json[jss::Sequence] = ++account.sequence;
     return tx_json;
 }
@@ -264,15 +267,23 @@ unfreezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign)
 }
 
 Json::Value
-getPaymentJson(TestAccount& from, TestAccount const& to,
-    Json::Value amountJson)
+    getPaymentJson(TestAccount& from, TestAccount const& to,
+    Json::Value amountJson, Json::Value feeJson = std::to_string(DefaultFee))
 {
-    Json::Value tx_json = getCommonTransactionJson(from);
+    Json::Value tx_json = getCommonTransactionJson(from, feeJson);
     tx_json[jss::Amount] = amountJson;
     tx_json[jss::Destination] = to.pk.humanAccountID();
     tx_json[jss::TransactionType] = "Payment";
     tx_json[jss::Flags] = tfUniversal;
     return tx_json;
+}
+
+Json::Value
+getPaymentJson(TestAccount& from, TestAccount const& to,
+    std::uint64_t amountDrops, std::uint64_t feeDrops)
+{
+    return getPaymentJson(from, to,
+        std::to_string(amountDrops), std::to_string(feeDrops));
 }
 
 STTx
@@ -281,7 +292,7 @@ getPaymentTx(TestAccount& from, TestAccount const& to,
     bool sign)
 {
     Json::Value tx_json = getPaymentJson(from, to,
-        std::to_string(amountDrops));
+        amountDrops, DefaultFee);
     return parseTransaction(from, tx_json, sign);
 }
 
@@ -429,15 +440,16 @@ trust(TestAccount& from, TestAccount const& issuer,
     applyTransaction(ledger, tx, sign);
 }
 
-void
+TxSet
 close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
 {
-    std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
+    auto set = ledger->peekTransactionMap();
+    auto txSet = buildTxSet(set);
     CanonicalTXSet retriableTransactions(set->getHash());
     Ledger::pointer newLCL = std::make_shared<Ledger>(false, *LCL);
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
-    applyTransactions(set, newLCL, newLCL, retriableTransactions, false);
+    applyTransactions(txSet, newLCL, newLCL, retriableTransactions, false);
     newLCL->updateSkipList();
     newLCL->setClosed();
     newLCL->peekAccountStateMap()->flushDirty(
@@ -455,6 +467,8 @@ close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
 
     LCL = newLCL;
     ledger = std::make_shared<Ledger>(false, *LCL);
+
+    return txSet;
 }
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
@@ -489,6 +503,20 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 }
 
 SLE::pointer
+getLedgerEntryAccountRoot(Ledger::pointer ledger,
+    TestAccount const& account)
+{
+    auto uNodeIndex = getAccountRootIndex(
+        account.pk.getAccountID());
+
+    if (!uNodeIndex.isNonZero())
+        throw std::runtime_error(
+        "!uNodeIndex.isNonZero()");
+
+    return ledger->getSLEi(uNodeIndex);
+}
+
+SLE::pointer
 getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
     Currency currency)
@@ -506,6 +534,23 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
 
 void
 verifyBalance(Ledger::pointer ledger, TestAccount const& account,
+    std::uint64_t amountDrops)
+{
+    auto sle = getLedgerEntryAccountRoot(ledger, account);
+    if (!sle)
+        throw std::runtime_error(
+        "!sle");
+    STAmount amountReq;
+    amountFromJsonNoThrow(amountReq, std::to_string(amountDrops));
+
+    auto balance = sle->getFieldAmount(sfBalance);
+    if (balance != amountReq)
+        throw std::runtime_error(
+        "balance != amountReq");
+}
+
+void
+verifyBalance(Ledger::pointer ledger, TestAccount const& account, 
     Amount const& amount)
 {
     auto sle = getLedgerEntryRippleState(ledger, account,

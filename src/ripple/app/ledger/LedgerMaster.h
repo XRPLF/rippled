@@ -31,6 +31,9 @@
 
 namespace ripple {
 
+class LoadFeeTrack;
+class TxQ;
+
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
@@ -67,6 +70,9 @@ public:
 
     // The validated ledger is the last fully validated ledger
     virtual Ledger::pointer getValidatedLedger () = 0;
+
+    // Holds transactions which don't have high enough fees to be put into the ledger yet.
+    virtual TxQ& getTransactionQueue() = 0;
 
     // This is the last ledger we published to clients and can lag the validated ledger
     virtual Ledger::ref getPublishedLedger () = 0;
@@ -159,6 +165,7 @@ public:
 
 std::unique_ptr <LedgerMaster>
 make_LedgerMaster (Config const& config, beast::Stoppable& parent,
+    LoadFeeTrack& loadFeeTrack,
     beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 } // ripple

@@ -27,22 +27,70 @@ namespace ripple {
 class LoadFeeTrack_test : public beast::unit_test::suite
 {
 public:
+
+    int doLedger (LoadFeeTrackImp& l, int max_fee, int max_txns)
+    {
+        // Attempts to apply as many transactions as possible up to the maximum
+        // fee. Returns how many got in before consensus and how many got in
+        // after
+
+        int count = 0;
+
+        // Accept transactions into open ledger
+        std::vector <int> feesPaid;
+        do
+        {
+            int fee = l.scaleTxnFee(l.getLoadBase());
+            if (fee > max_fee)
+            {
+                log << "Unwilling to pay " << fee;
+                break;
+            }
+            ++count;
+            feesPaid.push_back(fee);
+            l.onTx(fee);
+        }
+        while (1);
+
+        l.onLedger (0, feesPaid, count <= max_txns);
+        return count;
+    }
+
     void run ()
     {
-        Config d; // get a default configuration object
-        LoadFeeTrackImp l;
+        LoadFeeTrackImp l (false);
 
-        expect (l.scaleFeeBase (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10000);
-        expect (l.scaleFeeLoad (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false) == 10000);
-        expect (l.scaleFeeBase (1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 1);
-        expect (l.scaleFeeLoad (1, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false) == 1);
+        std::uint64_t fee_default = 10;
+        std::uint64_t fee_base = 10;
+        std::uint64_t fee_account_reserve = 200000000;
 
-        // Check new default fee values give same fees as old defaults
-        expect (l.scaleFeeBase (d.FEE_DEFAULT, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10);
-        expect (l.scaleFeeBase (d.FEE_ACCOUNT_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 200 * SYSTEM_CURRENCY_PARTS);
-        expect (l.scaleFeeBase (d.FEE_OWNER_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 50 * SYSTEM_CURRENCY_PARTS);
-        expect (l.scaleFeeBase (d.FEE_OFFER, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10);
-        expect (l.scaleFeeBase (d.FEE_CONTRACT_OPERATION, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 1);
+        expect (l.scaleFeeBase (10000, fee_default, fee_base) == 10000,
+            "scaleFeeBase(10k)");
+
+        expect (l.scaleFeeLoad (10000, fee_default, fee_base, false) == 10000,
+            "scaleFeeLoad(10k)");
+
+        expect (l.scaleFeeBase (1, fee_default, fee_base) == 1,
+            "scaleFeeBase(1)");
+
+        expect (l.scaleFeeLoad (1, fee_default, fee_base, false) == 1,
+            "scaleFeeLoad(1)");
+
+        expect (l.scaleFeeBase (fee_default, fee_default, fee_base) == 10,
+            "scaleFeeBase(default)");
+
+        expect (l.scaleFeeBase (fee_account_reserve, fee_default, fee_base) == 200 * SYSTEM_CURRENCY_PARTS,
+            "scaleFeeBase(reserve)");
+
+        // Check transaction-based fee escalation
+        std::vector<int> expected({8, 12, 17, 25, 36, 51, 70});
+        for (int i = 0; i < 40; ++i)
+        {
+            int count = doLedger (l, 256000, 100);
+            log << "Ledger: " << i + 1 << ", Count: " << count;
+            expect(((i < expected.size()) && (count == expected[i]))
+                || (count == expected.back()));
+        }
     }
 };
 

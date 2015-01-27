@@ -707,8 +707,13 @@ void NetworkOPsImp::processHeartbeatTimer ()
 void NetworkOPsImp::processClusterTimer ()
 {
     bool synced = (m_ledgerMaster.getValidatedLedgerAge() <= 240);
-    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0,
-                         getNetworkTimeNC());
+
+    // For temporary interoperability, report our current
+    // transaction fee multiplier as our cluster load.
+    int clusterLoad = getApp().getFeeTrack().scaleTxnFee (256);
+
+    ClusterNodeStatus us("", synced ? clusterLoad : 0, getNetworkTimeNC());
+
     auto& unl = getApp().getUNL();
     if (!unl.nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
@@ -724,7 +729,7 @@ void NetworkOPsImp::processClusterTimer ()
         protocol::TMClusterNode& node = *cluster.add_clusternodes();
         node.set_publickey(it.first.humanNodePublic());
         node.set_reporttime(it.second.getReportTime());
-        node.set_nodeload(it.second.getLoadFee());
+        node.set_nodeload(it.second.getLoadLevel());
         if (!it.second.getName().empty())
             node.set_nodename(it.second.getName());
     }
@@ -1022,6 +1027,13 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
             m_journal.info << "Transaction is obsolete";
             trans->setStatus (OBSOLETE);
         }
+        else if (r == terQUEUED)
+        {
+            m_journal.info << "Transaction is queued until fee drops";
+            trans->setStatus(HELD);
+            // EHENNIS TODO relay / broadcast
+            // EHENNIS TODO Does `trans` need to be canonicalized?
+        }
         else if (isTerRetry (r))
         {
             if (failType == FailHard::yes)
@@ -1048,7 +1060,8 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         }
 
         if (didApply ||
-            ((mMode != omFULL) && (failType != FailHard::yes) && bLocal))
+            ((mMode != omFULL) && (failType != FailHard::yes) && bLocal) ||
+            (r == terQUEUED))
         {
             std::set<Peer::id_t> peers;
 
@@ -1061,6 +1074,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                 tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
                 tx.set_status (protocol::tsCURRENT);
                 tx.set_receivetimestamp (getNetworkTimeNC ());
+                tx.set_deferred(r == terQUEUED);
                 // FIXME: This should be when we received it
                 getApp ().overlay ().foreach (send_if_not (
                     std::make_shared<Message> (tx, protocol::mtTRANSACTION),
@@ -1658,7 +1672,7 @@ void NetworkOPsImp::pubServer ()
         jvObj [jss::load_base]     =
                 (mLastLoadBase = getApp().getFeeTrack ().getLoadBase ());
         jvObj [jss::load_factor]   =
-                (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
+                (mLastLoadFactor = getApp().getFeeTrack ().getTxnFeeReport ());
 
         std::string sObj = to_string (jvObj);
 
@@ -2088,24 +2102,23 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     }
     else
     {
+        std::uint32_t base = getApp().getFeeTrack().getLoadBase();
         info[jss::load_factor] =
-            static_cast<double> (getApp().getFeeTrack ().getLoadFactor ()) /
-                getApp().getFeeTrack ().getLoadBase ();
+            static_cast<double> (getApp().getFeeTrack ().scaleTxnFee (base) / base);
         if (admin)
         {
-            std::uint32_t base = getApp().getFeeTrack().getLoadBase();
-            std::uint32_t fee = getApp().getFeeTrack().getLocalFee();
-            if (fee != base)
+            std::uint32_t level = getApp().getFeeTrack().getLocalLevel();
+            if (level != base)
                 info[jss::load_factor_local] =
-                    static_cast<double> (fee) / base;
-            fee = getApp().getFeeTrack ().getRemoteFee();
-            if (fee != base)
+                    static_cast<double> (level) / base;
+            level = getApp().getFeeTrack ().getTxnFeeReport();
+            if (level != base)
                 info[jss::load_factor_net] =
-                    static_cast<double> (fee) / base;
-            fee = getApp().getFeeTrack().getClusterFee();
-            if (fee != base)
+                    static_cast<double> (level) / base;
+            level = getApp().getFeeTrack().getClusterLevel();
+            if (level != base)
                 info[jss::load_factor_cluster] =
-                    static_cast<double> (fee) / base;
+                    static_cast<double> (level) / base;
         }
     }
 
@@ -2299,8 +2312,8 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
 
 void NetworkOPsImp::reportFeeChange ()
 {
-    if ((getApp().getFeeTrack ().getLoadBase () == mLastLoadBase) &&
-            (getApp().getFeeTrack ().getLoadFactor () == mLastLoadFactor))
+    if ((getApp().getFeeTrack().getLoadBase () == mLastLoadBase) &&
+            (getApp().getFeeTrack().getTxnFeeReport() == mLastLoadFactor))
         return;
 
     m_job_queue.addJob (

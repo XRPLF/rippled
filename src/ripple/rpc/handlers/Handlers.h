@@ -36,6 +36,7 @@ Json::Value doCanDelete             (RPC::Context&);
 Json::Value doConnect               (RPC::Context&);
 Json::Value doConsensusInfo         (RPC::Context&);
 Json::Value doFeature               (RPC::Context&);
+Json::Value doFee                   (RPC::Context&);
 Json::Value doFetchInfo             (RPC::Context&);
 Json::Value doGetCounts             (RPC::Context&);
 Json::Value doInternal              (RPC::Context&);

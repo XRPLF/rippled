@@ -29,17 +29,27 @@ namespace ripple {
 class LoadFeeTrackImp : public LoadFeeTrack
 {
 public:
-    explicit LoadFeeTrackImp (beast::Journal journal = beast::Journal())
+    explicit LoadFeeTrackImp (bool standAlone, beast::Journal journal = beast::Journal())
         : m_journal (journal)
-        , mLocalTxnLoadFee (lftNormalFee)
-        , mRemoteTxnLoadFee (lftNormalFee)
-        , mClusterTxnLoadFee (lftNormalFee)
+        , mLocalLoadLevel (lftReference)
+        , mRemoteLoadLevel (lftReference)
+        , mClusterLoadLevel (lftReference)
         , raiseCount (0)
+        , openLedgerTxns (0)
+        , closedLedgerTxns (0)
+        , targetMultiplier (500)
+        , targetTxnCount (50)
+        , medianFee (256)
+        , minimumTx (standAlone ? lftMinimumTxSA : lftMinimumTx)
     {
     }
 
     // Scale using load as well as base rate
-    std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee, std::uint32_t referenceFeeUnits, bool bAdmin)
+    std::uint64_t scaleFeeLoad (
+        std::uint64_t fee, // The number of fee units you want to scale
+        std::uint64_t baseFee, // Cost of reference transaction in drops
+        std::uint32_t referenceFeeUnits, // Cost of reference transaction in fee units
+        bool bAdmin) override
     {
         static std::uint64_t midrange (0x00000000FFFFFFFF);
 
@@ -50,68 +60,65 @@ public:
         else                    // normal fee, multiply first for accuracy
             fee *= baseFee;
 
-        std::uint32_t feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
-
-        // Let admins pay the normal fee until the local load exceeds four times the remote
-        std::uint32_t uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
-        if (bAdmin && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
-            feeFactor = uRemFee;
-
-        {
-            ScopedLockType sl (mLock);
-            fee = mulDiv (fee, feeFactor, lftNormalFee);
-        }
+        fee = scaleTxnFee (fee);
 
         if (big)                // Fee was big to start, must now multiply
             fee *= baseFee;
-        else                    // Fee was small to start, mst now divide
+        else                    // Fee was small to start, must now divide
             fee /= referenceFeeUnits;
 
         return fee;
     }
 
-    // Scale from fee units to millionths of a ripple
-    std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee, std::uint32_t referenceFeeUnits)
+    // Scale from fee units to drops
+    std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
+        std::uint32_t referenceFeeUnits) const override
     {
         return mulDiv (fee, baseFee, referenceFeeUnits);
     }
 
-    std::uint32_t getRemoteFee ()
+    std::uint32_t getLocalLevel () override
     {
         ScopedLockType sl (mLock);
-        return mRemoteTxnLoadFee;
+        return mLocalLoadLevel;
     }
 
-    std::uint32_t getLocalFee ()
+    std::uint32_t getLoadBase () override
+    {
+        return lftReference;
+    }
+
+    std::uint32_t getLoadFactor () override
     {
         ScopedLockType sl (mLock);
-        return mLocalTxnLoadFee;
+        return std::max(mClusterLoadLevel, std::max (mLocalLoadLevel, mRemoteLoadLevel));
     }
 
-    std::uint32_t getLoadBase ()
+    int getMedianFee() override
     {
-        return lftNormalFee;
+        ScopedLockType sl(mLock);
+        return medianFee;
     }
 
-    std::uint32_t getLoadFactor ()
+    int getExpectedLedgerSize() override
     {
-        ScopedLockType sl (mLock);
-        return std::max(mClusterTxnLoadFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee));
+        ScopedLockType sl(mLock);
+        return expectedLedgerSize();
     }
 
-    void setClusterFee (std::uint32_t fee)
-    {
-        ScopedLockType sl (mLock);
-        mClusterTxnLoadFee = fee;
-    }
-
-    std::uint32_t getClusterFee ()
+    void setClusterLevel(std::uint32_t level) override
     {
         ScopedLockType sl (mLock);
-        return mClusterTxnLoadFee;
+        mClusterLoadLevel = level;
     }
 
-    bool isLoadedLocal ()
+    std::uint32_t getClusterLevel () override
+    {
+        ScopedLockType sl (mLock);
+        return mClusterLoadLevel;
+    }
+
+    bool isLoadedLocal () override
     {
         // VFALCO TODO This could be replaced with a SharedData and
         //             using a read/write lock instead of a critical section.
@@ -120,10 +127,10 @@ public:
         //
         //
         ScopedLockType sl (mLock);
-        return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
+        return (raiseCount != 0) || (mLocalLoadLevel != lftReference);
     }
 
-    bool isLoadedCluster ()
+    bool isLoadedCluster () override
     {
         // VFALCO TODO This could be replaced with a SharedData and
         //             using a read/write lock instead of a critical section.
@@ -132,83 +139,156 @@ public:
         //
         //
         ScopedLockType sl (mLock);
-        return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee) || (mClusterTxnLoadFee != lftNormalFee);
+        return (raiseCount != 0) || (mLocalLoadLevel != lftReference) || (mClusterLoadLevel != lftReference);
     }
 
-    void setRemoteFee (std::uint32_t f)
-    {
-        ScopedLockType sl (mLock);
-        mRemoteTxnLoadFee = f;
-    }
-
-    bool raiseLocalFee ()
+    bool raiseLocalLevel () override
     {
         ScopedLockType sl (mLock);
 
         if (++raiseCount < 2)
             return false;
 
-        std::uint32_t origFee = mLocalTxnLoadFee;
+        std::uint32_t origLevel = mLocalLoadLevel;
 
-        if (mLocalTxnLoadFee < mRemoteTxnLoadFee) // make sure this fee takes effect
-            mLocalTxnLoadFee = mRemoteTxnLoadFee;
+        if (mLocalLoadLevel < mRemoteLoadLevel)
+            mLocalLoadLevel = mRemoteLoadLevel;
 
-        mLocalTxnLoadFee += (mLocalTxnLoadFee / lftFeeIncFraction); // increment by 1/16th
+        mLocalLoadLevel += (mLocalLoadLevel / lftLevelIncFraction); // increment by 1/16th
 
-        if (mLocalTxnLoadFee > lftFeeMax)
-            mLocalTxnLoadFee = lftFeeMax;
+        if (mLocalLoadLevel > lftLevelMax)
+            mLocalLoadLevel = lftLevelMax;
 
-        if (origFee == mLocalTxnLoadFee)
+        if (origLevel == mLocalLoadLevel)
             return false;
 
-        m_journal.debug << "Local load fee raised from " << origFee << " to " << mLocalTxnLoadFee;
+        m_journal.debug << "Local load level raised from " <<
+            origLevel << " to " << mLocalLoadLevel;
         return true;
     }
 
-    bool lowerLocalFee ()
+    bool lowerLocalLevel () override
     {
         ScopedLockType sl (mLock);
-        std::uint32_t origFee = mLocalTxnLoadFee;
+        std::uint32_t origLevel = mLocalLoadLevel;
         raiseCount = 0;
 
-        mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/4
+        mLocalLoadLevel -= (mLocalLoadLevel / lftLevelDecFraction ); // reduce by 1/4
 
-        if (mLocalTxnLoadFee < lftNormalFee)
-            mLocalTxnLoadFee = lftNormalFee;
+        if (mLocalLoadLevel < lftReference)
+            mLocalLoadLevel = lftReference;
 
-        if (origFee == mLocalTxnLoadFee)
+        if (origLevel == mLocalLoadLevel)
             return false;
 
-        m_journal.debug << "Local load fee lowered from " << origFee << " to " << mLocalTxnLoadFee;
+        m_journal.debug << "Local load level lowered from " << origLevel << " to " << mLocalLoadLevel;
         return true;
     }
 
-    Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits)
+    void onTx (std::uint64_t fee) override
     {
-        Json::Value j (Json::objectValue);
+        ScopedLockType sl (mLock);
 
+        ++openLedgerTxns;
+
+        m_journal.trace << "Tx count pending: "
+            << openLedgerTxns;
+    }
+
+    int setMinimumTx (int m) override
+    {
+        ScopedLockType sl (mLock);
+
+        int old = minimumTx;
+        minimumTx = m;
+        return old;
+    }
+
+    void onLedger (std::size_t openCount, std::vector<int> const& feesPaid, bool healthy) override
+    {
+        // Transactions in the closed ledger were accepted
+        // Transactions in the open ledger are held over
+        m_journal.debug <<
+            "Tx count: before: " << openLedgerTxns <<
+            " confirmed: " << feesPaid.size() <<
+            " pending: " << openCount;
+
+        ScopedLockType sl (mLock);
+
+        openLedgerTxns = openCount;
+
+        if (!healthy)
         {
-            ScopedLockType sl (mLock);
-
-            // base_fee = The cost to send a "reference" transaction under no load, in millionths of a Ripple
-            j[jss::base_fee] = Json::Value::UInt (baseFee);
-
-            // load_fee = The cost to send a "reference" transaction now, in millionths of a Ripple
-            j[jss::load_fee] = Json::Value::UInt (
-                                mulDiv (baseFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee));
+            // As soon as we start having trouble, clamp down.
+            closedLedgerTxns = feesPaid.size();
+            closedLedgerTxns = std::min(closedLedgerTxns, targetTxnCount);
+        }
+        else if (feesPaid.size() > closedLedgerTxns)
+        {
+            // As long as we're staying healthy, keep fees down by
+            // allowing more transactions per ledger at low cost.
+            closedLedgerTxns = feesPaid.size();
         }
 
-        return j;
+        if (!feesPaid.empty())
+        {
+            // In the case of an odd number of elements, this adds
+            // the same element to itself and takes the average;
+            // for an even number of elements, it will add the two
+            // "middle" elements and average them.
+            auto size = feesPaid.size();
+            medianFee = (feesPaid[size / 2] +
+                feesPaid[(size - 1) / 2] + 1) / 2;
+        }
+        else
+        {
+            medianFee = lftReference;
+        }
+    }
+
+    // Scale the required fee level based on transaction load
+    std::uint64_t scaleTxnFee (std::uint64_t baseFee) override
+    {
+        ScopedLockType sl (mLock);
+
+        // The number of transactions accepted so far
+        int openT = openLedgerTxns;
+
+        // Target number of transactions allowed
+        int closeT = expectedLedgerSize();
+
+        if (openT > closeT)
+        {
+            // Compute fee level required for constant counts
+            int multiplier = std::max(medianFee, targetMultiplier);
+            baseFee *= openT * openT * multiplier;
+            baseFee /= (closeT * closeT);
+        }
+
+        return baseFee;
+    }
+
+    std::uint64_t getTxnFeeReport () override
+    {
+        std::uint64_t base = getLoadBase ();
+        std::uint64_t ret = scaleTxnFee (base);
+
+        // If the fee is elevated, report a slightly
+        // higher fee to clients
+        if (ret != base)
+            ret += ret / lftExtraFee;
+
+        return ret;
     }
 
 private:
     // VFALCO TODO Move this function to some "math utilities" file
     // compute (value)*(mul)/(div) - avoid overflow but keep precision
-    std::uint64_t mulDiv (std::uint64_t value, std::uint32_t mul, std::uint64_t div)
+    static std::uint64_t mulDiv (std::uint64_t value, std::uint32_t mul, std::uint64_t div)
     {
         // VFALCO TODO replace with beast::literal64bitUnsigned ()
         //
-        static std::uint64_t boundary = (0x00000000FFFFFFFF);
+        const std::uint64_t boundary = (0x00000000FFFFFFFF);
 
         if (value > boundary)                           // Large value, avoid overflow
             return (value / div) * mul;
@@ -216,21 +296,40 @@ private:
             return (value * mul) / div;
     }
 
+    int expectedLedgerSize()
+    {
+        int closeT = minimumTx;
+        closeT = std::max(closeT, closedLedgerTxns);
+        closeT = std::min(closeT, targetTxnCount - 1);
+        return closeT;
+    }
+
 private:
-    static const int lftNormalFee = 256;        // 256 is the minimum/normal load factor
-    static const int lftFeeIncFraction = 4;     // increase fee by 1/4
-    static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
-    static const int lftFeeMax = lftNormalFee * 1000000;
+    static const int lftReference = 256;        // 256 means normal (DO NOT CHANGE)
+    static const int lftExtraFee = 3;           // boost reported fee by 1/3
+    static const int lftMinimumTx = 5;          // don't raise fee for first 5 transactions
+    static const int lftMinimumTxSA = 100;      // Allow more in standalone mode
+
+    static const int lftLevelIncFraction = 4;     // increase level by 1/4
+    static const int lftLevelDecFraction = 4;     // decrease level by 1/4
+    static const int lftLevelMax = lftReference * 1000000;
 
     beast::Journal m_journal;
     using LockType = std::mutex;
     using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
-    std::uint32_t mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
-    std::uint32_t mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
-    std::uint32_t mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
+    std::uint32_t mLocalLoadLevel;        // Scale factor, lftReference = normal
+    std::uint32_t mRemoteLoadLevel;       // Scale factor, lftReference = normal
+    std::uint32_t mClusterLoadLevel;      // Scale factor, lftReference = normal
     int raiseCount;
+
+    int openLedgerTxns;
+    int closedLedgerTxns;
+    int targetMultiplier;
+    int targetTxnCount;
+    int medianFee;
+    int minimumTx;
 };
 
 } // ripple

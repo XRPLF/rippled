@@ -32,6 +32,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/app/tx/InboundTransactions.h>
+#include <ripple/app/ledger/TxHold.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -875,6 +876,7 @@ public:
         WriteLog (lsINFO, LedgerConsensus) << "Simulation complete";
     }
 private:
+
     /** We have a new last closed ledger, process it. Final accept logic
 
       @param set Our consensus set
@@ -930,7 +932,8 @@ private:
         WriteLog (lsDEBUG, LedgerConsensus)
             << "Applying consensus set transactions to the"
             << " last closed ledger";
-        applyTransactions (set, newLCL, newLCL, retriableTransactions, false);
+        auto const txSet(buildTxSet(set));
+        applyTransactions(txSet, newLCL, newLCL, retriableTransactions, false);
         newLCL->updateSkipList ();
         newLCL->setClosed ();
 
@@ -1036,10 +1039,13 @@ private:
 
         if (anyDisputes)
         {
-            applyTransactions (std::shared_ptr<SHAMap>(),
+            // Attempt re-applying any disputed transactions
+            // where we voted NO
+            applyTransactions(TxSet(),
                 newOL, newLCL, retriableTransactions, true);
         }
 
+        std::uint64_t refTxnCost;
         {
             auto lock = beast::make_lock(getApp().getMasterMutex(), std::defer_lock);
             LedgerMaster::ScopedLockType sl
@@ -1047,17 +1053,32 @@ private:
             std::lock(lock, sl);
 
             // Apply transactions from the old open ledger
-            Ledger::pointer oldOL = getApp().getLedgerMaster().getCurrentLedger();
-            if (oldOL->peekTransactionMap()->getHash().isNonZero ())
+            auto& ledgerMaster = getApp().getLedgerMaster();
+            Ledger::pointer oldOL = ledgerMaster.getCurrentLedger();
+            auto& txQ = ledgerMaster.getTransactionQueue();
+            refTxnCost = oldOL->getBaseFee();
+            if (oldOL->peekTransactionMap()->getHash().isNonZero())
             {
                 WriteLog (lsDEBUG, LedgerConsensus)
                     << "Applying transactions from current open ledger";
-                applyTransactions (oldOL->peekTransactionMap (),
+                applyTransactions(buildTxSet(oldOL->peekTransactionMap()),
                     newOL, newLCL, retriableTransactions, true);
             }
 
+            // TODO: Can this be done outside of the lock?
+            // It does need to be done before fillOpenLedger
+            updateFeeTracking(newOL, txSet, getApp().getFeeTrack(), refTxnCost,
+                [&] ()
+            {
+                return mCurrentMSeconds;
+            });
+            
+            TransactionEngine engine(newOL);
+
+            // Stuff the ledger with transactions from the queue.
+            txQ.fillOpenLedger(engine);
+
             // Apply local transactions
-            TransactionEngine engine (newOL);
             m_localTX.apply (engine);
 
             // We have a new Last Closed Ledger and new Open Ledger
@@ -1720,13 +1741,13 @@ private:
     */
     void addLoad(STValidation::ref val)
     {
-        std::uint32_t fee = std::max(
-            getApp().getFeeTrack().getLocalFee(),
-            getApp().getFeeTrack().getClusterFee());
-        std::uint32_t ref = getApp().getFeeTrack().getLoadBase();
+        // Temporarily use the instantaneous fee
+        std::uint32_t ref = getApp().getFeeTrack().getLoadBase ();
+        std::uint32_t fee = getApp().getFeeTrack().getTxnFeeReport ();
         if (fee > ref)
             val->setFieldU32(sfLoadFee, fee);
     }
+
 private:
     LocalTxs& m_localTX;
     FeeVote& m_feeVote;
@@ -1797,7 +1818,6 @@ make_LedgerConsensus (LocalTxs& localtx,
   @param retryAssured true if the transaction should be retried on failure.
   @return             One of resultSuccess, resultFail or resultRetry.
 */
-static
 int applyTransaction (TransactionEngine& engine
     , STTx::ref txn, bool openLedger, bool retryAssured)
 {
@@ -1852,6 +1872,43 @@ int applyTransaction (TransactionEngine& engine
     }
 }
 
+std::size_t countLedgerNodes(ripple::Ledger::pointer ledger)
+{
+    // Count transactions in the open ledger
+    std::size_t nodes = 0;
+    ledger->peekTransactionMap()->visitLeaves
+        ([&] (std::shared_ptr<SHAMapItem> const&)
+    {
+        ++nodes;
+    });
+    return nodes;
+}
+
+// Build a transaction set from a transaction map
+// This allows us to serialize the transactions only once,
+TxSet buildTxSet(std::shared_ptr<SHAMap> const& map)
+{
+    TxSet txSet;
+    txSet.reserve (64);
+
+    map->visitLeaves ([&] (std::shared_ptr<SHAMapItem> const& item)
+    {
+        try
+        {
+            SerialIter sit (item->peekSerializer ());
+            txSet.emplace_back (item->getTag(),
+                std::make_shared <STTx> (sit));
+        }
+        catch (...)
+        {
+            WriteLog (lsWARNING, LedgerConsensus) << "Transaction " <<
+            item->getTag() << " throws";
+        }
+    });
+
+    return txSet;
+}
+
 /** Apply a set of transactions to a ledger
 
   @param set                   The set of transactions to apply
@@ -1862,40 +1919,36 @@ int applyTransaction (TransactionEngine& engine
   @param retriableTransactions collect failed transactions in this set
   @param openLgr               true if applyLedger is open, else false.
 */
-void applyTransactions (std::shared_ptr<SHAMap> const& set,
-    Ledger::ref applyLedger, Ledger::ref checkLedger,
-    CanonicalTXSet& retriableTransactions, bool openLgr)
+void applyTransactions (
+    TxSet const& set,
+    Ledger::ref applyLedger,
+    Ledger::ref checkLedger,
+    CanonicalTXSet& retriableTransactions,
+    bool openLgr)
 {
     TransactionEngine engine (applyLedger);
 
-    if (set)
+    for (auto& tx : set)
     {
-        for (std::shared_ptr<SHAMapItem> item = set->peekFirstItem (); !!item;
-            item = set->peekNextItem (item->getTag ()))
+        // If the checkLedger doesn't have the transaction
+        if (!checkLedger->hasTransaction (tx.first))
         {
-            // If the checkLedger doesn't have the transaction
-            if (!checkLedger->hasTransaction (item->getTag ()))
+            // Then try to apply the transaction to applyLedger
+            WriteLog (lsINFO, LedgerConsensus) <<
+                "Processing candidate transaction: " << tx.first;
+            try
             {
-                // Then try to apply the transaction to applyLedger
-                WriteLog (lsDEBUG, LedgerConsensus) <<
-                    "Processing candidate transaction: " << item->getTag ();
-                try
+                if (applyTransaction (engine, tx.second,
+                          openLgr, true) == LedgerConsensusImp::resultRetry)
                 {
-                    SerialIter sit (item->peekSerializer ());
-                    STTx::pointer txn
-                        = std::make_shared<STTx>(sit);
-                    if (applyTransaction (engine, txn,
-                              openLgr, true) == LedgerConsensusImp::resultRetry)
-                    {
-                        // On failure, stash the failed transaction for
-                        // later retry.
-                        retriableTransactions.push_back (txn);
-                    }
+                    // On failure, stash the failed transaction for
+                    // later retry.
+                    retriableTransactions.push_back (tx.second);
                 }
-                catch (...)
-                {
-                    WriteLog (lsWARNING, LedgerConsensus) << "  Throws";
-                }
+            }
+            catch (...)
+            {
+                WriteLog (lsWARNING, LedgerConsensus) << "  Throws";
             }
         }
     }
@@ -1955,6 +2008,27 @@ void applyTransactions (std::shared_ptr<SHAMap> const& set,
     // If there are any transactions left, we must have
     // tried them in at least one final pass
     assert (retriableTransactions.empty() || !certainRetry);
+}
+
+void updateFeeTracking(ripple::Ledger::pointer openLedger, TxSet const& txSet,
+    LoadFeeTrack& feeTrack, std::uint64_t refTxnCost, std::function<int()> const& msFunction)
+{
+    auto openNodes = countLedgerNodes(openLedger);
+
+    // Extract fee levels from transactions in consensus set
+    std::vector <int> feeVector;
+    feeVector.reserve(txSet.size());
+    for (auto const& tx : txSet)
+    {
+        int fee = tx.second->getFeeLevelPaid
+            (feeTrack.getLoadBase(), refTxnCost);
+        if (fee != 0) // ignore pseudo-transactions
+            feeVector.push_back(fee);
+    }
+    std::sort(feeVector.begin(), feeVector.end());
+
+    bool healthy = !msFunction || msFunction() <= 5000;
+    feeTrack.onLedger(openNodes, feeVector, healthy);
 }
 
 } // ripple
