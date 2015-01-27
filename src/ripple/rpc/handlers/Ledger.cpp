@@ -20,9 +20,9 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/json/Object.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/handlers/Ledger.h>
-#include <ripple/rpc/impl/JsonObject.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {

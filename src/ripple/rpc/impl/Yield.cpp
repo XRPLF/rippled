@@ -24,8 +24,8 @@
 namespace ripple {
 namespace RPC {
 
-Output chunkedYieldingOutput (
-    Output const& output, Yield const& yield, std::size_t chunkSize)
+Json::Output chunkedYieldingOutput (
+    Json::Output const& output, Yield const& yield, std::size_t chunkSize)
 {
     auto count = std::make_shared <std::size_t> (0);
     return [chunkSize, count, output, yield] (boost::string_ref const& bytes)

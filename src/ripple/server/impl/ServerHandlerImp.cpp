@@ -148,7 +148,7 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
 }
 
 static inline
-RPC::Output makeOutput (HTTP::Session& session)
+Json::Output makeOutput (HTTP::Session& session)
 {
     return [&](boost::string_ref const& b)
     {

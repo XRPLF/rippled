@@ -18,10 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/JsonObject.h>
+#include <ripple/json/Object.h>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
 Collection::Collection (Collection* parent, Writer* writer)
         : parent_ (parent), writer_ (writer), enabled_ (true)
@@ -157,5 +156,4 @@ WriterObject stringWriterObject (std::string& s)
     return WriterObject (stringOutput (s));
 }
 
-} // RPC
-} // ripple
+} // Json

@@ -20,7 +20,7 @@
 #ifndef RIPPLED_RIPPLE_RPC_HANDLERS_WALLETPROPOSE_H
 #define RIPPLED_RIPPLE_RPC_HANDLERS_WALLETPROPOSE_H
 
-#include <ripple/rpc/impl/JsonObject.h>
+#include <ripple/json/json_value.h>
 
 namespace ripple {
 

@@ -21,12 +21,12 @@
 #define RIPPLE_RPC_JSONWRITER_H_INCLUDED
 
 #include <ripple/basics/ToString.h>
+#include <ripple/json/Output.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/rpc/Output.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <memory>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
 /**
  *  Writer implements an O(1)-space, O(1)-granular output JSON writer.
@@ -204,11 +204,11 @@ public:
     template <typename Type>
     void output (Type t)
     {
-        implOutput (to_string (t));
+        implOutput (ripple::to_string (t));
     }
 
     /** Output an error code. */
-    void output (error_code_i t)
+    void output (ripple::error_code_i t)
     {
         output (int(t));
     }
@@ -244,7 +244,6 @@ inline void check (bool condition, std::string const& message)
         throw JsonException (message);
 }
 
-} // RPC
-} // ripple
+} // Json
 
 #endif

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
 #define RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
 
-#include <ripple/rpc/Output.h>
-#include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/json/Output.h>
+#include <ripple/json/Writer.h>
 #include <ripple/basics/TestSuite.h>
 
 namespace ripple {
@@ -31,13 +31,14 @@ class TestOutputSuite : public TestSuite
 {
 protected:
     std::string output_;
-    std::unique_ptr <Writer> writer_;
+    std::unique_ptr <Json::Writer> writer_;
 
     void setup (std::string const& testName)
     {
         testcase (testName);
         output_.clear ();
-        writer_ = std::make_unique <Writer> (stringOutput (output_));
+        writer_ = std::make_unique <Json::Writer> (
+            Json::stringOutput (output_));
     }
 
     // Test the result and report values.

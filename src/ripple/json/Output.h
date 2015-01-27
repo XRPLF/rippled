@@ -17,27 +17,35 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_WRITEJSON_H_INCLUDED
-#define RIPPLE_RPC_WRITEJSON_H_INCLUDED
+#ifndef RIPPLE_JSON_OUTPUT_H_INCLUDED
+#define RIPPLE_JSON_OUTPUT_H_INCLUDED
 
-namespace ripple {
-namespace RPC {
+#include <boost/utility/string_ref.hpp>
+
+namespace Json {
+
+using Output = std::function <void (boost::string_ref const&)>;
+
+inline
+Output stringOutput (std::string& s)
+{
+    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
+}
 
 /** Writes a minimal representation of a Json value to an Output in O(n) time.
 
     Data is streamed right to the output, so only a marginal amount of memory is
     used.  This can be very important for a very large Json::Value.
  */
-void writeJson (Json::Value const&, Output const&);
+void outputJson (Json::Value const&, Output const&);
 
 /** Return the minimal string representation of a Json::Value in O(n) time.
 
     This requires a memory allocation for the full size of the output.
-    If possible, use write().
+    If possible, use outputJson().
  */
 std::string jsonAsString (Json::Value const&);
 
-} // RPC
-} // ripple
+} // Json
 
 #endif

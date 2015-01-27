@@ -18,12 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/JsonWriter.h>
-#include <ripple/rpc/impl/WriteJson.h>
+#include <ripple/json/Output.h>
+#include <ripple/json/Writer.h>
 #include <beast/unit_test/suite.h>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
 namespace {
 
@@ -244,20 +243,20 @@ void Writer::output (std::string const& s)
 void Writer::output (Json::Value const& value)
 {
     impl_->markStarted();
-    writeJson (value, impl_->getOutput());
+    outputJson (value, impl_->getOutput());
 }
 
 template <>
 void Writer::output (float f)
 {
-    auto s = to_string (f);
+    auto s = ripple::to_string (f);
     impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
 template <>
 void Writer::output (double f)
 {
-    auto s = to_string (f);
+    auto s = ripple::to_string (f);
     impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
@@ -315,5 +314,4 @@ void Writer::finish ()
         impl_->finish ();
 }
 
-} // RPC
-} // ripple
+} // Json

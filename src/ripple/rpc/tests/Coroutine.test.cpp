@@ -35,7 +35,7 @@ public:
         setup (name);
 
         std::string buffer;
-        Output output = stringOutput (buffer);
+        Json::Output output = Json::stringOutput (buffer);
 
         auto coroutine = Coroutine ([=] (Yield yield)
         {

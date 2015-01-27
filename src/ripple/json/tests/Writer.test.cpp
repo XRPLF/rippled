@@ -19,14 +19,13 @@
 
 #include <BeastConfig.h>
 #include <ripple/json/json_writer.h>
-#include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/json/Writer.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 #include <beast/unit_test/suite.h>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
-class JsonWriter_test : public TestOutputSuite
+class JsonWriter_test : public ripple::RPC::TestOutputSuite
 {
 public:
     void testTrivial ()
@@ -203,5 +202,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JsonWriter, ripple_basics, ripple);
 
-} // RPC
-} // ripple
+} // Json

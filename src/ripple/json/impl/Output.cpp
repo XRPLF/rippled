@@ -18,15 +18,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/WriteJson.h>
-#include <ripple/rpc/impl/JsonWriter.h>
+#include <ripple/json/Output.h>
+#include <ripple/json/Writer.h>
 
-namespace ripple {
-namespace RPC {
+namespace Json {
 
 namespace {
 
-void writeJson (Json::Value const& value, Writer& writer)
+void outputJson (Json::Value const& value, Writer& writer)
 {
     switch (value.type())
     {
@@ -72,7 +71,7 @@ void writeJson (Json::Value const& value, Writer& writer)
         for (auto const& i: value)
         {
             writer.rawAppend();
-            writeJson (i, writer);
+            outputJson (i, writer);
         }
         writer.finish();
         break;
@@ -85,7 +84,7 @@ void writeJson (Json::Value const& value, Writer& writer)
         for (auto const& tag: members)
         {
             writer.rawSet (tag);
-            writeJson (value[tag], writer);
+            outputJson (value[tag], writer);
         }
         writer.finish();
         break;
@@ -95,19 +94,18 @@ void writeJson (Json::Value const& value, Writer& writer)
 
 } // namespace
 
-void writeJson (Json::Value const& value, Output const& out)
+void outputJson (Json::Value const& value, Output const& out)
 {
     Writer writer (out);
-    writeJson (value, writer);
+    outputJson (value, writer);
 }
 
 std::string jsonAsString (Json::Value const& value)
 {
     std::string s;
     Writer writer (stringOutput (s));
-    writeJson (value, writer);
+    outputJson (value, writer);
     return s;
 }
 
-} // RPC
-} // ripple
+} // Json
