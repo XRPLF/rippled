@@ -1551,9 +1551,8 @@ bool LedgerMaster::shouldAcquire (std::uint32_t const currentLedger,
     std::uint32_t const candidateLedger)
 {
     bool ret (candidateLedger >= currentLedger ||
-        (ledgerHistoryIndex != std::numeric_limits <LedgerIndex>::max () &&
-            candidateLedger > ledgerHistoryIndex) ||
-        (currentLedger - candidateLedger) <= ledgerHistory);
+        candidateLedger > ledgerHistoryIndex ||
+            (currentLedger - candidateLedger) <= ledgerHistory);
 
     WriteLog (lsTRACE, LedgerMaster)
         << "Missing ledger "
