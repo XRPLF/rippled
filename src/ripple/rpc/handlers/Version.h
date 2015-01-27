@@ -17,21 +17,45 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_OUTPUT_H_INCLUDED
-#define RIPPLE_RPC_OUTPUT_H_INCLUDED
+#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
+#define RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
 
-#include <boost/utility/string_ref.hpp>
+#include <ripple/rpc/RPCVersion.h>
 
 namespace ripple {
 namespace RPC {
 
-using Output = std::function <void (boost::string_ref const&)>;
-
-inline
-Output stringOutput (std::string& s)
+class VersionHandler
 {
-    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
-}
+public:
+    explicit VersionHandler (Context&) {}
+
+    Status check()
+    {
+        return Status::OK;
+    }
+
+    template <class Object>
+    void writeResult (Object& obj)
+    {
+        setVersion (obj);
+    }
+
+    static const char* const name()
+    {
+        return "version";
+    }
+
+    static Role role()
+    {
+        return Role::USER;
+    }
+
+    static Condition condition()
+    {
+        return NO_CONDITION;
+    }
+};
 
 } // RPC
 } // ripple

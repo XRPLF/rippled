@@ -17,20 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_OUTPUT_H_INCLUDED
-#define RIPPLE_RPC_OUTPUT_H_INCLUDED
+#ifndef RIPPLED_RIPPLE_RPC_VERSIONS_H
+#define RIPPLED_RIPPLE_RPC_VERSIONS_H
 
-#include <boost/utility/string_ref.hpp>
+#include <beast/module/core/diagnostic/SemanticVersion.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/impl/JsonObject.h>
 
 namespace ripple {
 namespace RPC {
 
-using Output = std::function <void (boost::string_ref const&)>;
+extern beast::SemanticVersion const firstVersion;
+extern beast::SemanticVersion const goodVersion;
+extern beast::SemanticVersion const lastVersion;
 
-inline
-Output stringOutput (std::string& s)
+template <class Object>
+void setVersion(Object& parent)
 {
-    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
+    auto&& object = addObject (parent, jss::version);
+    object[jss::first] = firstVersion.print();
+    object[jss::good] = goodVersion.print();
+    object[jss::last] = lastVersion.print();
 }
 
 } // RPC

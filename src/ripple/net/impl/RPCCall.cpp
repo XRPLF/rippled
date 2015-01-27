@@ -921,6 +921,7 @@ public:
             {   "unl_score",            &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
+            {   "version",              &RPCParser::parseAsIs,                  0,  0   },
             {   "wallet_accounts",      &RPCParser::parseWalletAccounts,        1,  1   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "wallet_seed",          &RPCParser::parseWalletSeed,            0,  1   },
