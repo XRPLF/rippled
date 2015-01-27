@@ -21,14 +21,13 @@
 #define RIPPLE_TEST_JTX_ADVANCE_H_INCLUDED
 
 #include <ripple/test/jtx/Env.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
-// TODO EHENNIS: Return the transaction list.
-// (Coming soon.)
-void
+TxSet
 advance(Env& env, std::shared_ptr<Ledger const>& last);
 
 } // jtx

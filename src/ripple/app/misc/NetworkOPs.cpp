@@ -645,7 +645,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
 void NetworkOPsImp::processClusterTimer ()
 {
     bool synced = (m_ledgerMaster.getValidatedLedgerAge() <= 240);
-    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0,
+    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalLevel() : 0,
                          getNetworkTimeNC());
     auto& unl = getApp().getUNL();
     if (!unl.nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
@@ -662,7 +662,7 @@ void NetworkOPsImp::processClusterTimer ()
         protocol::TMClusterNode& node = *cluster.add_clusternodes();
         node.set_publickey(it.first.humanNodePublic());
         node.set_reporttime(it.second.getReportTime());
-        node.set_nodeload(it.second.getLoadFee());
+        node.set_nodeload(it.second.getLoadLevel());
         if (!it.second.getName().empty())
             node.set_nodename(it.second.getName());
     }
@@ -996,7 +996,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     flags = flags | tapADMIN;
                 std::tie (e.result, e.applied) =
                     ripple::apply (*accum,
-                        *e.transaction->getSTransaction(), flags,
+                        e.transaction->getSTransaction(), flags,
                             getConfig(), deprecatedLogs().journal(
                                 "NetworkOPs"));
                 applied |= e.applied;
@@ -1990,15 +1990,15 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         if (admin)
         {
             std::uint32_t base = getApp().getFeeTrack().getLoadBase();
-            std::uint32_t fee = getApp().getFeeTrack().getLocalFee();
+            std::uint32_t fee = getApp().getFeeTrack().getLocalLevel();
             if (fee != base)
                 info[jss::load_factor_local] =
                     static_cast<double> (fee) / base;
-            fee = getApp().getFeeTrack ().getRemoteFee();
+            fee = getApp().getFeeTrack ().getRemoteLevel();
             if (fee != base)
                 info[jss::load_factor_net] =
                     static_cast<double> (fee) / base;
-            fee = getApp().getFeeTrack().getClusterFee();
+            fee = getApp().getFeeTrack().getClusterLevel();
             if (fee != base)
                 info[jss::load_factor_cluster] =
                     static_cast<double> (fee) / base;

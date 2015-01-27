@@ -176,7 +176,7 @@ std::uint64_t TxnSignApiFacade::scaleFeeBase (std::uint64_t fee) const
         return fee;
 
     // VFALCO Audit
-    return getApp().getFeeTrack().scaleFeeBase(
+    return ripple::scaleFeeBase(
         fee, ledger_->fees().base, ledger_->fees().units);
 }
 

@@ -1218,6 +1218,12 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
       <Filter>beast\module\core\logging</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\module\core\maths\Muldiv.cpp">
+      <Filter>beast\module\core\maths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Muldiv.h">
+      <Filter>beast\module\core\maths</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
       <Filter>beast\module\core\maths</Filter>
     </ClCompile>

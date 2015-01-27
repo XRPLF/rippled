@@ -30,7 +30,7 @@ namespace ripple {
 TER
 Payment::preCheck ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     if (uTxFlags & tfPaymentMask)
     {
@@ -42,15 +42,15 @@ Payment::preCheck ()
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     bool const limitQuality = uTxFlags & tfLimitQuality;
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
-    bool const bPaths = mTxn.isFieldPresent (sfPaths);
-    bool const bMax = mTxn.isFieldPresent (sfSendMax);
+    bool const bPaths = mTxn->isFieldPresent (sfPaths);
+    bool const bMax = mTxn->isFieldPresent (sfSendMax);
 
-    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
+    STAmount const saDstAmount (mTxn->getFieldAmount (sfAmount));
 
     STAmount maxSourceAmount;
 
     if (bMax)
-        maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+        maxSourceAmount = mTxn->getFieldAmount (sfSendMax);
     else if (saDstAmount.native ())
         maxSourceAmount = saDstAmount;
     else
@@ -68,7 +68,7 @@ Payment::preCheck ()
     if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
         return temBAD_AMOUNT;
 
-    AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
+    AccountID const uDstAccountID (mTxn->getAccountID (sfDestination));
 
     if (!uDstAccountID)
     {
@@ -146,17 +146,17 @@ TER
 Payment::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     bool const limitQuality = uTxFlags & tfLimitQuality;
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
-    bool const bPaths = mTxn.isFieldPresent (sfPaths);
-    bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
-    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
+    bool const bPaths = mTxn->isFieldPresent (sfPaths);
+    bool const bMax = mTxn->isFieldPresent (sfSendMax);
+    AccountID const uDstAccountID (mTxn->getAccountID (sfDestination));
+    STAmount const saDstAmount (mTxn->getFieldAmount (sfAmount));
     STAmount maxSourceAmount;
     if (bMax)
-        maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+        maxSourceAmount = mTxn->getFieldAmount (sfSendMax);
     else if (saDstAmount.native ())
         maxSourceAmount = saDstAmount;
     else
@@ -219,7 +219,7 @@ Payment::doApply ()
         view().insert(sleDst);
     }
     else if ((sleDst->getFlags () & lsfRequireDestTag) &&
-                !mTxn.isFieldPresent (sfDestinationTag))
+                !mTxn->isFieldPresent (sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -249,7 +249,7 @@ Payment::doApply ()
         // transitive balances.
 
         // Copy paths into an editable class.
-        STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
+        STPathSet spsPaths = mTxn->getFieldPathSet (sfPaths);
 
         try
         {
@@ -325,7 +325,7 @@ Payment::doApply ()
         // mPriorBalance is the balance on the sending account BEFORE the
         // fees were charged. We want to make sure we have enough reserve
         // to send. Allow final spend to use reserve for fee.
-        auto const mmm = std::max(mTxn.getTransactionFee (),
+        auto const mmm = std::max(mTxn->getTransactionFee (),
             STAmount (uReserve));
 
         if (mPriorBalance < saDstAmount + mmm)

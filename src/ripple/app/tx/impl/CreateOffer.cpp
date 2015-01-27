@@ -387,7 +387,7 @@ CreateOffer::cross (
     beast::WrappedSink takerSink (j_, "Taker ");
 
     Taker taker (cross_type_, view, mTxnAccountID, taker_amount,
-        mTxn.getFlags(), ctx_.config, beast::Journal (takerSink));
+        mTxn->getFlags(), ctx_.config, beast::Journal (takerSink));
 
     try
     {
@@ -429,15 +429,15 @@ CreateOffer::preCheck ()
 {
     cross_type_ = CrossType::IouToIou;
     bool const pays_xrp =
-        mTxn.getFieldAmount (sfTakerPays).native ();
+        mTxn->getFieldAmount (sfTakerPays).native ();
     bool const gets_xrp =
-        mTxn.getFieldAmount (sfTakerGets).native ();
+        mTxn->getFieldAmount (sfTakerGets).native ();
     if (pays_xrp && !gets_xrp)
         cross_type_ = CrossType::IouToXrp;
     else if (gets_xrp && !pays_xrp)
         cross_type_ = CrossType::XrpToIou;
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     if (uTxFlags & tfOfferCreateMask)
     {
@@ -456,26 +456,26 @@ CreateOffer::preCheck ()
         return temINVALID_FLAG;
     }
 
-    bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
+    bool const bHaveExpiration (mTxn->isFieldPresent (sfExpiration));
 
-    if (bHaveExpiration && (mTxn.getFieldU32 (sfExpiration) == 0))
+    if (bHaveExpiration && (mTxn->getFieldU32 (sfExpiration) == 0))
     {
         if (j_.debug) j_.warning <<
             "Malformed offer: bad expiration";
         return temBAD_EXPIRATION;
     }
 
-    bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
+    bool const bHaveCancel (mTxn->isFieldPresent (sfOfferSequence));
 
-    if (bHaveCancel && (mTxn.getFieldU32 (sfOfferSequence) == 0))
+    if (bHaveCancel && (mTxn->getFieldU32 (sfOfferSequence) == 0))
     {
         if (j_.debug) j_.debug <<
             "Malformed offer: bad cancel sequence";
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
+    STAmount saTakerPays = mTxn->getFieldAmount (sfTakerPays);
+    STAmount saTakerGets = mTxn->getFieldAmount (sfTakerGets);
 
     if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
         return temBAD_AMOUNT;
@@ -527,15 +527,15 @@ CreateOffer::preCheck ()
 std::pair<TER, bool>
 CreateOffer::applyGuts (View& view, View& view_cancel)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     bool const bPassive (uTxFlags & tfPassive);
     bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill (uTxFlags & tfFillOrKill);
     bool const bSell (uTxFlags & tfSell);
 
-    STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
+    STAmount saTakerPays = mTxn->getFieldAmount (sfTakerPays);
+    STAmount saTakerGets = mTxn->getFieldAmount (sfTakerGets);
 
     if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
         return { temBAD_AMOUNT, true };
@@ -545,18 +545,18 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer ();
 
-    bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
-    bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
+    bool const bHaveExpiration (mTxn->isFieldPresent (sfExpiration));
+    bool const bHaveCancel (mTxn->isFieldPresent (sfOfferSequence));
 
-    std::uint32_t const uExpiration = mTxn.getFieldU32 (sfExpiration);
-    std::uint32_t const uCancelSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uExpiration = mTxn->getFieldU32 (sfExpiration);
+    std::uint32_t const uCancelSequence = mTxn->getFieldU32 (sfOfferSequence);
 
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer sequence
     //       number insufficient?
 
     std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
-    std::uint32_t const uSequence = mTxn.getSequence ();
+    std::uint32_t const uSequence = mTxn->getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that

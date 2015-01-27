@@ -33,9 +33,9 @@ CreateTicket::preCheck ()
         return temDISABLED;
 #endif
 
-    if (mTxn.isFieldPresent (sfExpiration))
+    if (mTxn->isFieldPresent (sfExpiration))
     {
-        if (mTxn.getFieldU32 (sfExpiration) == 0)
+        if (mTxn->getFieldU32 (sfExpiration) == 0)
         {
             j_.warning <<
                 "Malformed transaction: bad expiration";
@@ -66,25 +66,25 @@ CreateTicket::doApply ()
 
     std::uint32_t expiration (0);
 
-    if (mTxn.isFieldPresent (sfExpiration))
+    if (mTxn->isFieldPresent (sfExpiration))
     {
-        expiration = mTxn.getFieldU32 (sfExpiration);
+        expiration = mTxn->getFieldU32 (sfExpiration);
 
         if (view().parentCloseTime() >= expiration)
             return tesSUCCESS;
     }
 
     SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
-        getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
+        getTicketIndex (mTxnAccountID, mTxn->getSequence ()));
     sleTicket->setAccountID (sfAccount, mTxnAccountID);
-    sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
+    sleTicket->setFieldU32 (sfSequence, mTxn->getSequence ());
     if (expiration != 0)
         sleTicket->setFieldU32 (sfExpiration, expiration);
     view().insert (sleTicket);
 
-    if (mTxn.isFieldPresent (sfTarget))
+    if (mTxn->isFieldPresent (sfTarget))
     {
-        AccountID const target_account (mTxn.getAccountID (sfTarget));
+        AccountID const target_account (mTxn->getAccountID (sfTarget));
 
         SLE::pointer sleTarget = view().peek (keylet::account(target_account));
 

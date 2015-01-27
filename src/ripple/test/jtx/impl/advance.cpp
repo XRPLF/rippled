@@ -26,12 +26,11 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-void
+TxSet
 advance(Env& env, std::shared_ptr<Ledger const>& last)
 {
-    close_and_advance(env.ledger, last);
+    return close_and_advance(env.ledger, last);
 }
-
 
 } // jtx
 } // test

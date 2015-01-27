@@ -28,7 +28,7 @@ namespace ripple {
 class Transactor
 {
 protected:
-    STTx const& mTxn;
+    std::shared_ptr<STTx const> const& mTxn;
     ApplyContext& ctx_;
     beast::Journal j_;
 

@@ -42,7 +42,7 @@ SetRegularKey::calculateBaseFee ()
 TER
 SetRegularKey::preCheck ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
@@ -61,10 +61,10 @@ SetRegularKey::doApply ()
     if (mFeeDue == zero)
         mTxnAccount->setFlag (lsfPasswordSpent);
 
-    if (mTxn.isFieldPresent (sfRegularKey))
+    if (mTxn->isFieldPresent (sfRegularKey))
     {
         mTxnAccount->setAccountID (sfRegularKey,
-            mTxn.getAccountID (sfRegularKey));
+            mTxn->getAccountID (sfRegularKey));
     }
     else
     {

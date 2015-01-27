@@ -202,7 +202,7 @@ Env::submit (JTx const& jt)
         // VFALCO Could wrap the log in a Journal here
         std::tie(ter, didApply) =
             ripple::apply(
-                *ledger, *stx, flags, config,
+                *ledger, stx, flags, config,
                     beast::Journal{});
     }
     else

@@ -95,8 +95,9 @@ std::pair<TER, bool>
 TestLedger::applyTransaction (STTx const& tx, bool check)
 {
     // Apply the transaction to the open ledger.
+    auto stx = std::make_shared<STTx>(tx);
     auto const r = apply(
-        *openLedger_, tx, check ? tapNONE : tapNO_CHECK_SIGN,
+        *openLedger_, stx, check ? tapNONE : tapNO_CHECK_SIGN,
             getConfig(), beast::Journal{});
 
     // Close the open ledger to see if the transaction was real committed.

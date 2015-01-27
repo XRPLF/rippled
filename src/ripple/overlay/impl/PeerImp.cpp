@@ -916,7 +916,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
         overlay_.resourceManager().importConsumers (name_, gossip);
     }
 
-    getApp().getFeeTrack().setClusterFee(getApp().getUNL().getClusterFee());
+    getApp().getFeeTrack().setClusterLevel(getApp().getUNL().getClusterLevel());
 }
 
 void

@@ -982,15 +982,16 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     auto newLCL = std::make_shared<Ledger> (false, *mPreviousLedger);
     newLCL->setClosed (); // so applyTransactions sees a closed ledger
 
-    // Set up to write SHAMap changes to our database,
-    //   perform updates, extract changes
     WriteLog (lsDEBUG, LedgerConsensus)
         << "Applying consensus set transactions to the"
         << " last closed ledger";
+    auto const txSet(buildTxSet(*set));
     {
         MetaView accum(*newLCL, tapNONE);
         assert(accum.closed());
-        applyTransactions (set.get(), accum,
+        // Build the new closed ledger by applying
+        // txSet to it directly.
+        lowLevelApply(txSet, accum,
             newLCL, retriableTransactions);
         accum.apply(*newLCL,
             deprecatedLogs().journal("LedgerConsensus"));
@@ -1002,12 +1003,16 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     newLCL->updateSkipList ();
 
-    int asf = newLCL->stateMap().flushDirty (
-        hotACCOUNT_NODE, newLCL->getLedgerSeq());
-    int tmf = newLCL->txMap().flushDirty (
-        hotTRANSACTION_NODE, newLCL->getLedgerSeq());
-    WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " accounts and " <<
-        tmf << " transaction nodes";
+    {
+        // Set up to write SHAMap changes to our database,
+        //   perform updates, extract changes
+        auto const asf = newLCL->stateMap().flushDirty(
+            hotACCOUNT_NODE, newLCL->getLedgerSeq());
+        auto const tmf = newLCL->txMap().flushDirty(
+            hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+        WriteLog(lsDEBUG, LedgerConsensus) << "Flushed " << asf <<
+            " accounts and " << tmf << " transaction nodes";
+    }
 
     // Accept ledger
     newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
@@ -1073,48 +1078,50 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     MetaView accum(*newOL, tapNONE);
     assert(accum.open());
 
-    // Apply disputed transactions that didn't get in
-    //
-    // The first crack of transactions to get into the new
-    // open ledger goes to transactions proposed by a validator
-    // we trust but not included in the consensus set.
-    //
-    // These are done first because they are the most likely
-    // to receive agreement during consensus. They are also
-    // ordered logically "sooner" than transactions not mentioned
-    // in the previous consensus round.
-    //
-    bool anyDisputes = false;
-    for (auto& it : mDisputes)
     {
-        if (!it.second->getOurVote ())
+        // Apply disputed transactions that didn't get in
+        //
+        // The first crack of transactions to get into the new
+        // open ledger goes to transactions proposed by a validator
+        // we trust but not included in the consensus set.
+        //
+        // These are done first because they are the most likely
+        // to receive agreement during consensus. They are also
+        // ordered logically "sooner" than transactions not mentioned
+        // in the previous consensus round.
+        //
+        bool anyDisputes = false;
+        for (auto& it : mDisputes)
         {
-            // we voted NO
-            try
+            if (!it.second->getOurVote())
             {
-                WriteLog (lsDEBUG, LedgerConsensus)
-                    << "Test applying disputed transaction that did"
-                    << " not get in";
-                SerialIter sit (it.second->peekTransaction().slice());
-
-                auto txn = std::make_shared<STTx>(sit);
-
-                retriableTransactions.push_back (txn);
-
-                anyDisputes = true;
-            }
-            catch (...)
-            {
-                WriteLog (lsDEBUG, LedgerConsensus)
-                    << "Failed to apply transaction we voted NO on";
+                // we voted NO
+                try
+                {
+                    WriteLog(lsDEBUG, LedgerConsensus) <<
+                        "Test applying disputed transaction that did" <<
+                        " not get in";
+                    SerialIter sit(it.second->peekTransaction().slice());
+                    auto txn = std::make_shared<STTx>(sit);
+                    retriableTransactions.push_back(txn);
+                    anyDisputes = true;
+                }
+                catch (...)
+                {
+                    WriteLog(lsDEBUG, LedgerConsensus) <<
+                        "Failed to apply transaction we voted NO on";
+                }
             }
         }
-    }
 
-    if (anyDisputes)
-    {
-        applyTransactions (nullptr,
-            accum, newLCL, retriableTransactions);
+        if (anyDisputes)
+        {
+            // Attempt to apply any disputed consensus
+            // transactions where we voted NO to the
+            // new open ledger.
+            lowLevelApply(TxSet(), accum, newLCL,
+                retriableTransactions);
+        }
     }
 
     {
@@ -1122,14 +1129,20 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         LedgerMaster::ScopedLockType sl (ledgerMaster_.peekMutex (), std::defer_lock);
         std::lock(lock, sl);
 
-        // Apply transactions from the old open ledger
+        // If any transactions came in while we were building
+        // this newOL, or simply didn't survive consensus,
+        // they'll be in the old open ledger. Try to apply them
+        // now. If they're already in newLCL, they won't get
+        // reapplied. Otherwise, they'll get dropped and lost.
         Ledger::pointer oldOL = ledgerMaster_.getCurrentLedger();
         if (oldOL->txMap().getHash().isNonZero ())
         {
-            WriteLog (lsDEBUG, LedgerConsensus)
-                << "Applying transactions from current open ledger";
-            applyTransactions (&oldOL->txMap(),
-                accum, newLCL, retriableTransactions);
+            WriteLog(lsDEBUG, LedgerConsensus) <<
+                "Applying transactions from current open ledger";
+            // Apply any transactions left from the old open
+            // ledger directly to the new open ledger.
+            lowLevelApply(buildTxSet(oldOL->txMap()), accum,
+                newLCL, retriableTransactions);
         }
 
         // Apply local transactions
@@ -1137,7 +1150,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         {
             try
             {
-                apply (accum, *it.second, tapNONE, getConfig(),
+                apply (accum, it.second, tapNONE, getConfig(),
                     deprecatedLogs().journal("LedgerConsensus"));
             }
             catch (...)
@@ -1718,9 +1731,9 @@ void LedgerConsensusImp::endConsensus ()
 
 void LedgerConsensusImp::addLoad(STValidation::ref val)
 {
-    std::uint32_t fee = std::max(
-        getApp().getFeeTrack().getLocalFee(),
-        getApp().getFeeTrack().getClusterFee());
+   std::uint32_t fee = std::max(
+        getApp().getFeeTrack().getLocalLevel(),
+        getApp().getFeeTrack().getClusterLevel());
     std::uint32_t ref = getApp().getFeeTrack().getLoadBase();
     if (fee > ref)
         val->setFieldU32(sfLoadFee, fee);
@@ -1750,7 +1763,7 @@ make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
 static
 int
 applyTransaction (BasicView& view,
-    STTx const& txn,
+    std::shared_ptr<STTx const> const& txn,
         bool retryAssured,
             bool enableTesting)
 {
@@ -1765,17 +1778,17 @@ applyTransaction (BasicView& view,
         parms = static_cast<ViewFlags> (parms | tapRETRY);
     }
 
-    if ((getApp().getHashRouter ().getFlags (txn.getTransactionID ())
+    if ((getApp().getHashRouter ().getFlags (txn->getTransactionID ())
         & SF_SIGGOOD) == SF_SIGGOOD)
     {
         parms = static_cast<ViewFlags>
             (parms | tapNO_CHECK_SIGN);
     }
     WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
-        << txn.getTransactionID ()
+        << txn->getTransactionID ()
         //<< (engine.view().open() ? " open" : " closed") // because of the optional in engine
         << (retryAssured ? "/retry" : "/final");
-    WriteLog (lsTRACE, LedgerConsensus) << txn.getJson (0);
+    WriteLog (lsTRACE, LedgerConsensus) << txn->getJson (0);
 
     try
     {
@@ -1809,42 +1822,60 @@ applyTransaction (BasicView& view,
     }
 }
 
-void applyTransactions (
-    SHAMap const* set,
+// Build a transaction set from a transaction map.
+// This allows us to deserialize the transactions only once.
+TxSet buildTxSet(SHAMap const& set)
+{
+    TxSet txSet;
+    txSet.reserve(64);
+
+    for (auto const& item : set)
+    {
+        try
+        {
+            SerialIter sit(item->slice());
+            txSet.emplace_back(item->getTag(),
+                std::make_shared <STTx>(sit));
+        }
+        catch (...)
+        {
+            WriteLog(lsWARNING, LedgerConsensus) << "Transaction " <<
+                item->getTag() << " throws";
+        }
+    }
+
+    return txSet;
+}
+
+void lowLevelApply (
+    TxSet const& set,
     BasicView& applyView,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
     bool enableTesting)
 {
-    if (set)
+    for (auto const tx : set)
     {
-        for (auto const item : *set)
+        if (checkLedger->txExists(tx.first))
+            continue;
+
+        // The transaction isn't in the check ledger, try to apply it
+        WriteLog(lsDEBUG, LedgerConsensus) <<
+            "Processing candidate transaction: " << tx.first;
+
+        try
         {
-            if (checkLedger->txExists (item->key()))
-                continue;
-
-            // The transaction isn't in the check ledger, try to apply it
-            WriteLog (lsDEBUG, LedgerConsensus) <<
-                "Processing candidate transaction: " << item->getTag ();
-
-            try
+            if (applyTransaction(applyView, tx.second, true, enableTesting) ==
+                LedgerConsensusImp::resultRetry)
             {
-                SerialIter sit (item->slice());
-                auto const txn =
-                    std::make_shared<STTx const>(sit);
-
-                if (applyTransaction(applyView, *txn, true, enableTesting) ==
-                    LedgerConsensusImp::resultRetry)
-                {
-                    // On failure, stash the failed transaction for
-                    // later retry.
-                    retriableTransactions.push_back (txn);
-                }
+                // On failure, stash the failed transaction for
+                // later retry.
+                retriableTransactions.push_back(tx.second);
             }
-            catch (...)
-            {
-                WriteLog (lsWARNING, LedgerConsensus) << "  Throws";
-            }
+        }
+        catch (...)
+        {
+            WriteLog(lsWARNING, LedgerConsensus) << "  Throws";
         }
     }
 
@@ -1864,7 +1895,7 @@ void applyTransactions (
             try
             {
                 switch (applyTransaction (applyView,
-                    *it->second, certainRetry, enableTesting))
+                    it->second, certainRetry, enableTesting))
                 {
                 case LedgerConsensusImp::resultSuccess:
                     it = retriableTransactions.erase (it);
@@ -1902,6 +1933,11 @@ void applyTransactions (
     // If there are any transactions left, we must have
     // tried them in at least one final pass
     assert (retriableTransactions.empty() || !certainRetry);
+}
+
+std::size_t countTx(std::shared_ptr<Ledger const> const& ledger)
+{
+    return std::distance(ledger->txMap().begin(), ledger->txMap().end());
 }
 
 } // ripple

@@ -170,11 +170,11 @@ public:
             {
                 if (m_journal.info)
                     m_journal.info << getApp().getJobQueue ().getJson (0);
-                change = getApp().getFeeTrack ().raiseLocalFee ();
+                change = getApp().getFeeTrack ().raiseLocalLevel ();
             }
             else
             {
-                change = getApp().getFeeTrack ().lowerLocalFee ();
+                change = getApp().getFeeTrack ().lowerLocalLevel ();
             }
 
             if (change)

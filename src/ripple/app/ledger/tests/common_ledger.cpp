@@ -30,6 +30,10 @@
 namespace ripple {
 namespace test {
 
+// Put this in a constant because it's duplicated
+// in a few different default parameters.
+const std::uint32_t DefaultFee = 10;
+
 Json::Value
 TestJson::getJson() const
 {
@@ -128,7 +132,8 @@ parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign)
 void
 applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 {
-    auto const r = apply (*ledger, tx,
+    auto stx = std::make_shared<STTx>(tx);
+    auto const r = apply (*ledger, stx,
         check ? tapNONE : tapNO_CHECK_SIGN, getConfig(),
             beast::Journal{});
     if (r.first != tesSUCCESS)
@@ -212,11 +217,12 @@ createAndFundAccountsWithFlags(TestAccount& from,
 }
 
 Json::Value
-getCommonTransactionJson(TestAccount& account)
+getCommonTransactionJson(TestAccount& account,
+    Json::Value feeJson = std::to_string(DefaultFee))
 {
     Json::Value tx_json;
     tx_json[jss::Account] = toBase58(calcAccountID(account.pk));
-    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Fee] = feeJson;
     tx_json[jss::Sequence] = ++account.sequence;
     return tx_json;
 }
@@ -267,14 +273,23 @@ unfreezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign)
 
 Json::Value
 getPaymentJson(TestAccount& from, TestAccount const& to,
-    Json::Value amountJson)
+    Json::Value amountJson, Json::Value feeJson =
+        std::to_string(DefaultFee))
 {
-    Json::Value tx_json = getCommonTransactionJson(from);
+    Json::Value tx_json = getCommonTransactionJson(from, feeJson);
     tx_json[jss::Amount] = amountJson;
     tx_json[jss::Destination] = toBase58(calcAccountID(to.pk));
     tx_json[jss::TransactionType] = "Payment";
     tx_json[jss::Flags] = tfUniversal;
     return tx_json;
+}
+
+Json::Value
+getPaymentJson(TestAccount& from, TestAccount const& to,
+    std::uint64_t amountDrops, std::uint64_t feeDrops)
+{
+    return getPaymentJson(from, to,
+        std::to_string(amountDrops), std::to_string(feeDrops));
 }
 
 STTx
@@ -283,7 +298,7 @@ getPaymentTx(TestAccount& from, TestAccount const& to,
     bool sign)
 {
     Json::Value tx_json = getPaymentJson(from, to,
-        std::to_string(amountDrops));
+        amountDrops, DefaultFee);
     return parseTransaction(from, tx_json, sign);
 }
 
@@ -433,19 +448,20 @@ trust(TestAccount& from, TestAccount const& issuer,
     applyTransaction(ledger, tx, sign);
 }
 
-void
+TxSet
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 {
     auto const& set = ledger->txMap();
+    auto txSet = buildTxSet(set);
     CanonicalTXSet retriableTransactions(set.getHash());
     // Make a non-const copy of LCL. This won't be necessary once
     // that other Ledger constructor can take a const Ledger.
     Ledger oldLCL(*LCL, false);
     Ledger::pointer newLCL = std::make_shared<Ledger>(false, oldLCL);
     MetaView accum(*newLCL, tapNONE);
-    // Set up to write SHAMap changes to our database,
-    //   perform updates, extract changes
-    applyTransactions(&set, accum, newLCL, retriableTransactions);
+    // Build the new closed ledger by applying
+    // txSet to it directly.
+    lowLevelApply(txSet, accum, newLCL, retriableTransactions);
     accum.apply(*newLCL, {});
     newLCL->updateSkipList();
     newLCL->setClosed();
@@ -468,6 +484,8 @@ close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 
     LCL = newLCL;
     ledger = std::make_shared<Ledger>(false, *newLCL);
+
+    return txSet;
 }
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
@@ -503,6 +521,20 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 }
 
 std::shared_ptr<SLE const>
+getLedgerEntryAccountRoot(Ledger::pointer ledger,
+    TestAccount const& account)
+{
+    auto k = keylet::account(
+        calcAccountID(account.pk));
+
+    if (!k.key.isNonZero())
+        throw std::runtime_error(
+        "!k.key.isNonZero()");
+
+    return ledger->read(k);
+}
+
+std::shared_ptr<SLE const>
 getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
         Currency currency)
@@ -516,6 +548,23 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
         "!k.key.isNonZero()");
 
     return ledger->read(k);
+}
+
+void
+verifyBalance(Ledger::pointer ledger, TestAccount const& account,
+    std::uint64_t amountDrops)
+{
+    auto const sle = getLedgerEntryAccountRoot(ledger, account);
+    if (!sle)
+        throw std::runtime_error(
+        "!sle");
+    STAmount amountReq;
+    amountFromJsonNoThrow(amountReq, std::to_string(amountDrops));
+
+    auto balance = sle->getFieldAmount(sfBalance);
+    if (balance != amountReq)
+        throw std::runtime_error(
+        "balance != amountReq");
 }
 
 void

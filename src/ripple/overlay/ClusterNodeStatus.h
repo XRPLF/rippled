@@ -26,26 +26,30 @@ class ClusterNodeStatus
 {
 public:
 
-    ClusterNodeStatus() : mLoadFee(0), mReportTime(0)
-    { ; }
+    ClusterNodeStatus() : mLoadLevel(0), mReportTime(0)
+    { }
 
-    explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
-    { ; }
+    explicit ClusterNodeStatus(std::string const& name)
+        : mNodeName(name)
+        , mLoadLevel(0)
+        , mReportTime(0)
+    { }
 
-    ClusterNodeStatus(std::string const& name, std::uint32_t fee, std::uint32_t rtime) :
-        mNodeName(name),
-        mLoadFee(fee),
-        mReportTime(rtime)
-    { ; }
+    ClusterNodeStatus(std::string const& name,
+        std::uint32_t level, std::uint32_t rtime)
+        : mNodeName(name)
+        , mLoadLevel(level)
+        , mReportTime(rtime)
+    { }
 
     std::string const& getName()
     {
         return mNodeName;
     }
 
-    std::uint32_t getLoadFee()
+    std::uint32_t getLoadLevel()
     {
-        return mLoadFee;
+        return mLoadLevel;
     }
 
     std::uint32_t getReportTime()
@@ -57,7 +61,7 @@ public:
     {
         if (status.mReportTime <= mReportTime)
             return false;
-        mLoadFee = status.mLoadFee;
+        mLoadLevel = status.mLoadLevel;
         mReportTime = status.mReportTime;
         if (mNodeName.empty() || !status.mNodeName.empty())
             mNodeName = status.mNodeName;
@@ -66,7 +70,7 @@ public:
 
 private:
     std::string       mNodeName;
-    std::uint32_t     mLoadFee;
+    std::uint32_t     mLoadLevel;
     std::uint32_t     mReportTime;
 };
 

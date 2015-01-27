@@ -30,7 +30,7 @@ namespace ripple {
 TER
 SetAccount::preCheck ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     if (uTxFlags & tfAccountSetMask)
     {
@@ -38,8 +38,8 @@ SetAccount::preCheck ()
         return temINVALID_FLAG;
     }
 
-    std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = mTxn->getFieldU32 (sfSetFlag);
+    std::uint32_t const uClearFlag = mTxn->getFieldU32 (sfClearFlag);
 
     if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
     {
@@ -84,9 +84,9 @@ SetAccount::preCheck ()
     }
 
     // TransferRate
-    if (mTxn.isFieldPresent (sfTransferRate))
+    if (mTxn->isFieldPresent (sfTransferRate))
     {
-        std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = mTxn->getFieldU32 (sfTransferRate);
 
         if (uRate && (uRate < QUALITY_ONE))
         {
@@ -101,13 +101,13 @@ SetAccount::preCheck ()
 TER
 SetAccount::doApply ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     std::uint32_t const uFlagsIn = mTxnAccount->getFieldU32 (sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = mTxn->getFieldU32 (sfSetFlag);
+    std::uint32_t const uClearFlag = mTxn->getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
     bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
@@ -255,9 +255,9 @@ SetAccount::doApply ()
     //
     // EmailHash
     //
-    if (mTxn.isFieldPresent (sfEmailHash))
+    if (mTxn->isFieldPresent (sfEmailHash))
     {
-        uint128 const uHash = mTxn.getFieldH128 (sfEmailHash);
+        uint128 const uHash = mTxn->getFieldH128 (sfEmailHash);
 
         if (!uHash)
         {
@@ -274,9 +274,9 @@ SetAccount::doApply ()
     //
     // WalletLocator
     //
-    if (mTxn.isFieldPresent (sfWalletLocator))
+    if (mTxn->isFieldPresent (sfWalletLocator))
     {
-        uint256 const uHash = mTxn.getFieldH256 (sfWalletLocator);
+        uint256 const uHash = mTxn->getFieldH256 (sfWalletLocator);
 
         if (!uHash)
         {
@@ -293,9 +293,9 @@ SetAccount::doApply ()
     //
     // MessageKey
     //
-    if (mTxn.isFieldPresent (sfMessageKey))
+    if (mTxn->isFieldPresent (sfMessageKey))
     {
-        Blob const messageKey = mTxn.getFieldVL (sfMessageKey);
+        Blob const messageKey = mTxn->getFieldVL (sfMessageKey);
 
         if (messageKey.size () > PUBLIC_BYTES_MAX)
         {
@@ -318,9 +318,9 @@ SetAccount::doApply ()
     //
     // Domain
     //
-    if (mTxn.isFieldPresent (sfDomain))
+    if (mTxn->isFieldPresent (sfDomain))
     {
-        Blob const domain = mTxn.getFieldVL (sfDomain);
+        Blob const domain = mTxn->getFieldVL (sfDomain);
 
         if (domain.size () > DOMAIN_BYTES_MAX)
         {
@@ -343,9 +343,9 @@ SetAccount::doApply ()
     //
     // TransferRate
     //
-    if (mTxn.isFieldPresent (sfTransferRate))
+    if (mTxn->isFieldPresent (sfTransferRate))
     {
-        std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = mTxn->getFieldU32 (sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {

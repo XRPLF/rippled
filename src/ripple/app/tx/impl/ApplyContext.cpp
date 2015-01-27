@@ -28,9 +28,10 @@
 namespace ripple {
 
 ApplyContext::ApplyContext(
-    BasicView& base, STTx const& tx_,
-        ViewFlags flags, Config const& config_,
-            beast::Journal journal_)
+    BasicView& base, 
+        std::shared_ptr<STTx const> const& tx_,
+            ViewFlags flags, Config const& config_,
+                beast::Journal journal_)
     : tx (tx_)
     , config (config_)
     , journal(journal_)

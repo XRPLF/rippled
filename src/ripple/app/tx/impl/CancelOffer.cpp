@@ -28,7 +28,7 @@ namespace ripple {
 TER
 CancelOffer::preCheck ()
 {
-    std::uint32_t const uTxFlags (mTxn.getFlags ());
+    std::uint32_t const uTxFlags (mTxn->getFlags ());
 
     if (uTxFlags & tfUniversalMask)
     {
@@ -37,7 +37,7 @@ CancelOffer::preCheck ()
         return temINVALID_FLAG;
     }
 
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uOfferSequence = mTxn->getFieldU32 (sfOfferSequence);
 
     if (!uOfferSequence)
     {
@@ -52,7 +52,7 @@ CancelOffer::preCheck ()
 TER
 CancelOffer::doApply ()
 {
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uOfferSequence = mTxn->getFieldU32 (sfOfferSequence);
 
     if (mTxnAccount->getFieldU32 (sfSequence) - 1 <= uOfferSequence)
     {
