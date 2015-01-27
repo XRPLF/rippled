@@ -205,7 +205,7 @@ SHAMapStoreImp::SHAMapStoreImp (Setup const& setup,
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
     , transactionMaster_ (transactionMaster)
-    , canDelete_ (0)
+    , canDelete_ (std::numeric_limits <LedgerIndex>::max())
 {
     if (setup_.deleteInterval)
     {
@@ -326,7 +326,6 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
             state_db_.setLastRotated (lastRotated);
         }
-        canDelete_ = std::numeric_limits <LedgerIndex>::max();
         if (setup_.advisoryDelete)
             canDelete_ = state_db_.getCanDelete();
 
