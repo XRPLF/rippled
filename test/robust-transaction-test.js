@@ -65,6 +65,9 @@ make_suite('Robust transaction submission', function() {
         tx.once('submitted', function(m) {
           assert.strictEqual('tefMAX_LEDGER', m.engine_result);
         });
+        tx.once('error', function(m) {
+          assert.strictEqual('tejMaxLedger', m.engine_result);
+        });
 
         // Standalone mode starts with the open ledger as 3, so there's no way
         // for this to be anything other than tefMAX_LEDGER.
@@ -97,10 +100,10 @@ make_suite('Robust transaction submission', function() {
         tx.once('submitted', function(m) {
           assert.strictEqual('terPRE_SEQ', m.engine_result);
         });
-
         tx.once('final', function() {
-          previousTx.once('final', function(){ callback(); });
-          testutils.ledger_wait($.remote, previousTx);
+          assert(previousTx.finalized,
+            "Expected lastLedger 1 transaction to be finalized");
+          callback();
         });
 
         tx.submit();
