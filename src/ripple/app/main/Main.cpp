@@ -126,6 +126,7 @@ void printHelp (const po::options_description& desc)
            "     random\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
+           "     version\n"
            "     server_info\n"
            "     stop\n"
            "     tx <id>\n"

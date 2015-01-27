@@ -103,6 +103,7 @@
 #include <ripple/rpc/impl/LookupLedger.cpp>
 #include <ripple/rpc/impl/ParseAccountIds.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
+#include <ripple/rpc/impl/RPCVersion.cpp>
 
 #include <ripple/rpc/tests/Coroutine.test.cpp>
 #include <ripple/rpc/tests/JsonObject.test.cpp>
