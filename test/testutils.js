@@ -30,33 +30,34 @@ function(config, host) {
   config = config || init_config();
   host = host || config.server_default;
   // Override the config with the command line if provided.
-  var local = {};
+  var override = {};
   // --noserver -> no_server
   if (process.env["npm_config_noserver"]) {
-    local["no_server"] = true;
+    override["no_server"] = true;
   } else {
-    local["no_server"] = process.argv.indexOf("--noserver") > -1;
+    override["no_server"] = process.argv.indexOf("--noserver") > -1;
   }
   // --rippled -> rippled_path
   var index = -1;
   if (process.env["npm_config_rippled"]) {
-    local["rippled_path"] = path.resolve(process.cwd(),
+    override["rippled_path"] = path.resolve(process.cwd(),
         process.env["npm_config_rippled"]);
   } else if ((index = process.argv.indexOf("--rippled")) > -1) {
     if (index < process.argv.length) {
-      local["rippled_path"] = path.resolve(process.cwd(),
+      override["rippled_path"] = path.resolve(process.cwd(),
         process.argv[index + 1]);
     }
   } else {
     for (var i = process.argv.length-1; i >= 0; --i) {
       arg = process.argv[i].split("=", 2);
       if (arg.length === 2 && arg[0] === "--rippled") {
-        local["rippled_path"] = path.resolve(process.cwd(), arg[1]);
+        override["rippled_path"] = path.resolve(process.cwd(), arg[1]);
         break;
       }
     };
   }
-  return extend({}, config.default_server_config, config.servers[host], local);
+  return extend({}, config.default_server_config, config.servers[host],
+      override);
 }
 
 function prepare_tests(tests, fn) {
