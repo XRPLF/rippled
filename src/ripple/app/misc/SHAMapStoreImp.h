@@ -132,7 +132,8 @@ public:
     LedgerIndex
     setCanDelete (LedgerIndex seq) override
     {
-        canDelete_ = seq;
+        if (setup_.advisoryDelete)
+            canDelete_ = seq;
         return state_db_.setCanDelete (seq);
     }
 

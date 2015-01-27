@@ -302,6 +302,9 @@ SHAMapStoreImp::run()
     transactionDb_ = &getApp().getTxnDB();
     ledgerDb_ = &getApp().getLedgerDB();
 
+    if (setup_.advisoryDelete)
+        canDelete_ = state_db_.getCanDelete ();
+
     while (1)
     {
         healthy_ = true;
@@ -326,8 +329,6 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
             state_db_.setLastRotated (lastRotated);
         }
-        if (setup_.advisoryDelete)
-            canDelete_ = state_db_.getCanDelete();
 
         // will delete up to (not including) lastRotated)
         if (validatedSeq >= lastRotated + setup_.deleteInterval

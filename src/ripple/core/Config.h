@@ -291,7 +291,6 @@ public:
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY;
-    std::uint32_t                      LEDGER_HISTORY_INDEX;
     std::uint32_t                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
