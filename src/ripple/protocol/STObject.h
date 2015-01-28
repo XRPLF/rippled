@@ -56,7 +56,7 @@ public:
     }
 
     STObject (
-        const SOTemplate & type, SerializerIterator & sit, SField::ref name)
+        const SOTemplate & type, SerialIter & sit, SField::ref name)
         : STBase (name)
     {
         set (sit);
@@ -77,7 +77,7 @@ public:
     virtual ~STObject () { }
 
     static std::unique_ptr<STBase>
-    deserialize (SerializerIterator & sit, SField::ref name);
+    deserialize (SerialIter & sit, SField::ref name);
 
     bool setType (const SOTemplate & type);
     bool isValidForType ();
@@ -88,7 +88,7 @@ public:
     }
 
     void set (const SOTemplate&);
-    bool set (SerializerIterator & u, int depth = 0);
+    bool set (SerialIter& u, int depth = 0);
 
     virtual SerializedTypeID getSType () const override
     {
@@ -271,7 +271,7 @@ public:
     static std::unique_ptr<STBase> makeDeserializedObject (
         SerializedTypeID id,
         SField::ref name,
-        SerializerIterator&,
+        SerialIter&,
         int depth);
 
     static std::unique_ptr<STBase>

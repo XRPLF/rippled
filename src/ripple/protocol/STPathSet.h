@@ -239,7 +239,7 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name);
+    deserialize (SerialIter& sit, SField::ref name);
 
     std::unique_ptr<STBase>
     duplicate () const override

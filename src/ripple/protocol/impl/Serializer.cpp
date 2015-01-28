@@ -337,25 +337,10 @@ uint256 Serializer::getSHA512Half (int size) const
     if (size == 0)
         return uint256();
     if (size < 0 || size > mData.size())
-        return getSHA512Half (mData);
+        return ripple::getSHA512Half (mData);
 
-    return getSHA512Half (const_byte_view (
-        mData.data(), mData.data() + size));
-}
-
-uint256 Serializer::getSHA512Half (const_byte_view v)
-{
-    uint256 j[2];
-    SHA512 (v.data(), v.size(),
-        reinterpret_cast<unsigned char*> (j));
-    return j[0];
-}
-
-uint256 Serializer::getSHA512Half (const unsigned char* data, int len)
-{
-    uint256 j[2];
-    SHA512 (data, len, (unsigned char*) j);
-    return j[0];
+    return ripple::getSHA512Half (
+        mData.data(), size);
 }
 
 uint256 Serializer::getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len)
@@ -565,87 +550,170 @@ int Serializer::decodeVLLength (int b1, int b2, int b3)
     return 12481 + (b1 - 241) * 65536 + b2 * 256 + b3;
 }
 
-void Serializer::TestSerializer ()
+//------------------------------------------------------------------------------
+
+SerialIter::SerialIter (void const* data,
+        std::size_t size) noexcept
+    : p_ (reinterpret_cast<
+        std::uint8_t const*>(data))
+    , remain_ (size)
 {
-    Serializer s (64);
 }
 
-int SerializerIterator::getBytesLeft ()
+void
+SerialIter::reset() noexcept
 {
-    return mSerializer.size () - mPos;
+    p_ -= used_;
+    remain_ += used_;
+    used_ = 0;
 }
 
-void SerializerIterator::getFieldID (int& type, int& field)
+unsigned char
+SerialIter::get8()
 {
-    if (!mSerializer.getFieldID (type, field, mPos))
-        throw std::runtime_error ("invalid serializer getFieldID");
-
-    ++mPos;
-
-    if (type >= 16)
-        ++mPos;
-
-    if (field >= 16)
-        ++mPos;
+    if (remain_ < 1)
+        throw std::runtime_error(
+            "invalid SerialIter get8");
+    unsigned char t = *p_;
+    ++p_;
+    ++used_;
+    --remain_;
+    return t;
 }
 
-unsigned char SerializerIterator::get8 ()
+std::uint16_t
+SerialIter::get16()
 {
-    int val;
-
-    if (!mSerializer.get8 (val, mPos)) throw std::runtime_error ("invalid serializer get8");
-
-    ++mPos;
-    return val;
+    if (remain_ < 2)
+        throw std::runtime_error(
+            "invalid SerialIter get16");
+    auto t = p_;
+    p_ += 2;
+    used_ += 2;
+    remain_ -= 2;
+    return
+        (std::uint64_t(*t++) <<  8) +
+         std::uint64_t(*t  );
 }
 
-std::uint16_t SerializerIterator::get16 ()
+std::uint32_t
+SerialIter::get32()
 {
-    std::uint16_t val;
-
-    if (!mSerializer.get16 (val, mPos)) throw std::runtime_error ("invalid serializer get16");
-
-    mPos += 16 / 8;
-    return val;
+    if (remain_ < 4)
+        throw std::runtime_error(
+            "invalid SerialIter get32");
+    auto t = p_;
+    p_ += 4;
+    used_ += 4;
+    remain_ -= 4;
+    return
+        (std::uint64_t(*t++) << 24) +
+        (std::uint64_t(*t++) << 16) +
+        (std::uint64_t(*t++) <<  8) +
+         std::uint64_t(*t  );
 }
 
-std::uint32_t SerializerIterator::get32 ()
+std::uint64_t
+SerialIter::get64 ()
 {
-    std::uint32_t val;
-
-    if (!mSerializer.get32 (val, mPos)) throw std::runtime_error ("invalid serializer get32");
-
-    mPos += 32 / 8;
-    return val;
+    if (remain_ < 8)
+        throw std::runtime_error(
+            "invalid SerialIter get64");
+    auto t = p_;
+    p_ += 8;
+    used_ += 8;
+    remain_ -= 8;
+    return
+        (std::uint64_t(*t++) << 56) +
+        (std::uint64_t(*t++) << 48) +
+        (std::uint64_t(*t++) << 40) +
+        (std::uint64_t(*t++) << 32) +
+        (std::uint64_t(*t++) << 24) +
+        (std::uint64_t(*t++) << 16) +
+        (std::uint64_t(*t++) <<  8) +
+         std::uint64_t(*t  );
 }
 
-std::uint64_t SerializerIterator::get64 ()
+void
+SerialIter::getFieldID (int& type, int& name)
 {
-    std::uint64_t val;
+    type = get8();
+    name = type & 15;
+    type >>= 4;
 
-    if (!mSerializer.get64 (val, mPos)) throw std::runtime_error ("invalid serializer get64");
+    if (type == 0)
+    {
+        // uncommon type
+        type = get8();
+        if (type == 0 || type < 16)
+            throw std::runtime_error(
+                "gFID: uncommon type out of range " +
+                    std::to_string(type));
+    }
 
-    mPos += 64 / 8;
-    return val;
+    if (name == 0)
+    {
+        // uncommon name
+        name = get8();
+        if (name == 0 || name < 16)
+            throw std::runtime_error(
+                "gFID: uncommon name out of range " +
+                    std::to_string(name));
+    }
 }
 
-Blob SerializerIterator::getVL ()
+// VFALCO DEPRECATED Returns a copy
+Blob
+SerialIter::getRaw (int size)
 {
-    int length;
-    Blob vl;
+    if (remain_ < size)
+        throw std::runtime_error(
+            "invalid SerialIter getRaw");
+    Blob b (p_, p_ + size);
+    p_ += size;
+    used_ += size;
+    remain_ -= size;
+    return b;
 
-    if (!mSerializer.getVL (vl, mPos, length)) throw std::runtime_error ("invalid serializer getVL");
-
-    mPos += length;
-    return vl;
 }
 
-Blob SerializerIterator::getRaw (int iLength)
+// VFALCO DEPRECATED Returns a copy
+Blob
+SerialIter::getVL()
 {
-    int iPos    = mPos;
-    mPos        += iLength;
+    int b1 = get8();
+    int datLen;
+    int lenLen = Serializer::decodeLengthLength(b1);
+    if (lenLen == 1)
+    {
+        datLen = Serializer::decodeVLLength (b1);
+    }
+    else if (lenLen == 2)
+    {
+        int b2 = get8();
+        datLen = Serializer::decodeVLLength (b1, b2);
+    }
+    else
+    {
+        assert(lenLen == 3);
+        int b2 = get8();
+        int b3 = get8();
+        datLen = Serializer::decodeVLLength (b1, b2, b3);
+    }
+    return getRaw(datLen);
+}
 
-    return mSerializer.getRaw (iPos, iLength);
+
+//------------------------------------------------------------------------------
+
+uint256
+getSHA512Half (void const* data, int len)
+{
+    uint256 j[2];
+    SHA512 (
+        reinterpret_cast<unsigned char const*>(
+            data), len, (unsigned char*) j);
+    return j[0];
 }
 
 } // ripple

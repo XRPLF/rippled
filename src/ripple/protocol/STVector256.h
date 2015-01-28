@@ -52,7 +52,7 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name);
+    deserialize (SerialIter& sit, SField::ref name);
 
     Json::Value
     getJson (int) const override;
@@ -159,7 +159,7 @@ public:
     }
 
 private:
-    std::vector<uint256>    mValue;
+    std::vector<uint256> mValue;
 };
 
 } // ripple

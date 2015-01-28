@@ -37,7 +37,7 @@ STUInt8::getSType () const
 
 template <>
 std::unique_ptr<STBase>
-STUInt8::deserialize (SerializerIterator& sit, SField::ref name)
+STUInt8::deserialize (SerialIter& sit, SField::ref name)
 {
     return std::make_unique <STUInt8> (name, sit.get8 ());
 }
@@ -86,7 +86,7 @@ STUInt16::getSType () const
 
 template <>
 std::unique_ptr<STBase>
-STUInt16::deserialize (SerializerIterator& sit, SField::ref name)
+STUInt16::deserialize (SerialIter& sit, SField::ref name)
 {
     return std::make_unique <STUInt16> (name, sit.get16 ());
 }
@@ -152,7 +152,7 @@ STUInt32::getSType () const
 
 template <>
 std::unique_ptr<STBase>
-STUInt32::deserialize (SerializerIterator& sit, SField::ref name)
+STUInt32::deserialize (SerialIter& sit, SField::ref name)
 {
     return std::make_unique <STUInt32> (name, sit.get32 ());
 }
@@ -182,7 +182,7 @@ STUInt64::getSType () const
 
 template <>
 std::unique_ptr<STBase>
-STUInt64::deserialize (SerializerIterator& sit, SField::ref name)
+STUInt64::deserialize (SerialIter& sit, SField::ref name)
 {
     return std::make_unique <STUInt64> (name, sit.get64 ());
 }

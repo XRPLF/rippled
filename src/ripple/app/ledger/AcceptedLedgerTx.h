@@ -50,7 +50,7 @@ public:
     typedef const pointer& ref;
 
 public:
-    AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit);
+    AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit);
     AcceptedLedgerTx (Ledger::ref ledger, STTx::ref,
         TransactionMetaSet::ref);
     AcceptedLedgerTx (Ledger::ref ledger, STTx::ref, TER result);

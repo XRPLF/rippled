@@ -20,11 +20,14 @@
 #ifndef RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 #define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 
-#include <ripple/basics/byte_view.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/basics/base_uint.h>
+#include <beast/utility/noexcept.h>
+#include <cassert>
+#include <cstdint>
 #include <iomanip>
 #include <sstream>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 
@@ -32,10 +35,8 @@ class CKey; // forward declaration
 
 class Serializer
 {
-public:
-    typedef std::shared_ptr<Serializer> pointer;
-
-protected:
+private:
+    // DEPRECATED
     Blob mData;
 
 public:
@@ -156,9 +157,6 @@ public:
     uint160 getRIPEMD160 (int size = -1) const;
     uint256 getSHA256 (int size = -1) const;
     uint256 getSHA512Half (int size = -1) const;
-    static uint256 getSHA512Half (const_byte_view v);
-
-    static uint256 getSHA512Half (const unsigned char* data, int len);
 
     // prefix hash functions
     static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);
@@ -301,78 +299,145 @@ public:
     static int decodeVLLength (int b1);
     static int decodeVLLength (int b1, int b2);
     static int decodeVLLength (int b1, int b2, int b3);
-
-    static void TestSerializer ();
 };
 
-class SerializerIterator
+//------------------------------------------------------------------------------
+
+// DEPRECATED
+// Transitional adapter to new serialization interfaces
+class SerialIter
 {
-protected:
-    const Serializer& mSerializer;
-    int mPos;
+private:
+    std::uint8_t const* p_;
+    std::size_t remain_;
+    std::size_t used_ = 0;
 
 public:
+    SerialIter (void const* data,
+            std::size_t size) noexcept;
 
-    // Reference is not const because we don't want to bind to a temporary
-    SerializerIterator (Serializer& s) : mSerializer (s), mPos (0)
+    explicit
+    SerialIter (std::string const& s) noexcept
+        : SerialIter(s.data(), s.size())
     {
-        ;
-    }
-
-    const Serializer& operator* (void)
-    {
-        return mSerializer;
-    }
-    void reset (void)
-    {
-        mPos = 0;
-    }
-    void setPos (int p)
-    {
-        mPos = p;
     }
 
-    int getPos (void)
+    template <class T,
+        std::enable_if_t<std::is_integral<T>::value &&
+            sizeof(T) == 1>* = nullptr>
+    explicit
+    SerialIter (std::vector<T> const& v) noexcept
+        : SerialIter (v.data(), v.size())
     {
-        return mPos;
     }
-    bool empty ()
+
+    // DEPRECATED
+    SerialIter (Serializer const& s) noexcept
+        : SerialIter(s.peekData())
     {
-        return mPos == mSerializer.getLength ();
     }
-    int getBytesLeft ();
+
+    std::size_t
+    empty() const noexcept
+    {
+        return remain_ == 0;
+    }
+
+    void
+    reset() noexcept;
+
+    int
+    getBytesLeft() const noexcept
+    {
+        return static_cast<int>(remain_);
+    }
 
     // get functions throw on error
-    unsigned char get8 ();
-    std::uint16_t get16 ();
-    std::uint32_t get32 ();
-    std::uint64_t get64 ();
+    unsigned char
+    get8();
 
-    uint128 get128 () { return getBitString<128>(); }
-    uint160 get160 () { return getBitString<160>(); }
-    uint256 get256 () { return getBitString<256>(); }
+    std::uint16_t
+    get16();
 
-    template <std::size_t Bits, typename Tag = void>
-    void getBitString (base_uint<Bits, Tag>& bits) {
-        if (!mSerializer.getBitString<Bits> (bits, mPos))
-            throw std::runtime_error ("invalid serializer getBitString");
+    std::uint32_t
+    get32();
 
-        mPos += Bits / 8;
+    std::uint64_t
+    get64();
+
+    template <int Bits, class Tag = void>
+    base_uint<Bits, Tag>
+    getBitString();
+
+    uint128
+    get128()
+    {
+        return getBitString<128>();
     }
 
-    template <std::size_t Bits, typename Tag = void>
-    base_uint<Bits, Tag> getBitString () {
-        base_uint<Bits, Tag> bits;
-        getBitString(bits);
-        return bits;
+    uint160
+    get160()
+    {
+        return getBitString<160>();
+    }
+    
+    uint256
+    get256()
+    {
+        return getBitString<256>();
     }
 
-    void getFieldID (int& type, int& field);
+    void
+    getFieldID (int& type, int& name);
 
-    Blob getRaw (int iLength);
+    // VFALCO DEPRECATED Returns a copy
+    Blob
+    getRaw (int size);
 
-    Blob getVL ();
+    // VFALCO DEPRECATED Returns a copy
+    Blob
+    getVL();
 };
+
+template <int Bits, class Tag>
+base_uint<Bits, Tag>
+SerialIter::getBitString()
+{
+    base_uint<Bits, Tag> u;
+    auto const n = Bits/8;
+    if (remain_ < n)
+        throw std::runtime_error(
+            "invalid SerialIter getBitString");
+    std::memcpy (u.begin(), p_, n);
+    p_ += n;
+    used_ += n;
+    remain_ -= n;
+    return u;
+}
+
+//------------------------------------------------------------------------------
+
+uint256
+getSHA512Half (void const* data, int len);
+
+// DEPRECATED
+inline
+uint256
+getSHA512Half (std::string const& s)
+{
+    return getSHA512Half(s.data(), s.size());
+}
+
+// DEPRECATED
+template <class T,
+    std::enable_if_t<std::is_integral<T>::value &&
+        sizeof(T) == 1>* = nullptr>
+inline
+uint256
+getSHA512Half (std::vector<T> const& v)
+{
+    return getSHA512Half(v.data(), v.size());
+}
 
 } // ripple
 

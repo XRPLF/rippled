@@ -44,11 +44,11 @@ public:
         : STBase (n)
     { }
 
-    STBlob (SerializerIterator&, SField::ref name = sfGeneric);
+    STBlob (SerialIter&, SField::ref name = sfGeneric);
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name)
+    deserialize (SerialIter& sit, SField::ref name)
     {
         return std::make_unique<STBlob> (name, sit.getVL ());
     }

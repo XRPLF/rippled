@@ -28,7 +28,7 @@
 namespace ripple {
 
 STLedgerEntry::STLedgerEntry (
-    SerializerIterator& sit, uint256 const& index)
+    SerialIter& sit, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
     set (sit);
@@ -40,7 +40,7 @@ STLedgerEntry::STLedgerEntry (
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
     // we know 's' isn't going away
-    SerializerIterator sit (const_cast<Serializer&> (s));
+    SerialIter sit (const_cast<Serializer&> (s));
     set (sit);
     setSLEType ();
 }

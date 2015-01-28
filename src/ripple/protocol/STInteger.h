@@ -40,7 +40,7 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name);
+    deserialize (SerialIter& sit, SField::ref name);
 
     SerializedTypeID
     getSType () const override;
@@ -100,7 +100,7 @@ private:
     Integer value_;
 };
 
-using STUInt8 = STInteger<unsigned char>;
+using STUInt8  = STInteger<unsigned char>;
 using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;

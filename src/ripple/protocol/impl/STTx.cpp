@@ -74,7 +74,7 @@ STTx::STTx (STObject const& object)
     }
 }
 
-STTx::STTx (SerializerIterator& sit)
+STTx::STTx (SerialIter& sit)
     : STObject (sfTransaction)
     , sig_state_ (boost::indeterminate)
 {

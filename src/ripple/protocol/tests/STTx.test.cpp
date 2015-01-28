@@ -46,7 +46,7 @@ public:
 
         Serializer rawTxn;
         j.add (rawTxn);
-        SerializerIterator sit (rawTxn);
+        SerialIter sit (rawTxn);
         STTx copy (sit);
 
         if (copy != j)

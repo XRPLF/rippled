@@ -991,11 +991,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    Serializer s (m->rawtransaction ());
+    SerialIter sit (m->rawtransaction ());
 
     try
     {
-        SerializerIterator sit (s);
         STTx::pointer stx = std::make_shared <
             STTx> (std::ref (sit));
         uint256 txID = stx->getTransactionID ();
@@ -1049,7 +1048,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
     catch (...)
     {
         p_journal_.warning << "Transaction invalid: " <<
-            s.getHex();
+            strHex(m->rawtransaction ());
     }
 }
 
@@ -1314,7 +1313,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
     try
     {
         Serializer s (m->validation ());
-        SerializerIterator sit (s);
+        SerialIter sit (s);
         STValidation::pointer val = std::make_shared <
             STValidation> (std::ref (sit), false);
 

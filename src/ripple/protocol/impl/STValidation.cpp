@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-STValidation::STValidation (SerializerIterator& sit, bool checkSignature)
+STValidation::STValidation (SerialIter& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
     , mTrusted (false)
 {

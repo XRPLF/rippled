@@ -51,7 +51,7 @@ STPathElement::get_hash (STPathElement const& element)
 }
 
 std::unique_ptr<STBase>
-STPathSet::deserialize (SerializerIterator& sit, SField::ref name)
+STPathSet::deserialize (SerialIter& sit, SField::ref name)
 {
     std::vector<STPathElement> path;
 

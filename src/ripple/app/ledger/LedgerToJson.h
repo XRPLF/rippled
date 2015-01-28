@@ -129,16 +129,16 @@ void fillJson (Object& json, LedgerFill const& fill)
             {
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
                 {
-                    SerializerIterator sit (item->peekSerializer ());
+                    SerialIter sit (item->peekSerializer ());
                     STTx txn (sit);
                     txns.append (txn.getJson (0));
                 }
                 else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
                 {
-                    SerializerIterator sit (item->peekSerializer ());
+                    SerialIter sit (item->peekSerializer ());
                     Serializer sTxn (sit.getVL ());
 
-                    SerializerIterator tsit (sTxn);
+                    SerialIter tsit (sTxn);
                     STTx txn (tsit);
 
                     TransactionMetaSet meta (

@@ -39,89 +39,49 @@ public:
     typedef const std::shared_ptr<SHAMapItem>&    ref;
 
 public:
-    explicit SHAMapItem (uint256 const& tag) : mTag (tag)
+    explicit SHAMapItem (uint256 const& tag)
+        : mTag (tag)
     {
-        ;
     }
-    explicit SHAMapItem (Blob const & data); // tag by hash
+    
+    // tag computed from hash of data
+    explicit SHAMapItem (Blob const& data);
+    
     SHAMapItem (uint256 const& tag, Blob const & data);
-    SHAMapItem (uint256 const& tag, const Serializer & s);
 
-    uint256 const& getTag () const
+    SHAMapItem (uint256 const& tag, Serializer const& s);
+
+    std::size_t
+    size() const
+    {
+        return mData.peekData().size();
+    }
+
+    void const*
+    data() const
+    {
+        return mData.peekData().data();
+    }
+
+    uint256 const& getTag() const
     {
         return mTag;
     }
-    Blob const& peekData () const
+
+    Blob const& peekData() const
     {
-        return mData.peekData ();
+        return mData.peekData();
     }
-    Serializer& peekSerializer ()
+
+    Serializer& peekSerializer()
     {
         return mData;
     }
-    void addRaw (Blob & s) const
+
+    void addRaw (Blob& s) const
     {
         s.insert (s.end (), mData.begin (), mData.end ());
     }
-
-    void updateData (Blob const & data)
-    {
-        mData = data;
-    }
-
-    bool operator== (const SHAMapItem & i) const
-    {
-        return mTag == i.mTag;
-    }
-    bool operator!= (const SHAMapItem & i) const
-    {
-        return mTag != i.mTag;
-    }
-    bool operator== (uint256 const& i) const
-    {
-        return mTag == i;
-    }
-    bool operator!= (uint256 const& i) const
-    {
-        return mTag != i;
-    }
-
-#if 0
-    // This code is comment out because it is unused.  It could work.
-    bool operator< (const SHAMapItem & i) const
-    {
-        return mTag < i.mTag;
-    }
-    bool operator> (const SHAMapItem & i) const
-    {
-        return mTag > i.mTag;
-    }
-    bool operator<= (const SHAMapItem & i) const
-    {
-        return mTag <= i.mTag;
-    }
-    bool operator>= (const SHAMapItem & i) const
-    {
-        return mTag >= i.mTag;
-    }
-
-    bool operator< (uint256 const& i) const
-    {
-        return mTag < i;
-    }
-    bool operator> (uint256 const& i) const
-    {
-        return mTag > i;
-    }
-    bool operator<= (uint256 const& i) const
-    {
-        return mTag <= i;
-    }
-    bool operator>= (uint256 const& i) const
-    {
-        return mTag >= i;
-    }
-#endif
 
     // VFALCO Why is this virtual?
     virtual void dump (beast::Journal journal);

@@ -334,7 +334,7 @@ void Ledger::updateHash ()
 
 void Ledger::setRaw (Serializer& s, bool hasPrefix)
 {
-    SerializerIterator sit (s);
+    SerialIter sit (s);
 
     if (hasPrefix)
         sit.get32 ();
@@ -509,7 +509,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 STTx::pointer Ledger::getSTransaction (
     SHAMapItem::ref item, SHAMapTreeNode::TNType type)
 {
-    SerializerIterator sit (item->peekSerializer ());
+    SerialIter sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         return std::make_shared<STTx> (sit);
@@ -517,7 +517,7 @@ STTx::pointer Ledger::getSTransaction (
     if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
-        SerializerIterator tSit (sTxn);
+        SerialIter tSit (sTxn);
         return std::make_shared<STTx> (tSit);
     }
 
@@ -528,7 +528,7 @@ STTx::pointer Ledger::getSMTransaction (
     SHAMapItem::ref item, SHAMapTreeNode::TNType type,
     TransactionMetaSet::pointer& txMeta) const
 {
-    SerializerIterator sit (item->peekSerializer ());
+    SerialIter sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
@@ -538,7 +538,7 @@ STTx::pointer Ledger::getSMTransaction (
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
-        SerializerIterator tSit (sTxn);
+        SerialIter tSit (sTxn);
 
         txMeta = std::make_shared<TransactionMetaSet> (
             item->getTag (), mLedgerSeq, sit.getVL ());
@@ -574,7 +574,7 @@ bool Ledger::getTransaction (
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         // in tree with metadata
-        SerializerIterator it (item->peekSerializer ());
+        SerialIter it (item->peekSerializer ());
         txn = getApp().getMasterTransaction ().fetch (txID, false);
 
         if (!txn)
@@ -607,7 +607,7 @@ bool Ledger::getTransactionMeta (
     if (type != SHAMapTreeNode::tnTRANSACTION_MD)
         return false;
 
-    SerializerIterator it (item->peekSerializer ());
+    SerialIter it (item->peekSerializer ());
     it.getVL (); // skip transaction
     meta = std::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
 
@@ -625,7 +625,7 @@ bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
     if (type != SHAMapTreeNode::tnTRANSACTION_MD)
         return false;
 
-    SerializerIterator it (item->peekSerializer ());
+    SerialIter it (item->peekSerializer ());
     it.getVL (); // skip transaction
     hex = strHex (it.getVL ());
     return true;

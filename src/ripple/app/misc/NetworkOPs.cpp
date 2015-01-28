@@ -887,7 +887,7 @@ void NetworkOPsImp::submitTransaction (
     Serializer s;
     iTrans->add (s);
 
-    SerializerIterator sit (s);
+    SerialIter sit (s);
     auto trans = std::make_shared<STTx> (std::ref (sit));
 
     uint256 suppress = trans->getTransactionID ();
@@ -3546,7 +3546,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
 
     mFetchPack.del (hash, false);
 
-    if (hash != Serializer::getSHA512Half (data))
+    if (hash != getSHA512Half (data))
     {
         m_journal.warning << "Bad entry in fetch pack";
         return false;

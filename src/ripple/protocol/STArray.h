@@ -74,7 +74,7 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator & sit, SField::ref name);
+    deserialize (SerialIter & sit, SField::ref name);
 
     const vector& getValue () const
     {

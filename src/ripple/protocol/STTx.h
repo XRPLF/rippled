@@ -50,7 +50,7 @@ public:
 
     STTx (STTx const& other) = default;
 
-    explicit STTx (SerializerIterator& sit);
+    explicit STTx (SerialIter& sit);
     explicit STTx (TxType type);
     
     // Only called from ripple::RPC::transactionSign - can we eliminate this?

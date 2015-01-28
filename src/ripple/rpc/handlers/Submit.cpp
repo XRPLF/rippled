@@ -39,15 +39,15 @@ Json::Value doSubmit (RPC::Context& context)
             context.params, true, bFailHard, context.netOps, context.role);
     }
 
-    Json::Value                 jvResult;
+    Json::Value jvResult;
 
     std::pair<Blob, bool> ret(strUnHex (context.params["tx_blob"].asString ()));
 
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
 
-    Serializer                  sTrans (ret.first);
-    SerializerIterator          sitTrans (sTrans);
+    Serializer sTrans (ret.first);
+    SerialIter sitTrans (sTrans);
 
     STTx::pointer stpTrans;
 

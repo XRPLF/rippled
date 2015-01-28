@@ -59,7 +59,7 @@ public:
 
     static
     std::unique_ptr<STBase>
-    deserialize (SerializerIterator& sit, SField::ref name)
+    deserialize (SerialIter& sit, SField::ref name)
     {
         return std::make_unique<STBitString> (name, sit.getBitString<Bits> ());
     }
