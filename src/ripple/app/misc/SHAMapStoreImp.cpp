@@ -302,6 +302,9 @@ SHAMapStoreImp::run()
     transactionDb_ = &getApp().getTxnDB();
     ledgerDb_ = &getApp().getLedgerDB();
 
+    if (setup_.advisoryDelete)
+        canDelete_ = state_db_.getCanDelete ();
+
     while (1)
     {
         healthy_ = true;
