@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEASTSYNC_SYNC_DEADLINE_TIMER_H_INCLUDED
-#define BEASTSYNC_SYNC_DEADLINE_TIMER_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_SIM_SYNC_TIMER_H_INCLUDED
+#define RIPPLE_PEERFINDER_SIM_SYNC_TIMER_H_INCLUDED
 
 //#include <chrono>
 

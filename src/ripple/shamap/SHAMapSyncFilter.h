@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPSYNCFILTER_H
-#define RIPPLE_SHAMAPSYNCFILTER_H
+#ifndef RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 
 #include <ripple/shamap/SHAMapTreeNode.h>
 

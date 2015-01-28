@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_BASICS_TYPES_OUTPUT_H
-#define RIPPLED_RIPPLE_BASICS_TYPES_OUTPUT_H
+#ifndef RIPPLE_RPC_OUTPUT_H_INCLUDED
+#define RIPPLE_RPC_OUTPUT_H_INCLUDED
 
 #include <boost/utility/string_ref.hpp>
 

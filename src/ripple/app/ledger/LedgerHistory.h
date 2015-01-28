@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERHISTORY_H
-#define RIPPLE_LEDGERHISTORY_H
+#ifndef RIPPLE_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/protocol/RippleLedgerHash.h>

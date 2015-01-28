@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_PRIVATE_TYPES_H_INCLUDED
-#define RIPPLE_PEERFINDER_PRIVATE_TYPES_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_PRIVATETYPES_H_INCLUDED
+#define RIPPLE_PEERFINDER_PRIVATETYPES_H_INCLUDED
 
 namespace ripple {
 namespace PeerFinder {

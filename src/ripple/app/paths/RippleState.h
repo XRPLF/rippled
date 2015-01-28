@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLESTATE_H
-#define RIPPLE_RIPPLESTATE_H
+#ifndef RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
+#define RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 
 #include <ripple/app/book/Types.h>
 #include <ripple/protocol/STAmount.h>

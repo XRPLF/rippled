@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
-#define RIPPLE_SQLITEDATABASE_H_INCLUDED
+#ifndef RIPPLE_APP_DATA_SQLITEDATABASE_H_INCLUDED
+#define RIPPLE_APP_DATA_SQLITEDATABASE_H_INCLUDED
 
 #include <ripple/app/data/Database.h>
 #include <ripple/basics/Blob.h>

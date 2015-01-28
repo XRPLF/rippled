@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
-#define RIPPLE_APP_APPLICATION_H_INCLUDED
+#ifndef RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
+#define RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
 
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>

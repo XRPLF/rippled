@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
-#define RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
+#ifndef RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
+#define RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
 
 #include <ripple/json/json_config.h>
 #include <beast/utility/PropertyStream.h>

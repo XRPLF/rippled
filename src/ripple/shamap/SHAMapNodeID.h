@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPNODEID_H
-#define RIPPLE_SHAMAPNODEID_H
+#ifndef RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 
 #include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>

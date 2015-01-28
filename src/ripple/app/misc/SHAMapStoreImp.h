@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_SHAMAPSTOREIMP_H_INCLUDED
-#define RIPPLE_APP_SHAMAPSTOREIMP_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
+#define RIPPLE_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
 
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/misc/SHAMapStore.h>

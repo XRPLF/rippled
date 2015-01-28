@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGERPROPOSAL_H_INCLUDED
-#define RIPPLE_APP_LEDGERPROPOSAL_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>

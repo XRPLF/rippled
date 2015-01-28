@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
-#define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
+#ifndef RIPPLE_NET_RPCSUB_H_INCLUDED
+#define RIPPLE_NET_RPCSUB_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
 #include <ripple/net/InfoSub.h>

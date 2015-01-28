@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOCALTRANSACTIONS_H
-#define RIPPLE_LOCALTRANSACTIONS_H
+#ifndef RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
+#define RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
 
 #include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/app/ledger/Ledger.h>

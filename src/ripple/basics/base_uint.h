@@ -22,8 +22,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef RIPPLE_PROTOCOL_BASE_UINT_H_INCLUDED
-#define RIPPLE_PROTOCOL_BASE_UINT_H_INCLUDED
+#ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
+#define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
 #include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADEVENT_H
-#define RIPPLE_LOADEVENT_H
+#ifndef RIPPLE_CORE_LOADEVENT_H_INCLUDED
+#define RIPPLE_CORE_LOADEVENT_H_INCLUDED
 
 #include <beast/chrono/RelativeTime.h>
 #include <memory>

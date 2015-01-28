@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ORDERBOOK_H
-#define RIPPLE_ORDERBOOK_H
+#ifndef RIPPLE_APP_MISC_ORDERBOOK_H_INCLUDED
+#define RIPPLE_APP_MISC_ORDERBOOK_H_INCLUDED
 
 namespace ripple {
 

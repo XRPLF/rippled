@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERENTRYSET_H
-#define RIPPLE_LEDGERENTRYSET_H
+#ifndef RIPPLE_APP_LEDGER_LEDGERENTRYSET_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERENTRYSET_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/CountedObject.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERCONSENSUS_H
-#define RIPPLE_LEDGERCONSENSUS_H
+#ifndef RIPPLE_APP_CONSENSUS_LEDGERCONSENSUS_H_INCLUDED
+#define RIPPLE_APP_CONSENSUS_LEDGERCONSENSUS_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>

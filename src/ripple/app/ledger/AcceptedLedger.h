@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ACCEPTEDLEDGER_H
-#define RIPPLE_ACCEPTEDLEDGER_H
+#ifndef RIPPLE_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 

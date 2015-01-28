@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_SHAMAPTREENODE_H
-#define RIPPLE_SHAMAP_SHAMAPTREENODE_H
+#ifndef RIPPLE_SHAMAP_SHAMAPTREENODE_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPTREENODE_H_INCLUDED
 
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapNodeID.h>

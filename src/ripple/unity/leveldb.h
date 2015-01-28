@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_H_INCLUDED
-#define RIPPLE_LEVELDB_H_INCLUDED
+#ifndef RIPPLE_UNITY_LEVELDB_H_INCLUDED
+#define RIPPLE_UNITY_LEVELDB_H_INCLUDED
 
 #ifndef RIPPLE_LEVELDB_AVAILABLE
 # define RIPPLE_LEVELDB_AVAILABLE 1

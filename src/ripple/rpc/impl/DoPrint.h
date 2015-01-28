@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#ifndef RIPPLE_RPC_DOPRINT_H_INCLUDED
+#define RIPPLE_RPC_DOPRINT_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
 #include <ripple/json/JsonPropertyStream.h>

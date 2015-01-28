@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLE_RPC_CONTEXT_H_INCLUDED
+#define RIPPLE_RPC_CONTEXT_H_INCLUDED
 
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>

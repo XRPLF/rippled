@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef JSONCPP_BATCHALLOCATOR_H_INCLUDED
-#define JSONCPP_BATCHALLOCATOR_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_BATCHALLOCATOR_H_INCLUDED
+#define RIPPLE_JSON_JSON_BATCHALLOCATOR_H_INCLUDED
 
 #ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 

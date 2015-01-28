@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
-#define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_BASE_H_INCLUDED
+#define RIPPLE_NODESTORE_BASE_H_INCLUDED
 
 #include <ripple/nodestore/Database.h>
 #include <ripple/basics/StringUtilities.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef JSONCPPTL_ASSERT_H_INCLUDED
-#define JSONCPPTL_ASSERT_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
+#define RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
 
 #define JSON_ASSERT_UNREACHABLE assert( false )
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw

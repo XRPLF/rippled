@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATIONS_H_INCLUDED
-#define RIPPLE_VALIDATIONS_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
+#define RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
 
 #include <ripple/protocol/STValidation.h>
 #include <beast/cxx14/memory.h> // <memory>

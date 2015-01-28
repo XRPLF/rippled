@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_IMPL_JSONCOLLECTIONS_H
-#define RIPPLED_RIPPLE_RPC_IMPL_JSONCOLLECTIONS_H
+#ifndef RIPPLE_RPC_JSONOBJECT_H_INCLUDED
+#define RIPPLE_RPC_JSONOBJECT_H_INCLUDED
 
 #include <ripple/rpc/impl/JsonWriter.h>
 

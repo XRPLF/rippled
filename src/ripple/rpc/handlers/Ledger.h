@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_LEDGER_H
-#define RIPPLED_RIPPLE_RPC_HANDLERS_LEDGER_H
+#ifndef RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
+#define RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/core/LoadFeeTrack.h>

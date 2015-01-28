@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SERIALIZEDTYPES_H_INCLUDED
-#define RIPPLE_PROTOCOL_SERIALIZEDTYPES_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
+#define RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
 
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STInteger.h>

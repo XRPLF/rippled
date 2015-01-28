@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPITEM_H
-#define RIPPLE_SHAMAPITEM_H
+#ifndef RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>

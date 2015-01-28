@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef __LEDGERTIMING__
-#define __LEDGERTIMING__
+#ifndef RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
 
 namespace ripple {
 

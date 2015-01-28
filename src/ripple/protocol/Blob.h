@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_BLOB_H_INCLUDED
-#define RIPPLE_TYPES_BLOB_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_BLOB_H_INCLUDED
+#define RIPPLE_PROTOCOL_BLOB_H_INCLUDED
 
 #include <vector>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
-#define RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_DIRECTORYENTRYITERATOR_H_INCLUDED
+#define RIPPLE_APP_LEDGER_DIRECTORYENTRYITERATOR_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>

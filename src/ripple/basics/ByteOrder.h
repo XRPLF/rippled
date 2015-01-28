@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_BYTEORDER_H
-#define RIPPLE_BASICS_BYTEORDER_H
+#ifndef RIPPLE_BASICS_BYTEORDER_H_INCLUDED
+#define RIPPLE_BASICS_BYTEORDER_H_INCLUDED
 
 #include <beast/Config.h>
 

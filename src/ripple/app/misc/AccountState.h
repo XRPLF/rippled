@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ACCOUNTSTATE_H
-#define RIPPLE_ACCOUNTSTATE_H
+#ifndef RIPPLE_APP_MISC_ACCOUNTSTATE_H_INCLUDED
+#define RIPPLE_APP_MISC_ACCOUNTSTATE_H_INCLUDED
 
 #include <ripple/basics/Blob.h>
 #include <ripple/protocol/RippleAddress.h>

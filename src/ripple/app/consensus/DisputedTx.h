@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DISPUTEDTX_H
-#define RIPPLE_DISPUTEDTX_H
+#ifndef RIPPLE_APP_CONSENSUS_DISPUTEDTX_H_INCLUDED
+#define RIPPLE_APP_CONSENSUS_DISPUTEDTX_H_INCLUDED
 
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Serializer.h>

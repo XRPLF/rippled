@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_GIT_TAG_H_INCLUDED
-#define RIPPLE_GIT_TAG_H_INCLUDED
+#ifndef RIPPLE_UNITY_GIT_ID_H_INCLUDED
+#define RIPPLE_UNITY_GIT_ID_H_INCLUDED
 
 #include <string>
 

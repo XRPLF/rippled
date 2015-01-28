@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ECIES_H
-#define RIPPLE_ECIES_H
+#ifndef RIPPLE_CRYPTO_ECIES_H_INCLUDED
+#define RIPPLE_CRYPTO_ECIES_H_INCLUDED
 
 #include <ripple/crypto/ec_key.h>
 #include <ripple/basics/Blob.h>

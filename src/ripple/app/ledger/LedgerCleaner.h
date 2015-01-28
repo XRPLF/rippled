@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERCLEANER_H_INCLUDED
-#define RIPPLE_LEDGERCLEANER_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
 
 #include <ripple/json/json_value.h>
 #include <beast/threads/Stoppable.h>

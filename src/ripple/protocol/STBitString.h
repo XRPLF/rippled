@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_STBITS_H_INCLUDED
-#define RIPPLE_PROTOCOL_STBITS_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
+#define RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 
 #include <ripple/protocol/STBase.h>
 

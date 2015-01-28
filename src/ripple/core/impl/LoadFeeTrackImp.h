@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADFEETRACKIMP_H_INCLUDED
-#define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
+#ifndef RIPPLE_CORE_LOADFEETRACKIMP_H_INCLUDED
+#define RIPPLE_CORE_LOADFEETRACKIMP_H_INCLUDED
 
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/LoadFeeTrack.h>

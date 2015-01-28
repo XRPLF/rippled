@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_APP_LEDGER_LEDGERTOJSON_H
-#define RIPPLED_RIPPLE_APP_LEDGER_LEDGERTOJSON_H
+#ifndef RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Time.h>

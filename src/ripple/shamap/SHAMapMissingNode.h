@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPMISSINGNODE_H
-#define RIPPLE_SHAMAPMISSINGNODE_H
+#ifndef RIPPLE_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
     

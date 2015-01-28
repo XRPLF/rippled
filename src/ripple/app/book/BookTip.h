@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_BOOKTIP_H_INCLUDED
-#define RIPPLE_CORE_BOOKTIP_H_INCLUDED
+#ifndef RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
+#define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
 
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/book/Types.h>

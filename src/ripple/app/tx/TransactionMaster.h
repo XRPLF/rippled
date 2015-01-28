@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef __TRANSACTIONMASTER__
-#define __TRANSACTIONMASTER__
+#ifndef RIPPLE_APP_TX_TRANSACTIONMASTER_H_INCLUDED
+#define RIPPLE_APP_TX_TRANSACTIONMASTER_H_INCLUDED
 
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/shamap/SHAMapItem.h>

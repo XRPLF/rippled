@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_RPC_HANDLER
-#define RIPPLE_APP_RPC_HANDLER
+#ifndef RIPPLE_RPC_RPCHANDLER_H_INCLUDED
+#define RIPPLE_RPC_RPCHANDLER_H_INCLUDED
 
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>

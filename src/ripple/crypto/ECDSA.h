@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ECDSA_H
-#define RIPPLE_ECDSA_H
+#ifndef RIPPLE_CRYPTO_ECDSA_H_INCLUDED
+#define RIPPLE_CRYPTO_ECDSA_H_INCLUDED
 
 #include <ripple/crypto/ec_key.h>
 #include <ripple/basics/base_uint.h>

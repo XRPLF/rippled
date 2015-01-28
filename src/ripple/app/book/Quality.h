@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_QUALITY_H_INCLUDED
-#define RIPPLE_CORE_QUALITY_H_INCLUDED
+#ifndef RIPPLE_APP_BOOK_QUALITY_H_INCLUDED
+#define RIPPLE_APP_BOOK_QUALITY_H_INCLUDED
 
 #include <ripple/app/book/Amount.h>
 #include <ripple/app/book/Amounts.h>

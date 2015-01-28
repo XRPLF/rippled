@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLECALC_H
-#define RIPPLE_RIPPLECALC_H
+#ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
+#define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/app/paths/PathState.h>

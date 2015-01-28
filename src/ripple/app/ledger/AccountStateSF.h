@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_ACCOUNTSTATESF_H_INCLUDED
-#define RIPPLE_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+#define RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 
 #include <ripple/shamap/SHAMapSyncFilter.h>
 

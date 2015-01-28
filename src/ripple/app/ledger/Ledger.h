@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_H
-#define RIPPLE_LEDGER_H
+#ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/app/tx/Transaction.h>

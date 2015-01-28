@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
-#define RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
+#ifndef RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
+#define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
 #include <ripple/basics/TaggedCache.h>
 

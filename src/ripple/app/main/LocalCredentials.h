@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOCALCREDENTIALS_H
-#define RIPPLE_LOCALCREDENTIALS_H
+#ifndef RIPPLE_APP_MAIN_LOCALCREDENTIALS_H_INCLUDED
+#define RIPPLE_APP_MAIN_LOCALCREDENTIALS_H_INCLUDED
 
 #include <ripple/protocol/RippleAddress.h>
 #include <mutex>

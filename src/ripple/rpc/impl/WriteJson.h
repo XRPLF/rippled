@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
-#define RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
+#ifndef RIPPLE_RPC_WRITEJSON_H_INCLUDED
+#define RIPPLE_RPC_WRITEJSON_H_INCLUDED
 
 namespace ripple {
 namespace RPC {

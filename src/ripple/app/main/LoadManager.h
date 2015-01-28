@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADMANAGER_H_INCLUDED
-#define RIPPLE_LOADMANAGER_H_INCLUDED
+#ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
+#define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
 #include <beast/threads/Stoppable.h>
 #include <beast/cxx14/memory.h> // <memory>

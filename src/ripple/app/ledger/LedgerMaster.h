@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERMASTER_H_INCLUDED
-#define RIPPLE_LEDGERMASTER_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/basics/StringUtilities.h>

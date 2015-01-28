@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATH_NODE_H
-#define RIPPLE_APP_PATH_NODE_H
+#ifndef RIPPLE_APP_PATHS_NODE_H_INCLUDED
+#define RIPPLE_APP_PATHS_NODE_H_INCLUDED
 
 #include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/paths/Types.h>

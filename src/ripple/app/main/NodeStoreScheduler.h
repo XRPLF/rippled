@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_NODESTORESCHEDULER_H_INCLUDED
-#define RIPPLE_APP_NODESTORESCHEDULER_H_INCLUDED
+#ifndef RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
+#define RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
 
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/core/JobQueue.h>

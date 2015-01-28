@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERHOLDER_H
-#define RIPPLE_LEDGERHOLDER_H
+#ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
 namespace ripple {
 

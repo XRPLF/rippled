@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSDOOR_H_INCLUDED
-#define RIPPLE_WSDOOR_H_INCLUDED
+#ifndef RIPPLE_APP_WEBSOCKET_WSDOOR_H_INCLUDED
+#define RIPPLE_APP_WEBSOCKET_WSDOOR_H_INCLUDED
 
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/net/InfoSub.h>
