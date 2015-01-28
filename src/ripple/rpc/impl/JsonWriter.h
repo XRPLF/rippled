@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_BASICS_TYPES_JSONWRITER_H
-#define RIPPLED_RIPPLE_BASICS_TYPES_JSONWRITER_H
+#ifndef RIPPLE_RPC_JSONWRITER_H_INCLUDED
+#define RIPPLE_RPC_JSONWRITER_H_INCLUDED
 
 #include <ripple/basics/ToString.h>
 #include <ripple/protocol/ErrorCodes.h>

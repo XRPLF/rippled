@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADMONITOR_H_INCLUDED
-#define RIPPLE_LOADMONITOR_H_INCLUDED
+#ifndef RIPPLE_CORE_LOADMONITOR_H_INCLUDED
+#define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 
 #include <ripple/core/LoadEvent.h>
 #include <chrono>

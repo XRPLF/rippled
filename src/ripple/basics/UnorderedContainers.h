@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_UNORDERED_CONTAINERS_H_INCLUDED
-#define RIPPLE_BASICS_UNORDERED_CONTAINERS_H_INCLUDED
+#ifndef RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
+#define RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
 
 #include <ripple/basics/hardened_hash.h>
 #include <beast/hash/hash_append.h>

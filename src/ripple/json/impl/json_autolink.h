@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef JSON_AUTOLINK_H_INCLUDED
-#define JSON_AUTOLINK_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_AUTOLINK_H_INCLUDED
+#define RIPPLE_JSON_JSON_AUTOLINK_H_INCLUDED
 
 // VFALCO TODO remove this file
 #error This file is deprecated!

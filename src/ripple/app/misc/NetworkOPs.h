@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NETWORKOPS_H
-#define RIPPLE_NETWORKOPS_H
+#ifndef RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
+#define RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/STValidation.h>

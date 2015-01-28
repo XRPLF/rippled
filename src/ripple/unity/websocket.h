@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WEBSOCKET_H_INCLUDED
-#define RIPPLE_WEBSOCKET_H_INCLUDED
+#ifndef RIPPLE_UNITY_WEBSOCKET_H_INCLUDED
+#define RIPPLE_UNITY_WEBSOCKET_H_INCLUDED
 
 // needed before inclusion of stdint.h for INT32_MIN/INT32_MAX macros
 #ifndef __STDC_LIMIT_MACROS

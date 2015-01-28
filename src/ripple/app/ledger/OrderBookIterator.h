@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
-#define RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_ORDERBOOKITERATOR_H_INCLUDED
+#define RIPPLE_APP_LEDGER_ORDERBOOKITERATOR_H_INCLUDED
 
 #include <ripple/app/ledger/DirectoryEntryIterator.h>
 #include <ripple/protocol/Indexes.h>

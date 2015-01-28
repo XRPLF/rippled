@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BOOKLISTENERS_H
-#define RIPPLE_BOOKLISTENERS_H
+#ifndef RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
+#define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
 #include <ripple/net/InfoSub.h>
 #include <memory>

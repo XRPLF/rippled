@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSCONNECTION_H
-#define RIPPLE_WSCONNECTION_H
+#ifndef RIPPLE_APP_WEBSOCKET_WSCONNECTION_H_INCLUDED
+#define RIPPLE_APP_WEBSOCKET_WSCONNECTION_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/Config.h>

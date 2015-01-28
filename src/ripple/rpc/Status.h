@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_STATUS_H
-#define RIPPLE_STATUS_H
+#ifndef RIPPLE_RPC_STATUS_H_INCLUDED
+#define RIPPLE_RPC_STATUS_H_INCLUDED
 
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/ErrorCodes.h>

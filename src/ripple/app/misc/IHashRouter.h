@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHROUTER_H_INCLUDED
-#define RIPPLE_HASHROUTER_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_IHASHROUTER_H_INCLUDED
+#define RIPPLE_APP_MISC_IHASHROUTER_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
 #include <cstdint>

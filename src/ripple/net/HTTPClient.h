@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
-#define RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
+#ifndef RIPPLE_NET_HTTPCLIENT_H_INCLUDED
+#define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PATHFINDER_H
-#define RIPPLE_PATHFINDER_H
+#ifndef RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
+#define RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 
 #include <ripple/app/book/Types.h>
 #include <ripple/app/paths/RippleLineCache.h>

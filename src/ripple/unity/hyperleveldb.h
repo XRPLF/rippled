@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HYPERLEVELDB_H_INCLUDED
-#define RIPPLE_HYPERLEVELDB_H_INCLUDED
+#ifndef RIPPLE_UNITY_HYPERLEVELDB_H_INCLUDED
+#define RIPPLE_UNITY_HYPERLEVELDB_H_INCLUDED
 
 #include <beast/Config.h>
 

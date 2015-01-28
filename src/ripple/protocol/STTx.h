@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERIALIZEDTRANSACTION_H
-#define RIPPLE_SERIALIZEDTRANSACTION_H
+#ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
+#define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/TxFormats.h>

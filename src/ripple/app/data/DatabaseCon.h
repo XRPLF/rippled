@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DATABASECON_H
-#define RIPPLE_DATABASECON_H
+#ifndef RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
+#define RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 
 #include <ripple/app/data/Database.h>
 #include <ripple/core/Config.h>

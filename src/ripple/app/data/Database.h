@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DATABASE_H_INCLUDED
-#define RIPPLE_DATABASE_H_INCLUDED
+#ifndef RIPPLE_APP_DATA_DATABASE_H_INCLUDED
+#define RIPPLE_APP_DATA_DATABASE_H_INCLUDED
 
 #include <ripple/basics/Blob.h>
 #include <cstdint>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
-#define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
+#ifndef RIPPLE_NET_INFOSUB_H_INCLUDED
+#define RIPPLE_NET_INFOSUB_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>

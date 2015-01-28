@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PATHS_CALCULATORS_H
-#define RIPPLE_PATHS_CALCULATORS_H
+#ifndef RIPPLE_APP_PATHS_CURSOR_RIPPLELIQUIDITY_H_INCLUDED
+#define RIPPLE_APP_PATHS_CURSOR_RIPPLELIQUIDITY_H_INCLUDED
 
 #include <boost/log/trivial.hpp>
 

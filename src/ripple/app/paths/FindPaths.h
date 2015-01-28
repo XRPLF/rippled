@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_APP_PATHS_FINDPATHS_H
-#define RIPPLED_RIPPLE_APP_PATHS_FINDPATHS_H
+#ifndef RIPPLE_APP_PATHS_FINDPATHS_H_INCLUDED
+#define RIPPLE_APP_PATHS_FINDPATHS_H_INCLUDED
 
 #include <ripple/app/paths/RippleLineCache.h>
 

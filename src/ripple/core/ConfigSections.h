@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONFIGSECTIONS_H_INCLUDED
-#define RIPPLE_CONFIGSECTIONS_H_INCLUDED
+#ifndef RIPPLE_CORE_CONFIGSECTIONS_H_INCLUDED
+#define RIPPLE_CORE_CONFIGSECTIONS_H_INCLUDED
 
 namespace ripple {
 

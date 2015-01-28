@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLELINECACHE_H
-#define RIPPLE_RIPPLELINECACHE_H
+#ifndef RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
+#define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/basics/hardened_hash.h>

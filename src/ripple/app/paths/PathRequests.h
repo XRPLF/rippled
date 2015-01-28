@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PATHREQUESTS_H
-#define RIPPLE_PATHREQUESTS_H
+#ifndef RIPPLE_APP_PATHS_PATHREQUESTS_H_INCLUDED
+#define RIPPLE_APP_PATHS_PATHREQUESTS_H_INCLUDED
 
 #include <ripple/app/paths/PathRequest.h>
 #include <ripple/app/paths/RippleLineCache.h>

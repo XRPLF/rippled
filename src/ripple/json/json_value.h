@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef CPPTL_JSON_H_INCLUDED
-#define CPPTL_JSON_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_VALUE_H_INCLUDED
+#define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 
 #include <ripple/json/json_config.h>
 #include <ripple/json/json_forwards.h>

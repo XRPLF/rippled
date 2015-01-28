@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_BASICS
-#define RIPPLE_PROTOCOL_BASICS
+#ifndef RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
+#define RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>

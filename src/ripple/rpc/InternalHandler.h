@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_RPC_INTERNAL_HANDLER
-#define RIPPLE_APP_RPC_INTERNAL_HANDLER
+#ifndef RIPPLE_RPC_INTERNALHANDLER_H_INCLUDED
+#define RIPPLE_RPC_INTERNALHANDLER_H_INCLUDED
 
 namespace ripple {
 namespace RPC {

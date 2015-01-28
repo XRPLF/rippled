@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_MODULE_APP_PATHS_NODEDIRECTORY_H
-#define RIPPLED_RIPPLE_MODULE_APP_PATHS_NODEDIRECTORY_H
+#ifndef RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
+#define RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/protocol/Indexes.h>

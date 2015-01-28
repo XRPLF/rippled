@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERSET_H
-#define RIPPLE_PEERSET_H
+#ifndef RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
+#define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/Job.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_TER_H
-#define RIPPLE_PROTOCOL_TER_H
+#ifndef RIPPLE_PROTOCOL_TER_H_INCLUDED
+#define RIPPLE_PROTOCOL_TER_H_INCLUDED
 
 #include <string>
 

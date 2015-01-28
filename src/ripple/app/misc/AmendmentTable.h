@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_AMENDMENT_TABLE_H
-#define RIPPLE_AMENDMENT_TABLE_H
+#ifndef RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
+#define RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 
 #include <ripple/app/book/Types.h>
 #include <ripple/app/misc/Validations.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_OFFERSTREAM_H_INCLUDED
-#define RIPPLE_CORE_OFFERSTREAM_H_INCLUDED
+#ifndef RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
+#define RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
 
 #include <ripple/app/book/BookTip.h>
 #include <ripple/app/book/Offer.h>

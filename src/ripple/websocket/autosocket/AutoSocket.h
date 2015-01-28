@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WEBSOCKET_AUTOSOCKET_H_INCLUDED
-#define RIPPLE_WEBSOCKET_AUTOSOCKET_H_INCLUDED
+#ifndef RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
+#define RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
 
 #include <ripple/basics/Log.h>
 #include <beast/asio/IPAddressConversion.h>

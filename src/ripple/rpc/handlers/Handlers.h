@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HANDLER_HANDLERS
-#define RIPPLE_HANDLER_HANDLERS
+#ifndef RIPPLE_RPC_HANDLERS_HANDLERS_H_INCLUDED
+#define RIPPLE_RPC_HANDLERS_HANDLERS_H_INCLUDED
 
 namespace ripple {
 

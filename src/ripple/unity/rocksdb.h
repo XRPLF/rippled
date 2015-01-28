@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ROCKSDB_H_INCLUDED
-#define RIPPLE_ROCKSDB_H_INCLUDED
+#ifndef RIPPLE_UNITY_ROCKSDB_H_INCLUDED
+#define RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 
 #include <beast/Config.h>
 

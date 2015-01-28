@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TRANSACTIONENGINE_H_INCLUDED
-#define RIPPLE_APP_TRANSACTIONENGINE_H_INCLUDED
+#ifndef RIPPLE_APP_TX_TRANSACTIONENGINE_H_INCLUDED
+#define RIPPLE_APP_TX_TRANSACTIONENGINE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_COROUTINE_H
-#define RIPPLED_RIPPLE_RPC_COROUTINE_H
+#ifndef RIPPLE_RPC_COROUTINE_H_INCLUDED
+#define RIPPLE_RPC_COROUTINE_H_INCLUDED
 
 #include <ripple/rpc/Yield.h>
 

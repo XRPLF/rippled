@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TRANSACTIONMETA_H
-#define RIPPLE_TRANSACTIONMETA_H
+#ifndef RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
+#define RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
 
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STArray.h>

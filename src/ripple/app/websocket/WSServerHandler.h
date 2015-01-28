@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
-#define RIPPLE_WSSERVERHANDLER_H_INCLUDED
+#ifndef RIPPLE_APP_WEBSOCKET_WSSERVERHANDLER_H_INCLUDED
+#define RIPPLE_APP_WEBSOCKET_WSSERVERHANDLER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/CollectorManager.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_IOSFORMAT_H_INCLUDED
-#define BEAST_IOSFORMAT_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_IOSFORMAT_H_INCLUDED
+#define RIPPLE_PEERFINDER_IOSFORMAT_H_INCLUDED
 
 #include <ostream>
 #include <sstream>

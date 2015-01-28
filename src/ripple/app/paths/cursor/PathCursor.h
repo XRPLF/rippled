@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_MODULE_APP_PATHS_PATHCURSOR_H
-#define RIPPLED_RIPPLE_MODULE_APP_PATHS_PATHCURSOR_H
+#ifndef RIPPLE_APP_PATHS_CURSOR_PATHCURSOR_H_INCLUDED
+#define RIPPLE_APP_PATHS_CURSOR_PATHCURSOR_H_INCLUDED
 
 #include <ripple/app/paths/RippleCalc.h>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_YIELD_H
-#define RIPPLED_RIPPLE_RPC_YIELD_H
+#ifndef RIPPLE_RPC_YIELD_H_INCLUDED
+#define RIPPLE_RPC_YIELD_H_INCLUDED
 
 #include <ripple/rpc/Output.h>
 #include <boost/coroutine/all.hpp>

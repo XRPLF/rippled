@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_SHAMAPSTORE_H_INCLUDED
-#define RIPPLE_APP_SHAMAPSTORE_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
+#define RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/tx/TransactionMaster.h>

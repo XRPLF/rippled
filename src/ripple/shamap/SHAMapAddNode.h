@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAPADDNODE_H
-#define RIPPLE_SHAMAPADDNODE_H
+#ifndef RIPPLE_SHAMAP_SHAMAPADDNODE_H_INCLUDED
+#define RIPPLE_SHAMAP_SHAMAPADDNODE_H_INCLUDED
 
 #include <beast/module/core/text/LexicalCast.h>
 

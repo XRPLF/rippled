@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JOBTYPES_H_INCLUDED
-#define RIPPLE_JOBTYPES_H_INCLUDED
+#ifndef RIPPLE_CORE_JOBTYPES_H_INCLUDED
+#define RIPPLE_CORE_JOBTYPES_H_INCLUDED
 
 #include <ripple/core/Job.h>
 #include <ripple/core/JobTypeInfo.h>

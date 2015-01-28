@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_INBOUNDLEDGERS_H
-#define RIPPLE_INBOUNDLEDGERS_H
+#ifndef RIPPLE_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
+#define RIPPLE_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/protocol/RippleLedgerHash.h>

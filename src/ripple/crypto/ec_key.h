@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ECKEY_H
-#define RIPPLE_ECKEY_H
+#ifndef RIPPLE_CRYPTO_EC_KEY_H_INCLUDED
+#define RIPPLE_CRYPTO_EC_KEY_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
 #include <cstdint>

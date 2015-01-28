@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_TRANSACTOR_H_INCLUDED
-#define RIPPLE_TX_TRANSACTOR_H_INCLUDED
+#ifndef RIPPLE_APP_TRANSACTORS_TRANSACTOR_H_INCLUDED
+#define RIPPLE_APP_TRANSACTORS_TRANSACTOR_H_INCLUDED
 
 #include <ripple/app/tx/TransactionEngine.h>
 

@@ -22,8 +22,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef RIPPLE_CKEYDETERMINISTIC_H
-#define RIPPLE_CKEYDETERMINISTIC_H
+#ifndef RIPPLE_CRYPTO_GENERATEDETERMINISTICKEY_H_INCLUDED
+#define RIPPLE_CRYPTO_GENERATEDETERMINISTICKEY_H_INCLUDED
 
 #include <ripple/crypto/ec_key.h>
 #include <ripple/basics/base_uint.h>

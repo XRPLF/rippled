@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
-#define RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
+#ifndef RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
+#define RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 
 #include <ripple/app/book/Types.h>
 #include <ripple/protocol/STAmount.h>
