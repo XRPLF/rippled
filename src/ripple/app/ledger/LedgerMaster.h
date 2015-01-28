@@ -150,9 +150,9 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t const currentLedgerID, 
-        std::uint32_t const ledgerHistory, std::uint32_t const ledgerHistoryIndex,
-        std::uint32_t const targetLedger);
+    static bool shouldAcquire (std::uint32_t currentLedgerID, 
+        std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
+        std::uint32_t targetLedger);
 
     virtual void clearPriorLedgers (LedgerIndex seq) = 0;
 
