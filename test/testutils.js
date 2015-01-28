@@ -49,12 +49,12 @@ function(config, host) {
     }
   } else {
     for (var i = process.argv.length-1; i >= 0; --i) {
-      arg = process.argv[i].split("=", 2);
+      var arg = process.argv[i].split("=", 2);
       if (arg.length === 2 && arg[0] === "--rippled") {
         override["rippled_path"] = path.resolve(process.cwd(), arg[1]);
         break;
       }
-    };
+    }
   }
   return extend({}, config.default_server_config, config.servers[host],
       override);
