@@ -26,6 +26,7 @@
 #include <ripple/protocol/impl/Indexes.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
+#include <ripple/protocol/impl/Seed.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
 #include <ripple/protocol/impl/SField.cpp>
 #include <ripple/protocol/impl/SOTemplate.cpp>

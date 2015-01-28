@@ -3318,6 +3318,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Seed.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Serializer.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
@@ -3403,6 +3406,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\RipplePublicKey.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Seed.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
