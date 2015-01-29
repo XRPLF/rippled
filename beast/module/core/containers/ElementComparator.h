@@ -24,8 +24,9 @@
 #ifndef BEAST_MODULE_CORE_CONTAINERS_ELEMENTCOMPARATOR_H_INCLUDED
 #define BEAST_MODULE_CORE_CONTAINERS_ELEMENTCOMPARATOR_H_INCLUDED
 
-namespace beast
-{
+#include <algorithm>
+
+namespace beast {
 
 #ifndef DOXYGEN
 
