@@ -250,7 +250,7 @@ void executeRPC (
     {
         // Can't ever get here.
         assert (false);
-        throw Json::JsonException ("RPC handler with no method");
+        throw std::logic_error ("RPC handler with no method");
     }
 }
 

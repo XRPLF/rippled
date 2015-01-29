@@ -21,8 +21,11 @@
 #define RIPPLE_JSON_OUTPUT_H_INCLUDED
 
 #include <boost/utility/string_ref.hpp>
+#include <functional>
 
 namespace Json {
+
+class Value;
 
 using Output = std::function <void (boost::string_ref const&)>;
 

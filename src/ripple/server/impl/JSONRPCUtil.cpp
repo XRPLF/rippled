@@ -45,7 +45,8 @@ std::string getHTTPHeaderTimestamp ()
     return std::string (buffer);
 }
 
-void HTTPReply (int nStatus, std::string const& content, Json::Output output)
+void HTTPReply (
+    int nStatus, std::string const& content, Json::Output const& output)
 {
     if (ShouldLog (lsTRACE, RPC))
     {
