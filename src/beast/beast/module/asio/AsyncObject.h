@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
-#define BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
+#ifndef BEAST_MODULE_ASIO_ASYNCOBJECT_H_INCLUDED
+#define BEAST_MODULE_ASIO_ASYNCOBJECT_H_INCLUDED
 
 #include <atomic>
 #include <cassert>

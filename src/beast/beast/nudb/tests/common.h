@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_TEST_COMMON_H_INCLUDED
-#define BEAST_NUDB_TEST_COMMON_H_INCLUDED
+#ifndef BEAST_NUDB_COMMON_H_INCLUDED
+#define BEAST_NUDB_COMMON_H_INCLUDED
 
 #include <beast/nudb.h>
 #include <beast/nudb/tests/fail_file.h>

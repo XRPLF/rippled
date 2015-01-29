@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_CACHE_H_INCLUDED
-#define BEAST_NUDB_CACHE_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_CACHE_H_INCLUDED
+#define BEAST_NUDB_DETAIL_CACHE_H_INCLUDED
 
 #include <beast/nudb/detail/arena.h>
 #include <beast/nudb/detail/bucket.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WORKERS_H_INCLUDED
-#define BEAST_WORKERS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_THREAD_WORKERS_H_INCLUDED
+#define BEAST_MODULE_CORE_THREAD_WORKERS_H_INCLUDED
 
 #include <beast/threads/Thread.h>
 #include <beast/threads/semaphore.h>

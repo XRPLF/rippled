@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQLITE_H_INCLUDED
-#define BEAST_SQLITE_H_INCLUDED
+#ifndef BEAST_MODULE_SQLITE_SQLITE_H_INCLUDED
+#define BEAST_MODULE_SQLITE_SQLITE_H_INCLUDED
 
 /**  A self-contained, serverless, zero configuration, transactional SQL engine.
 

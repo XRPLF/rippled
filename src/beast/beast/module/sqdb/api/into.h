@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_INTO_H_INCLUDED
-#define BEAST_SQDB_INTO_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_API_INTO_H_INCLUDED
+#define BEAST_MODULE_SQDB_API_INTO_H_INCLUDED
 
 namespace beast {
 namespace sqdb {

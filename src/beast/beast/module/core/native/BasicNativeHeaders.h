@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BASICNATIVEHEADERS_H_INCLUDED
-#define BEAST_BASICNATIVEHEADERS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_NATIVE_BASICNATIVEHEADERS_H_INCLUDED
+#define BEAST_MODULE_CORE_NATIVE_BASICNATIVEHEADERS_H_INCLUDED
 
 #include <beast/Config.h>
 

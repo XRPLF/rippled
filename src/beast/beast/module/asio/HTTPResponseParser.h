@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_RESPONSEPARSER_H_INCLUDED
-#define BEAST_HTTP_RESPONSEPARSER_H_INCLUDED
+#ifndef BEAST_MODULE_ASIO_HTTPRESPONSEPARSER_H_INCLUDED
+#define BEAST_MODULE_ASIO_HTTPRESPONSEPARSER_H_INCLUDED
 
 #include <beast/module/asio/HTTPParser.h>
 

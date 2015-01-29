@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PROCESS_H_INCLUDED
-#define BEAST_PROCESS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_THREADS_PROCESS_H_INCLUDED
+#define BEAST_MODULE_CORE_THREADS_PROCESS_H_INCLUDED
 
 namespace beast {
 

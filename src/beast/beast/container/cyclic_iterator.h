@@ -27,8 +27,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CYCLIC_ITERATOR_H_INCLUDED
-#define BEAST_CYCLIC_ITERATOR_H_INCLUDED
+#ifndef BEAST_CONTAINER_CYCLIC_ITERATOR_H_INCLUDED
+#define BEAST_CONTAINER_CYCLIC_ITERATOR_H_INCLUDED
 
 #include <iterator>
 #include <boost/iterator/iterator_facade.hpp>

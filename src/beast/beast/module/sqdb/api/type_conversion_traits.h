@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
-#define BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_API_TYPE_CONVERSION_TRAITS_H_INCLUDED
+#define BEAST_MODULE_SQDB_API_TYPE_CONVERSION_TRAITS_H_INCLUDED
 
 #include <beast/module/core/time/Time.h>
 

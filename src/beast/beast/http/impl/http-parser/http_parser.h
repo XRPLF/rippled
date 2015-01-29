@@ -18,8 +18,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef http_parser_h
-#define http_parser_h
+#ifndef BEAST_HTTP_HTTP_PARSER_HTTP_PARSER_H_INCLUDED
+#define BEAST_HTTP_HTTP_PARSER_HTTP_PARSER_H_INCLUDED
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -134,7 +135,7 @@ enum flags
 
 
 /* Map for errno-related constants
- * 
+ *
  * The provided argument should be a macro that takes 2 arguments.
  */
 #define HTTP_ERRNO_MAP(XX)                                           \

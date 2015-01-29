@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDOBJECT_H_INCLUDED
-#define BEAST_SHAREDOBJECT_H_INCLUDED
+#ifndef BEAST_SMART_PTR_SHAREDOBJECT_H_INCLUDED
+#define BEAST_SMART_PTR_SHAREDOBJECT_H_INCLUDED
 
 #include <atomic>
 

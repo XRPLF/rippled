@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
-#define BEAST_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
+#define BEAST_MODULE_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
 
 namespace beast {
 namespace sqdb {

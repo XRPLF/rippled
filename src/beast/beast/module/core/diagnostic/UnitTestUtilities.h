@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNITTESTUTILITIES_H_INCLUDED
-#define BEAST_UNITTESTUTILITIES_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_DIAGNOSTIC_UNITTESTUTILITIES_H_INCLUDED
+#define BEAST_MODULE_CORE_DIAGNOSTIC_UNITTESTUTILITIES_H_INCLUDED
 
 #include <beast/module/core/files/File.h>
 #include <beast/module/core/maths/Random.h>

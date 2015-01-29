@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LEXICALCAST_H_INCLUDED
-#define BEAST_LEXICALCAST_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
+#define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 
 #include <beast/Config.h>
 #include <algorithm>

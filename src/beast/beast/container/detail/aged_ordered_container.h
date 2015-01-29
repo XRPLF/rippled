@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONTAINER_AGED_ORDERED_CONTAINER_H_INCLUDED
-#define BEAST_CONTAINER_AGED_ORDERED_CONTAINER_H_INCLUDED
+#ifndef BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
+#define BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
 
 #include <beast/container/detail/aged_container_iterator.h>
 #include <beast/container/detail/aged_associative_container.h>

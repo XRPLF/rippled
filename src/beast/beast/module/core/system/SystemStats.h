@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SYSTEMSTATS_H_INCLUDED
-#define BEAST_SYSTEMSTATS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_SYSTEM_SYSTEMSTATS_H_INCLUDED
+#define BEAST_MODULE_CORE_SYSTEM_SYSTEMSTATS_H_INCLUDED
 
 namespace beast
 {

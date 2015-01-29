@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILEINPUTSOURCE_H_INCLUDED
-#define BEAST_FILEINPUTSOURCE_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_STREAMS_FILEINPUTSOURCE_H_INCLUDED
+#define BEAST_MODULE_CORE_STREAMS_FILEINPUTSOURCE_H_INCLUDED
 
 namespace beast
 {

@@ -19,8 +19,12 @@
 
 // Android platform configuration
 
+#ifndef BEAST_CONFIG_PLATFORM_ANDROID_H_INCLUDED
+#define BEAST_CONFIG_PLATFORM_ANDROID_H_INCLUDED
+
 #ifdef BEAST_ANDROID
 #undef BEAST_ANDROID
 #endif
 #define BEAST_ANDROID 1
 
+#endif
