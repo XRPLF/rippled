@@ -21,6 +21,7 @@
 #include <ripple/json/Output.h>
 #include <ripple/json/Writer.h>
 #include <beast/unit_test/suite.h>
+#include <stack>
 
 namespace Json {
 
@@ -146,7 +147,7 @@ public:
 
     void writeObjectTag (std::string const& tag)
     {
-#ifdef DEBUG
+#ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top ().tags;
         check (tags.find (tag) == tags.end (), "Already seen tag " + tag);
@@ -194,7 +195,7 @@ private:
          *  If false, we have to emit a , before we write the next entry. */
         bool isFirst = true;
 
-#ifdef DEBUG
+#ifndef NDEBUG
         /** What tags have we already seen in this collection? */
         std::set <std::string> tags;
 #endif
@@ -246,24 +247,26 @@ void Writer::output (Json::Value const& value)
     outputJson (value, impl_->getOutput());
 }
 
-template <>
 void Writer::output (float f)
 {
     auto s = ripple::to_string (f);
     impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
-template <>
 void Writer::output (double f)
 {
     auto s = ripple::to_string (f);
     impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
-template <>
 void Writer::output (std::nullptr_t)
 {
     impl_->output ("null");
+}
+
+void Writer::output (bool b)
+{
+    impl_->output (b ? "true" : "false");
 }
 
 void Writer::implOutput (std::string const& s)

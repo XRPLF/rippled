@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/json/Output.h>
+#include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 
 namespace Json {

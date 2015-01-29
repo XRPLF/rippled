@@ -17,13 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_JSONWRITER_H_INCLUDED
-#define RIPPLE_RPC_JSONWRITER_H_INCLUDED
+#ifndef RIPPLE_JSON_WRITER_H_INCLUDED
+#define RIPPLE_JSON_WRITER_H_INCLUDED
 
 #include <ripple/basics/ToString.h>
 #include <ripple/json/Output.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/ErrorCodes.h>
+ #include <ripple/json/json_value.h>
 #include <memory>
 
 namespace Json {
@@ -200,17 +199,23 @@ public:
     /*** Output a Json::Value. */
     void output (Json::Value const&);
 
+    /** Output a null. */
+    void output (std::nullptr_t);
+
+    /** Output a float. */
+    void output (float);
+
+    /** Output a double. */
+    void output (double);
+
+    /** Output a bool. */
+    void output (bool);
+
     /** Output numbers or booleans. */
     template <typename Type>
     void output (Type t)
     {
-        implOutput (ripple::to_string (t));
-    }
-
-    /** Output an error code. */
-    void output (ripple::error_code_i t)
-    {
-        output (int(t));
+        implOutput (std::to_string (t));
     }
 
     void output (Json::StaticString const& t)
@@ -225,23 +230,10 @@ private:
     void implOutput (std::string const&);
 };
 
-class JsonException : public std::exception
-{
-public:
-    explicit JsonException (std::string const& name) : name_(name) {}
-    const char* what() const throw() override
-    {
-        return name_.c_str();
-    }
-
-private:
-    std::string const name_;
-};
-
 inline void check (bool condition, std::string const& message)
 {
     if (!condition)
-        throw JsonException (message);
+        throw std::logic_error (message);
 }
 
 } // Json

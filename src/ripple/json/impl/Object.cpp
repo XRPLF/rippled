@@ -62,9 +62,9 @@ Collection::Collection (Collection&& that) noexcept
 void Collection::checkWritable (std::string const& label)
 {
     if (!enabled_)
-        throw JsonException (label + ": not enabled");
+        throw std::logic_error (label + ": not enabled");
     if (!writer_)
-        throw JsonException (label + ": not writable");
+        throw std::logic_error (label + ": not writable");
 }
 
 //------------------------------------------------------------------------------
@@ -124,6 +124,70 @@ Object::Proxy Object::operator[] (Json::StaticString const& key)
 {
     return Proxy (*this, std::string (key));
 }
+
+//------------------------------------------------------------------------------
+
+void Array::append (Json::Value const& v)
+{
+    auto t = v.type();
+    switch (t)
+    {
+    case Json::nullValue:    return append (nullptr);
+    case Json::intValue:     return append (v.asInt());
+    case Json::uintValue:    return append (v.asUInt());
+    case Json::realValue:    return append (v.asDouble());
+    case Json::stringValue:  return append (v.asString());
+    case Json::booleanValue: return append (v.asBool());
+
+    case Json::objectValue:
+    {
+        auto object = appendObject ();
+        copyFrom (object, v);
+        return;
+    }
+
+    case Json::arrayValue:
+    {
+        auto array = appendArray ();
+        for (auto& item: v)
+            array.append (item);
+        return;
+    }
+    }
+    assert (false);  // Can't get here.
+}
+
+void Object::set (std::string const& k, Json::Value const& v)
+{
+    auto t = v.type();
+    switch (t)
+    {
+    case Json::nullValue:    return set (k, nullptr);
+    case Json::intValue:     return set (k, v.asInt());
+    case Json::uintValue:    return set (k, v.asUInt());
+    case Json::realValue:    return set (k, v.asDouble());
+    case Json::stringValue:  return set (k, v.asString());
+    case Json::booleanValue: return set (k, v.asBool());
+
+    case Json::objectValue:
+    {
+        auto object = setObject (k);
+        copyFrom (object, v);
+        return;
+    }
+
+    case Json::arrayValue:
+    {
+        auto array = setArray (k);
+        for (auto& item: v)
+            array.append (item);
+        return;
+    }
+    }
+    assert (false);  // Can't get here.
+}
+
+//------------------------------------------------------------------------------
 
 namespace {
 

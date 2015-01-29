@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_JSONOBJECT_H_INCLUDED
-#define RIPPLE_RPC_JSONOBJECT_H_INCLUDED
+#ifndef RIPPLE_JSON_OBJECT_H_INCLUDED
+#define RIPPLE_JSON_OBJECT_H_INCLUDED
 
 #include <ripple/json/Writer.h>
 #include <beast/cxx14/memory.h>
@@ -39,14 +39,14 @@ namespace Json {
 
     1. Only one collection can be open for change at any one time.
 
-       This condition is enforced automatically and a JsonException thrown if it
+       This condition is enforced automatically and a std::logic_error thrown if it
        is violated.
 
     2. A tag may only be used once in an Object.
 
        Some objects have many tags, so this condition might be a little
        expensive. Enforcement of this condition is turned on in debug builds and
-       a JsonException is thrown when the tag is added for a second time.
+       a std::logic_error is thrown when the tag is added for a second time.
 
     Code samples:
 
@@ -122,7 +122,7 @@ namespace Json {
         // Outputs {"hands":{"left":false,"right":true}}
 
 
-   Typical ways to make mistakes and get a JsonException:
+   Typical ways to make mistakes and get a std::logic_error:
 
         Writer writer;
         Object::Root root (writer);
@@ -360,6 +360,14 @@ public:
     void operator= (T const& t)
     {
         object_.set (key_, t);
+        // Note: This function shouldn't return *this, because it's a trap.
+        //
+        // In Json::Value, foo[jss::key] returns a reference to a
+        // mutable Json::Value contained _inside_ foo.  But in the case of
+        // Json::Object, where we write once only, there isn't any such
+        // reference that can be returned.  Returning *this would return an
+        // object "a level higher" than in Json::Value, leading to obscure bugs,
+        // particularly in generic code.
     }
 };
 
@@ -373,72 +381,12 @@ void Array::append (Scalar const& value)
         writer_->append (value);
 }
 
-inline void Array::append (Json::Value const& v)
-{
-    auto t = v.type();
-    switch (t)
-    {
-    case Json::nullValue:    return append (nullptr);
-    case Json::intValue:     return append (v.asInt());
-    case Json::uintValue:    return append (v.asUInt());
-    case Json::realValue:    return append (v.asDouble());
-    case Json::stringValue:  return append (v.asString());
-    case Json::booleanValue: return append (v.asBool());
-
-    case Json::objectValue:
-    {
-        auto object = appendObject ();
-        copyFrom (object, v);
-        return;
-    }
-
-    case Json::arrayValue:
-    {
-        auto array = appendArray ();
-        for (auto& item: v)
-            array.append (item);
-        return;
-    }
-    }
-    assert (false);  // Can't get here.
-}
-
 template <typename Scalar>
 void Object::set (std::string const& key, Scalar const& value)
 {
     checkWritable ("set");
     if (writer_)
         writer_->set (key, value);
-}
-
-inline void Object::set (std::string const& k, Json::Value const& v)
-{
-    auto t = v.type();
-    switch (t)
-    {
-    case Json::nullValue:    return set (k, nullptr);
-    case Json::intValue:     return set (k, v.asInt());
-    case Json::uintValue:    return set (k, v.asUInt());
-    case Json::realValue:    return set (k, v.asDouble());
-    case Json::stringValue:  return set (k, v.asString());
-    case Json::booleanValue: return set (k, v.asBool());
-
-    case Json::objectValue:
-    {
-        auto object = setObject (k);
-        copyFrom (object, v);
-        return;
-    }
-
-    case Json::arrayValue:
-    {
-        auto array = setArray (k);
-        for (auto& item: v)
-            array.append (item);
-        return;
-    }
-    }
-    assert (false);  // Can't get here.
 }
 
 inline

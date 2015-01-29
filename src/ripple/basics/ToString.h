@@ -20,6 +20,9 @@
 #ifndef RIPPLE_BASICS_TOSTRING_H_INCLUDED
 #define RIPPLE_BASICS_TOSTRING_H_INCLUDED
 
+#include <string>
+#include <type_traits>
+
 namespace ripple {
 
 /** to_string() generalizes std::to_string to handle bools, chars, and strings.
