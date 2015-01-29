@@ -1,0 +1,79 @@
+COMPILER = g++
+CXXFLAGS = -Wall -pedantic -Wno-long-long
+INCLUDEDIRS = 
+
+BACKENDLOADERDEFS = -DSOCI_LIB_PREFIX=\"libsoci_\" -DSOCI_LIB_SUFFIX=\".so\"
+
+OBJS =  session.o statement.o row.o values.o \
+	into-type.o use-type.o \
+	blob.o rowid.o procedure.o ref-counted-prepare-info.o ref-counted-statement.o \
+	once-temp-type.o prepare-temp-type.o error.o transaction.o backend-loader.o \
+	connection-pool.o soci-simple.o
+
+
+libsoci_core.a : ${OBJS} 
+	ar rv $@ $?
+	rm *.o
+
+shared : ${OBJS} 
+	${COMPILER} -fPIC -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+	${COMPILER} -shared -o libsoci_core.so ${OBJS} 
+	rm *.o
+
+session.o : session.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+statement.o : statement.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+row.o : row.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+values.o : values.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+into-type.o : into-type.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+use-type.o : use-type.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+	
+blob.o : blob.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+error.o : error.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+rowid.o : rowid.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+procedure.o : procedure.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+ref-counted-prepare-info.o : ref-counted-prepare-info.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+ref-counted-statement.o : ref-counted-statement.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+once-temp-type.o : once-temp-type.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+prepare-temp-type.o : prepare-temp-type.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+transaction.o : transaction.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+backend-loader.o : backend-loader.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${BACKENDLOADERDEFS} ${INCLUDEDIRS}
+
+connection-pool.o : connection-pool.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+soci-simple.o : soci-simple.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+
+clean :
+	rm -f libsoci_core.a libsoci_core.so

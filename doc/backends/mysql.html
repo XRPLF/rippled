@@ -1,0 +1,261 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="../style.css" />
+  <title>SOCI - MySQL Backend Reference</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>MySQL Backend Reference</h2>
+
+<div class="navigation">
+<a href="#prerequisites">Prerequisites</a><br />
+<div class="navigation-indented">
+  <a href="#versions">Supported Versions</a><br />
+  <a href="#tested">Tested Platforms</a><br />
+  <a href="#required">Required Client Libraries</a><br />
+</div>
+<a href="#connecting">Connecting to the Database</a><br />
+     
+<a href="#support">SOCI Feature Support</a><br />
+<div class="navigation-indented">
+    <a href="#dynamic">Dynamic Binding</a><br />
+    <a href="#bindingbyname">Binding by Name</a><br />
+    <a href="#bulk">Bulk Operations</a><br />
+    <a href="#transactions">Transactions</a><br />
+    <a href="#blob">BLOB Data Type</a><br />
+    <a href="#rowid">RowID Data Type</a><br />
+    <a href="#nested">Nested Statements</a><br />
+    <a href="#procedures">Stored Procedures</a><br />
+</div>
+  <a href="#native">Accessing the Native Database API</a><br />
+  <a href="#extensions">Backend-specific Extensions</a><br />
+  <a href="#options">Configuration options</a><br />
+</div>
+
+<h3 id="prerequisites">Prerequisites</h3>
+<h4 id="versions">Supported Versions</h4>
+
+<p>The SOCI MySQL backend should in principle work with every version of MySQL 5.x.
+Some of the features (transactions, stored functions) are not available when 
+MySQL server doesn't support them.</p>
+
+<h4 id="tested">Tested Platforms</h4>
+
+<table border="1" cellpadding="5" cellspacing="0">
+<tbody>
+<tr><th>MySQL version</th><th>Operating System</th><th>Compiler</th></tr>
+<tr><td>5.5.28</td><td>OS X 10.8.2</td><td>Apple LLVM version 4.2
+(clang-425.0.24)</td></tr>
+<tr><td>5.0.96</td><td>Ubuntu 8.04.4 LTS (Hardy Heron)</td>
+<td>g++ (GCC) 4.2.4 (Ubuntu 4.2.4-1ubuntu4)</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="required">Required Client Libraries</h4>
+
+<p>The SOCI MySQL backend requires MySQL's <code>libmysqlclient</code>
+client library.</p>
+<p>Note that the SOCI library itself depends also on <code>libdl</code>, so the minimum set of libraries needed to compile a basic client program is:</p>
+<pre class="example">
+-lsoci_core -lsoci_mysql -ldl -lmysqlclient
+</pre>
+
+
+<h4 id="connecting">Connecting to the Database</h4>
+
+<p>To establish a connection to a MySQL server, create a <code>session</code> object
+using the <code>mysql</code> backend factory together with a connection
+string:</p>
+
+<pre class="example">
+session sql(mysql, "db=test user=root password='Ala ma kota'");
+
+// or:
+session sql("mysql", "db=test user=root password='Ala ma kota'");
+
+// or:
+session sql("mysql://db=test user=root password='Ala ma kota'");
+</pre>
+
+<p>The set of parameters used in the connection string for MySQL is:</p>
+<ul>
+  <li><code>dbname</code> or <code>db</code> or <code>service</code>
+  (required)</li>
+  <li><code>user</code></li>
+  <li><code>password</code> or <code>pass</code></li>
+  <li><code>host</code></li>
+  <li><code>port</code></li>
+  <li><code>unix_socket</code></li>
+  <li><code>sslca</code></li>
+  <li><code>sslcert</code></li>
+  <li><code>local_infile</code> - should be <code>0</code> or <code>1</code>,
+  <code>1</code> means <code>MYSQL_OPT_LOCAL_INFILE</code> will be set.</li>
+  <li><code>charset</code></li>
+</ul>
+
+<p>Once you have created a <code>session</code> object as shown above, you
+can use it to access the database, for example:</p>
+<pre class="example">
+int count;
+sql &lt;&lt; "select count(*) from invoices", into(count);
+</pre>
+
+<p>(See the <a href="../basics.html">SOCI basics</a> and <a href="../exchange.html">exchanging data</a> documentation for general information on using the <code>session</code> class.)</p>
+
+<h3 id="support">SOCI Feature Support</h3>
+<h4 id="dynamic">Dynamic Binding</h4>
+
+<p>The MySQL backend supports the use of the SOCI <code>row</code> class,
+which facilitates retrieval of data which type is not known at compile
+time.</p>
+
+<p>When calling <code>row::get&lt;T&gt;()</code>, the type you should pass
+as <code>T</code> depends upon the underlying database type.<br/>
+For the MySQL backend, this type mapping is:</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <tbody>
+    <tr>
+      <th>MySQL Data Type</th>
+      <th>SOCI Data Type</th>
+      <th><code>row::get&lt;T&gt;</code> specializations</th>
+    </tr>
+    <tr>
+      <td>FLOAT, DOUBLE, DECIMAL and synonyms</td>
+      <td><code>dt_double</code></td>
+      <td><code>double</code></td>
+    </tr>
+    <tr>
+      <td>TINYINT, TINYINT UNSIGNED, SMALLINT, SMALLINT UNSIGNED, INT</td>
+      <td><code>dt_integer</code></td>
+      <td><code>int</code></td>
+    </tr>
+    <tr>
+      <td>INT UNSIGNED</td>
+      <td><code>dt_long_long</code></td>
+      <td><code>long long</code> or <code>unsigned</code></td>
+    </tr>
+    <tr>
+      <td>BIGINT</td>
+      <td><code>dt_long_long</code></td>
+      <td><code>long long</code></td>
+    </tr>
+    <tr>
+      <td>BIGINT UNSIGNED</td>
+      <td><code>dt_unsigned_long_long</code></td>
+      <td><code>unsigned long long</code></td>
+    </tr>
+    <tr>
+      <td>CHAR, VARCHAR, BINARY, VARBINARY, TINYBLOB, MEDIUMBLOB, BLOB,
+      LONGBLOB, TINYTEXT, MEDIUMTEXT, TEXT, LONGTEXT, ENUM</td>
+      <td><code>dt_string</code></td>
+      <td><code>std::string</code></td>
+    </tr>
+    <tr>
+      <td>TIMESTAMP (works only with MySQL >=&nbsp;5.0), DATE,
+      TIME, DATETIME</td>
+      <td><code>dt_date</code></td>
+      <td><code>std::tm</code><code></code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>(See the <a href="../exchange.html#dynamic">dynamic resultset binding</a> documentation for general information on using the <code>Row</code> class.)</p>
+
+<h4 id="bindingbyname">Binding by Name</h4>
+
+<p>In addition to <a href="../exchange.html#bind_position">binding by
+position</a>, the MySQL backend supports
+<a href="../exchange.html#bind_name">binding by name</a>, via an overload
+of the <code>use()</code> function:</p>
+
+<pre class="example">
+int id = 7;
+sql &lt;&lt; "select name from person where id = :id", use(id, "id")
+</pre>
+
+<p>It should be noted that parameter binding of any kind is supported
+only by means of emulation, since the underlying API used by the backend
+doesn't provide this feature.</p>
+
+<h4 id="bulk">Bulk Operations</h4>
+
+<p>The MySQL backend has full support for SOCI's <a href="../statements.html#bulk">bulk operations</a> interface. This feature is also supported
+by emulation.</p>
+
+<h4 id="transactions">Transactions</h4>
+
+<p><a href="../statements.html#transactions">Transactions</a> are also
+supported by the MySQL backend. Please note, however, that transactions
+can only be used when the MySQL server supports them (it depends on
+options used during the compilation of the server; typically, but not
+always, servers >=4.0 support transactions and earlier versions do not)
+and only with appropriate table types.
+</p>
+
+<h4 id="blob">BLOB Data Type</h4>
+
+<p>SOCI <code>blob</code> interface is not supported by the MySQL backend.</p>
+<p>Note that this does not mean you cannot use MySQL's <code>BLOB</code>
+types.  They can be selected using the usual SQL syntax and read into
+<code>std::string</code> on the C++ side, so no special interface is
+required.</p>
+
+<h4 id="rowid">RowID Data Type</h4>
+
+<p>The <code>rowid</code> functionality is not supported by the MySQL backend.</p>
+
+<h4 id="nested">Nested Statements</h4>
+
+<p>Nested statements are not supported by the MySQL backend.</p>
+
+<h4 id="procedures">Stored Procedures</h4>
+
+<p>MySQL version 5.0 and later supports two kinds of
+stored routines: stored procedures and stored functions
+(for details, please consult the
+<a href="http://dev.mysql.com/doc/refman/5.0/en/stored-procedures.html">MySQL
+documentation</a>). Stored functions can be executed by using
+SOCI's <a href="../statements.html#procedures">procedure</a> class.
+There is currently no support for stored procedures.</p>
+
+<h3 id="native">Accessing the native database API</h3>
+
+<p>SOCI provides access to underlying datbabase APIs via several <code>get_backend()</code> functions, as described in the <a href="../beyond.html">Beyond SOCI</a> documentation.</p>
+
+<p>The MySQL backend provides the following concrete classes for native API access:</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <tbody>
+    <tr>
+      <th>Accessor Function</th>
+      <th>Concrete Class</th>
+    </tr>
+    <tr>
+      <td><code>session_backend * session::get_backend()</code></td>
+      <td><code>mysql_session_backend</code></td>
+    </tr>
+    <tr>
+      <td><code>statement_backend * statement::get_backend()</code></td>
+      <td><code>mysql_statement_backend</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h3 id="extensions">Backend-specific extensions</h3>
+
+<p>None.</p>
+
+<h3 id="options">Configuration options</h3>
+
+<p>None.</p>
+
+<p class="copyright">Copyright &copy; 2004-2008 Maciej Sobczak, Stephen Hutton, Pawel Aleksander Fedorynski</p>
+</body>
+</html>
