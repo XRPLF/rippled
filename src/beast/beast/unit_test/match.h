@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNIT_TEST_MATCH_H_INLCUDED
-#define BEAST_UNIT_TEST_MATCH_H_INLCUDED
+#ifndef BEAST_UNIT_TEST_MATCH_H_INCLUDED
+#define BEAST_UNIT_TEST_MATCH_H_INCLUDED
 
 #include <beast/unit_test/suite_info.h>
 

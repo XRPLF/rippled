@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTPPARSERIMPL_H_INCLUDED
-#define BEAST_HTTPPARSERIMPL_H_INCLUDED
+#ifndef BEAST_MODULE_ASIO_HTTPPARSERIMPL_H_INCLUDED
+#define BEAST_MODULE_ASIO_HTTPPARSERIMPL_H_INCLUDED
 
 #include <beast/http/impl/joyent_parser.h>
 #include <boost/asio/buffer.hpp>

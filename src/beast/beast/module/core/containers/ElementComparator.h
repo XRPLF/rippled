@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ELEMENTCOMPARATOR_H_INCLUDED
-#define BEAST_ELEMENTCOMPARATOR_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_CONTAINERS_ELEMENTCOMPARATOR_H_INCLUDED
+#define BEAST_MODULE_CORE_CONTAINERS_ELEMENTCOMPARATOR_H_INCLUDED
 
 namespace beast
 {

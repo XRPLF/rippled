@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_SYSTEM_BOOSTINCLUDES_H_INCLUDED
-#define BEAST_ASIO_SYSTEM_BOOSTINCLUDES_H_INCLUDED
+#ifndef BEAST_MODULE_ASIO_BOOSTINCLUDES_H_INCLUDED
+#define BEAST_MODULE_ASIO_BOOSTINCLUDES_H_INCLUDED
 
 // Make sure we take care of fixing boost::bind oddities first.
 #if !defined(BEAST_CORE_H_INCLUDED)

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ARRAY_H_INCLUDED
-#define BEAST_ARRAY_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_CONTAINERS_ARRAY_H_INCLUDED
+#define BEAST_MODULE_CORE_CONTAINERS_ARRAY_H_INCLUDED
 
 #include <beast/module/core/containers/ArrayAllocationBase.h>
 #include <beast/module/core/containers/ElementComparator.h>

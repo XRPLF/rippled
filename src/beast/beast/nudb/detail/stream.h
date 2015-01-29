@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_STREAM_H_INCLUDED
-#define BEAST_NUDB_STREAM_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_STREAM_H_INCLUDED
+#define BEAST_NUDB_DETAIL_STREAM_H_INCLUDED
 
 #include <beast/nudb/error.h>
 #include <beast/nudb/detail/config.h>

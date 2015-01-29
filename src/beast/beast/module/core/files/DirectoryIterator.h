@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
-#define BEAST_DIRECTORYITERATOR_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_FILES_DIRECTORYITERATOR_H_INCLUDED
+#define BEAST_MODULE_CORE_FILES_DIRECTORYITERATOR_H_INCLUDED
 
 #include <memory>
 

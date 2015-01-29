@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_H_INCLUDED
-#define BEAST_SQDB_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_SQDB_H_INCLUDED
+#define BEAST_MODULE_SQDB_SQDB_H_INCLUDED
 
 /** An embedded database wrapper with an intuitive, type-safe interface.
 

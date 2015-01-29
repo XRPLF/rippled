@@ -24,8 +24,8 @@
 namespace beast
 {
 
-#ifndef BEAST_FILEOUTPUTSTREAM_H_INCLUDED
-#define BEAST_FILEOUTPUTSTREAM_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_FILES_FILEOUTPUTSTREAM_H_INCLUDED
+#define BEAST_MODULE_CORE_FILES_FILEOUTPUTSTREAM_H_INCLUDED
 
 //==============================================================================
 /**

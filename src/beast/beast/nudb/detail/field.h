@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_FIELD_H_INCLUDED
-#define BEAST_NUDB_FIELD_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
+#define BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
 
 #include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/stream.h>

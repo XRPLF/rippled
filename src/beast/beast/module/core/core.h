@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_H_INCLUDED
-#define BEAST_CORE_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_CORE_H_INCLUDED
+#define BEAST_MODULE_CORE_CORE_H_INCLUDED
 
 // TargetPlatform.h should not use anything from BeastConfig.h
 #include <beast/Config.h>

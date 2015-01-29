@@ -30,8 +30,9 @@
 ** the version number) and changes its name to "sqlite3.h" as
 ** part of the build process.
 */
-#ifndef _SQLITE3_H_
-#define _SQLITE3_H_
+#ifndef BEAST_MODULE_SQLITE_SQLITE3_H_INCLUDED
+#define BEAST_MODULE_SQLITE_SQLITE3_H_INCLUDED
+
 #include <stdarg.h>     /* Needed for the definition of va_list */
 
 /*

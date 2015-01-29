@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TYPE_TRAITS_MAYBE_CONST_H_INCLUDED
-#define BEAST_TYPE_TRAITS_MAYBE_CONST_H_INCLUDED
+#ifndef BEAST_UTILITY_MAYBE_CONST_H_INCLUDED
+#define BEAST_UTILITY_MAYBE_CONST_H_INCLUDED
 
 #include <type_traits>
 

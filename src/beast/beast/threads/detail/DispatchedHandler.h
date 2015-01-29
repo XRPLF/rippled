@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADS_DISPATCHEDHANDLER_H_INCLUDED
-#define BEAST_THREADS_DISPATCHEDHANDLER_H_INCLUDED
+#ifndef BEAST_THREADS_DETAIL_DISPATCHEDHANDLER_H_INCLUDED
+#define BEAST_THREADS_DETAIL_DISPATCHEDHANDLER_H_INCLUDED
 
 #include <beast/threads/detail/BindHandler.h>
 

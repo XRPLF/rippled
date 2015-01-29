@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRITICALSECTION_H_INCLUDED
-#define BEAST_CRITICALSECTION_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_THREADS_CRITICALSECTION_H_INCLUDED
+#define BEAST_MODULE_CORE_THREADS_CRITICALSECTION_H_INCLUDED
 
 #include <beast/module/core/threads/ScopedLock.h>
 #include <cstdint>

@@ -18,8 +18,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONTAINER_TESTS_HASH_METRICS_H_INCLUDED
-#define BEAST_CONTAINER_TESTS_HASH_METRICS_H_INCLUDED
+#ifndef BEAST_HASH_HASH_METRICS_H_INCLUDED
+#define BEAST_HASH_HASH_METRICS_H_INCLUDED
 
 #include <algorithm>
 #include <cmath>

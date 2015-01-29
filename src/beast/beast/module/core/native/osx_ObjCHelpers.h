@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_OSX_OBJCHELPERS_H_INCLUDED
-#define BEAST_OSX_OBJCHELPERS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_NATIVE_OSX_OBJCHELPERS_H_INCLUDED
+#define BEAST_MODULE_CORE_NATIVE_OSX_OBJCHELPERS_H_INCLUDED
 
 namespace beast
 {

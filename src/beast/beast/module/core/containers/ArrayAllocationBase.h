@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
-#define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_CONTAINERS_ARRAYALLOCATIONBASE_H_INCLUDED
+#define BEAST_MODULE_CORE_CONTAINERS_ARRAYALLOCATIONBASE_H_INCLUDED
 
 #include <beast/HeapBlock.h>
 

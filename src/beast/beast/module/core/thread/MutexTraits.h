@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
-#define BEAST_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
+#define BEAST_MODULE_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
 
 namespace beast
 {

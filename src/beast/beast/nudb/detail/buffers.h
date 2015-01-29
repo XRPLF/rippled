@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_BUFFERS_H_INCLUDED
-#define BEAST_NUDB_BUFFERS_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_BUFFERS_H_INCLUDED
+#define BEAST_NUDB_DETAIL_BUFFERS_H_INCLUDED
 
 #include <beast/nudb/detail/config.h>
 #include <atomic>

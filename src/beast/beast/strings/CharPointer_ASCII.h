@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHARPOINTER_ASCII_H_INCLUDED
-#define BEAST_CHARPOINTER_ASCII_H_INCLUDED
+#ifndef BEAST_STRINGS_CHARPOINTER_ASCII_H_INCLUDED
+#define BEAST_STRINGS_CHARPOINTER_ASCII_H_INCLUDED
 
 #include <beast/Config.h>
 

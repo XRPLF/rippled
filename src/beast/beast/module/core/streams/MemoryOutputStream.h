@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
-#define BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_STREAMS_MEMORYOUTPUTSTREAM_H_INCLUDED
+#define BEAST_MODULE_CORE_STREAMS_MEMORYOUTPUTSTREAM_H_INCLUDED
 
 namespace beast
 {

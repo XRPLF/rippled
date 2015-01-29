@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STANDARDINCLUDES_H_INCLUDED
-#define BEAST_STANDARDINCLUDES_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_SYSTEM_STANDARDINCLUDES_H_INCLUDED
+#define BEAST_MODULE_CORE_SYSTEM_STANDARDINCLUDES_H_INCLUDED
 
 // Include some common OS headers..
 #if BEAST_MSVC
