@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+		<title>SOCI-Ada - documentation</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+	</head>
+<body>
+<h1>SOCI-Ada - manual</h1>
+
+<p class="section"><b>Concepts</b></p>
+<p>
+The SOCI-Ada library borrows its concepts and naming from the main SOCI project. They are shortly explained here in the bottom-up fashion.
+</p>
+<p>
+One of the main properties of the library is that the data objects which are bound for transfer to and from the database server are managed by the library itself and are not directly visible from the user code. This ensures that no aliasing of objects occurs between Ada and underlying C++ code, which makes the inter-language interface easier and more resilient to the differences in how compilers handle the linkage. As a direct result of this design choice, users of SOCI-Ada need to instruct the library to internally create all objects that will be subject to data transfer.
+</p>
+<p>
+There are two kinds of objects that can be managed by the SOCI-Ada library:
+</p>
+<ul>
+  <li><i>Into elements</i>, which are data objects that are transferred from the database to the user program as a result of executing a query. There are single into elements for binding single rows of results and vector into elements for binding whole bunches of data corresponding to whole result sets or their subranges. The into elements are identified by their <i>position</i>.</li>
+  <li><i>Use elements</i>, which are data objects that are transferred from the user program to the database as parameters of the query (and, if supported by the target database, that can be modified by the database server and transferred back to the user program). There are single use elements for binding parameters of single-row queries and vector use elements for binding whole bunches of data for transfer. The use elements are identified by their <i>name</i>.</li>
+</ul>
+<p>
+The user program can read the current value of into and use elements and assign new values to use elements. Elements are strongly typed and the following types are currently supported:
+</p>
+<ul>
+  <li><code>String</code></li>
+  <li><code>SOCI.DB_Integer</code>, which is defined by the library in terms of <code>Interfaces.C.int</code></li>
+  <li><code>SOCI.DB_Long_Long_Integer</code>, which is defined in terms of <code>Interfaces.Integer_64</code></li>
+  <li><code>SOCI.DB_Long_Float</code>, which is defined in terms of <code>Interfaces.C.double</code></li>
+  <li><code>Ada.Calendar.Time</code></li>
+</ul>
+<p>
+Both into and use elements are managed for a single <i>statement</i>, which can be prepared once and executed once or many times, with data transfer handled during execution or fetch phase.
+</p>
+<p>
+Statements can be managed explicitly, which is required if they are to be used repeteadly or when data transfer is needed or implicitly, which is a shorthand notation that is particularly useful with simple queries or DDL commands.
+</p>
+<p>
+All statements are handled within the context of some <i>session</i>, which also supports <i>transactions</i>.
+</p>
+<p>
+Sessions can be managed in isolation or as a group called <i>connection pool</i>, which helps to decouple tasking design choices from the concurrency policies at the database connection level. Sessions are <i>leased</i> from the pool for some time during which no other task can access them and returned back when no longer needed, where they can be acquired again by other tasks.
+</p>
+<p>
+All potential problems are signalled via exceptions that have some descriptive message attached to them.
+</p>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left">
+      <a href="index.html">Back to index</a>
+    </td>
+    <td class="foot-link-right">
+      <a href="idioms.html">Common Idioms</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2008-2011 Maciej Sobczak</p>
+</body>
+</html>
