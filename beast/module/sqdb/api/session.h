@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_SESSION_H_INCLUDED
-#define BEAST_SQDB_SESSION_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_API_SESSION_H_INCLUDED
+#define BEAST_MODULE_SQDB_API_SESSION_H_INCLUDED
 
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/module/core/memory/SharedSingleton.h>

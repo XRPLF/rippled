@@ -20,6 +20,9 @@
 // Ideas from boost
 
 // Intel
+#ifndef BEAST_CONFIG_SELECTCOMPILERCONFIG_H_INCLUDED
+#define BEAST_CONFIG_SELECTCOMPILERCONFIG_H_INCLUDED
+
 #if defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)
 #define BEAST_COMPILER_CONFIG "config/compiler/Intel.h"
 
@@ -42,3 +45,4 @@
 #error "Unsupported compiler."
 #endif
 
+#endif

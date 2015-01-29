@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_GENTEX_H_INCLUDED
-#define BEAST_NUDB_GENTEX_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_GENTEX_H_INCLUDED
+#define BEAST_NUDB_DETAIL_GENTEX_H_INCLUDED
 
 #include <beast/nudb/detail/config.h>
 #include <beast/utility/noexcept.h>

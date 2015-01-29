@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNIT_TEST_AMOUNT_H_INLCUDED
-#define BEAST_UNIT_TEST_AMOUNT_H_INLCUDED
+#ifndef BEAST_UNIT_TEST_AMOUNT_H_INCLUDED
+#define BEAST_UNIT_TEST_AMOUNT_H_INCLUDED
 
 #include <cstddef>
 #include <ostream>

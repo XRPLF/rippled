@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_WRAPPED_SINK_H_INCLUDED
-#define BEAST_UTILITY_WRAPPED_SINK_H_INCLUDED
+#ifndef BEAST_UTILITY_WRAPPEDSINK_H_INCLUDED
+#define BEAST_UTILITY_WRAPPEDSINK_H_INCLUDED
 
 #include <beast/utility/Journal.h>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADS_WRAPSCOPED_H_INCLUDED
-#define BEAST_THREADS_WRAPSCOPED_H_INCLUDED
+#ifndef BEAST_THREADS_SCOPEDWRAPPERCONTEXT_H_INCLUDED
+#define BEAST_THREADS_SCOPEDWRAPPERCONTEXT_H_INCLUDED
 
 namespace beast {
 

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILE_H_INCLUDED
-#define BEAST_FILE_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_FILES_FILE_H_INCLUDED
+#define BEAST_MODULE_CORE_FILES_FILE_H_INCLUDED
 
 #include <beast/module/core/containers/Array.h>
 #include <beast/module/core/memory/MemoryBlock.h>

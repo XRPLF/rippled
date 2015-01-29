@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_ATEXITHOOK_H_INCLUDED
-#define BEAST_CORE_ATEXITHOOK_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_TIME_ATEXITHOOK_H_INCLUDED
+#define BEAST_MODULE_CORE_TIME_ATEXITHOOK_H_INCLUDED
 
 #include <beast/intrusive/List.h>
 

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SMARTPTR_SHAREDPTR_H_INCLUDED
-#define BEAST_SMARTPTR_SHAREDPTR_H_INCLUDED
+#ifndef BEAST_SMART_PTR_SHAREDPTR_H_INCLUDED
+#define BEAST_SMART_PTR_SHAREDPTR_H_INCLUDED
 
 #include <beast/Config.h>
 #include <beast/smart_ptr/SharedObject.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNIT_TEST_REPORTER_H_INLCUDED
-#define BEAST_UNIT_TEST_REPORTER_H_INLCUDED
+#ifndef BEAST_UNIT_TEST_REPORTER_H_INCLUDED
+#define BEAST_UNIT_TEST_REPORTER_H_INCLUDED
 
 #include <beast/unit_test/amount.h>
 #include <beast/unit_test/recorder.h>

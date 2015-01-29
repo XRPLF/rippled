@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_CONFIG_H_INCLUDED
-#define BEAST_NUDB_CONFIG_H_INCLUDED
+#ifndef BEAST_NUDB_DETAIL_CONFIG_H_INCLUDED
+#define BEAST_NUDB_DETAIL_CONFIG_H_INCLUDED
 
 #include <beast/hash/xxhasher.h>
 

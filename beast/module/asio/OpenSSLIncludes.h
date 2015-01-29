@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_SYSTEM_OPENSSLINCLUDES_H_INCLUDED
-#define BEAST_ASIO_SYSTEM_OPENSSLINCLUDES_H_INCLUDED
+#ifndef BEAST_MODULE_ASIO_OPENSSLINCLUDES_H_INCLUDED
+#define BEAST_MODULE_ASIO_OPENSSLINCLUDES_H_INCLUDED
 
 #define OPENSSL_THREAD_DEFINES
 #include <openssl/opensslconf.h>

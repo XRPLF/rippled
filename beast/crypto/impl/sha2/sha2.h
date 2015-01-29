@@ -32,8 +32,8 @@
  * $Id: sha2.h,v 1.1 2001/11/08 00:02:01 adg Exp adg $
  */
 
-#ifndef __SHA2_H__
-#define __SHA2_H__
+#ifndef BEAST_CRYPTO_SHA2_SHA2_H_INCLUDED
+#define BEAST_CRYPTO_SHA2_SHA2_H_INCLUDED
 
 //#ifdef __cplusplus
 //extern "C" {

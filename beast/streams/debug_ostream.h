@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_DEBUG_OSTREAM_H_INCLUDED
-#define BEAST_UTILITY_DEBUG_OSTREAM_H_INCLUDED
+#ifndef BEAST_STREAMS_DEBUG_OSTREAM_H_INCLUDED
+#define BEAST_STREAMS_DEBUG_OSTREAM_H_INCLUDED
 
 #include <beast/streams/abstract_ostream.h>
 

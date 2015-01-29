@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_FATALERROR_H_INCLUDED
-#define BEAST_CORE_FATALERROR_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_DIAGNOSTIC_FATALERROR_H_INCLUDED
+#define BEAST_MODULE_CORE_DIAGNOSTIC_FATALERROR_H_INCLUDED
 
 #include <beast/strings/String.h>
 

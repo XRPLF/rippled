@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SQDB_TRANSACTION_H_INCLUDED
-#define BEAST_SQDB_TRANSACTION_H_INCLUDED
+#ifndef BEAST_MODULE_SQDB_API_TRANSACTION_H_INCLUDED
+#define BEAST_MODULE_SQDB_API_TRANSACTION_H_INCLUDED
 
 #include <beast/utility/Error.h>
 

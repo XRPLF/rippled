@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADS_BINDHANDLER_H_INCLUDED
-#define BEAST_THREADS_BINDHANDLER_H_INCLUDED
+#ifndef BEAST_THREADS_DETAIL_BINDHANDLER_H_INCLUDED
+#define BEAST_THREADS_DETAIL_BINDHANDLER_H_INCLUDED
 
 namespace beast {
 namespace detail {

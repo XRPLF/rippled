@@ -26,8 +26,8 @@
 // slower than MD5.
 //
 
-#ifndef BEAST_SPOOKYV2_H_INCLUDED
-#define BEAST_SPOOKYV2_H_INCLUDED
+#ifndef BEAST_HASH_SPOOKYV2_H_INCLUDED
+#define BEAST_HASH_SPOOKYV2_H_INCLUDED
 
 #include <stddef.h>
 

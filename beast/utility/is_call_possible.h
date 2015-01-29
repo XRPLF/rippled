@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_ISCALLPOSSIBLE_H_INCLUDED
-#define BEAST_UTILITY_ISCALLPOSSIBLE_H_INCLUDED
+#ifndef BEAST_UTILITY_IS_CALL_POSSIBLE_H_INCLUDED
+#define BEAST_UTILITY_IS_CALL_POSSIBLE_H_INCLUDED
 
 #include <beast/cxx14/type_traits.h> // <type_traits>
 

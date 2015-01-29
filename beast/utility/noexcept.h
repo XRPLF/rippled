@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WORKAROUND_NOEXCEPT_H_INCLUDED
-#define BEAST_WORKAROUND_NOEXCEPT_H_INCLUDED
+#ifndef BEAST_UTILITY_NOEXCEPT_H_INCLUDED
+#define BEAST_UTILITY_NOEXCEPT_H_INCLUDED
 
 #ifdef _MSC_VER
 # ifdef noexcept

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
-#define BEAST_STRINGPAIRARRAY_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_TEXT_STRINGPAIRARRAY_H_INCLUDED
+#define BEAST_MODULE_CORE_TEXT_STRINGPAIRARRAY_H_INCLUDED
 
 #include <beast/module/core/text/StringArray.h>
 

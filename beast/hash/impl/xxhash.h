@@ -57,8 +57,8 @@ It depends on successfully passing SMHasher test set.
 10 is a perfect score.
 */
 
-#ifndef BEAST_CONTAINER_XXHASH_H_INCLUDED
-#define BEAST_CONTAINER_XXHASH_H_INCLUDED
+#ifndef BEAST_HASH_XXHASH_H_INCLUDED
+#define BEAST_HASH_XXHASH_H_INCLUDED
 
 /*****************************
    Includes

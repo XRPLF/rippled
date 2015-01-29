@@ -20,6 +20,9 @@
 // Ideas from boost
 
 // Android, which must be manually set by defining BEAST_ANDROID
+#ifndef BEAST_CONFIG_SELECTPLATFORMCONFIG_H_INCLUDED
+#define BEAST_CONFIG_SELECTPLATFORMCONFIG_H_INCLUDED
+
 #if defined(BEAST_ANDROID)
 #define BEAST_PLATFORM_CONFIG "config/platform/Android.h"
 
@@ -41,4 +44,5 @@
 
 #else
 #error "Unsupported platform."
+#endif
 #endif

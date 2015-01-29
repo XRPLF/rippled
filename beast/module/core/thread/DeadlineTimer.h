@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DEADLINETIMER_H_INCLUDED
-#define BEAST_DEADLINETIMER_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
+#define BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
 
 #include <beast/module/core/memory/SharedSingleton.h>
 
