@@ -24,6 +24,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -124,14 +125,66 @@ Change::applyAmendment()
             amendment) != amendments.end ())
         return tefALREADY;
 
-    amendments.push_back (amendment);
-    amendmentObject->setFieldV256 (sfAmendments, amendments);
+    auto flags = mTxn.getFlags ();
+
+    const bool gotMajority = (flags & tfGotMajority) != 0;
+    const bool lostMajority = (flags & tfLostMajority) != 0;
+
+    if (gotMajority && lostMajority)
+        return temINVALID_FLAG;
+
+    STArray newMajorities (sfMajorities);
+
+    bool found = false;
+    if (amendmentObject->isFieldPresent (sfMajorities))
+    {
+        const STArray &oldMajorities = amendmentObject->getFieldArray (sfMajorities);
+        for (auto const& majority : oldMajorities)
+        {
+            if (majority.getFieldH256 (sfAmendment) == amendment)
+            {
+                if (gotMajority)
+                    return tefALREADY;
+                found = true;
+            }
+            else
+            {
+                // pass through
+                newMajorities.push_back (majority);
+            }
+        }
+    }
+
+    if (! found && lostMajority)
+        return tefALREADY;
+
+    if (gotMajority)
+    {
+        // This amendment now has a majority
+        newMajorities.push_back (STObject (sfMajority));
+        auto& entry = newMajorities.back ();
+        entry.emplace_back (STHash256 (sfAmendment, amendment));
+        entry.emplace_back (STUInt32 (sfCloseTime,
+            view().parentCloseTime()));
+    }
+    else if (!lostMajority)
+    {
+        // No flags, enable amendment
+        amendments.push_back (amendment);
+        amendmentObject->setFieldV256 (sfAmendments, amendments);
+
+        getApp().getAmendmentTable ().enable (amendment);
+
+        if (!getApp().getAmendmentTable ().isSupported (amendment))
+            getApp().getOPs ().setAmendmentBlocked ();
+    }
+
+    if (newMajorities.empty ())
+        amendmentObject->makeFieldAbsent (sfMajorities);
+    else
+        amendmentObject->setFieldArray (sfMajorities, newMajorities);
+
     view().update (amendmentObject);
-
-    getApp().getAmendmentTable ().enable (amendment);
-
-    if (!getApp().getAmendmentTable ().isSupported (amendment))
-        getApp().getOPs ().setAmendmentBlocked ();
 
     return tesSUCCESS;
 }

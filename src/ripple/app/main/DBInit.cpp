@@ -254,12 +254,6 @@ const char* WalletDBInit[] =
         PRIMARY KEY (Validator,Entry)                   \
     );",
 
-    "CREATE TABLE IF NOT EXISTS Features (              \
-        Hash            CHARACTER(64) PRIMARY KEY,      \
-        FirstMajority   BIGINT UNSIGNED,                \
-        LastMajority    BIGINT UNSIGNED                 \
-    );",
-
     "END TRANSACTION;"
 };
 

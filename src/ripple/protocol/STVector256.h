@@ -41,6 +41,10 @@ public:
         : mValue (vector)
     { }
 
+    STVector256 (SField const& n, std::vector<uint256> const& vector)
+        : STBase (n), mValue (vector)
+    { }
+
     STVector256 (SerialIter& sit, SField const& name);
 
     STBase*

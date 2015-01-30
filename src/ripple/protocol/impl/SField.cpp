@@ -226,6 +226,7 @@ SField const sfSignerEntry         = make::one(&sfSignerEntry,         STI_OBJEC
 // inner object (uncommon)
 SField const sfSigningAccount      = make::one(&sfSigningAccount,      STI_OBJECT, 16, "SigningAccount");
 SField const sfSigningFor          = make::one(&sfSigningFor,          STI_OBJECT, 17, "SigningFor");
+SField const sfMajority            = make::one(&sfMajority,            STI_OBJECT, 18, "Majority");
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -237,6 +238,9 @@ SField const sfNecessary       = make::one(&sfNecessary,       STI_ARRAY, 6, "Ne
 SField const sfSufficient      = make::one(&sfSufficient,      STI_ARRAY, 7, "Sufficient");
 SField const sfAffectedNodes   = make::one(&sfAffectedNodes,   STI_ARRAY, 8, "AffectedNodes");
 SField const sfMemos           = make::one(&sfMemos,           STI_ARRAY, 9, "Memos");
+
+// array of objects (uncommon)
+SField const sfMajorities      = make::one(&sfMajorities,      STI_ARRAY, 16, "Majorities");
 
 SField::SField (SerializedTypeID tid, int fv, const char* fn,
                 int meta, IsSigning signing)

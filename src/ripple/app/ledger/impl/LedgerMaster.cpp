@@ -27,6 +27,7 @@
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
@@ -233,6 +234,7 @@ public:
         getApp().getOPs().updateLocalTx (l);
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
         mLedgerHistory.validatedLedger (l);
+        getApp().getAmendmentTable().doValidatedLedger (l);
 
     #if RIPPLE_HOOK_VALIDATORS
         getApp().getValidators().onLedgerClosed (l->getLedgerSeq(),

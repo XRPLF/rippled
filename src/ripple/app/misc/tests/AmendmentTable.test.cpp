@@ -22,11 +22,14 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/Log.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple
 {
+
 class AmendmentTable_test final : public beast::unit_test::suite
 {
 public:
@@ -39,7 +42,7 @@ private:
         addKnown
     };
 
-    // 204/256 about 80%
+    // 204/256 about 80% (we round down because the implementation rounds up)
     static int const majorityFraction{204};
 
     static void populateTable (AmendmentTable& table,
@@ -95,51 +98,50 @@ private:
         return amendmentNames;
     }
 
-    static std::unique_ptr<AmendmentTable> makeTable ()
+    static std::unique_ptr< AmendmentTable >
+    makeTable (int w)
     {
-        beast::Journal journal;
         return make_AmendmentTable (
-            weeks (2),
+            weeks (w),
             majorityFraction,
-            journal,
-            /*useMock*/ true);
+            deprecatedLogs().journal("TestAmendmentTable"));
     };
 
     // Create the amendments by string pairs instead of AmendmentNames
     // as this helps test the AmendmentNames class
-    StringPairVec const m_validAmendmentPairs;
-    StringPairVec const m_notAddedAmendmentPairs;
+    StringPairVec const m_knownAmendmentPairs;
+    StringPairVec const m_unknownAmendmentPairs;
 
 public:
     AmendmentTable_test ()
-        : m_validAmendmentPairs (
-              {{"a49f90e7cddbcadfed8fc89ec4d02011", "Added1"},
-               {"ca956ccabf25151a16d773171c485423", "Added2"},
-               {"60dcd528f057711c5d26b57be28e23df", "Added3"},
-               {"da956ccabf25151a16d773171c485423", "Added4"},
-               {"70dcd528f057711c5d26b57be28e23df", "Added5"},
-               {"70dcd528f057711c5d26b57be28e23d0", "Added6"}})
-        , m_notAddedAmendmentPairs (
-              {{"a9f90e7cddbcadfed8fc89ec4d02011c", "NotAdded1"},
-               {"c956ccabf25151a16d773171c485423b", "NotAdded2"},
-               {"6dcd528f057711c5d26b57be28e23dfa", "NotAdded3"}})
+        : m_knownAmendmentPairs (
+              {{"a49f90e7cddbcadfed8fc89ec4d02011", "Known1"},
+               {"ca956ccabf25151a16d773171c485423", "Known2"},
+               {"60dcd528f057711c5d26b57be28e23df", "Known3"},
+               {"da956ccabf25151a16d773171c485423", "Known4"},
+               {"70dcd528f057711c5d26b57be28e23df", "Known5"},
+               {"70dcd528f057711c5d26b57be28e23d0", "Known6"}})
+        , m_unknownAmendmentPairs (
+              {{"a9f90e7cddbcadfed8fc89ec4d02011c", "Unknown1"},
+               {"c956ccabf25151a16d773171c485423b", "Unknown2"},
+               {"6dcd528f057711c5d26b57be28e23dfa", "Unknown3"}})
     {
     }
 
     void testGet ()
     {
         testcase ("get");
-        auto table (makeTable ());
+        auto table (makeTable (2));
         std::vector<AmendmentName> const amendmentNames (
-            populateTable (*table, m_validAmendmentPairs));
-        std::vector<AmendmentName> const notAddedAmendmentNames (
-            getAmendmentNames (m_notAddedAmendmentPairs));
+            populateTable (*table, m_knownAmendmentPairs));
+        std::vector<AmendmentName> const unknownAmendmentNames (
+            getAmendmentNames (m_unknownAmendmentPairs));
         for (auto const& i : amendmentNames)
         {
             expect (table->get (i.friendlyName ()) == i.id ());
         }
 
-        for (auto const& i : notAddedAmendmentNames)
+        for (auto const& i : unknownAmendmentNames)
         {
             expect (table->get (i.friendlyName ()) == uint256 ());
         }
@@ -156,11 +158,11 @@ public:
                 // test that the amendments we add are enabled and amendments we
                 // didn't add are not enabled
 
-                auto table (makeTable ());
+                auto table (makeTable (2));
                 std::vector<AmendmentName> const amendmentNames (populateTable (
-                    *table, m_validAmendmentPairs, tablePopulationAlgo));
-                std::vector<AmendmentName> const notAddedAmendmentNames (
-                    getAmendmentNames (m_notAddedAmendmentPairs));
+                    *table, m_knownAmendmentPairs, tablePopulationAlgo));
+                std::vector<AmendmentName> const unknownAmendmentNames (
+                    getAmendmentNames (m_unknownAmendmentPairs));
 
                 for (auto const& i : amendmentNames)
                 {
@@ -169,7 +171,7 @@ public:
                         expect (table->isEnabled (i.id ()));
                 }
 
-                for (auto const& i : notAddedAmendmentNames)
+                for (auto const& i : unknownAmendmentNames)
                 {
                     expect (!table->isSupported (i.id ()));
                     expect (!table->isEnabled (i.id ()));
@@ -187,7 +189,7 @@ public:
                 for (auto const& i : badHexPairs)
                 {
                     StringPairVec v ({i});
-                    auto table (makeTable ());
+                    auto table (makeTable (2));
                     try
                     {
                         populateTable (*table, v, tablePopulationAlgo);
@@ -224,7 +226,7 @@ public:
             for (auto const& i : badNumTokensConfigLines)
             {
                 std::vector<std::string> v ({i});
-                auto table (makeTable ());
+                auto table (makeTable (2));
                 try
                 {
                     populateTable (*table, v);
@@ -252,9 +254,9 @@ public:
     void testEnable ()
     {
         testcase ("enable");
-        auto table (makeTable ());
+        auto table (makeTable (2));
         std::vector<AmendmentName> const amendmentNames (
-            populateTable (*table, m_validAmendmentPairs));
+            populateTable (*table, m_knownAmendmentPairs));
         {
             // enable/disable tests
             for (auto const& i : amendmentNames)
@@ -289,11 +291,11 @@ public:
     using ATGetter = bool (AmendmentTable::*)(uint256 const& amendment);
     void testVectorSetUnset (ATSetter setter, ATGetter getter)
     {
-        auto table (makeTable ());
+        auto table (makeTable (2));
         // make pointer to ref syntax a little nicer
         auto& tableRef (*table);
         std::vector<AmendmentName> const amendmentNames (
-            populateTable (tableRef, m_validAmendmentPairs));
+            populateTable (tableRef, m_knownAmendmentPairs));
 
         // they should all be set
         for (auto const& i : amendmentNames)
@@ -338,10 +340,10 @@ public:
     {
         // Check that supported/enabled aren't the same thing
         testcase ("supportedEnabled");
-        auto table (makeTable ());
+        auto table (makeTable (2));
 
         std::vector<AmendmentName> const amendmentNames (
-            populateTable (*table, m_validAmendmentPairs));
+            populateTable (*table, m_knownAmendmentPairs));
 
         {
             // support every even amendment
@@ -375,8 +377,401 @@ public:
         }
     }
 
-    // TBD: veto/reportValidations/getJson/doValidation/doVoting
-    // Threading test?
+    std::vector <RippleAddress> makeValidators (int num)
+    {
+        std::vector <RippleAddress> ret;
+        ret.reserve (num);
+        for (int i = 0; i < num; ++i)
+            ret.push_back (RippleAddress::createNodePublic (
+                RippleAddress::createSeedRandom ()));
+        return ret;
+    }
+
+    static std::uint32_t weekTime (int w)
+    {
+        return w * (7*24*60*60);
+    }
+
+    // Execute a pretend consensus round for a flag ledger
+    void doRound
+        ( AmendmentTable& table
+        , int week
+        , std::vector <RippleAddress> const& validators
+        , std::vector <std::pair <uint256, int> > const& votes
+        , std::vector <uint256>& ourVotes
+        , enabledAmendments_t& enabled
+        , majorityAmendments_t& majority)
+    {
+        // Do a round at the specified time
+        // Returns the amendments we voted for
+
+        // Parameters:
+        // table:      Our table of known and vetoed amendments
+        // validators: The addreses of validators we trust
+        // votes:      Amendments and the number of validators who vote for them
+        // ourVotes:   The amendments we vote for in our validation
+        // enabled:    In/out enabled amendments
+        // majority:   In/our majority amendments (and when they got a majority)
+
+        std::uint32_t const roundTime = weekTime (week);
+
+        // Build validations
+        ValidationSet validations;
+        validations.reserve (validators.size ());
+
+        int i = 0;
+        for (auto const& val : validators)
+        {
+            STValidation::pointer v =
+                std::make_shared <STValidation>
+                    (uint256(), roundTime, val, true);
+
+            ++i;
+            STVector256 field (sfAmendments);
+
+            for (auto const& amendment : votes)
+            {
+                if ((256 * i) < (validators.size() * amendment.second))
+                {
+                    // We vote yes on this amendment
+                    field.push_back (amendment.first);
+                }
+            }
+            if (!field.empty ())
+                v->setFieldV256 (sfAmendments, field);
+
+            v->setTrusted();
+            validations [val.getNodeID()] = v;
+        }
+
+        ourVotes = table.doValidation (enabled);
+
+        auto actions = table.doVoting (roundTime, enabled, majority, validations);
+        for (auto const& action : actions)
+        {
+            // This code assumes other validators do as we do
+
+            auto const& hash = action.first;
+            switch (action.second)
+            {
+                case 0:
+                // amendment goes from majority to enabled
+                    if (enabled.find (hash) != enabled.end ())
+                        throw std::runtime_error ("enabling already enabled");
+                    if (majority.find (hash) == majority.end ())
+                        throw std::runtime_error ("enabling without majority");
+                    enabled.insert (hash);
+                    majority.erase (hash);
+                    break;
+
+                case tfGotMajority:
+                    if (majority.find (hash) != majority.end ())
+                        throw std::runtime_error ("got majority while having majority");
+                    majority[hash] = roundTime;
+                    break;
+
+                case tfLostMajority:
+                    if (majority.find (hash) == majority.end ())
+                        throw std::runtime_error ("lost majority without majority");
+                    majority.erase (hash);
+                    break;
+
+                default:
+                    assert (false);
+                    throw std::runtime_error ("unknown action");
+            }
+        }
+    }
+
+    // No vote on unknown amendment
+    void testNoUnknown ()
+    {
+        testcase ("voteNoUnknown");
+
+        auto table (makeTable (2));
+
+        auto const validators = makeValidators (10);
+
+        uint256 testAmendment;
+        testAmendment.SetHex("6dcd528f057711c5d26b57be28e23dfa");
+
+        std::vector <std::pair <uint256, int>> votes;
+        std::vector <uint256> ourVotes;
+        enabledAmendments_t enabled;
+        majorityAmendments_t majority;
+
+        doRound (*table, 1,
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
+        expect (ourVotes.empty(), "Voted with nothing to vote on");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+        expect (majority.empty(), "Majority found for no reason");
+
+        votes.emplace_back (testAmendment, 256);
+
+        doRound (*table, 2,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (ourVotes.empty(), "Voted on unknown because others did");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+
+        majority[testAmendment] = weekTime(1);
+
+        // Note that the simulation code assumes others behave as we do,
+        // so the amendment won't get enabled
+        doRound (*table, 5,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (ourVotes.empty(), "Voted on unknown because it had majority");
+        expect (enabled.empty(), "Pseudo-transaction from nowhere");
+    }
+
+    // No vote on vetoed amendment
+    void testNoVetoed ()
+    {
+        testcase ("voteNoVetoed");
+
+        auto table (makeTable (2));
+
+        auto const validators = makeValidators (10);
+
+        uint256 testAmendment;
+        testAmendment.SetHex("6dcd528f057711c5d26b57be28e23dfa");
+        table->veto(testAmendment);
+
+        std::vector <std::pair <uint256, int>> votes;
+        std::vector <uint256> ourVotes;
+        enabledAmendments_t enabled;
+        majorityAmendments_t majority;
+
+        doRound (*table, 1,
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
+        expect (ourVotes.empty(), "Voted with nothing to vote on");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+        expect (majority.empty(), "Majority found for no reason");
+
+        votes.emplace_back (testAmendment, 256);
+
+        doRound (*table, 2,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (ourVotes.empty(), "Voted on vetoed amendment because others did");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+
+        majority[testAmendment] = weekTime(1);
+
+        doRound (*table, 5,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (ourVotes.empty(), "Voted on vetoed because it had majority");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+    }
+
+    // Vote on and enable known, not-enabled amendment
+    void testVoteEnable ()
+    {
+        testcase ("voteEnable");
+
+        auto table (makeTable (2));
+        auto const amendmentNames (
+            populateTable (*table, m_knownAmendmentPairs));
+
+        auto const validators = makeValidators (10);
+
+        std::vector <std::pair <uint256, int>> votes;
+        std::vector <uint256> ourVotes;
+        enabledAmendments_t enabled;
+        majorityAmendments_t majority;
+
+        // Week 1: We should vote for all known amendments not enabled
+        doRound (*table, 1,
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
+        expect (ourVotes.size() == amendmentNames.size(), "Did not vote");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+        for (auto const& i : amendmentNames)
+            expect(majority.find(i.id()) == majority.end(), "majority detected for no reaosn");
+
+        // Now, everyone votes for this feature
+        for (auto const& i : amendmentNames)
+            votes.emplace_back (i.id(), 256);
+
+        // Week 2: We should recognize a majority
+        doRound (*table, 2,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (ourVotes.size() == amendmentNames.size(), "Did not vote");
+        expect (enabled.empty(), "Enabled amendment for no reason");
+        for (auto const& i : amendmentNames)
+            expect (majority[i.id()] == weekTime(2), "majority not detected");
+
+        // Week 5: We should enable the amendment
+        doRound (*table, 5,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (enabled.size() == amendmentNames.size(), "Did not enable");
+
+        // Week 6: We should remove it from our votes and from having a majority
+        doRound (*table, 6,
+                validators,
+                votes,
+                ourVotes,
+                enabled,
+                majority);
+        expect (enabled.size() == amendmentNames.size(), "Disabled");
+        expect (ourVotes.empty(), "Voted after enabling");
+        for (auto const& i : amendmentNames)
+            expect(majority.find(i.id()) == majority.end(), "majority not removed");
+    }
+
+    // Detect majority at 80%, enable later
+    void testDetectMajority ()
+    {
+        testcase ("detectMajority");
+        auto table (makeTable (2));
+
+        uint256 testAmendment;
+        testAmendment.SetHex("6dcd528f057711c5d26b57be28e23dfa");
+        table->addKnown({testAmendment, "testAmendment"});
+
+        auto const validators = makeValidators (16);
+
+        enabledAmendments_t enabled;
+        majorityAmendments_t majority;
+
+        for (int i = 0; i <= 17; ++i)
+        {
+            std::vector <std::pair <uint256, int>> votes;
+            std::vector <uint256> ourVotes;
+
+            if ((i > 0) && (i < 17))
+                votes.emplace_back (testAmendment, i * 16);
+
+            doRound (*table, i,
+                validators, votes, ourVotes, enabled, majority);
+
+            if (i < 14)
+            {
+                // rounds 0-13
+                // We are voting yes, not enabled, no majority
+                expect (!ourVotes.empty(), "We aren't voting");
+                expect (enabled.empty(), "Enabled too early");
+                expect (majority.empty(), "Majority too early");
+            }
+            else if (i < 16)
+            {
+                // rounds 14 and 15
+                // We have a majority, not enabled, keep voting
+                expect (!ourVotes.empty(), "We stopped voting");
+                expect (!majority.empty(), "Failed to detect majority");
+                expect (enabled.empty(), "Enabled too early");
+            }
+            else if (i == 16) // round 16
+            {
+                // round 16
+                // enable, keep voting, remove from majority
+                expect (!ourVotes.empty(), "We stopped voting");
+                expect (majority.empty(), "Failed to remove from majority");
+                expect (!enabled.empty(), "Did not enable");
+            }
+            else
+            {
+                // round 17
+                // Done, we should be enabled and not voting
+                expect (ourVotes.empty(), "We did not stop voting");
+                expect (majority.empty(), "Failed to revove from majority");
+                expect (!enabled.empty(), "Did not enable");
+            }
+        }
+    }
+
+    // Detect loss of majority
+    void testLostMajority ()
+    {
+        testcase ("lostMajority");
+
+        auto table (makeTable (8));
+
+        uint256 testAmendment;
+        testAmendment.SetHex("6dcd528f057711c5d26b57be28e23dfa");
+        table->addKnown({testAmendment, "testAmendment"});
+
+        auto const validators = makeValidators (16);
+
+        enabledAmendments_t enabled;
+        majorityAmendments_t majority;
+
+        {
+            // establish majority
+            std::vector <std::pair <uint256, int>> votes;
+            std::vector <uint256> ourVotes;
+
+            votes.emplace_back (testAmendment, 250);
+
+            doRound (*table, 1,
+                validators, votes, ourVotes, enabled, majority);
+
+            expect (enabled.empty(), "Enabled for no reason");
+            expect (!majority.empty(), "Failed to detect majority");
+        }
+
+        for (int i = 1; i < 16; ++i)
+        {
+            std::vector <std::pair <uint256, int>> votes;
+            std::vector <uint256> ourVotes;
+
+            // Gradually reduce support
+            votes.emplace_back (testAmendment, 256 - i * 8);
+
+            doRound (*table, i + 1,
+                validators, votes, ourVotes, enabled, majority);
+
+            if (i < 6)
+            {
+                // rounds 1 to 5
+                // We are voting yes, not enabled, majority
+                expect (!ourVotes.empty(), "We aren't voting");
+                expect (enabled.empty(), "Enabled for no reason");
+                expect (!majority.empty(), "Lost majority too early");
+            }
+            else
+            {
+                // rounds 6 to 15
+                // No majority, not enabled, keep voting
+                expect (!ourVotes.empty(), "We stopped voting");
+                expect (majority.empty(), "Failed to detect loss of majority");
+                expect (enabled.empty(), "Enabled errneously");
+            }
+        }
+    }
 
     void run ()
     {
@@ -385,6 +780,11 @@ public:
         testEnable ();
         testSupported ();
         testSupportedEnabled ();
+        testNoUnknown ();
+        testNoVetoed ();
+        testVoteEnable ();
+        testDetectMajority ();
+        testLostMajority ();
     }
 };
 
