@@ -102,6 +102,7 @@ public:
 
     void
     doVoting (Ledger::ref lastClosedLedger,
+        ValidationSet const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) override;
 };
 
@@ -145,6 +146,7 @@ FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
 
 void
 FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
+    ValidationSet const& set,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
@@ -159,10 +161,6 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     detail::VotableInteger<std::uint32_t> incReserveVote (
         lastClosedLedger->getReserveInc (), target_.owner_reserve);
 
-    // get validations for ledger before flag
-    ValidationSet const set =
-        getApp().getValidations ().getValidations (
-            lastClosedLedger->getParentHash ());
     for (auto const& e : set)
     {
         STValidation const& val = *e.second;

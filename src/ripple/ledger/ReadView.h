@@ -285,9 +285,6 @@ public:
     digest (key_type const& key) const = 0;
 };
 
-// For now
-using BasicView = ReadView;
-
 } // ripple
 
 #include <ripple/ledger/detail/ReadViewFwdRange.ipp>

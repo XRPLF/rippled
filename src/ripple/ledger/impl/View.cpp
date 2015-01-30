@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/STArray.h>
 
 namespace ripple {
 
@@ -386,6 +387,37 @@ cdirNext (ReadView const& view,
         " uDirEntry=" << uDirEntry <<
         " uEntryIndex=" << uEntryIndex;
     return true;
+}
+
+enabledAmendments_t
+getEnabledAmendments (ReadView const& view)
+{
+    enabledAmendments_t amendments;
+    auto const sleAmendments = view.read(keylet::amendments());
+
+    if (sleAmendments)
+    {
+        for (auto const &a : sleAmendments->getFieldV256 (sfAmendments))
+            amendments.insert (a);
+    }
+
+    return amendments;
+}
+
+majorityAmendments_t
+getMajorityAmendments (ReadView const& view)
+{
+    majorityAmendments_t majorities;
+    auto const sleAmendments = view.read(keylet::amendments());
+
+    if (sleAmendments && sleAmendments->isFieldPresent (sfMajorities))
+    {
+        auto const& majArray = sleAmendments->getFieldArray (sfMajorities);
+        for (auto const& m : majArray)
+            majorities[m.getFieldH256 (sfAmendment)] = m.getFieldU32 (sfCloseTime);
+    }
+
+    return majorities;
 }
 
 //------------------------------------------------------------------------------

@@ -90,6 +90,22 @@ support for those Amendments. Just a few nodes vetoing an Amendment will normall
 keep it from being accepted. Nodes could also vote yes on an Amendments even 
 before it obtains a super-majority. This might make sense for a critical bug fix.
 
+Validators that support an amendment that is not yet enabled announce their
+support in their validations. If 80% support is achieved, they will introduce
+a pseudo-transaction to track the amendment's majority status in the ledger.
+
+If an amendment whose majority status is reported in a ledger loses that
+majority status, validators will introduce pseudo-transactions to remove
+the majority status from the ledger.
+
+If an amendment holds majority status for two weeks, validators will
+introduce a pseudo-transaction to enable the amendment.
+
+All amednements are assumed to be critical and irreversible. Thus there
+is no mechanism to disable or revoke an amendment, nor is there a way
+for a server to operate while an amendment it does not understand is
+enabled.
+
 ---
 
 # SHAMapStore: Online Delete

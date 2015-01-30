@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MISC_FEEVOTE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/misc/Validations.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/protocol/SystemParameters.h>
 
@@ -66,7 +67,7 @@ public:
     */
     virtual
     void
-    doVoting (Ledger::ref lastClosedLedger,
+    doVoting (Ledger::ref lastClosedLedger, ValidationSet const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 

@@ -436,6 +436,7 @@ extern SField const sfMemo;
 extern SField const sfSignerEntry;
 extern SField const sfSigningAccount;
 extern SField const sfSigningFor;
+extern SField const sfMajority;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -447,6 +448,7 @@ extern SField const sfNecessary;
 extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
+extern SField const sfMajorities;
 
 //------------------------------------------------------------------------------
 

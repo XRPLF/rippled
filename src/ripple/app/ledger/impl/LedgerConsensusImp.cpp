@@ -1390,8 +1390,10 @@ void LedgerConsensusImp::takeInitialPosition (Ledger& initialLedger)
         // previous ledger was flag ledger
         std::shared_ptr<SHAMap> preSet
             = initialLedger.txMap().snapShot (true);
-        m_feeVote.doVoting (mPreviousLedger, preSet);
-        getApp().getAmendmentTable ().doVoting (mPreviousLedger, preSet);
+        ValidationSet parentSet = getApp().getValidations().getValidations (
+            mPreviousLedger->getParentHash ());
+        m_feeVote.doVoting (mPreviousLedger, parentSet, preSet);
+        getApp().getAmendmentTable ().doVoting (mPreviousLedger, parentSet, preSet);
         initialSet = preSet->snapShot (false);
     }
     else

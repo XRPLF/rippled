@@ -131,6 +131,16 @@ cdirNext (ReadView const& view,
     unsigned int& uDirEntry,    // <-> next entry
     uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
 
+// Return the list of enabled amendments
+using enabledAmendments_t = std::set <uint256>;
+enabledAmendments_t
+getEnabledAmendments (ReadView const& view);
+
+// Return a map of amendments that have achieved majority
+using majorityAmendments_t = std::map <uint256, std::uint32_t>;
+majorityAmendments_t
+getMajorityAmendments (ReadView const& view);
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
