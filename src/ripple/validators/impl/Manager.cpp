@@ -206,24 +206,21 @@ public:
     boost::asio::basic_waitable_timer<
         std::chrono::steady_clock> timer_;
     beast::Journal journal_;
-    beast::File dbFile_;
     StoreSqdb store_;
     Logic logic_;
+    std::unique_ptr<SociConfig> sociConfig_;
 
     ManagerImp (Stoppable& parent, boost::asio::io_service& io_service,
-        beast::File const& pathToDbFileOrDirectory, beast::Journal journal)
+        beast::Journal journal, BasicConfig const& config)
         : Stoppable ("Validators::Manager", parent)
         , io_service_(io_service)
         , strand_(io_service_)
         , timer_(io_service_)
         , journal_ (journal)
-        , dbFile_ (pathToDbFileOrDirectory)
         , store_ (journal_)
         , logic_ (store_, journal_)
+        , sociConfig_(make_SociConfig(config, "validators"))
     {
-        if (dbFile_.isDirectory ())
-            dbFile_ = dbFile_.getChildFile("validators.sqlite");
-
     }
 
     ~ManagerImp()
@@ -293,12 +290,9 @@ public:
 
     void init()
     {
-        beast::Error error (store_.open (dbFile_));
-
-        if (! error)
-        {
-            logic_.load ();
-        }
+        store_.open (sociConfig_->backendFactory (),
+                     sociConfig_->connectionString ());
+        logic_.load ();
     }
 
     void
@@ -331,12 +325,11 @@ Manager::Manager ()
 std::unique_ptr<Manager>
 make_Manager(beast::Stoppable& parent,
     boost::asio::io_service& io_service,
-        beast::File const& pathToDbFileOrDirectory,
-            beast::Journal journal)
+    beast::Journal journal,
+    BasicConfig const& config)
 {
-    return std::make_unique<ManagerImp> (parent,
-        io_service, pathToDbFileOrDirectory, journal);
+    return std::make_unique<ManagerImp>(parent,
+            io_service, journal, config);
 }
-
 }
 }

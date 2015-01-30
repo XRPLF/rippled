@@ -744,7 +744,7 @@ beast::URL Config::getValidatorsURL () const
     return beast::parse_URL (VALIDATORS_SITE).second;
 }
 
-beast::File const& Config::getModuleDatabasePath ()
+beast::File const& Config::getModuleDatabasePath () const
 {
     return m_moduleDbPath;
 }

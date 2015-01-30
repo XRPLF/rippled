@@ -76,6 +76,20 @@ public:
         return values_;
     }
 
+    void setLegacyValue(std::string value)
+    {
+        if (values_.empty())
+            values_.resize(1);
+        values_[0] = std::move(value);
+    }
+
+    std::string const legacyValue() const
+    {
+        if (values_.empty())
+            return "";
+        return values_[0];
+    }
+
     /** Set a key/value pair.
         The previous value is discarded.
     */
@@ -150,6 +164,15 @@ public:
     overwrite (std::string const& section, std::string const& key,
         std::string const& value);
 
+    /**
+       Set a value that is not a key/value pair.
+       The value is stored as the section's first value and may be retrieved
+       through section::legacyValue.
+     */
+    void
+    setLegacyValue(std::string const& section, std::string value);
+            
+
     friend
     std::ostream&
     operator<< (std::ostream& ss, BasicConfig const& c);
@@ -157,15 +180,6 @@ public:
 protected:
     void
     build (IniFileSections const& ifs);
-
-    /** Insert a legacy single section as a key/value pair.
-        Does nothing if the section does not exist, or does not contain
-        a single line that is not a key/value pair.
-        @deprecated
-    */
-    void
-    remap (std::string const& legacy_section,
-        std::string const& key, std::string const& new_section);
 };
 
 //------------------------------------------------------------------------------

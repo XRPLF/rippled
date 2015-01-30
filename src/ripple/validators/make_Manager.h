@@ -28,13 +28,14 @@
 #include <memory>
 
 namespace ripple {
+class BasicConfig;
 namespace Validators {
 
 std::unique_ptr<Manager>
 make_Manager (beast::Stoppable& stoppableParent,
     boost::asio::io_service& io_service,
-        beast::File const& pathToDbFileOrDirectory,
-            beast::Journal journal);
+    beast::Journal journal,
+    BasicConfig const& config);
 
 }
 }
