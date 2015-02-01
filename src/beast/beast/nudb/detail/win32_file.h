@@ -394,7 +394,6 @@ template <class _>
 std::pair<DWORD, DWORD>
 win32_file<_>::flags (file_mode mode)
 {
-mode = file_mode::write;
     std::pair<DWORD, DWORD> result(0, 0);
     switch (mode)
     {
