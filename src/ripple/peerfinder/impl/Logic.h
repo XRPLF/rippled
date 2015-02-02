@@ -211,7 +211,7 @@ public:
             if (result.second)
             {
                 if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic add fixed" << "'" << name <<
+                    "Logic add fixed '" << name <<
                     "' at " << remote_address;
                 return;
             }
@@ -230,8 +230,6 @@ public:
 
         typename SharedState::Access state (m_state);
         Slots::iterator const iter (state->slots.find (remoteAddress));
-        SlotImp& slot (*iter->second);
-
         if (iter == state->slots.end())
         {
             // The slot disconnected before we finished the check
@@ -241,6 +239,7 @@ public:
             return;
         }
 
+        SlotImp& slot (*iter->second);
         slot.checked = true;
         slot.connectivityCheckInProgress = false;
 
