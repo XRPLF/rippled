@@ -20,12 +20,10 @@
 #ifndef BEAST_NUDB_RECOVER_H_INCLUDED
 #define BEAST_NUDB_RECOVER_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
 #include <beast/nudb/detail/bucket.h>
 #include <beast/nudb/detail/bulkio.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <algorithm>
 #include <cstddef>
@@ -39,19 +37,22 @@ namespace nudb {
     any partially committed data.
 */
 template <
-    class Hasher = default_hash,
-    class File = native_file>
+    class Hasher,
+    class Codec,
+    class File = native_file,
+    class... Args>
 bool
 recover (
     path_type const& dat_path,
     path_type const& key_path,
     path_type const& log_path,
-    std::size_t read_size = 16 * 1024 * 1024)
+    std::size_t read_size,
+    Args&&... args)
 {
     using namespace detail;
-    File df;
-    File lf;
-    File kf;
+    File df(args...);
+    File lf(args...);
+    File kf(args...);
     if (! df.open (file_mode::append, dat_path))
         return false;
     if (! kf.open (file_mode::write, key_path))
@@ -96,8 +97,7 @@ recover (
         verify<Hasher>(kh, lh);
         auto const df_size = df.actual_size();
         buffer buf(kh.block_size);
-        bucket b (kh.key_size,
-            kh.block_size, buf.get());
+        bucket b (kh.block_size, buf.get());
         bulk_reader<File> r(lf, log_file_header::size,
             lf_size, read_size);
         while(! r.eof())

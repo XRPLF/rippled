@@ -20,9 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_WIN32_FILE_H_INCLUDED
 #define BEAST_NUDB_DETAIL_WIN32_FILE_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/mode.h>
-#include <beast/nudb/detail/config.h>
+#include <beast/nudb/common.h>
 #include <cassert>
 #include <string>
 
@@ -321,25 +319,32 @@ void
 win32_file<_>::read (std::size_t offset,
     void* buffer, std::size_t bytes)
 {
-    DWORD bytesRead;
-    LARGE_INTEGER li;
-    li.QuadPart = static_cast<LONGLONG>(offset);
-    OVERLAPPED ov;
-    ov.Offset = li.LowPart;
-    ov.OffsetHigh = li.HighPart;
-    ov.hEvent = NULL;
-    BOOL const bSuccess = ::ReadFile(
-        hf_, buffer, bytes, &bytesRead, &ov);
-    if (! bSuccess)
+    while(bytes > 0)
     {
-        DWORD const dwError = ::GetLastError();
-        if (dwError != ERROR_HANDLE_EOF)
-            throw file_win32_error(
-                "read file", dwError);
-        throw file_short_read_error();
+        DWORD bytesRead;
+        LARGE_INTEGER li;
+        li.QuadPart = static_cast<LONGLONG>(offset);
+        OVERLAPPED ov;
+        ov.Offset = li.LowPart;
+        ov.OffsetHigh = li.HighPart;
+        ov.hEvent = NULL;
+        BOOL const bSuccess = ::ReadFile(
+            hf_, buffer, bytes, &bytesRead, &ov);
+        if (! bSuccess)
+        {
+            DWORD const dwError = ::GetLastError();
+            if (dwError != ERROR_HANDLE_EOF)
+                throw file_win32_error(
+                    "read file", dwError);
+            throw file_short_read_error();
+        }
+        if (bytesRead == 0)
+            throw file_short_read_error();
+        offset += bytesRead;
+        bytes -= bytesRead;
+        buffer = reinterpret_cast<char*>(
+            buffer) + bytesRead;
     }
-    if (bytesRead != bytes)
-        throw file_short_read_error();
 }
 
 template <class _>
@@ -347,20 +352,28 @@ void
 win32_file<_>::write (std::size_t offset,
     void const* buffer, std::size_t bytes)
 {
-    LARGE_INTEGER li;
-    li.QuadPart = static_cast<LONGLONG>(offset);
-    OVERLAPPED ov;
-    ov.Offset = li.LowPart;
-    ov.OffsetHigh = li.HighPart;
-    ov.hEvent = NULL;
-    DWORD bytesWritten;
-    BOOL const bSuccess = ::WriteFile(
-        hf_, buffer, bytes, &bytesWritten, &ov);
-    if (! bSuccess)
-        throw file_win32_error(
-            "write file");
-    if (bytesWritten != bytes)
-        throw file_short_write_error();
+    while(bytes > 0)
+    {
+        LARGE_INTEGER li;
+        li.QuadPart = static_cast<LONGLONG>(offset);
+        OVERLAPPED ov;
+        ov.Offset = li.LowPart;
+        ov.OffsetHigh = li.HighPart;
+        ov.hEvent = NULL;
+        DWORD bytesWritten;
+        BOOL const bSuccess = ::WriteFile(
+            hf_, buffer, bytes, &bytesWritten, &ov);
+        if (! bSuccess)
+            throw file_win32_error(
+                "write file");
+        if (bytesWritten == 0)
+            throw file_short_write_error();
+        offset += bytesWritten;
+        bytes -= bytesWritten;
+        buffer = reinterpret_cast<
+            char const*>(buffer) +
+                bytesWritten;
+    }
 }
 
 template <class _>

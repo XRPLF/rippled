@@ -17,10 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/nudb/store.h>
-#include <beast/nudb/recover.h>
 #include <beast/nudb/tests/common.h>
-#include <beast/nudb/tests/fail_file.h>
 #include <beast/module/core/files/File.h>
 #include <beast/random/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
@@ -42,17 +39,19 @@ public:
     // they are there. Uses a fail_file that causes the n-th
     // I/O to fail, causing an exception.
     void
-    do_work (std::size_t n, std::size_t count,
-        float load_factor, nudb::path_type const& path)
+    do_work (std::size_t count, float load_factor,
+        nudb::path_type const& path, fail_counter& c)
     {
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
         auto const lp = path + ".log";
-        nudb::fail_counter c(0);
-        nudb::create (dp, kp, lp, appnum, salt,
-            sizeof(key_type), block_size(path),
-                load_factor);
-        fail_store db;
+        test_api::file_type::erase (dp);
+        test_api::file_type::erase (kp);
+        test_api::file_type::erase (lp);
+        expect(test_api::create (
+            dp, kp, lp, appnum, salt, sizeof(key_type),
+                block_size(path), load_factor), "create");
+        test_api::fail_store db;
         if (! expect(db.open(dp, kp, lp,
             arena_alloc_size, c), "open"))
         {
@@ -60,14 +59,14 @@ public:
             //        to report this and terminate the test.
         }
         expect (db.appnum() == appnum, "appnum");
-        c.reset(n);
         Sequence seq;
         for (std::size_t i = 0; i < count; ++i)
         {
             auto const v = seq[i];
-            db.insert(&v.key, v.data, v.size);
+            expect(db.insert(&v.key, v.data, v.size),
+                "insert");
         }
-        storage s;
+        Storage s;
         for (std::size_t i = 0; i < count; ++i)
         {
             auto const v = seq[i];
@@ -81,26 +80,36 @@ public:
                 break;
         }
         db.close();
-    #ifndef NDEBUG
-        print(log, verify(dp, kp));
-        verify(dp, kp);
-    #endif
-        nudb::native_file::erase (dp);
-        nudb::native_file::erase (kp);
-        nudb::native_file::erase (lp);
+        verify_info info;
+        try
+        {
+            info = test_api::verify(dp, kp);
+        }
+        catch(...)
+        {
+            print(log, info);
+            throw;
+        }
+        test_api::file_type::erase (dp);
+        test_api::file_type::erase (kp);
+        test_api::file_type::erase (lp);
     }
 
     void
-    do_recover (path_type const& path)
+    do_recover (path_type const& path,
+        fail_counter& c)
     {
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
         auto const lp = path + ".log";
-        recover(dp, kp, lp);
-        verify(dp, kp);
-        nudb::native_file::erase (dp);
-        nudb::native_file::erase (kp);
-        nudb::native_file::erase (lp);
+        recover<test_api::hash_type,
+            test_api::codec_type, fail_file<
+                test_api::file_type>>(dp, kp, lp,
+                    test_api::buffer_size, c);
+        test_api::verify(dp, kp);
+        test_api::file_type::erase (dp);
+        test_api::file_type::erase (kp);
+        test_api::file_type::erase (lp);
     }
 
     void
@@ -114,12 +123,24 @@ public:
         {
             try
             {
-                do_work (n, count, load_factor, path);
+                fail_counter c(n);
+                do_work (count, load_factor, path, c);
                 break;
             }
             catch (nudb::fail_error const&)
             {
-                do_recover (path);
+            }
+            for (std::size_t m = 1;;++m)
+            {
+                fail_counter c(m);
+                try
+                {
+                    do_recover (path, c);
+                    break;
+                }
+                catch (nudb::fail_error const&)
+                {
+                }
             }
         }
     }
@@ -131,11 +152,10 @@ public:
     void
     run() override
     {
-        float lf = 0.75f;
+        float lf = 0.55f;
         test_recover (lf, 0);
         test_recover (lf, 10);
         test_recover (lf, 100);
-        test_recover (lf, 1000);
     }
 };
 
@@ -148,7 +168,8 @@ public:
     run() override
     {
         float lf = 0.90f;
-        test_recover (lf, 100000);
+        test_recover (lf, 1000);
+        test_recover (lf, 10000);
     }
 };
 

@@ -20,9 +20,8 @@
 #ifndef BEAST_NUDB_FILE_H_INCLUDED
 #define BEAST_NUDB_FILE_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
-#include <beast/nudb/detail/posix_file.h>
-#include <beast/nudb/detail/win32_file.h>
+#include <beast/nudb/posix_file.h>
+#include <beast/nudb/win32_file.h>
 #include <string>
 
 namespace beast {

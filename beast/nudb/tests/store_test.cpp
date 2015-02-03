@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/nudb.h>
 #include <beast/nudb/tests/common.h>
-#include <beast/nudb/tests/fail_file.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 #include <beast/module/core/files/File.h>
 #include <beast/random/xor_shift_engine.h>
@@ -55,15 +53,15 @@ public:
         auto const kp = path + ".key";
         auto const lp = path + ".log";
         Sequence seq;
-        nudb::store db;
+        test_api::store db;
         try
         {
-            expect (nudb::create (dp, kp, lp, appnum,
+            expect (test_api::create (dp, kp, lp, appnum,
                 salt, sizeof(key_type), block_size,
                     load_factor), "create");
             expect (db.open(dp, kp, lp,
                 arena_alloc_size), "open");
-            storage s;
+            Storage s;
             // insert
             for (std::size_t i = 0; i < N; ++i)
             {
@@ -102,7 +100,9 @@ public:
                     "insert 2");
             }
             db.close();
-            auto const stats = nudb::verify (dp, kp);
+            //auto const stats = test_api::verify(dp, kp);
+            auto const stats = verify<test_api::hash_type>(
+                dp, kp, 1 * 1024 * 1024);
             expect (stats.hist[1] > 0, "no splits");
             print (log, stats);
         }
@@ -114,9 +114,9 @@ public:
         {
             fail (e.what());
         }
-        expect (native_file::erase(dp));
-        expect (native_file::erase(kp));
-        expect (! native_file::erase(lp));
+        expect (test_api::file_type::erase(dp));
+        expect (test_api::file_type::erase(kp));
+        expect (! test_api::file_type::erase(lp));
     }
 
     void
