@@ -23,8 +23,9 @@
 #include <beast/nudb/error.h>
 #include <beast/nudb/mode.h>
 #include <beast/nudb/detail/config.h>
-#include <string.h>
 #include <cassert>
+#include <cerrno>
+#include <cstring>
 #include <string>
 #include <utility>
 
@@ -75,7 +76,7 @@ private:
     std::string
     text (int errnum)
     {
-        return ::strerror(errnum);
+        return std::strerror(errnum);
     }
 };
 
