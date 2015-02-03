@@ -20,7 +20,7 @@
 #ifndef BEAST_NUDB_FAIL_FILE_H_INCLUDED
 #define BEAST_NUDB_FAIL_FILE_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <atomic>
 #include <cstddef>
 #include <string>

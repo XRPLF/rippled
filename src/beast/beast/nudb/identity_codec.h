@@ -17,58 +17,47 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_CONFIG_H_INCLUDED
-#define BEAST_NUDB_CONFIG_H_INCLUDED
+#ifndef BEAST_NUDB_IDENTITY_CODEC_H_INCLUDED
+#define BEAST_NUDB_IDENTITY_CODEC_H_INCLUDED
 
-#include <beast/hash/xxhasher.h>
-
-// Compiles out domain checks
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-# ifdef NDEBUG
-#  define BEAST_NUDB_NO_DOMAIN_CHECK 1
-# else
-#  define BEAST_NUDB_NO_DOMAIN_CHECK 0
-# endif
-#endif
+#include <utility>
 
 namespace beast {
 namespace nudb {
 
-// xxhasher is the fastest and the best choice
-// when keys are already uniformly distributed
-using default_hash = xxhasher;
-
-namespace detail {
-
-// Returns the closest power of 2 not less than x
-template <class = void>
-std::size_t
-ceil_pow2 (unsigned long long x)
+/** Codec which maps input directly to output. */
+class identity_codec
 {
-    static const unsigned long long t[6] = {
-        0xFFFFFFFF00000000ull,
-        0x00000000FFFF0000ull,
-        0x000000000000FF00ull,
-        0x00000000000000F0ull,
-        0x000000000000000Cull,
-        0x0000000000000002ull
-    };
-
-    int y = (((x & (x - 1)) == 0) ? 0 : 1);
-    int j = 32;
-    int i;
-
-    for(i = 0; i < 6; i++) {
-        int k = (((x & t[i]) == 0) ? 0 : j);
-        y += k;
-        x >>= k;
-        j >>= 1;
+public:
+    template <class... Args>
+    explicit
+    identity_codec(Args&&... args)
+    {
     }
 
-    return std::size_t(1)<<y;
-}
+    char const*
+    name() const
+    {
+        return "none";
+    }
 
-} // detail
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    compress (void const* in,
+        std::size_t in_size, BufferFactory&&) const
+    {
+        return std::make_pair(in, in_size);
+    }
+
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    decompress (void const* in,
+        std::size_t in_size, BufferFactory&&) const
+    {
+        return std::make_pair(in, in_size);
+    }
+};
+
 } // nudb
 } // beast
 

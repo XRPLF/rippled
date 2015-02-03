@@ -20,7 +20,7 @@
 #ifndef BEAST_NUDB_BULKIO_H_INCLUDED
 #define BEAST_NUDB_BULKIO_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/stream.h>
 #include <algorithm>
 #include <cstddef>
@@ -45,10 +45,16 @@ public:
     bulk_reader (File& f, std::size_t offset,
         std::size_t last, std::size_t buffer_size);
 
+    std::size_t
+    offset() const
+    {
+        return offset_ - avail_;
+    }
+
     bool
     eof() const
     {
-        return offset_ - avail_ == last_;
+        return offset() >= last_;
     }
 
     istream

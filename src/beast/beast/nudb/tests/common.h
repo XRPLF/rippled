@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_TEST_COMMON_H_INCLUDED
-#define BEAST_NUDB_TEST_COMMON_H_INCLUDED
+#ifndef BEAST_NUDB_TESTS_COMMON_H_INCLUDED
+#define BEAST_NUDB_TESTS_COMMON_H_INCLUDED
 
 #include <beast/nudb.h>
+#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/tests/fail_file.h>
+#include <beast/hash/xxhasher.h>
 #include <beast/random/xor_shift_engine.h>
 #include <cstdint>
 #include <iomanip>
@@ -33,9 +35,18 @@ namespace test {
 
 using key_type = std::size_t;
 
-using fail_store = nudb::basic_store<
-    beast::nudb::default_hash, nudb::fail_file <
-        nudb::native_file>>;
+// xxhasher is fast and produces good results
+using test_api_base =
+    //nudb::api<xxhasher, identity_codec, native_file>;
+    nudb::api<xxhasher, identity_codec, native_file>;
+
+struct test_api : test_api_base
+{
+    using fail_store = nudb::store<
+        typename test_api_base::hash_type,
+            typename test_api_base::codec_type,
+            nudb::fail_file <typename test_api_base::file_type>>;
+};
 
 static std::size_t BEAST_CONSTEXPR arena_alloc_size = 16 * 1024 * 1024;
 
@@ -45,8 +56,8 @@ static std::uint64_t BEAST_CONSTEXPR salt = 42;
 
 //------------------------------------------------------------------------------
 
-// Meets the requirements of BufferFactory
-class storage
+// Meets the requirements of Handler
+class Storage
 {
 private:
     std::size_t size_ = 0;
@@ -54,9 +65,9 @@ private:
     std::unique_ptr<std::uint8_t[]> buf_;
 
 public:
-    storage() = default;
-    storage (storage const&) = delete;
-    storage& operator= (storage const&) = delete;
+    Storage() = default;
+    Storage (Storage const&) = delete;
+    Storage& operator= (Storage const&) = delete;
 
     std::size_t
     size() const
@@ -71,15 +82,23 @@ public:
     }
 
     std::uint8_t*
-    operator()(std::size_t n)
+    reserve (std::size_t size)
     {
-        if (capacity_ < n)
+        if (capacity_ < size)
         {
-            capacity_ = detail::ceil_pow2(n);
+            capacity_ = detail::ceil_pow2(size);
             buf_.reset (
                 new std::uint8_t[capacity_]);
         }
-        size_ = n;
+        size_ = size;
+        return buf_.get();
+    }
+
+    std::uint8_t*
+    operator()(void const* data, std::size_t size)
+    {
+        reserve (size);
+        std::memcpy(buf_.get(), data, size);
         return buf_.get();
     }
 };
@@ -134,7 +153,7 @@ private:
         maxSize = 1250
     };
 
-    storage s_;
+    Storage s_;
     beast::xor_shift_engine gen_;
     std::uniform_int_distribution<std::uint32_t> d_size_;
 
@@ -162,7 +181,7 @@ public:
         value_type v;
         rngcpy (&v.key, sizeof(v.key), gen_);
         v.size = d_size_(gen_);
-        v.data = s_(v.size);
+        v.data = s_.reserve(v.size);
         rngcpy (v.data, v.size, gen_);
         return v;
     }
@@ -205,14 +224,18 @@ print (Log log,
     log << "actual_load:     " << std::fixed << std::setprecision(0) <<
                                     info.actual_load * 100 << "%";
     log << "version:         " << num(info.version);
-    log << "salt:            " << std::showbase << std::hex << info.salt;
+    log << "uid:             " << std::showbase << std::hex << info.uid;
+    log << "appnum:          " << info.appnum;
     log << "key_size:        " << num(info.key_size);
+    log << "salt:            " << std::showbase << std::hex << info.salt;
+    log << "pepper:          " << std::showbase << std::hex << info.pepper;
     log << "block_size:      " << num(info.block_size);
     log << "bucket_size:     " << num(info.bucket_size);
     log << "load_factor:     " << std::fixed << std::setprecision(0) <<
                                     info.load_factor * 100 << "%";
     log << "capacity:        " << num(info.capacity);
     log << "buckets:         " << num(info.buckets);
+    log << "key_count:       " << num(info.key_count);
     log << "value_count:     " << num(info.value_count);
     log << "value_bytes:     " << num(info.value_bytes);
     log << "spill_count:     " << num(info.spill_count);
