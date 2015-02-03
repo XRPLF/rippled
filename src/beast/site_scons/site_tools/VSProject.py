@@ -808,12 +808,16 @@ class _ProjectGenerator(object):
 
     def build(self):
         try:
-            self.project_file = open(str(self.project_node), 'wb')
+            path = str(self.project_node)
+            self.project_file = open(path, 'wb')
+            os.chmod(path, 0644)
         except IOError, detail:
             raise SCons.Errors.InternalError('Unable to open "' +
                 str(self.project_node) + '" for writing:' + str(detail))
         try:
-            self.filters_file = open(str(self.filters_node), 'wb')
+            path = str(self.filters_node)
+            self.filters_file = open(path, 'wb')
+            os.chmod(path, 0644)
         except IOError, detail:
             raise SCons.Errors.InternalError('Unable to open "' +
                 str(self.filters_node) + '" for writing:' + str(detail))
