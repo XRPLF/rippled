@@ -190,6 +190,11 @@ public:
     };
 
     //--------------------------------------------------------------------------
+    //
+    //  Version 1 Database
+    //
+    //      Uncompressed
+    //
 
     Status
     fetch1 (void const* key,
@@ -221,6 +226,11 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    //
+    //  Version 2 Database
+    //
+    //      Snappy compression
+    //
 
     Status
     fetch2 (void const* key,
@@ -270,10 +280,6 @@ public:
     Status
     fetch (void const* key, NodeObject::Ptr* pno)
     {
-        Buffer b1;
-        if (! db_.fetch (key, b1))
-            return notFound;
-
         switch (db_.appnum())
         {
         case typeOne:   return fetch1 (key, pno);
