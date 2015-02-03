@@ -110,5 +110,6 @@
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
 #include <ripple/rpc/tests/JsonWriter.test.cpp>
 #include <ripple/rpc/tests/Status.test.cpp>
+#include <ripple/rpc/tests/WalletPropose.test.cpp>
 #include <ripple/rpc/tests/WriteJson.test.cpp>
 #include <ripple/rpc/tests/Yield.test.cpp>

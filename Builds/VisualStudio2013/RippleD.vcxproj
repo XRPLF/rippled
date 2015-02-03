@@ -2792,6 +2792,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\WalletPropose.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\WriteJson.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

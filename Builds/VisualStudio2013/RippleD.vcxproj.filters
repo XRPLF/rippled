@@ -3861,6 +3861,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
       <Filter>ripple\rpc\tests</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\WalletPropose.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\WriteJson.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
