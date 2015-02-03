@@ -35,8 +35,8 @@ class Server
 {
 private:
     // TODO: why is this recursive?
-    using LockType = typename std::recursive_mutex;
-    using ScopedLockType = typename std::lock_guard <LockType>;
+    using LockType = std::recursive_mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
 
     ServerDescription desc_;
     LockType m_endpointLock;

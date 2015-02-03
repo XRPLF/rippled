@@ -18,26 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/websocket/MakeServer.h>
-#include <ripple/websocket/WebSocket.h>
 
-namespace ripple {
-namespace websocket {
+#ifdef _MSC_VER
+# ifndef _WEBSOCKETPP_CONSTEXPR_TOKEN_
+#  define _WEBSOCKETPP_CONSTEXPR_TOKEN_
+# endif
+#endif
+#define _WEBSOCKETPP_CPP11_STL_
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
-{
-    auto version = get<std::string> (
-        desc.config["server"], "websocket_version");
-    if (version.empty())
-        version = WebSocket02::versionName();
-
-    WriteLog (lsWARNING, WebSocket) << "Websocket version " << version;
-    if (version == WebSocket02::versionName())
-        return makeServer02 (desc);
-    assert (version == "04");
-    return makeServer04 (desc);
-}
-
-} // websocket
-} // ripple
+#include <ripple/websocket/WebSocket04.cpp>

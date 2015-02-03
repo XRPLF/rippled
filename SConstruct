@@ -673,7 +673,7 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/rpcx.cpp',
                 'src/ripple/unity/server.cpp',
                 'src/ripple/unity/validators.cpp',
-                'src/ripple/unity/websocket.cpp'
+                'src/ripple/unity/websocket02.cpp'
             )
 
             object_builder.add_source_files(
@@ -710,6 +710,11 @@ for tu_style in ['classic', 'unity']:
                     'src/snappy/snappy',
                     'src/snappy/config',
                 ]
+            )
+
+            object_builder.add_source_files(
+                'src/ripple/unity/websocket04.cpp',
+                CPPPATH='src/websocketpp',
             )
 
             if toolchain == "clang" and Beast.system.osx:

@@ -28,6 +28,8 @@ namespace beast { class Stoppable; }
 
 namespace ripple {
 
+class BasicConfig;
+
 namespace Resource { class Manager; }
 
 namespace websocket {
@@ -38,6 +40,7 @@ struct ServerDescription
     Resource::Manager& resourceManager;
     InfoSub::Source& source;
     beast::Journal& journal;
+    BasicConfig const& config;
     CollectorManager& collectorManager;
 };
 

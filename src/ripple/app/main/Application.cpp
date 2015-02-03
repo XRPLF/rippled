@@ -810,7 +810,7 @@ public:
             if (! port.websockets())
                 continue;
             auto server = websocket::makeServer (
-                {port, *m_resourceManager, getOPs(), m_journal,
+                {port, *m_resourceManager, getOPs(), m_journal, getConfig(),
                  *m_collectorManager});
             if (!server)
             {
