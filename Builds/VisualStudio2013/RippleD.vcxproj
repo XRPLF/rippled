@@ -2681,6 +2681,8 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletPropose.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\WalletPropose.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletSeed.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

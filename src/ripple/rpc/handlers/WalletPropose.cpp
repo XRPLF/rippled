@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/rpc/handlers/WalletPropose.h>
 
 namespace ripple {
 
@@ -26,13 +27,18 @@ namespace ripple {
 // }
 Json::Value doWalletPropose (RPC::Context& context)
 {
+    return WalletPropose (context.params);
+}
+
+Json::Value WalletPropose (Json::Value const& params)
+{
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (!context.params.isMember ("passphrase"))
+    if (!params.isMember ("passphrase"))
         naSeed.setSeedRandom ();
 
-    else if (!naSeed.setSeedGeneric (context.params["passphrase"].asString ()))
+    else if (!naSeed.setSeedGeneric (params["passphrase"].asString ()))
         return rpcError(rpcBAD_SEED);
 
     RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
