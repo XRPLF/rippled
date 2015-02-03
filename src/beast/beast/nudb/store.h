@@ -50,7 +50,6 @@
 #include <limits>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -953,25 +952,6 @@ basic_store<Hasher, File>::run()
 //------------------------------------------------------------------------------
 
 using store = basic_store <default_hash, native_file>;
-
-/** Generate a random salt. */
-template <class = void>
-std::uint64_t
-make_salt()
-{
-    std::random_device rng;
-    std::mt19937_64 gen {rng()};
-    std::uniform_int_distribution <std::size_t> dist;
-    return dist(gen);
-}
-
-/** Returns the best guess at the volume's block size. */
-inline
-std::size_t
-block_size(std::string const& /*path*/)
-{
-    return 4096;
-}
 
 } // nudb
 } // beast

@@ -21,16 +21,37 @@
 #define BEAST_NUDB_CREATE_H_INCLUDED
 
 #include <beast/nudb/file.h>
+#include <beast/nudb/mode.h>
 #include <beast/nudb/detail/bucket.h>
 #include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <algorithm>
 #include <cstring>
+#include <random>
 #include <stdexcept>
 #include <utility>
 
 namespace beast {
 namespace nudb {
+
+/** Generate a random salt. */
+template <class = void>
+std::uint64_t
+make_salt()
+{
+    std::random_device rng;
+    std::mt19937_64 gen {rng()};
+    std::uniform_int_distribution <std::size_t> dist;
+    return dist(gen);
+}
+
+/** Returns the best guess at the volume's block size. */
+inline
+std::size_t
+block_size (path_type const& /*path*/)
+{
+    return 4096;
+}
 
 /** Create a new database.
     Preconditions:
