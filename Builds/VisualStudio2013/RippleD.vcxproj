@@ -2705,6 +2705,8 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletPropose.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\WalletPropose.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletSeed.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2742,6 +2744,11 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\JsonWriter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\KeypairForSignature.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\KeypairForSignature.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2812,6 +2819,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JsonWriter.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">

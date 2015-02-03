@@ -3762,6 +3762,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletPropose.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\WalletPropose.h">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletSeed.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -3805,6 +3808,12 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\JsonWriter.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\KeypairForSignature.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\KeypairForSignature.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
@@ -3889,6 +3898,9 @@
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JsonWriter.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
