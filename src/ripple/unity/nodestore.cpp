@@ -27,6 +27,7 @@
 #include <ripple/nodestore/backend/NuDBFactory.cpp>
 #include <ripple/nodestore/backend/NullFactory.cpp>
 #include <ripple/nodestore/backend/RocksDBFactory.cpp>
+#include <ripple/nodestore/backend/RocksDBQuickFactory.cpp>
 
 #include <ripple/nodestore/impl/BatchWriter.cpp>
 #include <ripple/nodestore/impl/DatabaseImp.h>
