@@ -24,7 +24,7 @@
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
+Config::Config()
     : maxPeers (Tuning::defaultMaxPeers)
     , outPeers (calcOutPeers ())
     , wantIncoming (true)

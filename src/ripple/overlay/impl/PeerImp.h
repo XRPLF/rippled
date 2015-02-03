@@ -109,49 +109,37 @@ private:
     // the current conditions as closely as possible.
     beast::IP::Endpoint remote_address_;
 
-    // These is up here to prevent warnings about order of initializations
+    // These are up here to prevent warnings about order of initializations
     //
     OverlayImpl& overlay_;
     bool m_inbound;
-
     State state_;          // Current state
     bool detaching_ = false;
-
     // Node public key of peer.
     RippleAddress publicKey_;
-
     std::string name_;
-
     uint256 sharedValue_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
     LedgerIndex minLedger_ = 0;
     LedgerIndex maxLedger_ = 0;
-
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
-
     std::list<uint256> recentLedgers_;
     std::list<uint256> recentTxSets_;
     mutable std::mutex recentLock_;
-
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;
-
     Resource::Consumer usage_;
     PeerFinder::Slot::ptr slot_;
-
     beast::asio::streambuf read_buffer_;
     beast::http::message http_message_;
-    boost::optional <beast::http::parser> http_parser_;
     beast::http::body http_body_;
     beast::asio::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
-
     std::unique_ptr <LoadEvent> load_event_;
-
     std::unique_ptr<Validators::Connection> validatorsConnection_;
 
     //--------------------------------------------------------------------------
@@ -235,6 +223,9 @@ public:
     }
 
     bool
+    crawl() const;
+
+    bool
     cluster() const override
     {
         return slot_->cluster();
@@ -300,10 +291,6 @@ private:
     std::string
     makePrefix(id_t id);
 
-    static
-    beast::http::message
-    makeRequest (boost::asio::ip::address const& remote_address);
-
     // Called when the timer wait completes
     void
     onTimer (boost::system::error_code const& ec);
@@ -320,7 +307,7 @@ private:
 
     static
     beast::http::message
-    makeResponse (beast::http::message const& req,
+    makeResponse (bool crawl, beast::http::message const& req,
         uint256 const& sharedValue);
 
     void

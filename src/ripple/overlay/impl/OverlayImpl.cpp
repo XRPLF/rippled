@@ -27,6 +27,7 @@
 #include <ripple/overlay/impl/TMHello.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <beast/ByteOrder.h>
+#include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
 #include <beast/utility/ci_char_traits.h>
 #include <beast/utility/WrappedSink.h>
@@ -193,6 +194,8 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     beast::Journal journal (sink);
 
     Handoff handoff;
+    if (processRequest(request, handoff))
+        return handoff;
     if (! isPeerUpgrade(request))
         return handoff;
 
@@ -461,8 +464,9 @@ OverlayImpl::onPrepare()
 
     auto const port = serverHandler_.setup().overlay.port;
 
+    config.peerPrivate = getConfig().PEER_PRIVATE;
     config.wantIncoming =
-        (! getConfig ().PEER_PRIVATE) && (port != 0);
+        (! config.peerPrivate) && (port != 0);
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
     config.autoConnect =
@@ -604,11 +608,56 @@ OverlayImpl::size()
     return m_publicKeyMap.size ();
 }
 
+Json::Value
+OverlayImpl::crawl()
+{
+    Json::Value jv;
+    auto& av = jv["active"] = Json::Value(Json::arrayValue);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    for (auto const& e : m_publicKeyMap)
+    {
+        auto const sp = e.second.lock();
+        if (sp)
+        {
+            auto& pv = av.append(Json::Value(Json::objectValue));
+            pv["type"] = "peer";
+            pv["public_key"] = beast::base64_encode(
+                sp->getNodePublic().getNodePublic().data(),
+                    sp->getNodePublic().getNodePublic().size());
+            if (sp->crawl())
+            {
+                if (sp->slot()->inbound())
+                    pv["ip"] = sp->getRemoteAddress().address().to_string();
+                else
+                    pv["ip"] = sp->getRemoteAddress().to_string();
+            }
+        }
+    }
+    return jv;
+}
+
 // Returns information on verified peers.
 Json::Value
 OverlayImpl::json ()
 {
     return foreach (get_peer_json());
+}
+
+bool
+OverlayImpl::processRequest (beast::http::message const& req,
+    Handoff& handoff)
+{
+    if (req.url() != "/crawl")
+        return false;
+
+    beast::http::message resp;
+    resp.request(false);
+    resp.status(200);
+    resp.reason("OK");
+    Json::Value v;
+    v["overlay"] = crawl();
+    handoff.response = HTTP::make_JsonWriter(resp, v);
+    return true;
 }
 
 Overlay::PeerSequence

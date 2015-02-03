@@ -218,7 +218,8 @@ ConnectAttempt::onHandshake (error_code ec)
         return close(); // makeSharedValue logs
 
     beast::http::message req = makeRequest(
-        remote_endpoint_.address());
+        ! overlay_.peerFinder().config().peerPrivate,
+            remote_endpoint_.address());
     auto const hello = buildHello (sharedValue, getApp());
     appendHello (req, hello);
 
@@ -509,7 +510,7 @@ ConnectAttempt::onReadBody (error_code ec,
 //--------------------------------------------------------------------------
 
 beast::http::message
-ConnectAttempt::makeRequest (
+ConnectAttempt::makeRequest (bool crawl,
     boost::asio::ip::address const& remote_address)
 {
     beast::http::message m;
@@ -521,13 +522,7 @@ ConnectAttempt::makeRequest (
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
     m.headers.append ("Connection", "Upgrade");
     m.headers.append ("Connect-As", "Peer");
-    //m.headers.append ("Connect-As", "Leaf, Peer");
-    //m.headers.append ("Accept-Encoding", "identity");
-    //m.headers.append ("Local-Address", stream_.
-    //m.headers.append ("X-Try-IPs", "192.168.0.1:51234");
-    //m.headers.append ("X-Try-IPs", "208.239.114.74:51234");
-    //m.headers.append ("A", "BC");
-    //m.headers.append ("Content-Length", "0");
+    m.headers.append ("Crawl", crawl ? "public" : "private");
     return m;
 }
 

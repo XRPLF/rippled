@@ -58,6 +58,9 @@ struct Config
     */
     double outPeers;
 
+    /** `true` if we want our IP address kept private. */
+    bool peerPrivate = true;
+
     /** `true` if we want to accept incoming connections. */
     bool wantIncoming;
 
@@ -135,6 +138,11 @@ public:
             Can be called from any threads at any time.
     */
     virtual void setConfig (Config const& config) = 0;
+
+    /** Returns the configuration for the manager. */
+    virtual
+    Config
+    config() = 0;
 
     /** Add a peer that should always be connected.
         This is useful for maintaining a private cluster of peers.

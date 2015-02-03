@@ -51,9 +51,6 @@ operating in the Client Handler role accepts incoming connections from clients
 and services them through the JSON-RPC interface. A peer can operate in either
 the leaf or superpeer roles while also operating as a client handler.
 
-
-
-
 ## Handshake
 
 To establish a protocol connection, a peer makes an outgoing TLS encrypted
@@ -69,8 +66,8 @@ Upgrade: RTXP/1.2, RTXP/1.3
 Connection: Upgrade
 Connect-As: Leaf, Peer
 Accept-Encoding: identity, zlib, snappy
-Protocol-Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
-Protocol-Session-Cookie: 71ED064155FFADFA38782C5E0158CB26
+Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
+Session-Signature: 71ED064155FFADFA38782C5E0158CB26
 ```
 
 Upon receipt of a well-formed HTTP request the remote peer will send back a
@@ -84,8 +81,8 @@ Upgrade: RTXP/1.2
 Connection: Upgrade
 Connect-As: Leaf
 Transfer-Encoding: snappy
-Protocol-Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
-Protocol-Session-Cookie: 71ED064155FFADFA38782C5E0158CB26
+Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
+Session-Signature: 71ED064155FFADFA38782C5E0158CB26
 ```
 
 If the remote peer has no available slots, the HTTP status code 503 (Service
@@ -163,21 +160,28 @@ Content-Type: application/json
     of elements specified in the request. If a server does not recognize any
     of the connection types it must return a HTTP error response.
 
-* `Protocol-Public-Key`
+* `Public-Key`
 
-    This field value must be present, and contain a Base58 encoded value used
+    This field value must be present, and contain a base 64 encoded value used
     as a server public key identifier.
 
-* `Protocol-Session-Proof`
+* `Session-Signature`
 
-    This field must be present (TODO)
+    This field must be present. It contains a cryptographic token formed
+    from the SHA512 hash of the shared data exchanged during SSL handshaking.
+    For more details see the corresponding source code.
 
-* _User Defined_
+* `Crawl` (optional)
+
+    If present, and the value is "public" then neighbors will report the IP
+    address to crawler requests. If absent, neighbor's default behavior is to
+    not report IP addresses.
+
+* _User Defined_ (Unimplemented)
 
     The rippled operator may specify additional, optional fields and values
     through the configuration. These headers will be transmitted in the
     corresponding request or response messages.
-
 
 ---
 

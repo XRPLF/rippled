@@ -180,6 +180,13 @@ public:
         state->counts.onConfig (state->config);
     }
 
+    Config
+    config()
+    {
+        typename SharedState::Access state (m_state);
+        return state->config;
+    }
+
     void
     addFixedPeer (std::string const& name,
         beast::IP::Endpoint const& ep)
