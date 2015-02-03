@@ -32,8 +32,6 @@
 #include <beast/nudb/detail/format.h>
 #include <beast/nudb/detail/gentex.h>
 #include <beast/nudb/detail/pool.h>
-#include <beast/nudb/detail/posix_file.h>
-#include <beast/nudb/detail/win32_file.h>
 #include <boost/thread/lock_types.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <algorithm>

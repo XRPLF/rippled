@@ -1470,13 +1470,7 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\pool.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\posix_file.h">
-      <Filter>beast\nudb\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
-      <Filter>beast\nudb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\win32_file.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
@@ -1491,6 +1485,9 @@
     <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">
       <Filter>beast\nudb</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\posix_file.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
     <None Include="..\..\src\beast\beast\nudb\README.md">
       <Filter>beast\nudb</Filter>
     </None>
@@ -1522,6 +1519,9 @@
       <Filter>beast\nudb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\visit.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\win32_file.h">
       <Filter>beast\nudb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
