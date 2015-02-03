@@ -27,6 +27,7 @@
 #include <cassert>
 #include <string>
 #include <utility>
+#include <cerrno>
 
 #ifndef BEAST_NUDB_POSIX_FILE
 # ifdef _MSC_VER
