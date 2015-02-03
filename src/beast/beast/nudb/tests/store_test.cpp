@@ -63,7 +63,7 @@ public:
                     load_factor), "create");
             expect (db.open(dp, kp, lp,
                 arena_alloc_size), "open");
-            storage s;
+            Storage s;
             // insert
             for (std::size_t i = 0; i < N; ++i)
             {

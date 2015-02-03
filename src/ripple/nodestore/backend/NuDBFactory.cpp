@@ -200,22 +200,24 @@ public:
     fetch1 (void const* key,
         std::shared_ptr <NodeObject>* pno)
     {
+        Status status;
         pno->reset();
-        std::size_t bytes;
-        std::unique_ptr <std::uint8_t[]> data;
         if (! db_.fetch (key,
-            [&data, &bytes](std::size_t n)
+            [key, pno, &status](void const* data, std::size_t size)
             {
-                bytes = n;
-                data.reset(new std::uint8_t[bytes]);
-                return data.get();
+                DecodedBlob decoded (key, data, size);
+                if (! decoded.wasOk ())
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                *pno = decoded.createObject();
+                status = ok;
             }))
+        {
             return notFound;
-        DecodedBlob decoded (key, data.get(), bytes);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
+        }
+        return status;
     }
 
     void
@@ -236,31 +238,35 @@ public:
     fetch2 (void const* key,
         std::shared_ptr <NodeObject>* pno)
     {
+        Status status;
         pno->reset();
-        std::size_t actual;
-        std::unique_ptr <char[]> compressed;
         if (! db_.fetch (key,
-            [&](std::size_t n)
+            [&](void const* data, std::size_t size)
             {
-                actual = n;
-                compressed.reset(
-                    new char[n]);
-                return compressed.get();
+                std::size_t actual;
+                if (! snappy::GetUncompressedLength(
+                        (char const*)data, size, &actual))
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                std::unique_ptr <char[]> buf (new char[actual]);
+                snappy::RawUncompress (
+                    (char const*)data, size, buf.get());
+                DecodedBlob decoded (key, buf.get(), actual);
+                if (! decoded.wasOk ())
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                *pno = decoded.createObject();
+                status = ok;
             }))
+        {
             return notFound;
-        std::size_t size;
-        if (! snappy::GetUncompressedLength(
-                (char const*)compressed.get(),
-                    actual, &size))
-            return dataCorrupt;
-        std::unique_ptr <char[]> data (new char[size]);
-        snappy::RawUncompress (compressed.get(),
-            actual, data.get());
-        DecodedBlob decoded (key, data.get(), size);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
+        }
+
+        return status;
     }
 
     void

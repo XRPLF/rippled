@@ -67,7 +67,7 @@ public:
             auto const v = seq[i];
             db.insert(&v.key, v.data, v.size);
         }
-        storage s;
+        Storage s;
         for (std::size_t i = 0; i < count; ++i)
         {
             auto const v = seq[i];

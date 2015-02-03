@@ -67,7 +67,7 @@ public:
             expect (db.insert(&v.key, v.data, v.size),
                 "insert");
         }
-        storage s;
+        Storage s;
         for (std::size_t i = 0; i < count * 2; ++i)
         {
             if (! (i%2))

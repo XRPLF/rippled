@@ -243,17 +243,17 @@ public:
 
     /** Fetch a value.
 
-        If key is found, BufferFactory will be called as:
-            `(void*)()(std::size_t bytes)`
+        If key is found, Handler will be called as:
+            `(void)()(void const* data, std::size_t size)`
 
-        where bytes is the size of the value, and the returned pointer
-        points to a buffer of at least bytes size.
+        where data and size represent the value. If the
+        key is not found, the handler is not called.
 
-        @return `true` if the key exists.
+        @return `true` if a matching key was found.
     */
-    template <class BufferFactory>
+    template <class Handler>
     bool
-    fetch (void const* key, BufferFactory&& bf);
+    fetch (void const* key, Handler&& handler);
 
     /** Insert a value.
 
@@ -407,10 +407,10 @@ basic_store<Hasher, File>::close()
 }
 
 template <class Hasher, class File>
-template <class BufferFactory>
+template <class Handler>
 bool
 basic_store<Hasher, File>::fetch (
-    void const* key, BufferFactory&& bf)
+    void const* key, Handler&& handler)
 {
     using namespace detail;
     rethrow();
@@ -422,36 +422,23 @@ basic_store<Hasher, File>::fetch (
     {
         auto const h = hash<Hasher>(
            key, s_->kh.key_size, s_->kh.salt);
-        shared_lock_type m (m_,
-            boost::defer_lock);
-        m.lock();
+        shared_lock_type m (m_);
         {
-            typename pool::iterator iter;
-            iter = s_->p1.find(key);
-            if (iter != s_->p1.end())
+            auto iter = s_->p1.find(key);
+            if (iter == s_->p1.end())
             {
-                void* const b = bf(
-                    iter->first.size);
-                if (b == nullptr)
-                    return false;
-                std::memcpy (b,
-                    iter->first.data,
-                        iter->first.size);
-                return true;
+                iter = s_->p0.find(key);
+                if (iter == s_->p0.end())
+                    goto g1;
             }
-            iter = s_->p0.find(key);
-            if (iter != s_->p0.end())
-            {
-                void* const b = bf(
+            buf.reserve (iter->first.size);
+            std::memcpy (buf.get(),
+                iter->first.data,
                     iter->first.size);
-                if (b == nullptr)
-                    return false;
-                std::memcpy (b,
-                    iter->first.data,
-                        iter->first.size);
-                return true;
-            }
+            handler (buf.get(), iter->first.size);
+            return true;
         }
+    g1:
         auto const n = bucket_index(
             h, buckets_, modulus_);
         auto const iter = s_->c1.find(n);
@@ -463,7 +450,7 @@ basic_store<Hasher, File>::fetch (
             {
                 offset = result.first.offset;
                 size = result.first.size;
-                goto found;
+                goto g2;
             }
             // VFALCO Audit for concurrency
             auto spill = iter->second.spill();
@@ -476,7 +463,7 @@ basic_store<Hasher, File>::fetch (
                 {
                     offset = result.first.offset;
                     size = result.first.size;
-                    goto found;
+                    goto g2;
                 }
                 spill = tmp.spill();
             }
@@ -493,15 +480,14 @@ basic_store<Hasher, File>::fetch (
         offset = result.first.offset;
         size = result.first.size;
     }
-found:
-    void* const b = bf(size);
-    if (b == nullptr)
-        return false;
+g2:
+    buf.reserve (size);
     // Data Record
     s_->df.read (offset +
         field<uint48_t>::size + // Size
         s_->kh.key_size,        // Key
-            b, size);
+            buf.get(), size);
+    handler (buf.get(), size);
     return true;
 }
 
