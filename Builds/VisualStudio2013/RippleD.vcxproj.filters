@@ -1446,7 +1446,7 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bucket.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffers.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffer.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bulkio.h">

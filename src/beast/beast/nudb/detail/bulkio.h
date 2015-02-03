@@ -20,6 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_BULKIO_H_INCLUDED
 #define BEAST_NUDB_DETAIL_BULKIO_H_INCLUDED
 
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/stream.h>
 #include <algorithm>

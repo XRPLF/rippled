@@ -810,7 +810,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bucket.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffers.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bulkio.h">
     </ClInclude>

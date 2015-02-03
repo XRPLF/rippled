@@ -25,7 +25,7 @@
 #include <beast/nudb/mode.h>
 #include <beast/nudb/recover.h>
 #include <beast/nudb/detail/bucket.h>
-#include <beast/nudb/detail/buffers.h>
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/bulkio.h>
 #include <beast/nudb/detail/cache.h>
 #include <beast/nudb/detail/config.h>
@@ -110,9 +110,6 @@ private:
     using unique_lock_type =
         boost::unique_lock<boost::shared_mutex>;
 
-    using blockbuf =
-        typename detail::buffers::value_type;
-
     struct state
     {
         File df;
@@ -121,7 +118,6 @@ private:
         path_type dp;
         path_type kp;
         path_type lp;
-        detail::buffers b;
         detail::pool p0;
         detail::pool p1;
         detail::cache c0;
@@ -317,7 +313,6 @@ basic_store<Hasher, File>::state::state (
     , dp (dp_)
     , kp (kp_)
     , lp (lp_)
-    , b  (kh_.block_size)
     , p0 (kh_.key_size, arena_alloc_size)
     , p1 (kh_.key_size, arena_alloc_size)
     , c0 (kh_.key_size, kh_.block_size)
@@ -422,7 +417,7 @@ basic_store<Hasher, File>::fetch (
     rethrow();
     std::size_t offset;
     std::size_t size;
-    blockbuf buf(s_->b);
+    buffer buf (s_->kh.block_size);
     bucket tmp (s_->kh.key_size,
         s_->kh.block_size, buf.get());
     {
@@ -523,7 +518,7 @@ basic_store<Hasher, File>::insert (void const* key,
         throw std::logic_error(
             "nudb: size too large");
 #endif
-    blockbuf buf (s_->b);
+    buffer buf (s_->kh.block_size);
     bucket tmp (s_->kh.key_size,
         s_->kh.block_size, buf.get());
     auto const h = hash<Hasher>(
@@ -763,8 +758,8 @@ void
 basic_store<Hasher, File>::commit()
 {
     using namespace detail;
-    blockbuf buf1 (s_->b);
-    blockbuf buf2 (s_->b);
+    buffer buf1 (s_->kh.block_size);
+    buffer buf2 (s_->kh.block_size);
     bucket tmp (s_->kh.key_size,
         s_->kh.block_size, buf1.get());
     // Empty cache put in place temporarily
