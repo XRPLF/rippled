@@ -17,32 +17,48 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_ERROR_H_INCLUDED
-#define BEAST_NUDB_ERROR_H_INCLUDED
+#ifndef BEAST_NUDB_COMMON_H_INCLUDED
+#define BEAST_NUDB_COMMON_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
-#include <beast/utility/noexcept.h>
 #include <stdexcept>
 #include <string>
 
 namespace beast {
 namespace nudb {
 
+// Commonly used types
+
+enum class file_mode
+{
+    scan,         // read sequential
+    read,         // read random
+    append,       // read random, write append
+    write         // read random, write random
+};
+
+using path_type = std::string;
+
 // All exceptions thrown by nudb are derived
-// from std::exception except for fail_error
+// from std::runtime_error except for fail_error
+
+/** Thrown when a codec fails, e.g. corrupt data. */
+struct codec_error : std::runtime_error
+{
+    template <class String>
+    explicit
+    codec_error (String const& s)
+        : runtime_error(s)
+    {
+    }
+};
 
 /** Base class for all errors thrown by file classes. */
 struct file_error : std::runtime_error
 {
+    template <class String>
     explicit
-    file_error (char const* s)
-        : std::runtime_error(s)
-    {
-    }
-
-    explicit
-    file_error (std::string const& s)
-        : std::runtime_error(s)
+    file_error (String const& s)
+        : runtime_error(s)
     {
     }
 };
@@ -67,21 +83,24 @@ struct file_short_write_error : file_error
     }
 };
 
+/** Thrown when end of istream reached while reading. */
+struct short_read_error : std::runtime_error
+{
+    short_read_error()
+        : std::runtime_error(
+            "nudb: short read")
+    {
+    }
+};
+
 /** Base class for all exceptions thrown by store. */
 class store_error : public std::runtime_error
 {
 public:
+    template <class String>
     explicit
-    store_error (char const* m)
-        : std::runtime_error(
-            std::string("nudb: ") + m)
-    {
-    }
-
-    explicit
-    store_error (std::string const& m)
-        : std::runtime_error(
-            std::string("nudb: ") + m)
+    store_error (String const& s)
+        : runtime_error(s)
     {
     }
 };
@@ -90,15 +109,10 @@ public:
 class store_corrupt_error : public store_error
 {
 public:
+    template <class String>
     explicit
-    store_corrupt_error (char const* m)
-        : store_error (m)
-    {
-    }
-
-    explicit
-    store_corrupt_error (std::string const& m)
-        : store_error (m)
+    store_corrupt_error (String const& s)
+        : store_error(s)
     {
     }
 };

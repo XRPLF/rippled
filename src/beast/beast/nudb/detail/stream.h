@@ -20,8 +20,7 @@
 #ifndef BEAST_NUDB_STREAM_H_INCLUDED
 #define BEAST_NUDB_STREAM_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/detail/config.h>
+#include <beast/nudb/common.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -32,113 +31,53 @@ namespace beast {
 namespace nudb {
 namespace detail {
 
-// Simple growable memory buffer
-class buffer
-{
-private:
-    std::size_t size_ = 0;
-    std::unique_ptr<std::uint8_t[]> buf_;
-
-public:
-    buffer() = default;
-    buffer (buffer const&) = delete;
-    buffer& operator= (buffer const&) = delete;
-
-    explicit
-    buffer (std::size_t n)
-        : size_ (n)
-        , buf_ (new std::uint8_t[n])
-    {
-    }
-
-    buffer (buffer&& other)
-        : size_ (other.size_)
-        , buf_ (std::move(other.buf_))
-    {
-        other.size_ = 0;
-    }
-
-    buffer& operator= (buffer&& other)
-    {
-        size_ = other.size_;
-        buf_ = std::move(other.buf_);
-        other.size_ = 0;
-        return *this;
-    }
-
-    std::size_t
-    size() const
-    {
-        return size_;
-    }
-
-    std::uint8_t*
-    get() const
-    {
-        return buf_.get();
-    }
-
-    void
-    reserve (std::size_t n)
-    {
-        if (size_ < n)
-            buf_.reset (new std::uint8_t[n]);
-        size_ = n;
-    }
-};
-
-//------------------------------------------------------------------------------
-
 // Input stream from bytes
 template <class = void>
 class istream_t
 {
 private:
     std::uint8_t const* buf_;
-#if ! BEAST_NUDB_NO_DOMAIN_CHECK
-    std::size_t bytes_;
-#endif
+    std::size_t size_ = 0;
 
 public:
     istream_t (istream_t const&) = default;
     istream_t& operator= (istream_t const&) = default;
 
-    istream_t (void const* data, std::size_t
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        bytes
-    #endif
-        )
+    istream_t (void const* data, std::size_t size)
         : buf_(reinterpret_cast<
             std::uint8_t const*>(data))
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        , bytes_(bytes)
-    #endif
+        , size_(size)
     {
     }
 
     template <std::size_t N>
     istream_t (std::array<std::uint8_t, N> const& a)
         : buf_ (a.data())
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        , bytes_ (a.size())
-    #endif
+        , size_ (a.size())
     {
     }
 
     std::uint8_t const*
-    data (std::size_t bytes)
+    data (std::size_t bytes);
+
+    std::uint8_t const*
+    operator()(std::size_t bytes)
     {
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        if (bytes > bytes_)
-            throw std::logic_error(
-                "nudb: istream");
-        bytes_ -= bytes;
-    #endif
-        auto const data = buf_;
-        buf_ = buf_ + bytes;
-        return data;
+        return data(bytes);
     }
 };
+
+template <class _>
+std::uint8_t const*
+istream_t<_>::data (std::size_t bytes)
+{
+    if (size_ < bytes)
+        throw short_read_error();
+    auto const data = buf_;
+    buf_ = buf_ + bytes;
+    size_ -= bytes;
+    return data;
+}
 
 using istream = istream_t<>;
 
@@ -151,32 +90,19 @@ class ostream_t
 private:
     std::uint8_t* buf_;
     std::size_t size_ = 0;
-#if ! BEAST_NUDB_NO_DOMAIN_CHECK
-    std::size_t bytes_;
-#endif
 
 public:
     ostream_t (ostream_t const&) = default;
     ostream_t& operator= (ostream_t const&) = default;
 
-    ostream_t (void* data, std::size_t
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        bytes
-    #endif
-        )
+    ostream_t (void* data, std::size_t)
         : buf_ (reinterpret_cast<std::uint8_t*>(data))
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        , bytes_ (bytes)
-    #endif
     {
     }
 
     template <std::size_t N>
     ostream_t (std::array<std::uint8_t, N>& a)
         : buf_ (a.data())
-    #if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        , bytes_ (a.size())
-    #endif
     {
     }
 
@@ -188,20 +114,24 @@ public:
     }
 
     std::uint8_t*
-    data (std::size_t bytes)
+    data (std::size_t bytes);
+
+    std::uint8_t*
+    operator()(std::size_t bytes)
     {
-#if ! BEAST_NUDB_NO_DOMAIN_CHECK
-        if (bytes > bytes_)
-            throw std::logic_error(
-                "nudb: ostream");
-        bytes_ -= bytes;
-#endif
-        auto const data = buf_;
-        buf_ = buf_ + bytes;
-        size_ += bytes;
-        return data;
+        return data(bytes);
     }
 };
+
+template <class _>
+std::uint8_t*
+ostream_t<_>::data (std::size_t bytes)
+{
+    auto const data = buf_;
+    buf_ = buf_ + bytes;
+    size_ += bytes;
+    return data;
+}
 
 using ostream = ostream_t<>;
 
