@@ -99,6 +99,7 @@
 #include <ripple/rpc/impl/Accounts.cpp>
 #include <ripple/rpc/impl/GetMasterGenerator.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
+#include <ripple/rpc/impl/KeypairForSignature.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
 #include <ripple/rpc/impl/LookupLedger.cpp>
 #include <ripple/rpc/impl/ParseAccountIds.cpp>
@@ -109,6 +110,7 @@
 #include <ripple/rpc/tests/JsonObject.test.cpp>
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
 #include <ripple/rpc/tests/JsonWriter.test.cpp>
+#include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/Status.test.cpp>
 #include <ripple/rpc/tests/WriteJson.test.cpp>
 #include <ripple/rpc/tests/Yield.test.cpp>

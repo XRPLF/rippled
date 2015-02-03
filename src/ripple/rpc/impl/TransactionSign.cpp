@@ -22,6 +22,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <beast/unit_test/suite.h>
 
@@ -335,17 +336,15 @@ transactionSign (
 
     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << params;
 
-    if (! params.isMember ("secret"))
-        return RPC::missing_field_error ("secret");
+    KeyPair const keypair = keypairForSignature (params, jvResult);
+
+    if (contains_error (jvResult))
+    {
+        return jvResult;
+    }
 
     if (! params.isMember ("tx_json"))
         return RPC::missing_field_error ("tx_json");
-
-    RippleAddress naSeed;
-
-    if (! naSeed.setSeedGeneric (params["secret"].asString ()))
-        return RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message ("secret"));
 
     Json::Value& tx_json (params ["tx_json"]);
 
@@ -426,20 +425,13 @@ transactionSign (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    RippleAddress secret = RippleAddress::createSeedGeneric (
-        params["secret"].asString ());
-    RippleAddress masterGenerator = RippleAddress::createGeneratorPublic (
-        secret);
-    RippleAddress masterAccountPublic = RippleAddress::createAccountPublic (
-        masterGenerator, 0);
-
     if (verify)
     {
         WriteLog (lsTRACE, RPCHandler) <<
-                "verify: " << masterAccountPublic.humanAccountID () <<
+                "verify: " << keypair.publicKey.humanAccountID() <<
                 " : " << raSrcAddressID.humanAccountID ();
 
-        auto const secretAccountID = masterAccountPublic.getAccountID();
+        auto const secretAccountID = keypair.publicKey.getAccountID();
         if (raSrcAddressID.getAccountID () == secretAccountID)
         {
             if (ledgerFacade.accountMasterDisabled ())
@@ -462,7 +454,7 @@ transactionSign (
     std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
     sopTrans->setFieldVL (
         sfSigningPubKey,
-        masterAccountPublic.getAccountPublic ());
+        keypair.publicKey.getAccountPublic());
 
     STTx::pointer stpTrans;
 
@@ -489,10 +481,8 @@ transactionSign (
 
     // FIXME: For performance, transactions should not be signed in this code
     // path.
-    RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
-        masterGenerator, secret, 0);
 
-    stpTrans->sign (naAccountPrivate);
+    stpTrans->sign (keypair.secretKey);
 
     Transaction::pointer tpTrans;
 
