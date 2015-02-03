@@ -2844,6 +2844,9 @@
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
+      <Filter>ripple\core\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>

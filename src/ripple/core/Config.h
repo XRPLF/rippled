@@ -164,7 +164,7 @@ public:
         stored in a file named after the module (e.g. "peerfinder.sqlite") that
         is inside that directory.
     */
-    beast::File const& getModuleDatabasePath ();
+    beast::File const& getModuleDatabasePath () const;
 
     //--------------------------------------------------------------------------
 
@@ -313,6 +313,12 @@ public:
     int getSize (SizedItemName) const;
     void setup (std::string const& strConf, bool bQuiet);
     void load ();
+    /**
+     *  Load the conig from the contents of the sting.
+     *
+     *  @param fileContents String representing the config contents.
+     */
+    void loadFromString (std::string const& fileContents);
 };
 
 // VFALCO DEPRECATED

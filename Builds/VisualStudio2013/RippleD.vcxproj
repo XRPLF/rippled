@@ -1926,6 +1926,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
