@@ -76,6 +76,38 @@ public:
         return values_;
     }
 
+    /**
+     * Set the legacy value for this section.
+     */ 
+    void
+    legacy (std::string value)
+    {
+        if (lines_.empty ())
+            lines_.emplace_back (std::move (value));
+        else
+        {
+            assert (lines_.size () == 1);
+            lines_[0] = std::move (value);
+        }
+    }
+
+    /**
+     * Get the legacy value for this section.
+     *
+     * @return The retrieved value. A section with an empty legacy value returns
+               an empty string.
+     */
+    std::string
+    legacy () const
+    {
+        if (lines_.empty ())
+            return "";
+        else if (lines_.size () > 1)
+            throw std::runtime_error (
+                "A legacy value must have exactly one line. Section: " + name_);
+        return lines_[0];
+    }
+
     /** Set a key/value pair.
         The previous value is discarded.
     */
@@ -150,6 +182,29 @@ public:
     overwrite (std::string const& section, std::string const& key,
         std::string const& value);
 
+    /**
+     *  Set a value that is not a key/value pair.
+     *
+     *  The value is stored as the section's first value and may be retrieved
+     *  through section::legacy.
+     *
+     *  @param section Name of the section to modify.
+     *  @param value Contents of the legacy value.
+     */
+    void
+    legacy(std::string const& section, std::string value);
+
+    /**
+     *  Get the legacy value of a section. A section with a
+     *  single-line value may be retrieved as a legacy value.
+     *
+     *  @param sectionName Retrieve the contents of this section's
+     *         legacy value.
+     *  @returun Contents of the legacy value.
+     */
+    std::string
+    legacy(std::string const& sectionName) const;
+
     friend
     std::ostream&
     operator<< (std::ostream& ss, BasicConfig const& c);
@@ -157,15 +212,6 @@ public:
 protected:
     void
     build (IniFileSections const& ifs);
-
-    /** Insert a legacy single section as a key/value pair.
-        Does nothing if the section does not exist, or does not contain
-        a single line that is not a key/value pair.
-        @deprecated
-    */
-    void
-    remap (std::string const& legacy_section,
-        std::string const& key, std::string const& new_section);
 };
 
 //------------------------------------------------------------------------------

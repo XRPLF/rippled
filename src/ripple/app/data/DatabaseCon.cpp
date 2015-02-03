@@ -58,7 +58,7 @@ setup_DatabaseCon (Config const& c)
         setup.onlineDelete = c.nodeDatabase["online_delete"].getIntValue();
     setup.startUp = c.START_UP;
     setup.standAlone = c.RUN_STANDALONE;
-    setup.dataDir = c.DATA_DIR;
+    setup.dataDir = c.legacy ("database_path");
 
     return setup;
 }

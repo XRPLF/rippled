@@ -887,7 +887,8 @@ public:
         {
             // VFALCO TODO Move all this into doSweep
 
-            boost::filesystem::space_info space = boost::filesystem::space (getConfig ().DATA_DIR);
+            boost::filesystem::space_info space =
+                    boost::filesystem::space (getConfig ().legacy ("database_path"));
 
             // VFALCO TODO Give this magic constant a name and move it into a well documented header
             //
