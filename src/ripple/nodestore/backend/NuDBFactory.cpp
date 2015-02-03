@@ -24,7 +24,10 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/nudb.h>
+#include <beast/nudb/detail/bucket.h> // remove asap
+#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/visit.h>
+#include <beast/hash/xxhasher.h>
 #include <snappy.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
@@ -61,10 +64,13 @@ public:
         currentType = typeTwo
     };
 
+    using api = beast::nudb::api<
+        beast::xxhasher, beast::nudb::identity_codec>;
+
     beast::Journal journal_;
     size_t const keyBytes_;
     std::string const name_;
-    beast::nudb::store db_;
+    api::store db_;
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
@@ -85,7 +91,7 @@ public:
         auto const kp = (folder / "nudb.key").string ();
         auto const lp = (folder / "nudb.log").string ();
         using beast::nudb::make_salt;
-        beast::nudb::create (dp, kp, lp,
+        api::create (dp, kp, lp,
             currentType, make_salt(), keyBytes,
                 beast::nudb::block_size(kp),
             0.50);
@@ -200,22 +206,24 @@ public:
     fetch1 (void const* key,
         std::shared_ptr <NodeObject>* pno)
     {
+        Status status;
         pno->reset();
-        std::size_t bytes;
-        std::unique_ptr <std::uint8_t[]> data;
         if (! db_.fetch (key,
-            [&data, &bytes](std::size_t n)
+            [key, pno, &status](void const* data, std::size_t size)
             {
-                bytes = n;
-                data.reset(new std::uint8_t[bytes]);
-                return data.get();
+                DecodedBlob decoded (key, data, size);
+                if (! decoded.wasOk ())
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                *pno = decoded.createObject();
+                status = ok;
             }))
+        {
             return notFound;
-        DecodedBlob decoded (key, data.get(), bytes);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
+        }
+        return status;
     }
 
     void
@@ -236,31 +244,35 @@ public:
     fetch2 (void const* key,
         std::shared_ptr <NodeObject>* pno)
     {
+        Status status;
         pno->reset();
-        std::size_t actual;
-        std::unique_ptr <char[]> compressed;
         if (! db_.fetch (key,
-            [&](std::size_t n)
+            [&](void const* data, std::size_t size)
             {
-                actual = n;
-                compressed.reset(
-                    new char[n]);
-                return compressed.get();
+                std::size_t actual;
+                if (! snappy::GetUncompressedLength(
+                        (char const*)data, size, &actual))
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                std::unique_ptr <char[]> buf (new char[actual]);
+                snappy::RawUncompress (
+                    (char const*)data, size, buf.get());
+                DecodedBlob decoded (key, buf.get(), actual);
+                if (! decoded.wasOk ())
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                *pno = decoded.createObject();
+                status = ok;
             }))
+        {
             return notFound;
-        std::size_t size;
-        if (! snappy::GetUncompressedLength(
-                (char const*)compressed.get(),
-                    actual, &size))
-            return dataCorrupt;
-        std::unique_ptr <char[]> data (new char[size]);
-        snappy::RawUncompress (compressed.get(),
-            actual, data.get());
-        DecodedBlob decoded (key, data.get(), size);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
+        }
+
+        return status;
     }
 
     void
@@ -342,7 +354,7 @@ public:
         auto const lp = db_.log_path();
         auto const appnum = db_.appnum();
         db_.close();
-        beast::nudb::visit (dp,
+        api::visit (dp,
             [&](
                 void const* key, std::size_t key_bytes,
                 void const* data, std::size_t size)
@@ -399,7 +411,7 @@ public:
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
         db_.close();
-        beast::nudb::verify (dp, kp);
+        api::verify (dp, kp);
         db_.open (dp, kp, lp,
             arena_alloc_size);
     }

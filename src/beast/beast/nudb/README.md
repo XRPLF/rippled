@@ -167,16 +167,23 @@ fixed-length Bucket Records.
 
     char[8]         Type            The characters "nudb.key"
     uint16          Version         Holds the version number
+    uint64          UID             Unique ID generated on creation
     uint64          Appnum          Application defined constant
+    uint16          KeySize         Key size in bytes
+
     uint64          Salt            A random seed
     uint64          Pepper          The salt hashed
-    uint16          KeySize         Key size in bytes
     uint16          BlockSize       Size of a file block in bytes
+
     uint16          LoadFactor      Target fraction in 65536ths
-    uint8[64]       Reserved        Zeroes
+
+    uint8[56]       Reserved        Zeroes
     uint8[]         Reserved        Zero-pad to block size
 
-The Type identifies the file as belonging to nudb. Salt is
+The Type identifies the file as belonging to nudb. The UID is
+generated randomly when the database is created, and this value
+is stored in the data and log files as well. The UID is used
+to determine if files belong to the same database. Salt is
 generated when the database is created and helps prevent
 complexity attacks; the salt is prepended to the key material
 when computing a hash, or used to initialize the state of
@@ -197,7 +204,8 @@ bucket, and defines the size of a bucket record. The load factor
 is the target fraction of bucket occupancy.
 
 None of the information in the key file header or the data file
-header may be changed after the database is created.
+header may be changed after the database is created, including
+the Appnum.
 
 #### Bucket Record (fixed-length)
 
@@ -209,7 +217,7 @@ header may be changed after the database is created.
 
     uint48              Offset          Offset in data file of the data
     uint48              Size            The size of the value in bytes
-    uint8[KeySize]      Key             The key
+    uint48              Hash            The hash of the key
 
 ### Data File
 
@@ -220,14 +228,15 @@ variable-length Value Records and Spill Records.
 
     char[8]             Type            The characters "nudb.dat"
     uint16              Version         Holds the version number
+    uint64              UID             Unique ID generated on creation
     uint64              Appnum          Application defined constant
-    uint64              Salt            A random seed
     uint16              KeySize         Key size in bytes
+
     uint8[64]           Reserved        Zeroes
 
-Salt contains the same value as the salt in the corresponding
-key file. This is placed in the data file so that key and value
-files belonging to the same database can be identified.
+UID contains the same value as the salt in the corresponding key
+file. This is placed in the data file so that key and value files
+belonging to the same database can be identified.
 
 #### Data Record (variable-length)
 
@@ -244,15 +253,24 @@ files belonging to the same database can be identified.
 ### Log File
 
 The Log file contains the Header followed by zero or more fixed size
+log records. Each log record contains a snapshot of a bucket. When a
+database is not closed cleanly, the recovery process applies the log
+records to the key file, overwriting data that may be only partially
+updated with known good information. After the log records are applied,
+the data and key files are truncated to the last known good size.
 
-#### Header (44 bytes)
+#### Header (62 bytes)
 
     char[8]             Type            The characters "nudb.log"
     uint16              Version         Holds the version number
+    uint64              UID             Unique ID generated on creation
     uint64              Appnum          Application defined constant
+    uint16              KeySize         Key size in bytes
+
     uint64              Salt            A random seed.
     uint64              Pepper          The salt hashed
-    uint16              KeySize         Key size in bytes
+    uint16              BlockSize       Size of a file block in bytes
+
     uint64              KeyFileSize     Size of key file.
     uint64              DataFileSize    Size of data file.
 

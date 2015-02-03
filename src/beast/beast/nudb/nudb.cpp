@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <beast/nudb/detail/config.h>
-
 #include <beast/nudb/tests/callgrind_test.cpp>
 #include <beast/nudb/tests/recover_test.cpp>
 #include <beast/nudb/tests/store_test.cpp>
+#include <beast/nudb/tests/varint_test.cpp>
 #include <beast/nudb/tests/verify_test.cpp>

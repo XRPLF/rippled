@@ -804,19 +804,21 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\nudb.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\api.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\common.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\create.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\arena.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bucket.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffers.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\buffer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\bulkio.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\cache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\config.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\field.h">
     </ClInclude>
@@ -826,21 +828,19 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\pool.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\posix_file.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\win32_file.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\detail\varint.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\mode.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\identity_codec.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\nudb\posix_file.h">
+    </ClInclude>
     <None Include="..\..\src\beast\beast\nudb\README.md">
     </None>
     <ClInclude Include="..\..\src\beast\beast\nudb\recover.h">
@@ -860,12 +860,17 @@
     <ClCompile Include="..\..\src\beast\beast\nudb\tests\store_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\nudb\tests\varint_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\nudb\tests\verify_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\nudb\verify.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\visit.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\win32_file.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
     </ClInclude>
