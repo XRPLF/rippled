@@ -36,6 +36,9 @@ script:
   - set -e
   # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
   - scons $CC.debug
+  # Make sure vcxproj doesn't make any modifications
+  - scons vcxproj
+  - (git status --porcelain Builds/VisualStudio2013/RippleD.vcxproj | grep -E '^.+M' -q && exit 1 || exit 0)
   # We can be sure we're using the build/$CC.debug variant (-f so never err)
   - rm -f build/rippled 
   - export RIPPLED_PATH="$PWD/build/$CC.debug/rippled"
