@@ -159,7 +159,10 @@ public:
         add (s, true);    // just inner elements
     }
 
-    void add (Serializer & s, bool withSignature) const;
+    void addWithoutSigningFields (Serializer & s) const
+    {
+        add (s, false);
+    }
 
     // VFALCO NOTE does this return an expensive copy of an object with a
     //             dynamic buffer?
@@ -167,7 +170,7 @@ public:
     Serializer getSerializer () const
     {
         Serializer s;
-        add (s);
+        add (s, true);
         return s;
     }
 
@@ -242,6 +245,7 @@ public:
     STPathSet const& getFieldPathSet (SField const& field) const;
     const STVector256& getFieldV256 (SField const& field) const;
     const STArray& getFieldArray (SField const& field) const;
+    const STObject& getFieldObject (SField const& field) const;
 
     /** Set a field.
         if the field already exists, it is replaced.
@@ -265,6 +269,7 @@ public:
     void setFieldPathSet (SField const& field, STPathSet const&);
     void setFieldV256 (SField const& field, STVector256 const& v);
     void setFieldArray (SField const& field, STArray const& v);
+    void setFieldObject (SField const& field, STObject const& v);
 
     template <class Tag>
     void setFieldH160 (SField const& field, base_uint<160, Tag> const& v)
@@ -285,6 +290,7 @@ public:
     }
 
     STObject& peekFieldObject (SField const& field);
+    STArray& peekFieldArray (SField const& field);
 
     bool isFieldPresent (SField const& field) const;
     STBase* makeFieldPresent (SField const& field);
@@ -301,6 +307,24 @@ public:
     }
 
 private:
+    void add (Serializer & s, bool withSigningFields) const;
+
+    // Sort the entries in an STObject into the order that they will be
+    // serialized.  Note: they are not sorted into pointer value order, they
+    // are sorted by SField::fieldCode.
+    static std::vector<STBase const*>
+    getSortedFields (STObject const& objToSort);
+
+    // Two different ways to compare STObjects.
+    //
+    // This one works only if the SOTemplates are the same.  Presumably it
+    // runs faster since there's no sorting.
+    static bool equivalentSTObjectSameTemplate (
+        STObject const& obj1, STObject const& obj2);
+
+    // This way of comparing STObjects always works, but is slower.
+    static bool equivalentSTObject (STObject const& obj1, STObject const& obj2);
+
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
@@ -395,6 +419,26 @@ private:
             throw std::runtime_error ("Wrong field type");
 
         (*cf) = value;
+    }
+
+    // Implementation for peeking STObjects and STArrays
+    template <typename T>
+    T& peekField (SField const& field)
+    {
+        STBase* rf = getPField (field, true);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        if (rf->getSType () == STI_NOTPRESENT)
+            rf = makeFieldPresent (field);
+
+        T* cf = dynamic_cast<T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        return *cf;
     }
 };
 

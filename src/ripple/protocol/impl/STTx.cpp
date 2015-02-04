@@ -155,7 +155,7 @@ static Blob getSigningData (STTx const& that)
 {
     Serializer s;
     s.add32 (HashPrefix::txSign);
-    that.add (s, false);
+    that.addWithoutSigningFields (s);
     return s.getData();
 }
 

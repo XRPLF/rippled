@@ -111,7 +111,7 @@ inline bool operator!= (StaticString x, std::string const& y)
 
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
  *
- * This class is a discriminated union wrapper that can represents a:
+ * This class is a discriminated union wrapper that can represent a:
  * - signed integer [range: Value::minInt - Value::maxInt]
  * - unsigned integer (range: 0 - Value::maxUInt)
  * - double

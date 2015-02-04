@@ -187,7 +187,8 @@ TER Transactor::checkSeq ()
     {
         if (a_seq < t_seq)
         {
-            m_journal.trace << "Transaction has future sequence number " <<
+            m_journal.trace <<
+                "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;
             return terPRE_SEQ;
         }
@@ -195,7 +196,7 @@ TER Transactor::checkSeq ()
         if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
             return tefALREADY;
 
-        m_journal.trace << "Transaction has past sequence number " <<
+        m_journal.trace << "applyTransaction: has past sequence number " <<
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
@@ -223,7 +224,7 @@ TER Transactor::preCheck ()
 
     if (!mTxnAccountID)
     {
-        m_journal.warning << "apply: bad transaction source id";
+        m_journal.warning << "applyTransaction: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
     }
 
@@ -272,7 +273,7 @@ TER Transactor::apply ()
         if (mustHaveValidAccount ())
         {
             m_journal.trace <<
-                "apply: delay transaction: source account does not exist " <<
+                "applyTransaction: delay: source account does not exist " <<
                 mTxn.getSourceAccount ().humanAccountID ();
             return terNO_ACCOUNT;
         }
