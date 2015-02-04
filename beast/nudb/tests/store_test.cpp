@@ -124,7 +124,11 @@ public:
     {
         enum
         {
+        #ifndef NDEBUG
+            N =             5000 // debug
+        #else
             N =             50000
+        #endif
             ,block_size =   256
         };
 
