@@ -676,6 +676,27 @@ There's no point in including the leaves of transaction trees.
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (uint256 const&, const Blob&)> func)
 {
+    visitDifferences (have,
+        [includeLeaves, &max, &func] (SHAMapTreeNode& smn) -> bool
+        {
+            if (includeLeaves || smn.isInner ())
+            {
+                Serializer s;
+                smn.addRaw (s, snfPREFIX);
+                func (smn.getNodeHash(), s.peekData());
+
+                if (--max <= 0)
+                    return false;
+            }
+            return true;
+        });
+}
+
+void SHAMap::visitDifferences (SHAMap* have, std::function <bool (SHAMapTreeNode&)> func)
+{
+    // Visit every node in this SHAMap that is not present
+    // in the specified SHAMap
+
     if (root->getNodeHash ().isZero ())
         return;
 
@@ -684,14 +705,8 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 
     if (root->isLeaf ())
     {
-        if (includeLeaves &&
-                (!have || !have->hasLeafNode (root->peekItem()->getTag (), root->getNodeHash ())))
-        {
-            Serializer s;
-            root->addRaw (s, snfPREFIX);
-            func (std::cref(root->getNodeHash ()), std::cref(s.peekData ()));
-            --max;
-        }
+        if (! have || ! have->hasLeafNode (root->peekItem()->getTag (), root->getNodeHash ()))
+            func (*root);
 
         return;
     }
@@ -701,7 +716,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 
     stack.push ({root.get(), SHAMapNodeID{}});
 
-    while (!stack.empty() && (max > 0))
+    while (!stack.empty())
     {
         SHAMapTreeNode* node;
         SHAMapNodeID nodeID;
@@ -709,10 +724,8 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
         stack.pop ();
 
         // 1) Add this node to the pack
-        Serializer s;
-        node->addRaw (s, snfPREFIX);
-        func (std::cref(node->getNodeHash ()), std::cref(s.peekData ()));
-        --max;
+        if (!func (*node))
+            return;
 
         // 2) push non-matching child inner nodes
         for (int i = 0; i < 16; ++i)
@@ -725,15 +738,13 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 
                 if (next->isInner ())
                 {
-                    if (!have || !have->hasInnerNode (childID, childHash))
+                    if (! have || ! have->hasInnerNode (childID, childHash))
                         stack.push ({next, childID});
                 }
-                else if (includeLeaves && (!have || !have->hasLeafNode (next->peekItem()->getTag(), childHash)))
+                else if (! have || ! have->hasLeafNode (next->peekItem()->getTag(), childHash))
                 {
-                    Serializer s;
-                    next->addRaw (s, snfPREFIX);
-                    func (std::cref(childHash), std::cref(s.peekData ()));
-                    --max;
+                    if (! func (*next))
+                        return;
                 }
             }
         }
