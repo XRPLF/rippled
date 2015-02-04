@@ -57,7 +57,7 @@ Json::Value doSubmit (RPC::Context& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "invalidTransaction";
+        jvResult[jss::error]        = "invalidTransaction";
         jvResult[jss::error_exception] = e.what ();
 
         return jvResult;

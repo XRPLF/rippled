@@ -67,14 +67,14 @@
 
 namespace ripple {
 
-class NetworkOPsImp
+class NetworkOPsImp final
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
 {
 public:
     enum Fault
     {
-        // exceptions these functions can throw
+        // Exceptions these functions can throw.
         IO_ERROR    = 1,
         NO_NETWORK  = 2,
     };
@@ -116,109 +116,111 @@ public:
     {
     }
 
-    ~NetworkOPsImp()
-    {
-    }
+    ~NetworkOPsImp() override = default;
 
-    // network information
-    // Our best estimate of wall time in seconds from 1/1/2000
-    std::uint32_t getNetworkTimeNC () const;
+    // Network information.
+    // Our best estimate of wall time in seconds from 1/1/2000.
+    std::uint32_t getNetworkTimeNC () const override;
 
-    // Our best estimate of current ledger close time
-    std::uint32_t getCloseTimeNC () const;
+    // Our best estimate of current ledger close time.
+    std::uint32_t getCloseTimeNC () const override;
+private:
     std::uint32_t getCloseTimeNC (int& offset) const;
 
-    // Use *only* to timestamp our own validation
-    std::uint32_t getValidationTimeNC ();
-    void closeTimeOffset (int);
+public:
+    // Use *only* to timestamp our own validation.
+    std::uint32_t getValidationTimeNC () override;
+    void closeTimeOffset (int) override;
 
     /** On return the offset param holds the System time offset in seconds.
     */
-    boost::posix_time::ptime getNetworkTimePT(int& offset) const;
-    std::uint32_t getLedgerID (uint256 const& hash);
-    std::uint32_t getCurrentLedgerID ();
-    OperatingMode getOperatingMode () const
+    boost::posix_time::ptime getNetworkTimePT(int& offset) const override;
+    std::uint32_t getLedgerID (uint256 const& hash) override;
+    std::uint32_t getCurrentLedgerID () override;
+    OperatingMode getOperatingMode () const override
     {
         return mMode;
     }
-    std::string strOperatingMode () const;
+    std::string strOperatingMode () const override;
 
-    Ledger::pointer     getClosedLedger ()
+    Ledger::pointer getClosedLedger () override
     {
         return m_ledgerMaster.getClosedLedger ();
     }
-    Ledger::pointer     getValidatedLedger ()
+    Ledger::pointer getValidatedLedger () override
     {
         return m_ledgerMaster.getValidatedLedger ();
     }
-    Ledger::pointer     getPublishedLedger ()
+    Ledger::pointer getPublishedLedger () override
     {
         return m_ledgerMaster.getPublishedLedger ();
     }
-    Ledger::pointer     getCurrentLedger ()
+    Ledger::pointer getCurrentLedger () override
     {
         return m_ledgerMaster.getCurrentLedger ();
     }
-    Ledger::pointer getLedgerByHash (uint256 const& hash)
+    Ledger::pointer getLedgerByHash (uint256 const& hash) override
     {
         return m_ledgerMaster.getLedgerByHash (hash);
     }
-    Ledger::pointer getLedgerBySeq (const std::uint32_t seq);
-    void            missingNodeInLedger (const std::uint32_t seq);
+    Ledger::pointer getLedgerBySeq (const std::uint32_t seq) override;
+    void missingNodeInLedger (const std::uint32_t seq) override;
 
-    uint256         getClosedLedgerHash ()
+    uint256 getClosedLedgerHash () override
     {
         return m_ledgerMaster.getClosedLedger ()->getHash ();
     }
 
     // Do we have this inclusive range of ledgers in our database
-    bool haveLedgerRange (std::uint32_t from, std::uint32_t to);
-    bool haveLedger (std::uint32_t seq);
-    std::uint32_t getValidatedSeq ();
-    bool isValidated (std::uint32_t seq);
-    bool isValidated (std::uint32_t seq, uint256 const& hash);
-    bool isValidated (Ledger::ref l)
+    bool haveLedgerRange (std::uint32_t from, std::uint32_t to) override;
+    bool haveLedger (std::uint32_t seq) override;
+    std::uint32_t getValidatedSeq () override;
+    bool isValidated (std::uint32_t seq) override;
+    bool isValidated (std::uint32_t seq, uint256 const& hash) override;
+    bool isValidated (Ledger::ref l) override
     {
         return isValidated (l->getLedgerSeq (), l->getHash ());
     }
-    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         return m_ledgerMaster.getValidatedRange (minVal, maxVal);
     }
-    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getFullValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         return m_ledgerMaster.getFullValidatedRange (minVal, maxVal);
     }
 
-    STValidation::ref getLastValidation ()
+    STValidation::ref getLastValidation () override
     {
         return mLastValidation;
     }
-    void setLastValidation (STValidation::ref v)
+    void setLastValidation (STValidation::ref v) override
     {
         mLastValidation = v;
     }
 
     //
-    // Transaction operations
+    // Transaction operations.
     //
 
-    // must complete immediately
+    // Must complete immediately.
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
     void submitTransaction (
         Job&, STTx::pointer,
-        stCallback callback = stCallback ());
+        stCallback callback = stCallback ()) override;
 
     Transaction::pointer submitTransactionSync (
         Transaction::ref tpTrans,
-        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit);
+        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) override;
 
     Transaction::pointer processTransactionCb (
         Transaction::pointer,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback);
+        bool bAdmin, bool bLocal, bool bFailHard, stCallback) override;
     Transaction::pointer processTransaction (
         Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard)
+        bool bAdmin, bool bLocal, bool bFailHard) override
     {
         return processTransactionCb (
             transaction, bAdmin, bLocal, bFailHard, stCallback ());
@@ -227,6 +229,7 @@ public:
     // VFALCO Workaround for MSVC std::function which doesn't swallow return
     // types.
     //
+private:
     void processTransactionCbVoid (
         Transaction::pointer p,
         bool bAdmin, bool bLocal, bool bFailHard, stCallback cb)
@@ -234,77 +237,82 @@ public:
         processTransactionCb (p, bAdmin, bLocal, bFailHard, cb);
     }
 
-    Transaction::pointer findTransactionByID (uint256 const& transactionID);
+public:
+    Transaction::pointer findTransactionByID (
+        uint256 const& transactionID) override;
 
     int findTransactionsByDestination (
         std::list<Transaction::pointer>&,
         RippleAddress const& destinationAccount,
         std::uint32_t startLedgerSeq, std::uint32_t endLedgerSeq,
-        int maxTransactions);
+        int maxTransactions) override;
 
     //
-    // Account functions
+    // Account functions.
     //
 
     AccountState::pointer getAccountState (
-        Ledger::ref lrLedger, RippleAddress const& accountID);
+        Ledger::ref lrLedger, RippleAddress const& accountID) override;
 
     //
-    // Directory functions
+    // Directory functions.
     //
 
     STVector256 getDirNodeInfo (
         Ledger::ref lrLedger, uint256 const& uRootIndex,
-        std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext);
+        std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext) override;
 
     //
-    // Owner functions
+    // Owner functions.
     //
 
     Json::Value getOwnerInfo (
-        Ledger::pointer lpLedger, RippleAddress const& naAccount);
+        Ledger::pointer lpLedger, RippleAddress const& naAccount) override;
 
     //
-    // Book functions
+    // Book functions.
     //
 
     void getBookPage (bool bAdmin, Ledger::pointer lpLedger, Book const&,
         Account const& uTakerID, const bool bProof, const unsigned int iLimit,
-            Json::Value const& jvMarker, Json::Value& jvResult);
+            Json::Value const& jvMarker, Json::Value& jvResult) override;
 
-    // ledger proposal/close functions
+    // Ledger proposal/close functions.
     void processTrustedProposal (
         LedgerProposal::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
-        RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
+        RippleAddress nodePublic, uint256 checkLedger, bool sigGood) override;
 
     bool recvValidation (
-        STValidation::ref val, std::string const& source);
-    void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
+        STValidation::ref val, std::string const& source) override;
+    void takePosition (
+        int seq, std::shared_ptr<SHAMap> const& position) override;
     std::shared_ptr<SHAMap> getTXMap (uint256 const& hash);
     bool hasTXSet (
         const std::shared_ptr<Peer>& peer, uint256 const& set,
         protocol::TxSetStatus status);
 
-    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map);
+    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map) override;
     void makeFetchPack (
         Job&, std::weak_ptr<Peer> peer,
         std::shared_ptr<protocol::TMGetObjectByHash> request,
-        uint256 haveLedger, std::uint32_t uUptime);
+        uint256 haveLedger, std::uint32_t uUptime) override;
 
-    bool shouldFetchPack (std::uint32_t seq);
-    void gotFetchPack (bool progress, std::uint32_t seq);
-    void addFetchPack (uint256 const& hash, std::shared_ptr< Blob >& data);
-    bool getFetchPack (uint256 const& hash, Blob& data);
-    int getFetchSize ();
-    void sweepFetchPack ();
+    bool shouldFetchPack (std::uint32_t seq) override;
+    void gotFetchPack (bool progress, std::uint32_t seq) override;
+    void addFetchPack (
+        uint256 const& hash, std::shared_ptr< Blob >& data) override;
+    bool getFetchPack (uint256 const& hash, Blob& data) override;
+    int getFetchSize () override;
+    void sweepFetchPack () override;
 
-    // network state machine
+    // Network state machine.
 
     // VFALCO TODO Try to make all these private since they seem to be...private
     //
 
-    // Used for the "jump" case
+    // Used for the "jump" case.
+private:
     void switchLastClosedLedger (
         Ledger::pointer newLedger, bool duringConsensus);
     bool checkLastClosedLedger (
@@ -312,8 +320,10 @@ public:
     int beginConsensus (
         uint256 const& networkClosed, Ledger::pointer closingLedger);
     void tryStartConsensus ();
-    void endConsensus (bool correctLCL);
-    void setStandAlone ()
+
+public:
+    void endConsensus (bool correctLCL) override;
+    void setStandAlone () override
     {
         setMode (omFULL);
     }
@@ -321,73 +331,74 @@ public:
     /** Called to initially start our timers.
         Not called for stand-alone mode.
     */
-    void setStateTimer ();
+    void setStateTimer () override;
 
-    void newLCL (int proposers, int convergeTime, uint256 const& ledgerHash);
-    void needNetworkLedger ()
+    void newLCL (
+        int proposers, int convergeTime, uint256 const& ledgerHash) override;
+    void needNetworkLedger () override
     {
         mNeedNetworkLedger = true;
     }
-    void clearNeedNetworkLedger ()
+    void clearNeedNetworkLedger () override
     {
         mNeedNetworkLedger = false;
     }
-    bool isNeedNetworkLedger ()
+    bool isNeedNetworkLedger () override
     {
         return mNeedNetworkLedger;
     }
-    bool isFull ()
+    bool isFull () override
     {
         return !mNeedNetworkLedger && (mMode == omFULL);
     }
-    void setProposing (bool p, bool v)
+    void setProposing (bool p, bool v) override
     {
         mProposing = p;
         mValidating = v;
     }
-    bool isProposing ()
+    bool isProposing () override
     {
         return mProposing;
     }
-    bool isValidating ()
+    bool isValidating () override
     {
         return mValidating;
     }
-    bool isAmendmentBlocked ()
+    bool isAmendmentBlocked () override
     {
         return m_amendmentBlocked;
     }
-    void setAmendmentBlocked ();
-    void consensusViewChange ();
-    int getPreviousProposers ()
+    void setAmendmentBlocked () override;
+    void consensusViewChange () override;
+    int getPreviousProposers () override
     {
         return mLastCloseProposers;
     }
-    int getPreviousConvergeTime ()
+    int getPreviousConvergeTime () override
     {
         return mLastCloseConvergeTime;
     }
-    std::uint32_t getLastCloseTime ()
+    std::uint32_t getLastCloseTime () override
     {
         return mLastCloseTime;
     }
-    void setLastCloseTime (std::uint32_t t)
+    void setLastCloseTime (std::uint32_t t) override
     {
         mLastCloseTime = t;
     }
-    Json::Value getConsensusInfo ();
-    Json::Value getServerInfo (bool human, bool admin);
-    void clearLedgerFetch ();
-    Json::Value getLedgerFetchInfo ();
-    std::uint32_t acceptLedger ();
-    Proposals & peekStoredProposals ()
+    Json::Value getConsensusInfo () override;
+    Json::Value getServerInfo (bool human, bool admin) override;
+    void clearLedgerFetch () override;
+    Json::Value getLedgerFetchInfo () override;
+    std::uint32_t acceptLedger () override;
+    Proposals & peekStoredProposals () override
     {
         return mStoredProposals;
     }
     void storeProposal (
-        LedgerProposal::ref proposal, RippleAddress const& peerPublic);
-    uint256 getConsensusLCL ();
-    void reportFeeChange ();
+        LedgerProposal::ref proposal, RippleAddress const& peerPublic) override;
+    uint256 getConsensusLCL () override;
+    void reportFeeChange () override;
 
     void updateLocalTx (Ledger::ref newValidLedger) override
     {
@@ -403,24 +414,24 @@ public:
         return m_localTX->size ();
     }
 
-    //Helper function to generate SQL query to get transactions
+    //Helper function to generate SQL query to get transactions.
     std::string transactionsSQL (
         std::string selection, RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit,
-        bool binary, bool count, bool bAdmin);
+        bool binary, bool count, bool bAdmin) override;
 
-    // client information retrieval functions
+    // Client information retrieval functions.
     using NetworkOPs::AccountTxs;
     AccountTxs getAccountTxs (
         RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
-        std::uint32_t offset, int limit, bool bAdmin);
+        std::uint32_t offset, int limit, bool bAdmin) override;
 
     AccountTxs getTxsAccount (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
-        bool bAdmin);
+        bool bAdmin) override;
 
     using NetworkOPs::txnMetaLedgerType;
     using NetworkOPs::MetaTxsList;
@@ -429,31 +440,31 @@ public:
     getAccountTxsB (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
-        int limit, bool bAdmin);
+        int limit, bool bAdmin) override;
 
     MetaTxsList
     getTxsAccountB (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool forward, Json::Value& token,
-        int limit, bool bAdmin);
+        int limit, bool bAdmin) override;
 
     std::vector<RippleAddress> getLedgerAffectedAccounts (
-        std::uint32_t ledgerSeq);
+        std::uint32_t ledgerSeq) override;
 
     //
-    // Monitoring: publisher side
+    // Monitoring: publisher side.
     //
-    void pubLedger (Ledger::ref lpAccepted);
+    void pubLedger (Ledger::ref lpAccepted) override;
     void pubProposedTransaction (
-        Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult);
+        Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult) override;
 
     //--------------------------------------------------------------------------
     //
-    // InfoSub::Source
+    // InfoSub::Source.
     //
     void subAccount (
         InfoSub::ref ispListener,
-        const hash_set<RippleAddress>& vnaAccountIDs, bool rt);
+        const hash_set<RippleAddress>& vnaAccountIDs, bool rt) override;
     void unsubAccount (
         InfoSub::ref ispListener,
         const hash_set<RippleAddress>& vnaAccountIDs,
@@ -466,29 +477,31 @@ public:
         const hash_set<RippleAddress>& vnaAccountIDs,
         bool rt);
 
-    bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
-    bool unsubLedger (std::uint64_t uListener);
+    bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult) override;
+    bool unsubLedger (std::uint64_t uListener) override;
 
-    bool subServer (InfoSub::ref ispListener, Json::Value& jvResult, bool admin);
-    bool unsubServer (std::uint64_t uListener);
+    bool subServer (
+        InfoSub::ref ispListener, Json::Value& jvResult, bool admin) override;
+    bool unsubServer (std::uint64_t uListener) override;
 
     bool subBook (InfoSub::ref ispListener, Book const&) override;
     bool unsubBook (std::uint64_t uListener, Book const&) override;
 
-    bool subTransactions (InfoSub::ref ispListener);
-    bool unsubTransactions (std::uint64_t uListener);
+    bool subTransactions (InfoSub::ref ispListener) override;
+    bool unsubTransactions (std::uint64_t uListener) override;
 
-    bool subRTTransactions (InfoSub::ref ispListener);
-    bool unsubRTTransactions (std::uint64_t uListener);
+    bool subRTTransactions (InfoSub::ref ispListener) override;
+    bool unsubRTTransactions (std::uint64_t uListener) override;
 
-    InfoSub::pointer findRpcSub (std::string const& strUrl);
-    InfoSub::pointer addRpcSub (std::string const& strUrl, InfoSub::ref);
+    InfoSub::pointer findRpcSub (std::string const& strUrl) override;
+    InfoSub::pointer addRpcSub (
+        std::string const& strUrl, InfoSub::ref) override;
 
     //--------------------------------------------------------------------------
     //
-    // Stoppable
+    // Stoppable.
 
-    void onStop ()
+    void onStop () override
     {
         mAcquiringLedger.reset();
         m_heartbeatTimer.cancel();
@@ -500,7 +513,7 @@ public:
 private:
     void setHeartbeatTimer ();
     void setClusterTimer ();
-    void onDeadlineTimer (beast::DeadlineTimer& timer);
+    void onDeadlineTimer (beast::DeadlineTimer& timer) override;
     void processHeartbeatTimer ();
     void processClusterTimer ();
 
@@ -578,10 +591,10 @@ private:
 
     subRpcMapType mRpcSubMap;
 
-    SubMapType mSubLedger;             // accepted ledgers
-    SubMapType mSubServer;             // when server changes connectivity state
-    SubMapType mSubTransactions;       // all accepted transactions
-    SubMapType mSubRTTransactions;     // all proposed and accepted transactions
+    SubMapType mSubLedger;            // Accepted ledgers.
+    SubMapType mSubServer;            // When server changes connectivity state.
+    SubMapType mSubTransactions;      // All accepted transactions.
+    SubMapType mSubRTTransactions;    // All proposed and accepted transactions.
 
     TaggedCache<uint256, Blob>  mFetchPack;
     std::uint32_t mFetchSeq;
@@ -591,10 +604,10 @@ private:
 
     JobQueue& m_job_queue;
 
-    // Whether we are in standalone mode
+    // Whether we are in standalone mode.
     bool const m_standalone;
 
-    // The number of nodes that we need to consider ourselves connected
+    // The number of nodes that we need to consider ourselves connected.
     std::size_t const m_network_quorum;
 };
 
