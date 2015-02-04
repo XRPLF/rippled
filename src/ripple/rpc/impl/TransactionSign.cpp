@@ -23,7 +23,7 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/TransactionSign.h>
-#include <beast/unit_test.h>
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 
