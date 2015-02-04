@@ -99,62 +99,8 @@ struct SField::make
 
 using make = SField::make;
 
-/*
-
-SFieldU8 const&
-SFieldU16 const&
-SFieldU32 const&
-SFieldU64 const&
-SFieldH128 const&
-SFieldH160 const&
-SFieldH256 const&
-SFieldAccount const&
-SFieldAccount const&
-SFieldVL const&
-SFieldAmount const&
-SFieldArray const&
-SFieldPathSet const&
-SFieldV256 const&
-
-SFieldObject
-
-getFieldU8
-getFieldU16
-getFieldU32
-getFieldU64
-getFieldH128
-getFieldH160
-getFieldH256
-getFieldAccount
-getFieldAccount160
-getFieldVL
-getFieldAmount
-getFieldArray
-getFieldPathSet
-getFieldV256
-
-*/
-
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
-/*
-
-getFieldU8
-getFieldU16
-getFieldU32
-getFieldU64
-getFieldH128
-getFieldH160
-getFieldH256
-getFieldAccount
-getFieldAccount160
-getFieldVL
-getFieldAmount
-getFieldPathSet
-getFieldV256
-getFieldArray
-
-*/
 
 SField const sfInvalid     = make::one(&sfInvalid, -1);
 SField const sfGeneric     = make::one(&sfGeneric, 0);

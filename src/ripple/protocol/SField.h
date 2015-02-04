@@ -139,7 +139,7 @@ public:
     {}
 #endif
 
-// private:
+protected:
     // These constructors can only be called from FieldNames.cpp
     SField (SerializedTypeID tid, int fv, const char* fn,
             int meta = sMD_Default, bool signing = true);
@@ -264,30 +264,27 @@ class TypedSField : public SField
         TypedSField (SerializedTypeID id, int val) : SField(id, val) {};
 };
 
-typedef TypedSField<STI_UNKNOWN> UnknownSField;
+typedef TypedSField<STI_ACCOUNT> SFieldAccount;
+typedef TypedSField<STI_AMOUNT> SFieldAmount;
+typedef TypedSField<STI_ARRAY> SFieldArray;
 typedef TypedSField<STI_DONE> DoneSField;
+typedef TypedSField<STI_HASH128> SFieldH128;
+typedef TypedSField<STI_HASH160> SFieldH160;
+typedef TypedSField<STI_HASH256> SFieldH256;
+typedef TypedSField<STI_LEDGERENTRY> LedgerEntrySField;
+typedef TypedSField<STI_METADATA> MetadataSField;
 typedef TypedSField<STI_NOTPRESENT> NotPresentSField;
-
-typedef TypedSField<STI_UINT8> SFieldU8;
+typedef TypedSField<STI_OBJECT> SFieldObject;
+typedef TypedSField<STI_PATHSET> SFieldPathSet;
+typedef TypedSField<STI_TRANSACTION> TransactionSField;
 typedef TypedSField<STI_UINT16> SFieldU16;
 typedef TypedSField<STI_UINT32> SFieldU32;
 typedef TypedSField<STI_UINT64> SFieldU64;
-typedef TypedSField<STI_HASH128> SFieldH128;
-typedef TypedSField<STI_HASH256> SFieldH256;
-typedef TypedSField<STI_VECTOR256> SFieldV256;
-typedef TypedSField<STI_ACCOUNT> SFieldAccount;
-typedef TypedSField<STI_VL> SFieldVL;
-typedef TypedSField<STI_AMOUNT> SFieldAmount;
-typedef TypedSField<STI_PATHSET> SFieldPathSet;
-typedef TypedSField<STI_ARRAY> SFieldArray;
-typedef TypedSField<STI_HASH160> SFieldH160;
-
-typedef TypedSField<STI_OBJECT> SFieldObject;
-
-typedef TypedSField<STI_TRANSACTION> TransactionSField;
-typedef TypedSField<STI_LEDGERENTRY> LedgerEntrySField;
+typedef TypedSField<STI_UINT8> SFieldU8;
+typedef TypedSField<STI_UNKNOWN> UnknownSField;
 typedef TypedSField<STI_VALIDATION> ValidationSField;
-typedef TypedSField<STI_METADATA> MetadataSField;
+typedef TypedSField<STI_VECTOR256> SFieldV256;
+typedef TypedSField<STI_VL> SFieldVL;
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
