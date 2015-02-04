@@ -264,39 +264,6 @@ std::string STObject::getFullText () const
     return ret;
 }
 
-void STObject::add (Serializer& s, bool withSigningFields) const
-{
-    std::map<int, STBase const*> fields;
-    for (auto const& e : v_)
-    {
-        // pick out the fields and sort them
-        if ((e->getSType() != STI_NOTPRESENT) &&
-            e->getFName().shouldInclude (withSigningFields))
-        {
-            fields.insert (std::make_pair (
-                e->getFName().fieldCode, &e.get()));
-        }
-    }
-
-    // insert sorted
-    for (auto const& e : fields)
-    {
-        auto const field = e.second;
-
-        // When we serialize an object inside another object,
-        // the type associated by rule with this field name
-        // must be OBJECT, or the object cannot be deserialized
-        assert ((field->getSType() != STI_OBJECT) ||
-            (field->getFName().fieldType == STI_OBJECT));
-        field->addFieldID (s);
-        field->add (s);
-        if (dynamic_cast<const STArray*> (field) != nullptr)
-            s.addFieldID (STI_ARRAY, 1);
-        else if (dynamic_cast<const STObject*> (field) != nullptr)
-            s.addFieldID (STI_OBJECT, 1);
-    }
-}
-
 std::string STObject::getText () const
 {
     std::string ret = "{";
@@ -326,32 +293,10 @@ bool STObject::isEquivalent (const STBase& t) const
         return false;
     }
 
-    auto it1 = v_.begin (), end1 = v_.end ();
-    auto it2 = v->v_.begin (), end2 = v->v_.end ();
+    if (mType != nullptr && (v->mType == mType))
+        return equivalentSTObjectSameTemplate (*this, *v);
 
-    while ((it1 != end1) && (it2 != end2))
-    {
-        if ((it1->get().getSType () != it2->get().getSType ()) ||
-            !it1->get().isEquivalent (it2->get()))
-        {
-            if (it1->get().getSType () != it2->get().getSType ())
-            {
-                WriteLog (lsDEBUG, STObject) << "notEquiv type " <<
-                    it1->get().getFullText() << " != " <<  it2->get().getFullText();
-            }
-            else
-            {
-                WriteLog (lsDEBUG, STObject) << "notEquiv " <<
-                     it1->get().getFullText() << " != " <<  it2->get().getFullText();
-            }
-            return false;
-        }
-
-        ++it1;
-        ++it2;
-    }
-
-    return (it1 == end1) && (it2 == end2);
+    return equivalentSTObject (*this, *v);
 }
 
 uint256 STObject::getHash (std::uint32_t prefix) const
@@ -448,20 +393,12 @@ bool STObject::isFieldPresent (SField const& field) const
 
 STObject& STObject::peekFieldObject (SField const& field)
 {
-    STBase* rf = getPField (field, true);
+    return peekField<STObject> (field);
+}
 
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT)
-        rf = makeFieldPresent (field);
-
-    STObject* cf = dynamic_cast<STObject*> (rf);
-
-    if (!cf)
-        throw std::runtime_error ("Wrong field type");
-
-    return *cf;
+STArray& STObject::peekFieldArray (SField const& field)
+{
+    return peekField<STArray> (field);
 }
 
 bool STObject::setFlag (std::uint32_t f)
@@ -650,12 +587,6 @@ STAmount const& STObject::getFieldAmount (SField const& field) const
     return getFieldByConstRef <STAmount> (field, empty);
 }
 
-const STArray& STObject::getFieldArray (SField const& field) const
-{
-    static STArray const empty{};
-    return getFieldByConstRef <STArray> (field, empty);
-}
-
 STPathSet const& STObject::getFieldPathSet (SField const& field) const
 {
     static STPathSet const empty{};
@@ -666,6 +597,18 @@ const STVector256& STObject::getFieldV256 (SField const& field) const
 {
     static STVector256 const empty{};
     return getFieldByConstRef <STVector256> (field, empty);
+}
+
+const STArray& STObject::getFieldArray (SField const& field) const
+{
+    static STArray const empty{};
+    return getFieldByConstRef <STArray> (field, empty);
+}
+
+const STObject& STObject::getFieldObject (SField const& field) const
+{
+    static STObject const empty{sfInvalid};
+    return getFieldByConstRef <STObject> (field, empty);
 }
 
 void
@@ -760,6 +703,11 @@ void STObject::setFieldArray (SField const& field, STArray const& v)
     setFieldUsingAssignment (field, v);
 }
 
+void STObject::setFieldObject (SField const& field, STObject const& v)
+{
+    setFieldUsingAssignment (field, v);
+}
+
 Json::Value STObject::getJson (int options) const
 {
     Json::Value ret (Json::objectValue);
@@ -828,6 +776,98 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     return true;
+}
+
+void STObject::add (Serializer& s, bool withSigningFields) const
+{
+    std::map<int, STBase const*> fields;
+    for (auto const& e : v_)
+    {
+        // pick out the fields and sort them
+        if ((e->getSType() != STI_NOTPRESENT) &&
+            e->getFName().shouldInclude (withSigningFields))
+        {
+            fields.insert (std::make_pair (
+                e->getFName().fieldCode, &e.get()));
+        }
+    }
+
+    // insert sorted
+    for (auto const& e : fields)
+    {
+        auto const field = e.second;
+
+        // When we serialize an object inside another object,
+        // the type associated by rule with this field name
+        // must be OBJECT, or the object cannot be deserialized
+        assert ((field->getSType() != STI_OBJECT) ||
+            (field->getFName().fieldType == STI_OBJECT));
+        field->addFieldID (s);
+        field->add (s);
+        if (dynamic_cast<const STArray*> (field) != nullptr)
+            s.addFieldID (STI_ARRAY, 1);
+        else if (dynamic_cast<const STObject*> (field) != nullptr)
+            s.addFieldID (STI_OBJECT, 1);
+    }
+}
+
+std::vector<STBase const*>
+STObject::getSortedFields (STObject const& objToSort)
+{
+    std::vector<STBase const*> sf;
+    sf.reserve (objToSort.getCount ());
+
+    // Choose the fields that we need to sort.
+    for (detail::STVar const& elem : objToSort.v_)
+    {
+        // Pick out the fields and sort them.
+        STBase const& base = elem.get();
+        if ((base.getSType () != STI_NOTPRESENT) &&
+            base.getFName ().shouldInclude (true))
+        {
+            sf.push_back (&base);
+        }
+    }
+
+    // Sort the fields by fieldCode.
+    std::sort (sf.begin (), sf.end (),
+        [] (STBase const* a, STBase const* b) -> bool
+        {
+            return a->getFName ().fieldCode < b->getFName ().fieldCode;
+        });
+
+    // There should never be duplicate fields in an STObject. Verify that
+    // in debug mode.
+    assert (std::adjacent_find (sf.cbegin (), sf.cend ()) == sf.cend ());
+
+    return sf;
+}
+
+bool STObject::equivalentSTObjectSameTemplate (
+    STObject const& obj1, STObject const& obj2)
+{
+    assert (obj1.mType != nullptr);
+    assert (obj1.mType == obj2.mType);
+
+    return std::equal (obj1.begin (), obj1.end (), obj2.begin (), obj2.end (),
+        [] (STBase const& st1, STBase const& st2)
+        {
+            return (st1.getSType() == st2.getSType()) &&
+                st1.isEquivalent (st2);
+        });
+}
+
+bool STObject::equivalentSTObject (STObject const& obj1, STObject const& obj2)
+{
+    auto sf1 = getSortedFields (obj1);
+    auto sf2 = getSortedFields (obj2);
+
+    return std::equal (sf1.begin (), sf1.end (), sf2.begin (), sf2.end (),
+        [] (STBase const* st1, STBase const* st2)
+        {
+            return (st1->getSType() == st2->getSType()) &&
+                st1->isEquivalent (*st2);
+        });
 }
 
 } // ripple

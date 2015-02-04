@@ -27,7 +27,7 @@ sign (STObject& st, HashPrefix const& prefix,
 {
     Serializer ss;
     ss.add32(prefix);
-    st.add(ss, false);
+    st.addWithoutSigningFields(ss);
     set(st, sfSignature,
         sk.sign(ss.data(), ss.size()));
 }
@@ -42,7 +42,7 @@ verify (STObject const& st,
         return false;
     Serializer ss;
     ss.add32(prefix);
-    st.add(ss, false);
+    st.addWithoutSigningFields(ss);
     return pk.verify(
         ss.data(), ss.size(),
             sig->data(), sig->size());

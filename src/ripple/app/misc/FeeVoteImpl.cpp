@@ -226,7 +226,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             journal_.warning << "Vote: " << txID;
 
         Serializer s;
-        trans.add (s, true);
+        trans.add (s);
 
         auto tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
 
