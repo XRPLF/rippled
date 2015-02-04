@@ -30,6 +30,7 @@
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 #include <boost/format.hpp>
+#include <array>
 
 namespace ripple {
 
@@ -334,29 +335,25 @@ isMemoOkay (STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static int const allowed_symbols[] =
+            static std::array<char, 256> const allowedSymbols = []
             {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
-                0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            };
+                std::array<char, 256> a;
+                a.fill(0);
+
+                std::string symbols (
+                    "0123456789"
+                    "-._~:/?#[]@!$&'()*+,;=%"
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz");
+
+                for(char c : symbols)
+                    a[c] = 1;
+                return a;
+            }();
 
             for (auto c : data.first)
             {
-                if (!allowed_symbols[c])
+                if (!allowedSymbols[c])
                 {
                     reason = "The MemoType and MemoFormat fields may only "
                              "contain characters that are allowed in URLs "
