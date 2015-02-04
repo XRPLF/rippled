@@ -134,8 +134,10 @@ public:
         float lf = 0.75f;
         test_recover (lf, 0);
         test_recover (lf, 10);
+    #ifdef NDEBUG
         test_recover (lf, 100);
         test_recover (lf, 1000);
+    #endif
     }
 };
 
@@ -148,6 +150,10 @@ public:
     run() override
     {
         float lf = 0.90f;
+    #ifndef NDEBUG
+        test_recover (lf, 100);
+        test_recover (lf, 1000);
+    #endif
         test_recover (lf, 100000);
     }
 };

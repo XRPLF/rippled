@@ -88,6 +88,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(abstract_clock,chrono,beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(abstract_clock,chrono,beast);
 
 }
