@@ -238,7 +238,10 @@ public:
 
     typedef std::pair <uint256, Blob> fetchPackEntry_t;
 
-    void getFetchPack (SHAMap * have, bool includeLeaves, int max, std::function<void (uint256 const&, const Blob&)>);
+    void visitDifferences (SHAMap * have, std::function<bool (SHAMapTreeNode&)>);
+
+    void getFetchPack (SHAMap * have, bool includeLeaves, int max,
+        std::function<void (uint256 const&, const Blob&)>);
 
     void setUnbacked ()
     {
