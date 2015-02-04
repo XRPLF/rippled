@@ -3723,6 +3723,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\ValidationSeed.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\Version.h">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletAccounts.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -3798,6 +3801,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\RPCVersion.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -3835,6 +3841,9 @@
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\RPCVersion.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ProjectGuid>{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}</ProjectGuid>
@@ -2675,6 +2675,8 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\ValidationSeed.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\Version.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletAccounts.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2740,6 +2742,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\RPCVersion.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2770,6 +2775,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\RPCVersion.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
