@@ -1553,6 +1553,16 @@
     <ClCompile Include="..\..\src\leveldb\util\status.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\lz4\lib\lz4.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\lz4.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\lz4\lib\xxhash.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\xxhash.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\compiler\importer.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3392,6 +3402,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\leveldb.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\lz4.c">
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\net.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">

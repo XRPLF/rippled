@@ -265,6 +265,12 @@
     <Filter Include="leveldb\util">
       <UniqueIdentifier>{A3DA589F-2CB8-7260-66DC-5975D80AB46B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lz4">
+      <UniqueIdentifier>{B211F8F1-22D2-47BA-C39E-F9846A844D11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lz4\lib">
+      <UniqueIdentifier>{4F65E5BD-7EC4-113A-4603-B4625F16BC18}</UniqueIdentifier>
+    </Filter>
     <Filter Include="protobuf">
       <UniqueIdentifier>{C535C933-C404-7C0F-2AB9-059F92DE0A80}</UniqueIdentifier>
     </Filter>
@@ -2427,6 +2433,18 @@
     <ClCompile Include="..\..\src\leveldb\util\status.cc">
       <Filter>leveldb\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\lz4\lib\lz4.c">
+      <Filter>lz4\lib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\lz4.h">
+      <Filter>lz4\lib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\lz4\lib\xxhash.c">
+      <Filter>lz4\lib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\xxhash.h">
+      <Filter>lz4\lib</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\compiler\importer.cc">
       <Filter>protobuf\src\google\protobuf\compiler</Filter>
     </ClCompile>
@@ -4641,6 +4659,9 @@
     <ClInclude Include="..\..\src\ripple\unity\leveldb.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\lz4.c">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\net.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

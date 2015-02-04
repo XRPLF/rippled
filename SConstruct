@@ -667,6 +667,7 @@ for tu_style in ['classic', 'unity']:
             object_builder.add_source_files(
                 'src/beast/beast/unity/hash_unity.cpp',
                 'src/ripple/unity/beast.cpp',
+                'src/ripple/unity/lz4.c',
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
