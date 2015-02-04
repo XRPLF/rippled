@@ -564,7 +564,7 @@ AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
 
         // Inject the transaction into our initial proposal
         Serializer s;
-        trans.add (s, true);
+        trans.add (s);
 #if RIPPLE_PROPOSE_AMENDMENTS
         SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
         if (!initialPosition->addGiveItem (tItem, true, false))

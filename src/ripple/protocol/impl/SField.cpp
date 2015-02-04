@@ -34,6 +34,9 @@ static std::mutex SField_mutex;
 static std::map<int, SField::ptr> knownCodeToField;
 static std::map<int, std::unique_ptr<SField const>> unknownCodeToField;
 
+// Storage for static const member.
+SField::IsSigning const SField::notSigning;
+
 int SField::num = 0;
 
 typedef std::lock_guard <std::mutex> StaticScopedLockType;
@@ -206,9 +209,9 @@ SField const sfDeliveredAmount = make::one(&sfDeliveredAmount, STI_AMOUNT, 18, "
 SField const sfPublicKey     = make::one(&sfPublicKey,     STI_VL,  1, "PublicKey");
 SField const sfMessageKey    = make::one(&sfMessageKey,    STI_VL,  2, "MessageKey");
 SField const sfSigningPubKey = make::one(&sfSigningPubKey, STI_VL,  3, "SigningPubKey");
-SField const sfTxnSignature  = make::one(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, false);
+SField const sfTxnSignature  = make::one(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, SField::notSigning);
 SField const sfGenerator     = make::one(&sfGenerator,     STI_VL,  5, "Generator");
-SField const sfSignature     = make::one(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, false);
+SField const sfSignature     = make::one(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, SField::notSigning);
 SField const sfDomain        = make::one(&sfDomain,        STI_VL,  7, "Domain");
 SField const sfFundCode      = make::one(&sfFundCode,      STI_VL,  8, "FundCode");
 SField const sfRemoveCode    = make::one(&sfRemoveCode,    STI_VL,  9, "RemoveCode");
@@ -249,7 +252,7 @@ SField const sfMemo                = make::one(&sfMemo,                STI_OBJEC
 // array of objects
 // ARRAY/1 is reserved for end of array
 SField const sfSigningAccounts = make::one(&sfSigningAccounts, STI_ARRAY, 2, "SigningAccounts");
-SField const sfTxnSignatures   = make::one(&sfTxnSignatures,   STI_ARRAY, 3, "TxnSignatures", SField::sMD_Default, false);
+SField const sfTxnSignatures   = make::one(&sfTxnSignatures,   STI_ARRAY, 3, "TxnSignatures", SField::sMD_Default, SField::notSigning);
 SField const sfSignatures      = make::one(&sfSignatures,      STI_ARRAY, 4, "Signatures");
 SField const sfTemplate        = make::one(&sfTemplate,        STI_ARRAY, 5, "Template");
 SField const sfNecessary       = make::one(&sfNecessary,       STI_ARRAY, 6, "Necessary");
@@ -258,7 +261,7 @@ SField const sfAffectedNodes   = make::one(&sfAffectedNodes,   STI_ARRAY, 8, "Af
 SField const sfMemos           = make::one(&sfMemos,           STI_ARRAY, 9, "Memos");
 
 SField::SField (SerializedTypeID tid, int fv, const char* fn,
-                int meta, bool signing)
+                int meta, IsSigning signing)
     : fieldCode (field_code (tid, fv))
     , fieldType (tid)
     , fieldValue (fv)
@@ -277,7 +280,7 @@ SField::SField (int fc)
     , fieldValue (0)
     , fieldMeta (sMD_Never)
     , fieldNum (++num)
-    , signingField (true)
+    , signingField (IsSigning::yes)
     , rawJsonName (getName ())
     , jsonName (rawJsonName.c_str ())
 {
@@ -290,7 +293,7 @@ SField::SField (SerializedTypeID tid, int fv)
         : fieldCode (field_code (tid, fv)), fieldType (tid), fieldValue (fv),
           fieldMeta (sMD_Default),
           fieldNum (++num),
-          signingField (true),
+          signingField (IsSigning::yes),
           jsonName (nullptr)
 {
     fieldName = std::to_string (tid) + '/' + std::to_string (fv);

@@ -35,6 +35,13 @@ class STObject
     : public STBase
     , public CountedObject <STObject>
 {
+private:
+    enum class IncludeSigningFields : unsigned char
+    {
+        no,
+        yes,
+    };
+
 public:
     static char const* getCountedObjectName () { return "STObject"; }
 
@@ -50,14 +57,14 @@ public:
     }
 
     STObject (const SOTemplate & type, SField::ref name)
-        : STBase (name)
+        : STBase (name), mType (nullptr)
     {
         set (type);
     }
 
     STObject (
         const SOTemplate & type, SerialIter & sit, SField::ref name)
-        : STBase (name)
+        : STBase (name), mType (nullptr)
     {
         set (sit);
         setType (type);
@@ -102,10 +109,8 @@ public:
 
     virtual void add (Serializer & s) const override
     {
-        add (s, true);    // just inner elements
+        add (s, IncludeSigningFields::yes);
     }
-
-    void add (Serializer & s, bool withSignature) const;
 
     // VFALCO NOTE does this return an expensive copy of an object with a
     //             dynamic buffer?
@@ -113,7 +118,7 @@ public:
     Serializer getSerializer () const
     {
         Serializer s;
-        add (s);
+        add (s, IncludeSigningFields::yes);
         return s;
     }
 
@@ -126,16 +131,6 @@ public:
     int addObject (const STBase & t)
     {
         mData.push_back (t.duplicate ().release ());
-        return mData.size () - 1;
-    }
-    int giveObject (std::unique_ptr<STBase> t)
-    {
-        mData.push_back (t.release ());
-        return mData.size () - 1;
-    }
-    int giveObject (STBase * t)
-    {
-        mData.push_back (t);
         return mData.size () - 1;
     }
     const boost::ptr_vector<STBase>& peekData () const
@@ -220,6 +215,7 @@ public:
     STPathSet const& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
+    const STObject& getFieldObject (SField::ref field) const;
 
     void setFieldU8 (SField::ref field, unsigned char);
     void setFieldU16 (SField::ref field, std::uint16_t);
@@ -237,6 +233,7 @@ public:
     void setFieldPathSet (SField::ref field, STPathSet const&);
     void setFieldV256 (SField::ref field, STVector256 const& v);
     void setFieldArray (SField::ref field, STArray const& v);
+    void setFieldObject (SField::ref field, STObject const& v);
 
     template <class Tag>
     void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
@@ -257,6 +254,7 @@ public:
     }
 
     STObject& peekFieldObject (SField::ref field);
+    STArray& peekFieldArray (SField::ref field);
 
     bool isFieldPresent (SField::ref field) const;
     STBase* makeFieldPresent (SField::ref field);
@@ -317,13 +315,61 @@ public:
         return ! (*this == o);
     }
 
-    std::unique_ptr<STBase>
-    duplicate () const override
+private:
+    // This signature for giveObject () initially seems a little misleading,
+    // but it is correct.
+    //
+    // This call expects to receive a temporary (an rvalue reference to a)
+    // unique_ptr.  The unique_ptr move constructor moves the innards of that
+    // temporary into this unique_ptr, t.
+    //
+    // Given that description it seems like the signature would be better with
+    //   std::unique_ptr<STBase>&& t
+    // That's not quite right because giveObject unconditionally takes
+    // ownership of the contents of the unique_ptr, even in the face of an
+    // exception.  Once giveObject is called you can never get the contents
+    // of the unique_ptr back.  The current signature matches that reality.
+    int giveObject (std::unique_ptr<STBase> t)
+    {
+        // Howard and I initially thought that transferring pointer ownership
+        // in this form would leak if the push_back throws.  Howard dug in
+        // further and discovered that the ptr_vector takes ownership of the
+        // pointer even in the case where the push_back throws.  So this *is*
+        // the right form for the call to push_back.
+        mData.push_back (t.release ());
+        return mData.size () - 1;
+    }
+    int giveObject (STBase * t)
+    {
+        mData.push_back (t);
+        return mData.size () - 1;
+    }
+
+    void add (Serializer & s, IncludeSigningFields signingFieldsChoice) const;
+
+    std::unique_ptr<STBase> duplicate () const override
     {
         return std::make_unique<STObject>(*this);
     }
 
-private:
+    // Sort the entries in an STObject into the order that they will be
+    // serialized.  Note: they are not sorted into pointer value order, they
+    // are sorted by SField::fieldCode.
+    static
+    std::vector<STBase const*>
+    getSortedFields (
+        STObject const& objToSort, IncludeSigningFields signingFieldsChoice);
+
+    // Two different ways to compare STObjects.
+    //
+    // This one works only if the SOTemplates are the same.  Presumably it
+    // runs faster since there's no sorting.
+    static bool equivalentSTObjectSameTemplate (
+        STObject const& obj1, STObject const& obj2);
+
+    // This way of comparing STObjects always works, but is slower.
+    static bool equivalentSTObject (STObject const& obj1, STObject const& obj2);
+
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
@@ -416,6 +462,26 @@ private:
             throw std::runtime_error ("Wrong field type");
 
         (*cf) = value;
+    }
+
+    // Implementation for peeking STObjects and STArrays
+    template <typename T>
+    T& peekField (SField::ref field)
+    {
+        STBase* rf = getPField (field, true);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        if (rf->getSType () == STI_NOTPRESENT)
+            rf = makeFieldPresent (field);
+
+        T* cf = dynamic_cast<T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        return *cf;
     }
 
 private:
