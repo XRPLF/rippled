@@ -17,6 +17,9 @@ import os
 import pprint
 import random
 import re
+import contextlib
+import sys
+import platform
 
 import SCons.Builder
 import SCons.Node.FS
@@ -583,6 +586,43 @@ def _guid(seed, name = None):
     guid = "{%s-%s-%s-%s-%s}" % (d[:8], d[8:12], d[12:16], d[16:20], d[20:32])
     return guid
 
+def _rmExeMod(file_name):
+    if platform.system() != 'Windows':
+        st = os.stat(file_name)
+        os.chmod(file_name, st.st_mode & ~0111)
+        return
+    
+    import win32security
+    import ntsecuritycon
+
+    user, domain, type = win32security.LookupAccountName ("", "Everyone")
+
+    sd = win32security.GetFileSecurity(file_name, win32security.DACL_SECURITY_INFORMATION)
+    dacl = sd.GetSecurityDescriptorDacl()
+
+    deniedAccess = ntsecuritycon.FILE_EXECUTE
+    dacl.AddAccessDeniedAce(win32security.ACL_REVISION, deniedAccess, user)
+
+    sd.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(file_name, win32security.DACL_SECURITY_INFORMATION, sd)
+
+@contextlib.contextmanager
+def openNoExe(file_name):
+    try:
+        f = open(file_name, 'wb')
+    except IOError, detail:
+        raise SCons.Errors.InternalError('Unable to open "' +
+                                         str(file_name) + '" for writing:' + str(detail))
+    try:
+        yield f
+    finally:
+        f.close()
+        try:
+            _rmExeMod(file_name)
+        except Exception as e:
+            sys.stderr.write("Warning: Could not change file attributes on: %s\n" % file_name)
+            sys.stderr.write("Exception was: %s\n" % str(e))
+
 class _ProjectGenerator(object):
     '''Generates a project file for Visual Studio 2013'''
 
@@ -595,9 +635,7 @@ class _ProjectGenerator(object):
         self.root_dirs = [os.path.abspath(x) for x in makeList(env['VSPROJECT_ROOT_DIRS'])]
         self.project_dir = os.path.dirname(os.path.abspath(str(project_node)))
         self.project_node = project_node
-        self.project_file = None
         self.filters_node = filters_node
-        self.filters_file = None
         self.guid = _guid(os.path.basename(str(self.project_node)))
         self.buildItemList(env)
 
@@ -654,14 +692,14 @@ class _ProjectGenerator(object):
                 extras.append(path)
         return self.relPaths(extras)
 
-    def writeHeader(self):
+    def writeHeader(self, project_file):
         global clSwitches
 
         encoding = 'utf-8'
         project_guid = self.guid
         name = os.path.splitext(os.path.basename(str(self.project_node)))[0]
 
-        f = self.project_file
+        f = project_file
         f.write(UnicodeByteMarker)
         f.write(V12DSPHeader % locals())
         f.write(V12DSPGlobals % locals())
@@ -722,11 +760,11 @@ class _ProjectGenerator(object):
 
             f.write('  </ItemDefinitionGroup>\r\n')
 
-    def writeProject(self):
-        self.writeHeader()
+    def writeProject(self, project_file):
+        self.writeHeader(project_file)
 
-        f = self.project_file
-        self.project_file.write('  <ItemGroup>\r\n')
+        f = project_file
+        f.write('  <ItemGroup>\r\n')
         for item in self.items:
             path = winpath(os.path.relpath(item.path(), self.project_dir))
             props = ''
@@ -765,7 +803,7 @@ class _ProjectGenerator(object):
             '  </ImportGroup>\r\n'
             '</Project>\r\n')
 
-    def writeFilters(self):
+    def writeFilters(self, filters_file):
         def getGroup(abspath):
             abspath = os.path.dirname(abspath)
             for d in self.root_dirs:
@@ -774,7 +812,7 @@ class _ProjectGenerator(object):
                     return winpath(os.path.relpath(abspath, common))
             return winpath(os.path.split(abspath)[1])
 
-        f = self.filters_file
+        f = filters_file
         f.write(UnicodeByteMarker)
         f.write(V12DSPFiltersHeader)
 
@@ -807,20 +845,10 @@ class _ProjectGenerator(object):
         f.write('</Project>\r\n')
 
     def build(self):
-        try:
-            self.project_file = open(str(self.project_node), 'wb')
-        except IOError, detail:
-            raise SCons.Errors.InternalError('Unable to open "' +
-                str(self.project_node) + '" for writing:' + str(detail))
-        try:
-            self.filters_file = open(str(self.filters_node), 'wb')
-        except IOError, detail:
-            raise SCons.Errors.InternalError('Unable to open "' +
-                str(self.filters_node) + '" for writing:' + str(detail))
-        self.writeProject()
-        self.writeFilters()
-        self.project_file.close()
-        self.filters_file.close()
+        with openNoExe(str(self.project_node)) as project_file:
+            with openNoExe(str(self.filters_node)) as filters_file:
+                self.writeProject(project_file)
+                self.writeFilters(filters_file)
 
 #-------------------------------------------------------------------------------
 
