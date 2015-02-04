@@ -1123,6 +1123,16 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\modm-donna-64bit.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\lz4\lib\lz4.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\lz4.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\lz4\lib\xxhash.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lz4\lib\xxhash.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\compiler\importer.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2951,6 +2961,8 @@
     <ClInclude Include="..\..\src\ripple\unity\git_id.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\json.cpp">
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\lz4.c">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\net.cpp">
     </ClCompile>
