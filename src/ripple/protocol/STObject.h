@@ -97,19 +97,24 @@ public:
     void set (const SOTemplate&);
     bool set (SerialIter& u, int depth = 0);
 
-    virtual SerializedTypeID getSType () const override
+    SerializedTypeID getSType () const override
     {
         return STI_OBJECT;
     }
-    virtual bool isEquivalent (const STBase & t) const override;
-    virtual bool isDefault () const override
+    bool isEquivalent (const STBase & t) const override;
+    bool isDefault () const override
     {
         return mData.empty ();
     }
 
-    virtual void add (Serializer & s) const override
+    void add (Serializer & s) const override
     {
         add (s, IncludeSigningFields::yes);
+    }
+
+    void addWithoutSigningFields (Serializer & s)
+    {
+        add (s, IncludeSigningFields::no);
     }
 
     // VFALCO NOTE does this return an expensive copy of an object with a
@@ -122,11 +127,11 @@ public:
         return s;
     }
 
-    virtual std::string getFullText () const override;
-    virtual std::string getText () const override;
+    std::string getFullText () const override;
+    std::string getText () const override;
 
     // TODO(tom): options should be an enum.
-    virtual Json::Value getJson (int options) const override;
+    Json::Value getJson (int options) const override;
 
     int addObject (const STBase & t)
     {
