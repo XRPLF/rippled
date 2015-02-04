@@ -271,6 +271,11 @@ public:
         scoped_lock_type guard(m_mutex);
         m_message_handler = h;
     }
+    void set_send_empty_handler(send_empty_handler h) {
+        m_alog.write(log::alevel::devel,"set_send_empty_handler");
+        scoped_lock_type guard(m_mutex);
+        m_send_empty_handler = h;
+    }
 
     //////////////////////////////////////////
     // Connection timeouts and other limits //
@@ -560,6 +565,7 @@ private:
     http_handler                m_http_handler;
     validate_handler            m_validate_handler;
     message_handler             m_message_handler;
+    send_empty_handler          m_send_empty_handler;
 
     long                        m_open_handshake_timeout_dur;
     long                        m_close_handshake_timeout_dur;

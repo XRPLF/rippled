@@ -1575,7 +1575,9 @@ void connection<config>::write_frame() {
         // pull off all the messages that are ready to write.
         // stop if we get a message marked terminal
         message_ptr next_message = write_pop();
+        bool saw_message = false;
         while (next_message) {
+            saw_message = true;
             m_current_msgs.push_back(next_message);
             if (!next_message->get_terminal()) {
                 next_message = write_pop();
@@ -1586,6 +1588,10 @@ void connection<config>::write_frame() {
         
         if (m_current_msgs.empty()) {
             // there was nothing to send
+            // If we just made the transition to empty, send out
+            // "send_empty" callback.
+            if (saw_message)
+                m_send_empty_handler(m_connection_hdl);
             return;
         } else {
             // At this point we own the next messages to be sent and are

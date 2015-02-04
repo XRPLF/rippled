@@ -339,12 +339,13 @@ public:
             callback(lib::error_code());
         }
     }
-protected:
+
     /// Get a pointer to this connection's strand
     strand_ptr get_strand() {
         return m_strand;
     }
 
+protected:
     /// Initialize transport for reading
     /**
      * init_asio is called once immediately after construction to initialize
