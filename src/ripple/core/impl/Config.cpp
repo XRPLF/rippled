@@ -284,6 +284,7 @@ getEnvVar (char const* name)
 
 void Config::setup (std::string const& strConf, bool bQuiet)
 {
+    boost::filesystem::path dataDir;
     boost::system::error_code   ec;
     std::string                 strDbPath, strConfFile;
 
@@ -309,13 +310,13 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         CONFIG_FILE             = strConfFile;
         CONFIG_DIR              = boost::filesystem::absolute (CONFIG_FILE);
         CONFIG_DIR.remove_filename ();
-        DATA_DIR                = CONFIG_DIR / strDbPath;
+        dataDir                 = CONFIG_DIR / strDbPath;
     }
     else
     {
         CONFIG_DIR              = boost::filesystem::current_path ();
         CONFIG_FILE             = CONFIG_DIR / strConfFile;
-        DATA_DIR                = CONFIG_DIR / strDbPath;
+        dataDir                 = CONFIG_DIR / strDbPath;
 
         // Construct XDG config and data home.
         // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -345,7 +346,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
 
             CONFIG_DIR  = strXdgConfigHome + "/" + systemName ();
             CONFIG_FILE = CONFIG_DIR / strConfFile;
-            DATA_DIR    = strXdgDataHome + "/" + systemName ();
+            dataDir    = strXdgDataHome + "/" + systemName ();
 
             boost::filesystem::create_directories (CONFIG_DIR, ec);
 
@@ -358,20 +359,22 @@ void Config::setup (std::string const& strConf, bool bQuiet)
 
     // Update default values
     load ();
+    {
+        // load() may have set a new value for the dataDir
+        std::string const dbPath(legacy("database_path"));
+        if (!dbPath.empty())
+        {
+            dataDir = boost::filesystem::path(dbPath);
+        }
+    }
 
-    boost::filesystem::create_directories (DATA_DIR, ec);
+    boost::filesystem::create_directories (dataDir, ec);
 
     if (ec)
-        throw std::runtime_error (boost::str (boost::format ("Can not create %s") % DATA_DIR));
+        throw std::runtime_error (boost::str (boost::format ("Can not create %s") % dataDir));
 
-    // Create the new unified database
-    m_moduleDbPath = getDatabaseDir();
-
-    // This code is temporarily disabled, and modules will fall back to using
-    // per-module databases (e.g. "peerfinder.sqlite") under the module db path
-    //
-    //if (m_moduleDbPath.isDirectory ())
-    //    m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
+    legacy("database_path", 
+           boost::filesystem::absolute(dataDir).string ());
 }
 
 void Config::load ()
@@ -455,8 +458,15 @@ void Config::loadFromString (std::string const& fileContents)
         }
     }
 
-    if (getSingleSection (secConfig, SECTION_DATABASE_PATH, DATABASE_PATH))
-        DATA_DIR    = DATABASE_PATH;
+    {
+        std::string dbPath;
+        if (getSingleSection (secConfig, "database_path", dbPath))
+        {
+            boost::filesystem::path p(dbPath);
+            legacy("database_path", 
+                   boost::filesystem::absolute (p).string ());
+        }
+    }
 
     (void) getSingleSection (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
@@ -695,32 +705,17 @@ boost::filesystem::path Config::getDebugLogFile () const
     return log_file;
 }
 
-//------------------------------------------------------------------------------
-//
-// VFALCO NOTE Clean members area
-//
-
 Config& getConfig ()
 {
     static Config config;
     return config;
 }
 
-//------------------------------------------------------------------------------
-
 beast::File Config::getConfigDir () const
 {
     beast::String const s (CONFIG_FILE.native().c_str ());
     if (s.isNotEmpty ())
         return beast::File (s).getParentDirectory ();
-    return beast::File::nonexistent ();
-}
-
-beast::File Config::getDatabaseDir () const
-{
-    beast::String const s (DATA_DIR.native().c_str());
-    if (s.isNotEmpty ())
-        return beast::File (s);
     return beast::File::nonexistent ();
 }
 
@@ -737,9 +732,14 @@ beast::URL Config::getValidatorsURL () const
     return beast::parse_URL (VALIDATORS_SITE).second;
 }
 
-beast::File const& Config::getModuleDatabasePath () const
+beast::File Config::getModuleDatabasePath () const
 {
-    return m_moduleDbPath;
+    boost::filesystem::path dbPath(legacy ("database_path"));
+
+    beast::String const s (dbPath.native ().c_str ());
+    if (s.isNotEmpty ())
+        return beast::File (s);
+    return beast::File::nonexistent ();
 }
 
 } // ripple

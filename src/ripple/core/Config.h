@@ -87,10 +87,10 @@ struct SizedItem
     int             sizes[5];
 };
 
-// VFALCO NOTE This entire derived class is deprecated
-//             For new config information use the style implied
-//             in the base class. For existing config information
-//             try to refactor code to use the new style.
+//  This entire derived class is deprecated
+//  For new config information use the style implied
+//  in the base class. For existing config information
+//  try to refactor code to use the new style.
 //
 class Config : public BasicConfig
 {
@@ -121,20 +121,17 @@ public:
     /** Returns the directory from which the configuration file was loaded. */
     beast::File getConfigDir () const;
 
-    /** Returns the directory in which the current database files are located. */
-    beast::File getDatabaseDir () const;
-
     /** Returns the full path and filename of the debug log file. */
     boost::filesystem::path getDebugLogFile () const;
 
-    // LEGACY FIELDS, REMOVE ASAP
+    // DEPRECATED
     boost::filesystem::path CONFIG_FILE; // used by UniqueNodeList
 private:
     boost::filesystem::path CONFIG_DIR;
     boost::filesystem::path DEBUG_LOGFILE;
+
+    void load ();
 public:
-    // VFALCO TODO Make this private and fix callers to go through getDatabaseDir()
-    boost::filesystem::path DATA_DIR;
 
     //--------------------------------------------------------------------------
 
@@ -152,10 +149,6 @@ public:
     /** List of Validators entries from rippled.cfg */
     std::vector <std::string> validators;
 
-private:
-    /** The folder where new module databases should be located */
-    beast::File m_moduleDbPath;
-
 public:
     //--------------------------------------------------------------------------
     /** Returns the location were databases should be located
@@ -164,7 +157,7 @@ public:
         stored in a file named after the module (e.g. "peerfinder.sqlite") that
         is inside that directory.
     */
-    beast::File const& getModuleDatabasePath () const;
+    beast::File getModuleDatabasePath () const;
 
     //--------------------------------------------------------------------------
 
@@ -233,9 +226,6 @@ public:
 
 
     std::string                 START_LEDGER;
-
-    // Database
-    std::string                 DATABASE_PATH;
 
     // Network parameters
     int                         TRANSACTION_FEE_BASE;   // The number of fee units a reference transaction costs
@@ -312,7 +302,6 @@ public:
 
     int getSize (SizedItemName) const;
     void setup (std::string const& strConf, bool bQuiet);
-    void load ();
     /**
      *  Load the conig from the contents of the sting.
      *
@@ -321,7 +310,7 @@ public:
     void loadFromString (std::string const& fileContents);
 };
 
-// VFALCO DEPRECATED
+// DEPRECATED
 extern Config& getConfig();
 
 } // ripple
