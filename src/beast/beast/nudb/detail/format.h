@@ -38,7 +38,7 @@ namespace detail {
 
 // Format of the nudb files:
 
-static std::size_t BEAST_CONSTEXPR currentVersion = 1;
+static std::size_t BEAST_CONSTEXPR currentVersion = 2;
 
 struct dat_file_header
 {
@@ -108,6 +108,41 @@ struct log_file_header
     std::size_t dat_file_size;
 };
 
+// Type used to store hashes in buckets.
+// This can be smaller than the output
+// of the hash function.
+//
+using hash_t = uint48_t;
+
+static_assert(field<hash_t>::size <=
+    sizeof(std::size_t), "");
+
+template <class T>
+std::size_t
+make_hash (std::size_t h);
+
+template<>
+std::size_t
+make_hash<uint48_t>(std::size_t h)
+{
+    return (h>>16)&0xffffffffffff;
+}
+
+// Returns the hash of a key given the salt.
+// Note: The hash is expressed in hash_t units
+//
+template <class Hasher>
+inline
+std::size_t
+hash (void const* key,
+    std::size_t key_size, std::size_t salt)
+{
+    Hasher h (salt);
+    h.append (key, key_size);
+    return make_hash<hash_t>(static_cast<
+        typename Hasher::result_type>(h));
+}
+
 // Computes pepper from salt
 //
 template <class Hasher>
@@ -124,8 +159,7 @@ pepper (std::size_t salt)
 //
 template <class = void>
 std::size_t
-bucket_size (std::size_t key_size,
-    std::size_t capacity)
+bucket_size (std::size_t capacity)
 {
     // Bucket Record
     return
@@ -134,33 +168,14 @@ bucket_size (std::size_t key_size,
         capacity * (
             field<uint48_t>::size +     // Offset
             field<uint48_t>::size +     // Size
-            key_size);                  // Key
+            field<hash_t>::size);       // Hash
 }
 
-// Returns the size of a bucket large enough to
-// hold size keys of length key_size.
-//
-inline
-std::size_t
-compact_size(std::size_t key_size,
-    std::size_t size)
-{
-    // Bucket Record
-    return
-        field<std::uint16_t>::size +    // Size
-        field<uint48_t>::size +         // Spill
-        size * (
-            field<uint48_t>::size +     // Offset
-            field<uint48_t>::size +     // Size
-            key_size);                  // Key
-}
-
-// Returns: number of keys that fit in a bucket
+// Returns the number of entries that fit in a bucket
 //
 template <class = void>
 std::size_t
-bucket_capacity (std::size_t key_size,
-    std::size_t block_size)
+bucket_capacity (std::size_t block_size)
 {
     // Bucket Record
     auto const size =
@@ -169,17 +184,18 @@ bucket_capacity (std::size_t key_size,
     auto const entry_size =
         field<uint48_t>::size +         // Offset
         field<uint48_t>::size +         // Size
-        key_size;                       // Key
+        field<hash_t>::size;            // Hash
     if (block_size < key_file_header::size ||
         block_size < size)
         return 0;
     return (block_size - size) / entry_size;
 }
 
-// returns the number of bytes occupied by a value record
+// Returns the number of bytes occupied by a value record
 inline
 std::size_t
-data_size (std::size_t size, std::size_t key_size)
+value_size (std::size_t size,
+    std::size_t key_size)
 {
     // Data Record
     return
@@ -270,10 +286,8 @@ read (istream& is, std::size_t file_size,
 
     // VFALCO These need to be checked to handle
     //        when the file size is too small
-    kh.capacity = bucket_capacity(
-        kh.key_size, kh.block_size);
-    kh.bucket_size = bucket_size(
-        kh.key_size, kh.capacity);
+    kh.capacity = bucket_capacity(kh.block_size);
+    kh.bucket_size = bucket_size(kh.capacity);
     if (file_size > kh.block_size)
     {
         // VFALCO This should be handled elsewhere.

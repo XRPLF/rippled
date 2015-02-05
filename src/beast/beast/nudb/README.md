@@ -209,7 +209,7 @@ header may be changed after the database is created.
 
     uint48              Offset          Offset in data file of the data
     uint48              Size            The size of the value in bytes
-    uint8[KeySize]      Key             The key
+    uint48              Hash            The hash of the key
 
 ### Data File
 

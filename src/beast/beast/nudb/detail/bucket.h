@@ -33,21 +33,7 @@ namespace beast {
 namespace nudb {
 namespace detail {
 
-// Key, hash, and bucket calculations:
-
-// Returns the hash of a key given the salt
-//
-template <class Hasher>
-inline
-typename Hasher::result_type
-hash (void const* key,
-    std::size_t key_size, std::size_t salt)
-{
-    Hasher h (salt);
-    h.append (key, key_size);
-    return static_cast<
-        typename Hasher::result_type>(h);
-}
+// bucket calculations:
 
 // Returns bucket index given hash, buckets, and modulus
 //
@@ -62,30 +48,6 @@ bucket_index (std::size_t h,
     return n;
 }
 
-// Returns the bucket index of a key
-//
-template <class Hasher>
-inline
-std::size_t
-bucket_index (void const* key, std::size_t key_size,
-    std::size_t salt, std::size_t buckets,
-        std::size_t modulus)
-{
-    return bucket_index (hash<Hasher>
-        (key, key_size, salt), buckets, modulus);
-}
-
-// Returns the bucket index of a key
-// given the key file header
-template <class Hasher>
-inline
-std::size_t
-bucket_index (void const* key, key_file_header const& kh)
-{
-    return bucket_index<Hasher>(key, kh.key_size,
-        kh.salt, kh.buckets, kh.modulus);
-}
-
 //------------------------------------------------------------------------------
 
 // Tag for constructing empty buckets
@@ -97,9 +59,8 @@ template <class = void>
 class bucket_t
 {
 private:
-    std::size_t key_size_;      // Size of key in bytes
     std::size_t block_size_;    // Size of a key file block
-    std::size_t count_;         // Current key count
+    std::size_t size_;          // Current key count
     std::size_t spill_;         // Offset of next spill record or 0
     std::uint8_t* p_;           // Pointer to the bucket blob
 
@@ -108,23 +69,15 @@ public:
     {
         std::size_t offset;
         std::size_t size;
-        void const* key;
+        std::size_t hash;
     };
 
     bucket_t (bucket_t const&) = default;
     bucket_t& operator= (bucket_t const&) = default;
 
-    bucket_t (std::size_t key_size,
-        std::size_t block_size, void* p);
+    bucket_t (std::size_t block_size, void* p);
 
-    bucket_t (std::size_t key_size,
-        std::size_t block_size, void* p, empty_t);
-
-    std::size_t
-    key_size() const
-    {
-        return key_size_;
-    }
+    bucket_t (std::size_t block_size, void* p, empty_t);
 
     std::size_t
     block_size() const
@@ -135,43 +88,45 @@ public:
     std::size_t
     compact_size() const
     {
-        return detail::compact_size(
-            key_size_, count_);
+        return detail::bucket_size(size_);
     }
 
     bool
     empty() const
     {
-        return count_ == 0;
+        return size_ == 0;
     }
 
     bool
     full() const
     {
-        return count_ >= detail::bucket_capacity(
-            key_size_, block_size_);
+        return size_ >=
+            detail::bucket_capacity(block_size_);
     }
 
     std::size_t
     size() const
     {
-        return count_;
+        return size_;
     }
 
     // Returns offset of next spill record or 0
+    //
     std::size_t
     spill() const
     {
         return spill_;
     }
 
-    // Clear contents of the bucket
-    void
-    clear();
-
     // Set offset of next spill record
+    //
     void
     spill (std::size_t offset);
+
+    // Clear contents of the bucket
+    //
+    void
+    clear();
 
     // Returns the record for a key
     // entry without bounds checking.
@@ -185,12 +140,15 @@ public:
         return at(i);
     }
 
-    std::pair<value_type, bool>
-    find (void const* key) const;
+    // Returns index of entry with prefix
+    // equal to or greater than the given prefix.
+    //
+    std::size_t
+    lower_bound (std::size_t h) const;
 
     void
     insert (std::size_t offset,
-        std::size_t size, void const* key);
+        std::size_t size, std::size_t h);
 
     // Erase an element by index
     //
@@ -227,32 +185,27 @@ private:
     // Update size and spill in the blob
     void
     update();
-
-    std::pair<std::size_t, bool>
-    lower_bound (void const* key) const;
 };
 
 //------------------------------------------------------------------------------
 
 template <class _>
-bucket_t<_>::bucket_t (std::size_t key_size,
+bucket_t<_>::bucket_t (
         std::size_t block_size, void* p)
-    : key_size_ (key_size)
-    , block_size_ (block_size)
+    : block_size_ (block_size)
     , p_ (reinterpret_cast<std::uint8_t*>(p))
 {
     // Bucket Record
     istream is(p_, block_size);
-    detail::read<uint16_t>(is, count_); // Count
+    detail::read<uint16_t>(is, size_);  // Count
     detail::read<uint48_t>(is, spill_); // Spill
 }
 
 template <class _>
-bucket_t<_>::bucket_t (std::size_t key_size,
+bucket_t<_>::bucket_t (
         std::size_t block_size, void* p, empty_t)
-    : key_size_ (key_size)
-    , block_size_ (block_size)
-    , count_ (0)
+    : block_size_ (block_size)
+    , size_ (0)
     , spill_ (0)
     , p_ (reinterpret_cast<std::uint8_t*>(p))
 {
@@ -261,18 +214,18 @@ bucket_t<_>::bucket_t (std::size_t key_size,
 
 template <class _>
 void
-bucket_t<_>::clear()
+bucket_t<_>::spill (std::size_t offset)
 {
-    count_ = 0;
-    spill_ = 0;
+    spill_ = offset;
     update();
 }
 
 template <class _>
 void
-bucket_t<_>::spill (std::size_t offset)
+bucket_t<_>::clear()
 {
-    spill_ = offset;
+    size_ = 0;
+    spill_ = 0;
     update();
 }
 
@@ -286,7 +239,7 @@ bucket_t<_>::at (std::size_t i) const ->
     std::size_t const w =
         field<uint48_t>::size +         // Offset
         field<uint48_t>::size +         // Size
-        key_size_;                      // Key
+        field<hash_t>::size;            // Prefix
     // Bucket Record
     detail::istream is(p_ +
         field<std::uint16_t>::size +    // Count
@@ -297,54 +250,80 @@ bucket_t<_>::at (std::size_t i) const ->
         is, result.offset);             // Offset
     detail::read<uint48_t>(
         is, result.size);               // Size
-    result.key = is.data(key_size_);    // Key
+    detail::read<hash_t>(
+        is, result.hash);               // Hash
     return result;
 }
 
 template <class _>
-auto
-bucket_t<_>::find (void const* key) const ->
-    std::pair<value_type, bool>
+std::size_t
+bucket_t<_>::lower_bound (
+    std::size_t h) const
 {
-    std::pair<value_type, bool> result;
-    std::size_t i;
-    std::tie(i, result.second) = lower_bound(key);
-    if (result.second)
-        result.first = at(i);
-    return result;
+    // Bucket Entry
+    auto const w =
+        field<uint48_t>::size +         // Offset
+        field<uint48_t>::size +         // Size
+        field<hash_t>::size;            // Hash
+    // Bucket Record
+    auto const p = p_ +
+        field<std::uint16_t>::size +    // Count
+        field<uint48_t>::size +         // Spill
+        // Bucket Entry
+        field<uint48_t>::size +         // Offset
+        field<uint48_t>::size;          // Size
+    std::size_t step;
+    std::size_t first = 0;
+    std::size_t count = size_;
+    while (count > 0)
+    {
+        step = count / 2;
+        auto const i = first + step;
+        std::size_t h1;
+        readp<hash_t>(p + i * w, h1);
+        if (h1 < h)
+        {
+            first = i + 1;
+            count -= step + 1;
+        }
+        else
+        {
+            count = step;
+        }
+    }
+    return first;
 }
 
 template <class _>
 void
 bucket_t<_>::insert (std::size_t offset,
-    std::size_t size, void const* key)
+    std::size_t size, std::size_t h)
 {
-    bool found;
-    std::size_t i;
-    std::tie(i, found) = lower_bound(key);
-    (void)found;
-    assert(! found);
+    std::size_t i = lower_bound(h);
     // Bucket Record
     auto const p = p_ +
-        field<std::uint16_t>::size +    // Count
-        field<uint48_t>::size;          // Spill
+        field<
+            std::uint16_t>::size +  // Count
+        field<uint48_t>::size;      // Spill
     // Bucket Entry
     std::size_t const w =
-        field<uint48_t>::size +         // Offset
-        field<uint48_t>::size +         // Size
-        key_size_;                      // Key
+        field<uint48_t>::size +     // Offset
+        field<uint48_t>::size +     // Size
+        field<hash_t>::size;        // Hash
     std::memmove (
         p + (i + 1)  * w,
         p +  i       * w,
-        (count_ - i) * w);
-    count_++;
+        (size_ - i) * w);
+    size_++;
     update();
     // Bucket Entry
     ostream os (p + i * w, w);
-    detail::write<uint48_t>(os, offset);    // Offset
-    detail::write<uint48_t>(os, size);      // Size
-    std::memcpy (os.data(key_size_),
-        key, key_size_);                    // Key
+    detail::write<uint48_t>(
+        os, offset);                // Offset
+    detail::write<uint48_t>(
+        os, size);                  // Size
+    detail::write<hash_t>(
+        os, h);                     // Prefix
 }
 
 template <class _>
@@ -353,18 +332,19 @@ bucket_t<_>::erase (std::size_t i)
 {
     // Bucket Record
     auto const p = p_ +
-        field<std::uint16_t>::size +    // Count
-        field<uint48_t>::size;          // Spill
+        field<
+            std::uint16_t>::size +  // Count
+        field<uint48_t>::size;      // Spill
     auto const w =
-        field<uint48_t>::size +         // Offset
-        field<uint48_t>::size +         // Size
-        key_size_;                      // Key
-    --count_;
-    if (i != count_)
+        field<uint48_t>::size +     // Offset
+        field<uint48_t>::size +     // Size
+        field<hash_t>::size;        // Hash
+    --size_;
+    if (i != size_)
         std::memmove(
             p +  i       * w,
             p + (i + 1)  * w,
-            (count_ - i) * w);
+            (size_ - i) * w);
     update();
 }
 
@@ -374,17 +354,15 @@ void
 bucket_t<_>::read (File& f, std::size_t offset)
 {
     auto const cap = bucket_capacity (
-        key_size_, block_size_);
+        block_size_);
     // Excludes padding to block size
-    f.read (offset, p_, bucket_size(
-        key_size_, bucket_capacity(
-            key_size_, block_size_)));
+    f.read (offset, p_, bucket_size(cap));
     istream is(p_, block_size_);
     detail::read<
-        std::uint16_t>(is, count_);     // Count
+        std::uint16_t>(is, size_);     // Count
     detail::read<
         uint48_t>(is, spill_);          // Spill
-    if (count_ > cap)
+    if (size_ > cap)
         throw store_corrupt_error(
             "bad bucket size");
 }
@@ -399,19 +377,21 @@ bucket_t<_>::read (bulk_reader<File>& r)
         detail::field<std::uint16_t>::size +
         detail::field<uint48_t>::size);
     detail::read<
-        std::uint16_t>(is, count_);     // Count
-    detail::read<uint48_t>(is, spill_); // Spill
+        std::uint16_t>(is, size_);  // Count
+    detail::read<uint48_t>(
+        is, spill_);                // Spill
     update();
     // Excludes empty bucket entries
-    auto const w = count_ * (
-        field<uint48_t>::size +         // Offset
-        field<uint48_t>::size +         // Size
-        key_size_);                     // Key
+    auto const w = size_ * (
+        field<uint48_t>::size +     // Offset
+        field<uint48_t>::size +     // Size
+        field<hash_t>::size);       // Hash
     is = r.prepare (w);
     std::memcpy(p_ +
-        field<std::uint16_t>::size +    // Count
-        field<uint48_t>::size,          // Spill
-        is.data(w), w);                 // Entries
+        field<
+            std::uint16_t>::size +  // Count
+        field<uint48_t>::size,      // Spill
+        is.data(w), w);             // Entries
 }
 
 template <class _>
@@ -447,54 +427,11 @@ bucket_t<_>::update()
     // Bucket Record
     ostream os(p_, block_size_);
     detail::write<
-        std::uint16_t>(os, count_); // Count
+        std::uint16_t>(os, size_);  // Count
     detail::write<
         uint48_t>(os, spill_);      // Spill
 }
 
-// bool is true if key matches index
-template <class _>
-std::pair<std::size_t, bool>
-bucket_t<_>::lower_bound (
-    void const* key) const
-{
-    // Bucket Entry
-    auto const w =
-        field<uint48_t>::size +         // Offset
-        field<uint48_t>::size +         // Size
-        key_size_;                      // Key
-    // Bucket Record
-    auto const p = p_ +
-        field<std::uint16_t>::size +    // Count
-        field<uint48_t>::size +         // Spill
-        // Bucket Entry
-        field<uint48_t>::size +         // Offset
-        field<uint48_t>::size;          // Size
-    std::size_t step;
-    std::size_t first = 0;
-    std::size_t count = count_;
-    while (count > 0)
-    {
-        step = count / 2;
-        auto const i = first + step;
-        auto const c = std::memcmp (
-            p + i * w, key, key_size_);
-        if (c < 0)
-        {
-            first = i + 1;
-            count -= step + 1;
-        }
-        else if (c > 0)
-        {
-            count = step;
-        }
-        else
-        {
-            return std::make_pair (i, true);
-        }
-    }
-    return std::make_pair (first, false);
-}
 using bucket = bucket_t<>;
 
 } // detail

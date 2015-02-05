@@ -77,8 +77,8 @@ private:
         operator() (argument_type const& e) const
         {
             return std::make_pair(e.first,
-                bucket (cache_->key_size_,
-                    cache_->block_size_, e.second));
+                bucket (cache_->block_size_,
+                    e.second));
         }
     };
 
@@ -209,7 +209,7 @@ cache_t<_>::create (std::size_t n)
 {
     auto const p = arena_.alloc (block_size_);
     map_.emplace (n, p);
-    return bucket (key_size_, block_size_,
+    return bucket (block_size_,
         p, detail::empty);
 }
 

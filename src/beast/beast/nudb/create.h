@@ -88,7 +88,7 @@ create (
         throw std::domain_error(
             "nudb: load factor too large");
     auto const capacity =
-        bucket_capacity(key_size, block_size);
+        bucket_capacity(block_size);
     if (capacity < 1)
         throw std::domain_error(
             "nudb: block size too small");
@@ -134,8 +134,7 @@ create (
     write (kf, kh);
     buffer buf(block_size);
     std::memset(buf.get(), 0, block_size);
-    bucket b (key_size, block_size,
-        buf.get(), empty);
+    bucket b (block_size, buf.get(), empty);
     b.write (kf, block_size);
     // VFALCO Leave log file empty?
     df.sync();

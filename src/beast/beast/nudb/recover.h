@@ -96,8 +96,7 @@ recover (
         verify<Hasher>(kh, lh);
         auto const df_size = df.actual_size();
         buffer buf(kh.block_size);
-        bucket b (kh.key_size,
-            kh.block_size, buf.get());
+        bucket b (kh.block_size, buf.get());
         bulk_reader<File> r(lf, log_file_header::size,
             lf_size, read_size);
         while(! r.eof())
