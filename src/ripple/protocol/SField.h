@@ -124,7 +124,7 @@ public:
     std::string             fieldName;
     int                     fieldMeta;
     int                     fieldNum;
-    IsSigning               signingField;
+    IsSigning const         signingField;
     std::string             rawJsonName;
     Json::StaticString      jsonName;
 
@@ -223,10 +223,6 @@ public:
     bool isSigningField () const
     {
         return signingField == IsSigning::yes;
-    }
-    void notSigningField ()
-    {
-        signingField = IsSigning::no;
     }
     bool shouldMeta (int c) const
     {

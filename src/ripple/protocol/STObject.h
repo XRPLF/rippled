@@ -321,6 +321,12 @@ public:
     }
 
 private:
+    int giveObject (STBase * t)
+    {
+        mData.push_back (t);
+        return mData.size () - 1;
+    }
+
     // This signature for giveObject () initially seems a little misleading,
     // but it is correct.
     //
@@ -336,18 +342,11 @@ private:
     // of the unique_ptr back.  The current signature matches that reality.
     int giveObject (std::unique_ptr<STBase> t)
     {
-        // Howard and I initially thought that transferring pointer ownership
-        // in this form would leak if the push_back throws.  Howard dug in
-        // further and discovered that the ptr_vector takes ownership of the
-        // pointer even in the case where the push_back throws.  So this *is*
-        // the right form for the call to push_back.
-        mData.push_back (t.release ());
-        return mData.size () - 1;
-    }
-    int giveObject (STBase * t)
-    {
-        mData.push_back (t);
-        return mData.size () - 1;
+        // Because mData is a ptr_vector, mData.push_back() takes ownership of
+        // the pointer even if the push_back() throws.  So calling t.release()
+        // here (which will go straight into an mData.push_back()) does not
+        // present the opportunity for a leak.
+        return giveObject (t.release ());
     }
 
     void add (Serializer & s, IncludeSigningFields signingFieldsChoice) const;
