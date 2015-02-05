@@ -2311,6 +2311,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Seed.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Serializer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2387,6 +2390,8 @@
     <ClInclude Include="..\..\src\ripple\protocol\RippleLedgerHash.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\RipplePublicKey.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Seed.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
     </ClInclude>
