@@ -34,7 +34,6 @@ struct ConfigSection
 #define SECTION_ACCOUNT_PROBE_MAX       "account_probe_max"
 #define SECTION_AMENDMENTS              "amendments"
 #define SECTION_CLUSTER_NODES           "cluster_nodes"
-#define SECTION_DATABASE_PATH           "database_path"
 #define SECTION_DEBUG_LOGFILE           "debug_logfile"
 #define SECTION_ELB_SUPPORT             "elb_support"
 #define SECTION_FEE_DEFAULT             "fee_default"

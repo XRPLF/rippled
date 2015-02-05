@@ -700,7 +700,7 @@ setup_SHAMapStore (Config const& c)
     setup.ledgerHistory = c.LEDGER_HISTORY;
     setup.nodeDatabase = c.nodeDatabase;
     setup.ephemeralNodeDatabase = c.ephemeralNodeDatabase;
-    setup.databasePath = c.DATABASE_PATH;
+    setup.databasePath = c.legacy("database_path");
     if (c.nodeDatabase["delete_batch"].isNotEmpty())
         setup.deleteBatch = c.nodeDatabase["delete_batch"].getIntValue();
     if (c.nodeDatabase["backOff"].isNotEmpty())
