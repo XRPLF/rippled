@@ -111,13 +111,20 @@ public:
         sMD_Default        = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };
 
-    const int               fieldCode;      // (type<<16)|index
-    const SerializedTypeID  fieldType;      // STI_*
-    const int               fieldValue;     // Code number for protocol
+    enum class IsSigning : unsigned char
+    {
+        no,
+        yes
+    };
+    static IsSigning const notSigning = IsSigning::no;
+
+    int const               fieldCode;      // (type<<16)|index
+    SerializedTypeID const  fieldType;      // STI_*
+    int const               fieldValue;     // Code number for protocol
     std::string             fieldName;
     int                     fieldMeta;
     int                     fieldNum;
-    bool                    signingField;
+    IsSigning const         signingField;
     std::string             rawJsonName;
     Json::StaticString      jsonName;
 
@@ -142,7 +149,7 @@ public:
 private:
     // These constructors can only be called from FieldNames.cpp
     SField (SerializedTypeID tid, int fv, const char* fn,
-            int meta = sMD_Default, bool signing = true);
+            int meta = sMD_Default, IsSigning signing = IsSigning::yes);
     explicit SField (int fc);
     SField (SerializedTypeID id, int val);
 
@@ -215,11 +222,7 @@ public:
 
     bool isSigningField () const
     {
-        return signingField;
-    }
-    void notSigningField ()
-    {
-        signingField = false;
+        return signingField == IsSigning::yes;
     }
     bool shouldMeta (int c) const
     {
@@ -232,7 +235,8 @@ public:
 
     bool shouldInclude (bool withSigningField) const
     {
-        return (fieldValue < 256) && (withSigningField || signingField);
+        return (fieldValue < 256) &&
+            (withSigningField || (signingField == IsSigning::yes));
     }
 
     bool operator== (const SField& f) const
