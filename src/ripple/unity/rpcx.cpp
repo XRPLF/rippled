@@ -73,6 +73,7 @@
 #include <ripple/rpc/handlers/ServerInfo.cpp>
 #include <ripple/rpc/handlers/ServerState.cpp>
 #include <ripple/rpc/handlers/Sign.cpp>
+#include <ripple/rpc/handlers/SignFor.cpp>
 #include <ripple/rpc/handlers/Stop.cpp>
 #include <ripple/rpc/handlers/Submit.cpp>
 #include <ripple/rpc/handlers/Subscribe.cpp>

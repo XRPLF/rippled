@@ -138,6 +138,9 @@ void printHelp (const po::options_description& desc)
            "     version\n"
            "     server_info\n"
            "     sign\n"
+#if RIPPLE_ENABLE_MULTI_SIGN
+           "     sign_for\n"
+#endif // RIPPLE_ENABLE_MULTI_SIGN
            "     stop\n"
            "     submit\n"
            "     tx <id>\n"

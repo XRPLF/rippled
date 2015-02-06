@@ -23,10 +23,10 @@
 namespace ripple {
 namespace RPC {
 
-namespace RPCDetail {
+namespace detail {
 // A class that allows these methods to be called with or without a
 // real NetworkOPs instance.  This allows for unit testing.
-class LedgerFacade
+class TxnSignApiFacade
 {
 private:
     NetworkOPs* const netOPs_;
@@ -40,21 +40,21 @@ public:
         noNetOPs
     };
 
-    LedgerFacade () = delete;
-    LedgerFacade (LedgerFacade const&) = delete;
-    LedgerFacade& operator= (LedgerFacade const&) = delete;
+    TxnSignApiFacade () = delete;
+    TxnSignApiFacade (TxnSignApiFacade const&) = delete;
+    TxnSignApiFacade& operator= (TxnSignApiFacade const&) = delete;
 
     // For use in non unit testing circumstances.
-    explicit LedgerFacade (NetworkOPs& netOPs)
+    explicit TxnSignApiFacade (NetworkOPs& netOPs)
     : netOPs_ (&netOPs)
     { }
 
     // For testTransactionRPC unit tests.
-    explicit LedgerFacade (NoNetworkOPs noOPs)
+    explicit TxnSignApiFacade (NoNetworkOPs noOPs)
     : netOPs_ (nullptr) { }
 
     // For testAutoFillFees unit tests.
-    LedgerFacade (NoNetworkOPs noOPs, Ledger::pointer ledger)
+    TxnSignApiFacade (NoNetworkOPs noOPs, Ledger::pointer ledger)
     : netOPs_ (nullptr)
     , ledger_ (ledger)
     { }
@@ -74,12 +74,11 @@ public:
         STPathSet& pathsOut,
         STPath& fullLiquidityPath) const;
 
-    Transaction::pointer submitTransactionSync (
+    Transaction::pointer processTransaction (
         Transaction::ref tpTrans,
         bool bAdmin,
         bool bLocal,
-        bool bFailHard,
-        bool bSubmit);
+        NetworkOPs::FailHard failType);
 
     std::uint64_t scaleFeeBase (std::uint64_t fee) const;
 
@@ -87,35 +86,86 @@ public:
 
     bool hasAccountRoot () const;
 
-    bool accountMasterDisabled () const;
+    error_code_i singleAcctMatchesPubKey (
+        RippleAddress const& publicKey) const;
 
-    bool accountMatchesRegularKey (Account account) const;
+    error_code_i multiAcctMatchesPubKey (
+        RippleAddress const& acctID,
+        RippleAddress const& publicKey) const;
 
     int getValidatedLedgerAge () const;
 
     bool isLoadedCluster () const;
 };
 
-} // namespace RPCDetail
+// A function to auto-fill fees.
+enum class AutoFill : unsigned char
+{
+    dont,
+    might
+};
+
+static Json::Value checkFee (
+    Json::Value& request,
+    TxnSignApiFacade& apiFacade,
+    Role const role,
+    AutoFill const doAutoFill);
+
+} // namespace detail
 
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSign (
-    Json::Value params,
-    bool bSubmit,
-    bool bFailHard,
-    RPCDetail::LedgerFacade& ledgerFacade,
+    Json::Value params,  // Passed by value so it can be modified locally.
+    NetworkOPs::FailHard failType,
+    detail::TxnSignApiFacade& apiFacade,
     Role role);
 
+/** Returns a Json::objectValue. */
 inline Json::Value transactionSign (
-    Json::Value params,
-    bool bSubmit,
-    bool bFailHard,
+    Json::Value const& params,
+    NetworkOPs::FailHard failType,
     NetworkOPs& netOPs,
     Role role)
 {
-    RPCDetail::LedgerFacade ledgerFacade (netOPs);
-    return transactionSign (params, bSubmit, bFailHard, ledgerFacade, role);
+    detail::TxnSignApiFacade apiFacade (netOPs);
+    return transactionSign (params, failType, apiFacade, role);
+}
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmit (
+    Json::Value params,  // Passed by value so it can be modified locally.
+    NetworkOPs::FailHard failType,
+    detail::TxnSignApiFacade& apiFacade,
+    Role role);
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmit (
+    Json::Value const& params,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOPs,
+    Role role)
+{
+    detail::TxnSignApiFacade apiFacade (netOPs);
+    return transactionSubmit (params, failType, apiFacade, role);
+}
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSignFor (
+    Json::Value params,  // Passed by value so it can be modified locally.
+    NetworkOPs::FailHard failType,
+    detail::TxnSignApiFacade& apiFacade,
+    Role role);
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSignFor (
+    Json::Value const& params,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOPs,
+    Role role)
+{
+    detail::TxnSignApiFacade apiFacade (netOPs);
+    return transactionSignFor (params, failType, apiFacade, role);
 }
 
 } // RPC
