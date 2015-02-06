@@ -24,10 +24,12 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/nudb.h>
-#include <beast/nudb/detail/bucket.h> // remove asap
+#include <beast/nudb/detail/varint.h>
 #include <beast/nudb/identity_codec.h>
 #include <beast/nudb/visit.h>
 #include <beast/hash/xxhasher.h>
+#include <lz4/lib/lz4.h>
+#include <lz4/lib/lz4hc.h>
 #include <snappy.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
@@ -40,6 +42,204 @@
 namespace ripple {
 namespace NodeStore {
 
+class snappy_codec
+{
+public:
+    template <class... Args>
+    explicit
+    snappy_codec(Args&&... args)
+    {
+    }
+
+    char const*
+    name() const
+    {
+        return "snappy";
+    }
+
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    compress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        std::pair<void const*, std::size_t> result;
+        auto const out_max =
+            snappy::MaxCompressedLength(in_size);
+        void* const out = bf(out_max);
+        result.first = out;
+        snappy::RawCompress(
+            reinterpret_cast<char const*>(in),
+                in_size, reinterpret_cast<char*>(out),
+                    &result.second);
+        return result;
+    }
+
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    decompress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        std::pair<void const*, std::size_t> result;
+        if (! snappy::GetUncompressedLength(
+                reinterpret_cast<char const*>(in),
+                    in_size, &result.second))
+            throw beast::nudb::codec_error(
+                "snappy decompress");
+        void* const out = bf(result.second);
+        result.first = out;
+        if (! snappy::RawUncompress(
+            reinterpret_cast<char const*>(in), in_size,
+                reinterpret_cast<char*>(out)))
+            throw beast::nudb::codec_error(
+                "snappy decompress");
+        return result;
+    }
+};
+
+class lz4_codec
+{
+public:
+    template <class... Args>
+    explicit
+    lz4_codec(Args&&... args)
+    {
+    }
+
+    char const*
+    name() const
+    {
+        return "lz4";
+    }
+     
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    decompress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        using beast::nudb::codec_error;
+        using namespace beast::nudb::detail;
+        std::pair<void const*, std::size_t> result;
+        std::uint8_t const* p = reinterpret_cast<
+            std::uint8_t const*>(in);
+        auto const n = read_varint(
+            p, in_size, result.second);
+        if (n == 0)
+            throw codec_error(
+                "lz4 decompress");
+        void* const out = bf(result.second);
+        result.first = out;
+        if (LZ4_decompress_fast(
+            reinterpret_cast<char const*>(in) + n,
+                reinterpret_cast<char*>(out),
+                    result.second) + n != in_size)
+            throw codec_error(
+                "lz4 decompress");
+        return result;
+    }
+
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    compress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        using beast::nudb::codec_error;
+        using namespace beast::nudb::detail;
+        std::pair<void const*, std::size_t> result;
+        std::array<std::uint8_t, varint_traits<
+            std::size_t>::max> vi;
+        auto const n = write_varint(
+            vi.data(), in_size);
+        auto const out_max =
+            LZ4_compressBound(in_size);
+        std::uint8_t* out = reinterpret_cast<
+            std::uint8_t*>(bf(n + out_max));
+        result.first = out;
+        std::memcpy(out, vi.data(), n);
+        auto const out_size = LZ4_compress(
+            reinterpret_cast<char const*>(in),
+                reinterpret_cast<char*>(out + n),
+                    in_size);
+        if (out_size == 0)
+            throw codec_error(
+                "lz4 compress");
+        result.second = n + out_size;
+        return result;
+    }
+};
+
+class lz4hc_codec
+{
+public:
+    template <class... Args>
+    explicit
+    lz4hc_codec(Args&&... args)
+    {
+    }
+
+    char const*
+    name() const
+    {
+        return "lz4hc";
+    }
+     
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    decompress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        using beast::nudb::codec_error;
+        using namespace beast::nudb::detail;
+        std::pair<void const*, std::size_t> result;
+        std::uint8_t const* p = reinterpret_cast<
+            std::uint8_t const*>(in);
+        auto const n = read_varint(
+            p, in_size, result.second);
+        if (n == 0)
+            throw codec_error(
+                "lz4hc decompress");
+        void* const out = bf(result.second);
+        result.first = out;
+        if (LZ4_decompress_fast(
+            reinterpret_cast<char const*>(in) + n,
+                reinterpret_cast<char*>(out),
+                    result.second) + n != in_size)
+            throw codec_error(
+                "lz4hc decompress");
+        return result;
+    }
+
+    template <class BufferFactory>
+    std::pair<void const*, std::size_t>
+    compress (void const* in,
+        std::size_t in_size, BufferFactory&& bf) const
+    {
+        using beast::nudb::codec_error;
+        using namespace beast::nudb::detail;
+        std::pair<void const*, std::size_t> result;
+        std::array<std::uint8_t, varint_traits<
+            std::size_t>::max> vi;
+        auto const n = write_varint(
+            vi.data(), in_size);
+        auto const out_max =
+            LZ4_compressBound(in_size);
+        std::uint8_t* out = reinterpret_cast<
+            std::uint8_t*>(bf(n + out_max));
+        result.first = out;
+        std::memcpy(out, vi.data(), n);
+        auto const out_size = LZ4_compressHC(
+            reinterpret_cast<char const*>(in),
+                reinterpret_cast<char*>(out + n),
+                    in_size);
+        if (out_size == 0)
+            throw codec_error(
+                "lz4hc compress");
+        result.second = n + out_size;
+        return result;
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class NuDBBackend
     : public Backend
 {
@@ -50,22 +250,11 @@ public:
         // distribution of data sizes.
         arena_alloc_size = 16 * 1024 * 1024,
 
-        //  Version 1
-        //      No compression
-        //
-        typeOne = 1,
-
-        // Version 2
-        //      Snappy compression
-        typeTwo = 2,
-
-
-
-        currentType = typeTwo
+        currentType = 1
     };
 
     using api = beast::nudb::api<
-        beast::xxhasher, beast::nudb::identity_codec>;
+        beast::xxhasher, lz4_codec>;
 
     beast::Journal journal_;
     size_t const keyBytes_;
@@ -137,74 +326,8 @@ public:
         }
     }
 
-    //--------------------------------------------------------------------------
-
-    class Buffer
-    {
-    private:
-        std::size_t size_ = 0;
-        std::size_t capacity_ = 0;
-        std::unique_ptr <std::uint8_t[]> buf_;
-
-    public:
-        Buffer() = default;
-        Buffer (Buffer const&) = delete;
-        Buffer& operator= (Buffer const&) = delete;
-
-        explicit
-        Buffer (std::size_t n)
-        {
-            resize (n);
-        }
-
-        std::size_t
-        size() const
-        {
-            return size_;
-        }
-
-        std::size_t
-        capacity() const
-        {
-            return capacity_;
-        }
-
-        void*
-        get()
-        {
-            return buf_.get();
-        }
-
-        void
-        resize (std::size_t n)
-        {
-            if (capacity_ < n)
-            {
-                capacity_ = beast::nudb::detail::ceil_pow2(n);
-                buf_.reset (new std::uint8_t[capacity_]);
-            }
-            size_ = n;
-        }
-
-        // Meet the requirements of BufferFactory
-        void*
-        operator() (std::size_t n)
-        {
-            resize(n);
-            return get();
-        }
-    };
-
-    //--------------------------------------------------------------------------
-    //
-    //  Version 1 Database
-    //
-    //      Uncompressed
-    //
-
     Status
-    fetch1 (void const* key,
-        std::shared_ptr <NodeObject>* pno)
+    fetch (void const* key, NodeObject::Ptr* pno)
     {
         Status status;
         pno->reset();
@@ -227,93 +350,12 @@ public:
     }
 
     void
-    insert1 (void const* key, void const* data,
-        std::size_t size)
-    {
-        db_.insert (key, data, size);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //  Version 2 Database
-    //
-    //      Snappy compression
-    //
-
-    Status
-    fetch2 (void const* key,
-        std::shared_ptr <NodeObject>* pno)
-    {
-        Status status;
-        pno->reset();
-        if (! db_.fetch (key,
-            [&](void const* data, std::size_t size)
-            {
-                std::size_t actual;
-                if (! snappy::GetUncompressedLength(
-                        (char const*)data, size, &actual))
-                {
-                    status = dataCorrupt;
-                    return;
-                }
-                std::unique_ptr <char[]> buf (new char[actual]);
-                snappy::RawUncompress (
-                    (char const*)data, size, buf.get());
-                DecodedBlob decoded (key, buf.get(), actual);
-                if (! decoded.wasOk ())
-                {
-                    status = dataCorrupt;
-                    return;
-                }
-                *pno = decoded.createObject();
-                status = ok;
-            }))
-        {
-            return notFound;
-        }
-
-        return status;
-    }
-
-    void
-    insert2 (void const* key, void const* data,
-        std::size_t size)
-    {
-        std::unique_ptr<char[]> buf (
-            new char[snappy::MaxCompressedLength(size)]);
-        std::size_t actual;
-        snappy::RawCompress ((char const*)data, size,
-            buf.get(), &actual);
-        db_.insert (key, buf.get(), actual);
-    }
-
-    //--------------------------------------------------------------------------
-
-    Status
-    fetch (void const* key, NodeObject::Ptr* pno)
-    {
-        switch (db_.appnum())
-        {
-        case typeOne:   return fetch1 (key, pno);
-        case typeTwo:   return fetch2 (key, pno);
-        }
-        throw std::runtime_error(
-            "nodestore: unknown appnum");
-        return notFound;
-    }
-
-    void
     do_insert (std::shared_ptr <NodeObject> const& no)
     {
         EncodedBlob e;
         e.prepare (no);
-        switch (db_.appnum())
-        {
-        case typeOne:       return insert1 (e.getKey(), e.getData(), e.getSize());
-        case typeTwo:       return insert2 (e.getKey(), e.getData(), e.getSize());
-        }
-        throw std::runtime_error(
-            "nodestore: unknown appnum");
+        db_.insert (e.getKey(),
+            e.getData(), e.getSize());
     }
 
     void
@@ -352,40 +394,17 @@ public:
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
-        auto const appnum = db_.appnum();
+        //auto const appnum = db_.appnum();
         db_.close();
         api::visit (dp,
             [&](
                 void const* key, std::size_t key_bytes,
                 void const* data, std::size_t size)
             {
-                switch (appnum)
-                {
-                case typeOne:
-                {
-                    DecodedBlob decoded (key, data, size);
-                    if (! decoded.wasOk ())
-                        return false;
-                    f (decoded.createObject());
-                    break;
-                }
-                case typeTwo:
-                {
-                    std::size_t actual;
-                    if (! snappy::GetUncompressedLength(
-                            (char const*)data, size, &actual))
-                        return false;
-                    std::unique_ptr <char[]> buf (new char[actual]);
-                    if (! snappy::RawUncompress ((char const*)data,
-                            size, buf.get()))
-                        return false;
-                    DecodedBlob decoded (key, buf.get(), actual);
-                    if (! decoded.wasOk ())
-                        return false;
-                    f (decoded.createObject());
-                    break;
-                }
-                }
+                DecodedBlob decoded (key, data, size);
+                if (! decoded.wasOk ())
+                    return false;
+                f (decoded.createObject());
                 return true;
             });
         db_.open (dp, kp, lp,
