@@ -58,10 +58,10 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
         switch (m_objectType)
         {
-        case hotUNKNOWN:
         default:
             break;
 
+        case hotUNKNOWN:
         case hotLEDGER:
         case hotTRANSACTION:
         case hotACCOUNT_NODE:

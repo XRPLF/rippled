@@ -2555,6 +2555,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\BatchWriter.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\codec.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.cpp">

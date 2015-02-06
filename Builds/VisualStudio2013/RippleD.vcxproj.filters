@@ -3651,6 +3651,9 @@
     <ClInclude Include="..\..\src\ripple\nodestore\impl\BatchWriter.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\codec.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
