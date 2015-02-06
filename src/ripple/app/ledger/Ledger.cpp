@@ -28,7 +28,6 @@
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/DefaultMissingNodeHandler.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
@@ -60,13 +59,9 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap  (std::make_shared <SHAMap> (smtTRANSACTION,
-        getApp().getFullBelowCache(), getApp().getTreeNodeCache(),
-            getApp().getNodeStore(), DefaultMissingNodeHandler(),
-                deprecatedLogs().journal("SHAMap")))
+        getApp().family(), deprecatedLogs().journal("SHAMap")))
     , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE,
-        getApp().getFullBelowCache(), getApp().getTreeNodeCache(),
-            getApp().getNodeStore(), DefaultMissingNodeHandler(),
-                deprecatedLogs().journal("SHAMap")))
+        getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     // special case: put coins in root account
     auto startAccount = std::make_shared<AccountState> (masterID);
@@ -109,13 +104,10 @@ Ledger::Ledger (uint256 const& parentHash,
     , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (std::make_shared <SHAMap> (
-        smtTRANSACTION, transHash, getApp().getFullBelowCache(),
-            getApp().getTreeNodeCache(), getApp().getNodeStore(),
-                DefaultMissingNodeHandler(), deprecatedLogs().journal("SHAMap")))
-    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
-        getApp().getFullBelowCache(), getApp().getTreeNodeCache(),
-            getApp().getNodeStore(), DefaultMissingNodeHandler(),
+        smtTRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
+    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
+        getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     updateHash ();
     loaded = true;
@@ -176,9 +168,7 @@ Ledger::Ledger (bool /* dummy */,
     , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap (std::make_shared <SHAMap> (smtTRANSACTION,
-        getApp().getFullBelowCache(), getApp().getTreeNodeCache(),
-            getApp().getNodeStore(), DefaultMissingNodeHandler(),
-                deprecatedLogs().journal("SHAMap")))
+        getApp().family(), deprecatedLogs().journal("SHAMap")))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
     prevLedger.updateHash ();
@@ -246,13 +236,11 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mAccepted (false),
       mImmutable (false),
       mTransactionMap (std::make_shared <SHAMap> (
-          smtTRANSACTION, getApp().getFullBelowCache(),
-            getApp().getTreeNodeCache(), getApp().getNodeStore(),
-                DefaultMissingNodeHandler(), deprecatedLogs().journal("SHAMap"))),
+          smtTRANSACTION, getApp().family(),
+            deprecatedLogs().journal("SHAMap"))),
       mAccountStateMap (std::make_shared <SHAMap> (
-          smtSTATE, getApp().getFullBelowCache(),
-            getApp().getTreeNodeCache(), getApp().getNodeStore(),
-                DefaultMissingNodeHandler(), deprecatedLogs().journal("SHAMap")))
+          smtSTATE, getApp().family(),
+            deprecatedLogs().journal("SHAMap")))
 {
     initializeFees ();
 }
@@ -352,15 +340,10 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        Application& app = getApp();
         mTransactionMap = std::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
-            app.getFullBelowCache(), app.getTreeNodeCache(),
-                getApp().getNodeStore(), DefaultMissingNodeHandler(),
-                    deprecatedLogs().journal("SHAMap"));
+            getApp().family(), deprecatedLogs().journal("SHAMap"));
         mAccountStateMap = std::make_shared<SHAMap> (smtSTATE, mAccountHash,
-            app.getFullBelowCache(), app.getTreeNodeCache(),
-                getApp().getNodeStore(), DefaultMissingNodeHandler(),
-                    deprecatedLogs().journal("SHAMap"));
+            getApp().family(), deprecatedLogs().journal("SHAMap"));
     }
 }
 

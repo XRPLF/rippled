@@ -19,18 +19,18 @@
 
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
+#include <ripple/shamap/tests/common.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/UInt160.h>
-#include <beast/chrono/manual_clock.h>
 #include <beast/module/core/maths/Random.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
 #include <stdexcept>
 
 namespace ripple {
+namespace shamap {
+namespace tests {
 
 class FetchPack_test : public beast::unit_test::suite
 {
@@ -114,17 +114,10 @@ public:
 
     void run ()
     {
-        beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
-
-        FullBelowCache fullBelowCache ("test.full_below", clock);
-        TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
-        NodeStore::DummyScheduler scheduler;
-        auto db = NodeStore::Manager::instance().make_Database (
-            "test", scheduler, j, 0, parseDelimitedKeyValueString("type=memory|path=FetchPack"));
-
+        TestFamily f(j);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            smtFREE, fullBelowCache, treeNodeCache, *db, Handler(), beast::Journal()));
+            smtFREE, f, beast::Journal()));
 
         pass ();
 
@@ -167,6 +160,9 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack,ripple_app,ripple);
+BEAST_DEFINE_TESTSUITE(FetchPack,shamap,ripple);
 
-}
+} // tests
+} // shamap
+} // ripple
+

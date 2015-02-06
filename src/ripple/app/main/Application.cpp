@@ -59,6 +59,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
+#include <ripple/shamap/Family.h>
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <beast/asio/io_latency_probe.h>
@@ -97,6 +98,77 @@ public:
 };
 
 Application* ApplicationImpBase::s_instance;
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+class AppFamily : public shamap::Family
+{
+private:
+    TreeNodeCache treecache_;
+    FullBelowCache fullbelow_;
+    NodeStore::Database& db_;
+
+public:
+    AppFamily (AppFamily const&) = delete;
+    AppFamily& operator= (AppFamily const&) = delete;
+
+    AppFamily (NodeStore::Database& db,
+            CollectorManager& collectorManager)
+        : treecache_ ("TreeNodeCache", 65536, 60, get_seconds_clock(),
+            deprecatedLogs().journal("TaggedCache"))
+        , fullbelow_ ("full_below", get_seconds_clock(),
+            collectorManager.collector(),
+                fullBelowTargetSize, fullBelowExpirationSeconds)
+        , db_ (db)
+    {
+    }
+
+    FullBelowCache&
+    fullbelow() override
+    {
+        return fullbelow_;
+    }
+
+    FullBelowCache const&
+    fullbelow() const override
+    {
+        return fullbelow_;
+    }
+
+    TreeNodeCache&
+    treecache() override
+    {
+        return treecache_;
+    }
+
+    TreeNodeCache const&
+    treecache() const override
+    {
+        return treecache_;
+    }
+
+    NodeStore::Database&
+    db() override
+    {
+        return db_;
+    }
+
+    NodeStore::Database const&
+    db() const override
+    {
+        return db_;
+    }
+
+    void
+    missing_node (std::uint32_t refNum) override
+    {
+        getApp().getOPs().missingNodeInLedger (refNum);
+    }
+};
+
+} // detail
 
 //------------------------------------------------------------------------------
 
@@ -185,11 +257,12 @@ public:
 
     // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
+    std::unique_ptr <CollectorManager> m_collectorManager;
+    detail::AppFamily family_;
     TreeNodeCache m_treeNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
 
-    std::unique_ptr <CollectorManager> m_collectorManager;
     std::unique_ptr <Resource::Manager> m_resourceManager;
     std::unique_ptr <FullBelowCache> m_fullBelowCache;
 
@@ -260,14 +333,16 @@ public:
         , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
 
+        , m_collectorManager (CollectorManager::New (
+            getConfig().insightSettings, m_logs.journal("Collector")))
+
+        , family_ (*m_nodeStore, *m_collectorManager)
+
         , m_treeNodeCache ("TreeNodeCache", 65536, 60, get_seconds_clock (),
             deprecatedLogs().journal("TaggedCache"))
 
         , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
-
-        , m_collectorManager (CollectorManager::New (
-            getConfig().insightSettings, m_logs.journal("Collector")))
 
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), m_logs.journal("Resource")))
@@ -369,6 +444,12 @@ public:
     CollectorManager& getCollectorManager ()
     {
         return *m_collectorManager;
+    }
+
+    shamap::Family&
+    family()
+    {
+        return family_;
     }
 
     FullBelowCache& getFullBelowCache ()

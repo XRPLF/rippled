@@ -143,7 +143,7 @@ public:
         return false;
     }
 
-    void waitReads ()
+    void waitReads() override
     {
         {
             std::unique_lock <std::mutex> lock (m_readLock);

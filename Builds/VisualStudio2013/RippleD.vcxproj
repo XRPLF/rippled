@@ -1537,11 +1537,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\CanonicalTXSet.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\FeeVote.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\FeeVoteImpl.cpp">
@@ -2888,6 +2883,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\Family.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\FullBelowCache.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\shamap\impl\SHAMap.cpp">
@@ -2924,6 +2921,8 @@
     <ClInclude Include="..\..\src\ripple\shamap\SHAMapSyncFilter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\SHAMapTreeNode.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\tests\common.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\shamap\tests\FetchPack.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

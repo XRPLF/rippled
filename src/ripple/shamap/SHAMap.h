@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
 
+#include <ripple/shamap/Family.h>
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/SHAMapAddNode.h>
 #include <ripple/shamap/SHAMapItem.h>
@@ -100,6 +101,18 @@ using MissingNodeHandler = std::function <void (std::uint32_t refNum)>;
  */
 class SHAMap
 {
+private:
+    using Family = shamap::Family;
+
+    Family& f_;
+    beast::Journal journal_;
+    std::uint32_t mSeq;
+    std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
+    SHAMapTreeNode::pointer root;
+    SHAMapState mState;
+    SHAMapType mType;
+    bool mBacked = true; // Map is backed by the database
+
 public:
     enum
     {
@@ -121,10 +134,7 @@ public:
     // build new map
     SHAMap (
         SHAMapType t,
-        FullBelowCache& fullBelowCache,
-        TreeNodeCache& treeNodeCache,
-        NodeStore::Database& db,
-        MissingNodeHandler missing_node_handler,
+        Family& f,
         beast::Journal journal,
         std::uint32_t seq = 1
         );
@@ -132,10 +142,7 @@ public:
     SHAMap (
         SHAMapType t,
         uint256 const& hash,
-        FullBelowCache& fullBelowCache,
-        TreeNodeCache& treeNodeCache,
-        NodeStore::Database& db,
-        MissingNodeHandler missing_node_handler,
+        Family& f,
         beast::Journal journal);
 
     ~SHAMap ();
@@ -321,19 +328,6 @@ private:
     void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);
 
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
-
-private:
-    beast::Journal journal_;
-    NodeStore::Database& db_;
-    FullBelowCache& m_fullBelowCache;
-    std::uint32_t mSeq;
-    std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
-    TreeNodeCache& mTreeNodeCache;
-    SHAMapTreeNode::pointer root;
-    SHAMapState mState;
-    SHAMapType mType;
-    bool mBacked = true; // Map is backed by the database
-    MissingNodeHandler m_missing_node_handler;
 };
 
 }
