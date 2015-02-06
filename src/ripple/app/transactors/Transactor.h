@@ -54,6 +54,11 @@ protected:
     beast::Journal m_journal;
 
     virtual TER preCheck ();
+
+    // Non-virtual components of preCheck()
+    TER preCheckAccount ();
+    TER preCheckSigningKey ();
+
     virtual TER checkSeq ();
     virtual TER payFee ();
 

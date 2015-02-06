@@ -18,20 +18,38 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 
-#include <ripple/app/book/impl/BookTip.cpp>
-#include <ripple/app/book/impl/OfferStream.cpp>
-#include <ripple/app/book/impl/Quality.cpp>
-#include <ripple/app/book/impl/Taker.cpp>
-#include <ripple/app/transactors/Transactor.cpp>
-#include <ripple/app/transactors/Change.cpp>
-#include <ripple/app/transactors/CancelOffer.cpp>
-#include <ripple/app/transactors/Payment.cpp>
-#include <ripple/app/transactors/SetRegularKey.cpp>
-#include <ripple/app/transactors/SetAccount.cpp>
-#include <ripple/app/transactors/SetTrust.cpp>
-#include <ripple/app/transactors/CreateOffer.cpp>
-#include <ripple/app/transactors/CreateTicket.cpp>
-#include <ripple/app/transactors/CancelTicket.cpp>
-#include <ripple/app/transactors/SetSignerList.cpp>
-#include <ripple/app/transactors/impl/SignerEntries.cpp>
+namespace ripple {
+
+InnerObjectFormats::InnerObjectFormats ()
+{
+    add (sfSignerEntry.getJsonName ().c_str (), sfSignerEntry.getCode ())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfSignerWeight,         SOE_REQUIRED)
+        ;
+}
+
+void InnerObjectFormats::addCommonFields (Item& item)
+{
+}
+
+InnerObjectFormats const&
+InnerObjectFormats::getInstance ()
+{
+    static InnerObjectFormats instance;
+    return instance;
+}
+
+SOTemplate const*
+InnerObjectFormats::findSOTemplateBySField (SField const& sField) const
+{
+    SOTemplate const* ret = nullptr;
+    auto itemPtr = findByType (sField.getCode ());
+    if (itemPtr)
+        ret = &(itemPtr->elements);
+
+    return ret;
+}
+
+} // ripple

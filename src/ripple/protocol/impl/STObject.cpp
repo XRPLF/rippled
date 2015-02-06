@@ -21,6 +21,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
@@ -119,7 +120,7 @@ bool STObject::setType (const SOTemplate& type)
             {
                 WriteLog (lsWARNING, STObject) <<
                     "setType( " << getFName ().getName () <<
-                    ") invalid default " << e->e_field.fieldName;
+                    " ) invalid default " << e->e_field.fieldName;
                 valid = false;
             }
             v.emplace_back(std::move(*iter));
@@ -131,7 +132,7 @@ bool STObject::setType (const SOTemplate& type)
             {
                 WriteLog (lsWARNING, STObject) <<
                     "setType( " << getFName ().getName () <<
-                    ") invalid missing " << e->e_field.fieldName;
+                    " ) invalid missing " << e->e_field.fieldName;
                 valid = false;
             }
             v.emplace_back(detail::nonPresentObject, e->e_field);
@@ -144,7 +145,7 @@ bool STObject::setType (const SOTemplate& type)
         {
             WriteLog (lsWARNING, STObject) <<
                 "setType( " << getFName ().getName () <<
-                ") invalid leftover " << e->getFName ().getName ();
+                " ) invalid leftover " << e->getFName ().getName ();
             valid = false;
         }
     }
@@ -152,6 +153,20 @@ bool STObject::setType (const SOTemplate& type)
     // freeing any leftover junk
     v_.swap(v);
     return valid;
+}
+
+STObject::ResultOfSetTypeFromSField
+STObject::setTypeFromSField (SField const& sField)
+{
+    ResultOfSetTypeFromSField ret = noTemplate;
+
+    SOTemplate const* elements =
+        InnerObjectFormats::getInstance ().findSOTemplateBySField (sField);
+    if (elements)
+    {
+        ret = setType (*elements) ? typeIsSet : typeSetFail;
+    }
+    return ret;
 }
 
 bool STObject::isValidForType ()
@@ -219,6 +234,13 @@ bool STObject::set (SerialIter& sit, int depth)
 
             // Unflatten the field
             v_.emplace_back(sit, fn);
+
+            // If the object type has a known SOTemplate then set it.
+            STObject* const obj = dynamic_cast <STObject*> (&(v_.back().get()));
+            if (obj && (obj->setTypeFromSField (fn) == typeSetFail))
+            {
+                throw std::runtime_error ("field deserialization error");
+            }
         }
     }
 

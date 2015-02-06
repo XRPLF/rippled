@@ -202,4 +202,13 @@
 #define RIPPLE_ENABLE_TICKETS 0
 #endif
 
+/** Config: RIPPLE_ENABLE_MULTI_SIGN
+    When set, activates the current state of the multi-sign feature which is
+    under development.  When the feature is complete and released this
+    #define should be removed.
+*/
+#ifndef RIPPLE_ENABLE_MULTI_SIGN
+#define RIPPLE_ENABLE_MULTI_SIGN 0
+#endif
+
 #endif
