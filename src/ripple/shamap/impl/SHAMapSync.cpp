@@ -169,7 +169,11 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
                 {
                     uint256 const& childHash = node->getChildHash (branch);
 
-                    if (! backed_ || ! f_.fullbelow().touch_if_exists (childHash))
+                    if (missingHashes.count (childHash) != 0)
+                    {
+                        fullBelow = false;
+                    }
+                    else if (! backed_ || ! f_.fullbelow().touch_if_exists (childHash))
                     {
                         SHAMapNodeID childID = nodeID.getChildNodeID (branch);
                         bool pending = false;
@@ -179,14 +183,11 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
                         {
                             if (!pending)
                             { // node is not in the database
-                                if (missingHashes.insert (childHash).second)
-                                {
-                                    nodeIDs.push_back (childID);
-                                    hashes.push_back (childHash);
+                                nodeIDs.push_back (childID);
+                                hashes.push_back (childHash);
 
-                                    if (--max <= 0)
-                                        return;
-                                }
+                                if (--max <= 0)
+                                    return;
                             }
                             else
                             {
@@ -238,9 +239,16 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
         if (deferredReads.empty ())
             break;
 
+        auto const before = std::chrono::steady_clock::now();
         f_.db().waitReads();
+        auto const after = std::chrono::steady_clock::now();
+
+        auto const elapsed = std::chrono::duration_cast
+            <std::chrono::milliseconds> (after - before);
+        auto const count = deferredReads.size ();
 
         // Process all deferred reads
+        int hits = 0;
         for (auto const& node : deferredReads)
         {
             auto parent = std::get<0>(node);
@@ -251,19 +259,30 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
             std::shared_ptr<SHAMapTreeNode> nodePtr = fetchNodeNT (nodeID, nodeHash, filter);
             if (nodePtr)
             {
+                ++hits;
                 if (backed_)
                     canonicalize (nodeHash, nodePtr);
                 parent->canonicalizeChild (branch, nodePtr);
             }
-            else if (missingHashes.insert (nodeHash).second)
+            else if ((max > 0) && (missingHashes.insert (nodeHash).second))
             {
                 nodeIDs.push_back (nodeID);
                 hashes.push_back (nodeHash);
 
-                if (--max <= 0)
-                    return;
+                --max;
             }
         }
+
+        auto const process_time = std::chrono::duration_cast
+            <std::chrono::milliseconds> (std::chrono::steady_clock::now() - after);
+
+        if ((count > 50) || (elapsed.count() > 50))
+            journal_.debug << "getMissingNodes reads " <<
+                count << " nodes (" << hits << " hits) in "
+                << elapsed.count() << " + " << process_time.count()  << " ms";
+
+        if (max <= 0)
+            return;
 
     }
 
