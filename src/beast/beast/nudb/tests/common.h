@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_COMMON_H_INCLUDED
-#define BEAST_NUDB_COMMON_H_INCLUDED
+#ifndef BEAST_NUDB_TESTS_COMMON_H_INCLUDED
+#define BEAST_NUDB_TESTS_COMMON_H_INCLUDED
 
 #include <beast/nudb.h>
+#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/tests/fail_file.h>
+#include <beast/hash/xxhasher.h>
 #include <beast/random/xor_shift_engine.h>
 #include <cstdint>
 #include <iomanip>
@@ -33,9 +35,18 @@ namespace test {
 
 using key_type = std::size_t;
 
-using fail_store = nudb::basic_store<
-    beast::nudb::default_hash, nudb::fail_file <
-        nudb::native_file>>;
+// xxhasher is fast and produces good results
+using test_api_base =
+    //nudb::api<xxhasher, identity_codec, native_file>;
+    nudb::api<xxhasher, identity_codec, native_file>;
+
+struct test_api : test_api_base
+{
+    using fail_store = nudb::store<
+        typename test_api_base::hash_type,
+            typename test_api_base::codec_type,
+            nudb::fail_file <typename test_api_base::file_type>>;
+};
 
 static std::size_t BEAST_CONSTEXPR arena_alloc_size = 16 * 1024 * 1024;
 

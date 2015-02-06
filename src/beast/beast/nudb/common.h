@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_ERROR_H_INCLUDED
-#define BEAST_NUDB_ERROR_H_INCLUDED
+#ifndef BEAST_NUDB_COMMON_H_INCLUDED
+#define BEAST_NUDB_COMMON_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
 #include <beast/utility/noexcept.h>
 #include <stdexcept>
 #include <string>
@@ -28,8 +27,31 @@
 namespace beast {
 namespace nudb {
 
+// Commonly used types
+
+enum class file_mode
+{
+    scan,         // read sequential
+    read,         // read random
+    append,       // read random, write append
+    write         // read random, write random
+};
+
+using path_type = std::string;
+
 // All exceptions thrown by nudb are derived
-// from std::exception except for fail_error
+// from std::runtime_error except for fail_error
+
+/** Thrown when a codec fails, e.g. corrupt data. */
+struct codec_error : std::runtime_error
+{
+    template <class String>
+    explicit
+    codec_error (String const& s)
+        : runtime_error(s)
+    {
+    }
+};
 
 /** Base class for all errors thrown by file classes. */
 struct file_error : std::runtime_error

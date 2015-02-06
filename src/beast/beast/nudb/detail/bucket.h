@@ -20,12 +20,12 @@
 #ifndef BEAST_NUDB_DETAIL_BUCKET_H_INCLUDED
 #define BEAST_NUDB_DETAIL_BUCKET_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/detail/bulkio.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/format.h>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 

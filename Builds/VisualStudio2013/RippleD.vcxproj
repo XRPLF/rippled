@@ -804,6 +804,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\nudb.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\api.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\common.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\create.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\arena.h">
@@ -816,8 +820,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\cache.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\config.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\field.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\format.h">
@@ -827,8 +829,6 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\pool.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
     </ClInclude>

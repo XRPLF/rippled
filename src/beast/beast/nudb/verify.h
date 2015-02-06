@@ -20,12 +20,10 @@
 #ifndef BEAST_NUDB_VERIFY_H_INCLUDED
 #define BEAST_NUDB_VERIFY_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
 #include <beast/nudb/detail/bucket.h>
 #include <beast/nudb/detail/bulkio.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <algorithm>
 #include <cstddef>
@@ -82,12 +80,12 @@ struct verify_info
         Iterates the key and data files, throws store_corrupt_error
             on broken invariants.
 */
-template <class Hasher = default_hash>
+template <class Hasher, class Codec>
 verify_info
 verify (
     path_type const& dat_path,
     path_type const& key_path,
-    std::size_t read_size = 16 * 1024 * 1024)
+    std::size_t read_size)
 {
     using namespace detail;
     using File = native_file;
@@ -103,6 +101,7 @@ verify (
     dat_file_header dh;
     read (df, dh);
     read (kf, kh);
+    verify<Codec>(dh);
     verify<Hasher>(dh, kh);
 
     verify_info info;

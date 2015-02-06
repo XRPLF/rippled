@@ -20,7 +20,6 @@
 #ifndef BEAST_NUDB_DETAIL_BUFFER_H_INCLUDED
 #define BEAST_NUDB_DETAIL_BUFFER_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
 #include <atomic>
 #include <cstdint>
 #include <memory>

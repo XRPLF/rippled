@@ -20,11 +20,10 @@
 #ifndef BEAST_NUDB_VISIT_H_INCLUDED
 #define BEAST_NUDB_VISIT_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/bulkio.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <algorithm>
 #include <cstddef>
@@ -44,12 +43,12 @@ namespace nudb {
     @return `true` if the visit completed
     This only requires the data file.
 */
-template <class Function>
+template <class Codec, class Function>
 bool
 visit(
     path_type const& path,
-    Function f,
-    std::size_t read_size = 16 * 1024 * 1024)
+    Function&& f,
+    std::size_t read_size)
 {
     using namespace detail;
     using File = native_file;
@@ -57,11 +56,13 @@ visit(
     df.open (file_mode::scan, path);
     dat_file_header dh;
     read (df, dh);
-    verify (dh);
+    verify<Codec> (dh);
+    Codec codec;
     // Iterate Data File
     bulk_reader<File> r(
         df, dat_file_header::size,
             df.actual_size(), read_size);
+    buffer buf;
     try
     {
         while (! r.eof())
@@ -79,10 +80,10 @@ visit(
                     size);                  // Data
                 std::uint8_t const* const key =
                     is.data(dh.key_size);
-                std::uint8_t const* const data =
-                    is.data(size);
+                auto const result = codec.decompress(
+                    is.data(size), size, buf);
                 if (! f(key, dh.key_size,
-                        data, size))
+                        result.first, result.second))
                     return false;
             }
             else

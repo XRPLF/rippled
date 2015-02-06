@@ -22,7 +22,6 @@
 
 #include <beast/nudb/posix_file.h>
 #include <beast/nudb/win32_file.h>
-#include <beast/nudb/detail/config.h>
 #include <string>
 
 namespace beast {

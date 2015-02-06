@@ -34,7 +34,7 @@ public:
     {
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
-        print(log, verify(dp, kp));
+        print(log, test_api::verify(dp, kp));
     }
 
     void

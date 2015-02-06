@@ -17,10 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/nudb/store.h>
-#include <beast/nudb/recover.h>
 #include <beast/nudb/tests/common.h>
-#include <beast/nudb/tests/fail_file.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 #include <beast/module/core/files/File.h>
 #include <beast/random/xor_shift_engine.h>
@@ -44,18 +41,18 @@ public:
     // with keys not present.
     void
     do_test (std::size_t count,
-        nudb::path_type const& path)
+        path_type const& path)
     {
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
         auto const lp = path + ".log";
-        nudb::create (dp, kp, lp,
+        test_api::create (dp, kp, lp,
             appnum,
             salt,
             sizeof(nudb::test::key_type),
             nudb::block_size(path),
             0.50);
-        nudb::store db;
+        test_api::store db;
         if (! expect (db.open(dp, kp, lp,
                 arena_alloc_size), "open"))
             return;

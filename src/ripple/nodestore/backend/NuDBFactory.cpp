@@ -24,7 +24,10 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/nudb.h>
+#include <beast/nudb/detail/bucket.h> // remove asap
+#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/visit.h>
+#include <beast/hash/xxhasher.h>
 #include <snappy.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
@@ -61,10 +64,13 @@ public:
         currentType = typeTwo
     };
 
+    using api = beast::nudb::api<
+        beast::xxhasher, beast::nudb::identity_codec>;
+
     beast::Journal journal_;
     size_t const keyBytes_;
     std::string const name_;
-    beast::nudb::store db_;
+    api::store db_;
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
@@ -85,7 +91,7 @@ public:
         auto const kp = (folder / "nudb.key").string ();
         auto const lp = (folder / "nudb.log").string ();
         using beast::nudb::make_salt;
-        beast::nudb::create (dp, kp, lp,
+        api::create (dp, kp, lp,
             currentType, make_salt(), keyBytes,
                 beast::nudb::block_size(kp),
             0.50);
@@ -348,7 +354,7 @@ public:
         auto const lp = db_.log_path();
         auto const appnum = db_.appnum();
         db_.close();
-        beast::nudb::visit (dp,
+        api::visit (dp,
             [&](
                 void const* key, std::size_t key_bytes,
                 void const* data, std::size_t size)
@@ -405,7 +411,7 @@ public:
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
         db_.close();
-        beast::nudb::verify (dp, kp);
+        api::verify (dp, kp);
         db_.open (dp, kp, lp,
             arena_alloc_size);
     }

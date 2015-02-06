@@ -20,7 +20,6 @@
 #ifndef BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
 #define BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/stream.h>
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <cstddef>
@@ -181,11 +180,6 @@ template <class T, class U, std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -198,11 +192,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -216,11 +205,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -235,11 +219,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     std::uint64_t const t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -256,11 +235,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);

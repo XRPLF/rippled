@@ -20,15 +20,12 @@
 #ifndef BEAST_NUDB_STORE_H_INCLUDED
 #define BEAST_NUDB_STORE_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/recover.h>
 #include <beast/nudb/detail/bucket.h>
 #include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/bulkio.h>
 #include <beast/nudb/detail/cache.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <beast/nudb/detail/gentex.h>
 #include <beast/nudb/detail/pool.h>
@@ -77,15 +74,17 @@ namespace nudb {
 */
 
 /** A simple key/value database
+    @tparam Hasher The hash function to use on key
+    @tparam Codec The codec to apply to value data
     @tparam File The type of File object to use.
-    @tparam Hash The hash function to use on key
 */
-template <class Hasher, class File>
-class basic_store
+template <class Hasher, class Codec, class File>
+class store
 {
 public:
-    using file_type = File;
     using hash_type = Hasher;
+    using codec_type = Codec;
+    using file_type = File;
 
 private:
     // requires 64-bit integers or better
@@ -121,6 +120,7 @@ private:
         detail::pool p1;
         detail::cache c0;
         detail::cache c1;
+        Codec const codec;
         detail::key_file_header const kh;
 
         // pool commit high water mark
@@ -137,8 +137,6 @@ private:
     };
 
     bool open_ = false;
-    // VFALCO Make consistency checks optional?
-    //bool safe_ = true;              // Do consistency checks
 
     // VFALCO Unfortunately boost::optional doesn't support
     //        move construction so we use unique_ptr instead.
@@ -166,9 +164,9 @@ private:
     std::exception_ptr ep_;
 
 public:
-    basic_store() = default;
-    basic_store (basic_store const&) = delete;
-    basic_store& operator= (basic_store const&) = delete;
+    store() = default;
+    store (store const&) = delete;
+    store& operator= (store const&) = delete;
 
     /** Destroy the database.
 
@@ -184,7 +182,7 @@ public:
         Throws:
             None
     */
-    ~basic_store();
+    ~store();
 
     /** Returns `true` if the database is open. */
     bool
@@ -310,8 +308,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class Hasher, class File>
-basic_store<Hasher, File>::state::state (
+template <class Hasher, class Codec, class File>
+store<Hasher, Codec, File>::state::state (
     File&& df_, File&& kf_, File&& lf_,
         path_type const& dp_, path_type const& kp_,
             path_type const& lp_,
@@ -333,8 +331,8 @@ basic_store<Hasher, File>::state::state (
 
 //------------------------------------------------------------------------------
 
-template <class Hasher, class File>
-basic_store<Hasher, File>::~basic_store()
+template <class Hasher, class Codec, class File>
+store<Hasher, Codec, File>::~store()
 {
     try
     {
@@ -347,10 +345,10 @@ basic_store<Hasher, File>::~basic_store()
     }
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 template <class... Args>
 bool
-basic_store<Hasher, File>::open (
+store<Hasher, Codec, File>::open (
     path_type const& dat_path,
     path_type const& key_path,
     path_type const& log_path,
@@ -361,8 +359,10 @@ basic_store<Hasher, File>::open (
     if (is_open())
         throw std::logic_error("nudb: already open");
     epb_.store(false);
-    recover (dat_path, key_path, log_path,
-        recover_read_size);
+    recover<Hasher, Codec, File>(
+        dat_path, key_path, log_path,
+            recover_read_size,
+                std::forward<Args>(args)...);
     File df(std::forward<Args>(args)...);
     File kf(std::forward<Args>(args)...);
     File lf(std::forward<Args>(args)...);
@@ -376,7 +376,7 @@ basic_store<Hasher, File>::open (
     key_file_header kh;
     read (df, dh);
     read (kf, kh);
-    verify (dh);
+    verify<Codec> (dh);
     verify<Hasher> (kh);
     verify<Hasher> (dh, kh);
     auto s = std::make_unique<state>(
@@ -395,13 +395,13 @@ basic_store<Hasher, File>::open (
     s_ = std::move(s);
     open_ = true;
     thread_ = std::thread(
-        &basic_store::run, this);
+        &store::run, this);
     return true;
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::close()
+store<Hasher, Codec, File>::close()
 {
     if (open_)
     {
@@ -417,10 +417,10 @@ basic_store<Hasher, File>::close()
     }
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 template <class Handler>
 bool
-basic_store<Hasher, File>::fetch (
+store<Hasher, Codec, File>::fetch (
     void const* key, Handler&& handler)
 {
     using namespace detail;
@@ -436,8 +436,12 @@ basic_store<Hasher, File>::fetch (
             if (iter == s_->p0.end())
                 goto next;
         }
-        handler (iter->first.data,
-            iter->first.size);
+        buffer buf;
+        auto const result =
+            s_->codec.decompress(
+            iter->first.data,
+                iter->first.size, buf);
+        handler(result.first, result.second);
         return true;
     }
 next:
@@ -459,19 +463,19 @@ next:
     return fetch(h, key, b, handler);
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 bool
-basic_store<Hasher, File>::insert (
+store<Hasher, Codec, File>::insert (
     void const* key, void const* data,
         std::size_t size)
 {
     using namespace detail;
     rethrow();
-#if ! BEAST_NUDB_NO_DOMAIN_CHECK
+    buffer buf;
+    // Data Record
     if (size > field<uint48_t>::max)
         throw std::logic_error(
             "nudb: size too large");
-#endif
     auto const h = hash<Hasher>(
         key, s_->kh.key_size, s_->kh.salt);
     std::lock_guard<std::mutex> u (u_);
@@ -496,7 +500,7 @@ basic_store<Hasher, File>::insert (
             // VFALCO Audit for concurrency
             genlock <gentex> g (g_);
             m.unlock();
-            buffer buf (s_->kh.block_size);
+            buf.reserve(s_->kh.block_size);
             bucket b (s_->kh.block_size,
                 buf.get());
             b.read (s_->kf,
@@ -505,9 +509,12 @@ basic_store<Hasher, File>::insert (
                 return false;
         }
     }
+    auto const result =
+        s_->codec.compress(data, size, buf);
     // Perform insert
     unique_lock_type m (m_);
-    s_->p1.insert (h, key, data, size);
+    s_->p1.insert (h, key,
+        result.first, result.second);
     // Did we go over the commit limit?
     if (commit_limit_ > 0 &&
         s_->p1.data_size() >= commit_limit_)
@@ -528,10 +535,10 @@ basic_store<Hasher, File>::insert (
     return true;
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 template <class Handler>
 bool
-basic_store<Hasher, File>::fetch (
+store<Hasher, Codec, File>::fetch (
     std::size_t h, void const* key,
         detail::bucket b, Handler&& handler)
 {
@@ -557,13 +564,15 @@ basic_store<Hasher, File>::fetch (
             if (std::memcmp(buf0.get(), key,
                 s_->kh.key_size) == 0)
             {
-                handler(buf0.get() +
-                    s_->kh.key_size,    // Key
-                        item.size);
+                auto const result =
+                    s_->codec.decompress(
+                        buf0.get() + s_->kh.key_size,
+                            item.size, buf1);
+                handler(result.first, result.second);
                 return true;
             }
         }
-        auto spill = b.spill();
+        auto const spill = b.spill();
         if (! spill)
             break;
         buf1.reserve(s_->kh.block_size);
@@ -574,9 +583,9 @@ basic_store<Hasher, File>::fetch (
     return false;
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 bool
-basic_store<Hasher, File>::exists (
+store<Hasher, Codec, File>::exists (
     std::size_t h, void const* key,
         shared_lock_type* lock, detail::bucket b)
 {
@@ -613,9 +622,9 @@ basic_store<Hasher, File>::exists (
 }
 //  Spill bucket if full
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::maybe_spill(
+store<Hasher, Codec, File>::maybe_spill(
     detail::bucket& b, detail::bulk_writer<File>& w)
 {
     using namespace detail;
@@ -644,9 +653,9 @@ basic_store<Hasher, File>::maybe_spill(
 //  tmp is used as a temporary buffer
 //  splits are written but not the new buckets
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::split (detail::bucket& b1,
+store<Hasher, Codec, File>::split (detail::bucket& b1,
     detail::bucket& b2, detail::bucket& tmp,
         std::size_t n1, std::size_t n2,
             std::size_t buckets, std::size_t modulus,
@@ -731,9 +740,9 @@ basic_store<Hasher, File>::split (detail::bucket& b1,
 //  Postconditions:
 //      c1, and c0, and the memory pointed to by buf may be modified
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 detail::bucket
-basic_store<Hasher, File>::load (
+store<Hasher, Codec, File>::load (
     std::size_t n, detail::cache& c1,
         detail::cache& c0, void* buf)
 {
@@ -758,9 +767,9 @@ basic_store<Hasher, File>::load (
 //
 //  Effects:
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::commit()
+store<Hasher, Codec, File>::commit()
 {
     using namespace detail;
     buffer buf1 (s_->kh.block_size);
@@ -902,9 +911,9 @@ basic_store<Hasher, File>::commit()
     }
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::run()
+store<Hasher, Codec, File>::run()
 {
     auto const pred =
         [this]()
@@ -953,10 +962,6 @@ basic_store<Hasher, File>::run()
         epb_.store(true);
     }
 }
-
-//------------------------------------------------------------------------------
-
-using store = basic_store <default_hash, native_file>;
 
 } // nudb
 } // beast

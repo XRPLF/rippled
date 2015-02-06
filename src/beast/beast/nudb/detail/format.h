@@ -20,7 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_FORMAT_H_INCLUDED
 #define BEAST_NUDB_DETAIL_FORMAT_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/stream.h>
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
@@ -122,6 +122,7 @@ std::size_t
 make_hash (std::size_t h);
 
 template<>
+inline
 std::size_t
 make_hash<uint48_t>(std::size_t h)
 {
@@ -202,6 +203,34 @@ value_size (std::size_t size,
         field<uint48_t>::size + // Size
         key_size +              // Key
         size;                   // Data
+}
+
+// Returns the closest power of 2 not less than x
+template <class = void>
+std::size_t
+ceil_pow2 (unsigned long long x)
+{
+    static const unsigned long long t[6] = {
+        0xFFFFFFFF00000000ull,
+        0x00000000FFFF0000ull,
+        0x000000000000FF00ull,
+        0x00000000000000F0ull,
+        0x000000000000000Cull,
+        0x0000000000000002ull
+    };
+
+    int y = (((x & (x - 1)) == 0) ? 0 : 1);
+    int j = 32;
+    int i;
+
+    for(i = 0; i < 6; i++) {
+        int k = (((x & t[i]) == 0) ? 0 : j);
+        y += k;
+        x >>= k;
+        j >>= 1;
+    }
+
+    return std::size_t(1)<<y;
 }
 
 //------------------------------------------------------------------------------
@@ -443,7 +472,7 @@ verify (key_file_header const& kh)
             "bad key file size");
 }
 
-template <class = void>
+template <class Codec>
 void
 verify (dat_file_header const& dh)
 {
@@ -484,7 +513,6 @@ void
 verify (dat_file_header const& dh,
     key_file_header const& kh)
 {
-    verify (dh);
     verify<Hasher> (kh);
     if (kh.salt != dh.salt)
         throw store_corrupt_error(

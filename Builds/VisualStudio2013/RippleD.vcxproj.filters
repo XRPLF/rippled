@@ -1437,6 +1437,12 @@
     <ClInclude Include="..\..\src\beast\beast\nudb.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\api.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\common.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\create.h">
       <Filter>beast\nudb</Filter>
     </ClInclude>
@@ -1455,9 +1461,6 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\cache.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\detail\config.h">
-      <Filter>beast\nudb\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\field.h">
       <Filter>beast\nudb\detail</Filter>
     </ClInclude>
@@ -1472,9 +1475,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\detail\stream.h">
       <Filter>beast\nudb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\error.h">
-      <Filter>beast\nudb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
       <Filter>beast\nudb</Filter>

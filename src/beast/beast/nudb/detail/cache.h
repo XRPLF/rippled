@@ -22,7 +22,6 @@
 
 #include <beast/nudb/detail/arena.h>
 #include <beast/nudb/detail/bucket.h>
-#include <beast/nudb/detail/config.h>
 #include <boost/iterator/transform_iterator.hpp>
 #include <algorithm>
 #include <cstdint>

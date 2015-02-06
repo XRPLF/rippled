@@ -17,10 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/nudb/store.h>
-#include <beast/nudb/recover.h>
 #include <beast/nudb/tests/common.h>
-#include <beast/nudb/tests/fail_file.h>
 #include <beast/module/core/files/File.h>
 #include <beast/random/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
@@ -48,11 +45,11 @@ public:
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
         auto const lp = path + ".log";
-        nudb::fail_counter c(0);
-        nudb::create (dp, kp, lp, appnum, salt,
+        fail_counter c(0);
+        test_api::create (dp, kp, lp, appnum, salt,
             sizeof(key_type), block_size(path),
                 load_factor);
-        fail_store db;
+        test_api::fail_store db;
         if (! expect(db.open(dp, kp, lp,
             arena_alloc_size, c), "open"))
         {
@@ -85,9 +82,9 @@ public:
         print(log, verify(dp, kp));
         verify(dp, kp);
     #endif
-        nudb::native_file::erase (dp);
-        nudb::native_file::erase (kp);
-        nudb::native_file::erase (lp);
+        test_api::file_type::erase (dp);
+        test_api::file_type::erase (kp);
+        test_api::file_type::erase (lp);
     }
 
     void
@@ -96,11 +93,11 @@ public:
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
         auto const lp = path + ".log";
-        recover(dp, kp, lp);
-        verify(dp, kp);
-        nudb::native_file::erase (dp);
-        nudb::native_file::erase (kp);
-        nudb::native_file::erase (lp);
+        test_api::recover(dp, kp, lp, 16*1024*1024);
+        test_api::verify(dp, kp);
+        test_api::file_type::erase (dp);
+        test_api::file_type::erase (kp);
+        test_api::file_type::erase (lp);
     }
 
     void
