@@ -832,6 +832,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\identity_codec.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\mode.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">

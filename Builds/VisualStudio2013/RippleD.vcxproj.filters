@@ -1479,6 +1479,9 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
       <Filter>beast\nudb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\nudb\identity_codec.h">
+      <Filter>beast\nudb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\mode.h">
       <Filter>beast\nudb</Filter>
     </ClInclude>
