@@ -212,6 +212,17 @@ public:
     uint256 getHash (std::uint32_t prefix) const;
     uint256 getSigningHash (std::uint32_t prefix) const;
 
+    // Break the multi-signing hash computation into 2 parts for optimization.
+    Serializer startMultiSigningData () const;
+    void finishMultiSigningData (
+        RippleAddress const& signingForID,
+        RippleAddress const& signingID, Serializer& s) const;
+
+    // Get data to compute a complete multi-signature.
+    Serializer getMultiSigningData (
+        RippleAddress const& signingForID,
+        RippleAddress const& signingID) const;
+
     const STBase& peekAtIndex (int offset) const
     {
         return v_[offset].get();

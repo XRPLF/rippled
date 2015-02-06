@@ -387,7 +387,7 @@ extern SField const sfMinimumOffer;
 extern SField const sfRippleEscrow;
 extern SField const sfDeliveredAmount;
 
-// variable length
+// variable length (common)
 extern TypedField<STBlob> const sfPublicKey;
 extern SField const sfMessageKey;
 extern TypedField<STBlob> const sfSigningPubKey;
@@ -401,6 +401,9 @@ extern SField const sfCreateCode;
 extern SField const sfMemoType;
 extern SField const sfMemoData;
 extern SField const sfMemoFormat;
+
+// variable length (uncommon)
+extern SField const sfMultiSignature;
 
 // account
 extern SField const sfAccount;
@@ -430,11 +433,13 @@ extern SField const sfNewFields;
 extern SField const sfTemplateEntry;
 extern SField const sfMemo;
 extern SField const sfSignerEntry;
+extern SField const sfSigningAccount;
+extern SField const sfSigningFor;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
 extern SField const sfSigningAccounts;
-extern SField const sfTxnSignatures;
+extern SField const sfMultiSigners;
 extern SField const sfSignerEntries;
 extern SField const sfTemplate;
 extern SField const sfNecessary;

@@ -133,6 +133,9 @@ HandlerTable HANDLERS({
     {   "random",               byRef (&doRandom),              Role::USER,  NO_CONDITION     },
     {   "ripple_path_find",     byRef (&doRipplePathFind),      Role::USER,  NO_CONDITION  },
     {   "sign",                 byRef (&doSign),                Role::USER,  NO_CONDITION     },
+#if RIPPLE_ENABLE_MULTI_SIGN
+    {   "sign_for",             byRef (&doSignFor),             Role::USER,    NO_CONDITION     },
+#endif // RIPPLE_ENABLE_MULTI_SIGN
     {   "submit",               byRef (&doSubmit),              Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "server_info",          byRef (&doServerInfo),          Role::USER,  NO_CONDITION     },
     {   "server_state",         byRef (&doServerState),         Role::USER,  NO_CONDITION     },

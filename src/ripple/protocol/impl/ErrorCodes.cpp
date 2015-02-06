@@ -98,6 +98,7 @@ public:
         add (rpcPORT_MALFORMED,        "portMalformed",     "Port is malformed.");
         add (rpcPUBLIC_MALFORMED,      "publicMalformed",   "Public key is malformed.");
         add (rpcQUALITY_MALFORMED,     "qualityMalformed",  "Quality malformed.");
+        add (rpcSIGN_FOR_MALFORMED,    "signForMalformed",  "Signing for account is malformed.");
         add (rpcSLOW_DOWN,             "slowDown",          "You are placing too much load on the server.");
         add (rpcSRC_ACT_MALFORMED,     "srcActMalformed",   "Source account is malformed.");
         add (rpcSRC_ACT_MISSING,       "srcActMissing",     "Source account not provided.");
