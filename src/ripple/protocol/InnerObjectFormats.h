@@ -17,57 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_TXFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_TXFORMATS_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
+#define RIPPLE_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
 
 #include <ripple/protocol/KnownFormats.h>
 
 namespace ripple {
 
-/** Transaction type identifiers.
-
-    These are part of the binary message format.
-
-    @ingroup protocol
+/** Manages the list of known inner object formats.
 */
-enum TxType
-{
-    ttINVALID           = -1,
-
-    ttPAYMENT           = 0,
-    ttCLAIM             = 1, // open
-    ttWALLET_ADD        = 2, // unused
-    ttACCOUNT_SET       = 3,
-    ttPASSWORD_FUND     = 4, // open
-    ttREGULAR_KEY_SET   = 5,
-    ttNICKNAME_SET      = 6, // open
-    ttOFFER_CREATE      = 7,
-    ttOFFER_CANCEL      = 8,
-    no_longer_used      = 9,
-    ttTICKET_CREATE     = 10,
-    ttTICKET_CANCEL     = 11,
-    ttSIGNER_LIST_SET   = 12,
-
-    ttTRUST_SET         = 20,
-
-    ttAMENDMENT         = 100,
-    ttFEE               = 101,
-};
-
-/** Manages the list of known transaction formats.
-*/
-class TxFormats : public KnownFormats <TxType>
+class InnerObjectFormats : public KnownFormats <int>
 {
 private:
     void addCommonFields (Item& item);
 
 public:
     /** Create the object.
-        This will load the object will all the known transaction formats.
+        This will load the object will all the known inner object formats.
     */
-    TxFormats ();
+    InnerObjectFormats ();
 
-    static TxFormats const& getInstance ();
+    static InnerObjectFormats const& getInstance ();
+
+    SOTemplate const* findSOTemplateBySField (SField const& sField) const;
 };
 
 } // ripple

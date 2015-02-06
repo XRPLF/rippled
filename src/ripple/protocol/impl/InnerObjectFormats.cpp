@@ -18,3 +18,38 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/InnerObjectFormats.h>
+
+namespace ripple {
+
+InnerObjectFormats::InnerObjectFormats ()
+{
+    add (sfSignerEntry.getJsonName ().c_str (), sfSignerEntry.getCode ())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfSignerWeight,         SOE_REQUIRED)
+        ;
+}
+
+void InnerObjectFormats::addCommonFields (Item& item)
+{
+}
+
+InnerObjectFormats const&
+InnerObjectFormats::getInstance ()
+{
+    static InnerObjectFormats instance;
+    return instance;
+}
+
+SOTemplate const*
+InnerObjectFormats::findSOTemplateBySField (SField const& sField) const
+{
+    SOTemplate const* ret = nullptr;
+    auto itemPtr = findByType (sField.getCode ());
+    if (itemPtr)
+        ret = &(itemPtr->elements);
+
+    return ret;
+}
+
+} // ripple

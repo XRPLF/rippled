@@ -44,5 +44,8 @@
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
 #include <ripple/app/tx/impl/CancelTicket.cpp>
+#include <ripple/app/tx/impl/SetSignerList.cpp>
+#include <ripple/app/tx/impl/SignerEntries.cpp>
+
 #include <ripple/app/tx/tests/OfferStream.test.cpp>
 #include <ripple/app/tx/tests/Taker.test.cpp>

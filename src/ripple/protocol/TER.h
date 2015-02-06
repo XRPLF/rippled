@@ -81,6 +81,8 @@ enum TER    // aka TransactionEngineResult
     temREDUNDANT,
     temRIPPLE_EMPTY,
     temDISABLED,
+    temBAD_SIGNER,
+    temBAD_QUORUM,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,

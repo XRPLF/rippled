@@ -219,4 +219,15 @@ getRippleStateIndex (Account const& a, Issue const& issue)
     return getRippleStateIndex (a, issue.account, issue.currency);
 }
 
+uint256
+getSignerListIndex (Account const& account)
+{
+    Serializer  s (22);
+
+    s.add16 (spaceSignerList);  //  2
+    s.add160 (account);         // 20
+
+    return s.getSHA512Half ();
 }
+
+} // namespace ripple

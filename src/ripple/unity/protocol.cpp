@@ -45,6 +45,7 @@
 #include <ripple/protocol/impl/STLedgerEntry.cpp>
 #include <ripple/protocol/impl/STObject.cpp>
 #include <ripple/protocol/impl/STParsedJSON.cpp>
+#include <ripple/protocol/impl/InnerObjectFormats.cpp>
 #include <ripple/protocol/impl/STPathSet.cpp>
 #include <ripple/protocol/impl/STTx.cpp>
 #include <ripple/protocol/impl/STValidation.cpp>
@@ -53,6 +54,7 @@
 
 
 #include <ripple/protocol/tests/BuildInfo.test.cpp>
+#include <ripple/protocol/tests/InnerObjectFormats.test.cpp>
 #include <ripple/protocol/tests/Issue.test.cpp>
 #include <ripple/protocol/tests/Quality.test.cpp>
 #include <ripple/protocol/tests/RippleAddress.test.cpp>

@@ -678,7 +678,6 @@ def get_unity_sources():
         'src/ripple/unity/app6.cpp',
         'src/ripple/unity/app7.cpp',
         'src/ripple/unity/app8.cpp',
-        'src/ripple/unity/app9.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
         'src/ripple/unity/crypto.cpp',
