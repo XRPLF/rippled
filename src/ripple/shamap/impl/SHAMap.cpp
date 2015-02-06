@@ -26,21 +26,15 @@ namespace ripple {
 
 SHAMap::SHAMap (
     SHAMapType t,
-    FullBelowCache& fullBelowCache,
-    TreeNodeCache& treeNodeCache,
-    NodeStore::Database& db,
-    MissingNodeHandler missing_node_handler,
+    Family& f,
     beast::Journal journal,
     std::uint32_t seq)
-    : journal_(journal)
-    , db_(db)
-    , m_fullBelowCache (fullBelowCache)
+    : f_ (f)
+    , journal_(journal)
     , mSeq (seq)
     , mLedgerSeq (0)
-    , mTreeNodeCache (treeNodeCache)
     , mState (smsModifying)
     , mType (t)
-    , m_missing_node_handler (missing_node_handler)
 {
     assert (mSeq != 0);
 
@@ -51,20 +45,14 @@ SHAMap::SHAMap (
 SHAMap::SHAMap (
     SHAMapType t,
     uint256 const& hash,
-    FullBelowCache& fullBelowCache,
-    TreeNodeCache& treeNodeCache,
-    NodeStore::Database& db,
-    MissingNodeHandler missing_node_handler,
+    Family& f,
     beast::Journal journal)
-    : journal_(journal)
-    , db_(db)
-    , m_fullBelowCache (fullBelowCache)
+    : f_ (f)
+    , journal_(journal)
     , mSeq (1)
     , mLedgerSeq (0)
-    , mTreeNodeCache (treeNodeCache)
     , mState (smsSynching)
     , mType (t)
-    , m_missing_node_handler (missing_node_handler)
 {
     root = std::make_shared<SHAMapTreeNode> (mSeq);
     root->makeInner ();
@@ -77,9 +65,8 @@ SHAMap::~SHAMap ()
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
-    SHAMap::pointer ret = std::make_shared<SHAMap> (mType,
-        m_fullBelowCache, mTreeNodeCache, db_, m_missing_node_handler,
-            journal_);
+    SHAMap::pointer ret = std::make_shared<SHAMap> (
+        mType, f_, journal_);
     SHAMap& newMap = *ret;
 
     if (!isMutable)
@@ -193,7 +180,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeFromDB (uint256 const& hash)
 
     if (mBacked)
     {
-        NodeObject::pointer obj = db_.fetch (hash);
+        NodeObject::pointer obj = f_.db().fetch (hash);
         if (obj)
         {
             try
@@ -211,7 +198,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeFromDB (uint256 const& hash)
         }
         else if (mLedgerSeq != 0)
         {
-            m_missing_node_handler (mLedgerSeq);
+            f_.missing_node(mLedgerSeq);
             mLedgerSeq = 0;
         }
     }
@@ -394,7 +381,7 @@ SHAMapTreeNode* SHAMap::descendAsync (SHAMapTreeNode* parent, int branch,
         if (!ptr && mBacked)
         {
             NodeObject::pointer obj;
-            if (! db_.asyncFetch (hash, obj))
+            if (! f_.db().asyncFetch (hash, obj))
             {
                 pending = true;
                 return nullptr;
@@ -943,8 +930,8 @@ void SHAMap::writeNode (
 
     Serializer s;
     node->addRaw (s, snfPREFIX);
-    db_.store (t, std::move (s.modData()),
-        node->getNodeHash ());
+    f_.db().store (t,
+        std::move (s.modData ()), node->getNodeHash ());
 }
 
 // We can't modify an inner node someone else might have a
@@ -1157,7 +1144,7 @@ void SHAMap::dump (bool hash)
 
 SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash)
 {
-    SHAMapTreeNode::pointer ret = mTreeNodeCache.fetch (hash);
+    SHAMapTreeNode::pointer ret = f_.treecache().fetch (hash);
     assert (!ret || !ret->getSeq());
     return ret;
 }
@@ -1168,7 +1155,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
     assert (node->getSeq() == 0);
     assert (node->getNodeHash() == hash);
 
-    mTreeNodeCache.canonicalize (hash, node);
+    f_.treecache().canonicalize (hash, node);
 
 }
 

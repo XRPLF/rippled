@@ -39,6 +39,9 @@ namespace RPC { class Manager; }
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
 class CollectorManager;
+namespace shamap {
+class Family;
+} // shamap
 class IHashRouter;
 class Logs;
 class LoadFeeTrack;
@@ -94,6 +97,7 @@ public:
 
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
+    virtual shamap::Family&         family() = 0;
     virtual FullBelowCache&         getFullBelowCache () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual RPC::Manager&           getRPCManager () = 0;

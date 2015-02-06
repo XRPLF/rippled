@@ -20,32 +20,23 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
+#include <ripple/shamap/tests/common.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/UInt160.h>
-#include <beast/chrono/manual_clock.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/rand.h> // DEPRECATED
 
 namespace ripple {
+namespace shamap {
+namespace tests {
 
 #ifdef BEAST_DEBUG
 //#define SMS_DEBUG
 #endif
 
-class SHAMapSync_test : public beast::unit_test::suite
+class sync_test : public beast::unit_test::suite
 {
 public:
-    struct Handler
-    {
-        void operator()(std::uint32_t refNum) const
-        {
-            throw std::runtime_error("missing node");
-        }
-    };
-
     static SHAMapItem::pointer makeRandomAS ()
     {
         Serializer s;
@@ -107,19 +98,11 @@ public:
         RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
         srand (seed);
 
-        beast::manual_clock <std::chrono::steady_clock> clock;  // manual advance clock
         beast::Journal const j;                            // debug journal
 
-        FullBelowCache fullBelowCache ("test.full_below", clock);
-        TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
-        NodeStore::DummyScheduler scheduler;
-        auto db = NodeStore::Manager::instance().make_Database (
-            "test", scheduler, j, 1, parseDelimitedKeyValueString("type=memory|path=SHAMapSync_test"));
-
-        SHAMap source (smtFREE, fullBelowCache, treeNodeCache,
-            *db, Handler(), beast::Journal());
-        SHAMap destination (smtFREE, fullBelowCache, treeNodeCache,
-            *db, Handler(), beast::Journal());
+        TestFamily f(j);
+        SHAMap source (smtFREE, f, j);
+        SHAMap destination (smtFREE, f, j);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
@@ -157,7 +140,7 @@ public:
 
         do
         {
-            ++clock;
+            f.clock().advance(std::chrono::seconds(1));
             ++passes;
             hashes.clear ();
 
@@ -238,6 +221,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync,ripple_app,ripple);
+BEAST_DEFINE_TESTSUITE(sync,shamap,ripple);
 
+} // tests
+} // shamap
 } // ripple

@@ -2376,12 +2376,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\CanonicalTXSet.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\DefaultMissingNodeHandler.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\FeeVote.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
@@ -3984,6 +3978,9 @@
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\Family.h">
+      <Filter>ripple\shamap</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\FullBelowCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
@@ -4028,6 +4025,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\SHAMapTreeNode.h">
       <Filter>ripple\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\shamap\tests\common.h">
+      <Filter>ripple\shamap\tests</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\shamap\tests\FetchPack.test.cpp">
       <Filter>ripple\shamap\tests</Filter>

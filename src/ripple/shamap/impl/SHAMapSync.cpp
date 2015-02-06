@@ -118,7 +118,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
     assert (root->isValid ());
     assert (root->getNodeHash().isNonZero ());
 
-    std::uint32_t generation = m_fullBelowCache.getGeneration();
+    std::uint32_t generation = f_.fullbelow().getGeneration();
     if (root->isFullBelow (generation))
     {
         clearSynching ();
@@ -132,7 +132,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
         return;
     }
 
-    int const maxDefer = db_.getDesiredAsyncReadCount ();
+    int const maxDefer = f_.db().getDesiredAsyncReadCount ();
 
     // Track the missing hashes we have found so far
     std::set <uint256> missingHashes;
@@ -169,7 +169,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
                 {
                     uint256 const& childHash = node->getChildHash (branch);
 
-                    if (! mBacked || ! m_fullBelowCache.touch_if_exists (childHash))
+                    if (! mBacked || ! f_.fullbelow().touch_if_exists (childHash))
                     {
                         SHAMapNodeID childID = nodeID.getChildNodeID (branch);
                         bool pending = false;
@@ -218,7 +218,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
             { // No partial node encountered below this node
                 node->setFullBelowGen (generation);
                 if (mBacked)
-                    m_fullBelowCache.insert (node->getNodeHash ());
+                    f_.fullbelow().insert (node->getNodeHash ());
             }
 
             if (stack.empty ())
@@ -238,7 +238,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
         if (deferredReads.empty ())
             break;
 
-        db_.waitReads();
+        f_.db().waitReads();
 
         // Process all deferred reads
         for (auto const& node : deferredReads)
@@ -463,7 +463,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         return SHAMapAddNode::duplicate ();
     }
 
-    std::uint32_t generation = m_fullBelowCache.getGeneration();
+    std::uint32_t generation = f_.fullbelow().getGeneration();
     SHAMapNodeID iNodeID;
     SHAMapTreeNode* iNode = root.get ();
 
@@ -481,7 +481,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         }
 
         uint256 childHash = iNode->getChildHash (branch);
-        if (m_fullBelowCache.touch_if_exists (childHash))
+        if (f_.fullbelow().touch_if_exists (childHash))
             return SHAMapAddNode::duplicate ();
 
         SHAMapTreeNode* prevNode = iNode;

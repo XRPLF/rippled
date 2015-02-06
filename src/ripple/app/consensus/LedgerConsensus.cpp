@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/consensus/DisputedTx.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
-#include <ripple/app/misc/DefaultMissingNodeHandler.h> // VFALCO bad dependency
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
@@ -351,11 +350,9 @@ public:
             {
                 if (hash.isZero ())
                 {
-                    Application& app = getApp();
                     SHAMap::pointer empty = std::make_shared<SHAMap> (
-                        smtTRANSACTION, app.getFullBelowCache(),
-                            app.getTreeNodeCache(), getApp().getNodeStore(),
-                                DefaultMissingNodeHandler(), deprecatedLogs().journal("SHAMap"));
+                        smtTRANSACTION, getApp().family(),
+                            deprecatedLogs().journal("SHAMap"));
                     mapCompleteInternal (hash, empty, false);
                     return empty;
                 }
