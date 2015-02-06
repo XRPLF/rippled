@@ -133,7 +133,18 @@ public:
         return v_.empty();
     }
 
+    void reserve (std::size_t n)
+    {
+        v_.reserve (n);
+    }
+
     bool setType (const SOTemplate & type);
+
+    enum ResultOfSetTypeFromSField : unsigned char
+    {typeSetFail, typeIsSet, noTemplate};
+
+    ResultOfSetTypeFromSField setTypeFromSField (SField const&);
+
     bool isValidForType ();
     bool isFieldAllowed (SField const&);
     bool isFree () const

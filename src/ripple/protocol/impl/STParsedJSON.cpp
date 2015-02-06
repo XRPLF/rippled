@@ -138,6 +138,26 @@ static Json::Value singleton_expected (std::string const& object,
             "]' must be an object with a single key/object value.");
 }
 
+static Json::Value serialization_error (SField const& sField)
+{
+    return RPC::make_error (rpcINVALID_PARAMS,
+        "Object '" + sField.getName () + "' failed to serialize.");
+}
+
+static Json::Value template_mismatch (SField const& sField)
+{
+    return RPC::make_error (rpcINVALID_PARAMS,
+        "Object '" +  sField.getName () +
+            "' contents did not meet requirements for that type.");
+}
+
+static Json::Value
+non_object_in_array (std::string const& item, Json::UInt index)
+{
+    return RPC::make_error (rpcINVALID_PARAMS,
+        "Item '" + item + "' at index " + std::to_string (index) +
+            " is not an object.  Arrays may only contain objects.");
+}
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
@@ -766,6 +786,13 @@ static boost::optional <STObject> parseObject (
         }
     }
 
+    // Some inner object types have templates.  Attempt to apply that.
+    if (data.setTypeFromSField (inName) == STObject::typeSetFail)
+    {
+        error = template_mismatch (inName);
+        return boost::none;
+    }
+
     return std::move (data);
 }
 
@@ -823,10 +850,17 @@ static boost::optional <detail::STVar> parseArray (
 
             auto ret = parseObject (ss.str (), objectFields,
                 nameField, depth + 1, error);
+            if (! ret)
+            {
+                    std::string errMsg = error["error_message"].asString ();
+                    error["error_message"] = "Error at '" + ss.str () +
+                        "'. " + errMsg;
+                    return boost::none;
+            }
 
-            if (! ret ||
-                (ret->getFName().fieldType != STI_OBJECT))
+            if (ret->getFName().fieldType != STI_OBJECT)
 	    {
+	        error = non_object_in_array (ss.str(), i);
 	        return boost::none;
 	    }
 

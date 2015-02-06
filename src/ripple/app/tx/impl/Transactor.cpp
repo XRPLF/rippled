@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/core/Config.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/core/Config.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -33,6 +33,7 @@ TER transact_CancelOffer (STTx const& txn, TransactionEngineParams params, Trans
 TER transact_Change (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CreateTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CancelTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetSignerList (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
@@ -69,6 +70,13 @@ Transactor::transact (
 
     case ttTICKET_CANCEL:
         return transact_CancelTicket (txn, params, engine);
+
+#if RIPPLE_ENABLE_MULTI_SIGN
+
+    case ttSIGNER_LIST_SET:
+        return transact_SetSignerList (txn, params, engine);
+
+#endif // RIPPLE_ENABLE_MULTI_SIGN
 
     default:
         return temUNKNOWN;
@@ -220,6 +228,15 @@ TER Transactor::checkSeq ()
 // check stuff before you bother to lock the ledger
 TER Transactor::preCheck ()
 {
+    TER result = preCheckAccount ();
+    if (result != tesSUCCESS)
+        return result;
+
+    return preCheckSigningKey ();
+}
+
+TER Transactor::preCheckAccount ()
+{
     mTxnAccountID = mTxn.getSourceAccount ().getAccountID ();
 
     if (!mTxnAccountID)
@@ -227,14 +244,19 @@ TER Transactor::preCheck ()
         m_journal.warning << "applyTransaction: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
     }
+    return tesSUCCESS;
+}
 
+TER Transactor::preCheckSigningKey ()
+{
     // Extract signing key
     // Transactions contain a signing key.  This allows us to trivially verify a
     // transaction has at least been properly signed without going to disk.
     // Each transaction also notes a source account id. This is used to verify
     // that the signing key is associated with the account.
     // XXX This could be a lot cleaner to prevent unnecessary copying.
-    mSigningPubKey = RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
+    mSigningPubKey =
+        RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
 
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())

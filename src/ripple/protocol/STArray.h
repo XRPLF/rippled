@@ -40,7 +40,7 @@ private:
     list_type v_;
 
 public:
-    // Read-only iteration 
+    // Read-only iteration
     class Items;
 
     static char const* getCountedObjectName () { return "STArray"; }
@@ -134,6 +134,10 @@ public:
     void clear ()
     {
         v_.clear ();
+    }
+    void reserve (std::size_t n)
+    {
+        v_.reserve (n);
     }
     void swap (STArray & a) noexcept
     {

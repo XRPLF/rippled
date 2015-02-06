@@ -87,6 +87,8 @@ getRippleStateIndex (Account const& a, Account const& b, Currency const& currenc
 uint256
 getRippleStateIndex (Account const& a, Issue const& issue);
 
+uint256
+getSignerListIndex (Account const& account);
 }
 
 #endif

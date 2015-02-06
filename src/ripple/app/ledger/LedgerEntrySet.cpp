@@ -1018,50 +1018,65 @@ uint256 LedgerEntrySet::getNextLedgerIndex (
 
 void LedgerEntrySet::incrementOwnerCount (SLE::ref sleAccount)
 {
-    assert (sleAccount);
-
-    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
-
-    if (current_count == std::numeric_limits<std::uint32_t>::max ())
-    {
-        WriteLog (lsFATAL, LedgerEntrySet) <<
-            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
-            " owner count exceeds max!";
-        return;
-    }
-
-    sleAccount->setFieldU32 (sfOwnerCount, current_count + 1);
-    entryModify (sleAccount);
+    increaseOwnerCount (sleAccount, 1);
 }
 
 void LedgerEntrySet::incrementOwnerCount (Account const& owner)
 {
-    incrementOwnerCount(entryCache (ltACCOUNT_ROOT,
-        getAccountRootIndex (owner)));
+    increaseOwnerCount(
+        entryCache (ltACCOUNT_ROOT, getAccountRootIndex (owner)), 1);
 }
 
-void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
+void
+LedgerEntrySet::increaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch)
 {
     assert (sleAccount);
 
     std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
+    std::uint32_t new_count = current_count + howMuch;
 
-    if (current_count == 0)
+    // Check for integer overflow -- well defined behavior on unsigned.
+    if (new_count < current_count)
     {
         WriteLog (lsFATAL, LedgerEntrySet) <<
             "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
-            " owner count is already 0!";
-        return;
+            " owner count exceeds max!";
+        new_count = std::numeric_limits<std::uint32_t>::max ();
     }
-
-    sleAccount->setFieldU32 (sfOwnerCount, current_count - 1);
+    sleAccount->setFieldU32 (sfOwnerCount, new_count);
     entryModify (sleAccount);
+}
+
+void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
+{
+    decreaseOwnerCount (sleAccount, 1);
 }
 
 void LedgerEntrySet::decrementOwnerCount (Account const& owner)
 {
-    decrementOwnerCount(entryCache (ltACCOUNT_ROOT,
-        getAccountRootIndex (owner)));
+    decreaseOwnerCount(
+        entryCache (ltACCOUNT_ROOT, getAccountRootIndex (owner)), 1);
+}
+
+void
+LedgerEntrySet::decreaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch)
+{
+    assert (sleAccount);
+
+    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
+    std::uint32_t new_count = current_count - howMuch;
+
+    // Check for integer underflow -- well defined behavior on unsigned.
+    if (new_count > current_count)
+    {
+        WriteLog (lsFATAL, LedgerEntrySet) <<
+            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
+            " owner count set below 0!";
+        new_count = 0;
+        assert (false); // "This is a dangerous place."  Stop in a debug build.
+    }
+    sleAccount->setFieldU32 (sfOwnerCount, new_count);
+    entryModify (sleAccount);
 }
 
 TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)

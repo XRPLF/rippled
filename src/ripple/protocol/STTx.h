@@ -44,6 +44,8 @@ public:
     typedef std::shared_ptr<STTx>        pointer;
     typedef const std::shared_ptr<STTx>& ref;
 
+    static std::size_t const maxMultiSigners = 8;
+
 public:
     STTx () = delete;
     STTx& operator= (STTx const& other) = delete;
