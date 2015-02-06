@@ -21,6 +21,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STAccount.h>
@@ -335,6 +336,34 @@ uint256 STObject::getSigningHash (std::uint32_t prefix) const
     s.add32 (prefix);
     add (s, false);
     return s.getSHA512Half ();
+}
+
+Serializer
+STObject::startMultiSigningData () const
+{
+    Serializer s;
+    s.add32 (HashPrefix::txMultiSign);
+    add (s, false);
+    return s;
+}
+
+void
+STObject::finishMultiSigningData (
+    RippleAddress const& signingForID,
+    RippleAddress const& signingID,
+    Serializer& s) const
+{
+    s.add160 (signingForID.getAccountID ());
+    s.add160 (signingID.getAccountID ());
+}
+
+Serializer
+STObject::getMultiSigningData (
+    RippleAddress const& signingForID, RippleAddress const& signingID) const
+{
+    Serializer s (startMultiSigningData ());
+    finishMultiSigningData (signingForID, signingID, s);
+    return s;
 }
 
 int STObject::getFieldIndex (SField const& field) const

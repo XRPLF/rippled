@@ -1653,7 +1653,8 @@ PeerImp::checkTransaction (Job&, int flags,
         }
 
         bool const trusted (flags & SF_TRUSTED);
-        getApp().getOPs ().processTransaction (tx, trusted, false, false);
+        getApp().getOPs ().processTransaction (
+            tx, trusted, false, NetworkOPs::FailHard::no);
     }
     catch (...)
     {

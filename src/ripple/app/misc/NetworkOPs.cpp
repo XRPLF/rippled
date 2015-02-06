@@ -211,19 +211,16 @@ public:
         Job&, STTx::pointer,
         stCallback callback = stCallback ()) override;
 
-    Transaction::pointer submitTransactionSync (
-        Transaction::ref tpTrans,
-        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) override;
-
     Transaction::pointer processTransactionCb (
         Transaction::pointer,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback) override;
+        bool bAdmin, bool bLocal, FailHard failType, stCallback) override;
+
     Transaction::pointer processTransaction (
         Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard) override
+        bool bAdmin, bool bLocal, FailHard failType) override
     {
         return processTransactionCb (
-            transaction, bAdmin, bLocal, bFailHard, stCallback ());
+            transaction, bAdmin, bLocal, failType, stCallback ());
     }
 
     // VFALCO Workaround for MSVC std::function which doesn't swallow return
@@ -232,9 +229,9 @@ public:
 private:
     void processTransactionCbVoid (
         Transaction::pointer p,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback cb)
+        bool bAdmin, bool bLocal, FailHard failType, stCallback cb)
     {
-        processTransactionCb (p, bAdmin, bLocal, bFailHard, cb);
+        processTransactionCb (p, bAdmin, bLocal, failType, cb);
     }
 
 public:
@@ -955,51 +952,13 @@ void NetworkOPsImp::submitTransaction (
                    std::make_shared<Transaction> (trans, Validate::NO, reason),
                    false,
                    false,
-                   false,
+                   FailHard::no,
                    callback));
-}
-
-// Sterilize transaction through serialization.
-// This is fully synchronous and deprecated
-Transaction::pointer NetworkOPsImp::submitTransactionSync (
-    Transaction::ref tpTrans,
-    bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit)
-{
-    Serializer s;
-    tpTrans->getSTransaction ()->add (s);
-
-    auto tpTransNew = Transaction::sharedTransaction (
-        s.getData (), Validate::YES);
-
-    if (!tpTransNew)
-    {
-        // Could not construct transaction.
-        return tpTransNew;
-    }
-
-    if (tpTransNew->getSTransaction ()->isEquivalent (
-            *tpTrans->getSTransaction ()))
-    {
-        if (bSubmit)
-            processTransaction (tpTransNew, bAdmin, bLocal, bFailHard);
-    }
-    else
-    {
-        m_journal.fatal << "Transaction reconstruction failure";
-        m_journal.fatal << tpTransNew->getSTransaction ()->getJson (0);
-        m_journal.fatal << tpTrans->getSTransaction ()->getJson (0);
-
-        // assert (false); "1e-95" as amount can trigger this
-
-        tpTransNew.reset ();
-    }
-
-    return tpTransNew;
 }
 
 Transaction::pointer NetworkOPsImp::processTransactionCb (
     Transaction::pointer trans,
-    bool bAdmin, bool bLocal, bool bFailHard, stCallback callback)
+    bool bAdmin, bool bLocal, FailHard failType, stCallback callback)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
     int newFlags = getApp().getHashRouter ().getFlags (trans->getID ());
@@ -1077,7 +1036,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         }
         else if (isTerRetry (r))
         {
-            if (bFailHard)
+            if (failType == FailHard::yes)
                 addLocal = false;
             else
             {
@@ -1100,7 +1059,8 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                         trans->getSTransaction ());
         }
 
-        if (didApply || ((mMode != omFULL) && !bFailHard && bLocal))
+        if (didApply ||
+            ((mMode != omFULL) && (failType != FailHard::yes) && bLocal))
         {
             std::set<Peer::id_t> peers;
 
