@@ -20,20 +20,15 @@
 #ifndef BEAST_NUDB_STORE_H_INCLUDED
 #define BEAST_NUDB_STORE_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/recover.h>
 #include <beast/nudb/detail/bucket.h>
-#include <beast/nudb/detail/buffers.h>
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/bulkio.h>
 #include <beast/nudb/detail/cache.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <beast/nudb/detail/gentex.h>
 #include <beast/nudb/detail/pool.h>
-#include <beast/nudb/detail/posix_file.h>
-#include <beast/nudb/detail/win32_file.h>
 #include <boost/thread/lock_types.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <algorithm>
@@ -52,7 +47,6 @@
 #include <limits>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -80,15 +74,17 @@ namespace nudb {
 */
 
 /** A simple key/value database
+    @tparam Hasher The hash function to use on key
+    @tparam Codec The codec to apply to value data
     @tparam File The type of File object to use.
-    @tparam Hash The hash function to use on key
 */
-template <class Hasher, class File>
-class basic_store
+template <class Hasher, class Codec, class File>
+class store
 {
 public:
-    using file_type = File;
     using hash_type = Hasher;
+    using codec_type = Codec;
+    using file_type = File;
 
 private:
     // requires 64-bit integers or better
@@ -112,9 +108,6 @@ private:
     using unique_lock_type =
         boost::unique_lock<boost::shared_mutex>;
 
-    using blockbuf =
-        typename detail::buffers::value_type;
-
     struct state
     {
         File df;
@@ -123,11 +116,11 @@ private:
         path_type dp;
         path_type kp;
         path_type lp;
-        detail::buffers b;
         detail::pool p0;
         detail::pool p1;
         detail::cache c0;
         detail::cache c1;
+        Codec const codec;
         detail::key_file_header const kh;
 
         // pool commit high water mark
@@ -144,8 +137,6 @@ private:
     };
 
     bool open_ = false;
-    // VFALCO Make consistency checks optional?
-    //bool safe_ = true;              // Do consistency checks
 
     // VFALCO Unfortunately boost::optional doesn't support
     //        move construction so we use unique_ptr instead.
@@ -173,9 +164,9 @@ private:
     std::exception_ptr ep_;
 
 public:
-    basic_store() = default;
-    basic_store (basic_store const&) = delete;
-    basic_store& operator= (basic_store const&) = delete;
+    store() = default;
+    store (store const&) = delete;
+    store& operator= (store const&) = delete;
 
     /** Destroy the database.
 
@@ -191,7 +182,7 @@ public:
         Throws:
             None
     */
-    ~basic_store();
+    ~store();
 
     /** Returns `true` if the database is open. */
     bool
@@ -250,17 +241,17 @@ public:
 
     /** Fetch a value.
 
-        If key is found, BufferFactory will be called as:
-            `(void*)()(std::size_t bytes)`
+        If key is found, Handler will be called as:
+            `(void)()(void const* data, std::size_t size)`
 
-        where bytes is the size of the value, and the returned pointer
-        points to a buffer of at least bytes size.
+        where data and size represent the value. If the
+        key is not found, the handler is not called.
 
-        @return `true` if the key exists.
+        @return `true` if a matching key was found.
     */
-    template <class BufferFactory>
+    template <class Handler>
     bool
-    fetch (void const* key, BufferFactory&& bf);
+    fetch (void const* key, Handler&& handler);
 
     /** Insert a value.
 
@@ -280,8 +271,19 @@ private:
             std::rethrow_exception(ep_);
     }
 
-    std::pair <detail::bucket::value_type, bool>
-    find (void const* key, detail::bucket& b);
+    // Fetch key in loaded bucket b or its spills.
+    //
+    template <class Handler>
+    bool
+    fetch (std::size_t h, void const* key,
+        detail::bucket b, Handler&& handler);
+
+    // Returns `true` if the key exists
+    // lock is unlocked after the first bucket processed
+    //
+    bool
+    exists (std::size_t h, void const* key,
+        shared_lock_type* lock, detail::bucket b);
 
     void
     maybe_spill (detail::bucket& b,
@@ -306,8 +308,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class Hasher, class File>
-basic_store<Hasher, File>::state::state (
+template <class Hasher, class Codec, class File>
+store<Hasher, Codec, File>::state::state (
     File&& df_, File&& kf_, File&& lf_,
         path_type const& dp_, path_type const& kp_,
             path_type const& lp_,
@@ -319,7 +321,6 @@ basic_store<Hasher, File>::state::state (
     , dp (dp_)
     , kp (kp_)
     , lp (lp_)
-    , b  (kh_.block_size)
     , p0 (kh_.key_size, arena_alloc_size)
     , p1 (kh_.key_size, arena_alloc_size)
     , c0 (kh_.key_size, kh_.block_size)
@@ -330,8 +331,8 @@ basic_store<Hasher, File>::state::state (
 
 //------------------------------------------------------------------------------
 
-template <class Hasher, class File>
-basic_store<Hasher, File>::~basic_store()
+template <class Hasher, class Codec, class File>
+store<Hasher, Codec, File>::~store()
 {
     try
     {
@@ -344,10 +345,10 @@ basic_store<Hasher, File>::~basic_store()
     }
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 template <class... Args>
 bool
-basic_store<Hasher, File>::open (
+store<Hasher, Codec, File>::open (
     path_type const& dat_path,
     path_type const& key_path,
     path_type const& log_path,
@@ -358,8 +359,10 @@ basic_store<Hasher, File>::open (
     if (is_open())
         throw std::logic_error("nudb: already open");
     epb_.store(false);
-    recover (dat_path, key_path, log_path,
-        recover_read_size);
+    recover<Hasher, Codec, File>(
+        dat_path, key_path, log_path,
+            recover_read_size,
+                std::forward<Args>(args)...);
     File df(std::forward<Args>(args)...);
     File kf(std::forward<Args>(args)...);
     File lf(std::forward<Args>(args)...);
@@ -373,7 +376,7 @@ basic_store<Hasher, File>::open (
     key_file_header kh;
     read (df, dh);
     read (kf, kh);
-    verify (dh);
+    verify<Codec> (dh);
     verify<Hasher> (kh);
     verify<Hasher> (dh, kh);
     auto s = std::make_unique<state>(
@@ -392,13 +395,13 @@ basic_store<Hasher, File>::open (
     s_ = std::move(s);
     open_ = true;
     thread_ = std::thread(
-        &basic_store::run, this);
+        &store::run, this);
     return true;
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::close()
+store<Hasher, Codec, File>::close()
 {
     if (open_)
     {
@@ -414,208 +417,214 @@ basic_store<Hasher, File>::close()
     }
 }
 
-template <class Hasher, class File>
-template <class BufferFactory>
+template <class Hasher, class Codec, class File>
+template <class Handler>
 bool
-basic_store<Hasher, File>::fetch (
-    void const* key, BufferFactory&& bf)
+store<Hasher, Codec, File>::fetch (
+    void const* key, Handler&& handler)
 {
     using namespace detail;
     rethrow();
-    std::size_t offset;
-    std::size_t size;
-    blockbuf buf(s_->b);
-    bucket tmp (s_->kh.key_size,
-        s_->kh.block_size, buf.get());
+    auto const h = hash<Hasher>(
+        key, s_->kh.key_size, s_->kh.salt);
+    shared_lock_type m (m_);
     {
-        auto const h = hash<Hasher>(
-           key, s_->kh.key_size, s_->kh.salt);
-        shared_lock_type m (m_,
-            boost::defer_lock);
-        m.lock();
+        auto iter = s_->p1.find(key);
+        if (iter == s_->p1.end())
         {
-            typename pool::iterator iter;
-            iter = s_->p1.find(key);
-            if (iter != s_->p1.end())
-            {
-                void* const b = bf(
-                    iter->first.size);
-                if (b == nullptr)
-                    return false;
-                std::memcpy (b,
-                    iter->first.data,
-                        iter->first.size);
-                return true;
-            }
             iter = s_->p0.find(key);
-            if (iter != s_->p0.end())
-            {
-                void* const b = bf(
-                    iter->first.size);
-                if (b == nullptr)
-                    return false;
-                std::memcpy (b,
-                    iter->first.data,
-                        iter->first.size);
-                return true;
-            }
+            if (iter == s_->p0.end())
+                goto next;
         }
+        buffer buf;
+        auto const result =
+            s_->codec.decompress(
+            iter->first.data,
+                iter->first.size, buf);
+        handler(result.first, result.second);
+        return true;
+    }
+next:
+    auto const n = bucket_index(
+        h, buckets_, modulus_);
+    auto const iter = s_->c1.find(n);
+    if (iter != s_->c1.end())
+        return fetch(h, key,
+            iter->second, handler);
+    // VFALCO Audit for concurrency
+    genlock <gentex> g (g_);
+    m.unlock();
+    buffer buf (s_->kh.block_size);
+    // VFALCO Constructs with garbage here
+    bucket b (s_->kh.block_size,
+        buf.get());
+    b.read (s_->kf,
+        (n + 1) * b.block_size());
+    return fetch(h, key, b, handler);
+}
+
+template <class Hasher, class Codec, class File>
+bool
+store<Hasher, Codec, File>::insert (
+    void const* key, void const* data,
+        std::size_t size)
+{
+    using namespace detail;
+    rethrow();
+    buffer buf;
+    // Data Record
+    if (size > field<uint48_t>::max)
+        throw std::logic_error(
+            "nudb: size too large");
+    auto const h = hash<Hasher>(
+        key, s_->kh.key_size, s_->kh.salt);
+    std::lock_guard<std::mutex> u (u_);
+    {
+        shared_lock_type m (m_);
+        if (s_->p1.find(key) != s_->p1.end())
+            return false;
+        if (s_->p0.find(key) != s_->p0.end())
+            return false;
         auto const n = bucket_index(
             h, buckets_, modulus_);
         auto const iter = s_->c1.find(n);
         if (iter != s_->c1.end())
         {
-            auto const result =
-                iter->second.find(key);
-            if (result.second)
-            {
-                offset = result.first.offset;
-                size = result.first.size;
-                goto found;
-            }
-            // VFALCO Audit for concurrency
-            auto spill = iter->second.spill();
-            m.unlock();
-            while (spill)
-            {
-                tmp.read(s_->df, spill);
-                auto const result = tmp.find(key);
-                if (result.second)
-                {
-                    offset = result.first.offset;
-                    size = result.first.size;
-                    goto found;
-                }
-                spill = tmp.spill();
-            }
-            return false;
+            if (exists(h, key, &m,
+                    iter->second))
+                return false;
+            // m is now unlocked
         }
-        // VFALCO Audit for concurrency
-        genlock <gentex> g (g_);
-        m.unlock();
-        tmp.read (s_->kf,
-            (n + 1) * tmp.block_size());
-        auto const result = find(key, tmp);
-        if (! result.second)
-            return false;
-        offset = result.first.offset;
-        size = result.first.size;
+        else
+        {
+            // VFALCO Audit for concurrency
+            genlock <gentex> g (g_);
+            m.unlock();
+            buf.reserve(s_->kh.block_size);
+            bucket b (s_->kh.block_size,
+                buf.get());
+            b.read (s_->kf,
+                (n + 1) * s_->kh.block_size);
+            if (exists(h, key, nullptr, b))
+                return false;
+        }
     }
-found:
-    void* const b = bf(size);
-    if (b == nullptr)
-        return false;
-    // Data Record
-    s_->df.read (offset +
-        field<uint48_t>::size + // Size
-        s_->kh.key_size,        // Key
-            b, size);
+    auto const result =
+        s_->codec.compress(data, size, buf);
+    // Perform insert
+    unique_lock_type m (m_);
+    s_->p1.insert (h, key,
+        result.first, result.second);
+    // Did we go over the commit limit?
+    if (commit_limit_ > 0 &&
+        s_->p1.data_size() >= commit_limit_)
+    {
+        // Yes, start a new commit
+        cond_.notify_all();
+        // Wait for pool to shrink
+        cond_limit_.wait(m,
+            [this]() { return
+                s_->p1.data_size() <
+                    commit_limit_; });
+    }
+    bool const notify =
+        s_->p1.data_size() >= s_->pool_thresh;
+    m.unlock();
+    if (notify)
+        cond_.notify_all();
     return true;
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
+template <class Handler>
 bool
-basic_store<Hasher, File>::insert (void const* key,
-    void const* data, std::size_t size)
+store<Hasher, Codec, File>::fetch (
+    std::size_t h, void const* key,
+        detail::bucket b, Handler&& handler)
 {
     using namespace detail;
-    rethrow();
-#if ! BEAST_NUDB_NO_DOMAIN_CHECK
-    if (size > field<uint48_t>::max)
-        throw std::logic_error(
-            "nudb: size too large");
-#endif
-    blockbuf buf (s_->b);
-    bucket tmp (s_->kh.key_size,
-        s_->kh.block_size, buf.get());
-    auto const h = hash<Hasher>(
-        key, s_->kh.key_size, s_->kh.salt);
-    std::lock_guard<std::mutex> u (u_);
-    shared_lock_type m (m_, boost::defer_lock);
-    m.lock();
-    if (s_->p1.find(key) != s_->p1.end())
-        return false;
-    if (s_->p0.find(key) != s_->p0.end())
-        return false;
-    auto const n = bucket_index(
-        h, buckets_, modulus_);
-    auto const iter = s_->c1.find(n);
-    if (iter != s_->c1.end())
+    buffer buf0;
+    buffer buf1;
+    for(;;)
     {
-        if (iter->second.find(key).second)
-            return false;
-        // VFALCO Audit for concurrency
-        auto spill = iter->second.spill();
-        m.unlock();
-        while (spill)
+        for (auto i = b.lower_bound(h);
+            i < b.size(); ++i)
         {
-            tmp.read (s_->df, spill);
-            if (tmp.find(key).second)
-                return false;
-            spill = tmp.spill();
+            auto const item = b[i];
+            if (item.hash != h)
+                break;
+            // Data Record
+            auto const len = 
+                s_->kh.key_size +       // Key
+                item.size;              // Value
+            buf0.reserve(len);
+            s_->df.read(item.offset +
+                field<uint48_t>::size,  // Size
+                    buf0.get(), len);
+            if (std::memcmp(buf0.get(), key,
+                s_->kh.key_size) == 0)
+            {
+                auto const result =
+                    s_->codec.decompress(
+                        buf0.get() + s_->kh.key_size,
+                            item.size, buf1);
+                handler(result.first, result.second);
+                return true;
+            }
         }
+        auto const spill = b.spill();
+        if (! spill)
+            break;
+        buf1.reserve(s_->kh.block_size);
+        b = bucket(s_->kh.block_size,
+            buf1.get());
+        b.read(s_->df, spill);
     }
-    else
-    {
-        genlock <gentex> g (g_);
-        m.unlock();
-        // VFALCO Audit for concurrency
-        tmp.read (s_->kf,
-            (n + 1) * s_->kh.block_size);
-        if (find(key, tmp).second)
-            return false;
-    }
-    {
-        unique_lock_type m (m_);
-        s_->p1.insert (h, key, data, size);
-        // Did we go over the commit limit?
-        if (commit_limit_ > 0 &&
-            s_->p1.data_size() >= commit_limit_)
-        {
-            // Yes, start a new commit
-            cond_.notify_all();
-            // Wait for pool to shrink
-            cond_limit_.wait(m,
-                [this]() { return
-                    s_->p1.data_size() <
-                        commit_limit_; });
-        }
-        bool const notify =
-            s_->p1.data_size() >= s_->pool_thresh;
-        m.unlock();
-        if (notify)
-            cond_.notify_all();
-    }
-    return true;
+    return false;
 }
 
-//  Find key in loaded bucket b or its spills.
-//
-template <class Hasher, class File>
-std::pair <detail::bucket::value_type, bool>
-basic_store<Hasher, File>::find (
-    void const* key, detail::bucket& b)
+template <class Hasher, class Codec, class File>
+bool
+store<Hasher, Codec, File>::exists (
+    std::size_t h, void const* key,
+        shared_lock_type* lock, detail::bucket b)
 {
-    auto result = b.find(key);
-    if (result.second)
-        return result;
-    auto spill = b.spill();
-    while (spill)
+    using namespace detail;
+    buffer buf(s_->kh.key_size +
+        s_->kh.block_size);
+    void* pk = buf.get();
+    void* pb = buf.get() + s_->kh.key_size;
+    for(;;)
     {
-        b.read (s_->df, spill);
-        result = b.find(key);
-        if (result.second)
-            return result;
-        spill = b.spill();
+        for (auto i = b.lower_bound(h);
+            i < b.size(); ++i)
+        {
+            auto const item = b[i];
+            if (item.hash != h)
+                break;
+            // Data Record
+            s_->df.read(item.offset +
+                field<uint48_t>::size,      // Size
+                pk, s_->kh.key_size);       // Key
+            if (std::memcmp(pk, key,
+                    s_->kh.key_size) == 0)
+                return true;
+        }
+        auto spill = b.spill();
+        if (lock && lock->owns_lock())
+            lock->unlock();
+        if (! spill)
+            break;
+        b = bucket(s_->kh.block_size, pb);
+        b.read(s_->df, spill);
     }
-    return result;
+    return false;
 }
-
 //  Spill bucket if full
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::maybe_spill(
+store<Hasher, Codec, File>::maybe_spill(
     detail::bucket& b, detail::bulk_writer<File>& w)
 {
     using namespace detail;
@@ -644,9 +653,9 @@ basic_store<Hasher, File>::maybe_spill(
 //  tmp is used as a temporary buffer
 //  splits are written but not the new buckets
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::split (detail::bucket& b1,
+store<Hasher, Codec, File>::split (detail::bucket& b1,
     detail::bucket& b2, detail::bucket& tmp,
         std::size_t n1, std::size_t n2,
             std::size_t buckets, std::size_t modulus,
@@ -659,15 +668,13 @@ basic_store<Hasher, File>::split (detail::bucket& b1,
     // Split
     for (std::size_t i = 0; i < b1.size();)
     {
-        auto e = b1[i];
-        auto const h = hash<Hasher>(
-            e.key, s_->kh.key_size, s_->kh.salt);
+        auto const e = b1[i];
         auto const n = bucket_index(
-            h, buckets, modulus);
+            e.hash, buckets, modulus);
         assert(n==n1 || n==n2);
         if (n == n2)
         {
-            b2.insert (e.offset, e.size, e.key);
+            b2.insert (e.offset, e.size, e.hash);
             b1.erase (i);
         }
         else
@@ -684,26 +691,27 @@ basic_store<Hasher, File>::split (detail::bucket& b1,
             // If any part of the spill record is
             // in the write buffer then flush first
             // VFALCO Needs audit
-            if (spill + bucket_size(s_->kh.key_size,
-                    s_->kh.capacity) > w.offset() - w.size())
+            if (spill + bucket_size(s_->kh.capacity) >
+                    w.offset() - w.size())
                 w.flush();
             tmp.read (s_->df, spill);
             for (std::size_t i = 0; i < tmp.size(); ++i)
             {
-                auto e = tmp[i];
-                auto const n = bucket_index<Hasher>(
-                    e.key, s_->kh.key_size, s_->kh.salt,
-                        buckets, modulus);
+                auto const e = tmp[i];
+                auto const n = bucket_index(
+                    e.hash, buckets, modulus);
                 assert(n==n1 || n==n2);
                 if (n == n2)
                 {
-                    maybe_spill (b2, w);
-                    b2.insert (e.offset, e.size, e.key);
+                    maybe_spill(b2, w);
+                    b2.insert(
+                        e.offset, e.size, e.hash);
                 }
                 else
                 {
-                    maybe_spill (b1, w);
-                    b1.insert (e.offset, e.size, e.key);
+                    maybe_spill(b1, w);
+                    b1.insert(
+                        e.offset, e.size, e.hash);
                 }
             }
             spill = tmp.spill();
@@ -732,9 +740,9 @@ basic_store<Hasher, File>::split (detail::bucket& b1,
 //  Postconditions:
 //      c1, and c0, and the memory pointed to by buf may be modified
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 detail::bucket
-basic_store<Hasher, File>::load (
+store<Hasher, Codec, File>::load (
     std::size_t n, detail::cache& c1,
         detail::cache& c0, void* buf)
 {
@@ -746,8 +754,7 @@ basic_store<Hasher, File>::load (
     if (iter != c0.end())
         return c1.insert (n,
             iter->second)->second;
-    bucket tmp (s_->kh.key_size,
-        s_->kh.block_size, buf);
+    bucket tmp (s_->kh.block_size, buf);
     tmp.read (s_->kf, (n + 1) *
         s_->kh.block_size);
     c0.insert (n, tmp);
@@ -760,15 +767,14 @@ basic_store<Hasher, File>::load (
 //
 //  Effects:
 //
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::commit()
+store<Hasher, Codec, File>::commit()
 {
     using namespace detail;
-    blockbuf buf1 (s_->b);
-    blockbuf buf2 (s_->b);
-    bucket tmp (s_->kh.key_size,
-        s_->kh.block_size, buf1.get());
+    buffer buf1 (s_->kh.block_size);
+    buffer buf2 (s_->kh.block_size);
+    bucket tmp (s_->kh.block_size, buf1.get());
     // Empty cache put in place temporarily
     // so we can reuse the memory from s_->c1
     cache c1;
@@ -813,7 +819,7 @@ basic_store<Hasher, File>::commit()
             // threads are reading other data members
             // of this object in memory
             e.second = w.offset();
-            auto os = w.prepare (data_size(
+            auto os = w.prepare (value_size(
                 e.first.size, s_->kh.key_size));
             // Data Record
             write <uint48_t> (os,
@@ -849,7 +855,7 @@ basic_store<Hasher, File>::commit()
             auto b = load (n, c1, s_->c0, buf2.get());
             // This can amplify writes if it spills.
             maybe_spill (b, w);
-            b.insert (e.second, e.first.size, e.first.key);
+            b.insert (e.second, e.first.size, e.first.hash);
         }
         w.flush();
     }
@@ -905,9 +911,9 @@ basic_store<Hasher, File>::commit()
     }
 }
 
-template <class Hasher, class File>
+template <class Hasher, class Codec, class File>
 void
-basic_store<Hasher, File>::run()
+store<Hasher, Codec, File>::run()
 {
     auto const pred =
         [this]()
@@ -955,29 +961,6 @@ basic_store<Hasher, File>::run()
         ep_ = std::current_exception(); // must come first
         epb_.store(true);
     }
-}
-
-//------------------------------------------------------------------------------
-
-using store = basic_store <default_hash, native_file>;
-
-/** Generate a random salt. */
-template <class = void>
-std::uint64_t
-make_salt()
-{
-    std::random_device rng;
-    std::mt19937_64 gen {rng()};
-    std::uniform_int_distribution <std::size_t> dist;
-    return dist(gen);
-}
-
-/** Returns the best guess at the volume's block size. */
-inline
-std::size_t
-block_size(std::string const& /*path*/)
-{
-    return 4096;
 }
 
 } // nudb

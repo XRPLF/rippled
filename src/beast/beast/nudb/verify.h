@@ -20,12 +20,10 @@
 #ifndef BEAST_NUDB_VERIFY_H_INCLUDED
 #define BEAST_NUDB_VERIFY_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
 #include <beast/nudb/detail/bucket.h>
 #include <beast/nudb/detail/bulkio.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <algorithm>
 #include <cstddef>
@@ -82,12 +80,12 @@ struct verify_info
         Iterates the key and data files, throws store_corrupt_error
             on broken invariants.
 */
-template <class Hasher = default_hash>
+template <class Hasher, class Codec>
 verify_info
 verify (
     path_type const& dat_path,
     path_type const& key_path,
-    std::size_t read_size = 16 * 1024 * 1024)
+    std::size_t read_size)
 {
     using namespace detail;
     using File = native_file;
@@ -103,6 +101,7 @@ verify (
     dat_file_header dh;
     read (df, dh);
     read (kf, kh);
+    verify<Codec>(dh);
     verify<Hasher>(dh, kh);
 
     verify_info info;
@@ -117,21 +116,28 @@ verify (
     info.key_file_size = kf.actual_size();
     info.dat_file_size = df.actual_size();
 
-    buffer buf (kh.block_size);
-    bucket b (kh.key_size,
-        kh.block_size, buf.get());
+    // Data Record
+    auto const dh_len =
+        field<uint48_t>::size + // Size
+        kh.key_size;            // Key
+
+    std::size_t fetches = 0;
 
     // Iterate Data File
+    buffer buf (kh.block_size + dh_len);
+    bucket b (kh.block_size, buf.get());
+    std::uint8_t* pd = buf.get() + kh.block_size;
     {
         bulk_reader<File> r(df,
             dat_file_header::size,
                 df.actual_size(), read_size);
         while (! r.eof())
         {
+            auto const offset = r.offset();
             // Data Record or Spill Record
-            std::size_t size;
             auto is = r.prepare(
                 field<uint48_t>::size); // Size
+            std::size_t size;
             read<uint48_t>(is, size);
             if (size > 0)
             {
@@ -144,39 +150,49 @@ verify (
                 std::uint8_t const* const data =
                     is.data(size);
                 (void)data;
+                auto const h = hash<Hasher>(
+                    key, kh.key_size, kh.salt);
                 // Check bucket and spills
                 try
                 {
-                    b.read (kf, (bucket_index<Hasher>(
-                        key, kh) + 1) * kh.block_size);
+                    auto const n = bucket_index(
+                        h, kh.buckets, kh.modulus);
+                    b.read (kf, (n + 1) * kh.block_size);
+                    ++fetches;
                 }
                 catch (file_short_read_error const&)
                 {
                     throw store_corrupt_error(
                         "short bucket");
                 }
-                for(;;)
+                for (;;)
                 {
-                    if (b.find(key).second)
-                        break;
-                    if (b.spill() != 0)
+                    for (auto i = b.lower_bound(h);
+                        i < b.size(); ++i)
                     {
-                        try
-                        {
-                            b.read (df, b.spill());
-                        }
-                        catch (file_short_read_error const&)
-                        {
-                            throw store_corrupt_error(
-                                "short spill");
-                        }
+                        auto const item = b[i];
+                        if (item.hash != h)
+                            break;
+                        if (item.offset == offset)
+                            goto found;
+                        ++fetches;
                     }
-                    else
-                    {
+                    auto const spill = b.spill();
+                    if (! spill)
                         throw store_corrupt_error(
                             "orphaned value");
+                    try
+                    {
+                        b.read (df, spill);
+                        ++fetches;
+                    }
+                    catch (file_short_read_error const&)
+                    {
+                        throw store_corrupt_error(
+                            "short spill");
                     }
                 }
+            found:
                 // Update
                 ++info.value_count;
                 info.value_bytes += size;
@@ -203,10 +219,6 @@ verify (
 
     // Iterate Key File
     {
-        // Data Record (header)
-        buffer buf (
-            field<uint48_t>::size +     // Size
-            kh.key_size);               // Key Size
         for (std::size_t n = 0; n < kh.buckets; ++n)
         {
             std::size_t nspill = 0;
@@ -219,8 +231,7 @@ verify (
                     auto const e = b[i];
                     try
                     {
-                        df.read (e.offset,
-                            buf.get(), buf.size());
+                        df.read (e.offset, pd, dh_len);
                     }
                     catch (file_short_read_error const&)
                     {
@@ -228,16 +239,19 @@ verify (
                             "missing value");
                     }
                     // Data Record
-                    istream is(buf.get(), buf.size());
+                    istream is(pd, dh_len);
                     std::size_t size;
                     read<uint48_t>(is, size);   // Size
+                    void const* key =
+                        is.data(kh.key_size);   // Key
                     if (size != e.size)
                         throw store_corrupt_error(
                             "wrong size");
-                    if (std::memcmp(is.data(kh.key_size),
-                            e.key, kh.key_size) != 0)
+                    auto const h = hash<Hasher>(key,
+                        kh.key_size, kh.salt);
+                    if (h != e.hash)
                         throw store_corrupt_error(
-                            "wrong key");
+                            "wrong hash");
                 }
                 if (! b.spill())
                     break;
@@ -266,12 +280,19 @@ verify (
     float sum = 0;
     for (int i = 0; i < info.hist.size(); ++i)
         sum += info.hist[i] * (i + 1);
-    info.avg_fetch = sum / info.buckets;
+    //info.avg_fetch = sum / info.buckets;
+    info.avg_fetch = float(fetches) / info.value_count;
     info.waste = (info.spill_bytes_tot - info.spill_bytes) /
         float(info.dat_file_size);
     info.overhead =
         float(info.key_file_size + info.dat_file_size) /
-        (info.value_bytes + info.key_count * info.key_size) - 1;
+        (
+            info.value_bytes +
+            info.key_count *
+                (info.key_size +
+                // Data Record
+                 field<uint48_t>::size) // Size
+                    ) - 1;
     info.actual_load = info.key_count / float(
         info.capacity * info.buckets);
     return info;

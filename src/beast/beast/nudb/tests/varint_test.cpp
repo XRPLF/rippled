@@ -17,27 +17,51 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_MODE_H_INCLUDED
-#define BEAST_NUDB_MODE_H_INCLUDED
-
-#include <beast/nudb/detail/config.h>
-#include <string>
+#include <beast/nudb/detail/varint.h>
+#include <beast/unit_test/suite.h>
+#include <array>
 
 namespace beast {
 namespace nudb {
+namespace tests {
 
-enum class file_mode
+class varint_test : public unit_test::suite
 {
-    scan,         // read sequential
-    read,         // read random
-    append,       // read random, write append
-    write         // read random, write random
+public:
+    void
+    test_varints (std::vector<std::size_t> vv)
+    {
+        testcase("encode, decode");
+        for (auto const v : vv)
+        {
+            std::array<std::uint8_t,
+                detail::varint_traits<std::size_t>::max> vi;
+            auto const n = detail::write_varint(
+                vi.data(), v);
+            std::size_t v1;
+            detail::read_varint(vi.data(), n, v1);
+            expect(v == v1);
+        }
+    }
+
+    void
+    run() override
+    {
+        test_varints({
+                0,     1,     2,
+              126,   127,   128,
+              253,   254,   255,
+            16127, 16128, 16129,
+            0xff,
+            0xffff,
+            0xffffffff,
+            0xffffffffffffUL,
+            0xffffffffffffffffUL});
+    }
 };
 
-// This sort of doesn't belong here
-using path_type = std::string;
+BEAST_DEFINE_TESTSUITE(varint,nudb,beast);
 
+} // test
 } // nudb
 } // beast
-
-#endif

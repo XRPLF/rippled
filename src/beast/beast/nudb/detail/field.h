@@ -20,7 +20,6 @@
 #ifndef BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
 #define BEAST_NUDB_DETAIL_FIELD_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/stream.h>
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <cstddef>
@@ -85,16 +84,16 @@ struct field <std::uint64_t>
     static std::size_t BEAST_CONSTEXPR max = 0xffffffffffffffff;
 };
 
-// read field from istream
+// read field from memory
 
 template <class T, class U, std::enable_if_t<
     std::is_same<T, std::uint16_t>::value>* = nullptr>
 void
-read (istream& is, U& u)
+readp (void const* v, U& u)
 {
-    T t;
     std::uint8_t const* p =
-        is.data(field<T>::size);
+        reinterpret_cast<std::uint8_t const*>(v);
+    T t;
     t =  T(*p++)<< 8;
     t =  T(*p  )      | t;
     u = t;
@@ -103,25 +102,25 @@ read (istream& is, U& u)
 template <class T, class U, std::enable_if_t<
     std::is_same<T, uint24_t>::value>* = nullptr>
 void
-read (istream& is, U& u)
+readp (void const* v, U& u)
 {
-    T t;
     std::uint8_t const* p =
-        is.data(field<T>::size);
-    t = (T(*p++)<<16) | t;
-    t = (T(*p++)<< 8) | t;
-    t =  T(*p  )      | t;
+        reinterpret_cast<std::uint8_t const*>(v);
+    std::uint32_t t;
+    t = (std::uint32_t(*p++)<<16) | t;
+    t = (std::uint32_t(*p++)<< 8) | t;
+    t =  std::uint32_t(*p  )      | t;
     u = t;
 }
 
 template <class T, class U, std::enable_if_t<
     std::is_same<T, std::uint32_t>::value>* = nullptr>
 void
-read (istream& is, U& u)
+readp (void const* v, U& u)
 {
-    T t;
     std::uint8_t const* p =
-        is.data(field<T>::size);
+        reinterpret_cast<std::uint8_t const*>(v);
+    T t;
     t =  T(*p++)<<24;
     t = (T(*p++)<<16) | t;
     t = (T(*p++)<< 8) | t;
@@ -132,11 +131,11 @@ read (istream& is, U& u)
 template <class T, class U, std::enable_if_t<
     std::is_same<T, uint48_t>::value>* = nullptr>
 void
-read (istream& is, U& u)
+readp (void const* v, U& u)
 {
-    std::uint64_t t;
     std::uint8_t const* p =
-        is.data(field<T>::size);
+        reinterpret_cast<std::uint8_t const*>(v);
+    std::uint64_t t;
     t = (std::uint64_t(*p++)<<40);
     t = (std::uint64_t(*p++)<<32) | t;
     t = (std::uint64_t(*p++)<<24) | t;
@@ -149,11 +148,11 @@ read (istream& is, U& u)
 template <class T, class U, std::enable_if_t<
     std::is_same<T, std::uint64_t>::value>* = nullptr>
 void
-read (istream& is, U& u)
+readp (void const* v, U& u)
 {
-    T t;
     std::uint8_t const* p =
-        is.data(field<T>::size);
+        reinterpret_cast<std::uint8_t const*>(v);
+    T t;
     t =  T(*p++)<<56;
     t = (T(*p++)<<48) | t;
     t = (T(*p++)<<40) | t;
@@ -165,6 +164,15 @@ read (istream& is, U& u)
     u = t;
 }
 
+// read field from istream
+
+template <class T, class U>
+void
+read (istream& is, U& u)
+{
+    readp<T>(is.data(field<T>::size), u);
+}
+
 // write field to ostream
 
 template <class T, class U, std::enable_if_t<
@@ -172,11 +180,6 @@ template <class T, class U, std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -189,11 +192,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -207,11 +205,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -226,11 +219,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     std::uint64_t const t = u;
     std::uint8_t* p =
         os.data(field<T>::size);
@@ -247,11 +235,6 @@ template <class T, class U,std::enable_if_t<
 void
 write (ostream& os, U const& u)
 {
-#ifndef BEAST_NUDB_NO_DOMAIN_CHECK
-    if (u > field<T>::max)
-        throw std::logic_error(
-            "nudb: field max exceeded");
-#endif
     T t = u;
     std::uint8_t* p =
         os.data(field<T>::size);

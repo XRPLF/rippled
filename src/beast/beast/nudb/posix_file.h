@@ -20,9 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_POSIX_FILE_H_INCLUDED
 #define BEAST_NUDB_DETAIL_POSIX_FILE_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/mode.h>
-#include <beast/nudb/detail/config.h>
+#include <beast/nudb/common.h>
 #include <cassert>
 #include <cerrno>
 #include <cstring>
