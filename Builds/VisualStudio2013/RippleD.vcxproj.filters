@@ -3141,6 +3141,9 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Database.test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\import_test.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Timing.test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>

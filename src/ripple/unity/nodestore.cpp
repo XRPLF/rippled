@@ -40,4 +40,6 @@
 #include <ripple/nodestore/tests/Backend.test.cpp>
 #include <ripple/nodestore/tests/Basics.test.cpp>
 #include <ripple/nodestore/tests/Database.test.cpp>
+#include <ripple/nodestore/tests/import_test.cpp>
 #include <ripple/nodestore/tests/Timing.test.cpp>
+

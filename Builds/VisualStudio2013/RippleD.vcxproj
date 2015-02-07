@@ -2168,6 +2168,9 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Database.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\import_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Timing.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
