@@ -165,9 +165,11 @@ trim (std::string const& s)
         http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
 */
 template <class FwdIt,
-    class Result = std::vector<std::basic_string<typename FwdIt::value_type>>>
+    class Result = std::vector<
+        std::basic_string<typename FwdIt::value_type>>,
+            class Char>
 Result
-split_commas(FwdIt first, FwdIt last)
+split(FwdIt first, FwdIt last, Char delim)
 {
     Result result;
     using string = typename Result::value_type;
@@ -206,7 +208,7 @@ split_commas(FwdIt first, FwdIt last)
                 e.clear();
             }
         }
-        else if (*iter == ',')
+        else if (*iter == delim)
         {
             e = trim_right (e);
             if (! e.empty())
@@ -233,6 +235,15 @@ split_commas(FwdIt first, FwdIt last)
             result.emplace_back(std::move(e));
     }
     return result;
+}
+
+template <class FwdIt,
+    class Result = std::vector<
+        std::basic_string<typename FwdIt::value_type>>>
+Result
+split_commas(FwdIt first, FwdIt last)
+{
+    return split(first, last, ',');
 }
 
 template <class Result = std::vector<std::string>>
