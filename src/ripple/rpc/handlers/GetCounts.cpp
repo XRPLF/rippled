@@ -93,8 +93,10 @@ Json::Value doGetCounts (RPC::Context& context)
     ret["node_writes"] = app.getNodeStore().getStoreCount();
     ret["node_reads_total"] = app.getNodeStore().getFetchTotalCount();
     ret["node_reads_hit"] = app.getNodeStore().getFetchHitCount();
-    ret["node_written_bytes"] = app.getNodeStore().getStoreSize();
-    ret["node_read_bytes"] = app.getNodeStore().getFetchSize();
+    ret["node_written_bytes"] = app.getNodeStore().getStoreBytes();
+    ret["node_read_bytes"] = app.getNodeStore().getFetchBytes();
+    ret["node_stores_duration"] = app.getNodeStore().getStoresDuration();
+    ret["node_fetches_duration"] = app.getNodeStore().getFetchesDuration();
 
     return ret;
 }

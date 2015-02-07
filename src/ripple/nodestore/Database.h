@@ -54,7 +54,7 @@ public:
         or paths used by the underlying backend.
     */
     virtual std::string getName () const = 0;
-    
+
     /** Close the database.
         This allows the caller to catch exceptions.
     */
@@ -143,11 +143,13 @@ public:
     /** Gather statistics pertaining to read and write activities.
         Return the reads and writes, and total read and written bytes.
      */
-    virtual std::uint32_t getStoreCount () const = 0;
-    virtual std::uint32_t getFetchTotalCount () const = 0;
-    virtual std::uint32_t getFetchHitCount () const = 0;
-    virtual std::uint32_t getStoreSize () const = 0;
-    virtual std::uint32_t getFetchSize () const = 0;
+    virtual std::uint32_t getStoreCount() const = 0;
+    virtual std::uint32_t getFetchTotalCount() const = 0;
+    virtual std::uint32_t getFetchHitCount() const = 0;
+    virtual std::uint32_t getStoreBytes() const = 0;
+    virtual std::uint32_t getFetchBytes() const = 0;
+    virtual std::uint32_t getStoresDuration () const = 0;
+    virtual std::uint32_t getFetchesDuration() const = 0;
 };
 
 }

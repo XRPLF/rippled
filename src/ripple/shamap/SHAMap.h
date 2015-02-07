@@ -334,6 +334,9 @@ private:
     SHAMapType mType;
     bool mBacked = true; // Map is backed by the database
     MissingNodeHandler m_missing_node_handler;
+    // Thresholds for deferred reads and duration in microseconds to read them.
+    std::uint32_t const cDeferredReads = 50;
+    std::uint32_t const cElapsedReads = 50000;
 };
 
 }

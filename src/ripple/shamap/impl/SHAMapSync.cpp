@@ -238,7 +238,17 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
         if (deferredReads.empty ())
             break;
 
-        db_.waitReads();
+        {
+            auto const before = std::chrono::steady_clock::now();
+            db_.waitReads();
+            auto const after = std::chrono::steady_clock::now();
+            auto const elapsed = std::chrono::duration_cast
+                <std::chrono::microseconds> (after - before);
+            auto const count = deferredReads.size ();
+            if ((elapsed.count() > cElapsedReads) || (count > cDeferredReads))
+                journal_.debug << "getMissingNodes reads " <<
+                        count << " nodes in " << elapsed << " us";
+        }
 
         // Process all deferred reads
         for (auto const& node : deferredReads)
