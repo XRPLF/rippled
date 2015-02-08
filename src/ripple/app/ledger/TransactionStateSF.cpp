@@ -43,7 +43,6 @@ void TransactionStateSF::gotNode (bool fromFilter,
     //        and this should use that Database instad of getNodeStore
     getApp().getNodeStore ().store (
         (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
-        mLedgerSeq,
         std::move (nodeData),
         nodeHash);
 }

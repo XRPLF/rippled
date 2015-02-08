@@ -27,13 +27,11 @@ namespace ripple {
 
 NodeObject::NodeObject (
     NodeObjectType type,
-    LedgerIndex ledgerIndex,
     Blob&& data,
     uint256 const& hash,
     PrivateAccess)
     : mType (type)
     , mHash (hash)
-    , mLedgerIndex (ledgerIndex)
 {
     mData = std::move (data);
 }
@@ -41,12 +39,11 @@ NodeObject::NodeObject (
 NodeObject::Ptr
 NodeObject::createObject (
     NodeObjectType type,
-    LedgerIndex ledgerIndex,
     Blob&& data,
     uint256 const& hash)
 {
     return std::make_shared <NodeObject> (
-        type, ledgerIndex, std::move (data), hash, PrivateAccess ());
+        type, std::move (data), hash, PrivateAccess ());
 }
 
 NodeObjectType
@@ -59,12 +56,6 @@ uint256 const&
 NodeObject::getHash () const
 {
     return mHash;
-}
-
-LedgerIndex
-NodeObject::getLedgerIndex () const
-{
-    return mLedgerIndex;
 }
 
 Blob const&
@@ -80,9 +71,6 @@ NodeObject::isCloneOf (NodeObject::Ptr const& other) const
         return false;
 
     if (mHash != other->mHash)
-        return false;
-
-    if (mLedgerIndex != other->mLedgerIndex)
         return false;
 
     if (mData != other->mData)

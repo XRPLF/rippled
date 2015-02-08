@@ -306,21 +306,19 @@ public:
     //------------------------------------------------------------------------------
 
     void store (NodeObjectType type,
-                std::uint32_t index,
                 Blob&& data,
-                uint256 const& hash)
+                uint256 const& hash) override
     {
-        storeInternal (type, index, std::move(data), hash, *m_backend.get());
+        storeInternal (type, std::move(data), hash, *m_backend.get());
     }
 
     void storeInternal (NodeObjectType type,
-                        std::uint32_t index,
                         Blob&& data,
                         uint256 const& hash,
                         Backend& backend)
     {
-        NodeObject::Ptr object = NodeObject::createObject(type, index,
-                std::move(data), hash);
+        NodeObject::Ptr object = NodeObject::createObject(
+            type, std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
         assert (hash == Serializer::getSHA512Half (data));

@@ -77,7 +77,6 @@ private:
 public:
     // This constructor is private, use createObject instead.
     NodeObject (NodeObjectType type,
-                LedgerIndex ledgerIndex,
                 Blob&& data,
                 uint256 const& hash,
                 PrivateAccess);
@@ -94,7 +93,6 @@ public:
         @param hash The 256-bit hash of the payload data.
     */
     static Ptr createObject (NodeObjectType type,
-                             LedgerIndex ledgerIndex,
                              Blob&& data,
                              uint256 const& hash);
 
@@ -105,10 +103,6 @@ public:
     /** Retrieve the hash metadata.
     */
     uint256 const& getHash () const;
-
-    /** Retrieve the ledger index in which this object appears.
-    */
-    LedgerIndex getLedgerIndex() const;
 
     /** Retrieve the binary data.
     */
@@ -136,7 +130,6 @@ public:
 private:
     NodeObjectType mType;
     uint256 mHash;
-    LedgerIndex mLedgerIndex;
     Blob mData;
 };
 
