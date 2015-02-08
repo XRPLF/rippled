@@ -223,9 +223,9 @@ public:
             auto const before = std::chrono::steady_clock::now();
             obj = fetchFrom (hash);
             auto const after = std::chrono::steady_clock::now();
-            nodeCounters_.fetchesDuration += std::chrono::duration_cast
+            counters_.fetchDuration += std::chrono::duration_cast
                     <std::chrono::microseconds> (after - before).count();
-            ++nodeCounters_.fetches;
+            ++counters_.fetches;
         }
 
         if (obj == nullptr)
@@ -253,9 +253,9 @@ public:
                 if (m_fastBackend != nullptr)
                 {
                     m_fastBackend->store (obj);
-                    ++nodeCounters_.stores;
+                    ++counters_.stores;
                     if (obj)
-                        nodeCounters_.storeBytes += obj->getData().size();
+                        counters_.storeBytes += obj->getData().size();
                 }
 
                 // Since this was a 'hard' fetch, we will log it.
@@ -283,9 +283,9 @@ public:
         switch (status)
         {
         case ok:
-            ++nodeCounters_.fetchHits;
+            ++counters_.fetchHits;
             if (object)
-                nodeCounters_.fetchBytes += object->getData().size();
+                counters_.fetchBytes += object->getData().size();
         case notFound:
             break;
 
@@ -331,18 +331,18 @@ public:
         m_cache.canonicalize (hash, object, true);
 
         backend.store (object);
-        ++nodeCounters_.stores;
+        ++counters_.stores;
         if (object)
-            nodeCounters_.storeBytes += object->getData().size();
+            counters_.storeBytes += object->getData().size();
 
         m_negCache.erase (hash);
 
         if (m_fastBackend)
         {
             m_fastBackend->store (object);
-            ++nodeCounters_.stores;
+            ++counters_.stores;
             if (object)
-                nodeCounters_.storeBytes += object->getData().size();
+                counters_.storeBytes += object->getData().size();
         }
     }
 
@@ -443,73 +443,23 @@ public:
             }
 
             b.push_back (object);
-            ++nodeCounters_.stores;
+            ++counters_.stores;
             if (object)
-                nodeCounters_.storeBytes += object->getData().size();
+                counters_.storeBytes += object->getData().size();
         });
 
         if (! b.empty())
             dest.storeBatch (b);
     }
 
-    std::uint32_t getStoreCount() const override
+    Counters const& counters() const override
     {
-        return nodeCounters_.stores;
-    }
-
-    std::uint32_t getFetchTotalCount() const override
-    {
-        return nodeCounters_.fetches;
-    }
-
-    std::uint32_t getFetchHitCount() const override
-    {
-        return nodeCounters_.fetchHits;
-    }
-
-    std::uint32_t getStoreBytes() const override
-    {
-        return nodeCounters_.storeBytes;
-    }
-
-    std::uint32_t getFetchBytes() const override
-    {
-        return nodeCounters_.fetchBytes;
-    }
-
-    std::uint32_t getStoresDuration() const override
-    {
-        return nodeCounters_.storesDuration;
-    }
-
-    std::uint32_t getFetchesDuration() const override
-    {
-        return nodeCounters_.fetchesDuration;
+        return counters_;
     }
 
 private:
-    struct NodeCounters
-    {
-        NodeCounters()
-            : stores (0)
-            , fetches (0)
-            , fetchHits (0)
-            , storeBytes (0)
-            , fetchBytes (0)
-            , storesDuration (0)
-            , fetchesDuration (0)
-        {}
+    Counters counters_;
 
-        std::atomic <std::uint32_t> stores;
-        std::atomic <std::uint32_t> fetches;
-        std::atomic <std::uint32_t> fetchHits;
-        std::atomic <std::uint32_t> storeBytes;
-        std::atomic <std::uint32_t> fetchBytes;
-        std::atomic <std::uint32_t> storesDuration;
-        std::atomic <std::uint32_t> fetchesDuration;
-    };
-
-    NodeCounters nodeCounters_;
 };
 
 }

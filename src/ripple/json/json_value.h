@@ -220,6 +220,10 @@ public:
 # endif
     Value ( bool value );
     Value ( const Value& other );
+    Value ( std::atomic<bool> const& other );
+    Value ( std::atomic <std::int32_t> const& other );
+    Value ( std::atomic <std::uint32_t> const& other );
+    Value ( std::atomic <double> const& other );
     ~Value ();
 
     Value& operator= ( const Value& other );
