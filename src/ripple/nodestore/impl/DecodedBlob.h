@@ -51,7 +51,6 @@ private:
     bool m_success;
 
     void const* m_key;
-    LedgerIndex m_ledgerIndex;
     NodeObjectType m_objectType;
     unsigned char const* m_objectData;
     int m_dataBytes;

@@ -1400,8 +1400,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                     if (obj.has_nodeid ())
                         newObj.set_index (obj.nodeid ());
 
-                    if (!reply.has_seq () && (hObj->getLedgerIndex () != 0))
-                        reply.set_seq (hObj->getLedgerIndex ());
+                    // VFALCO NOTE "seq" in the message is obsolete
                 }
             }
         }

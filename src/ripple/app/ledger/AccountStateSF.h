@@ -29,7 +29,7 @@ namespace ripple {
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-    explicit AccountStateSF (std::uint32_t ledgerSeq);
+    AccountStateSF();
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -41,9 +41,6 @@ public:
     bool haveNode (SHAMapNodeID const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
-
-private:
-    std::uint32_t mLedgerSeq;
 };
 
 } // ripple

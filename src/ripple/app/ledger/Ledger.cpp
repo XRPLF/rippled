@@ -688,7 +688,7 @@ bool Ledger::saveValidatedLedger (bool current)
         s.add32 (HashPrefix::ledgerMaster);
         addRaw (s);
         getApp().getNodeStore ().store (
-            hotLEDGER, mLedgerSeq, std::move (s.modData ()), mHash);
+            hotLEDGER, std::move (s.modData ()), mHash);
     }
 
     AcceptedLedger::pointer aLedger;

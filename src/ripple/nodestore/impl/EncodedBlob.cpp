@@ -27,30 +27,27 @@ namespace NodeStore {
 void
 EncodedBlob::prepare (NodeObject::Ptr const& object)
 {
-    m_key = object->getHash ().begin ();
+    m_key = object->getHash().begin ();
 
     // This is how many bytes we need in the flat data
     m_size = object->getData ().size () + 9;
 
-    m_data.ensureSize (m_size);
-
-    // These sizes must be the same!
-    static_assert (sizeof (std::uint32_t) == sizeof (object->getLedgerIndex ()),
-        "Ledger Indices must be exactly 32-bits long.");
+    m_data.ensureSize(m_size);
 
     {
-        std::uint32_t* buf = static_cast <std::uint32_t*> (m_data.getData ());
-
-        buf [0] = beast::ByteOrder::swapIfLittleEndian (object->getLedgerIndex ());
-        buf [1] = beast::ByteOrder::swapIfLittleEndian (object->getLedgerIndex ());
+        // these 8 bytes are unused
+        std::uint64_t* buf = static_cast <
+            std::uint64_t*>(m_data.getData ());
+        *buf = 0;
     }
 
     {
-        unsigned char* buf = static_cast <unsigned char*> (m_data.getData ());
-
-        buf [8] = static_cast <unsigned char> (object->getType ());
-
-        memcpy (&buf [9], object->getData ().data (), object->getData ().size ());
+        unsigned char* buf = static_cast <
+            unsigned char*> (m_data.getData ());
+        buf [8] = static_cast <
+            unsigned char> (object->getType ());
+        memcpy (&buf [9], object->getData ().data(),
+            object->getData ().size());
     }
 }
 

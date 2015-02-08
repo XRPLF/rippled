@@ -27,6 +27,8 @@
 
 namespace ripple {
 
+// VFALCO NOTE LedgerIndex in CommittedObjects is obsolete
+
 static const char* s_nodeStoreDBInit [] =
 {
     "PRAGMA synchronous=NORMAL;",
@@ -94,7 +96,7 @@ public:
             uint256 const hash (uint256::fromVoid (key));
 
             static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
-                "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
+                "SELECT ObjType,Object FROM CommittedObjects WHERE Hash = ?;");
 
             pSt.bind (1, to_string (hash));
 
@@ -102,10 +104,9 @@ public:
             {
                 // VFALCO NOTE This is unfortunately needed,
                 //             the DatabaseCon creates the blob?
-                Blob data (pSt.getBlob (2));
+                Blob data (pSt.getBlob(1));
                 *pObject = NodeObject::createObject (
                     getTypeFromString (pSt.peekString (0)),
-                    pSt.getUInt32 (1),
                     std::move(data),
                     hash);
             }
@@ -131,15 +132,13 @@ public:
 
     void storeBatch (NodeStore::Batch const& batch)
     {
-        // VFALCO TODO Rewrite this to use Beast::db
-
         auto sl (m_db->lock());
 
         static SqliteStatement pStB (m_db->getDB()->getSqliteDB(), "BEGIN TRANSACTION;");
         static SqliteStatement pStE (m_db->getDB()->getSqliteDB(), "END TRANSACTION;");
         static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
             "INSERT OR IGNORE INTO CommittedObjects "
-                "(Hash,ObjType,LedgerIndex,Object) VALUES (?, ?, ?, ?);");
+                "(Hash,ObjType,Object) VALUES (?, ?, ?, ?);");
 
         pStB.step();
         pStB.reset();
@@ -163,7 +162,7 @@ public:
         uint256 hash;
 
         static SqliteStatement pSt(m_db->getDB()->getSqliteDB(),
-            "SELECT ObjType,LedgerIndex,Object,Hash FROM CommittedObjects;");
+            "SELECT ObjType,Object,Hash FROM CommittedObjects;");
 
         while (pSt.isRow (pSt.step()))
         {
@@ -171,10 +170,9 @@ public:
 
             // VFALCO NOTE This is unfortunately needed,
             //             the DatabaseCon creates the blob?
-            Blob data (pSt.getBlob (2));
+            Blob data (pSt.getBlob (1));
             NodeObject::Ptr const object (NodeObject::createObject (
                 getTypeFromString (pSt.peekString (0)),
-                pSt.getUInt32 (1),
                 std::move(data),
                 hash));
 
@@ -207,8 +205,7 @@ public:
 
         statement.bind(1, to_string (object->getHash()));
         statement.bind(2, type);
-        statement.bind(3, object->getLedgerIndex());
-        statement.bindStatic(4, object->getData());
+        statement.bindStatic(3, object->getData());
     }
 
     NodeObjectType getTypeFromString (std::string const& s)

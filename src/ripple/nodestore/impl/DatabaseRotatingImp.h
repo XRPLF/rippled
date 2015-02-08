@@ -110,11 +110,10 @@ public:
     }
 
     void store (NodeObjectType type,
-                std::uint32_t index,
                 Blob&& data,
                 uint256 const& hash) override
     {
-        storeInternal (type, index, std::move(data), hash,
+        storeInternal (type, std::move(data), hash,
                 *getWritableBackend());
     }
 

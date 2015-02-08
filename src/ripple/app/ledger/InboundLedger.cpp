@@ -141,8 +141,8 @@ bool InboundLedger::tryLocal ()
             if (m_journal.trace) m_journal.trace <<
                 "Ledger header found in fetch pack";
             mLedger = std::make_shared<Ledger> (data, true);
-            getApp().getNodeStore ().store (hotLEDGER,
-                mLedger->getLedgerSeq (), std::move (data), mHash);
+            getApp().getNodeStore ().store (
+                hotLEDGER, std::move (data), mHash);
         }
         else
         {
@@ -172,7 +172,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            TransactionStateSF filter (mLedger->getLedgerSeq ());
+            TransactionStateSF filter;
 
             if (mLedger->peekTransactionMap ()->fetchRoot (
                 mLedger->getTransHash (), &filter))
@@ -200,7 +200,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            AccountStateSF filter (mLedger->getLedgerSeq ());
+            AccountStateSF filter;
 
             if (mLedger->peekAccountStateMap ()->fetchRoot (
                 mLedger->getAccountHash (), &filter))
@@ -570,7 +570,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             // VFALCO Why 256? Make this a constant
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            AccountStateSF filter (mSeq);
+            AccountStateSF filter;
 
             // Release the lock while we process the large state map
             sl.unlock();
@@ -649,7 +649,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             std::vector<uint256> nodeHashes;
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            TransactionStateSF filter (mSeq);
+            TransactionStateSF filter;
             mLedger->peekTransactionMap ()->getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
 
@@ -804,8 +804,8 @@ bool InboundLedger::takeHeader (std::string const& data)
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
-    getApp().getNodeStore ().store (hotLEDGER,
-        mLedger->getLedgerSeq (), std::move (s.modData ()), mHash);
+    getApp().getNodeStore ().store (
+        hotLEDGER, std::move (s.modData ()), mHash);
 
     progress ();
 
@@ -841,7 +841,7 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNodeID>& nodeIDs,
 
     std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
-    TransactionStateSF tFilter (mLedger->getLedgerSeq ());
+    TransactionStateSF tFilter;
 
     while (nodeIDit != nodeIDs.end ())
     {
@@ -908,7 +908,7 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNodeID>& nodeIDs,
 
     std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
-    AccountStateSF tFilter (mLedger->getLedgerSeq ());
+    AccountStateSF tFilter;
 
     while (nodeIDit != nodeIDs.end ())
     {
@@ -972,7 +972,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    AccountStateSF tFilter (mLedger->getLedgerSeq ());
+    AccountStateSF tFilter;
     san += mLedger->peekAccountStateMap ()->addRootNode (
         mLedger->getAccountHash (), data, snfWIRE, &tFilter);
     return san.isGood();
@@ -996,7 +996,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    TransactionStateSF tFilter (mLedger->getLedgerSeq ());
+    TransactionStateSF tFilter;
     san += mLedger->peekTransactionMap ()->addRootNode (
         mLedger->getTransHash (), data, snfWIRE, &tFilter);
     return san.isGood();
@@ -1015,7 +1015,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveState)
     {
-        AccountStateSF filter (mLedger->getLedgerSeq ());
+        AccountStateSF filter;
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
         {
@@ -1026,7 +1026,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveTransactions)
     {
-        TransactionStateSF filter (mLedger->getLedgerSeq ());
+        TransactionStateSF filter;
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
         {

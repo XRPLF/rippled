@@ -66,8 +66,6 @@ public:
                 break;
             };
 
-            LedgerIndex ledgerIndex = 1 + r.nextInt (1024 * 1024);
-
             uint256 hash;
             r.fillBitsRandomly (hash.begin (), hash.size ());
 
@@ -77,7 +75,7 @@ public:
 
             r.fillBitsRandomly (data.data (), payloadBytes);
 
-            return NodeObject::createObject(type, ledgerIndex, std::move(data), hash);
+            return NodeObject::createObject(type, std::move(data), hash);
         }
 
     private:
@@ -176,7 +174,6 @@ public:
             Blob data (object->getData ());
 
             db.store (object->getType (),
-                      object->getLedgerIndex (),
                       std::move (data),
                       object->getHash ());
         }
