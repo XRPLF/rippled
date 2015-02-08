@@ -40,16 +40,9 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
     m_success = false;
     m_key = key;
     // VFALCO NOTE Ledger indexes should have started at 1
-    m_ledgerIndex = LedgerIndex (-1);
     m_objectType = hotUNKNOWN;
     m_objectData = nullptr;
     m_dataBytes = std::max (0, valueBytes - 9);
-
-    if (valueBytes > 4)
-    {
-        LedgerIndex const* index = static_cast <LedgerIndex const*> (value);
-        m_ledgerIndex = beast::ByteOrder::swapIfLittleEndian (*index);
-    }
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?
 
@@ -90,7 +83,7 @@ NodeObject::Ptr DecodedBlob::createObject ()
         Blob data(m_objectData, m_objectData + m_dataBytes);
 
         object = NodeObject::createObject (
-            m_objectType, m_ledgerIndex, std::move(data), uint256::fromVoid(m_key));
+            m_objectType, std::move(data), uint256::fromVoid(m_key));
     }
 
     return object;
