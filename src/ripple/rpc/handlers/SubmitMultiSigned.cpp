@@ -1,12 +1,10 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
+    Copyright (c) 2012-2014 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -18,22 +16,24 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/StringUtilities.h>
 
-#include <ripple/app/book/impl/BookTip.cpp>
-#include <ripple/app/book/impl/OfferStream.cpp>
-#include <ripple/app/book/impl/Quality.cpp>
-#include <ripple/app/book/impl/Taker.cpp>
-#include <ripple/app/transactors/Transactor.cpp>
-#include <ripple/app/transactors/Change.cpp>
-#include <ripple/app/transactors/CancelOffer.cpp>
-#include <ripple/app/transactors/Payment.cpp>
-#include <ripple/app/transactors/SetRegularKey.cpp>
-#include <ripple/app/transactors/SetAccount.cpp>
-#include <ripple/app/transactors/SetTrust.cpp>
-#include <ripple/app/transactors/CreateOffer.cpp>
-#include <ripple/app/transactors/CreateTicket.cpp>
-#include <ripple/app/transactors/CancelTicket.cpp>
-#include <ripple/app/transactors/SetSignerList.cpp>
-#include <ripple/app/transactors/impl/SignerEntries.cpp>
-#include <ripple/app/transactors/test/MultiSign.test.cpp>
-#include <ripple/app/transactors/test/common_transactor.cpp>
+namespace ripple {
+
+// {
+//   SigningAccounts <array>,
+//   tx_json: <object>,
+// }
+Json::Value doSubmitMultiSigned (RPC::Context& context)
+{
+    context.loadType = Resource::feeHighBurdenRPC;
+
+    NetworkOPs::FailHard const failType = NetworkOPs::doFailHard (
+            context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ());
+
+    return RPC::transactionSubmitMultiSigned (
+        context.params, failType, context.netOps, context.role);
+}
+
+} // ripple

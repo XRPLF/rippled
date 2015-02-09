@@ -304,6 +304,9 @@
     <Filter Include="ripple\app\transactors\impl">
       <UniqueIdentifier>{CFEA25C1-316C-B934-E027-501899E36F85}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\transactors\test">
+      <UniqueIdentifier>{A3490B5D-0825-5748-E39D-BF8076F5C63D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\tx">
       <UniqueIdentifier>{50FDCDC1-EC9C-9F3B-34C9-EF4137E132B4}</UniqueIdentifier>
     </Filter>
@@ -2592,6 +2595,15 @@
     <ClCompile Include="..\..\src\ripple\app\transactors\SetTrust.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\transactors\test\common_transactor.cpp">
+      <Filter>ripple\app\transactors\test</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\transactors\test\common_transactor.h">
+      <Filter>ripple\app\transactors\test</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\transactors\test\MultiSign.test.cpp">
+      <Filter>ripple\app\transactors\test</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\Transactor.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
@@ -3823,6 +3835,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Submit.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SubmitMultiSigned.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Subscribe.cpp">

@@ -659,6 +659,28 @@ private:
         return rpcError (rpcINVALID_PARAMS);
     }
 
+    // submit any multisigned transaction to the network
+    //
+    // submit_multisigned <json>
+    Json::Value parseSubmitMultiSigned (Json::Value const& jvParams)
+    {
+        Json::Value     jvRequest;
+        Json::Reader    reader;
+        bool const      bOffline    = 2 == jvParams.size () && jvParams[1u].asString () == "offline";
+
+        if ((1 == jvParams.size () || bOffline)
+            && reader.parse (jvParams[0u].asString (), jvRequest))
+        {
+            // Multisigned.
+            if (bOffline)
+                jvRequest["offline"]    = true;
+
+            return jvRequest;
+        }
+
+        return rpcError (rpcINVALID_PARAMS);
+    }
+
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
@@ -859,6 +881,9 @@ public:
             {   "sign_for",             &RPCParser::parseSignFor,               4,  4   },
 #endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
+#if RIPPLE_ENABLE_MULTI_SIGN
+            {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
+#endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },

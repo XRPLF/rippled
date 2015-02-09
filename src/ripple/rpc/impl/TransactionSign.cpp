@@ -525,7 +525,6 @@ struct transactionPreProcessResult
      transactionPreProcessResult& operator=
         (transactionPreProcessResult&&) = delete;
 
-
     transactionPreProcessResult (Json::Value&& json)
     : first (std::move (json))
     , second ()
@@ -1017,6 +1016,277 @@ Json::Value transactionSignFor (
         multiSignForAddrID, multiSignAddrID, multiSignPubKey, multiSignature);
 
     return json;
+}
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmitMultiSigned (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    detail::TxnSignApiFacade& apiFacade,
+    Role role)
+{
+    WriteLog (lsDEBUG, RPCHandler)
+        << "transactionSubmitMultiSigned: " << jvRequest;
+
+    // When multi-signing, the "Sequence" and "SigningPubKey" fields must
+    // be passed in by the caller.
+    using namespace detail;
+    {
+        Json::Value err = checkMultiSignFields (jvRequest);
+        if (RPC::contains_error (err))
+            return std::move (err);
+    }
+
+    Json::Value& tx_json (jvRequest ["tx_json"]);
+
+    auto const txJsonResult = checkTxJsonFields(tx_json, apiFacade, role, true);
+    if (RPC::contains_error (txJsonResult.first))
+        return std::move (txJsonResult.first);
+
+    RippleAddress const raSrcAddressID = std::move (txJsonResult.second);
+
+    apiFacade.snapshotAccountState (raSrcAddressID);
+    if (!apiFacade.isValidAccount ())
+    {
+        // If not offline and did not find account, error.
+        WriteLog (lsDEBUG, RPCHandler)
+            << "transactionSubmitMultiSigned: Failed to find source account "
+            << "in current ledger: "
+            << raSrcAddressID.humanAccountID ();
+
+        return rpcError (rpcSRC_ACT_NOT_FOUND);
+    }
+
+    {
+        Json::Value err = checkFee (jvRequest, apiFacade, role, AutoFill::dont);
+        if (RPC::contains_error(err))
+            return std::move (err);
+
+        err = checkPayment (
+            jvRequest,
+            tx_json,
+            raSrcAddressID,
+            apiFacade,
+            role,
+            PathFind::dont);
+
+        if (RPC::contains_error(err))
+            return std::move (err);
+    }
+
+    // Grind through the JSON in tx_json to produce a STTx
+    STTx::pointer stpTrans;
+    {
+        STParsedJSONObject parsedTx_json ("tx_json", tx_json);
+        if (!parsedTx_json.object)
+        {
+            Json::Value jvResult;
+            jvResult ["error"] = parsedTx_json.error ["error"];
+            jvResult ["error_code"] = parsedTx_json.error ["error_code"];
+            jvResult ["error_message"] = parsedTx_json.error ["error_message"];
+            return jvResult;
+        }
+        try
+        {
+            stpTrans =
+                std::make_shared<STTx> (std::move(parsedTx_json.object.get()));
+        }
+        catch (std::exception& ex)
+        {
+            std::string reason (ex.what ());
+            return RPC::make_error (rpcINTERNAL,
+                "Exception while serializing transaction: " + reason);
+        }
+        std::string reason;
+        if (!passesLocalChecks (*stpTrans, reason))
+            return RPC::make_error (rpcINVALID_PARAMS, reason);
+    }
+
+    // Validate the fields in the serialized transaction.
+    {
+        // We now have the transaction text serialized and in the right format.
+        // Verify the values of select fields.
+        //
+        // The SigningPubKey must be present but empty.
+        if (!stpTrans->getFieldVL (sfSigningPubKey).empty ())
+        {
+            std::ostringstream err;
+            err << "Invalid  " << sfSigningPubKey.fieldName
+                << " field.  Field must be empty when multi-signing.";
+            return RPC::make_error (rpcINVALID_PARAMS, err.str ());
+        }
+
+        // The Fee field must be greater than zero.
+        if (stpTrans->getFieldAmount (sfFee) <= 0)
+        {
+            std::ostringstream err;
+            err << "Invalid " << sfFee.fieldName
+                << " field.  Value must be greater than zero.";
+            return RPC::make_error (rpcINVALID_PARAMS, err.str ());
+        }
+    }
+
+    // Check MultiSigners for valid entries.
+    const char* multiSignersArrayName {sfMultiSigners.getJsonName ().c_str ()};
+
+    STArray multiSigners;
+    {
+        // Verify that the MultiSigners field is present and an array.
+        if (! jvRequest.isMember (multiSignersArrayName))
+            return RPC::missing_field_error (multiSignersArrayName);
+
+        Json::Value& multiSignersValue (
+            jvRequest [multiSignersArrayName]);
+
+        if (! multiSignersValue.isArray ())
+        {
+            std::ostringstream err;
+                err << "Expected "
+                << multiSignersArrayName << " to be an array";
+            return RPC::make_param_error (err.str ());
+        }
+
+        // Convert the MultiSigners into SerializedTypes.
+        STParsedJSONArray parsedMultiSigners (
+            multiSignersArrayName, multiSignersValue);
+
+        if (!parsedMultiSigners.array)
+        {
+            Json::Value jvResult;
+            jvResult ["error"] = parsedMultiSigners.error ["error"];
+            jvResult ["error_code"] =
+                parsedMultiSigners.error ["error_code"];
+            jvResult ["error_message"] =
+                parsedMultiSigners.error ["error_message"];
+            return jvResult;
+        }
+        multiSigners = std::move (parsedMultiSigners.array.get());
+    }
+
+    if (multiSigners.empty ())
+        return RPC::make_param_error ("MultiSigners array may not be empty.");
+
+    for (STObject const& signingFor : multiSigners)
+    {
+        if (signingFor.getFName () != sfSigningFor)
+            return RPC::make_param_error (
+                "MultiSigners array has a non-SigningFor entry");
+
+        // Each SigningAccounts array must have at least one entry.
+        STArray const& signingAccounts =
+            signingFor.getFieldArray (sfSigningAccounts);
+
+        if (signingAccounts.empty ())
+            return RPC::make_param_error (
+                "A SigningAccounts array may not be empty");
+
+        // Each SigningAccounts array may only contain SigningAccount objects.
+        auto const signingAccountsEnd = signingAccounts.end ();
+        auto const findItr = std::find_if (
+            signingAccounts.begin (), signingAccountsEnd,
+            [](STObject const& obj)
+            { return obj.getFName () != sfSigningAccount; });
+
+        if (findItr != signingAccountsEnd)
+            return RPC::make_param_error (
+                "SigningAccounts may only contain SigningAccount objects.");
+    }
+
+    // Lambdas for sorting arrays and finding duplicates.
+    auto byFieldAccountID =
+        [] (STObject const& a, STObject const& b) {
+            return (a.getFieldAccount (sfAccount).getAccountID () <
+                b.getFieldAccount (sfAccount).getAccountID ()); };
+
+    auto ifDuplicateAccountID =
+        [] (STObject const& a, STObject const& b) {
+            return (a.getFieldAccount (sfAccount).getAccountID () ==
+                    b.getFieldAccount (sfAccount).getAccountID ()); };
+
+    {
+        // MultiSigners are submitted sorted in Account order.  This
+        // assures that the same list will always have the same hash.
+        multiSigners.sort (byFieldAccountID);
+
+        // There may be no duplicate Accounts in MultiSigners
+        auto const multiSignersEnd = multiSigners.end ();
+
+        auto const dupAccountItr = std::adjacent_find (
+            multiSigners.begin (), multiSignersEnd, ifDuplicateAccountID);
+
+        if (dupAccountItr != multiSignersEnd)
+        {
+            std::ostringstream err;
+            err << "Duplicate SigningFor:Account entries ("
+                << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
+                << ") are not allowed.";
+            return RPC::make_param_error(err.str ());
+        }
+    }
+
+    // All SigningAccounts inside the MultiSigners must also be sorted and
+    // contain no duplicates.
+    for (STObject& signingFor : multiSigners)
+    {
+        STArray& signingAccts = signingFor.peekFieldArray (sfSigningAccounts);
+        signingAccts.sort (byFieldAccountID);
+
+        auto const signingAcctsEnd = signingAccts.end ();
+
+        auto const dupAccountItr = std::adjacent_find (
+            signingAccts.begin (), signingAcctsEnd, ifDuplicateAccountID);
+
+        if (dupAccountItr != signingAcctsEnd)
+        {
+            std::ostringstream err;
+            err << "Duplicate SigningAccounts:SigningAccount:Account entries ("
+                << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
+                << ") are not allowed.";
+            return RPC::make_param_error(err.str ());
+        }
+
+        // An account may not sign for itself.
+        RippleAddress const signingForAcct =
+            signingFor.getFieldAccount (sfAccount);
+
+        auto const selfSigningItr = std::find_if(
+            signingAccts.begin (), signingAcctsEnd,
+            [&signingForAcct](STObject const& elem)
+            { return elem.getFieldAccount (sfAccount) == signingForAcct; });
+
+        if (selfSigningItr != signingAcctsEnd)
+        {
+            std::ostringstream err;
+            err << "A SigningAccount may not SignFor itself ("
+                << signingForAcct.humanAccountID () << ").";
+            return RPC::make_param_error(err.str ());
+        }
+    }
+
+    // Insert the MultiSigners into the transaction.
+    stpTrans->setFieldArray (sfMultiSigners, std::move(multiSigners));
+
+    // Make sure the SerializedTransaction makes a legitimate Transaction.
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (stpTrans);
+
+    if (!txn.second)
+        return txn.first;
+
+    // Finally, submit the transaction.
+    try
+    {
+        // FIXME: For performance, should use asynch interface
+        apiFacade.processTransaction (
+            txn.second, role == Role::ADMIN, true, failType);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
+    }
+
+    return transactionFormatResultImpl (txn.second);
 }
 
 } // RPC

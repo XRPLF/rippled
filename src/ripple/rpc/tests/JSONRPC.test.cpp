@@ -963,7 +963,8 @@ public:
         {
             TestStuff {transactionSign,              "sign",               0},
             TestStuff {transactionSubmit,            "submit",             1},
-            TestStuff {transactionSignFor,           "sign_for",           2}
+            TestStuff {transactionSignFor,           "sign_for",           2},
+            TestStuff {transactionSubmitMultiSigned, "submit_multisigned", 3}
         };
 
         for (auto testFunc : testFuncs)

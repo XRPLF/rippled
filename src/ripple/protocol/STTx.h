@@ -157,6 +157,9 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
+    bool checkSingleSign () const;
+    bool checkMultiSign () const;
+
     TxType tx_type_;
 
     mutable boost::tribool sig_state_;
