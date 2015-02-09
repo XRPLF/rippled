@@ -168,6 +168,24 @@ Json::Value transactionSignFor (
     return transactionSignFor (params, failType, apiFacade, role);
 }
 
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmitMultiSigned (
+    Json::Value params,  // Passed by value so it can be modified locally.
+    NetworkOPs::FailHard failType,
+    detail::TxnSignApiFacade& apiFacade,
+    Role role);
+
+/** Returns a Json::objectValue. */
+Json::Value transactionSubmitMultiSigned (
+    Json::Value const& params,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOPs,
+    Role role)
+{
+    detail::TxnSignApiFacade apiFacade (netOPs);
+    return transactionSubmitMultiSigned (params, failType, apiFacade, role);
+}
+
 } // RPC
 } // ripple
 

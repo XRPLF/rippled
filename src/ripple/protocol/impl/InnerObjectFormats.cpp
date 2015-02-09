@@ -28,6 +28,17 @@ InnerObjectFormats::InnerObjectFormats ()
         << SOElement (sfAccount,              SOE_REQUIRED)
         << SOElement (sfSignerWeight,         SOE_REQUIRED)
         ;
+
+    add (sfSigningFor.getJsonName ().c_str (), sfSigningFor.getCode ())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfSigningAccounts,      SOE_REQUIRED)
+        ;
+
+    add (sfSigningAccount.getJsonName ().c_str (), sfSigningAccount.getCode ())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfSigningPubKey,        SOE_REQUIRED)
+        << SOElement (sfMultiSignature,       SOE_REQUIRED)
+        ;
 }
 
 void InnerObjectFormats::addCommonFields (Item& item)

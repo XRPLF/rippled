@@ -185,13 +185,13 @@ public:
     /** @{ */
     void incrementOwnerCount (SLE::ref sleAccount);
     void incrementOwnerCount (Account const& owner);
-    void increaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch);
+    void increaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch);
     /** @} */
 
     /** @{ */
     void decrementOwnerCount (SLE::ref sleAccount);
     void decrementOwnerCount (Account const& owner);
-    void decreaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch);
+    void decreaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch);
     /** @} */
 
     // Offer functions.

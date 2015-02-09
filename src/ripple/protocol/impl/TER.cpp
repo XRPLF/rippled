@@ -73,6 +73,8 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tefBAD_ADD_AUTH,          "tefBAD_ADD_AUTH",          "Not authorized to add account."                                },
         { tefBAD_AUTH,              "tefBAD_AUTH",              "Transaction's public key is not authorized."                   },
         { tefBAD_LEDGER,            "tefBAD_LEDGER",            "Ledger in unexpected state."                                   },
+        { tefBAD_QUORUM,            "tefBAD_QUORUM",            "Signatures provided do not meet the quorum."                   },
+        { tefBAD_SIGNATURE,         "tefBAD_SIGNATURE",         "A signature is provided for a non-signer."                     },
         { tefCREATED,               "tefCREATED",               "Can't add an already created account."                         },
         { tefEXCEPTION,             "tefEXCEPTION",             "Unexpected program state."                                     },
         { tefFAILURE,               "tefFAILURE",               "Failed to apply."                                              },
@@ -80,8 +82,10 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tefMASTER_DISABLED,       "tefMASTER_DISABLED",       "Master key is disabled."                                       },
         { tefMAX_LEDGER,            "tefMAX_LEDGER",            "Ledger sequence too high."                                     },
         { tefNO_AUTH_REQUIRED,      "tefNO_AUTH_REQUIRED",      "Auth is not required."                                         },
+        { tefNOT_MULTI_SIGNING,     "tefNOT_MULTI_SIGNING",     "Account has no appropriate list of multi-signers."             },
         { tefPAST_SEQ,              "tefPAST_SEQ",              "This sequence number has already past."                        },
         { tefWRONG_PRIOR,           "tefWRONG_PRIOR",           "This previous transaction does not match."                     },
+        { tefBAD_AUTH_MASTER,       "tefBAD_AUTH_MASTER",       "Auth for unclaimed account needs correct master key."          },
 
         { telLOCAL_ERROR,           "telLOCAL_ERROR",           "Local failure."                                                },
         { telBAD_DOMAIN,            "telBAD_DOMAIN",            "Domain too long."                                              },
@@ -93,7 +97,6 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
 
         { temMALFORMED,             "temMALFORMED",             "Malformed transaction."                                        },
         { temBAD_AMOUNT,            "temBAD_AMOUNT",            "Can only send positive amounts."                               },
-        { temBAD_AUTH_MASTER,       "temBAD_AUTH_MASTER",       "Auth for unclaimed account needs correct master key."          },
         { temBAD_CURRENCY,          "temBAD_CURRENCY",          "Malformed: Bad currency."                                      },
         { temBAD_EXPIRATION,        "temBAD_EXPIRATION",        "Malformed: Bad expiration."                                    },
         { temBAD_FEE,               "temBAD_FEE",               "Invalid fee, negative or not XRP."                             },

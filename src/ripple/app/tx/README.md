@@ -29,8 +29,6 @@ classes the ability to replace portions of the default implementation.
 
 ## SetSignerList ##
 
-**Associated JIRA task is [RIPD-182](https://ripplelabs.atlassian.net/browse/RIPD-182)**
-
 In order to enhance the flexibility of Ripple and provide support for enhanced
 security of accounts, native support for "multi-signature" or "multi-sign"
 accounts is required.
@@ -157,8 +155,6 @@ The data for a transaction that removes any signer list has this form:
 ## SetTrust ##
 
 ## Tickets ##
-
-**Associated JIRA task is [RIPD-368](https://ripplelabs.atlassian.net/browse/RIPD-368)**
 
 Currently transactions on the Ripple network require the use of sequence
 numbers and sequence numbers must monotonically increase. Since the sequence

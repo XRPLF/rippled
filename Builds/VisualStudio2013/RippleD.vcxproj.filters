@@ -2574,6 +2574,15 @@
     <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\common_transactor.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\tests\common_transactor.h">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\MultiSign.test.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
@@ -3745,6 +3754,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Submit.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SubmitMultiSigned.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Subscribe.cpp">
