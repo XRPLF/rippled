@@ -544,6 +544,15 @@
     <Filter Include="snappy\snappy">
       <UniqueIdentifier>{575659AE-C11F-C7F6-CEA1-3F2FBB560918}</UniqueIdentifier>
     </Filter>
+    <Filter Include="soci">
+      <UniqueIdentifier>{E5334950-60C3-CE41-4DD7-535029F143F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src">
+      <UniqueIdentifier>{5A1D8022-39F2-67E1-FFBE-EA7D5BF9FBDB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src\core">
+      <UniqueIdentifier>{D4BF99B9-6486-2124-6103-825710EDD595}</UniqueIdentifier>
+    </Filter>
     <Filter Include="websocketpp">
       <UniqueIdentifier>{EE7AC8C9-27EB-C05E-C986-EECB0174B997}</UniqueIdentifier>
     </Filter>
@@ -4293,6 +4302,12 @@
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\soci.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -5132,6 +5147,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
       <Filter>snappy\snappy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
+      <Filter>soci\src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocketpp\websocketpp\base64\base64.hpp">
       <Filter>websocketpp\websocketpp\base64</Filter>
