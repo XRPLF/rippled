@@ -6,34 +6,36 @@ these database than what is traditional. NuDB provides highly
 optimized and concurrent atomic, durable, and isolated fetch and
 insert operations to secondary storage, along with these features:
 
-* Low memory footprint
-* Values are immutable
-* Value sizes from 1 2^48 bytes (281TB)
-* All keys are the same size
-* Performance independent of growth
-* Optimized for concurrent fetch
-* Key file can be rebuilt if needed
-* Inserts are atomic and consistent
-* Data file may be iterated, index rebuilt.
-* Key and data files may be on different volumes
-* Hardened against algorithmic complexity attacks
-* Header-only, nothing to build or link
+* Low memory footprint.
+* Values are immutable.
+* Value sizes from 1 to 2^48 bytes (281TB).
+* All keys are the same size.
+* Performance independent of growth.
+* Optimized for concurrent fetch.
+* Key file can be rebuilt if needed.
+* Inserts are atomic and consistent.
+* Data files may be efficiently iterated.
+* Key and data files may be on different volumes.
+* Hardened against algorithmic complexity attacks.
+* Header-only, nothing to build or link.
 
-Three files are used. The data file holds keys and values stored
-sequentially and size-prefixed. The key file holds a series of
-fixed-size bucket records forming an on-disk hash table. The log file
-stores bookkeeping information used to restore consistency when an
-external failure occurs. In typical cases a fetch costs one I/O to
-consult the key file and if the key is present, one I/O to read the
-value.
+Three files are used. 
+
+* The data file holds keys and values stored sequentially and size-prefixed.
+* The key file holds a series of fixed-size bucket records forming an on-disk
+  hash table.
+* The log file stores bookkeeping information used to restore consistency when
+an external failure occurs. 
+
+In typical cases a fetch costs one I/O cycle to consult the key file, and if the
+key is present, one I/O cycle to read the value.
 
 ## Usage
 
-Callers define these parameters when a database is created:
+Callers must define these parameters when _creating_ a database:
 
-* KeySize: The size of a key in bytes
-* BlockSize: The physical size of a key file record
-* LoadFactor: The desired fraction of bucket occupancy
+* `KeySize`: The size of a key in bytes.
+* `BlockSize`: The physical size of a key file record.
 
 The ideal block size matches the sector size or block size of the
 underlying physical media that holds the key file. Functions are
@@ -42,33 +44,37 @@ device, but a default of 4096 should work for typical installations.
 The implementation tries to fit as many entries as possible in a key
 file record, to maximize the amount of useful work performed per I/O.
 
-The load factor is chosen to make bucket overflows unlikely without
+* `LoadFactor`: The desired fraction of bucket occupancy
+
+`LoadFactor` is chosen to make bucket overflows unlikely without
 sacrificing bucket occupancy. A value of 0.50 seems to work well with
 a good hash function.
 
-Callers also provide these parameters when a database is opened:
+Callers must also provide these parameters when a database is _opened:_
 
-* Appnum: An application-defined integer constant
-* AllocSize: A significant multiple of the average data size
+* `Appnum`: An application-defined integer constant which can be retrieved 
+later from the database [TODO].
+* `AllocSize`: A significant multiple of the average data size.
 
-To improve performance, memory is recycled. NuDB needs a hint about
-the average size of the data being inserted. For an average data
-size of 1KB (one kilobyte), AllocSize of sixteen megabytes (16MB) is
-sufficient. If the AllocSize is too low, the memory recycler will
-not make efficient use of allocated blocks.
+Memory is recycled to improve performance, so NuDB needs `AllocSize` as a
+hint about the average size of the data being inserted. For an average data size
+of 1KB (one kilobyte), `AllocSize` of sixteen megabytes (16MB) is sufficient. If
+the `AllocSize` is too low, the memory recycler will not make efficient use of
+allocated blocks.
 
-Two operations are defined, fetch and insert.
+Two operations are defined: `fetch`, and `insert`.
 
-### Fetch
+### `fetch`
 
-The fetch operation retrieves a variable length value given the
+The `fetch` operation retrieves a variable length value given the
 key. The caller supplies a factory used to provide a buffer for storing
 the value. This interface allows custom memory allocation strategies.
 
-### Insert
+### `insert`
 
-Insert adds a key/value pair to the store. Value data must contain at
-least one byte. Duplicate keys are disallowed. Insertions are serialized.
+`insert` adds a key/value pair to the store. Value data must contain at least
+one byte. Duplicate keys are disallowed. Insertions are serialized, which means
+[TODO].
 
 ## Implementation
 
@@ -89,24 +95,24 @@ and immutable: once written, bytes are never changed.
 Initially the hash table in the key file consists of a single bucket.
 After the load factor is exceeded from insertions, the hash table grows
 in size by one bucket by doing a "split". The split operation is the
-linear hashing algorithm as described by Litwin and Larson:
-    
-http://en.wikipedia.org/wiki/Linear_hashing
+[linear hashing algorithm](http://en.wikipedia.org/wiki/Linear_hashing) 
+as described by Litwin and Larson.
 
-When a bucket is split, each key is rehashed and either remains in the
-original bucket or gets moved to the new bucket appended to the end of
+
+When a bucket is split, each key is rehashed, and either remains in the
+original bucket or gets moved to the a bucket appended to the end of
 the key file.
 
-An insertion on a full bucket first triggers the "spill" algorithm:
-First, a spill record is appended to the data file. The spill record
-contains header information followed by the entire bucket record. Then,
-the bucket's size is set to zero and the offset of the spill record is
-stored in the bucket. At this point the insertion may proceed normally,
-since the bucket is empty. Spilled buckets in the data file are always
-full.
+An insertion on a full bucket first triggers the "spill" algorithm.
+
+First, a spill record is appended to the data file, containing header
+information followed by the entire bucket record. Then the bucket's size is set
+to zero and the offset of the spill record is stored in the bucket. At this
+point the insertion may proceed normally, since the bucket is empty. Spilled
+buckets in the data file are always full.
 
 Because every bucket holds the offset of the next spill record in the
-data file, each bucket forms a linked list. In practice, careful
+data file, the buckets form a linked list. In practice, careful
 selection of capacity and load factor will keep the percentage of
 buckets with one spill record to a minimum, with no bucket requiring
 two spill records.
@@ -141,16 +147,16 @@ database stores information used to roll back partial commits.
 
 Each record in the data file is prefixed with a header identifying
 whether it is a value record or a spill record, along with the size of
-the record in bytes and a copy of the key if its a value record.
-Therefore, values may be iterated. A key file can be regenerated from
+the record in bytes and a copy of the key if it's a value record, so values can
+be iterated by incrementing a byte counter. A key file can be regenerated from
 just the data file by iterating the values and performing the key
 insertion algorithm.
 
 ## Concurrency
 
 Locks are never held during disk reads and writes. Fetches are fully
-concurrent, while inserts are serialized. Inserts prevent duplicate
-keys. Inserts are atomic, they either succeed immediately or fail.
+concurrent, while inserts are serialized. Inserts fail on duplicate
+keys, and are atomic: they either succeed immediately or fail.
 After an insert, the key is immediately visible to subsequent fetches.
 
 ## Formats
@@ -180,18 +186,18 @@ fixed-length Bucket Records.
     uint8[56]       Reserved        Zeroes
     uint8[]         Reserved        Zero-pad to block size
 
-The Type identifies the file as belonging to nudb. The UID is
+`Type` identifies the file as belonging to nudb. `UID` is
 generated randomly when the database is created, and this value
-is stored in the data and log files as well. The UID is used
-to determine if files belong to the same database. Salt is
+is stored in the data and log files as well - it's used
+to determine if files belong to the same database. `Salt` is
 generated when the database is created and helps prevent
-complexity attacks; the salt is prepended to the key material
+complexity attacks; it is prepended to the key material
 when computing a hash, or used to initialize the state of
-the hash function. Appnum is an application defined constant
+the hash function. `Appnum` is an application defined constant
 set when the database is created. It can be used for anything,
 for example to distinguish between different data formats.
 
-Pepper is computed by hashing the salt using a hash function
+`Pepper` is computed by hashing `Salt` using a hash function
 seeded with the salt. This is used to fingerprint the hash
 function used. If a database is opened and the fingerprint
 does not match the hash calculation performed using the template
@@ -231,8 +237,7 @@ variable-length Value Records and Spill Records.
     uint64              UID             Unique ID generated on creation
     uint64              Appnum          Application defined constant
     uint16              KeySize         Key size in bytes
-
-    uint8[64]           Reserved        Zeroes
+    uint8[64]           (reserved)      Zeroes
 
 UID contains the same value as the salt in the corresponding key
 file. This is placed in the data file so that key and value files
