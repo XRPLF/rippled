@@ -23,6 +23,7 @@
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <ripple/app/data/SociDB.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
 #include <beast/cxx14/memory.h> // <memory>
@@ -38,33 +39,31 @@ class ManagerImp
 public:
     boost::asio::io_service &io_service_;
     boost::optional <boost::asio::io_service::work> work_;
-    beast::File m_databaseFile;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
     Checker<boost::asio::ip::tcp> checker_;
     Logic <decltype(checker_)> m_logic;
+    SociConfig m_sociConfig;
 
     //--------------------------------------------------------------------------
 
     ManagerImp (
         Stoppable& stoppable,
         boost::asio::io_service& io_service,
-        beast::File const& pathToDbFileOrDirectory,
         clock_type& clock,
-        beast::Journal journal)
+        beast::Journal journal,
+        BasicConfig const& config)
         : Manager (stoppable)
         , io_service_(io_service)
         , work_(boost::in_place(std::ref(io_service_)))
-        , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
         , checker_ (io_service_)
         , m_logic (clock, m_store, checker_, journal)
+        , m_sociConfig (config, "peerfinder")
     {
-        if (m_databaseFile.isDirectory ())
-            m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
     }
 
     ~ManagerImp()
@@ -215,12 +214,8 @@ public:
     void
     onPrepare ()
     {
-        beast::Error error (m_store.open (m_databaseFile));
-        if (error)
-            m_journal.fatal <<
-                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
-        if (! error)
-            m_logic.load ();
+        m_store.open (m_sociConfig);
+        m_logic.load ();
     }
 
     void
@@ -256,10 +251,10 @@ Manager::Manager (Stoppable& parent)
 
 std::unique_ptr<Manager>
 make_Manager (beast::Stoppable& parent, boost::asio::io_service& io_service,
-    beast::File const& databaseFile, clock_type& clock, beast::Journal journal)
+        clock_type& clock, beast::Journal journal, BasicConfig const& config)
 {
     return std::make_unique<ManagerImp> (
-        parent, io_service, databaseFile, clock, journal);
+        parent, io_service, clock, journal, config);
 }
 
 }

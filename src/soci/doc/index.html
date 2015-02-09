@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>SOCI</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h1>Documentation and tutorial</h1>
+
+<div class="navigation">
+<a href="structure.html">Structure</a><br />
+<a href="installation.html">Installation</a><br />
+<a href="errors.html">Errors</a><br />
+<a href="connections.html">Connections</a><br />
+<a href="queries.html">Queries</a><br />
+<a href="exchange.html">Exchanging data</a><br />
+<a href="statements.html">Statements, procedures and transactions</a><br />
+<a href="multithreading.html">Multithreading and SOCI</a><br />
+<a href="boost.html">Integration with Boost</a><br />
+<a href="interfaces.html">Interfaces</a><br />
+<a href="beyond.html">Beyond standard SQL</a><br />
+<a href="reference.html">Client interface reference</a><br />
+<a href="backends.html">Backends reference</a><br />
+<a href="rationale.html">Rationale FAQ</a><br /><br />
+<a href="languages/ada/index.html">Ada language binding</a><br /><br />
+<a href="backends/index.html">Existing backends and supported platforms</a>
+</div>
+
+<p>The following (complete!) example is purposedly provided without any explanation.</p>
+
+<pre class="example">
+#include "soci.h"
+#include "soci-oracle.h"
+#include &lt;iostream&gt;
+#include &lt;istream&gt;
+#include &lt;ostream&gt;
+#include &lt;string&gt;
+#include &lt;exception&gt;
+
+using namespace soci;
+using namespace std;
+
+bool get_name(string &amp;name)
+{
+    cout &lt;&lt; "Enter name: ";
+    return cin &gt;&gt; name;
+}
+
+int main()
+{
+    try
+    {
+        session sql(oracle, "service=mydb user=john password=secret");
+
+        int count;
+        sql &lt;&lt; "select count(*) from phonebook", into(count);
+
+        cout &lt;&lt; "We have " &lt;&lt; count &lt;&lt; " entries in the phonebook.\n";
+
+        string name;
+        while (get_name(name))
+        {
+            string phone;
+            indicator ind;
+            sql &lt;&lt; "select phone from phonebook where name = :name",
+                into(phone, ind), use(name);
+
+            if (ind == i_ok)
+            {
+                cout &lt;&lt; "The phone number is " &lt;&lt; phone &lt;&lt; '\n';
+            }
+            else
+            {
+                cout &lt;&lt; "There is no phone for " &lt;&lt; name &lt;&lt; '\n';
+            }
+        }
+    }
+    catch (exception const &amp;e)
+    {
+        cerr &lt;&lt; "Error: " &lt;&lt; e.what() &lt;&lt; '\n';
+    }
+}
+</pre>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left"></td>
+    <td class="foot-link-right">
+      <a href="structure.html">Next (Library structure, files and compilation)</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2010-2013 Mateusz Loskot</p>
+<p class="copyright">Copyright &copy; 2012 Vadim Zeitlin</p>
+<p class="copyright">Copyright &copy; 2004-2008 Maciej Sobczak, Stephen Hutton</p>
+</body>
+</html>

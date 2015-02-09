@@ -22,9 +22,8 @@
 
 #include <ripple/validators/impl/Store.h>
 #include <beast/module/core/files/File.h>
-#include <beast/module/sqdb/sqdb.h>
-#include <beast/utility/Error.h>
 #include <beast/utility/Journal.h>
+#include <ripple/app/data/SociDB.h>
 
 namespace ripple {
 namespace Validators {
@@ -34,7 +33,7 @@ class StoreSqdb : public Store
 {
 private:
     beast::Journal m_journal;
-    beast::sqdb::session m_session;
+    soci::session m_session;
 
 public:
     enum
@@ -48,8 +47,8 @@ public:
 
     ~StoreSqdb();
 
-    beast::Error
-    open (beast::File const& file);
+    void
+    open (SociConfig const& sociConfig);
 };
 
 }

@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>SOCI - multithreading</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>Multithreading</h2>
+
+<p>The general rule for multithreading is that SOCI classes are <i>not</i> thread-safe, meaning that their instances should not be used concurrently by multiple threads.</p>
+
+<p>The simplest solution for multithreaded code is to set up a separate <code>session</code> object for each thread that needs to inteact with the database. Depending on the design of the client application this might be also the most straightforward approach.</p>
+
+<p>For some applications, however, it might be preferable to decouple the set of threads from the set of sessions, so that they can be optimized separately with different resources in mind. The <code>connection_pool</code> class is provided for this purpose:</p>
+
+<pre class="example">
+// phase 1: preparation
+
+const size_t poolSize = 10;
+connection_pool pool(poolSize);
+
+for (size_t i = 0; i != poolSize; ++i)
+{
+    session &amp; sql = pool.at(i);
+
+    sql.open("postgresql://dbname=mydb");
+}
+
+// phase 2: usage from working threads
+
+{
+    session sql(pool);
+
+    sql &lt;&lt; "select something from somewhere...";
+
+} // session is returned to the pool automatically
+</pre>
+
+<p>The <code>connection_pool</code>'s constructor expects the size of the pool and internally creates an array of <code>session</code>s in the disconnected state. Later, the <code>at</code> function provides <i>non-synchronized</i> access to each element of the array. Note that this function is <i>not</i> thread-safe and exists only to make it easier to set up the pool in the initialization phase.</p>
+
+<p>Note that it is not obligatory to use the same connection parameters for all sessions in the pool, although this will be most likely the usual case.</p>
+
+<p>The working threads that need to <i>lease</i> a single session from the pool use the dedicated constructor of the <code>session</code> class - this constructor blocks until some session object becomes available in the pool and attaches to it, so that all further uses will be forwarded to the <code>session</code> object managed by the pool. As long as the local <code>session</code> object exists, the associated session in the pool is <i>locked</i> and no other thread will gain access to it. When the local <code>session</code> variable goes out of scope, the related entry in the pool's internal array is released, so that it can be used by other threads. This way, the connection pool guarantees that its session objects are never used by more than one thread at a time.</p>
+
+<p>Note that the above scheme is the simplest way to use the connection pool, but it is also constraining in the fact that the <code>session</code>'s constructor can <i>block</i> waiting for the availability of some entry in the pool. For more demanding users there are also low-level functions that allow to lease sessions from the pool with timeout on wait. Please consult the <a href="reference.html">reference</a> for details.</p>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left">
+      <a href="statements.html">Previous (Statements, procedures and transactions)</a>
+    </td>
+    <td class="foot-link-right">
+      <a href="boost.html">Next (Boost)</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2004-2008 Maciej Sobczak, Stephen Hutton</p>
+</body>
+</html>
