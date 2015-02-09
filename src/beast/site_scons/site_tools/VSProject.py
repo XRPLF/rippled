@@ -14,12 +14,11 @@ import io
 import itertools
 import ntpath
 import os
+import platform
 import pprint
 import random
 import re
-import contextlib
 import sys
-import platform
 
 import SCons.Builder
 import SCons.Node.FS
@@ -586,42 +585,34 @@ def _guid(seed, name = None):
     guid = "{%s-%s-%s-%s-%s}" % (d[:8], d[8:12], d[12:16], d[16:20], d[20:32])
     return guid
 
-def _rmExeMod(file_name):
-    if platform.system() != 'Windows':
-        st = os.stat(file_name)
-        os.chmod(file_name, st.st_mode & ~0111)
-        return
-    
-    import win32security
-    import ntsecuritycon
-
-    user, domain, type = win32security.LookupAccountName ("", "Everyone")
-
-    sd = win32security.GetFileSecurity(file_name, win32security.DACL_SECURITY_INFORMATION)
-    dacl = sd.GetSecurityDescriptorDacl()
-
-    deniedAccess = ntsecuritycon.FILE_EXECUTE
-    dacl.AddAccessDeniedAce(win32security.ACL_REVISION, deniedAccess, user)
-
-    sd.SetSecurityDescriptorDacl(1, dacl, 0)
-    win32security.SetFileSecurity(file_name, win32security.DACL_SECURITY_INFORMATION, sd)
-
-@contextlib.contextmanager
-def openNoExe(file_name):
+def turn_off_executable_flag(file_name):
     try:
-        f = open(file_name, 'wb')
-    except IOError, detail:
-        raise SCons.Errors.InternalError('Unable to open "' +
-                                         str(file_name) + '" for writing:' + str(detail))
-    try:
-        yield f
-    finally:
-        f.close()
-        try:
-            _rmExeMod(file_name)
-        except Exception as e:
-            sys.stderr.write("Warning: Could not change file attributes on: %s\n" % file_name)
-            sys.stderr.write("Exception was: %s\n" % str(e))
+        if platform.system() != 'Windows':
+            st = os.stat(file_name)
+            os.chmod(file_name, st.st_mode & ~0111)
+            return
+        
+        import win32security
+        import ntsecuritycon
+
+        user, domain, _ = win32security.LookupAccountName ('', 'Everyone')
+
+        sd = win32security.GetFileSecurity(
+            file_name, win32security.DACL_SECURITY_INFORMATION)
+        dacl = sd.GetSecurityDescriptorDacl()
+
+        # Do *not* use FILE_EXECUTE_GENERIC here or VS will not be able to open
+        # the file.
+        deniedAccess = ntsecuritycon.FILE_EXECUTE
+        dacl.AddAccessDeniedAce(win32security.ACL_REVISION, deniedAccess, user)
+
+        sd.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(
+            file_name, win32security.DACL_SECURITY_INFORMATION, sd)
+    except Exception as e:
+        sys.stderr.write(
+            "Warning: Could not change file attributes on: %s\n" % file_name)
+        sys.stderr.write("Exception was: %s\n" % str(e))
 
 class _ProjectGenerator(object):
     '''Generates a project file for Visual Studio 2013'''
@@ -845,10 +836,17 @@ class _ProjectGenerator(object):
         f.write('</Project>\r\n')
 
     def build(self):
-        with openNoExe(str(self.project_node)) as project_file:
-            with openNoExe(str(self.filters_node)) as filters_file:
-                self.writeProject(project_file)
-                self.writeFilters(filters_file)
+        try:
+            with open(str(self.project_node),'wb') as project_file:
+                with open(str(self.filters_node),'wb') as filters_file:
+                    self.writeProject(project_file)
+                    self.writeFilters(filters_file)
+            turn_off_executable_flag(str(self.project_node))
+            turn_off_executable_flag(str(self.filters_node))
+        except IOError as detail:
+            raise SCons.Errors.InternalError(
+                'Unable to open project file "' +
+                detail.filename + '" for writing:' + str(detail))
 
 #-------------------------------------------------------------------------------
 
