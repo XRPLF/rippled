@@ -139,12 +139,6 @@
     <Filter Include="beast\module\core\time">
       <UniqueIdentifier>{FEAEA931-9FBB-1723-2676-9115C88A7A91}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\module\sqlite">
-      <UniqueIdentifier>{81C8331F-4768-BDE6-D058-29BDEE8F322C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqlite\sqlite">
-      <UniqueIdentifier>{43A67E22-F261-00BB-B657-C9427E7F2615}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\net">
       <UniqueIdentifier>{02B45E0B-A3F5-ECE5-B83C-AF06DC73AF14}</UniqueIdentifier>
     </Filter>
@@ -537,6 +531,9 @@
     </Filter>
     <Filter Include="sqlite">
       <UniqueIdentifier>{FA8496D0-0D5F-AC6F-3422-DEAB4BA19ACA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sqlite\sqlite">
+      <UniqueIdentifier>{D2A046B6-8986-92AC-082F-15B3A01B8E40}</UniqueIdentifier>
     </Filter>
     <Filter Include="websocketpp_02">
       <UniqueIdentifier>{96CE200F-2670-323E-3B37-B90DBC0EDA11}</UniqueIdentifier>
@@ -1292,18 +1289,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\time\Time.h">
       <Filter>beast\module\core\time</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqlite\sqlite.h">
-      <Filter>beast\module\sqlite</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\sqlite\sqlite.unity.c">
-      <Filter>beast\module\sqlite</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqlite\sqlite\sqlite3.c">
-      <Filter>beast\module\sqlite\sqlite</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\sqlite\sqlite\sqlite3.h">
-      <Filter>beast\module\sqlite\sqlite</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
       <Filter>beast\net\detail</Filter>
@@ -5106,8 +5091,20 @@
     <ClInclude Include="..\..\src\soci\src\core\values.h">
       <Filter>soci\src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\sqlite\sqlite.h">
+      <Filter>sqlite</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\sqlite\sqlite.unity.c">
+      <Filter>sqlite</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\sqlite\sqlite3.h">
       <Filter>sqlite</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\sqlite\sqlite\sqlite3.c">
+      <Filter>sqlite\sqlite</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\sqlite\sqlite\sqlite3.h">
+      <Filter>sqlite\sqlite</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
       <Filter>websocketpp_02\src\base64</Filter>
