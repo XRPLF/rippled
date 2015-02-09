@@ -193,7 +193,7 @@ public:
         {
             if (!mSigMaster)
             {
-                m_journal.trace << "Can't use regular key to disable master key.";
+                m_journal.trace << "Must use master key to disable master key.";
                 return tecNEED_MASTER_KEY;
             }
 

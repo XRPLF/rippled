@@ -1028,7 +1028,7 @@ void LedgerEntrySet::incrementOwnerCount (Account const& owner)
 }
 
 void
-LedgerEntrySet::increaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch)
+LedgerEntrySet::increaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch)
 {
     assert (sleAccount);
 
@@ -1059,7 +1059,7 @@ void LedgerEntrySet::decrementOwnerCount (Account const& owner)
 }
 
 void
-LedgerEntrySet::decreaseOwnerCount (SLE::ref sleAccount, std::size_t howMuch)
+LedgerEntrySet::decreaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch)
 {
     assert (sleAccount);
 

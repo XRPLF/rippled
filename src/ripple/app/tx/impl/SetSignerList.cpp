@@ -221,8 +221,8 @@ SetSignerList::replaceSignerList (uint256 const& index)
         return ter;
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::size_t const oldOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
-    std::size_t const addedOwnerCount = ownerCountDelta (signers_.size ());
+    std::uint32_t const oldOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
+    std::uint32_t const addedOwnerCount = ownerCountDelta (signers_.size ());
 
     std::uint64_t const newReserve =
         mEngine->getLedger ()->getReserve (oldOwnerCount + addedOwnerCount);
@@ -277,7 +277,7 @@ SetSignerList::destroySignerList (uint256 const& index)
 
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    std::size_t removeFromOwnerCount = 0;
+    std::uint32_t removeFromOwnerCount = 0;
     uint256 const signerListIndex = getSignerListIndex (mTxnAccountID);
     SLE::pointer accountSignersList =
         mEngine->view ().entryCache (ltSIGNER_LIST, signerListIndex);

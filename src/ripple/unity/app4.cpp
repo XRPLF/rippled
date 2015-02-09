@@ -47,5 +47,7 @@
 #include <ripple/app/tx/impl/SetSignerList.cpp>
 #include <ripple/app/tx/impl/SignerEntries.cpp>
 
+#include <ripple/app/tx/tests/common_transactor.cpp>
+#include <ripple/app/tx/tests/MultiSign.test.cpp>
 #include <ripple/app/tx/tests/OfferStream.test.cpp>
 #include <ripple/app/tx/tests/Taker.test.cpp>
