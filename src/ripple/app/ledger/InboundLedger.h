@@ -114,7 +114,10 @@ private:
 
     void newPeer (Peer::ptr const& peer)
     {
-        trigger (peer);
+        // For historical nodes, do not trigger too soon
+        // since a fetch pack is probably coming
+        if (mReason != fcHISTORY)
+            trigger (peer);
     }
 
     std::weak_ptr <PeerSet> pmDowncast ();
