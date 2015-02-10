@@ -39,8 +39,6 @@ class Features;
 typedef int Int;
 typedef unsigned int UInt;
 class StaticString;
-class Path;
-class PathArgument;
 class Value;
 class ValueIteratorBase;
 class ValueIterator;

@@ -465,74 +465,6 @@ private:
     CommentInfo* comments_;
 };
 
-
-/** \brief Experimental and untested: represents an element of the "path" to access a node.
- */
-class PathArgument
-{
-public:
-    friend class Path;
-
-    PathArgument ();
-    PathArgument ( UInt index );
-    PathArgument ( const char* key );
-    PathArgument ( std::string const& key );
-
-private:
-    enum Kind
-    {
-        kindNone = 0,
-        kindIndex,
-        kindKey
-    };
-    std::string key_;
-    UInt index_;
-    Kind kind_;
-};
-
-/** \brief Experimental and untested: represents a "path" to access a node.
- *
- * Syntax:
- * - "." => root node
- * - ".[n]" => elements at index 'n' of root node (an array value)
- * - ".name" => member named 'name' of root node (an object value)
- * - ".name1.name2.name3"
- * - ".[0][1][2].name1[3]"
- * - ".%" => member name is provided as parameter
- * - ".[%]" => index is provied as parameter
- */
-class Path
-{
-public:
-    Path ( std::string const& path,
-           const PathArgument& a1 = PathArgument (),
-           const PathArgument& a2 = PathArgument (),
-           const PathArgument& a3 = PathArgument (),
-           const PathArgument& a4 = PathArgument (),
-           const PathArgument& a5 = PathArgument () );
-
-    const Value& resolve ( const Value& root ) const;
-    Value resolve ( const Value& root,
-                    const Value& defaultValue ) const;
-    /// Creates the "path" to access the specified node and returns a reference on the node.
-    Value& make ( Value& root ) const;
-
-private:
-    typedef std::vector<const PathArgument*> InArgs;
-    typedef std::vector<PathArgument> Args;
-
-    void makePath ( std::string const& path,
-                    const InArgs& in );
-    void addPathInArg ( std::string const& path,
-                        const InArgs& in,
-                        InArgs::const_iterator& itInArg,
-                        PathArgument::Kind kind );
-    void invalidPath ( std::string const& path,
-                       int location );
-
-    Args args_;
-};
-
 /** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively duplicate and
@@ -540,6 +472,10 @@ private:
  * - duplicateStringValue() and releaseStringValue() are called similarly to
  *   duplicate and free a Json::stringValue value.
  */
+
+// Unfortunately, CommentInfo does use this, and that is part of Value.
+// TODO(tom): get rid of CommentInfo
+
 class ValueAllocator
 {
 public:
