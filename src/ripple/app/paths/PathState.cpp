@@ -824,9 +824,9 @@ Json::Value PathState::getJson () const
     for (auto const &pnNode: nodes_)
         jvNodes.append (pnNode.getJson ());
 
-    jvPathState["status"]   = terStatus;
-    jvPathState["index"]    = mIndex;
-    jvPathState["nodes"]    = jvNodes;
+    jvPathState[jss::status]   = terStatus;
+    jvPathState[jss::index]    = mIndex;
+    jvPathState[jss::nodes]    = jvNodes;
 
     if (saInReq)
         jvPathState["in_req"]   = saInReq.getJson (0);

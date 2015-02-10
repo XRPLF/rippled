@@ -98,7 +98,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                         {
                             Json::Value update = pRequest->doUpdate (cache, false);
                             pRequest->updateComplete ();
-                            update["type"] = "path_find";
+                            update[jss::type] = "path_find";
                             ipSub->send (update, false);
                             remove = false;
                             ++processed;

@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/Node.h>
 #include <ripple/app/paths/PathState.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 namespace path {
@@ -39,7 +40,7 @@ Json::Value Node::getJson () const
     Json::Value jvNode (Json::objectValue);
     Json::Value jvFlags (Json::arrayValue);
 
-    jvNode["type"]  = uFlags;
+    jvNode[jss::type]  = uFlags;
 
     bool const hasCurrency = !isXRP (issue_.currency);
     bool const hasAccount = !isXRP (account_);
@@ -65,13 +66,13 @@ Json::Value Node::getJson () const
     jvNode["flags"] = jvFlags;
 
     if (!isXRP (account_))
-        jvNode["account"] = to_string (account_);
+        jvNode[jss::account] = to_string (account_);
 
     if (!isXRP (issue_.currency))
-        jvNode["currency"] = to_string (issue_.currency);
+        jvNode[jss::currency] = to_string (issue_.currency);
 
     if (!isXRP (issue_.account))
-        jvNode["issuer"] = to_string (issue_.account);
+        jvNode[jss::issuer] = to_string (issue_.account);
 
     if (saRevRedeem)
         jvNode["rev_redeem"] = saRevRedeem.getFullText ();

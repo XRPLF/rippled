@@ -38,8 +38,8 @@ Json::Value doAccountTx (RPC::Context& context)
     RippleAddress   raAccount;
     int limit = params.isMember (jss::limit) ?
             params[jss::limit].asUInt () : -1;
-    bool bBinary = params.isMember ("binary") && params["binary"].asBool ();
-    bool bForward = params.isMember ("forward") && params["forward"].asBool ();
+    bool bBinary = params.isMember (jss::binary) && params[jss::binary].asBool ();
+    bool bForward = params.isMember (jss::forward) && params[jss::forward].asBool ();
     std::uint32_t   uLedgerMin;
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
@@ -53,21 +53,21 @@ Json::Value doAccountTx (RPC::Context& context)
         return rpcError (rpcLGR_IDXS_INVALID);
     }
 
-    if (!params.isMember ("account"))
+    if (!params.isMember (jss::account))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (params["account"].asString ()))
+    if (!raAccount.setAccountID (params[jss::account].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (params.isMember ("ledger_index_min") ||
-        params.isMember ("ledger_index_max"))
+    if (params.isMember (jss::ledger_index_min) ||
+        params.isMember (jss::ledger_index_max))
     {
-        std::int64_t iLedgerMin  = params.isMember ("ledger_index_min")
-                ? params["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = params.isMember ("ledger_index_max")
-                ? params["ledger_index_max"].asInt () : -1;
+        std::int64_t iLedgerMin  = params.isMember (jss::ledger_index_min)
+                ? params[jss::ledger_index_min].asInt () : -1;
+        std::int64_t iLedgerMax  = params.isMember (jss::ledger_index_max)
+                ? params[jss::ledger_index_max].asInt () : -1;
 
         uLedgerMin  = iLedgerMin == -1 ? uValidatedMin :
             ((iLedgerMin >= uValidatedMin) ? iLedgerMin : uValidatedMin);
@@ -100,8 +100,8 @@ Json::Value doAccountTx (RPC::Context& context)
 #endif
         Json::Value ret (Json::objectValue);
 
-        ret["account"] = raAccount.humanAccountID ();
-        Json::Value& jvTxns = (ret["transactions"] = Json::arrayValue);
+        ret[jss::account] = raAccount.humanAccountID ();
+        Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         if (bBinary)
         {
@@ -113,12 +113,12 @@ Json::Value doAccountTx (RPC::Context& context)
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                jvObj["tx_blob"] = std::get<0> (it);
-                jvObj["meta"] = std::get<1> (it);
+                jvObj[jss::tx_blob] = std::get<0> (it);
+                jvObj[jss::meta] = std::get<1> (it);
 
                 std::uint32_t uLedgerIndex = std::get<2> (it);
 
-                jvObj["ledger_index"] = uLedgerIndex;
+                jvObj[jss::ledger_index] = uLedgerIndex;
                 jvObj[jss::validated] = bValidated &&
                     uValidatedMin <= uLedgerIndex &&
                     uValidatedMax >= uLedgerIndex;

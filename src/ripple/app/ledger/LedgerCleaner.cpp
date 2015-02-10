@@ -188,30 +188,30 @@ public:
             */
 
             // Quick way to fix a single ledger
-            if (params.isMember("ledger"))
+            if (params.isMember(jss::ledger))
             {
-                state->maxRange = params["ledger"].asUInt();
-                state->minRange = params["ledger"].asUInt();
+                state->maxRange = params[jss::ledger].asUInt();
+                state->minRange = params[jss::ledger].asUInt();
                 state->fixTxns = true;
                 state->checkNodes = true;
             }
 
-            if (params.isMember("max_ledger"))
-                 state->maxRange = params["max_ledger"].asUInt();
+            if (params.isMember(jss::max_ledger))
+                 state->maxRange = params[jss::max_ledger].asUInt();
 
-            if (params.isMember("min_ledger"))
-                state->minRange = params["min_ledger"].asUInt();
+            if (params.isMember(jss::min_ledger))
+                state->minRange = params[jss::min_ledger].asUInt();
 
-            if (params.isMember("full"))
-                state->fixTxns = state->checkNodes = params["full"].asBool();
+            if (params.isMember(jss::full))
+                state->fixTxns = state->checkNodes = params[jss::full].asBool();
 
-            if (params.isMember("fix_txns"))
-                state->fixTxns = params["fix_txns"].asBool();
+            if (params.isMember(jss::fix_txns))
+                state->fixTxns = params[jss::fix_txns].asBool();
 
-            if (params.isMember("check_nodes"))
-                state->checkNodes = params["check_nodes"].asBool();
+            if (params.isMember(jss::check_nodes))
+                state->checkNodes = params[jss::check_nodes].asBool();
 
-            if (params.isMember("stop") && params["stop"].asBool())
+            if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 state->minRange = state->maxRange = 0;
         }
 

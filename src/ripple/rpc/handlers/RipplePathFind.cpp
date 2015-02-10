@@ -56,30 +56,30 @@ Json::Value doRipplePathFind (RPC::Context& context)
             return jvResult;
     }
 
-    if (!context.params.isMember ("source_account"))
+    if (!context.params.isMember (jss::source_account))
     {
         jvResult = rpcError (rpcSRC_ACT_MISSING);
     }
-    else if (!context.params["source_account"].isString ()
+    else if (!context.params[jss::source_account].isString ()
              || !raSrc.setAccountID (
-                 context.params["source_account"].asString ()))
+                 context.params[jss::source_account].asString ()))
     {
         jvResult = rpcError (rpcSRC_ACT_MALFORMED);
     }
-    else if (!context.params.isMember ("destination_account"))
+    else if (!context.params.isMember (jss::destination_account))
     {
         jvResult = rpcError (rpcDST_ACT_MISSING);
     }
-    else if (!context.params["destination_account"].isString ()
+    else if (!context.params[jss::destination_account].isString ()
              || !raDst.setAccountID (
-                 context.params["destination_account"].asString ()))
+                 context.params[jss::destination_account].asString ()))
     {
         jvResult = rpcError (rpcDST_ACT_MALFORMED);
     }
     else if (
         // Parse saDstAmount.
-        !context.params.isMember ("destination_amount")
-        || ! amountFromJsonNoThrow(saDstAmount, context.params["destination_amount"])
+        !context.params.isMember (jss::destination_amount)
+        || ! amountFromJsonNoThrow(saDstAmount, context.params[jss::destination_amount])
         || saDstAmount <= zero
         || (!isXRP(saDstAmount.getCurrency ())
             && (!saDstAmount.getIssuer () ||
@@ -90,9 +90,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else if (
         // Checks on source_currencies.
-        context.params.isMember ("source_currencies")
-        && (!context.params["source_currencies"].isArray ()
-            || !context.params["source_currencies"].size ())
+        context.params.isMember (jss::source_currencies)
+        && (!context.params[jss::source_currencies].isArray ()
+            || !context.params[jss::source_currencies].size ())
         // Don't allow empty currencies.
     )
     {
@@ -120,9 +120,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
         Json::Value     jvSrcCurrencies;
 
-        if (context.params.isMember ("source_currencies"))
+        if (context.params.isMember (jss::source_currencies))
         {
-            jvSrcCurrencies = context.params["source_currencies"];
+            jvSrcCurrencies = context.params[jss::source_currencies];
         }
         else
         {
@@ -132,7 +132,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             for (auto const& uCurrency: currencies)
             {
                 Json::Value jvCurrency (Json::objectValue);
-                jvCurrency["currency"] = to_string(uCurrency);
+                jvCurrency[jss::currency] = to_string(uCurrency);
                 jvSrcCurrencies.append (jvCurrency);
             }
         }
@@ -146,8 +146,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         for (auto const& uCurrency: usDestCurrID)
                 jvDestCur.append (to_string (uCurrency));
 
-        jvResult["destination_currencies"] = jvDestCur;
-        jvResult["destination_account"] = raDst.humanAccountID ();
+        jvResult[jss::destination_currencies] = jvDestCur;
+        jvResult[jss::destination_account] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
 
@@ -158,10 +158,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
             ++level;
         }
 
-        if (context.params.isMember("search_depth")
-            && context.params["search_depth"].isIntegral())
+        if (context.params.isMember(jss::search_depth)
+            && context.params[jss::search_depth].isIntegral())
         {
-            int rLev = context.params["search_depth"].asInt ();
+            int rLev = context.params[jss::search_depth].asInt ();
             if ((rLev < level) || (context.role == Role::ADMIN))
                 level = rLev;
         }
@@ -185,9 +185,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 return rpcError (rpcINVALID_PARAMS);
 
             // Parse mandatory currency.
-            if (!jvSource.isMember ("currency")
+            if (!jvSource.isMember (jss::currency)
                 || !to_currency (
-                    uSrcCurrencyID, jvSource["currency"].asString ()))
+                    uSrcCurrencyID, jvSource[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad currency.";
 
@@ -198,9 +198,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 uSrcIssuerID = raSrc.getAccountID ();
 
             // Parse optional issuer.
-            if (jvSource.isMember ("issuer") &&
-                ((!jvSource["issuer"].isString () ||
-                  !to_issuer (uSrcIssuerID, jvSource["issuer"].asString ())) ||
+            if (jvSource.isMember (jss::issuer) &&
+                ((!jvSource[jss::issuer].isString () ||
+                  !to_issuer (uSrcIssuerID, jvSource[jss::issuer].asString ())) ||
                  (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
                  (noAccount() == uSrcIssuerID)))
             {
@@ -209,10 +209,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
             }
 
             STPathSet spsComputed;
-            if (context.params.isMember("paths"))
+            if (context.params.isMember(jss::paths))
             {
                 Json::Value pathSet = Json::objectValue;
-                pathSet["Paths"] = context.params["paths"];
+                pathSet[jss::Paths] = context.params[jss::paths];
                 STParsedJSONObject paths ("pathSet", pathSet);
                 if (paths.object.get() == nullptr)
                     return paths.error;
@@ -294,9 +294,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     // anyway to produce the canonical.  (At least unless we
                     // make a direct canonical.)
 
-                    jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
-                    jvEntry["paths_canonical"]  = Json::arrayValue;
-                    jvEntry["paths_computed"]   = spsComputed.getJson (0);
+                    jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
+                    jvEntry[jss::paths_canonical]  = Json::arrayValue;
+                    jvEntry[jss::paths_computed]   = spsComputed.getJson (0);
 
                     jvArray.append (jvEntry);
                 }
@@ -317,7 +317,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
 
         // Each alternative differs by source currency.
-        jvResult["alternatives"] = jvArray;
+        jvResult[jss::alternatives] = jvArray;
     }
 
     WriteLog (lsDEBUG, RPCHandler)
