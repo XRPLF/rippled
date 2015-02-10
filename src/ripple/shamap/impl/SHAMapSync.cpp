@@ -29,7 +29,7 @@ namespace ripple {
 static const uint256 uZero;
 
 bool SHAMap::visitLeavesHelper (
-    std::function <void (SHAMapItem::ref)> const& function,
+    std::function <void (std::shared_ptr<SHAMapItem> const&)> const& function,
     SHAMapTreeNode& node)
 {
     // Adapt visitNodes to visitLeaves
@@ -39,7 +39,7 @@ bool SHAMap::visitLeavesHelper (
     return false;
 }
 
-void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> const& leafFunction)
+void SHAMap::visitLeaves (std::function<void (std::shared_ptr<SHAMapItem> const& item)> const& leafFunction)
 {
     visitNodes (std::bind (visitLeavesHelper,
             std::cref (leafFunction), std::placeholders::_1));

@@ -286,9 +286,9 @@ public:
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
     static STTx::pointer getSTransaction (
-        SHAMapItem::ref, SHAMapTreeNode::TNType);
+        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType);
     STTx::pointer getSMTransaction (
-        SHAMapItem::ref, SHAMapTreeNode::TNType,
+        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 
     // high-level functions

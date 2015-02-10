@@ -55,7 +55,7 @@ private:
     uint256                         mHash;
     uint256                         mHashes[16];
     std::shared_ptr<SHAMapTreeNode> mChildren[16];
-    SHAMapItem::pointer             mItem;
+    std::shared_ptr<SHAMapItem>     mItem;
     std::uint32_t                   mSeq;
     TNType                          mType;
     int                             mIsBranch;
@@ -71,7 +71,7 @@ public:
     // constructors
     SHAMapTreeNode (std::uint32_t seq); // empty node
     SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
-    SHAMapTreeNode (SHAMapItem::ref item, TNType type, std::uint32_t seq);
+    SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item, TNType type, std::uint32_t seq);
     SHAMapTreeNode (Blob const & data, std::uint32_t seq,
                     SHANodeFormat format, uint256 const& hash, bool hashValid);
 
@@ -104,8 +104,8 @@ public:  // public only to SHAMap
 
     // item node function
     bool hasItem () const;
-    SHAMapItem::ref peekItem () const;
-    bool setItem (SHAMapItem::ref i, TNType type);
+    std::shared_ptr<SHAMapItem> const& peekItem () const;
+    bool setItem (std::shared_ptr<SHAMapItem> const& i, TNType type);
 
     // sync functions
     bool isFullBelow (std::uint32_t generation) const;
@@ -237,7 +237,7 @@ SHAMapTreeNode::hasItem () const
 }
 
 inline
-SHAMapItem::ref
+std::shared_ptr<SHAMapItem> const&
 SHAMapTreeNode::peekItem () const
 {
     return mItem;

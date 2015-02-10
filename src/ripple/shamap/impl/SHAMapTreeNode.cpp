@@ -57,7 +57,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
     }
 }
 
-SHAMapTreeNode::SHAMapTreeNode (SHAMapItem::ref item,
+SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item,
                                 TNType type, std::uint32_t seq)
     : mItem (item)
     , mSeq (seq)
@@ -402,7 +402,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
         assert (false);
 }
 
-bool SHAMapTreeNode::setItem (SHAMapItem::ref i, TNType type)
+bool SHAMapTreeNode::setItem (std::shared_ptr<SHAMapItem> const& i, TNType type)
 {
     mType = type;
     mItem = i;

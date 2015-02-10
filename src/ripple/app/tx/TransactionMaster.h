@@ -34,7 +34,7 @@ public:
     TransactionMaster ();
 
     Transaction::pointer            fetch (uint256 const& , bool checkDisk);
-    STTx::pointer  fetch (SHAMapItem::ref item, SHAMapTreeNode:: TNType type,
+    STTx::pointer  fetch (std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode:: TNType type,
                                            bool checkDisk, std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already

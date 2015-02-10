@@ -566,7 +566,7 @@ AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
         Serializer s;
         trans.add (s, true);
 #if RIPPLE_PROPOSE_AMENDMENTS
-        SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
+        std::shared_ptr<SHAMapItem> tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
         if (!initialPosition->addGiveItem (tItem, true, false))
         {
             if (m_journal.warning) m_journal.warning <<

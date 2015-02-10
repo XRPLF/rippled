@@ -176,7 +176,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         else
         {
             accountStateMap->visitLeaves(
-                [&array, &count] (SHAMapItem::ref smi)
+                [&array, &count] (std::shared_ptr<SHAMapItem> const& smi)
                 {
                     count.yield();
                     array.append (to_string(smi->getTag ()));

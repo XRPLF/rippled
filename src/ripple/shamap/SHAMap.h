@@ -125,8 +125,9 @@ public:
     typedef std::shared_ptr<SHAMap> pointer;
     typedef const std::shared_ptr<SHAMap>& ref;
 
-    typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
-    typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
+    typedef std::pair<std::shared_ptr<SHAMapItem>, std::shared_ptr<SHAMapItem>> DeltaItem;
+    typedef std::pair<std::shared_ptr<SHAMapItem> const&,
+                      std::shared_ptr<SHAMapItem> const&> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
 
     typedef std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>> SharedPtrNodeStack;
@@ -170,24 +171,24 @@ public:
     }
 
     // save a copy if you have a temporary anyway
-    bool updateGiveItem (SHAMapItem::ref, bool isTransaction, bool hasMeta);
-    bool addGiveItem (SHAMapItem::ref, bool isTransaction, bool hasMeta);
+    bool updateGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
+    bool addGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
 
     // save a copy if you only need a temporary
-    SHAMapItem::pointer peekItem (uint256 const& id);
-    SHAMapItem::pointer peekItem (uint256 const& id, uint256 & hash);
-    SHAMapItem::pointer peekItem (uint256 const& id, SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id, uint256 & hash);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id, SHAMapTreeNode::TNType & type);
 
     // traverse functions
-    SHAMapItem::pointer peekFirstItem ();
-    SHAMapItem::pointer peekFirstItem (SHAMapTreeNode::TNType & type);
-    SHAMapItem::pointer peekLastItem ();
-    SHAMapItem::pointer peekNextItem (uint256 const& );
-    SHAMapItem::pointer peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
-    SHAMapItem::pointer peekPrevItem (uint256 const& );
+    std::shared_ptr<SHAMapItem> peekFirstItem ();
+    std::shared_ptr<SHAMapItem> peekFirstItem (SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekLastItem ();
+    std::shared_ptr<SHAMapItem> peekNextItem (uint256 const& );
+    std::shared_ptr<SHAMapItem> peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekPrevItem (uint256 const& );
 
     void visitNodes (std::function<bool (SHAMapTreeNode&)> const&);
-    void visitLeaves(std::function<void (SHAMapItem::ref)> const&);
+    void visitLeaves(std::function<void (std::shared_ptr<SHAMapItem> const&)> const&);
 
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
@@ -320,16 +321,16 @@ private:
     std::shared_ptr<SHAMapTreeNode> descendNoStore (std::shared_ptr<SHAMapTreeNode> const&, int branch);
 
     /** If there is only one leaf below this node, get its contents */
-    SHAMapItem::pointer onlyBelow (SHAMapTreeNode*);
+    std::shared_ptr<SHAMapItem> onlyBelow (SHAMapTreeNode*);
 
     bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash);
     bool hasLeafNode (uint256 const& tag, uint256 const& hash);
 
     bool walkBranch (SHAMapTreeNode* node,
-                     SHAMapItem::ref otherMapItem, bool isFirstMap,
+                     std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount);
 
-    void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);
+    void visitLeavesInternal (std::function<void (std::shared_ptr<SHAMapItem> const& item)>& function);
 
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
 };

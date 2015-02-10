@@ -228,7 +228,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
         Serializer s;
         trans.add (s, true);
 
-        SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (
+        std::shared_ptr<SHAMapItem> tItem = std::make_shared<SHAMapItem> (
             txID, s.peekData ());
 
         if (!initialPosition->addGiveItem (tItem, true, false))

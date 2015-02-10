@@ -2077,7 +2077,7 @@ void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
 
     if (set)
     {
-        for (SHAMapItem::pointer item = set->peekFirstItem (); !!item;
+        for (std::shared_ptr<SHAMapItem> item = set->peekFirstItem (); !!item;
             item = set->peekNextItem (item->getTag ()))
         {
             // If the checkLedger doesn't have the transaction
