@@ -576,9 +576,7 @@ public:
         {
             if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))
             {
-                if (count++ == 0)
-                    target = peer;
-                else if ((rand () % ++count) == 0)
+                if ((count++ == 0) || ((rand() % count) == 0))
                     target = peer;
             }
         }
