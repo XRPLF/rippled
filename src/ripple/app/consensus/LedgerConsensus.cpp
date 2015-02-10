@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <ripple/app/consensus/DisputedTx.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -319,7 +320,8 @@ public:
       @return          Pointer to the transaction tree if we got it, else
                        nullptr.
     */
-    SHAMap::pointer getTransactionTree (uint256 const& hash, bool doAcquire)
+    std::shared_ptr<SHAMap>
+    getTransactionTree (uint256 const& hash, bool doAcquire)
     {
         auto it = mAcquired.find (hash);
 
@@ -328,7 +330,7 @@ public:
 
         if (mState == lcsPRE_CLOSE)
         {
-            SHAMap::pointer currentMap
+            std::shared_ptr<SHAMap> currentMap
                 = getApp().getLedgerMaster ().getCurrentLedger ()
                     ->peekTransactionMap ();
 
@@ -350,8 +352,8 @@ public:
             {
                 if (hash.isZero ())
                 {
-                    SHAMap::pointer empty = std::make_shared<SHAMap> (
-                        smtTRANSACTION, getApp().family(),
+                    auto empty = std::make_shared<SHAMap> (
+                        SHAMapType::TRANSACTION, getApp().family(),
                             deprecatedLogs().journal("SHAMap"));
                     mapCompleteInternal (hash, empty, false);
                     return empty;
@@ -362,7 +364,7 @@ public:
             }
         }
 
-        return SHAMap::pointer ();
+        return std::shared_ptr<SHAMap> ();
     }
 
     /**
@@ -372,7 +374,8 @@ public:
       @param map      the transaction set.
       @param acquired true if we have acquired the transaction set.
     */
-    void mapComplete (uint256 const& hash, SHAMap::ref map, bool acquired)
+    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map,
+                      bool acquired)
     {
         try
         {
@@ -387,7 +390,8 @@ public:
         }
     }
 
-    void mapCompleteInternal (uint256 const& hash, SHAMap::ref map, bool acquired)
+    void mapCompleteInternal (uint256 const& hash,
+                              std::shared_ptr<SHAMap> const& map, bool acquired)
     {
         CondLog (acquired, lsINFO, LedgerConsensus)
             << "We have acquired TXS " << hash;
@@ -904,7 +908,7 @@ public:
             << newPosition->getCurrentHash ();
         currentPosition = newPosition;
 
-        SHAMap::pointer set
+        std::shared_ptr<SHAMap> set
             = getTransactionTree (newPosition->getCurrentHash (), true);
 
         if (set)
@@ -998,7 +1002,7 @@ private:
 
       @param set Our consensus set
     */
-    void accept (SHAMap::pointer set)
+    void accept (std::shared_ptr<SHAMap> set)
     {
 
         {
@@ -1282,7 +1286,8 @@ private:
       @param m1 One transaction set
       @param m2 The other transaction set
     */
-    void createDisputes (SHAMap::ref m1, SHAMap::ref m2)
+    void createDisputes (std::shared_ptr<SHAMap> const& m1,
+                         std::shared_ptr<SHAMap> const& m2)
     {
         if (m1->getHash() == m2->getHash())
             return;
@@ -1381,7 +1386,8 @@ private:
       @param map   A disputed position
       @param peers peers which are taking the position map
     */
-    void adjustCount (SHAMap::ref map, const std::vector<NodeID>& peers)
+    void adjustCount (std::shared_ptr<SHAMap> const& map,
+                      const std::vector<NodeID>& peers)
     {
         for (auto& it : mDisputes)
         {
@@ -1512,13 +1518,13 @@ private:
     */
     void takeInitialPosition (Ledger& initialLedger)
     {
-        SHAMap::pointer initialSet;
+        std::shared_ptr<SHAMap> initialSet;
 
         if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
                 && ((mPreviousLedger->getLedgerSeq () % 256) == 0))
         {
             // previous ledger was flag ledger
-            SHAMap::pointer preSet
+            std::shared_ptr<SHAMap> preSet
                 = initialLedger.peekTransactionMap ()->snapShot (true);
             m_feeVote.doVoting (mPreviousLedger, preSet);
             getApp().getAmendmentTable ().doVoting (mPreviousLedger, preSet);
@@ -1604,7 +1610,7 @@ private:
         peerCutoff -= boost::posix_time::seconds (PROPOSE_FRESHNESS);
 
         bool changes = false;
-        SHAMap::pointer ourPosition;
+        std::shared_ptr<SHAMap> ourPosition;
         //  std::vector<uint256> addedTx, removedTx;
 
         // Verify freshness of peer positions and compute close times
@@ -1889,7 +1895,7 @@ private:
     */
     void beginAccept (bool synchronous)
     {
-        SHAMap::pointer consensusSet
+        std::shared_ptr<SHAMap> consensusSet
             = mAcquired[mOurPosition->getCurrentHash ()];
 
         if (!consensusSet)
@@ -1963,7 +1969,7 @@ private:
     hash_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<uint256, SHAMap::pointer> mAcquired;
+    hash_map<uint256, std::shared_ptr<SHAMap>> mAcquired;
     hash_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
     // Peer sets
@@ -2069,15 +2075,15 @@ int applyTransaction (TransactionEngine& engine
   @param retriableTransactions collect failed transactions in this set
   @param openLgr               true if applyLedger is open, else false.
 */
-void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
-    Ledger::ref checkLedger, CanonicalTXSet& retriableTransactions,
-    bool openLgr)
+void applyTransactions (std::shared_ptr<SHAMap> const& set,
+    Ledger::ref applyLedger, Ledger::ref checkLedger,
+    CanonicalTXSet& retriableTransactions, bool openLgr)
 {
     TransactionEngine engine (applyLedger);
 
     if (set)
     {
-        for (SHAMapItem::pointer item = set->peekFirstItem (); !!item;
+        for (std::shared_ptr<SHAMapItem> item = set->peekFirstItem (); !!item;
             item = set->peekNextItem (item->getTag ()))
         {
             // If the checkLedger doesn't have the transaction

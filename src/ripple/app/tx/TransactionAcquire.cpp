@@ -40,7 +40,7 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
         deprecatedLogs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
-    mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,
+    mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
         getApp().family(), deprecatedLogs().journal("SHAMap"));
     mMap->setUnbacked ();
 }
@@ -49,7 +49,7 @@ TransactionAcquire::~TransactionAcquire ()
 {
 }
 
-static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
+static void TACompletionHandler (uint256 hash, std::shared_ptr<SHAMap> map)
 {
     {
         Application::ScopedLockType lock (getApp ().getMasterLock ());
@@ -63,7 +63,7 @@ static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 void TransactionAcquire::done ()
 {
     // We hold a PeerSet lock and so cannot acquire the master lock here
-    SHAMap::pointer map;
+    std::shared_ptr<SHAMap> map;
 
     if (mFailed)
     {

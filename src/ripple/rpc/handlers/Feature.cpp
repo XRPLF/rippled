@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {
 

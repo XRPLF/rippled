@@ -57,7 +57,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
     }
 }
 
-SHAMapTreeNode::SHAMapTreeNode (SHAMapItem::ref item,
+SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item,
                                 TNType type, std::uint32_t seq)
     : mItem (item)
     , mSeq (seq)
@@ -402,7 +402,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
         assert (false);
 }
 
-bool SHAMapTreeNode::setItem (SHAMapItem::ref i, TNType type)
+bool SHAMapTreeNode::setItem (std::shared_ptr<SHAMapItem> const& i, TNType type)
 {
     mType = type;
     mItem = i;
@@ -437,11 +437,15 @@ void SHAMapTreeNode::makeInner ()
     mHash.zero ();
 }
 
+#ifdef BEAST_DEBUG
+
 void SHAMapTreeNode::dump (const SHAMapNodeID & id, beast::Journal journal)
 {
     if (journal.debug) journal.debug <<
         "SHAMapTreeNode(" << id.getNodeID () << ")";
 }
+
+#endif  // BEAST_DEBUG
 
 std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 {
@@ -486,7 +490,7 @@ std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 }
 
 // We are modifying an inner node
-bool SHAMapTreeNode::setChild (int m, uint256 const& hash, SHAMapTreeNode::ref child)
+bool SHAMapTreeNode::setChild (int m, uint256 const& hash, std::shared_ptr<SHAMapTreeNode> const& child)
 {
     assert ((m >= 0) && (m < 16));
     assert (mType == tnINNER);
@@ -515,7 +519,7 @@ bool SHAMapTreeNode::setChild (int m, uint256 const& hash, SHAMapTreeNode::ref c
 }
 
 // finished modifying, now make shareable
-void SHAMapTreeNode::shareChild (int m, SHAMapTreeNode::ref child)
+void SHAMapTreeNode::shareChild (int m, std::shared_ptr<SHAMapTreeNode> const& child)
 {
     assert ((m >= 0) && (m < 16));
     assert (mType == tnINNER);
@@ -536,7 +540,7 @@ SHAMapTreeNode* SHAMapTreeNode::getChildPointer (int branch)
     return mChildren[branch].get ();
 }
 
-SHAMapTreeNode::pointer SHAMapTreeNode::getChild (int branch)
+std::shared_ptr<SHAMapTreeNode> SHAMapTreeNode::getChild (int branch)
 {
     assert (branch >= 0 && branch < 16);
     assert (isInnerNode ());
@@ -546,7 +550,7 @@ SHAMapTreeNode::pointer SHAMapTreeNode::getChild (int branch)
     return mChildren[branch];
 }
 
-void SHAMapTreeNode::canonicalizeChild (int branch, SHAMapTreeNode::pointer& node)
+void SHAMapTreeNode::canonicalizeChild (int branch, std::shared_ptr<SHAMapTreeNode>& node)
 {
     assert (branch >= 0 && branch < 16);
     assert (isInnerNode ());

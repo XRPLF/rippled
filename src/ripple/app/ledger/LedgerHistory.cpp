@@ -213,13 +213,13 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
             std::vector <SHAMapItemInfo> builtTx, validTx;
             // Get built ledger hashes and metadata
             builtLedger->peekTransactionMap()->visitLeaves(
-                [&builtTx](SHAMapItem::ref item)
+                [&builtTx](std::shared_ptr<SHAMapItem> const& item)
                 {
                     builtTx.push_back({item->getTag(), item->peekData()});
                 });
             // Get valid ledger hashes and metadata
             validLedger->peekTransactionMap()->visitLeaves(
-                [&validTx](SHAMapItem::ref item)
+                [&validTx](std::shared_ptr<SHAMapItem> const& item)
                 {
                     validTx.push_back({item->getTag(), item->peekData()});
                 });

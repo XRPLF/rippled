@@ -57,43 +57,15 @@ SHAMapNodeID::Masks (int depth)
     return masks->entry[depth];
 }
 
-std::size_t
-SHAMapNodeID::calculate_hash (uint256 const& node, int depth)
-{
-    struct HashParams
-    {
-        HashParams ()
-            : golden_ratio (0x9e3779b9)
-        {
-            random_fill (&cookie_value);
-        }
-
-        // The cookie value protects us against algorithmic complexity attacks.
-        std::size_t cookie_value;
-        std::size_t golden_ratio;
-    };
-
-    static beast::static_initializer <HashParams> params;
-
-    std::size_t h = params->cookie_value + (depth * params->golden_ratio);
-
-    auto ptr = reinterpret_cast <const unsigned int*> (node.cbegin ());
-
-    for (int i = (depth + 7) / 8; i != 0; --i)
-        h = (h * params->golden_ratio) ^ *ptr++;
-
-    return h;
-}
-
 // canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
-    : mNodeID (hash), mDepth (depth), mHash (0)
+    : mNodeID (hash), mDepth (depth)
 {
     assert ((depth >= 0) && (depth < 65));
     mNodeID &= Masks(depth);
 }
 
-SHAMapNodeID::SHAMapNodeID (void const* ptr, int len) : mHash (0)
+SHAMapNodeID::SHAMapNodeID (void const* ptr, int len)
 {
     if (len < 33)
         mDepth = -1;
@@ -111,12 +83,6 @@ std::string SHAMapNodeID::getString () const
 
     return "NodeID(" + std::to_string (mDepth) +
         "," + to_string (mNodeID) + ")";
-}
-
-uint256 SHAMapNodeID::getNodeID (int depth, uint256 const& hash)
-{
-    assert ((depth >= 0) && (depth <= 64));
-    return hash & Masks(depth);
 }
 
 void SHAMapNodeID::addIDRaw (Serializer& s) const
@@ -141,7 +107,7 @@ SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
     uint256 child (mNodeID);
     child.begin ()[mDepth / 2] |= (mDepth & 1) ? m : (m << 4);
 
-    return SHAMapNodeID (mDepth + 1, child, true);
+    return SHAMapNodeID (mDepth + 1, child);
 }
 
 // Which branch would contain the specified hash

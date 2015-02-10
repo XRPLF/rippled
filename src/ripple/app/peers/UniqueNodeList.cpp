@@ -31,6 +31,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/net/HTTPClient.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/algorithm/string.hpp>

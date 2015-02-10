@@ -42,6 +42,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
@@ -58,9 +59,9 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap  (std::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
-    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE,
+    , mAccountStateMap (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     // special case: put coins in root account
@@ -104,9 +105,9 @@ Ledger::Ledger (uint256 const& parentHash,
     , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (std::make_shared <SHAMap> (
-        smtTRANSACTION, transHash, getApp().family(),
+        SHAMapType::TRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
-    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
+    , mAccountStateMap (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     updateHash ();
@@ -167,7 +168,7 @@ Ledger::Ledger (bool /* dummy */,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (std::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
@@ -236,10 +237,10 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mAccepted (false),
       mImmutable (false),
       mTransactionMap (std::make_shared <SHAMap> (
-          smtTRANSACTION, getApp().family(),
+          SHAMapType::TRANSACTION, getApp().family(),
             deprecatedLogs().journal("SHAMap"))),
       mAccountStateMap (std::make_shared <SHAMap> (
-          smtSTATE, getApp().family(),
+          SHAMapType::STATE, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
 {
     initializeFees ();
@@ -340,9 +341,9 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        mTransactionMap = std::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
+        mTransactionMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, mTransHash,
             getApp().family(), deprecatedLogs().journal("SHAMap"));
-        mAccountStateMap = std::make_shared<SHAMap> (smtSTATE, mAccountHash,
+        mAccountStateMap = std::make_shared<SHAMap> (SHAMapType::STATE, mAccountHash,
             getApp().family(), deprecatedLogs().journal("SHAMap"));
     }
 }
@@ -454,7 +455,7 @@ bool Ledger::addTransaction (
 Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 {
     SHAMapTreeNode::TNType type;
-    SHAMapItem::pointer item = mTransactionMap->peekItem (transID, type);
+    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (transID, type);
 
     if (!item)
         return Transaction::pointer ();
@@ -490,7 +491,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 }
 
 STTx::pointer Ledger::getSTransaction (
-    SHAMapItem::ref item, SHAMapTreeNode::TNType type)
+    std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type)
 {
     SerialIter sit (item->peekSerializer ());
 
@@ -508,7 +509,7 @@ STTx::pointer Ledger::getSTransaction (
 }
 
 STTx::pointer Ledger::getSMTransaction (
-    SHAMapItem::ref item, SHAMapTreeNode::TNType type,
+    std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type,
     TransactionMetaSet::pointer& txMeta) const
 {
     SerialIter sit (item->peekSerializer ());
@@ -537,7 +538,7 @@ bool Ledger::getTransaction (
     TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
-    SHAMapItem::pointer item = mTransactionMap->peekItem (txID, type);
+    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (txID, type);
 
     if (!item)
         return false;
@@ -582,7 +583,7 @@ bool Ledger::getTransactionMeta (
     uint256 const& txID, TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
-    SHAMapItem::pointer item = mTransactionMap->peekItem (txID, type);
+    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (txID, type);
 
     if (!item)
         return false;
@@ -600,7 +601,7 @@ bool Ledger::getTransactionMeta (
 bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
 {
     SHAMapTreeNode::TNType type;
-    SHAMapItem::pointer item = mTransactionMap->peekItem (transID, type);
+    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (transID, type);
 
     if (!item)
         return false;
@@ -1204,7 +1205,7 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
 
 SLE::pointer Ledger::getSLE (uint256 const& uHash) const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekItem (uHash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekItem (uHash);
 
     if (!node)
         return SLE::pointer ();
@@ -1216,7 +1217,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 {
     uint256 hash;
 
-    SHAMapItem::pointer node = mAccountStateMap->peekItem (uId, hash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekItem (uId, hash);
 
     if (!node)
         return SLE::pointer ();
@@ -1346,7 +1347,7 @@ bool Ledger::visitAccountItems (
 }
 
 static void visitHelper (
-    std::function<void (SLE::ref)>& function, SHAMapItem::ref item)
+    std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
 {
     function (std::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
 }
@@ -1375,25 +1376,25 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
 
 uint256 Ledger::getFirstLedgerIndex () const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekFirstItem ();
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekFirstItem ();
     return node ? node->getTag () : uint256 ();
 }
 
 uint256 Ledger::getLastLedgerIndex () const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekLastItem ();
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekLastItem ();
     return node ? node->getTag () : uint256 ();
 }
 
 uint256 Ledger::getNextLedgerIndex (uint256 const& uHash) const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
     return node ? node->getTag () : uint256 ();
 }
 
 uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
 
     if ((!node) || (node->getTag () > uEnd))
         return uint256 ();
@@ -1403,13 +1404,13 @@ uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) c
 
 uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash) const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekPrevItem (uHash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekPrevItem (uHash);
     return node ? node->getTag () : uint256 ();
 }
 
 uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const
 {
-    SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
+    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
 
     if ((!node) || (node->getTag () < uBegin))
         return uint256 ();
@@ -1430,7 +1431,7 @@ SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let) con
 SLE::pointer Ledger::getASNode (
     LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let) const
 {
-    SHAMapItem::pointer account = mAccountStateMap->peekItem (nodeID);
+    std::shared_ptr<SHAMapItem> account = mAccountStateMap->peekItem (nodeID);
 
     if (!account)
     {

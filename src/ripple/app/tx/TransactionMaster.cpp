@@ -59,7 +59,7 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
     return txn;
 }
 
-STTx::pointer TransactionMaster::fetch (SHAMapItem::ref item,
+STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         SHAMapTreeNode::TNType type,
         bool checkDisk, std::uint32_t uCommitLedger)
 {

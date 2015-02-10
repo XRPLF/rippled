@@ -63,6 +63,7 @@
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <beast/asio/io_latency_probe.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/asio/signal_set.hpp>
 #include <fstream>
@@ -1254,7 +1255,7 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
-            SHAMap::ref txns = replayLedger->peekTransactionMap();
+            std::shared_ptr<SHAMap> const& txns = replayLedger->peekTransactionMap();
 
             // Get a mutable snapshot of the open ledger
             Ledger::pointer cur = getLedgerMaster().getCurrentLedger();

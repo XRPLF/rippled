@@ -23,6 +23,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 

@@ -31,6 +31,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <boost/log/trivial.hpp>
 #include <tuple>
 

@@ -34,6 +34,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/streams/debug_ostream.h>
 #include <beast/weak_fn.h>
 #include <boost/asio/io_service.hpp>
@@ -1719,7 +1720,7 @@ void
 PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 {
     protocol::TMGetLedger& packet = *m;
-    SHAMap::pointer map;
+    std::shared_ptr<SHAMap> map;
     protocol::TMLedgerData reply;
     bool fatLeaves = true, fatRoot = false;
 
@@ -1949,7 +1950,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 
-            SHAMap::pointer map = ledger->peekAccountStateMap ();
+            std::shared_ptr<SHAMap> map = ledger->peekAccountStateMap ();
 
             if (map && map->getHash ().isNonZero ())
             {

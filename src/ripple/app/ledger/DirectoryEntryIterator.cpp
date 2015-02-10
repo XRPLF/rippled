@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/DirectoryEntryIterator.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 

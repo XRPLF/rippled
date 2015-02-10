@@ -37,7 +37,7 @@ namespace tests {
 class sync_test : public beast::unit_test::suite
 {
 public:
-    static SHAMapItem::pointer makeRandomAS ()
+    static std::shared_ptr<SHAMapItem> makeRandomAS ()
     {
         Serializer s;
 
@@ -56,7 +56,7 @@ public:
 
         for (int i = 0; i < count; ++i)
         {
-            SHAMapItem::pointer item = makeRandomAS ();
+            std::shared_ptr<SHAMapItem> item = makeRandomAS ();
             items.push_back (item->getTag ());
 
             if (!map.addItem (*item, false, false))
@@ -101,8 +101,8 @@ public:
         beast::Journal const j;                            // debug journal
 
         TestFamily f(j);
-        SHAMap source (smtFREE, f, j);
-        SHAMap destination (smtFREE, f, j);
+        SHAMap source (SHAMapType::FREE, f, j);
+        SHAMap destination (SHAMapType::FREE, f, j);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)

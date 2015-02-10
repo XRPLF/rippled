@@ -56,6 +56,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/Manager.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>
@@ -292,13 +293,13 @@ public:
 
     bool recvValidation (
         STValidation::ref val, std::string const& source);
-    void takePosition (int seq, SHAMap::ref position);
-    SHAMap::pointer getTXMap (uint256 const& hash);
+    void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
+    std::shared_ptr<SHAMap> getTXMap (uint256 const& hash);
     bool hasTXSet (
         const std::shared_ptr<Peer>& peer, uint256 const& set,
         protocol::TxSetStatus status);
 
-    void mapComplete (uint256 const& hash, SHAMap::ref map);
+    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map);
     bool stillNeedTXSet (uint256 const& hash);
     void makeFetchPack (
         Job&, std::weak_ptr<Peer> peer,
@@ -577,7 +578,7 @@ private:
     STValidation::pointer       mLastValidation;
 
     // Recent positions taken
-    std::map<uint256, std::pair<int, SHAMap::pointer> > mRecentPositions;
+    std::map<uint256, std::pair<int, std::shared_ptr<SHAMap>>> mRecentPositions;
 
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
@@ -1657,7 +1658,8 @@ void NetworkOPsImp::processTrustedProposal (
 }
 
 // Must be called while holding the master lock
-SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
+std::shared_ptr<SHAMap>
+NetworkOPsImp::getTXMap (uint256 const& hash)
 {
     auto it = mRecentPositions.find (hash);
 
@@ -1665,13 +1667,14 @@ SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
         return it->second.second;
 
     if (!haveConsensusObject ())
-        return SHAMap::pointer ();
+        return std::shared_ptr<SHAMap> ();
 
     return mConsensus->getTransactionTree (hash, false);
 }
 
 // Must be called while holding the master lock
-void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
+void
+NetworkOPsImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
 {
     mRecentPositions[position->getHash ()] = std::make_pair (seq, position);
 
@@ -1726,7 +1729,9 @@ bool NetworkOPsImp::stillNeedTXSet (uint256 const& hash)
     return mConsensus->stillNeedTXSet (hash);
 }
 
-void NetworkOPsImp::mapComplete (uint256 const& hash, SHAMap::ref map)
+void
+NetworkOPsImp::mapComplete (uint256 const& hash,
+                            std::shared_ptr<SHAMap> const& map)
 {
     if (haveConsensusObject ())
         mConsensus->mapComplete (hash, map, true);
