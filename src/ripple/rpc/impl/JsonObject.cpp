@@ -42,7 +42,7 @@ Collection::~Collection ()
         parent_->enabled_ = true;
 }
 
-Collection& Collection::operator= (Collection&& that)
+Collection& Collection::operator= (Collection&& that) noexcept
 {
     parent_ = that.parent_;
     writer_ = that.writer_;
@@ -55,7 +55,7 @@ Collection& Collection::operator= (Collection&& that)
     return *this;
 }
 
-Collection::Collection (Collection&& that)
+Collection::Collection (Collection&& that) noexcept
 {
     *this = std::move (that);
 }

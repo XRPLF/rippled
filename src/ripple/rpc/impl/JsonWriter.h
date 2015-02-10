@@ -129,8 +129,8 @@ public:
     enum CollectionType {array, object};
 
     explicit Writer (Output const& output);
-    Writer(Writer&&);
-    Writer& operator=(Writer&&);
+    Writer(Writer&&) noexcept;
+    Writer& operator=(Writer&&) noexcept;
 
     ~Writer();
 

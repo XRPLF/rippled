@@ -105,7 +105,7 @@ public:
         return mSocket->lowest_layer ();
     }
 
-    void swap (AutoSocket& s)
+    void swap (AutoSocket& s) noexcept
     {
         mBuffer.swap (s.mBuffer);
         mSocket.swap (s.mSocket);

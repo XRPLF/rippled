@@ -56,7 +56,7 @@ public:
     {
         mNodes.clear ();
     }
-    void swap (TransactionMetaSet&);
+    void swap (TransactionMetaSet&) noexcept;
 
     uint256 const& getTxID ()
     {

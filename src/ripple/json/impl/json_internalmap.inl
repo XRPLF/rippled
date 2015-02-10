@@ -241,7 +241,7 @@ ValueInternalMap::~ValueInternalMap ()
 
 
 void
-ValueInternalMap::swap ( ValueInternalMap& other )
+ValueInternalMap::swap ( ValueInternalMap& other ) noexcept
 {
     ValueInternalLink* tempBuckets = buckets_;
     buckets_ = other.buckets_;

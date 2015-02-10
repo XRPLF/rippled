@@ -208,7 +208,7 @@ Value::CZString::~CZString ()
 }
 
 void
-Value::CZString::swap ( CZString& other )
+Value::CZString::swap ( CZString& other ) noexcept
 {
     std::swap ( cstr_, other.cstr_ );
     std::swap ( index_, other.index_ );
@@ -558,7 +558,7 @@ Value::operator= ( const Value& other )
     return *this;
 }
 
-Value::Value ( Value&& other )
+Value::Value ( Value&& other ) noexcept
     : value_ ( other.value_ )
     , type_ ( other.type_ )
     , allocated_ ( other.allocated_ )
@@ -572,14 +572,14 @@ Value::Value ( Value&& other )
 }
 
 Value&
-Value::operator= ( Value&& other )
+Value::operator= ( Value&& other ) noexcept
 {
     swap ( other );
     return *this;
 }
 
 void
-Value::swap ( Value& other )
+Value::swap ( Value& other ) noexcept
 {
     std::swap ( value_, other.value_ );
 

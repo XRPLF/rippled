@@ -194,7 +194,7 @@ void TransactionMetaSet::init (uint256 const& id, std::uint32_t ledger)
     mDelivered = boost::optional <STAmount> ();
 }
 
-void TransactionMetaSet::swap (TransactionMetaSet& s)
+void TransactionMetaSet::swap (TransactionMetaSet& s) noexcept
 {
     assert ((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
     mNodes.swap (s.mNodes);
