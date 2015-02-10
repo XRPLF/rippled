@@ -100,11 +100,6 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     {
         addPeers ();
         setTimer ();
-
-        // For historical nodes, wait a bit since a
-        // fetch pack is probably coming
-        if (mReason != fcHISTORY)
-            trigger (Peer::ptr ());
     }
     else if (!isFailed ())
     {
@@ -272,9 +267,16 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
             "No progress(" << pc <<
             ") for ledger " << mHash;
 
-        trigger (Peer::ptr ());
+        // addPeers triggers if the reason is not fcHISTORY
+        // So if the reason IS fcHISTORY, need to trigger after we add
+        // otherwise, we need to trigger before we add
+        // so each peer gets triggered once
+        if (mReason != fcHISTORY)
+            trigger (Peer::ptr ());
         if (pc < 4)
             addPeers ();
+        if (mReason == fcHISTORY)
+            trigger (Peer::ptr ());
     }
 }
 
