@@ -24,11 +24,11 @@ namespace ripple {
 
 Json::Value doSMS (RPC::Context& context)
 {
-    if (!context.params.isMember ("text"))
+    if (!context.params.isMember (jss::text))
         return rpcError (rpcINVALID_PARAMS);
 
     HTTPClient::sendSMS (
-        getApp().getIOService (), context.params["text"].asString ());
+        getApp().getIOService (), context.params[jss::text].asString ());
 
     return RPC::makeObjectValue ("sms dispatched");
 }

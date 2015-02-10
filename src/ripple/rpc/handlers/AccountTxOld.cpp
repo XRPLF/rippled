@@ -36,16 +36,16 @@ Json::Value doAccountTxOld (RPC::Context& context)
 {
     RippleAddress   raAccount;
     std::uint32_t offset
-            = context.params.isMember ("offset")
-            ? context.params["offset"].asUInt () : 0;
-    int limit = context.params.isMember ("limit")
-            ? context.params["limit"].asUInt () : -1;
-    bool bBinary = context.params.isMember ("binary")
-            && context.params["binary"].asBool ();
-    bool bDescending = context.params.isMember ("descending")
-            && context.params["descending"].asBool ();
-    bool bCount = context.params.isMember ("count")
-            && context.params["count"].asBool ();
+            = context.params.isMember (jss::offset)
+            ? context.params[jss::offset].asUInt () : 0;
+    int limit = context.params.isMember (jss::limit)
+            ? context.params[jss::limit].asUInt () : -1;
+    bool bBinary = context.params.isMember (jss::binary)
+            && context.params[jss::binary].asBool ();
+    bool bDescending = context.params.isMember (jss::descending)
+            && context.params[jss::descending].asBool ();
+    bool bCount = context.params.isMember (jss::count)
+            && context.params[jss::count].asBool ();
     std::uint32_t   uLedgerMin;
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
@@ -53,10 +53,10 @@ Json::Value doAccountTxOld (RPC::Context& context)
     bool bValidated  = context.netOps.getValidatedRange (
         uValidatedMin, uValidatedMax);
 
-    if (!context.params.isMember ("account"))
+    if (!context.params.isMember (jss::account))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (context.params["account"].asString ()))
+    if (!raAccount.setAccountID (context.params[jss::account].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
     if (offset > 3000)
@@ -65,26 +65,26 @@ Json::Value doAccountTxOld (RPC::Context& context)
     context.loadType = Resource::feeHighBurdenRPC;
 
     // DEPRECATED
-    if (context.params.isMember ("ledger_min"))
+    if (context.params.isMember (jss::ledger_min))
     {
-        context.params["ledger_index_min"]   = context.params["ledger_min"];
+        context.params[jss::ledger_index_min]   = context.params[jss::ledger_min];
         bDescending = true;
     }
 
     // DEPRECATED
-    if (context.params.isMember ("ledger_max"))
+    if (context.params.isMember (jss::ledger_max))
     {
-        context.params["ledger_index_max"]   = context.params["ledger_max"];
+        context.params[jss::ledger_index_max]   = context.params[jss::ledger_max];
         bDescending = true;
     }
 
-    if (context.params.isMember ("ledger_index_min")
-        || context.params.isMember ("ledger_index_max"))
+    if (context.params.isMember (jss::ledger_index_min)
+        || context.params.isMember (jss::ledger_index_max))
     {
-        std::int64_t iLedgerMin  = context.params.isMember ("ledger_index_min")
-                ? context.params["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = context.params.isMember ("ledger_index_max")
-                ? context.params["ledger_index_max"].asInt () : -1;
+        std::int64_t iLedgerMin  = context.params.isMember (jss::ledger_index_min)
+                ? context.params[jss::ledger_index_min].asInt () : -1;
+        std::int64_t iLedgerMax  = context.params.isMember (jss::ledger_index_max)
+                ? context.params[jss::ledger_index_max].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -121,8 +121,8 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
         Json::Value ret (Json::objectValue);
 
-        ret["account"] = raAccount.humanAccountID ();
-        Json::Value& jvTxns = (ret["transactions"] = Json::arrayValue);
+        ret[jss::account] = raAccount.humanAccountID ();
+        Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         if (bBinary)
         {
@@ -136,10 +136,10 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
                 std::uint32_t  uLedgerIndex = std::get<2> (*it);
-                jvObj["tx_blob"]            = std::get<0> (*it);
-                jvObj["meta"]               = std::get<1> (*it);
-                jvObj["ledger_index"]       = uLedgerIndex;
-                jvObj["validated"]
+                jvObj[jss::tx_blob]            = std::get<0> (*it);
+                jvObj[jss::meta]               = std::get<1> (*it);
+                jvObj[jss::ledger_index]       = uLedgerIndex;
+                jvObj[jss::validated]
                         = bValidated
                         && uValidatedMin <= uLedgerIndex
                         && uValidatedMax >= uLedgerIndex;
@@ -158,14 +158,14 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
 
                 if (it->first)
-                    jvObj["tx"]             = it->first->getJson (1);
+                    jvObj[jss::tx]             = it->first->getJson (1);
 
                 if (it->second)
                 {
                     std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
 
-                    jvObj["meta"]           = it->second->getJson (0);
-                    jvObj["validated"]
+                    jvObj[jss::meta]           = it->second->getJson (0);
+                    jvObj[jss::validated]
                             = bValidated
                             && uValidatedMin <= uLedgerIndex
                             && uValidatedMax >= uLedgerIndex;
@@ -175,22 +175,22 @@ Json::Value doAccountTxOld (RPC::Context& context)
         }
 
         //Add information about the original query
-        ret["ledger_index_min"] = uLedgerMin;
-        ret["ledger_index_max"] = uLedgerMax;
-        ret["validated"]
+        ret[jss::ledger_index_min] = uLedgerMin;
+        ret[jss::ledger_index_max] = uLedgerMax;
+        ret[jss::validated]
                 = bValidated
                 && uValidatedMin <= uLedgerMin
                 && uValidatedMax >= uLedgerMax;
-        ret["offset"]           = offset;
+        ret[jss::offset]           = offset;
 
         // We no longer return the full count but only the count of returned
         // transactions. Computing this count was two expensive and this API is
         // deprecated anyway.
         if (bCount)
-            ret["count"]        = count;
+            ret[jss::count]        = count;
 
-        if (context.params.isMember ("limit"))
-            ret["limit"]        = limit;
+        if (context.params.isMember (jss::limit))
+            ret[jss::limit]        = limit;
 
 
         return ret;

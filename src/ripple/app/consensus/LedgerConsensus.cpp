@@ -195,19 +195,19 @@ public:
         switch (mState)
         {
         case lcsPRE_CLOSE:
-            ret["state"] = "open";
+            ret[jss::state] = "open";
             break;
 
         case lcsESTABLISH:
-            ret["state"] = "consensus";
+            ret[jss::state] = "consensus";
             break;
 
         case lcsFINISHED:
-            ret["state"] = "finished";
+            ret[jss::state] = "finished";
             break;
 
         case lcsACCEPTED:
-            ret["state"] = "accepted";
+            ret[jss::state] = "accepted";
             break;
         }
 

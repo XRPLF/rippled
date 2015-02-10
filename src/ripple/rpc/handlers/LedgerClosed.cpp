@@ -26,8 +26,8 @@ Json::Value doLedgerClosed (RPC::Context& context)
     uint256 uLedger = context.netOps.getClosedLedgerHash ();
 
     Json::Value jvResult;
-    jvResult["ledger_index"] = context.netOps.getLedgerID (uLedger);
-    jvResult["ledger_hash"] = to_string (uLedger);
+    jvResult[jss::ledger_index] = context.netOps.getLedgerID (uLedger);
+    jvResult[jss::ledger_hash] = to_string (uLedger);
 
     return jvResult;
 }

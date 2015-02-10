@@ -29,7 +29,7 @@ Json::Value doValidationSeed (RPC::Context& context)
     auto lock = getApp().masterLock();
     Json::Value obj (Json::objectValue);
 
-    if (!context.params.isMember ("secret"))
+    if (!context.params.isMember (jss::secret))
     {
         std::cerr << "Unset validation seed." << std::endl;
 
@@ -38,7 +38,7 @@ Json::Value doValidationSeed (RPC::Context& context)
         getConfig ().VALIDATION_PRIV.clear ();
     }
     else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (
-        context.params["secret"].asString ()))
+        context.params[jss::secret].asString ()))
     {
         getConfig ().VALIDATION_PUB.clear ();
         getConfig ().VALIDATION_PRIV.clear ();
@@ -53,9 +53,9 @@ Json::Value doValidationSeed (RPC::Context& context)
         pub = RippleAddress::createNodePublic (seed);
         getConfig ().VALIDATION_PRIV = RippleAddress::createNodePrivate (seed);
 
-        obj["validation_public_key"] = pub.humanNodePublic ();
-        obj["validation_seed"] = seed.humanSeed ();
-        obj["validation_key"] = seed.humanSeed1751 ();
+        obj[jss::validation_public_key] = pub.humanNodePublic ();
+        obj[jss::validation_seed] = seed.humanSeed ();
+        obj[jss::validation_key] = seed.humanSeed1751 ();
     }
 
     return obj;

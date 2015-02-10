@@ -2313,11 +2313,11 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info [jss::server_state] = strOperatingMode ();
 
     if (mNeedNetworkLedger)
-        info[jss::network_ledger] = jss::waiting;
+        info[jss::network_ledger] = "waiting";
 
     info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
 
-    info["io_latency_ms"] = static_cast<Json::UInt> (
+    info[jss::io_latency_ms] = static_cast<Json::UInt> (
         getApp().getIOLatency().count());
 
     if (admin)
@@ -2329,7 +2329,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         }
         else
         {
-            info[jss::pubkey_validator] = jss::none;
+            info[jss::pubkey_validator] = "none";
         }
     }
 
@@ -2463,7 +2463,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
         Ledger::pointer lpPublished = getPublishedLedger ();
         if (!lpPublished)
-            info[jss::published_ledger] = jss::none;
+            info[jss::published_ledger] = "none";
         else if (lpPublished->getLedgerSeq() != lpClosed->getLedgerSeq())
             info[jss::published_ledger] = lpPublished->getLedgerSeq();
     }
@@ -2490,12 +2490,12 @@ Json::Value NetworkOPsImp::pubBootstrapAccountInfo (
 {
     Json::Value         jvObj (Json::objectValue);
 
-    jvObj["type"]           = "accountInfoBootstrap";
-    jvObj["account"]        = naAccountID.humanAccountID ();
-    jvObj["owner"]          = getOwnerInfo (lpAccepted, naAccountID);
-    jvObj["ledger_index"]   = lpAccepted->getLedgerSeq ();
-    jvObj["ledger_hash"]    = to_string (lpAccepted->getHash ());
-    jvObj["ledger_time"]
+    jvObj[jss::type]           = "accountInfoBootstrap";
+    jvObj[jss::account]        = naAccountID.humanAccountID ();
+    jvObj[jss::owner]          = getOwnerInfo (lpAccepted, naAccountID);
+    jvObj[jss::ledger_index]   = lpAccepted->getLedgerSeq ();
+    jvObj[jss::ledger_hash]    = to_string (lpAccepted->getHash ());
+    jvObj[jss::ledger_time]
             = Json::Value::UInt (utFromSeconds (lpAccepted->getCloseTimeNC ()));
 
     return jvObj;
@@ -2545,7 +2545,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
         {
             Json::Value jvObj (Json::objectValue);
 
-            jvObj[jss::type] = jss::ledgerClosed;
+            jvObj[jss::type] = "ledgerClosed";
             jvObj[jss::ledger_index] = lpAccepted->getLedgerSeq ();
             jvObj[jss::ledger_hash] = to_string (lpAccepted->getHash ());
             jvObj[jss::ledger_time]
@@ -2611,7 +2611,7 @@ Json::Value NetworkOPsImp::transJson(
 
     transResultInfo (terResult, sToken, sHuman);
 
-    jvObj[jss::type]           = jss::transaction;
+    jvObj[jss::type]           = "transaction";
     jvObj[jss::transaction]    = stTxn.getJson (0);
 
     if (bValidated)
@@ -2630,7 +2630,7 @@ Json::Value NetworkOPsImp::transJson(
         jvObj[jss::ledger_current_index]   = lpCurrent->getLedgerSeq ();
     }
 
-    jvObj[jss::status]                 = bValidated ? jss::closed : jss::proposed;
+    jvObj[jss::status]                 = bValidated ? "closed" : "proposed";
     jvObj[jss::engine_result]          = sToken;
     jvObj[jss::engine_result_code]     = terResult;
     jvObj[jss::engine_result_message]  = sHuman;
@@ -3233,8 +3233,8 @@ void NetworkOPsImp::getBookPage (
         }
     }
 
-    //  jvResult["marker"]  = Json::Value(Json::arrayValue);
-    //  jvResult["nodes"]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
 }
 
 
@@ -3384,8 +3384,8 @@ void NetworkOPsImp::getBookPage (
         }
     }
 
-    //  jvResult["marker"]  = Json::Value(Json::arrayValue);
-    //  jvResult["nodes"]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
 }
 
 #endif

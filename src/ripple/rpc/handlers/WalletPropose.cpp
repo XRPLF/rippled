@@ -29,10 +29,10 @@ Json::Value doWalletPropose (RPC::Context& context)
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (!context.params.isMember ("passphrase"))
+    if (!context.params.isMember (jss::passphrase))
         naSeed.setSeedRandom ();
 
-    else if (!naSeed.setSeedGeneric (context.params["passphrase"].asString ()))
+    else if (!naSeed.setSeedGeneric (context.params[jss::passphrase].asString ()))
         return rpcError(rpcBAD_SEED);
 
     RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
@@ -40,14 +40,14 @@ Json::Value doWalletPropose (RPC::Context& context)
 
     Json::Value obj (Json::objectValue);
 
-    obj["master_seed"]      = naSeed.humanSeed ();
-    obj["master_seed_hex"]  = to_string (naSeed.getSeed ());
-    obj["master_key"]     = naSeed.humanSeed1751();
-    obj["account_id"]       = naAccount.humanAccountID ();
-    obj["public_key"] = naAccount.humanAccountPublic();
+    obj[jss::master_seed]      = naSeed.humanSeed ();
+    obj[jss::master_seed_hex]  = to_string (naSeed.getSeed ());
+    obj[jss::master_key]     = naSeed.humanSeed1751();
+    obj[jss::account_id]       = naAccount.humanAccountID ();
+    obj[jss::public_key] = naAccount.humanAccountPublic();
 
     auto acct = naAccount.getAccountPublic();
-    obj["public_key_hex"] = strHex(acct.begin(), acct.size());
+    obj[jss::public_key_hex] = strHex(acct.begin(), acct.size());
 
     return obj;
 }

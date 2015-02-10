@@ -38,7 +38,7 @@ Json::Value doSubscribe (RPC::Context& context)
             ? context.params[jss::ledger_index].asUInt ()
             : 0;
 
-    if (!context.infoSub && !context.params.isMember ("url"))
+    if (!context.infoSub && !context.params.isMember (jss::url))
     {
         // Must be a JSON-RPC call.
         WriteLog (lsINFO, RPCHandler)
@@ -47,24 +47,24 @@ Json::Value doSubscribe (RPC::Context& context)
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (context.params.isMember ("url"))
+    if (context.params.isMember (jss::url))
     {
         if (context.role != Role::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl      = context.params["url"].asString ();
-        std::string strUsername = context.params.isMember ("url_username") ?
-                context.params["url_username"].asString () : "";
-        std::string strPassword = context.params.isMember ("url_password") ?
-                context.params["url_password"].asString () : "";
+        std::string strUrl      = context.params[jss::url].asString ();
+        std::string strUsername = context.params.isMember (jss::url_username) ?
+                context.params[jss::url_username].asString () : "";
+        std::string strPassword = context.params.isMember (jss::url_password) ?
+                context.params[jss::url_password].asString () : "";
 
         // DEPRECATED
-        if (context.params.isMember ("username"))
-            strUsername = context.params["username"].asString ();
+        if (context.params.isMember (jss::username))
+            strUsername = context.params[jss::username].asString ();
 
         // DEPRECATED
-        if (context.params.isMember ("password"))
-            strPassword = context.params["password"].asString ();
+        if (context.params.isMember (jss::password))
+            strPassword = context.params[jss::password].asString ();
 
         ispSub  = context.netOps.findRpcSub (strUrl);
 
@@ -84,10 +84,10 @@ Json::Value doSubscribe (RPC::Context& context)
             WriteLog (lsTRACE, RPCHandler)
                 << "doSubscribe: reusing: " << strUrl;
 
-            if (context.params.isMember ("username"))
+            if (context.params.isMember (jss::username))
                 dynamic_cast<RPCSub*> (&*ispSub)->setUsername (strUsername);
 
-            if (context.params.isMember ("password"))
+            if (context.params.isMember (jss::password))
                 dynamic_cast<RPCSub*> (&*ispSub)->setPassword (strPassword);
         }
     }
@@ -96,10 +96,10 @@ Json::Value doSubscribe (RPC::Context& context)
         ispSub  = context.infoSub;
     }
 
-    if (!context.params.isMember ("streams"))
+    if (!context.params.isMember (jss::streams))
     {
     }
-    else if (!context.params["streams"].isArray ())
+    else if (!context.params[jss::streams].isArray ())
     {
         WriteLog (lsINFO, RPCHandler)
             << "doSubscribe: streams requires an array.";
@@ -108,7 +108,7 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else
     {
-        for (auto& it: context.params["streams"])
+        for (auto& it: context.params[jss::streams])
         {
             if (it.isString ())
             {
@@ -144,9 +144,9 @@ Json::Value doSubscribe (RPC::Context& context)
         }
     }
 
-    std::string strAccountsProposed =
-               context.params.isMember ("accounts_proposed")
-               ? "accounts_proposed" : "rt_accounts";  // DEPRECATED
+    auto strAccountsProposed =
+               context.params.isMember (jss::accounts_proposed)
+               ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
 
     if (!context.params.isMember (strAccountsProposed))
     {
@@ -165,16 +165,16 @@ Json::Value doSubscribe (RPC::Context& context)
             context.netOps.subAccount (ispSub, ids, uLedgerIndex, true);
     }
 
-    if (!context.params.isMember ("accounts"))
+    if (!context.params.isMember (jss::accounts))
     {
     }
-    else if (!context.params["accounts"].isArray ())
+    else if (!context.params[jss::accounts].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        auto ids  = RPC::parseAccountIds (context.params["accounts"]);
+        auto ids  = RPC::parseAccountIds (context.params[jss::accounts]);
 
         if (ids.empty ())
         {
@@ -189,16 +189,16 @@ Json::Value doSubscribe (RPC::Context& context)
     }
 
     bool bHaveMasterLock = true;
-    if (!context.params.isMember ("books"))
+    if (!context.params.isMember (jss::books))
     {
     }
-    else if (!context.params["books"].isArray ())
+    else if (!context.params[jss::books].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (auto& j: context.params["books"])
+        for (auto& j: context.params[jss::books])
         {
             if (!j.isObject ()
                     || !j.isMember (jss::taker_pays)
@@ -209,11 +209,11 @@ Json::Value doSubscribe (RPC::Context& context)
 
             Book book;
             bool bBoth =
-                    (j.isMember ("both") && j["both"].asBool ()) ||
-                    (j.isMember ("both_sides") && j["both_sides"].asBool ());
+                    (j.isMember (jss::both) && j[jss::both].asBool ()) ||
+                    (j.isMember (jss::both_sides) && j[jss::both_sides].asBool ());
             bool bSnapshot =
-                    (j.isMember ("snapshot") && j["snapshot"].asBool ()) ||
-                    (j.isMember ("state_now") && j["state_now"].asBool ());
+                    (j.isMember (jss::snapshot) && j[jss::snapshot].asBool ()) ||
+                    (j.isMember (jss::state_now) && j[jss::state_now].asBool ());
             // TODO(tom): both_sides and state_now are apparently deprecated...
             // where is this documented?
 
@@ -276,9 +276,9 @@ Json::Value doSubscribe (RPC::Context& context)
 
             RippleAddress   raTakerID;
 
-            if (!j.isMember ("taker"))
+            if (!j.isMember (jss::taker))
                 raTakerID.setAccountID (noAccount());
-            else if (!raTakerID.setAccountID (j["taker"].asString ()))
+            else if (!raTakerID.setAccountID (j[jss::taker].asString ()))
                 return rpcError (rpcBAD_ISSUER);
 
             if (!isConsistent (book))

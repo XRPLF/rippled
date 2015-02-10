@@ -191,21 +191,21 @@ static void autofill_fee (
     Json::Value& result,
     bool admin)
 {
-    Json::Value& tx (request["tx_json"]);
-    if (tx.isMember ("Fee"))
+    Json::Value& tx (request[jss::tx_json]);
+    if (tx.isMember (jss::Fee))
         return;
 
     int mult = Tuning::defaultAutoFillFeeMultiplier;
-    if (request.isMember ("fee_mult_max"))
+    if (request.isMember (jss::fee_mult_max))
     {
-        if (request["fee_mult_max"].isNumeric ())
+        if (request[jss::fee_mult_max].isNumeric ())
         {
-            mult = request["fee_mult_max"].asInt();
+            mult = request[jss::fee_mult_max].asInt();
         }
         else
         {
             RPC::inject_error (rpcHIGH_FEE, RPC::expected_field_message (
-                "fee_mult_max", "a number"), result);
+                jss::fee_mult_max, "a number"), result);
             return;
         }
     }
@@ -227,7 +227,7 @@ static void autofill_fee (
         return;
     }
 
-    tx ["Fee"] = static_cast<int>(fee);
+    tx [jss::Fee] = static_cast<int>(fee);
 }
 
 static Json::Value signPayment(
@@ -239,27 +239,27 @@ static Json::Value signPayment(
 {
     RippleAddress dstAccountID;
 
-    if (!tx_json.isMember ("Amount"))
+    if (!tx_json.isMember (jss::Amount))
         return RPC::missing_field_error ("tx_json.Amount");
 
     STAmount amount;
 
-    if (! amountFromJsonNoThrow (amount, tx_json ["Amount"]))
+    if (! amountFromJsonNoThrow (amount, tx_json [jss::Amount]))
         return RPC::invalid_field_error ("tx_json.Amount");
 
-    if (!tx_json.isMember ("Destination"))
+    if (!tx_json.isMember (jss::Destination))
         return RPC::missing_field_error ("tx_json.Destination");
 
-    if (!dstAccountID.setAccountID (tx_json["Destination"].asString ()))
+    if (!dstAccountID.setAccountID (tx_json[jss::Destination].asString ()))
         return RPC::invalid_field_error ("tx_json.Destination");
 
-    if (tx_json.isMember ("Paths") && params.isMember ("build_path"))
+    if (tx_json.isMember (jss::Paths) && params.isMember (jss::build_path))
         return RPC::make_error (rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
-    if (!tx_json.isMember ("Paths")
-        && tx_json.isMember ("Amount")
-        && params.isMember ("build_path"))
+    if (!tx_json.isMember (jss::Paths)
+        && tx_json.isMember (jss::Amount)
+        && params.isMember (jss::build_path))
     {
         // Need a ripple path.
         Currency uSrcCurrencyID;
@@ -267,9 +267,9 @@ static Json::Value signPayment(
 
         STAmount    saSendMax;
 
-        if (tx_json.isMember ("SendMax"))
+        if (tx_json.isMember (jss::SendMax))
         {
-            if (! amountFromJsonNoThrow (saSendMax, tx_json ["SendMax"]))
+            if (! amountFromJsonNoThrow (saSendMax, tx_json [jss::SendMax]))
                 return RPC::invalid_field_error ("tx_json.SendMax");
         }
         else
@@ -311,7 +311,7 @@ static Json::Value signPayment(
                     << spsPaths.getJson (0);
 
             if (!spsPaths.empty ())
-                tx_json["Paths"] = spsPaths.getJson (0);
+                tx_json[jss::Paths] = spsPaths.getJson (0);
         }
     }
     return Json::Value();
@@ -335,42 +335,42 @@ transactionSign (
 
     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << params;
 
-    if (! params.isMember ("secret"))
-        return RPC::missing_field_error ("secret");
+    if (! params.isMember (jss::secret))
+        return RPC::missing_field_error (jss::secret);
 
-    if (! params.isMember ("tx_json"))
-        return RPC::missing_field_error ("tx_json");
+    if (! params.isMember (jss::tx_json))
+        return RPC::missing_field_error (jss::tx_json);
 
     RippleAddress naSeed;
 
-    if (! naSeed.setSeedGeneric (params["secret"].asString ()))
+    if (! naSeed.setSeedGeneric (params[jss::secret].asString ()))
         return RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message ("secret"));
+            RPC::invalid_field_message (jss::secret));
 
-    Json::Value& tx_json (params ["tx_json"]);
+    Json::Value& tx_json (params [jss::tx_json]);
 
     if (! tx_json.isObject ())
-        return RPC::object_field_error ("tx_json");
+        return RPC::object_field_error (jss::tx_json);
 
-    if (! tx_json.isMember ("TransactionType"))
+    if (! tx_json.isMember (jss::TransactionType))
         return RPC::missing_field_error ("tx_json.TransactionType");
 
-    std::string const sType = tx_json ["TransactionType"].asString ();
+    std::string const sType = tx_json [jss::TransactionType].asString ();
 
-    if (! tx_json.isMember ("Account"))
+    if (! tx_json.isMember (jss::Account))
         return RPC::make_error (rpcSRC_ACT_MISSING,
             RPC::missing_field_message ("tx_json.Account"));
 
     RippleAddress raSrcAddressID;
 
-    if (! raSrcAddressID.setAccountID (tx_json["Account"].asString ()))
+    if (! raSrcAddressID.setAccountID (tx_json[jss::Account].asString ()))
         return RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message ("tx_json.Account"));
 
-    bool const verify = !(params.isMember ("offline")
-                          && params["offline"].asBool ());
+    bool const verify = !(params.isMember (jss::offline)
+                          && params[jss::offline].asBool ());
 
-    if (!tx_json.isMember ("Sequence") && !verify)
+    if (!tx_json.isMember (jss::Sequence) && !verify)
         return RPC::missing_field_error ("tx_json.Sequence");
 
     // Check for current ledger.
@@ -413,11 +413,11 @@ transactionSign (
             return e;
     }
 
-    if (!tx_json.isMember ("Sequence"))
-        tx_json["Sequence"] = ledgerFacade.getSeq ();
+    if (!tx_json.isMember (jss::Sequence))
+        tx_json[jss::Sequence] = ledgerFacade.getSeq ();
 
-    if (!tx_json.isMember ("Flags"))
-        tx_json["Flags"] = tfFullyCanonicalSig;
+    if (!tx_json.isMember (jss::Flags))
+        tx_json[jss::Flags] = tfFullyCanonicalSig;
 
     if (verify)
     {
@@ -427,7 +427,7 @@ transactionSign (
     }
 
     RippleAddress secret = RippleAddress::createSeedGeneric (
-        params["secret"].asString ());
+        params[jss::secret].asString ());
     RippleAddress masterGenerator = RippleAddress::createGeneratorPublic (
         secret);
     RippleAddress masterAccountPublic = RippleAddress::createAccountPublic (
@@ -451,12 +451,12 @@ transactionSign (
         }
     }
 
-    STParsedJSONObject parsed ("tx_json", tx_json);
+    STParsedJSONObject parsed (std::string (jss::tx_json), tx_json);
     if (!parsed.object.get())
     {
-        jvResult ["error"] = parsed.error ["error"];
-        jvResult ["error_code"] = parsed.error ["error_code"];
-        jvResult ["error_message"] = parsed.error ["error_message"];
+        jvResult [jss::error] = parsed.error [jss::error];
+        jvResult [jss::error_code] = parsed.error [jss::error_code];
+        jvResult [jss::error_message] = parsed.error [jss::error_message];
         return jvResult;
     }
     std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
@@ -480,11 +480,11 @@ transactionSign (
     if (!passesLocalChecks (*stpTrans, reason))
         return RPC::make_error (rpcINVALID_PARAMS, reason);
 
-    if (params.isMember ("debug_signing"))
+    if (params.isMember (jss::debug_signing))
     {
-        jvResult["tx_unsigned"] = strHex (
+        jvResult[jss::tx_unsigned] = strHex (
             stpTrans->getSerializer ().peekData ());
-        jvResult["tx_signing_hash"] = to_string (stpTrans->getSigningHash ());
+        jvResult[jss::tx_signing_hash] = to_string (stpTrans->getSigningHash ());
     }
 
     // FIXME: For performance, transactions should not be signed in this code
@@ -526,8 +526,8 @@ transactionSign (
 
     try
     {
-        jvResult["tx_json"] = tpTrans->getJson (0);
-        jvResult["tx_blob"] = strHex (
+        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_blob] = strHex (
             tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
@@ -537,9 +537,9 @@ transactionSign (
 
             transResultInfo (tpTrans->getResult (), sToken, sHuman);
 
-            jvResult["engine_result"]           = sToken;
-            jvResult["engine_result_code"]      = tpTrans->getResult ();
-            jvResult["engine_result_message"]   = sHuman;
+            jvResult[jss::engine_result]           = sToken;
+            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
+            jvResult[jss::engine_result_message]   = sHuman;
         }
 
         return jvResult;
