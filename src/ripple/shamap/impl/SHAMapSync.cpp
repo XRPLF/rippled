@@ -28,7 +28,7 @@ namespace ripple {
 
 static const uint256 uZero;
 
-static bool visitLeavesHelper (
+bool SHAMap::visitLeavesHelper (
     std::function <void (SHAMapItem::ref)> const& function,
     SHAMapTreeNode& node)
 {
@@ -58,10 +58,10 @@ void SHAMap::visitNodes(std::function<bool (SHAMapTreeNode&)> const& function)
     if (!root->isInner ())
         return;
 
-    using StackEntry = std::pair <int, SHAMapTreeNode::pointer>;
+    using StackEntry = std::pair <int, std::shared_ptr<SHAMapTreeNode>>;
     std::stack <StackEntry, std::vector <StackEntry>> stack;
 
-    SHAMapTreeNode::pointer node = root;
+    std::shared_ptr<SHAMapTreeNode> node = root;
     int pos = 0;
 
     while (1)
@@ -71,7 +71,7 @@ void SHAMap::visitNodes(std::function<bool (SHAMapTreeNode&)> const& function)
             uint256 childHash;
             if (!node->isEmptyBranch (pos))
             {
-                SHAMapTreeNode::pointer child = descendNoStore (node, pos);
+                std::shared_ptr<SHAMapTreeNode> child = descendNoStore (node, pos);
                 if (function (*child))
                     return;
 
@@ -248,7 +248,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
             auto const& nodeID = std::get<2>(node);
             auto const& nodeHash = parent->getChildHash (branch);
 
-            SHAMapTreeNode::pointer nodePtr = fetchNodeNT (nodeID, nodeHash, filter);
+            std::shared_ptr<SHAMapTreeNode> nodePtr = fetchNodeNT (nodeID, nodeHash, filter);
             if (nodePtr)
             {
                 if (mBacked)
@@ -380,7 +380,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
     }
 
     assert (mSeq >= 1);
-    SHAMapTreeNode::pointer node =
+    std::shared_ptr<SHAMapTreeNode> node =
         std::make_shared<SHAMapTreeNode> (rootNode, 0,
                                           format, uZero, false);
 
@@ -423,7 +423,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     }
 
     assert (mSeq >= 1);
-    SHAMapTreeNode::pointer node =
+    std::shared_ptr<SHAMapTreeNode> node =
         std::make_shared<SHAMapTreeNode> (rootNode, 0,
                                           format, uZero, false);
 
@@ -502,7 +502,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 return SHAMapAddNode::invalid ();
             }
 
-            SHAMapTreeNode::pointer newNode =
+            std::shared_ptr<SHAMapTreeNode> newNode =
                 std::make_shared<SHAMapTreeNode> (rawNode, 0, snfWIRE,
                                                   uZero, false);
 

@@ -219,8 +219,8 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
 
 void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
 {
-    std::stack <SHAMapTreeNode::pointer,
-        std::vector <SHAMapTreeNode::pointer>> nodeStack;
+    std::stack <std::shared_ptr<SHAMapTreeNode>,
+        std::vector <std::shared_ptr<SHAMapTreeNode>>> nodeStack;
 
     if (!root->isInner ())  // root is only node, and we have it
         return;
@@ -229,14 +229,14 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
 
     while (!nodeStack.empty ())
     {
-        SHAMapTreeNode::pointer node = std::move (nodeStack.top());
+        std::shared_ptr<SHAMapTreeNode> node = std::move (nodeStack.top());
         nodeStack.pop ();
 
         for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch (i))
             {
-                SHAMapTreeNode::pointer nextNode = descendNoStore (node, i);
+                std::shared_ptr<SHAMapTreeNode> nextNode = descendNoStore (node, i);
 
                 if (nextNode)
                 {

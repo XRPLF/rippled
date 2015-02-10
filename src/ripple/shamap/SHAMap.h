@@ -28,6 +28,7 @@
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -128,7 +129,7 @@ public:
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
 
-    typedef std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> SharedPtrNodeStack;
+    typedef std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>> SharedPtrNodeStack;
 
 public:
     // build new map
@@ -257,27 +258,27 @@ private:
     bool getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeFormat format);
 
      // tree node cache operations
-    SHAMapTreeNode::pointer getCache (uint256 const& hash);
-    void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
+    std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash);
+    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>&);
 
     // database operations
-    SHAMapTreeNode::pointer fetchNodeFromDB (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> fetchNodeFromDB (uint256 const& hash);
 
-    SHAMapTreeNode::pointer fetchNodeNT (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (uint256 const& hash);
 
-    SHAMapTreeNode::pointer fetchNodeNT (
+    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (
         SHAMapNodeID const& id,
         uint256 const& hash,
         SHAMapSyncFilter *filter);
 
-    SHAMapTreeNode::pointer fetchNode (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> fetchNode (uint256 const& hash);
 
-    SHAMapTreeNode::pointer checkFilter (uint256 const& hash, SHAMapNodeID const& id,
+    std::shared_ptr<SHAMapTreeNode> checkFilter (uint256 const& hash, SHAMapNodeID const& id,
         SHAMapSyncFilter* filter);
 
     /** Update hashes up to the root */
     void dirtyUp (SharedPtrNodeStack& stack,
-                  uint256 const& target, SHAMapTreeNode::pointer terminal);
+                  uint256 const& target, std::shared_ptr<SHAMapTreeNode> terminal);
 
     /** Get the path from the root to the specified node */
     SharedPtrNodeStack
@@ -287,14 +288,14 @@ private:
     SHAMapTreeNode* walkToPointer (uint256 const& id);
 
     /** Unshare the node, allowing it to be modified */
-    void unshareNode (SHAMapTreeNode::pointer&, SHAMapNodeID const& nodeID);
+    void unshareNode (std::shared_ptr<SHAMapTreeNode>&, SHAMapNodeID const& nodeID);
 
     /** prepare a node to be modified before flushing */
-    void preFlushNode (SHAMapTreeNode::pointer& node);
+    void preFlushNode (std::shared_ptr<SHAMapTreeNode>& node);
 
     /** write and canonicalize modified node */
     void writeNode (NodeObjectType t, std::uint32_t seq,
-        SHAMapTreeNode::pointer& node);
+        std::shared_ptr<SHAMapTreeNode>& node);
 
     SHAMapTreeNode* firstBelow (SHAMapTreeNode*);
     SHAMapTreeNode* lastBelow (SHAMapTreeNode*);
@@ -303,8 +304,8 @@ private:
     // Get a child of the specified node
     SHAMapTreeNode* descend (SHAMapTreeNode*, int branch);
     SHAMapTreeNode* descendThrow (SHAMapTreeNode*, int branch);
-    SHAMapTreeNode::pointer descend (SHAMapTreeNode::ref, int branch);
-    SHAMapTreeNode::pointer descendThrow (SHAMapTreeNode::ref, int branch);
+    std::shared_ptr<SHAMapTreeNode> descend (std::shared_ptr<SHAMapTreeNode> const&, int branch);
+    std::shared_ptr<SHAMapTreeNode> descendThrow (std::shared_ptr<SHAMapTreeNode> const&, int branch);
 
     // Descend with filter
     SHAMapTreeNode* descendAsync (SHAMapTreeNode* parent, int branch,
@@ -316,7 +317,7 @@ private:
 
     // Non-storing
     // Does not hook the returned node to its parent
-    SHAMapTreeNode::pointer descendNoStore (SHAMapTreeNode::ref, int branch);
+    std::shared_ptr<SHAMapTreeNode> descendNoStore (std::shared_ptr<SHAMapTreeNode> const&, int branch);
 
     /** If there is only one leaf below this node, get its contents */
     SHAMapItem::pointer onlyBelow (SHAMapTreeNode*);
