@@ -37,7 +37,7 @@ Json::Value doRandom (RPC::Context& context)
         random_fill (rand.begin (), rand.size ());
 
         Json::Value jvResult;
-        jvResult["random"]  = to_string (rand);
+        jvResult[jss::random]  = to_string (rand);
         return jvResult;
     }
     catch (...)

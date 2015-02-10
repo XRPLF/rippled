@@ -201,63 +201,63 @@ PeerImp::json()
 {
     Json::Value ret (Json::objectValue);
 
-    ret["public_key"]   = publicKey_.ToString ();
-    ret["address"]      = remote_address_.to_string();
+    ret[jss::public_key]   = publicKey_.ToString ();
+    ret[jss::address]      = remote_address_.to_string();
 
     if (m_inbound)
-        ret["inbound"] = true;
+        ret[jss::inbound] = true;
 
     if (cluster())
     {
-        ret["cluster"] = true;
+        ret[jss::cluster] = true;
 
         if (!name_.empty ())
-            ret["name"] = name_;
+            ret[jss::name] = name_;
     }
 
     if (hello_.has_fullversion ())
-        ret["version"] = hello_.fullversion ();
+        ret[jss::version] = hello_.fullversion ();
 
     if (hello_.has_protoversion ())
     {
         auto protocol = BuildInfo::make_protocol (hello_.protoversion ());
 
         if (protocol != BuildInfo::getCurrentProtocol())
-            ret["protocol"] = to_string (protocol);
+            ret[jss::protocol] = to_string (protocol);
     }
 
     std::uint32_t minSeq, maxSeq;
     ledgerRange(minSeq, maxSeq);
 
     if ((minSeq != 0) || (maxSeq != 0))
-        ret["complete_ledgers"] = boost::lexical_cast<std::string>(minSeq) +
+        ret[jss::complete_ledgers] = boost::lexical_cast<std::string>(minSeq) +
             " - " + boost::lexical_cast<std::string>(maxSeq);
 
     if (closedLedgerHash_ != zero)
-        ret["ledger"] = to_string (closedLedgerHash_);
+        ret[jss::ledger] = to_string (closedLedgerHash_);
 
     if (last_status_.has_newstatus ())
     {
         switch (last_status_.newstatus ())
         {
         case protocol::nsCONNECTING:
-            ret["status"] = "connecting";
+            ret[jss::status] = "connecting";
             break;
 
         case protocol::nsCONNECTED:
-            ret["status"] = "connected";
+            ret[jss::status] = "connected";
             break;
 
         case protocol::nsMONITORING:
-            ret["status"] = "monitoring";
+            ret[jss::status] = "monitoring";
             break;
 
         case protocol::nsVALIDATING:
-            ret["status"] = "validating";
+            ret[jss::status] = "validating";
             break;
 
         case protocol::nsSHUTTING:
-            ret["status"] = "shutting";
+            ret[jss::status] = "shutting";
             break;
 
         default:

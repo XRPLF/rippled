@@ -113,7 +113,7 @@ Json::Value STLedgerEntry::getJson (int options) const
 {
     Json::Value ret (STObject::getJson (options));
 
-    ret["index"] = to_string (mIndex);
+    ret[jss::index] = to_string (mIndex);
 
     return ret;
 }

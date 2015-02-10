@@ -31,7 +31,7 @@ Json::Value doPeers (RPC::Context& context)
     {
         auto lock = getApp().masterLock();
 
-        jvResult["peers"] = getApp().overlay ().json ();
+        jvResult[jss::peers] = getApp().overlay ().json ();
         getApp().getUNL().addClusterStatus(jvResult);
     }
 

@@ -24,7 +24,7 @@ namespace ripple {
 Json::Value doLedgerCurrent (RPC::Context& context)
 {
     Json::Value jvResult;
-    jvResult["ledger_current_index"] = context.netOps.getCurrentLedgerID ();
+    jvResult[jss::ledger_current_index] = context.netOps.getCurrentLedgerID ();
     return jvResult;
 }
 

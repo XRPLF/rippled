@@ -29,10 +29,10 @@ Json::Value doTxHistory (RPC::Context& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember ("start"))
+    if (!context.params.isMember (jss::start))
         return rpcError (rpcINVALID_PARAMS);
 
-    unsigned int startIndex = context.params["start"].asUInt ();
+    unsigned int startIndex = context.params[jss::start].asUInt ();
 
     if ((startIndex > 10000) &&  (context.role != Role::ADMIN))
         return rpcError (rpcNO_PERMISSION);
@@ -40,7 +40,7 @@ Json::Value doTxHistory (RPC::Context& context)
     Json::Value obj;
     Json::Value txs;
 
-    obj["index"] = startIndex;
+    obj[jss::index] = startIndex;
 
     std::string sql =
         boost::str (boost::format (
@@ -58,7 +58,7 @@ Json::Value doTxHistory (RPC::Context& context)
         }
     }
 
-    obj["txs"] = txs;
+    obj[jss::txs] = txs;
 
     return obj;
 }

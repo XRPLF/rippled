@@ -89,6 +89,26 @@ private:
     const char* str_;
 };
 
+inline bool operator== (std::string const& x, StaticString y)
+{
+    return x == y.c_str();
+}
+
+inline bool operator!= (std::string const& x, StaticString y)
+{
+    return x != y.c_str();
+}
+
+inline bool operator== (StaticString x, std::string const& y)
+{
+    return y == x;
+}
+
+inline bool operator!= (StaticString x, std::string const& y)
+{
+    return y != x;
+}
+
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
  *
  * This class is a discriminated union wrapper that can represents a:

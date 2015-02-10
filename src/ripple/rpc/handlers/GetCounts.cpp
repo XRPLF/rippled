@@ -35,8 +35,8 @@ Json::Value doGetCounts (RPC::Context& context)
 
     int minCount = 10;
 
-    if (context.params.isMember ("min_count"))
-        minCount = context.params["min_count"].asUInt ();
+    if (context.params.isMember (jss::min_count))
+        minCount = context.params[jss::min_count].asUInt ();
 
     auto objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 
@@ -52,34 +52,34 @@ Json::Value doGetCounts (RPC::Context& context)
     int dbKB = app.getLedgerDB ().getDB ()->getKBUsedAll ();
 
     if (dbKB > 0)
-        ret["dbKBTotal"] = dbKB;
+        ret[jss::dbKBTotal] = dbKB;
 
     dbKB = app.getLedgerDB ().getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
-        ret["dbKBLedger"] = dbKB;
+        ret[jss::dbKBLedger] = dbKB;
 
     dbKB = app.getTxnDB ().getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
-        ret["dbKBTransaction"] = dbKB;
+        ret[jss::dbKBTransaction] = dbKB;
 
     {
         std::size_t c = app.getOPs().getLocalTxCount ();
         if (c > 0)
-            ret["local_txs"] = static_cast<Json::UInt> (c);
+            ret[jss::local_txs] = static_cast<Json::UInt> (c);
     }
 
-    ret["write_load"] = app.getNodeStore ().getWriteLoad ();
+    ret[jss::write_load] = app.getNodeStore ().getWriteLoad ();
 
-    ret["SLE_hit_rate"] = app.getSLECache ().getHitRate ();
-    ret["node_hit_rate"] = app.getNodeStore ().getCacheHitRate ();
-    ret["ledger_hit_rate"] = app.getLedgerMaster ().getCacheHitRate ();
-    ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
+    ret[jss::SLE_hit_rate] = app.getSLECache ().getHitRate ();
+    ret[jss::node_hit_rate] = app.getNodeStore ().getCacheHitRate ();
+    ret[jss::ledger_hit_rate] = app.getLedgerMaster ().getCacheHitRate ();
+    ret[jss::AL_hit_rate] = AcceptedLedger::getCacheHitRate ();
 
-    ret["fullbelow_size"] = static_cast<int>(app.getFullBelowCache().size());
-    ret["treenode_cache_size"] = app.getTreeNodeCache().getCacheSize();
-    ret["treenode_track_size"] = app.getTreeNodeCache().getTrackSize();
+    ret[jss::fullbelow_size] = static_cast<int>(app.getFullBelowCache().size());
+    ret[jss::treenode_cache_size] = app.getTreeNodeCache().getCacheSize();
+    ret[jss::treenode_track_size] = app.getTreeNodeCache().getTrackSize();
 
     std::string uptime;
     int s = UptimeTimer::getInstance ().getElapsedSeconds ();
@@ -88,13 +88,13 @@ Json::Value doGetCounts (RPC::Context& context)
     textTime (uptime, s, "hour", 60 * 60);
     textTime (uptime, s, "minute", 60);
     textTime (uptime, s, "second", 1);
-    ret["uptime"] = uptime;
+    ret[jss::uptime] = uptime;
 
-    ret["node_writes"] = app.getNodeStore().getStoreCount();
-    ret["node_reads_total"] = app.getNodeStore().getFetchTotalCount();
-    ret["node_reads_hit"] = app.getNodeStore().getFetchHitCount();
-    ret["node_written_bytes"] = app.getNodeStore().getStoreSize();
-    ret["node_read_bytes"] = app.getNodeStore().getFetchSize();
+    ret[jss::node_writes] = app.getNodeStore().getStoreCount();
+    ret[jss::node_reads_total] = app.getNodeStore().getFetchTotalCount();
+    ret[jss::node_reads_hit] = app.getNodeStore().getFetchHitCount();
+    ret[jss::node_written_bytes] = app.getNodeStore().getStoreSize();
+    ret[jss::node_read_bytes] = app.getNodeStore().getFetchSize();
 
     return ret;
 }

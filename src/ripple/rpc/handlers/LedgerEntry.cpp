@@ -39,21 +39,21 @@ Json::Value doLedgerEntry (RPC::Context& context)
     uint256     uNodeIndex;
     bool        bNodeBinary = false;
 
-    if (context.params.isMember ("index"))
+    if (context.params.isMember (jss::index))
     {
         // XXX Needs to provide proof.
-        uNodeIndex.SetHex (context.params["index"].asString ());
+        uNodeIndex.SetHex (context.params[jss::index].asString ());
         bNodeBinary = true;
     }
-    else if (context.params.isMember ("account_root"))
+    else if (context.params.isMember (jss::account_root))
     {
         RippleAddress   naAccount;
 
         if (!naAccount.setAccountID (
-                context.params["account_root"].asString ())
+                context.params[jss::account_root].asString ())
             || !naAccount.getAccountID ())
         {
-            jvResult["error"]   = "malformedAddress";
+            jvResult[jss::error]   = "malformedAddress";
         }
         else
         {
@@ -61,39 +61,39 @@ Json::Value doLedgerEntry (RPC::Context& context)
                     = getAccountRootIndex (naAccount.getAccountID ());
         }
     }
-    else if (context.params.isMember ("directory"))
+    else if (context.params.isMember (jss::directory))
     {
-        if (!context.params["directory"].isObject ())
+        if (!context.params[jss::directory].isObject ())
         {
-            uNodeIndex.SetHex (context.params["directory"].asString ());
+            uNodeIndex.SetHex (context.params[jss::directory].asString ());
         }
-        else if (context.params["directory"].isMember ("sub_index")
-                 && !context.params["directory"]["sub_index"].isIntegral ())
+        else if (context.params[jss::directory].isMember (jss::sub_index)
+                 && !context.params[jss::directory][jss::sub_index].isIntegral ())
         {
-            jvResult["error"]   = "malformedRequest";
+            jvResult[jss::error]   = "malformedRequest";
         }
         else
         {
             std::uint64_t  uSubIndex
-                    = context.params["directory"].isMember ("sub_index")
-                    ? context.params["directory"]["sub_index"].asUInt () : 0;
+                    = context.params[jss::directory].isMember (jss::sub_index)
+                    ? context.params[jss::directory][jss::sub_index].asUInt () : 0;
 
-            if (context.params["directory"].isMember ("dir_root"))
+            if (context.params[jss::directory].isMember (jss::dir_root))
             {
                 uint256 uDirRoot;
 
-                uDirRoot.SetHex (context.params["dir_root"].asString ());
+                uDirRoot.SetHex (context.params[jss::dir_root].asString ());
 
                 uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
             }
-            else if (context.params["directory"].isMember ("owner"))
+            else if (context.params[jss::directory].isMember (jss::owner))
             {
                 RippleAddress   naOwnerID;
 
                 if (!naOwnerID.setAccountID (
-                        context.params["directory"]["owner"].asString ()))
+                        context.params[jss::directory][jss::owner].asString ()))
                 {
-                    jvResult["error"]   = "malformedAddress";
+                    jvResult[jss::error]   = "malformedAddress";
                 }
                 else
                 {
@@ -105,26 +105,26 @@ Json::Value doLedgerEntry (RPC::Context& context)
             }
             else
             {
-                jvResult["error"]   = "malformedRequest";
+                jvResult[jss::error]   = "malformedRequest";
             }
         }
     }
-    else if (context.params.isMember ("generator"))
+    else if (context.params.isMember (jss::generator))
     {
         RippleAddress   naGeneratorID;
 
-        if (!context.params["generator"].isObject ())
+        if (!context.params[jss::generator].isObject ())
         {
-            uNodeIndex.SetHex (context.params["generator"].asString ());
+            uNodeIndex.SetHex (context.params[jss::generator].asString ());
         }
-        else if (!context.params["generator"].isMember ("regular_seed"))
+        else if (!context.params[jss::generator].isMember (jss::regular_seed))
         {
-            jvResult["error"]   = "malformedRequest";
+            jvResult[jss::error]   = "malformedRequest";
         }
         else if (!naGeneratorID.setSeedGeneric (
-            context.params["generator"]["regular_seed"].asString ()))
+            context.params[jss::generator][jss::regular_seed].asString ()))
         {
-            jvResult["error"]   = "malformedAddress";
+            jvResult[jss::error]   = "malformedAddress";
         }
         else
         {
@@ -137,62 +137,62 @@ Json::Value doLedgerEntry (RPC::Context& context)
             uNodeIndex  = getGeneratorIndex (na0Public.getAccountID ());
         }
     }
-    else if (context.params.isMember ("offer"))
+    else if (context.params.isMember (jss::offer))
     {
         RippleAddress   naAccountID;
 
-        if (!context.params["offer"].isObject ())
+        if (!context.params[jss::offer].isObject ())
         {
-            uNodeIndex.SetHex (context.params["offer"].asString ());
+            uNodeIndex.SetHex (context.params[jss::offer].asString ());
         }
-        else if (!context.params["offer"].isMember ("account")
-                 || !context.params["offer"].isMember ("seq")
-                 || !context.params["offer"]["seq"].isIntegral ())
+        else if (!context.params[jss::offer].isMember (jss::account)
+                 || !context.params[jss::offer].isMember (jss::seq)
+                 || !context.params[jss::offer][jss::seq].isIntegral ())
         {
-            jvResult["error"]   = "malformedRequest";
+            jvResult[jss::error]   = "malformedRequest";
         }
         else if (!naAccountID.setAccountID (
-            context.params["offer"]["account"].asString ()))
+            context.params[jss::offer][jss::account].asString ()))
         {
-            jvResult["error"]   = "malformedAddress";
+            jvResult[jss::error]   = "malformedAddress";
         }
         else
         {
             uNodeIndex  = getOfferIndex (naAccountID.getAccountID (),
-                context.params["offer"]["seq"].asUInt ());
+                context.params[jss::offer][jss::seq].asUInt ());
         }
     }
-    else if (context.params.isMember ("ripple_state"))
+    else if (context.params.isMember (jss::ripple_state))
     {
         RippleAddress   naA;
         RippleAddress   naB;
         Currency         uCurrency;
-        Json::Value     jvRippleState   = context.params["ripple_state"];
+        Json::Value     jvRippleState   = context.params[jss::ripple_state];
 
         if (!jvRippleState.isObject ()
-            || !jvRippleState.isMember ("currency")
-            || !jvRippleState.isMember ("accounts")
-            || !jvRippleState["accounts"].isArray ()
-            || 2 != jvRippleState["accounts"].size ()
-            || !jvRippleState["accounts"][0u].isString ()
-            || !jvRippleState["accounts"][1u].isString ()
-            || (jvRippleState["accounts"][0u].asString ()
-                == jvRippleState["accounts"][1u].asString ())
+            || !jvRippleState.isMember (jss::currency)
+            || !jvRippleState.isMember (jss::accounts)
+            || !jvRippleState[jss::accounts].isArray ()
+            || 2 != jvRippleState[jss::accounts].size ()
+            || !jvRippleState[jss::accounts][0u].isString ()
+            || !jvRippleState[jss::accounts][1u].isString ()
+            || (jvRippleState[jss::accounts][0u].asString ()
+                == jvRippleState[jss::accounts][1u].asString ())
            )
         {
-            jvResult["error"]   = "malformedRequest";
+            jvResult[jss::error]   = "malformedRequest";
         }
         else if (!naA.setAccountID (
-                     jvRippleState["accounts"][0u].asString ())
+                     jvRippleState[jss::accounts][0u].asString ())
                  || !naB.setAccountID (
-                     jvRippleState["accounts"][1u].asString ()))
+                     jvRippleState[jss::accounts][1u].asString ()))
         {
-            jvResult["error"]   = "malformedAddress";
+            jvResult[jss::error]   = "malformedAddress";
         }
         else if (!to_currency (
-            uCurrency, jvRippleState["currency"].asString ()))
+            uCurrency, jvRippleState[jss::currency].asString ()))
         {
-            jvResult["error"]   = "malformedCurrency";
+            jvResult[jss::error]   = "malformedCurrency";
         }
         else
         {
@@ -202,21 +202,21 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else
     {
-        jvResult["error"]   = "unknownOption";
+        jvResult[jss::error]   = "unknownOption";
     }
 
     if (uNodeIndex.isNonZero ())
     {
         auto sleNode = context.netOps.getSLEi (lpLedger, uNodeIndex);
 
-        if (context.params.isMember("binary"))
-            bNodeBinary = context.params["binary"].asBool();
+        if (context.params.isMember(jss::binary))
+            bNodeBinary = context.params[jss::binary].asBool();
 
         if (!sleNode)
         {
             // Not found.
             // XXX Should also provide proof.
-            jvResult["error"]       = "entryNotFound";
+            jvResult[jss::error]       = "entryNotFound";
         }
         else if (bNodeBinary)
         {
@@ -225,13 +225,13 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
             sleNode->add (s);
 
-            jvResult["node_binary"] = strHex (s.peekData ());
-            jvResult["index"]       = to_string (uNodeIndex);
+            jvResult[jss::node_binary] = strHex (s.peekData ());
+            jvResult[jss::index]       = to_string (uNodeIndex);
         }
         else
         {
-            jvResult["node"]        = sleNode->getJson (0);
-            jvResult["index"]       = to_string (uNodeIndex);
+            jvResult[jss::node]        = sleNode->getJson (0);
+            jvResult[jss::index]       = to_string (uNodeIndex);
         }
     }
 

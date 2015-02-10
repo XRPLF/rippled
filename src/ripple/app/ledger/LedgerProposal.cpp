@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/core/Config.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Serializer.h>
 
@@ -131,18 +132,18 @@ Blob LedgerProposal::sign (void)
 Json::Value LedgerProposal::getJson () const
 {
     Json::Value ret = Json::objectValue;
-    ret["previous_ledger"] = to_string (mPreviousLedger);
+    ret[jss::previous_ledger] = to_string (mPreviousLedger);
 
     if (mProposeSeq != seqLeave)
     {
-        ret["transaction_hash"] = to_string (mCurrentHash);
-        ret["propose_seq"] = mProposeSeq;
+        ret[jss::transaction_hash] = to_string (mCurrentHash);
+        ret[jss::propose_seq] = mProposeSeq;
     }
 
-    ret["close_time"] = mCloseTime;
+    ret[jss::close_time] = mCloseTime;
 
     if (mPublicKey.isValid ())
-        ret["peer_id"] = mPublicKey.humanNodePublic ();
+        ret[jss::peer_id] = mPublicKey.humanNodePublic ();
 
     return ret;
 }

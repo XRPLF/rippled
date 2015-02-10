@@ -145,7 +145,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     {
         Json::Value jvResult (Json::objectValue);
 
-        jvResult[jss::type]    = jss::response;
+        jvResult[jss::type]    = "response";
         jvResult[jss::status]  = jss::error;
         jvResult[jss::error]   = jss::missingCommand;
         jvResult[jss::request] = jvRequest;
@@ -207,7 +207,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
         jvResult[jss::id] = jvRequest[jss::id];
     }
 
-    jvResult[jss::type] = jss::response;
+    jvResult[jss::type] = "response";
 
     return jvResult;
 }
