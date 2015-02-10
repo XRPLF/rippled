@@ -165,7 +165,7 @@ private:
         const char* c_str () const;
         bool isStaticString () const;
     private:
-        void swap ( CZString& other );
+        void swap ( CZString& other ) noexcept;
         const char* cstr_;
         int index_;
     };
@@ -224,13 +224,13 @@ public:
 
     Value& operator= ( const Value& other );
 
-    Value ( Value&& other );
-    Value& operator= ( Value&& other );
+    Value ( Value&& other ) noexcept;
+    Value& operator= ( Value&& other ) noexcept;
 
     /// Swap values.
     /// \note Currently, comments are intentionally not swapped, for
     /// both logic and efficiency.
-    void swap ( Value& other );
+    void swap ( Value& other ) noexcept;
 
     ValueType type () const;
 
@@ -678,7 +678,7 @@ public:
     ValueInternalMap& operator = ( const ValueInternalMap& other );
     ~ValueInternalMap ();
 
-    void swap ( ValueInternalMap& other );
+    void swap ( ValueInternalMap& other ) noexcept;
 
     BucketIndex size () const;
 
@@ -774,7 +774,7 @@ public:
     ValueInternalArray ( const ValueInternalArray& other );
     ValueInternalArray& operator = ( const ValueInternalArray& other );
     ~ValueInternalArray ();
-    void swap ( ValueInternalArray& other );
+    void swap ( ValueInternalArray& other ) noexcept;
 
     void clear ();
     void resize ( ArrayIndex newSize );

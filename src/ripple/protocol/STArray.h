@@ -170,7 +170,7 @@ public:
     {
         value.clear ();
     }
-    void swap (STArray & a)
+    void swap (STArray & a) noexcept
     {
         value.swap (a.value);
     }

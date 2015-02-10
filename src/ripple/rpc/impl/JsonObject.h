@@ -151,8 +151,8 @@ namespace RPC {
 class Collection
 {
 public:
-    Collection (Collection&& c);
-    Collection& operator= (Collection&& c);
+    Collection (Collection&& c) noexcept;
+    Collection& operator= (Collection&& c) noexcept;
     Collection() = delete;
 
     ~Collection();
@@ -294,7 +294,7 @@ public:
     }
 
 #ifdef _MSC_VER
-    WriterObject (WriterObject&& other)
+    WriterObject (WriterObject&& other) noexcept
             : writer_ (std::move (other.writer_)),
               object_ (std::move (other.object_))
     {
