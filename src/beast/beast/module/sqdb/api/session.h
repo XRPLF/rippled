@@ -61,7 +61,6 @@
 #define BEAST_MODULE_SQDB_API_SESSION_H_INCLUDED
 
 #include <beast/smart_ptr/SharedPtr.h>
-#include <beast/module/core/memory/SharedSingleton.h>
 
 namespace beast {
 namespace sqdb {
@@ -137,8 +136,6 @@ private:
     Error hard_exec(std::string const& query);
 
 private:
-    class Sqlite3;
-    SharedPtr <SharedSingleton <Sqlite3> > m_instance;
     bool m_bInTransaction;
     sqlite3* m_connection;
     String m_fileName;

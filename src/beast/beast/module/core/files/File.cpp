@@ -28,23 +28,11 @@
 
 namespace beast {
 
-// We need to make a shared singleton or else there are
-// issues with the leak detector and order of detruction.
-//
-class NonexistentHolder
-{
-public:
-    static NonexistentHolder* getInstance()
-    {
-        return SharedSingleton <NonexistentHolder>::getInstance();
-    }
+static File s_nonexistent;
 
-    File file;
-};
-
-File const& File::nonexistent ()
+File const& File::nonexistent()
 {
-    return NonexistentHolder::getInstance ()->file;
+    return s_nonexistent;
 }
 
 //------------------------------------------------------------------------------

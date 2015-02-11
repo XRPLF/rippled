@@ -563,8 +563,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\memory\SharedSingleton.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\misc\Result.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

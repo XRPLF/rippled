@@ -1134,9 +1134,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.h">
       <Filter>beast\module\core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\memory\SharedSingleton.h">
-      <Filter>beast\module\core\memory</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\misc\Result.cpp">
       <Filter>beast\module\core\misc</Filter>
     </ClCompile>
