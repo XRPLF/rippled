@@ -1734,9 +1734,6 @@
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\StaticObject.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>

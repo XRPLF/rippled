@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include <beast/utility/static_initializer.h>
+
+namespace beast {
 
 // Manages the list of hooks, and calls
 // whoever is in the list at exit time.
@@ -33,7 +34,9 @@ public:
 
     static inline Manager& get ()
     {
-        return StaticObject <Manager>::get();
+        static beast::static_initializer<
+            Manager> instance;
+        return *instance;
     }
 
     void insert (Item& item)
