@@ -73,10 +73,6 @@ private:
             AtExitHook* const hook (item.hook ());
             hook->onExit ();
         }
-
-        // Now do the leak checking
-        //
-        LeakCheckedBase::checkForLeaks ();
     }
 
     struct StaticDestructor

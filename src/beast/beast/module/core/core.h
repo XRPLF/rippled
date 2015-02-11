@@ -52,7 +52,6 @@
 #include <beast/utility/Debug.h>
 #include <beast/utility/Error.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/LeakChecked.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/utility/StaticObject.h>
 

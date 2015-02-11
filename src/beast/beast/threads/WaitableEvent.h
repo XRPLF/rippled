@@ -38,7 +38,6 @@ namespace beast {
     method.
 */
 class WaitableEvent
-    //, LeakChecked <WaitableEvent> // VFALCO TODO Move LeakChecked to beast/
 {
 public:
     //==============================================================================

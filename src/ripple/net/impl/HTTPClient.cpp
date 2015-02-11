@@ -92,7 +92,6 @@ void HTTPClient::initializeSSLContext ()
 class HTTPClientImp
     : public std::enable_shared_from_this <HTTPClientImp>
     , public HTTPClient
-    , beast::LeakChecked <HTTPClientImp>
 {
 public:
     HTTPClientImp (boost::asio::io_service& io_service,

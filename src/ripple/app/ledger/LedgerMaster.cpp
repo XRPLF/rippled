@@ -49,7 +49,6 @@ namespace ripple {
 
 class LedgerMasterImp
     : public LedgerMaster
-    , public beast::LeakChecked <LedgerMasterImp>
 {
 public:
     typedef std::function <void (Ledger::ref)> callback;

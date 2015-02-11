@@ -20,7 +20,8 @@
 #ifndef RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
-#include <beast/utility/LeakChecked.h>
+#include <beast/utility/noexcept.h>
+#include <beast/utility/static_initializer.h>
 #include <atomic>
 #include <string>
 #include <utility>
@@ -100,7 +101,7 @@ private:
     @ingroup ripple_basics
 */
 template <class Object>
-class CountedObject : beast::LeakChecked <CountedObject <Object> >
+class CountedObject
 {
 public:
     CountedObject ()
@@ -133,9 +134,10 @@ private:
     };
 
 private:
-    static Counter& getCounter ()
+    static Counter& getCounter()
     {
-        return beast::StaticObject <Counter>::get();
+        static beast::static_initializer<Counter> c;
+        return *c;
     }
 };
 

@@ -32,7 +32,6 @@ namespace ripple {
 // Private implementation
 class ServerHandlerImp
     : public ServerHandler
-    , public beast::LeakChecked <ServerHandlerImp>
     , public HTTP::Handler
 {
 private:

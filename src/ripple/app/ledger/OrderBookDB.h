@@ -28,7 +28,6 @@ namespace ripple {
 
 class OrderBookDB
     : public beast::Stoppable
-    , public beast::LeakChecked <OrderBookDB>
 {
 public:
     explicit OrderBookDB (Stoppable& parent);

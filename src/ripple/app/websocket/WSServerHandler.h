@@ -53,7 +53,6 @@ template <typename endpoint_type>
 class WSServerHandler
     : public WSServerHandlerBase
     , public endpoint_type::handler
-    , public beast::LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;

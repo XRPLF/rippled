@@ -399,7 +399,6 @@ bool File::setAsCurrentWorkingDirectory() const
 
 //==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
-    : LeakChecked <DirectoryIterator::NativeIterator::Pimpl>
 {
 public:
     Pimpl (const File& directory, const String& wildCard)

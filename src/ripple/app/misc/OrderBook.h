@@ -23,7 +23,7 @@
 namespace ripple {
 
 /** Describes a serialized ledger entry for an order book. */
-class OrderBook : beast::LeakChecked <OrderBook>
+class OrderBook
 {
 public:
     typedef std::shared_ptr <OrderBook> pointer;

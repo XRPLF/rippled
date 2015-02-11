@@ -1014,15 +1014,10 @@
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\LeakChecked.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\LeakChecked.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
     </ClInclude>

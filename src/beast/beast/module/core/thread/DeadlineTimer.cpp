@@ -21,8 +21,7 @@ namespace beast
 {
 
 class DeadlineTimer::Manager
-    : public LeakChecked <Manager>
-    , protected Thread
+    : protected Thread
 {
 private:
     typedef CriticalSection LockType;
