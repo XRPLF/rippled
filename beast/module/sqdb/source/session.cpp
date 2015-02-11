@@ -62,26 +62,27 @@
 namespace beast {
 namespace sqdb {
 
-class session::Sqlite3
+class Sqlite3Instance
 {
 public:
-    Sqlite3()
+    Sqlite3Instance()
     {
         assert (sqlite3_threadsafe() != 0);
         sqlite3_initialize();
     }
 
-    ~Sqlite3()
+    ~Sqlite3Instance()
     {
         sqlite3_shutdown();
     }
 };
 
+Sqlite3Instance sqlite3_instance;
+
 //------------------------------------------------------------------------------
 
 session::session()
     : prepare (this)
-    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
     , m_bInTransaction (false)
     , m_connection (nullptr)
 {
@@ -89,7 +90,6 @@ session::session()
 
 session::session(const session& deferredClone)
     : prepare (this)
-    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
     , m_bInTransaction (false)
     , m_connection (nullptr)
     , m_fileName (deferredClone.m_fileName)

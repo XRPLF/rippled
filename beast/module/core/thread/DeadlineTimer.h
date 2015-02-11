@@ -20,8 +20,6 @@
 #ifndef BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
 #define BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
 
-#include <beast/module/core/memory/SharedSingleton.h>
-
 namespace beast {
 
 /** Provides periodic or one time notifications at a specified time interval.
@@ -108,7 +106,6 @@ private:
     class Manager;
 
     Listener* const m_listener;
-    SharedPtr <SharedSingleton <Manager> > m_manager;
     bool m_isActive;
     RelativeTime m_notificationTime;
     double m_secondsRecurring; // non zero if recurring

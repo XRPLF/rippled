@@ -35,7 +35,6 @@ namespace beast
 */
 class FileInputStream
     : public InputStream
-    , LeakChecked <FileInputStream>
 {
 public:
     //==============================================================================

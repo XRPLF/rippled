@@ -22,29 +22,16 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
-
+#include <beast/utility/static_initializer.h>
 #include <algorithm>
 #include <memory>
 
 namespace beast {
 
-// We need to make a shared singleton or else there are
-// issues with the leak detector and order of detruction.
-//
-class NonexistentHolder
+File const& File::nonexistent()
 {
-public:
-    static NonexistentHolder* getInstance()
-    {
-        return SharedSingleton <NonexistentHolder>::getInstance();
-    }
-
-    File file;
-};
-
-File const& File::nonexistent ()
-{
-    return NonexistentHolder::getInstance ()->file;
+    static beast::static_initializer<File> instance;
+    return *instance;
 }
 
 //------------------------------------------------------------------------------

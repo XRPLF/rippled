@@ -38,7 +38,6 @@ class MemoryBlock;
     @see OutputStream, FileInputStream
 */
 class InputStream
-    : LeakChecked <InputStream>
 {
 public:
     /** Destructor. */

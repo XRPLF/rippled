@@ -35,7 +35,6 @@ namespace beast
 */
 class FileInputSource
     : public InputSource
-    , LeakChecked <FileInputSource>
 {
 public:
     //==============================================================================

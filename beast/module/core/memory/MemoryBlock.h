@@ -25,7 +25,6 @@
 #define BEAST_MODULE_CORE_MEMORY_MEMORYBLOCK_H_INCLUDED
 
 #include <beast/HeapBlock.h>
-#include <beast/utility/LeakChecked.h>
 #include <beast/strings/String.h>
 
 namespace beast {
@@ -35,7 +34,7 @@ namespace beast {
     A class to hold a resizable block of raw data.
 
 */
-class MemoryBlock : LeakChecked <MemoryBlock>
+class MemoryBlock
 {
 public:
     //==============================================================================
