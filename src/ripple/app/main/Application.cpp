@@ -644,20 +644,6 @@ public:
         mWalletDB = std::make_unique <DatabaseCon> (setup, "wallet.db",
                 WalletDBInit, WalletDBCount);
 
-        if (setup.onlineDelete && mTxnDB && mLedgerDB)
-        {
-            {
-                std::lock_guard <std::recursive_mutex> lock (
-                        mTxnDB->peekMutex());
-                mTxnDB->getDB()->executeSQL ("VACUUM;");
-            }
-            {
-                std::lock_guard <std::recursive_mutex> lock (
-                        mLedgerDB->peekMutex());
-                mLedgerDB->getDB()->executeSQL ("VACUUM;");
-            }
-        }
-
         return
             mRpcDB.get() != nullptr &&
             mTxnDB.get () != nullptr &&
