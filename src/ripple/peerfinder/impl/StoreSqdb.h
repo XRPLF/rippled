@@ -29,7 +29,6 @@ namespace PeerFinder {
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb
     : public Store
-    , public beast::LeakChecked <StoreSqdb>
 {
 private:
     beast::Journal m_journal;

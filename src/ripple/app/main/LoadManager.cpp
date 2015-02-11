@@ -28,6 +28,7 @@
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
+#include <thread>
 
 namespace ripple {
 

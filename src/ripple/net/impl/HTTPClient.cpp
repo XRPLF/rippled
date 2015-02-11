@@ -24,12 +24,12 @@
 #include <ripple/net/HTTPClient.h>
 #include <ripple/websocket/autosocket/AutoSocket.h>
 #include <beast/asio/placeholders.h>
-#include <beast/module/core/memory/SharedSingleton.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/regex.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -77,14 +77,11 @@ private:
     boost::asio::ssl::context m_context;
 };
 
-//------------------------------------------------------------------------------
+boost::optional<HTTPClientSSLContext> httpClientSSLContext;
 
-// VFALCO NOTE I moved the SSL_CONTEXT out of the Config and into this
-//             singleton to eliminate the asio dependency in the headers.
-//
 void HTTPClient::initializeSSLContext ()
 {
-    beast::SharedSingleton <HTTPClientSSLContext>::get();
+    httpClientSSLContext = boost::in_place();
 }
 
 //------------------------------------------------------------------------------
@@ -92,13 +89,12 @@ void HTTPClient::initializeSSLContext ()
 class HTTPClientImp
     : public std::enable_shared_from_this <HTTPClientImp>
     , public HTTPClient
-    , beast::LeakChecked <HTTPClientImp>
 {
 public:
     HTTPClientImp (boost::asio::io_service& io_service,
                               const unsigned short port,
                               std::size_t responseMax)
-        : mSocket (io_service, beast::SharedSingleton <HTTPClientSSLContext>::get()->context())
+        : mSocket (io_service, httpClientSSLContext->context())
         , mResolver (io_service)
         , mHeader (maxClientHeaderBytes)
         , mPort (port)

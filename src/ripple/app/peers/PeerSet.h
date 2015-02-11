@@ -24,7 +24,6 @@
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Peer.h>
 #include <beast/chrono/abstract_clock.h>
-#include <beast/utility/LeakChecked.h>
 #include <beast/utility/Journal.h>
 #include <boost/asio/deadline_timer.hpp>
 
@@ -34,7 +33,7 @@ namespace ripple {
 
     A peer set is used to acquire a ledger or a transaction set.
 */
-class PeerSet : beast::LeakChecked <PeerSet>
+class PeerSet
 {
 public:
     typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;

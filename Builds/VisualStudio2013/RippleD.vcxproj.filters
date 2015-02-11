@@ -1140,9 +1140,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.h">
       <Filter>beast\module\core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\memory\SharedSingleton.h">
-      <Filter>beast\module\core\memory</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\misc\Result.cpp">
       <Filter>beast\module\core\misc</Filter>
     </ClCompile>
@@ -1728,16 +1725,10 @@
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\LeakChecked.cpp">
-      <Filter>beast\utility\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\LeakChecked.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
@@ -1750,9 +1741,6 @@
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\StaticObject.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">

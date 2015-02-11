@@ -105,7 +105,6 @@ class ApplicationImp
     : public ApplicationImpBase
     , public beast::RootStoppable
     , public beast::DeadlineTimer::Listener
-    , public beast::LeakChecked <ApplicationImp>
     , public BasicApp
 {
 private:
