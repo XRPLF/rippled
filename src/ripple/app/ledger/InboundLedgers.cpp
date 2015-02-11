@@ -30,7 +30,6 @@ namespace ripple {
 class InboundLedgersImp
     : public InboundLedgers
     , public beast::Stoppable
-    , public beast::LeakChecked <InboundLedgers>
 {
 public:
     typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;

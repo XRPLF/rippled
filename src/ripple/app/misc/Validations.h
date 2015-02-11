@@ -34,7 +34,7 @@ typedef std::pair<int, NodeID> ValidationCounter;
 typedef hash_map<uint256, ValidationCounter> LedgerToValidationCounter;
 typedef std::vector<STValidation::pointer> ValidationVector;
 
-class Validations : beast::LeakChecked <Validations>
+class Validations
 {
 public:
 

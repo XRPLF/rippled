@@ -32,7 +32,6 @@ namespace ripple {
 class SqliteDatabase
     : public Database
     , private beast::Thread
-    , private beast::LeakChecked <SqliteDatabase>
 {
 public:
     explicit SqliteDatabase (char const* host);

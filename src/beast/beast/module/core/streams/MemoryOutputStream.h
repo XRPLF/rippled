@@ -43,8 +43,7 @@ namespace beast
 */
 class  MemoryOutputStream
     : public OutputStream
-    , LeakChecked <MemoryOutputStream>
-{
+{    
 public:
     //==============================================================================
     /** Creates an empty memory stream, ready to be written into.

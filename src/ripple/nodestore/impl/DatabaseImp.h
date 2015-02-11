@@ -39,7 +39,6 @@ namespace NodeStore {
 
 class DatabaseImp
     : public Database
-    , public beast::LeakChecked <DatabaseImp>
 {
 public:
     beast::Journal m_journal;

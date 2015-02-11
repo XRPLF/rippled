@@ -52,9 +52,7 @@
 #include <beast/utility/Debug.h>
 #include <beast/utility/Error.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/LeakChecked.h>
 #include <beast/utility/PropertyStream.h>
-#include <beast/utility/StaticObject.h>
 
 #include <beast/module/core/system/StandardIncludes.h>
 
@@ -144,7 +142,6 @@ class FileOutputStream;
 #include <beast/module/core/streams/FileInputSource.h>
 #include <beast/module/core/streams/OutputStream.h>
 #include <beast/module/core/files/FileOutputStream.h>
-#include <beast/module/core/memory/SharedSingleton.h>
 #include <beast/module/core/streams/MemoryOutputStream.h>
 
 #include <beast/module/core/system/SystemStats.h>

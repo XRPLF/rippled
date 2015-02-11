@@ -563,8 +563,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\memory\SharedSingleton.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\misc\Result.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1014,15 +1012,10 @@
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\LeakChecked.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\LeakChecked.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
     </ClInclude>
@@ -1031,8 +1024,6 @@
     <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\StaticObject.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
     </ClInclude>

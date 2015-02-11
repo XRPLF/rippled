@@ -46,7 +46,6 @@ namespace ripple {
 class WSDoorImp
     : public WSDoor
     , protected beast::Thread
-    , beast::LeakChecked <WSDoorImp>
 {
 private:
     using LockType = std::recursive_mutex;

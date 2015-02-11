@@ -33,7 +33,6 @@ namespace PeerFinder {
 
 class ManagerImp
     : public Manager
-    , public beast::LeakChecked <ManagerImp>
 {
 public:
     boost::asio::io_service &io_service_;

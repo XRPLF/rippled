@@ -66,7 +66,6 @@ namespace ripple {
 class NetworkOPsImp
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
-    , public beast::LeakChecked <NetworkOPsImp>
 {
 public:
     enum Fault

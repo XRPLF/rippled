@@ -65,7 +65,6 @@ static uint8_t SNTPQueryData[48] =
 class SNTPClientImp
     : public SNTPClient
     , public beast::Thread
-    , public beast::LeakChecked <SNTPClientImp>
 {
 public:
     class SNTPQuery

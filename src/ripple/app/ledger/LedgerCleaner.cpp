@@ -49,7 +49,6 @@ Cleans up the ledger. Specifically, resolves these issues:
 class LedgerCleanerImp
     : public LedgerCleaner
     , public beast::Thread
-    , public beast::LeakChecked <LedgerCleanerImp>
 {
 public:
     struct State
