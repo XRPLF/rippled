@@ -84,7 +84,6 @@ private:
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::uniform_int_distribution<std::uint32_t> d_seq_;
     std::uniform_int_distribution<std::uint32_t> d_type_;
     std::uniform_int_distribution<std::uint32_t> d_size_;
 
@@ -92,7 +91,6 @@ public:
     explicit
     Sequence(std::uint8_t prefix)
         : prefix_ (prefix)
-        , d_seq_ (minLedger, maxLedger)
         , d_type_ (hotLEDGER, hotTRANSACTION_NODE)
         , d_size_ (minSize, maxSize)
     {
@@ -122,7 +120,7 @@ public:
         rngcpy (&value[0], value.size(), gen_);
         return NodeObject::createObject (
             static_cast<NodeObjectType>(d_type_(gen_)),
-                d_seq_(gen_), std::move(value), key);
+                std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n

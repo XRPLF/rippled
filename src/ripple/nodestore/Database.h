@@ -106,7 +106,6 @@ public:
         @return `true` if the object was stored?
     */
     virtual void store (NodeObjectType type,
-                        std::uint32_t ledgerIndex,
                         Blob&& data,
                         uint256 const& hash) = 0;
 

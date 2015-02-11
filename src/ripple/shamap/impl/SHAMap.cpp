@@ -943,8 +943,8 @@ void SHAMap::writeNode (
 
     Serializer s;
     node->addRaw (s, snfPREFIX);
-    db_.store (t, seq,
-        std::move (s.modData ()), node->getNodeHash ());
+    db_.store (t, std::move (s.modData()),
+        node->getNodeHash ());
 }
 
 // We can't modify an inner node someone else might have a

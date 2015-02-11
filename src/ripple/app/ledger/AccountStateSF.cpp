@@ -27,8 +27,7 @@
 
 namespace ripple {
 
-AccountStateSF::AccountStateSF (std::uint32_t ledgerSeq)
-    : mLedgerSeq (ledgerSeq)
+AccountStateSF::AccountStateSF()
 {
 }
 
@@ -41,7 +40,8 @@ void AccountStateSF::gotNode (bool fromFilter,
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
     //        SHAMap should provide an accessor to get the injected Database,
     //        and this should use that Database instad of getNodeStore
-    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
+    getApp().getNodeStore ().store (
+        hotACCOUNT_NODE, std::move (nodeData), nodeHash);
 }
 
 bool AccountStateSF::haveNode (SHAMapNodeID const& id,

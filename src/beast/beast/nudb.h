@@ -20,10 +20,10 @@
 #ifndef BEAST_NUDB_H_INCLUDED
 #define BEAST_NUDB_H_INCLUDED
 
+#include <beast/nudb/api.h>
 #include <beast/nudb/create.h>
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/file.h>
-#include <beast/nudb/mode.h>
 #include <beast/nudb/recover.h>
 #include <beast/nudb/store.h>
 #include <beast/nudb/verify.h>

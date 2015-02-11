@@ -20,7 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_FORMAT_H_INCLUDED
 #define BEAST_NUDB_DETAIL_FORMAT_H_INCLUDED
 
-#include <beast/nudb/error.h>
+#include <beast/nudb/common.h>
 #include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/stream.h>
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
@@ -38,22 +38,23 @@ namespace detail {
 
 // Format of the nudb files:
 
-static std::size_t BEAST_CONSTEXPR currentVersion = 1;
+static std::size_t BEAST_CONSTEXPR currentVersion = 2;
 
 struct dat_file_header
 {
     static std::size_t BEAST_CONSTEXPR size =
         8 +     // Type
         2 +     // Version
+        8 +     // UID
         8 +     // Appnum
-        8 +     // Salt
         2 +     // KeySize
+
         64;     // (Reserved)
 
     char type[8];
     std::size_t version;
+    std::uint64_t uid;
     std::uint64_t appnum;
-    std::uint64_t salt;
     std::size_t key_size;
 };
 
@@ -62,20 +63,25 @@ struct key_file_header
     static std::size_t BEAST_CONSTEXPR size =
         8 +     // Type
         2 +     // Version
+        8 +     // UID
         8 +     // Appnum
+        2 +     // KeySize
+
         8 +     // Salt
         8 +     // Pepper
-        2 +     // KeySize
         2 +     // BlockSize
         2 +     // LoadFactor
-        64;     // (Reserved)
+
+        56;     // (Reserved)
 
     char type[8];
     std::size_t version;
+    std::uint64_t uid;
     std::uint64_t appnum;
+    std::size_t key_size;
+
     std::uint64_t salt;
     std::uint64_t pepper;
-    std::size_t key_size;
     std::size_t block_size;
     std::size_t load_factor;
 
@@ -91,22 +97,64 @@ struct log_file_header
     static std::size_t BEAST_CONSTEXPR size =
         8 +     // Type
         2 +     // Version
+        8 +     // UID
         8 +     // Appnum
+        2 +     // KeySize
+
         8 +     // Salt
         8 +     // Pepper
-        2 +     // KeySize
+        2 +     // BlockSize
+
         8 +     // KeyFileSize
         8;      // DataFileSize
 
     char type[8];
     std::size_t version;
+    std::uint64_t uid;
     std::uint64_t appnum;
+    std::size_t key_size;
     std::uint64_t salt;
     std::uint64_t pepper;
-    std::size_t key_size;
+    std::size_t block_size;
     std::size_t key_file_size;
     std::size_t dat_file_size;
 };
+
+// Type used to store hashes in buckets.
+// This can be smaller than the output
+// of the hash function.
+//
+using hash_t = uint48_t;
+
+static_assert(field<hash_t>::size <=
+    sizeof(std::size_t), "");
+
+template <class T>
+std::size_t
+make_hash (std::size_t h);
+
+template<>
+inline
+std::size_t
+make_hash<uint48_t>(std::size_t h)
+{
+    return (h>>16)&0xffffffffffff;
+}
+
+// Returns the hash of a key given the salt.
+// Note: The hash is expressed in hash_t units
+//
+template <class Hasher>
+inline
+std::size_t
+hash (void const* key,
+    std::size_t key_size, std::size_t salt)
+{
+    Hasher h (salt);
+    h.append (key, key_size);
+    return make_hash<hash_t>(static_cast<
+        typename Hasher::result_type>(h));
+}
 
 // Computes pepper from salt
 //
@@ -124,8 +172,7 @@ pepper (std::size_t salt)
 //
 template <class = void>
 std::size_t
-bucket_size (std::size_t key_size,
-    std::size_t capacity)
+bucket_size (std::size_t capacity)
 {
     // Bucket Record
     return
@@ -134,33 +181,14 @@ bucket_size (std::size_t key_size,
         capacity * (
             field<uint48_t>::size +     // Offset
             field<uint48_t>::size +     // Size
-            key_size);                  // Key
+            field<hash_t>::size);       // Hash
 }
 
-// Returns the size of a bucket large enough to
-// hold size keys of length key_size.
-//
-inline
-std::size_t
-compact_size(std::size_t key_size,
-    std::size_t size)
-{
-    // Bucket Record
-    return
-        field<std::uint16_t>::size +    // Size
-        field<uint48_t>::size +         // Spill
-        size * (
-            field<uint48_t>::size +     // Offset
-            field<uint48_t>::size +     // Size
-            key_size);                  // Key
-}
-
-// Returns: number of keys that fit in a bucket
+// Returns the number of entries that fit in a bucket
 //
 template <class = void>
 std::size_t
-bucket_capacity (std::size_t key_size,
-    std::size_t block_size)
+bucket_capacity (std::size_t block_size)
 {
     // Bucket Record
     auto const size =
@@ -169,23 +197,52 @@ bucket_capacity (std::size_t key_size,
     auto const entry_size =
         field<uint48_t>::size +         // Offset
         field<uint48_t>::size +         // Size
-        key_size;                       // Key
+        field<hash_t>::size;            // Hash
     if (block_size < key_file_header::size ||
         block_size < size)
         return 0;
     return (block_size - size) / entry_size;
 }
 
-// returns the number of bytes occupied by a value record
+// Returns the number of bytes occupied by a value record
 inline
 std::size_t
-data_size (std::size_t size, std::size_t key_size)
+value_size (std::size_t size,
+    std::size_t key_size)
 {
     // Data Record
     return
         field<uint48_t>::size + // Size
         key_size +              // Key
         size;                   // Data
+}
+
+// Returns the closest power of 2 not less than x
+template <class = void>
+std::size_t
+ceil_pow2 (unsigned long long x)
+{
+    static const unsigned long long t[6] = {
+        0xFFFFFFFF00000000ull,
+        0x00000000FFFF0000ull,
+        0x000000000000FF00ull,
+        0x00000000000000F0ull,
+        0x000000000000000Cull,
+        0x0000000000000002ull
+    };
+
+    int y = (((x & (x - 1)) == 0) ? 0 : 1);
+    int j = 32;
+    int i;
+
+    for(i = 0; i < 6; i++) {
+        int k = (((x & t[i]) == 0) ? 0 : j);
+        y += k;
+        x >>= k;
+        j >>= 1;
+    }
+
+    return std::size_t(1)<<y;
 }
 
 //------------------------------------------------------------------------------
@@ -197,11 +254,12 @@ read (istream& is, dat_file_header& dh)
 {
     read (is, dh.type, sizeof(dh.type));
     read<std::uint16_t>(is, dh.version);
+    read<std::uint64_t>(is, dh.uid);
     read<std::uint64_t>(is, dh.appnum);
-    read<std::uint64_t>(is, dh.salt);
     read<std::uint16_t>(is, dh.key_size);
-    std::array <std::uint8_t, 64> zero;
-    read (is, zero.data(), zero.size());
+    std::array <std::uint8_t, 64> reserved;
+    read (is,
+        reserved.data(), reserved.size());
 }
 
 // Read data file header from file
@@ -231,12 +289,13 @@ write (ostream& os, dat_file_header const& dh)
 {
     write (os, "nudb.dat", 8);
     write<std::uint16_t>(os, dh.version);
+    write<std::uint64_t>(os, dh.uid);
     write<std::uint64_t>(os, dh.appnum);
-    write<std::uint64_t>(os, dh.salt);
     write<std::uint16_t>(os, dh.key_size);
-    std::array <std::uint8_t, 64> zero;
-    zero.fill(0);
-    write (os, zero.data(), zero.size());
+    std::array <std::uint8_t, 64> reserved;
+    reserved.fill(0);
+    write (os,
+        reserved.data(), reserved.size());
 }
 
 // Write data file header to file
@@ -259,25 +318,26 @@ read (istream& is, std::size_t file_size,
 {
     read(is, kh.type, sizeof(kh.type));
     read<std::uint16_t>(is, kh.version);
+    read<std::uint64_t>(is, kh.uid);
     read<std::uint64_t>(is, kh.appnum);
+    read<std::uint16_t>(is, kh.key_size);
     read<std::uint64_t>(is, kh.salt);
     read<std::uint64_t>(is, kh.pepper);
-    read<std::uint16_t>(is, kh.key_size);
     read<std::uint16_t>(is, kh.block_size);
     read<std::uint16_t>(is, kh.load_factor);
-    std::array <std::uint8_t, 64> zero;
-    read (is, zero.data(), zero.size());
+    std::array <std::uint8_t, 56> reserved;
+    read (is,
+        reserved.data(), reserved.size());
 
     // VFALCO These need to be checked to handle
     //        when the file size is too small
-    kh.capacity = bucket_capacity(
-        kh.key_size, kh.block_size);
-    kh.bucket_size = bucket_size(
-        kh.key_size, kh.capacity);
+    kh.capacity = bucket_capacity(kh.block_size);
+    kh.bucket_size = bucket_size(kh.capacity);
     if (file_size > kh.block_size)
     {
         // VFALCO This should be handled elsewhere.
-        //        we shouldn't put the computed fields in this header.
+        //        we shouldn't put the computed fields
+        //        in this header.
         if (kh.block_size > 0)
             kh.buckets = (file_size - kh.bucket_size)
                 / kh.block_size;
@@ -319,15 +379,17 @@ write (ostream& os, key_file_header const& kh)
 {
     write (os, "nudb.key", 8);
     write<std::uint16_t>(os, kh.version);
+    write<std::uint64_t>(os, kh.uid);
     write<std::uint64_t>(os, kh.appnum);
+    write<std::uint16_t>(os, kh.key_size);
     write<std::uint64_t>(os, kh.salt);
     write<std::uint64_t>(os, kh.pepper);
-    write<std::uint16_t>(os, kh.key_size);
     write<std::uint16_t>(os, kh.block_size);
     write<std::uint16_t>(os, kh.load_factor);
-    std::array <std::uint8_t, 64> zero;
-    zero.fill (0);
-    write (os, zero.data(), zero.size());
+    std::array <std::uint8_t, 56> reserved;
+    reserved.fill (0);
+    write (os,
+        reserved.data(), reserved.size());
 }
 
 // Write key file header to file
@@ -353,10 +415,12 @@ read (istream& is, log_file_header& lh)
 {
     read (is, lh.type, sizeof(lh.type));
     read<std::uint16_t>(is, lh.version);
+    read<std::uint64_t>(is, lh.uid);
     read<std::uint64_t>(is, lh.appnum);
+    read<std::uint16_t>(is, lh.key_size);
     read<std::uint64_t>(is, lh.salt);
     read<std::uint64_t>(is, lh.pepper);
-    read<std::uint16_t>(is, lh.key_size);
+    read<std::uint16_t>(is, lh.block_size);
     read<std::uint64_t>(is, lh.key_file_size);
     read<std::uint64_t>(is, lh.dat_file_size);
 }
@@ -381,10 +445,12 @@ write (ostream& os, log_file_header const& lh)
 {
     write (os, "nudb.log", 8);
     write<std::uint16_t>(os, lh.version);
+    write<std::uint64_t>(os, lh.uid);
     write<std::uint64_t>(os, lh.appnum);
+    write<std::uint16_t>(os, lh.key_size);
     write<std::uint64_t>(os, lh.salt);
     write<std::uint64_t>(os, lh.pepper);
-    write<std::uint16_t>(os, lh.key_size);
+    write<std::uint16_t>(os, lh.block_size);
     write<std::uint64_t>(os, lh.key_file_size);
     write<std::uint64_t>(os, lh.dat_file_size);
 }
@@ -401,34 +467,6 @@ write (File& f, log_file_header const& lh)
     f.write (0, buf.data(), buf.size());
 }
 
-template <class Hasher>
-void
-verify (key_file_header const& kh)
-{
-    std::string const type (kh.type, 8);
-    if (type != "nudb.key")
-        throw store_corrupt_error (
-            "bad type in key file");
-    if (kh.version != currentVersion)
-        throw store_corrupt_error (
-            "bad version in key file");
-    if (kh.pepper != pepper<Hasher>(kh.salt))
-        throw store_corrupt_error(
-            "wrong hash function for key file");
-    if (kh.key_size < 1)
-        throw store_corrupt_error (
-            "bad key size in key file");
-    if (kh.load_factor < 1)
-        throw store_corrupt_error (
-            "bad load factor in key file");
-    if (kh.capacity < 1)
-        throw store_corrupt_error (
-            "bad capacity in key file");
-    if (kh.buckets < 1)
-        throw store_corrupt_error (
-            "bad key file size");
-}
-
 template <class = void>
 void
 verify (dat_file_header const& dh)
@@ -443,6 +481,34 @@ verify (dat_file_header const& dh)
     if (dh.key_size < 1)
         throw store_corrupt_error (
             "bad key size in data file");
+}
+
+template <class Hasher>
+void
+verify (key_file_header const& kh)
+{
+    std::string const type (kh.type, 8);
+    if (type != "nudb.key")
+        throw store_corrupt_error (
+            "bad type in key file");
+    if (kh.version != currentVersion)
+        throw store_corrupt_error (
+            "bad version in key file");
+    if (kh.key_size < 1)
+        throw store_corrupt_error (
+            "bad key size in key file");
+    if (kh.pepper != pepper<Hasher>(kh.salt))
+        throw store_corrupt_error(
+            "wrong hash function for key file");
+    if (kh.load_factor < 1)
+        throw store_corrupt_error (
+            "bad load factor in key file");
+    if (kh.capacity < 1)
+        throw store_corrupt_error (
+            "bad capacity in key file");
+    if (kh.buckets < 1)
+        throw store_corrupt_error (
+            "bad key file size");
 }
 
 template <class Hasher>
@@ -470,17 +536,16 @@ void
 verify (dat_file_header const& dh,
     key_file_header const& kh)
 {
-    verify (dh);
     verify<Hasher> (kh);
-    if (kh.salt != dh.salt)
+    if (kh.uid != dh.uid)
         throw store_corrupt_error(
-            "salt mismatch");
-    if (kh.key_size != dh.key_size)
-        throw store_corrupt_error(
-            "key size mismatch");
+            "uid mismatch");
     if (kh.appnum != dh.appnum)
         throw store_corrupt_error(
             "appnum mismatch");
+    if (kh.key_size != dh.key_size)
+        throw store_corrupt_error(
+            "key size mismatch");
 }
 
 template <class Hasher>
@@ -489,15 +554,24 @@ verify (key_file_header const& kh,
     log_file_header const& lh)
 {
     verify<Hasher>(lh);
-    if (kh.salt != lh.salt)
+    if (kh.uid != lh.uid)
         throw store_corrupt_error (
-            "salt mismatch in log file");
+            "uid mismatch in log file");
+    if (kh.appnum != lh.appnum)
+        throw store_corrupt_error(
+            "appnum mismatch in log file");
     if (kh.key_size != lh.key_size)
         throw store_corrupt_error (
             "key size mismatch in log file");
-    if (kh.appnum != lh.appnum)
-        throw store_corrupt_error(
-            "appnum mismatch");
+    if (kh.salt != lh.salt)
+        throw store_corrupt_error (
+            "salt mismatch in log file");
+    if (kh.pepper != lh.pepper)
+        throw store_corrupt_error (
+            "pepper mismatch in log file");
+    if (kh.block_size != lh.block_size)
+        throw store_corrupt_error (
+            "block size mismatch in log file");
 }
 
 } // detail

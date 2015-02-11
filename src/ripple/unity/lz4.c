@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Vinnie Falco <vinnie.falco@gmail.com>
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,27 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NUDB_MODE_H_INCLUDED
-#define BEAST_NUDB_MODE_H_INCLUDED
-
-#include <beast/nudb/detail/config.h>
-#include <string>
-
-namespace beast {
-namespace nudb {
-
-enum class file_mode
-{
-    scan,         // read sequential
-    read,         // read random
-    append,       // read random, write append
-    write         // read random, write random
-};
-
-// This sort of doesn't belong here
-using path_type = std::string;
-
-} // nudb
-} // beast
-
+#include <lz4/lib/lz4.c>
+#ifdef _MSC_VER
+#include <lz4/lib/xxhash.c>
 #endif
+

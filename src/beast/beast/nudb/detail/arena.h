@@ -20,7 +20,6 @@
 #ifndef BEAST_NUDB_DETAIL_ARENA_H_INCLUDED
 #define BEAST_NUDB_DETAIL_ARENA_H_INCLUDED
 
-#include <beast/nudb/detail/config.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

@@ -20,9 +20,7 @@
 #ifndef BEAST_NUDB_DETAIL_POSIX_FILE_H_INCLUDED
 #define BEAST_NUDB_DETAIL_POSIX_FILE_H_INCLUDED
 
-#include <beast/nudb/error.h>
-#include <beast/nudb/mode.h>
-#include <beast/nudb/detail/config.h>
+#include <beast/nudb/common.h>
 #include <cassert>
 #include <cerrno>
 #include <cstring>
@@ -266,14 +264,21 @@ void
 posix_file<_>::read (std::size_t offset,
     void* buffer, std::size_t bytes)
 {
-    auto const n = ::pread (
-        fd_, buffer, bytes, offset);
-    // VFALCO end of file should throw short_read
-    if (n == -1)
-        throw file_posix_error(
-            "pread");
-    if (n < bytes)
-        throw file_short_read_error();
+    while(bytes > 0)
+    {
+        auto const n = ::pread (
+            fd_, buffer, bytes, offset);
+        // VFALCO end of file should throw short_read
+        if (n == -1)
+            throw file_posix_error(
+                "pread");
+        if (n == 0)
+            throw file_short_read_error();
+        offset += n;
+        bytes -= n;
+        buffer = reinterpret_cast<
+            char*>(buffer) + n;
+    }
 }
 
 template <class _>
@@ -281,13 +286,20 @@ void
 posix_file<_>::write (std::size_t offset,
     void const* buffer, std::size_t bytes)
 {
-    auto const n = ::pwrite (
-        fd_, buffer, bytes, offset);
-    if (n == -1)
-        throw file_posix_error(
-            "pwrite");
-    if (n < bytes)
-        throw file_short_write_error();
+    while(bytes > 0)
+    {
+        auto const n = ::pwrite (
+            fd_, buffer, bytes, offset);
+        if (n == -1)
+            throw file_posix_error(
+                "pwrite");
+        if (n == 0)
+            throw file_short_write_error();
+        offset += n;
+        bytes -= n;
+        buffer = reinterpret_cast<
+            char const*>(buffer) + n;
+    }
 }
 
 template <class _>

@@ -21,11 +21,14 @@
 
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
+#include <ripple/nodestore/impl/codec.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/nudb.h>
+#include <beast/nudb/detail/varint.h>
+#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/visit.h>
-#include <snappy.h>
+#include <beast/hash/xxhasher.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
 #include <chrono>
@@ -47,24 +50,16 @@ public:
         // distribution of data sizes.
         arena_alloc_size = 16 * 1024 * 1024,
 
-        //  Version 1
-        //      No compression
-        //
-        typeOne = 1,
-
-        // Version 2
-        //      Snappy compression
-        typeTwo = 2,
-
-
-
-        currentType = typeTwo
+        currentType = 1
     };
+
+    using api = beast::nudb::api<
+        beast::xxhasher, nodeobject_codec>;
 
     beast::Journal journal_;
     size_t const keyBytes_;
     std::string const name_;
-    beast::nudb::store db_;
+    api::store db_;
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
@@ -85,7 +80,7 @@ public:
         auto const kp = (folder / "nudb.key").string ();
         auto const lp = (folder / "nudb.log").string ();
         using beast::nudb::make_salt;
-        beast::nudb::create (dp, kp, lp,
+        api::create (dp, kp, lp,
             currentType, make_salt(), keyBytes,
                 beast::nudb::block_size(kp),
             0.50);
@@ -131,163 +126,27 @@ public:
         }
     }
 
-    //--------------------------------------------------------------------------
-
-    class Buffer
-    {
-    private:
-        std::size_t size_ = 0;
-        std::size_t capacity_ = 0;
-        std::unique_ptr <std::uint8_t[]> buf_;
-
-    public:
-        Buffer() = default;
-        Buffer (Buffer const&) = delete;
-        Buffer& operator= (Buffer const&) = delete;
-
-        explicit
-        Buffer (std::size_t n)
-        {
-            resize (n);
-        }
-
-        std::size_t
-        size() const
-        {
-            return size_;
-        }
-
-        std::size_t
-        capacity() const
-        {
-            return capacity_;
-        }
-
-        void*
-        get()
-        {
-            return buf_.get();
-        }
-
-        void
-        resize (std::size_t n)
-        {
-            if (capacity_ < n)
-            {
-                capacity_ = beast::nudb::detail::ceil_pow2(n);
-                buf_.reset (new std::uint8_t[capacity_]);
-            }
-            size_ = n;
-        }
-
-        // Meet the requirements of BufferFactory
-        void*
-        operator() (std::size_t n)
-        {
-            resize(n);
-            return get();
-        }
-    };
-
-    //--------------------------------------------------------------------------
-    //
-    //  Version 1 Database
-    //
-    //      Uncompressed
-    //
-
-    Status
-    fetch1 (void const* key,
-        std::shared_ptr <NodeObject>* pno)
-    {
-        pno->reset();
-        std::size_t bytes;
-        std::unique_ptr <std::uint8_t[]> data;
-        if (! db_.fetch (key,
-            [&data, &bytes](std::size_t n)
-            {
-                bytes = n;
-                data.reset(new std::uint8_t[bytes]);
-                return data.get();
-            }))
-            return notFound;
-        DecodedBlob decoded (key, data.get(), bytes);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
-    }
-
-    void
-    insert1 (void const* key, void const* data,
-        std::size_t size)
-    {
-        db_.insert (key, data, size);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //  Version 2 Database
-    //
-    //      Snappy compression
-    //
-
-    Status
-    fetch2 (void const* key,
-        std::shared_ptr <NodeObject>* pno)
-    {
-        pno->reset();
-        std::size_t actual;
-        std::unique_ptr <char[]> compressed;
-        if (! db_.fetch (key,
-            [&](std::size_t n)
-            {
-                actual = n;
-                compressed.reset(
-                    new char[n]);
-                return compressed.get();
-            }))
-            return notFound;
-        std::size_t size;
-        if (! snappy::GetUncompressedLength(
-                (char const*)compressed.get(),
-                    actual, &size))
-            return dataCorrupt;
-        std::unique_ptr <char[]> data (new char[size]);
-        snappy::RawUncompress (compressed.get(),
-            actual, data.get());
-        DecodedBlob decoded (key, data.get(), size);
-        if (! decoded.wasOk ())
-            return dataCorrupt;
-        *pno = decoded.createObject();
-        return ok;
-    }
-
-    void
-    insert2 (void const* key, void const* data,
-        std::size_t size)
-    {
-        std::unique_ptr<char[]> buf (
-            new char[snappy::MaxCompressedLength(size)]);
-        std::size_t actual;
-        snappy::RawCompress ((char const*)data, size,
-            buf.get(), &actual);
-        db_.insert (key, buf.get(), actual);
-    }
-
-    //--------------------------------------------------------------------------
-
     Status
     fetch (void const* key, NodeObject::Ptr* pno)
     {
-        switch (db_.appnum())
+        Status status;
+        pno->reset();
+        if (! db_.fetch (key,
+            [key, pno, &status](void const* data, std::size_t size)
+            {
+                DecodedBlob decoded (key, data, size);
+                if (! decoded.wasOk ())
+                {
+                    status = dataCorrupt;
+                    return;
+                }
+                *pno = decoded.createObject();
+                status = ok;
+            }))
         {
-        case typeOne:   return fetch1 (key, pno);
-        case typeTwo:   return fetch2 (key, pno);
+            return notFound;
         }
-        throw std::runtime_error(
-            "nodestore: unknown appnum");
-        return notFound;
+        return status;
     }
 
     void
@@ -295,13 +154,8 @@ public:
     {
         EncodedBlob e;
         e.prepare (no);
-        switch (db_.appnum())
-        {
-        case typeOne:       return insert1 (e.getKey(), e.getData(), e.getSize());
-        case typeTwo:       return insert2 (e.getKey(), e.getData(), e.getSize());
-        }
-        throw std::runtime_error(
-            "nodestore: unknown appnum");
+        db_.insert (e.getKey(),
+            e.getData(), e.getSize());
     }
 
     void
@@ -340,40 +194,17 @@ public:
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
-        auto const appnum = db_.appnum();
+        //auto const appnum = db_.appnum();
         db_.close();
-        beast::nudb::visit (dp,
+        api::visit (dp,
             [&](
                 void const* key, std::size_t key_bytes,
                 void const* data, std::size_t size)
             {
-                switch (appnum)
-                {
-                case typeOne:
-                {
-                    DecodedBlob decoded (key, data, size);
-                    if (! decoded.wasOk ())
-                        return false;
-                    f (decoded.createObject());
-                    break;
-                }
-                case typeTwo:
-                {
-                    std::size_t actual;
-                    if (! snappy::GetUncompressedLength(
-                            (char const*)data, size, &actual))
-                        return false;
-                    std::unique_ptr <char[]> buf (new char[actual]);
-                    if (! snappy::RawUncompress ((char const*)data,
-                            size, buf.get()))
-                        return false;
-                    DecodedBlob decoded (key, buf.get(), actual);
-                    if (! decoded.wasOk ())
-                        return false;
-                    f (decoded.createObject());
-                    break;
-                }
-                }
+                DecodedBlob decoded (key, data, size);
+                if (! decoded.wasOk ())
+                    return false;
+                f (decoded.createObject());
                 return true;
             });
         db_.open (dp, kp, lp,
@@ -399,7 +230,7 @@ public:
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
         db_.close();
-        beast::nudb::verify (dp, kp);
+        api::verify (dp, kp);
         db_.open (dp, kp, lp,
             arena_alloc_size);
     }

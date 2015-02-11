@@ -22,7 +22,6 @@
 
 #include <beast/nudb/detail/arena.h>
 #include <beast/nudb/detail/bucket.h>
-#include <beast/nudb/detail/config.h>
 #include <beast/nudb/detail/format.h>
 #include <cstdint>
 #include <cstring>
