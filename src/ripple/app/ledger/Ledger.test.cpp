@@ -37,24 +37,25 @@
 
 /* -------------------------------------------------------------------------- */
 
-#define AFFECTED(name, index, is_type) EXPECT(nodes.contains(index));\
+#define GET_AFFECTED(name, index, is_type) \
+        EXPECT(nodes.contains(index));\
         Affected& name = nodes[index];\
         EXPECT(name.is_type);
 
-#define CHANGED_PROP(affected, fieldName, prop, beforeValue, afterValue) \
+#define EXPECT_CHANGED_PROP(affected, fieldName, prop, beforeValue, afterValue) \
         EXPECT(!affected.is_created) \
         EXPECT_EQ((affected.before()[fieldName])prop, (beforeValue)) \
         EXPECT_EQ((affected.after()[fieldName])prop, (afterValue));
 
-#define CHANGED(affected, fieldName, beforeValue, afterValue) \
-        CHANGED_PROP(affected, fieldName, ,beforeValue, afterValue);
-        // Note the `, ,` empty prop value forwarded to CHANGED_PROP
+#define EXPECT_CHANGED(affected, fieldName, beforeValue, afterValue) \
+        EXPECT_CHANGED_PROP(affected, fieldName, ,beforeValue, afterValue);
+        // Note the `, ,` empty prop value forwarded to EXPECT_CHANGED_PROP
 
-#define UNCHANGED(affected, fieldName) \
+#define EXPECT_UNCHANGED(affected, fieldName) \
         EXPECT(!affected.is_created) \
         EXPECT_EQ(affected.before()[fieldName], affected.after()[fieldName]);
 
-#define NEW(affected, fieldName, value) \
+#define EXPECT_NEW(affected, fieldName, value) \
         EXPECT(affected.is_created) \
         EXPECT_EQ(affected.after()[fieldName], (value));
 
@@ -779,16 +780,16 @@ TRANSACTOR_TEST(Tickets, {
        AffectedNodes nodes;
        r.getAffected(nodes);
        {
-           AFFECTED(r, root.ledgerIndex, is_modified);
-           CHANGED(r, sfOwnerCount, 0, 1);
+           GET_AFFECTED(r, root.ledgerIndex, is_modified);
+           EXPECT_CHANGED(r, sfOwnerCount, 0, 1);
        }
        {
-           AFFECTED(t, ticketID, is_created);
-           NEW(t, sfAccount, root.id);
+           GET_AFFECTED(t, ticketID, is_created);
+           EXPECT_NEW(t, sfAccount, root.id);
        }
        {
-           AFFECTED(dir, root.ownerDirIndex(), is_created);
-           NEW(dir, sfOwner, root.id);
+           GET_AFFECTED(dir, root.ownerDirIndex(), is_created);
+           EXPECT_NEW(dir, sfOwner, root.id);
            auto& indexes = dir.after()[sfIndexes];
            EXPECT_EQ(indexes.size(), 1);
            EXPECT_EQ(indexes[0], ticketID);
@@ -814,22 +815,22 @@ TRANSACTOR_TEST(Tickets, {
        r.getAffected(nodes);
        {
            // // The root account's owner count is updated
-           AFFECTED(r, root.ledgerIndex, is_modified);
-           CHANGED(r, sfOwnerCount, 1, 0);
+           GET_AFFECTED(r, root.ledgerIndex, is_modified);
+           EXPECT_CHANGED(r, sfOwnerCount, 1, 0);
        }
        // Alice's owner count is not decremented
        {
-           AFFECTED(a, alice.ledgerIndex, is_modified);
-           UNCHANGED(a, sfOwnerCount);
+           GET_AFFECTED(a, alice.ledgerIndex, is_modified);
+           EXPECT_UNCHANGED(a, sfOwnerCount);
        }
        // The ticket is deleted
        {
-           AFFECTED(t, ticketID, is_deleted);
+           GET_AFFECTED(t, ticketID, is_deleted);
        }
        // The owner directory is deleted
        {
-           AFFECTED(dir, root.ownerDirIndex(), is_deleted);
-           CHANGED_PROP(dir, sfIndexes, .size(), 1, 0);
+           GET_AFFECTED(dir, root.ownerDirIndex(), is_deleted);
+           EXPECT_CHANGED_PROP(dir, sfIndexes, .size(), 1, 0);
        }
        // Nothing weird going on here
        EXPECT_EQ(nodes.size(), 4);
@@ -1053,10 +1054,10 @@ public:
 BEAST_DEFINE_TESTSUITE_MANUAL(DiscrepancyTestExample,ripple_app,ripple);
 BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
 
-#undef AFFECTED
-#undef UNCHANGED
-#undef CHANGED_PROP
-#undef CHANGED
-#undef NEW
+#undef GET_AFFECTED
+#undef EXPECT_UNCHANGED
+#undef EXPECT_CHANGED_PROP
+#undef EXPECT_CHANGED
+#undef EXPECT_NEW
 
 } // ripple
