@@ -22,17 +22,16 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
-
+#include <beast/utility/static_initializer.h>
 #include <algorithm>
 #include <memory>
 
 namespace beast {
 
-static File s_nonexistent;
-
 File const& File::nonexistent()
 {
-    return s_nonexistent;
+    static beast::static_initializer<File> instance;
+    return *instance;
 }
 
 //------------------------------------------------------------------------------
