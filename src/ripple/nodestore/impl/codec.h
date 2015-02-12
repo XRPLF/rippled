@@ -20,8 +20,10 @@
 #ifndef RIPPLE_NODESTORE_CODEC_H_INCLUDED
 #define RIPPLE_NODESTORE_CODEC_H_INCLUDED
 
+#include <ripple/nodestore/NodeObject.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/nudb/common.h>
+#include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/varint.h>
 #include <lz4/lib/lz4.h>
 #include <snappy.h>

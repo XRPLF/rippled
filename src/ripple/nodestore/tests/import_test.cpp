@@ -23,11 +23,14 @@
 #include <beast/chrono/basic_seconds_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/http/rfc2616.h>
+#include <beast/nudb/create.h>
+#include <beast/nudb/detail/format.h>
 #include <beast/unit_test/suite.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <map>
 #include <sstream>
 

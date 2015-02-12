@@ -21,6 +21,7 @@
 #define BEAST_NUDB_DETAIL_FORMAT_H_INCLUDED
 
 #include <beast/nudb/common.h>
+#include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/stream.h>
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
