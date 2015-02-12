@@ -245,8 +245,11 @@ TER TransactionEngine::applyTransaction (
         }
     }
 
-    mTxnAccount.reset ();
-    mNodes.clear ();
+    if (!(params & tapNO_RESET))
+    {
+        mTxnAccount.reset ();
+        mNodes.clear ();
+    }
 
     if (!(params & tapOPEN_LEDGER) && isTemMalformed (terResult))
     {

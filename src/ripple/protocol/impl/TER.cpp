@@ -156,6 +156,12 @@ std::string transToken (TER code)
     return transResultInfo (code, token, text) ? token : "-";
 }
 
+std::ostream& operator<< (std::ostream& os, TER code)
+{
+    os << transToken (code);
+    return os;
+}
+
 std::string transHuman (TER code)
 {
     std::string token;

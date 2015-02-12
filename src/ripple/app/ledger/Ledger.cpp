@@ -44,6 +44,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/unit_test/suite.h>
+#include <ripple/protocol/STParsedJSON.h>
 
 namespace ripple {
 
@@ -233,8 +234,12 @@ Ledger::Ledger (std::string const& rawLedger, bool hasPrefix)
 }
 
 /** Used for ledgers loaded from JSON files */
-Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
-    : mTotCoins (0),
+Ledger::Ledger (std::uint32_t ledgerSeq,
+                std::uint32_t closeTime,
+                uint256 const& parentHash)
+    :
+      mParentHash (parentHash),
+      mTotCoins (0),
       mLedgerSeq (ledgerSeq),
       mCloseTime (closeTime),
       mParentCloseTime (0),
@@ -1920,5 +1925,111 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 
 Ledger::StaticLockType Ledger::sPendingSaveLock;
 std::set<std::uint32_t> Ledger::sPendingSaves;
+
+/*
+* This has expectations that the Json::Value is a Json::objectValue
+* Returns a validated/closed ledger, with the accountState loaded.
+* TODO: Does not load the transactions. Should it?
+*       The dump should be internally consistent if it's to be relied upon.
+*          What about historical values that can no longer be loaded?
+*             Values that can't handled binary -> json -> binary should have
+*               an embedded `blob`, which is just the binary direct from the
+*               node store. This way ShaMaps can be pieced back together.
+* TODO: Would this be better of as a Constructor?
+* TODO: This doesn't do anything about logging, or other wise reporting of
+*       errors.
+*/
+Ledger::pointer parseLedgerFromJSON(Json::Value& jLedger) {
+    std::reference_wrapper<Json::Value> ledger (jLedger);
+
+    // accept a wrapped ledger
+    if (ledger.get().isMember  ("result"))
+        ledger = ledger.get()["result"];
+    if (ledger.get().isMember ("ledger"))
+        ledger = ledger.get()["ledger"];
+
+    std::uint32_t seq = 1;
+    std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
+    std::uint32_t closeTimeResolution = 30;
+    bool closeTimeEstimated = false;
+    std::uint64_t totalCoins = 0;
+    uint256 parentHash (0);
+
+    Ledger::pointer loadLedger;
+
+    if (ledger.get().isMember (jss::accountState))
+    {
+         if (ledger.get().isMember (jss::ledger_index))
+         {
+             seq = ledger.get()[jss::ledger_index].asUInt();
+         }
+         if (ledger.get().isMember (jss::close_time))
+         {
+             closeTime = ledger.get()[jss::close_time].asUInt();
+         }
+         if (ledger.get().isMember (jss::close_time_resolution))
+         {
+             closeTimeResolution =
+                 ledger.get()[jss::close_time_resolution].asUInt();
+         }
+         if (ledger.get().isMember (jss::close_time_estimated))
+         {
+             closeTimeEstimated =
+                 ledger.get()[jss::close_time_estimated].asBool();
+         }
+         if (ledger.get().isMember (jss::parent_hash))
+         {
+             parentHash =
+                 uint256(ledger.get()[jss::parent_hash].asString());
+         }
+         if (ledger.get().isMember (jss::total_coins))
+         {
+             totalCoins =
+               beast::lexicalCastThrow<std::uint64_t>
+                   (ledger.get()[jss::total_coins].asString());
+         }
+        ledger = ledger.get()[jss::accountState];
+    }
+    if (!ledger.get().isArray ())
+    {
+        // log << "State nodes must be an array";
+    }
+    else
+    {
+        loadLedger = std::make_shared<Ledger> (seq, closeTime, parentHash);
+        loadLedger->setTotalCoins(totalCoins);
+
+        for (Json::UInt index = 0; index < ledger.get().size(); ++index)
+        {
+            Json::Value& entry = ledger.get()[index];
+
+            uint256 uIndex;
+            uIndex.SetHex (entry["index"].asString());
+            entry.removeMember ("index");
+
+            STParsedJSONObject stp ("sle", ledger.get()[index]);
+
+            if (stp.object && (uIndex.isNonZero()))
+            {
+                STLedgerEntry sle (*stp.object, uIndex);
+                /*bool ok = */loadLedger->addSLE (sle);
+                // if (!ok)
+                    // log << "Couldn't add SLE with index: " << uIndex;
+            }
+            else
+            {
+                /*log << "Invalid entry in ledger";*/
+            }
+        }
+        loadLedger->setClosed ();
+        loadLedger->setAccepted (closeTime,
+            closeTimeResolution, !closeTimeEstimated);
+        loadLedger->setValidated ();
+
+        return loadLedger;
+    }
+
+    return nullptr;
+}
 
 } // ripple

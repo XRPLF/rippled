@@ -204,42 +204,42 @@ public:
     // these throw if the field type doesn't match, or return default values
     // if the field is optional but not present
     std::string getFieldString (SField::ref field) const;
-    unsigned char getFieldU8 (SField::ref field) const;
-    std::uint16_t getFieldU16 (SField::ref field) const;
-    std::uint32_t getFieldU32 (SField::ref field) const;
-    std::uint64_t getFieldU64 (SField::ref field) const;
-    uint128 getFieldH128 (SField::ref field) const;
+    unsigned char getFieldU8 (SFieldU8 const& /*SField::ref*/ field) const;
+    std::uint16_t getFieldU16 (SFieldU16 const& /*SField::ref*/ field) const;
+    std::uint32_t getFieldU32 (SFieldU32 const& /*SField::ref*/ field) const;
+    std::uint64_t getFieldU64 (SFieldU64 const& /*SField::ref*/ field) const;
+    uint128 getFieldH128 (SFieldH128 const& /*SField::ref*/ field) const;
 
-    uint160 getFieldH160 (SField::ref field) const;
-    uint256 getFieldH256 (SField::ref field) const;
-    RippleAddress getFieldAccount (SField::ref field) const;
-    Account getFieldAccount160 (SField::ref field) const;
+    uint160 getFieldH160 (SFieldH160 const& /*SField::ref*/ field) const;
+    uint256 getFieldH256 (SFieldH256 const& /*SField::ref*/ field) const;
+    RippleAddress getFieldAccount (SFieldAccount const& /*SField::ref*/ field) const;
+    Account getFieldAccount160 (SFieldAccount const& /*SField::ref*/ field) const;
 
-    Blob getFieldVL (SField::ref field) const;
-    STAmount const& getFieldAmount (SField::ref field) const;
-    STPathSet const& getFieldPathSet (SField::ref field) const;
-    const STVector256& getFieldV256 (SField::ref field) const;
-    const STArray& getFieldArray (SField::ref field) const;
+    Blob getFieldVL (SFieldVL const& /*SField::ref*/ field) const;
+    STAmount const& getFieldAmount (SFieldAmount const& /*SField::ref*/ field) const;
+    STPathSet const& getFieldPathSet (SFieldPathSet const& /*SField::ref*/ field) const;
+    const STVector256& getFieldV256 (SFieldV256 const& /*SField::ref*/ field) const;
+    const STArray& getFieldArray (SFieldArray const& /*SField::ref*/  field) const;
 
-    void setFieldU8 (SField::ref field, unsigned char);
-    void setFieldU16 (SField::ref field, std::uint16_t);
-    void setFieldU32 (SField::ref field, std::uint32_t);
-    void setFieldU64 (SField::ref field, std::uint64_t);
-    void setFieldH128 (SField::ref field, uint128 const&);
-    void setFieldH256 (SField::ref field, uint256 const& );
-    void setFieldVL (SField::ref field, Blob const&);
-    void setFieldAccount (SField::ref field, Account const&);
-    void setFieldAccount (SField::ref field, RippleAddress const& addr)
+    void setFieldU8 (SFieldU8 const&, unsigned char);
+    void setFieldU16 (SFieldU16 const&, std::uint16_t);
+    void setFieldU32 (SFieldU32 const&, std::uint32_t);
+    void setFieldU64 (SFieldU64 const&, std::uint64_t);
+    void setFieldH128 (SFieldH128 const&, uint128 const&);
+    void setFieldH256 (SFieldH256 const&, uint256 const& );
+    void setFieldVL (SFieldVL const&, Blob const&);
+    void setFieldAccount (SFieldAccount const&, Account const&);
+    void setFieldAccount (SFieldAccount const& field, RippleAddress const& addr)
     {
         setFieldAccount (field, addr.getAccountID ());
     }
-    void setFieldAmount (SField::ref field, STAmount const&);
-    void setFieldPathSet (SField::ref field, STPathSet const&);
-    void setFieldV256 (SField::ref field, STVector256 const& v);
-    void setFieldArray (SField::ref field, STArray const& v);
+    void setFieldAmount (SFieldAmount const&, STAmount const&);
+    void setFieldPathSet (SFieldPathSet const&, STPathSet const&);
+    void setFieldV256 (SFieldV256 const&, STVector256 const& v);
+    void setFieldArray (SFieldArray const&, STArray const& v);
 
     template <class Tag>
-    void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
+    void setFieldH160 (SFieldH160 const& field, base_uint<160, Tag> const& v)
     {
         STBase* rf = getPField (field, true);
 
@@ -255,6 +255,133 @@ public:
         else
             throw std::runtime_error ("Wrong field type");
     }
+
+    /* ------------- NEW SCHOOL TYPED FIELDS SUBSCRIPT OPERATOR ------------- */
+
+/*    void operator() (SFieldU32 const& f, std::uint32_t v)
+    {
+        setFieldU32(f, v);
+    }
+*/
+
+    void set (SFieldU8 const& f, unsigned char v)
+    {
+        setFieldU8(f, v);
+    }
+    void set (SFieldU16 const& f, std::uint16_t v)
+    {
+        setFieldU16(f, v);
+    }
+    void set (SFieldU32 const& f, std::uint32_t v)
+    {
+        setFieldU32(f, v);
+    }
+    void set (SFieldU64 const& f, std::uint64_t v)
+    {
+        setFieldU64(f, v);
+    }
+    void set (SFieldH128 const& f, uint128 const& v)
+    {
+        setFieldH128(f, v);
+    }
+    void set (SFieldH256 const& f, uint256 const& v)
+    {
+        setFieldH256(f, v);
+    }
+    void set (SFieldVL const& f, Blob const& v)
+    {
+        setFieldVL(f, v);
+    }
+    void set (SFieldAccount const& f, Account const& v)
+    {
+        setFieldAccount(f, v);
+    }
+    void set (SFieldAccount const& f, RippleAddress const& v)
+    {
+        setFieldAccount(f, v);
+    }
+    void set (SFieldAmount const& f, STAmount const& v)
+    {
+        setFieldAmount(f, v);
+    }
+    void set (SFieldPathSet const& f, STPathSet const& v)
+    {
+        setFieldPathSet(f, v);
+    }
+    void set (SFieldV256 const& f, STVector256 const& v)
+    {
+        setFieldV256(f, v);
+    }
+    void set (SFieldArray const& f, STArray const& v)
+    {
+        setFieldArray(f, v);
+    }
+
+    template <class Tag>
+    void set (SFieldH160 const& f, base_uint<160, Tag> const& v)
+    {
+        setFieldH160(f, v);
+    }
+
+    /* Primarily for writing terse tests  */
+    unsigned char operator[] (SFieldU8 const& /*SField::ref*/ field) const
+    {
+        return getFieldU8(field);
+    }
+    std::uint16_t operator[] (SFieldU16 const& /*SField::ref*/ field) const
+    {
+        return getFieldU16(field);
+    }
+    std::uint32_t operator[] (SFieldU32 const& /*SField::ref*/ field) const
+    {
+        return getFieldU32(field);
+    }
+    std::uint64_t operator[] (SFieldU64 const& /*SField::ref*/ field) const
+    {
+        return getFieldU64(field);
+    }
+    uint128 operator[] (SFieldH128 const& /*SField::ref*/ field) const
+    {
+        return getFieldH128(field);
+    }
+    uint160 operator[] (SFieldH160 const& /*SField::ref*/ field) const
+    {
+        return getFieldH160(field);
+    }
+    uint256 operator[] (SFieldH256 const& /*SField::ref*/ field) const
+    {
+        return getFieldH256(field);
+    }
+/*    RippleAddress operator[] (SFieldAccount const& SField::ref field) const
+    {
+        return getFieldAccount(field);
+    }
+*/
+    Account operator[] (SFieldAccount const& /*SField::ref*/ field) const
+    {
+        return getFieldAccount160(field);
+    }
+    Blob operator[] (SFieldVL const& /*SField::ref*/ field) const
+    {
+        return getFieldVL(field);
+    }
+    STAmount const& operator[] (SFieldAmount const& /*SField::ref*/ field) const
+    {
+        return getFieldAmount(field);
+    }
+    STPathSet const& operator[] (SFieldPathSet const& /*SField::ref*/ field) const
+    {
+        return getFieldPathSet(field);
+    }
+    const STVector256& operator[] (SFieldV256 const& /*SField::ref*/ field) const
+    {
+        return getFieldV256(field);
+    }
+    const STArray& operator[] (SFieldArray const& /*SField::ref*/  field) const
+    {
+        return getFieldArray(field);
+    }
+    /* ---------------------------------------------------------------------- */
 
     STObject& peekFieldObject (SField::ref field);
 
