@@ -27,6 +27,36 @@
 namespace ripple {
 namespace NodeStore {
 
+struct Counters
+{
+    Counters()
+        : stores (0)
+        , fetches (0)
+        , fetchHits (0)
+        , storeBytes (0)
+        , fetchBytes (0)
+        , fetchDuration (0)
+    {};
+
+    ~Counters() = default;
+
+    Counters (Counters const& other)
+        : stores (other.stores.load())
+        , fetches (other.fetches.load())
+        , fetchHits (other.fetchHits.load())
+        , storeBytes (other.storeBytes.load())
+        , fetchBytes (other.fetchBytes.load())
+        , fetchDuration (other.fetchDuration.load())
+    {}
+
+    std::atomic <std::uint32_t> stores;
+    std::atomic <std::uint32_t> fetches;
+    std::atomic <std::uint32_t> fetchHits;
+    std::atomic <std::uint32_t> storeBytes;
+    std::atomic <std::uint32_t> fetchBytes;
+    std::atomic <std::uint32_t> fetchDuration;
+};
+
 /** Persistency layer for NodeObject
 
     A Node is a ledger object which is uniquely identified by a key, which is
@@ -54,7 +84,7 @@ public:
         or paths used by the underlying backend.
     */
     virtual std::string getName () const = 0;
-    
+
     /** Close the database.
         This allows the caller to catch exceptions.
     */
@@ -140,13 +170,11 @@ public:
     virtual void sweep () = 0;
 
     /** Gather statistics pertaining to read and write activities.
-        Return the reads and writes, and total read and written bytes.
+     *  Return the reads and writes, total read and written bytes,
+     *  and total duration of reads in microseconds. Writes are batched
+     *  and written from another object, so duration is not obtainable here.
      */
-    virtual std::uint32_t getStoreCount () const = 0;
-    virtual std::uint32_t getFetchTotalCount () const = 0;
-    virtual std::uint32_t getFetchHitCount () const = 0;
-    virtual std::uint32_t getStoreSize () const = 0;
-    virtual std::uint32_t getFetchSize () const = 0;
+    virtual Counters const& counters() const = 0;
 };
 
 }

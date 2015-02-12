@@ -79,11 +79,6 @@ public:
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)
         , m_readGen (0)
-        , m_storeCount (0)
-        , m_fetchTotalCount (0)
-        , m_fetchHitCount (0)
-        , m_storeSize (0)
-        , m_fetchSize (0)
     {
         for (int i = 0; i < readThreads; ++i)
             m_readThreads.push_back (std::thread (&DatabaseImp::threadEntry,
@@ -224,8 +219,12 @@ public:
         {
             // Yes so at last we will try the main database.
             //
+            auto const before = std::chrono::steady_clock::now();
             obj = fetchFrom (hash);
-            ++m_fetchTotalCount;
+            auto const after = std::chrono::steady_clock::now();
+            counters_.fetchDuration += std::chrono::duration_cast
+                    <std::chrono::microseconds> (after - before).count();
+            ++counters_.fetches;
         }
 
         if (obj == nullptr)
@@ -253,9 +252,9 @@ public:
                 if (m_fastBackend != nullptr)
                 {
                     m_fastBackend->store (obj);
-                    ++m_storeCount;
+                    ++counters_.stores;
                     if (obj)
-                        m_storeSize += obj->getData().size();
+                        counters_.storeBytes += obj->getData().size();
                 }
 
                 // Since this was a 'hard' fetch, we will log it.
@@ -283,9 +282,9 @@ public:
         switch (status)
         {
         case ok:
-            ++m_fetchHitCount;
+            ++counters_.fetchHits;
             if (object)
-                m_fetchSize += object->getData().size();
+                counters_.fetchBytes += object->getData().size();
         case notFound:
             break;
 
@@ -329,18 +328,18 @@ public:
         m_cache.canonicalize (hash, object, true);
 
         backend.store (object);
-        ++m_storeCount;
+        ++counters_.stores;
         if (object)
-            m_storeSize += object->getData().size();
+            counters_.storeBytes += object->getData().size();
 
         m_negCache.erase (hash);
 
         if (m_fastBackend)
         {
             m_fastBackend->store (object);
-            ++m_storeCount;
+            ++counters_.stores;
             if (object)
-                m_storeSize += object->getData().size();
+                counters_.storeBytes += object->getData().size();
         }
     }
 
@@ -441,46 +440,23 @@ public:
             }
 
             b.push_back (object);
-            ++m_storeCount;
+            ++counters_.stores;
             if (object)
-                m_storeSize += object->getData().size();
+                counters_.storeBytes += object->getData().size();
         });
 
         if (! b.empty())
             dest.storeBatch (b);
     }
 
-    std::uint32_t getStoreCount () const override
+    Counters const& counters() const override
     {
-        return m_storeCount;
-    }
-
-    std::uint32_t getFetchTotalCount () const override
-    {
-        return m_fetchTotalCount;
-    }
-
-    std::uint32_t getFetchHitCount () const override
-    {
-        return m_fetchHitCount;
-    }
-
-    std::uint32_t getStoreSize () const override
-    {
-        return m_storeSize;
-    }
-
-    std::uint32_t getFetchSize () const override
-    {
-        return m_fetchSize;
+        return counters_;
     }
 
 private:
-    std::atomic <std::uint32_t> m_storeCount;
-    std::atomic <std::uint32_t> m_fetchTotalCount;
-    std::atomic <std::uint32_t> m_fetchHitCount;
-    std::atomic <std::uint32_t> m_storeSize;
-    std::atomic <std::uint32_t> m_fetchSize;
+    Counters counters_;
+
 };
 
 }

@@ -509,6 +509,50 @@ Value::Value ( const Value& other )
 }
 
 
+Value::Value ( std::atomic<bool> const& other )
+    : type_ ( booleanValue )
+    , comments_ ( 0 )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( 0 )
+#endif
+{
+    value_.bool_ = other.load();
+}
+
+
+Value::Value ( std::atomic <std::int32_t> const& other )
+    : type_ ( intValue )
+    , comments_ ( 0 )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( 0 )
+#endif
+{
+    value_.int_ = other.load();
+}
+
+
+Value::Value ( std::atomic <std::uint32_t> const& other )
+    : type_ ( uintValue )
+    , comments_ ( 0 )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( 0 )
+#endif
+{
+    value_.uint_ = other.load();
+}
+
+
+Value::Value ( std::atomic <double> const& other )
+    : type_ ( realValue )
+    , comments_ ( 0 )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( 0 )
+#endif
+{
+    value_.real_ = other.load();
+}
+
+
 Value::~Value ()
 {
     switch ( type_ )
