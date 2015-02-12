@@ -25,18 +25,6 @@ var uniport_test_config = {
   // the test connections on the various ports.
   remote_trace : false,
 
-  // There's a bug where we can't subscribe to the admin ports requiring
-  // credentials, even though subscribe has Role::USER. `Remote` always issues a
-  // subscribe command after connect(). Setting this flag adds the credentials
-  // to let the tests go further to test that admin requests without credentials
-  // are not honored.
-  add_credentials_to_ws_subscribe: false,
-
-  // WebSocket connections honor admin=no regardless of ip address, yet admin
-  // commands issued via http will be executed for any client with an ip in the
-  // [rpc_admin_allow] whitelist. 127.0.0.1 is hardcoded in cpp code.
-  expect_http_to_honour_admin_no: true,
-
   // We can be a bit more exhaustive, but it will cost us 2 seconds, unless
   // we use `skip_tests_matching` to `test.skip` them.
   define_redundant_tests : false,
@@ -189,15 +177,10 @@ function test_websocket_admin_command (test_declaration,
 
   if (require_pass) {
     remote.on('prepare_subscribe', function (request){
-      if (require_pass && uniport_test_config.add_credentials_to_ws_subscribe) {
-        add_credentials_to_request(request.message, port_conf);
-      }
       request.once('error', function (e, m){
-        if (!uniport_test_config.add_credentials_to_ws_subscribe) {
           assert.notEqual(e.remote.error,
                           'forbidden',
                           'Need credentials for non admin request (subscribe)');
-        }
       });
     });
   }
@@ -308,10 +291,8 @@ function test_http_admin_command (test_declaration, protocol, conf, done)
         assert.equal(body.trim(), 'Forbidden');
       }
       else {
-        if (uniport_test_config.expect_http_to_honour_admin_no) {
-          assert(body.result.status != 'success',
-                create_error("succeded when shouldn't have"));
-        }
+        assert(body.result.status != 'success',
+              create_error("succeded when shouldn't have"));
       }
       done();
     }
