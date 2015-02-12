@@ -191,6 +191,15 @@ void runCoroutine (RPC::Coroutine coroutine, JobQueue& jobQueue)
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
+    // Make sure RPC is enabled on the port
+    if (session.port().protocol.count("http") == 0 &&
+        session.port().protocol.count("https") == 0)
+    {
+        HTTPReply (403, "Forbidden", makeOutput (session));
+        session.close (true);
+        return;
+    }
+
     // Check user/password authorization
     if (! authorized (session.port(),
         build_map(session.request().headers)))
