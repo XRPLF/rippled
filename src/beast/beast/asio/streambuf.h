@@ -231,16 +231,13 @@ private:
         using argument_type = element;
         using result_type = value_type;
 
-        const_buffers_type const* buffers_;
+        basic_streambuf const* streambuf_ = nullptr;
 
-        transform()
-            : buffers_ (nullptr)
-        {
-        }
+        transform() = default;
 
         explicit
-        transform (const_buffers_type const& buffers)
-            : buffers_ (&buffers)
+        transform (basic_streambuf const& streambuf)
+            : streambuf_ (&streambuf)
         {
         }
 
@@ -255,11 +252,15 @@ public:
         transform, typename list_type::const_iterator,
             value_type, value_type>;
 
+    const_buffers_type() = default;
+    const_buffers_type (const_buffers_type const&) = default;
+    const_buffers_type& operator= (const_buffers_type const&) = default;
+
     const_iterator
     begin() const
     {
         return const_iterator (streambuf_->list_.begin(),
-            transform(*this));
+            transform(*streambuf_));
     }
 
     const_iterator
@@ -267,7 +268,7 @@ public:
     {
         return const_iterator (streambuf_->out_ ==
             streambuf_->list_.end() ? streambuf_->list_.end() :
-                std::next(streambuf_->out_), transform(*this));
+                std::next(streambuf_->out_), transform(*streambuf_));
     }
 
 private:
@@ -290,12 +291,11 @@ basic_streambuf<Allocator>::const_buffers_type::
     transform::operator() (element const& e) const ->
         value_type const
 {
-    basic_streambuf const& streambuf = *buffers_->streambuf_;
     return value_type (e.data(),
-        (streambuf.out_ == streambuf.list_.end() ||
-            &e != &*streambuf.out_) ? e.size() : streambuf.out_pos_) +
-                (&e == &*streambuf.list_.begin() ?
-                    streambuf.in_pos_ : 0);
+        (streambuf_->out_ == streambuf_->list_.end() ||
+            &e != &*streambuf_->out_) ? e.size() : streambuf_->out_pos_) +
+                (&e == &*streambuf_->list_.begin() ?
+                    streambuf_->in_pos_ : 0);
 }
 
 //------------------------------------------------------------------------------
@@ -312,16 +312,13 @@ private:
         using argument_type = element;
         using result_type = value_type;
 
-        mutable_buffers_type const* buffers_;
+        basic_streambuf const* streambuf_ = nullptr;
 
-        transform()
-            : buffers_ (nullptr)
-        {
-        }
+        transform() = default;
 
         explicit
-        transform (mutable_buffers_type const& buffers)
-            : buffers_ (&buffers)
+        transform (basic_streambuf const& streambuf)
+            : streambuf_ (&streambuf)
         {
         }
 
@@ -336,18 +333,22 @@ public:
         transform, typename list_type::const_iterator,
             value_type, value_type>;
 
+    mutable_buffers_type() = default;
+    mutable_buffers_type (mutable_buffers_type const&) = default;
+    mutable_buffers_type& operator= (mutable_buffers_type const&) = default;
+
     const_iterator
     begin() const
     {
         return const_iterator (streambuf_->out_,
-            transform(*this));
+            transform(*streambuf_));
     }
 
     const_iterator
     end() const
     {
         return const_iterator (streambuf_->list_.end(),
-            transform(*this));
+            transform(*streambuf_));
     }
 
 private:
@@ -368,10 +369,9 @@ basic_streambuf<Allocator>::mutable_buffers_type::
     transform::operator() (element const& e) const ->
         value_type const
 {
-    basic_streambuf const& streambuf = *buffers_->streambuf_;
-    return value_type (e.data(), &e == &*std::prev(streambuf.list_.end()) ?
-        streambuf.out_end_ : e.size()) + (&e == &*streambuf.out_ ?
-            streambuf.out_pos_ : 0);
+    return value_type (e.data(), &e == &*std::prev(streambuf_->list_.end()) ?
+        streambuf_->out_end_ : e.size()) + (&e == &*streambuf_->out_ ?
+            streambuf_->out_pos_ : 0);
 }
 
 //------------------------------------------------------------------------------
