@@ -194,10 +194,16 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     beast::Journal journal (sink);
 
     Handoff handoff;
+
+#if 1
+    // VFALCO Disable handoffs
+    return handoff;
+#else
     if (processRequest(request, handoff))
         return handoff;
     if (! isPeerUpgrade(request))
         return handoff;
+#endif
 
     handoff.moved = true;
 
