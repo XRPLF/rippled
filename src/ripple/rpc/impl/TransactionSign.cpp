@@ -384,7 +384,8 @@ transactionSign (
 
     ledgerFacade.snapshotAccountState (raSrcAddressID);
 
-    if (verify) {
+    if (verify)
+    {
         if (!ledgerFacade.isValidAccount ())
         {
             // If not offline and did not find account, error.
@@ -413,16 +414,16 @@ transactionSign (
             return e;
     }
 
-    if (!tx_json.isMember ("Sequence"))
-        tx_json["Sequence"] = ledgerFacade.getSeq ();
-
     if (!tx_json.isMember ("Flags"))
         tx_json["Flags"] = tfFullyCanonicalSig;
 
     if (verify)
     {
+        if (!tx_json.isMember ("Sequence"))
+            tx_json["Sequence"] = ledgerFacade.getSeq ();
+
+        // XXX Ignore transactions for accounts not created.
         if (!ledgerFacade.hasAccountRoot ())
-            // XXX Ignore transactions for accounts not created.
             return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
