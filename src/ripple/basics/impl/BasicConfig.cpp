@@ -121,7 +121,8 @@ BasicConfig::legacy(std::string const& section, std::string value)
     map_[section].legacy(std::move(value));
 }
 
-std::string BasicConfig::legacy(std::string const& sectionName) const
+std::string
+BasicConfig::legacy(std::string const& sectionName) const
 {
     return section (sectionName).legacy ();
 }

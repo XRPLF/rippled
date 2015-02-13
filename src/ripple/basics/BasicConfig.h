@@ -80,12 +80,15 @@ public:
      * Set the legacy value for this section.
      */ 
     void
-    legacy(std::string value)
+    legacy (std::string value)
     {
-        if (lines_.empty())
-            lines_.emplace_back(std::move(value));
+        if (lines_.empty ())
+            lines_.emplace_back (std::move (value));
         else
-            lines_[0] = std::move(value);
+        {
+            assert (lines_.size () == 1);
+            lines_[0] = std::move (value);
+        }
     }
 
     /**
@@ -95,7 +98,7 @@ public:
                an empty string.
      */
     std::string
-    legacy() const
+    legacy () const
     {
         if (lines_.empty ())
             return "";

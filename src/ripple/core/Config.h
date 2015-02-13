@@ -87,7 +87,7 @@ struct SizedItem
     int             sizes[5];
 };
 
-//  This entire derived class is deprecated
+//  This entire derived class is deprecated.
 //  For new config information use the style implied
 //  in the base class. For existing config information
 //  try to refactor code to use the new style.
@@ -302,6 +302,7 @@ public:
 
     int getSize (SizedItemName) const;
     void setup (std::string const& strConf, bool bQuiet);
+
     /**
      *  Load the conig from the contents of the sting.
      *

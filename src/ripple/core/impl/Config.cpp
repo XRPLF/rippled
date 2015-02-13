@@ -361,26 +361,26 @@ void Config::setup (std::string const& strConf, bool bQuiet)
     load ();
     {
         // load() may have set a new value for the dataDir
-        std::string const dbPath(legacy("database_path"));
-        if (!dbPath.empty())
+        std::string const dbPath (legacy ("database_path"));
+        if (!dbPath.empty ())
         {
-            dataDir = boost::filesystem::path(dbPath);
+            dataDir = boost::filesystem::path (dbPath);
         }
     }
 
     boost::filesystem::create_directories (dataDir, ec);
 
     if (ec)
-        throw std::runtime_error (boost::str (boost::format ("Can not create %s") % dataDir));
+        throw std::runtime_error (
+            boost::str (boost::format ("Can not create %s") % dataDir));
 
-    legacy("database_path", 
-           boost::filesystem::absolute(dataDir).string ());
+    legacy ("database_path", boost::filesystem::absolute (dataDir).string ());
 }
 
 void Config::load ()
 {
     if (!QUIET)
-        std::cerr << "Loading: " << CONFIG_FILE << std::endl;
+        std::cerr << "Loading: " << CONFIG_FILE << "\n";
 
     std::ifstream ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
@@ -409,42 +409,37 @@ void Config::loadFromString (std::string const& fileContents)
 
     build (secConfig);
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_VALIDATORS))
+    if (auto s = getIniFileSection (secConfig, SECTION_VALIDATORS))
     {
-        validators  = *smtTmp;
+        validators  = *s;
     }
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_CLUSTER_NODES))
+    if (auto s = getIniFileSection (secConfig, SECTION_CLUSTER_NODES))
     {
-        CLUSTER_NODES = *smtTmp;
+        CLUSTER_NODES = *s;
     }
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_IPS))
+    if (auto s = getIniFileSection (secConfig, SECTION_IPS))
     {
-        IPS = *smtTmp;
+        IPS = *s;
     }
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_IPS_FIXED))
+    if (auto s = getIniFileSection (secConfig, SECTION_IPS_FIXED))
     {
-        IPS_FIXED = *smtTmp;
+        IPS_FIXED = *s;
     }
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_SNTP))
+    if (auto s = getIniFileSection (secConfig, SECTION_SNTP))
     {
-        SNTP_SERVERS = *smtTmp;
+        SNTP_SERVERS = *s;
     }
 
-    if (auto smtTmp =
+    if (auto s =
         getIniFileSection (secConfig, SECTION_RPC_STARTUP))
     {
         RPC_STARTUP = Json::arrayValue;
 
-        for (auto const& strJson : *smtTmp)
+        for (auto const& strJson : *s)
         {
             Json::Reader    jrReader;
             Json::Value     jvCommand;
@@ -477,13 +472,10 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_PEERS_MAX, strTemp))
         PEERS_MAX           = beast::lexicalCastThrow <int> (strTemp);
 
-    if (auto smtTmp =
-        getIniFileSection (secConfig, SECTION_RPC_ADMIN_ALLOW))
+    if (auto s = getIniFileSection (secConfig, SECTION_RPC_ADMIN_ALLOW))
     {
         std::vector<beast::IP::Endpoint> parsedAddresses;
-        //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator>
-        //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
-        parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+        parseAddresses (parsedAddresses, (*s).cbegin(), (*s).cend());
         RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
                 parsedAddresses.cbegin (), parsedAddresses.cend ());
     }
@@ -734,7 +726,7 @@ beast::URL Config::getValidatorsURL () const
 
 beast::File Config::getModuleDatabasePath () const
 {
-    boost::filesystem::path dbPath(legacy ("database_path"));
+    boost::filesystem::path dbPath (legacy ("database_path"));
 
     beast::String const s (dbPath.native ().c_str ());
     if (s.isNotEmpty ())
