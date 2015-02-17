@@ -84,6 +84,9 @@ This is the repository for Ripple's `rippled`, reference P2P server.
 ###Setup instructions:
 * https://ripple.com/wiki/Rippled_setup_instructions
 
+###Issues
+* https://ripplelabs.atlassian.net/browse/RIPD
+
 ### Repository Contents
 
 #### ./bin
