@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <ripple/app/consensus/DisputedTx.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>

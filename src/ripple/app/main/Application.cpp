@@ -63,6 +63,7 @@
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <beast/asio/io_latency_probe.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/asio/signal_set.hpp>
 #include <fstream>
