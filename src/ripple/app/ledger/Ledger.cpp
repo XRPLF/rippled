@@ -58,9 +58,9 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap  (std::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
-    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE,
+    , mAccountStateMap (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     // special case: put coins in root account
@@ -104,7 +104,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (std::make_shared <SHAMap> (
-        smtTRANSACTION, transHash, getApp().family(),
+        SHAMapType::TRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
     , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
@@ -167,7 +167,7 @@ Ledger::Ledger (bool /* dummy */,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (std::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
@@ -236,7 +236,7 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mAccepted (false),
       mImmutable (false),
       mTransactionMap (std::make_shared <SHAMap> (
-          smtTRANSACTION, getApp().family(),
+          SHAMapType::TRANSACTION, getApp().family(),
             deprecatedLogs().journal("SHAMap"))),
       mAccountStateMap (std::make_shared <SHAMap> (
           smtSTATE, getApp().family(),
@@ -340,9 +340,9 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        mTransactionMap = std::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
+        mTransactionMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, mTransHash,
             getApp().family(), deprecatedLogs().journal("SHAMap"));
-        mAccountStateMap = std::make_shared<SHAMap> (smtSTATE, mAccountHash,
+        mAccountStateMap = std::make_shared<SHAMap> (SHAMapType::STATE, mAccountHash,
             getApp().family(), deprecatedLogs().journal("SHAMap"));
     }
 }

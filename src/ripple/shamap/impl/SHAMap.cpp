@@ -884,12 +884,12 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 
     if (journal_.trace)
     {
-        if (mType == smtTRANSACTION)
+        if (mType == SHAMapType::TRANSACTION)
         {
             journal_.trace
                 << "Fetch root TXN node " << hash;
         }
-        else if (mType == smtSTATE)
+        else if (mType == SHAMapType::STATE)
         {
             journal_.trace <<
                 "Fetch root STATE node " << hash;

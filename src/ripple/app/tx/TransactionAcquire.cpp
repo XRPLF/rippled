@@ -40,7 +40,7 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
         deprecatedLogs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
-    mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,
+    mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
         getApp().family(), deprecatedLogs().journal("SHAMap"));
     mMap->setUnbacked ();
 }

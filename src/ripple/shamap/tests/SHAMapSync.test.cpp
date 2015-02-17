@@ -101,8 +101,8 @@ public:
         beast::Journal const j;                            // debug journal
 
         TestFamily f(j);
-        SHAMap source (smtFREE, f, j);
-        SHAMap destination (smtFREE, f, j);
+        SHAMap source (SHAMapType::FREE, f, j);
+        SHAMap destination (SHAMapType::FREE, f, j);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)

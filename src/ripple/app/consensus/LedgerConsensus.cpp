@@ -351,7 +351,7 @@ public:
                 if (hash.isZero ())
                 {
                     SHAMap::pointer empty = std::make_shared<SHAMap> (
-                        smtTRANSACTION, getApp().family(),
+                        SHAMapType::TRANSACTION, getApp().family(),
                             deprecatedLogs().journal("SHAMap"));
                     mapCompleteInternal (hash, empty, false);
                     return empty;
