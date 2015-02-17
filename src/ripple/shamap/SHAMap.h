@@ -38,32 +38,6 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <stack>
 
-namespace std {
-
-template <>
-struct hash <ripple::SHAMapNodeID>
-{
-    std::size_t operator() (ripple::SHAMapNodeID const& value) const
-    {
-        return value.getMHash ();
-    }
-};
-
-}
-
-//------------------------------------------------------------------------------
-
-namespace boost {
-
-template <>
-struct hash <ripple::SHAMapNodeID> : std::hash <ripple::SHAMapNodeID>
-{
-};
-
-}
-
-//------------------------------------------------------------------------------
-
 namespace ripple {
 
 enum SHAMapState

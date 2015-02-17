@@ -35,103 +35,131 @@ class SHAMapNodeID
 private:
     uint256 mNodeID;
     int mDepth;
-    mutable size_t  mHash;
 
 public:
-    SHAMapNodeID () : mDepth (0), mHash (0)
-    {
-    }
-
-    SHAMapNodeID (int depth, uint256 const& hash);
+    SHAMapNodeID ();
     SHAMapNodeID (void const* ptr, int len);
 
-protected:
-    SHAMapNodeID (int depth, uint256 const& id, bool)
-        : mNodeID (id), mDepth (depth), mHash (0)
-    {
-    }
-
-public:
-    int getDepth () const
-    {
-        return mDepth;
-    }
-
-    uint256 const& getNodeID ()  const
-    {
-        return mNodeID;
-    }
-
-    bool isValid () const
-    {
-        return (mDepth >= 0) && (mDepth < 64);
-    }
-
-    bool isRoot () const
-    {
-        return mDepth == 0;
-    }
-
-    size_t getMHash () const
-    {
-        if (mHash == 0)
-            mHash = calculate_hash (mNodeID, mDepth);
-        return mHash;
-    }
-
-    SHAMapNodeID getParentNodeID () const
-    {
-        assert (mDepth);
-        return SHAMapNodeID (mDepth - 1, mNodeID);
-    }
-
-    SHAMapNodeID getChildNodeID (int m) const;
-    int selectBranch (uint256 const& hash) const;
-
-    bool operator< (const SHAMapNodeID& n) const
-    {
-        return std::tie(mDepth, mNodeID) < std::tie(n.mDepth, n.mNodeID);
-    }
-    bool operator> (const SHAMapNodeID& n) const {return n < *this;}
-    bool operator<= (const SHAMapNodeID& n) const {return !(*this < n);}
-    bool operator>= (const SHAMapNodeID& n) const {return !(n < *this);}
-
-    bool operator== (const SHAMapNodeID& n) const
-    {
-        return (mDepth == n.mDepth) && (mNodeID == n.mNodeID);
-    }
-    bool operator!= (const SHAMapNodeID& n) const {return !(*this == n);}
-
-    bool operator== (uint256 const& n) const
-    {
-        return n == mNodeID;
-    }
-    bool operator!= (uint256 const& n) const {return !(*this == n);}
-
-    virtual std::string getString () const;
-    void dump (beast::Journal journal) const;
-
-    static uint256 getNodeID (int depth, uint256 const& hash);
+    bool isValid () const;
+    bool isRoot () const;
 
     // Convert to/from wire format (256-bit nodeID, 1-byte depth)
     void addIDRaw (Serializer& s) const;
     std::string getRawString () const;
-    static int getRawIDLength (void)
-    {
-        return 33;
-    }
+
+    bool operator== (const SHAMapNodeID& n) const;
+    bool operator!= (const SHAMapNodeID& n) const;
+
+    bool operator< (const SHAMapNodeID& n) const;
+    bool operator> (const SHAMapNodeID& n) const;
+    bool operator<= (const SHAMapNodeID& n) const;
+    bool operator>= (const SHAMapNodeID& n) const;
+
+    std::string getString () const;
+    void dump (beast::Journal journal) const;
+
+public:  // Only used by SHAMap and SHAMapTreeNode
+    uint256 const& getNodeID ()  const;
+    SHAMapNodeID getChildNodeID (int m) const;
+    int selectBranch (uint256 const& hash) const;
+    int getDepth () const;
 
 private:
-    static
-    uint256 const&
-    Masks (int depth);
+    SHAMapNodeID (int depth, uint256 const& hash);
 
-    static
-    std::size_t
-    calculate_hash (uint256 const& node, int depth);
+    static uint256 const& Masks (int depth);
+
+    friend std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node);
+
+private:  // Currently unused
+    SHAMapNodeID getParentNodeID () const;
 };
 
 //------------------------------------------------------------------------------
+
+inline
+SHAMapNodeID::SHAMapNodeID ()
+    : mDepth (0)
+{
+}
+
+inline
+int
+SHAMapNodeID::getDepth () const
+{
+    return mDepth;
+}
+
+inline
+uint256 const&
+SHAMapNodeID::getNodeID ()  const
+{
+    return mNodeID;
+}
+
+inline
+bool
+SHAMapNodeID::isValid () const
+{
+    return (mDepth >= 0) && (mDepth < 64);
+}
+
+inline
+bool
+SHAMapNodeID::isRoot () const
+{
+    return mDepth == 0;
+}
+
+inline
+SHAMapNodeID
+SHAMapNodeID::getParentNodeID () const
+{
+    assert (mDepth);
+    return SHAMapNodeID (mDepth - 1, mNodeID);
+}
+
+inline
+bool
+SHAMapNodeID::operator< (const SHAMapNodeID& n) const
+{
+    return std::tie(mDepth, mNodeID) < std::tie(n.mDepth, n.mNodeID);
+}
+
+inline
+bool
+SHAMapNodeID::operator> (const SHAMapNodeID& n) const
+{
+    return n < *this;
+}
+
+inline
+bool
+SHAMapNodeID::operator<= (const SHAMapNodeID& n) const
+{
+    return !(n < *this);
+}
+
+inline
+bool
+SHAMapNodeID::operator>= (const SHAMapNodeID& n) const
+{
+    return !(*this < n);
+}
+
+inline
+bool
+SHAMapNodeID::operator== (const SHAMapNodeID& n) const
+{
+    return (mDepth == n.mDepth) && (mNodeID == n.mNodeID);
+}
+
+inline
+bool
+SHAMapNodeID::operator!= (const SHAMapNodeID& n) const
+{
+    return !(*this == n);
+}
 
 inline std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node)
 {
