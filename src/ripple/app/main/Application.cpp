@@ -62,6 +62,7 @@
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
+#include <ripple/crypto/RandomNumbers.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
@@ -286,6 +287,7 @@ public:
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     beast::DeadlineTimer m_sweepTimer;
+    beast::DeadlineTimer m_entropyTimer;
 
     std::unique_ptr <DatabaseCon> mRpcDB;
     std::unique_ptr <DatabaseCon> mTxnDB;
@@ -407,6 +409,8 @@ public:
         , m_loadManager (make_LoadManager (*this, m_logs.journal("LoadManager")))
 
         , m_sweepTimer (this)
+
+        , m_entropyTimer (this)
 
         , m_signals(get_io_service(), SIGINT)
 
@@ -857,6 +861,7 @@ public:
         m_journal.info << "Application starting. Build is " << gitCommitID();
 
         m_sweepTimer.setExpiration (10);
+        m_entropyTimer.setRecurringExpiration (300);
 
         m_io_latency_sampler.start();
 
@@ -886,6 +891,8 @@ public:
         m_resolver->stop ();
 
         m_sweepTimer.cancel ();
+
+        m_entropyTimer.cancel ();
 
         mValidations->flush ();
 
@@ -952,6 +959,12 @@ public:
 
     void onDeadlineTimer (beast::DeadlineTimer& timer)
     {
+        if (timer == m_entropyTimer)
+        {
+            add_entropy (nullptr, 0);
+            return;
+        }
+
         if (timer == m_sweepTimer)
         {
             // VFALCO TODO Move all this into doSweep

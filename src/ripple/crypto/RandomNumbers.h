@@ -20,9 +20,20 @@
 #ifndef RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 #define RIPPLE_CRYPTO_RANDOMNUMBERS_H_INCLUDED
 
+#include <string>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
+
+/** Stir the RNG using entropy from stable storage.
+
+    @param file the file from which state is loaded and into
+           which it is saved.
+
+    @return true if the pool has sufficient entropy; false
+            otherwise.
+*/
+bool stir_entropy (std::string file);
 
 /** Adds entropy to the RNG pool.
 
