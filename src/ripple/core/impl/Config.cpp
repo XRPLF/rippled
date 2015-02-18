@@ -410,32 +410,21 @@ void Config::loadFromString (std::string const& fileContents)
     build (secConfig);
 
     if (auto s = getIniFileSection (secConfig, SECTION_VALIDATORS))
-    {
         validators  = *s;
-    }
 
     if (auto s = getIniFileSection (secConfig, SECTION_CLUSTER_NODES))
-    {
         CLUSTER_NODES = *s;
-    }
 
     if (auto s = getIniFileSection (secConfig, SECTION_IPS))
-    {
         IPS = *s;
-    }
 
     if (auto s = getIniFileSection (secConfig, SECTION_IPS_FIXED))
-    {
         IPS_FIXED = *s;
-    }
 
     if (auto s = getIniFileSection (secConfig, SECTION_SNTP))
-    {
         SNTP_SERVERS = *s;
-    }
 
-    if (auto s =
-        getIniFileSection (secConfig, SECTION_RPC_STARTUP))
+    if (auto s = getIniFileSection (secConfig, SECTION_RPC_STARTUP))
     {
         RPC_STARTUP = Json::arrayValue;
 
