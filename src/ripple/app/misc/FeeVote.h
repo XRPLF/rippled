@@ -67,7 +67,7 @@ public:
     virtual
     void
     doVoting (Ledger::ref lastClosedLedger,
-        SHAMap::ref initialPosition) = 0;
+        std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 
 /** Build FeeVote::Setup from a config section. */

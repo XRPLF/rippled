@@ -251,11 +251,11 @@ public:
     boost::posix_time::ptime getCloseTime () const;
 
     // low level functions
-    SHAMap::ref peekTransactionMap () const
+    std::shared_ptr<SHAMap> const& peekTransactionMap () const
     {
         return mTransactionMap;
     }
-    SHAMap::ref peekAccountStateMap () const
+    std::shared_ptr<SHAMap> const& peekAccountStateMap () const
     {
         return mAccountStateMap;
     }
@@ -486,8 +486,8 @@ private:
     // Ripple cost of the reference transaction
     std::uint64_t mBaseFee;
 
-    SHAMap::pointer mTransactionMap;
-    SHAMap::pointer mAccountStateMap;
+    std::shared_ptr<SHAMap> mTransactionMap;
+    std::shared_ptr<SHAMap> mAccountStateMap;
 
     typedef RippleMutex StaticLockType;
     typedef std::lock_guard <StaticLockType> StaticScopedLockType;

@@ -1255,7 +1255,7 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
-            SHAMap::ref txns = replayLedger->peekTransactionMap();
+            std::shared_ptr<SHAMap> const& txns = replayLedger->peekTransactionMap();
 
             // Get a mutable snapshot of the open ledger
             Ledger::pointer cur = getLedgerMaster().getCurrentLedger();

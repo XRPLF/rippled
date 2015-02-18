@@ -95,7 +95,8 @@ public:
     Json::Value getJson (uint256 const&) override;
 
     void doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) override;
-    void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) override;
+    void doVoting (Ledger::ref lastClosedLedger,
+                   std::shared_ptr<SHAMap> const& initialPosition) override;
 
     amendmentList_t getVetoed();
     amendmentList_t getEnabled();
@@ -518,7 +519,7 @@ AmendmentTableImpl<AppApiFacade>::doValidation (Ledger::ref lastClosedLedger,
 template<class AppApiFacade>
 void
 AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
-    SHAMap::ref initialPosition)
+    std::shared_ptr<SHAMap> const& initialPosition)
 {
 
     // LCL must be flag ledger

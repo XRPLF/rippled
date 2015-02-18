@@ -53,11 +53,11 @@ public:
 
     virtual uint256 getLCL () = 0;
 
-    virtual SHAMap::pointer getTransactionTree (uint256 const& hash,
+    virtual std::shared_ptr<SHAMap> getTransactionTree (uint256 const& hash,
         bool doAcquire) = 0;
 
-    virtual void mapComplete (uint256 const& hash, SHAMap::ref map,
-        bool acquired) = 0;
+    virtual void mapComplete (uint256 const& hash,
+        std::shared_ptr<SHAMap> const& map, bool acquired) = 0;
 
     virtual bool stillNeedTXSet (uint256 const& hash) = 0;
 
@@ -97,7 +97,7 @@ make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
         std::uint32_t closeTime, FeeVote& feeVote);
 
 void
-applyTransactions(SHAMap::ref set, Ledger::ref applyLedger,
+applyTransactions(std::shared_ptr<SHAMap> const& set, Ledger::ref applyLedger,
                   Ledger::ref checkLedger,
                   CanonicalTXSet& retriableTransactions, bool openLgr);
 

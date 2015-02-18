@@ -89,7 +89,7 @@ public:
 
         testcase ("snapshot");
         uint256 mapHash = sMap.getHash ();
-        SHAMap::pointer map2 = sMap.snapShot (false);
+        std::shared_ptr<SHAMap> map2 = sMap.snapShot (false);
         unexpected (sMap.getHash () != mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
         unexpected (!sMap.delItem (sMap.peekFirstItem ()->getTag ()), "bad mod");

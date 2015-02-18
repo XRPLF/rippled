@@ -223,7 +223,7 @@ class Ledger_test : public beast::unit_test::suite
     Ledger::pointer
     close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
     {
-        SHAMap::pointer set = ledger->peekTransactionMap();
+        std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
         CanonicalTXSet retriableTransactions(set->getHash());
         Ledger::pointer newLCL = std::make_shared<Ledger>(false, *LCL);
         // Set up to write SHAMap changes to our database,

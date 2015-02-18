@@ -102,7 +102,7 @@ public:
 
     void
     doVoting (Ledger::ref lastClosedLedger,
-        SHAMap::ref initialPosition) override;
+        std::shared_ptr<SHAMap> const& initialPosition) override;
 };
 
 //--------------------------------------------------------------------------
@@ -145,7 +145,7 @@ FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
 
 void
 FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
-    SHAMap::ref initialPosition)
+    std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
     assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);

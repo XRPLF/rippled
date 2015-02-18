@@ -112,7 +112,9 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node,
     return true;
 }
 
-bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
+bool
+SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
+                 Delta& differences, int maxCount)
 {
     // compare two hash trees, add up to maxCount differences to the difference table
     // return value: true=complete table of differences given, false=too many differences
@@ -127,7 +129,7 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
     if (getHash () == otherMap->getHash ())
         return true;
 
-    nodeStack.push ({root.get(), otherMap->root.get()});
+    nodeStack.push ({root_.get(), otherMap->root_.get()});
     while (!nodeStack.empty ())
     {
         SHAMapTreeNode* ourNode = nodeStack.top().first;
@@ -137,7 +139,7 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
         if (!ourNode || !otherNode)
         {
             assert (false);
-            throw SHAMapMissingNode (mType, uint256 ());
+            throw SHAMapMissingNode (type_, uint256 ());
         }
 
         if (ourNode->isLeaf () && otherNode->isLeaf ())
@@ -222,10 +224,10 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
     std::stack <std::shared_ptr<SHAMapTreeNode>,
         std::vector <std::shared_ptr<SHAMapTreeNode>>> nodeStack;
 
-    if (!root->isInner ())  // root is only node, and we have it
+    if (!root_->isInner ())  // root_ is only node, and we have it
         return;
 
-    nodeStack.push (root);
+    nodeStack.push (root_);
 
     while (!nodeStack.empty ())
     {
@@ -245,7 +247,7 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
                 }
                 else
                 {
-                    missingNodes.emplace_back (mType, node->getChildHash (i));
+                    missingNodes.emplace_back (type_, node->getChildHash (i));
                     if (--maxMissing <= 0)
                         return;
                 }

@@ -107,7 +107,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mTransactionMap (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
-    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
+    , mAccountStateMap (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     updateHash ();
@@ -240,7 +240,7 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
           SHAMapType::TRANSACTION, getApp().family(),
             deprecatedLogs().journal("SHAMap"))),
       mAccountStateMap (std::make_shared <SHAMap> (
-          smtSTATE, getApp().family(),
+          SHAMapType::STATE, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
 {
     initializeFees ();
