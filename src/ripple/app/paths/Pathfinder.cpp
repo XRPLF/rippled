@@ -175,6 +175,8 @@ Pathfinder::Pathfinder (
     STAmount const& saDstAmount)
     :   mSrcAccount (uSrcAccount),
         mDstAccount (uDstAccount),
+        mEffectiveDst (isXRP(saDstAmount.getIssuer ()) ?
+            uDstAccount : saDstAmount.getIssuer ()),
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
         mSrcIssuer (uSrcIssuer),
@@ -193,6 +195,8 @@ Pathfinder::Pathfinder (
     STAmount const& saDstAmount)
     :   mSrcAccount (uSrcAccount),
         mDstAccount (uDstAccount),
+        mEffectiveDst (isXRP(saDstAmount.getIssuer ()) ?
+            uDstAccount : saDstAmount.getIssuer ()),
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
         mSrcAmount (
@@ -223,12 +227,20 @@ bool Pathfinder::findPaths (int searchLevel)
     }
 
     if (mSrcAccount == mDstAccount &&
+        mDstAccount == mEffectiveDst &&
         mSrcCurrency == mDstAmount.getCurrency ())
     {
         // No need to send to same account with same currency.
         WriteLog (lsDEBUG, Pathfinder) << "Tried to send to same issuer";
         mLedger.reset ();
         return false;
+    }
+
+    if (mSrcAccount == mEffectiveDst &&
+        mSrcCurrency == mDstAmount.getCurrency())
+    {
+        // Default path might work, but any path would loop
+        return true;
     }
 
     m_loadEvent = getApp ().getJobQueue ().getLoadEvent (
@@ -263,6 +275,14 @@ bool Pathfinder::findPaths (int searchLevel)
     {
         // We can't even start without a source account.
         WriteLog (lsDEBUG, Pathfinder) << "invalid source account";
+        return false;
+    }
+
+    if ((mEffectiveDst != mDstAccount) &&
+        ! mLedger->getSLEi (getAccountRootIndex (mEffectiveDst)))
+    {
+        WriteLog (lsDEBUG, Pathfinder)
+            << "Non-existent gateway";
         return false;
     }
 
@@ -540,13 +560,11 @@ STPathSet Pathfinder::getBestPaths (
         mCompletePaths.size() << " paths and " <<
         extraPaths.size () << " extras";
 
+    if (mCompletePaths.empty() && extraPaths.empty())
+        return mCompletePaths;
+
     assert (fullLiquidityPath.empty ());
     const bool issuerIsSender = isXRP (mSrcCurrency) || (srcIssuer == mSrcAccount);
-
-    if (issuerIsSender &&
-            (mCompletePaths.size () <= maxPaths) &&
-            (extraPaths.size() == 0))
-        return mCompletePaths;
 
     std::vector <PathRank> extraPathRanks;
     rankPaths (maxPaths, extraPaths, extraPathRanks);
@@ -877,6 +895,11 @@ void Pathfinder::addLink (
     auto const& uEndAccount = pathEnd.getAccountID ();
     bool const bOnXRP = uEndCurrency.isZero ();
 
+    // Does pathfinding really need to get this to
+    // a gateway (the issuer of the destination amount)
+    // rather than the ultimate destination?
+    bool const hasEffectiveDestination = mEffectiveDst != mDstAccount;
+
     WriteLog (lsTRACE, Pathfinder) << "addLink< flags="
                                    << addFlags << " onXRP=" << bOnXRP;
     WriteLog (lsTRACE, Pathfinder) << currentPath.getJson (0);
@@ -924,7 +947,14 @@ void Pathfinder::addLink (
                         continue;
                     }
                     auto const& acct = rs->getAccountIDPeer ();
-                    bool const bToDestination = acct == mDstAccount;
+
+                    if (hasEffectiveDestination && (acct == mDstAccount))
+                    {
+                        // We skipped the gateway
+                        continue;
+                    }
+
+                    bool bToDestination = acct == mEffectiveDst;
 
                     if (bDestOnly && !bToDestination)
                     {
@@ -979,7 +1009,7 @@ void Pathfinder::addLink (
                                 uEndCurrency,
                                 acct,
                                 bIsEndCurrency,
-                                mDstAccount);
+                                mEffectiveDst);
                             if (out)
                                 candidates.push_back ({out, acct});
                         }
@@ -1108,7 +1138,13 @@ void Pathfinder::addLink (
                                 book->getIssuerOut());
                         }
 
-                        if (book->getIssuerOut() == mDstAccount &&
+                        if (hasEffectiveDestination &&
+                            book->getIssuerOut() == mDstAccount &&
+                            book->getCurrencyOut() == mDstAmount.getCurrency())
+                        {
+                            // We skipped a required issuer
+                        }
+                        else if (book->getIssuerOut() == mEffectiveDst &&
                             book->getCurrencyOut() == mDstAmount.getCurrency())
                         { // with the destination account, this path is complete
                             WriteLog (lsTRACE, Pathfinder)
