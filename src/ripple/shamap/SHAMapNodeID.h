@@ -58,7 +58,8 @@ public:
     std::string getString () const;
     void dump (beast::Journal journal) const;
 
-public:  // Only used by SHAMap and SHAMapTreeNode
+// Only used by SHAMap and SHAMapTreeNode
+
     uint256 const& getNodeID ()  const;
     SHAMapNodeID getChildNodeID (int m) const;
     int selectBranch (uint256 const& hash) const;

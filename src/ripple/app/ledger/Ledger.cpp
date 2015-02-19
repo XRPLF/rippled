@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/module/core/text/LexicalCast.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -43,6 +42,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

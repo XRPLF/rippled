@@ -64,11 +64,9 @@ private:
     static std::mutex               childLock;
 
 public:
-    // special members
     SHAMapTreeNode (const SHAMapTreeNode&) = delete;
     SHAMapTreeNode& operator= (const SHAMapTreeNode&) = delete;
 
-    // constructors
     SHAMapTreeNode (std::uint32_t seq); // empty node
     SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
     SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item, TNType type, std::uint32_t seq);

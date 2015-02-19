@@ -36,6 +36,7 @@ enum class SHAMapType
 class SHAMapMissingNode
     : public std::runtime_error
 {
+private:
     SHAMapType mType;
     uint256 mNodeHash;
 public:

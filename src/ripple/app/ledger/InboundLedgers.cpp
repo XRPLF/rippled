@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/module/core/text/LexicalCast.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {
 

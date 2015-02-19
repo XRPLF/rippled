@@ -113,7 +113,7 @@ public:
 
     // Returns a new map that's a snapshot of this one.
     // Handles copy on write for mutable snapshots.
-    std::shared_ptr<SHAMap> snapShot (bool isMutable);
+    std::shared_ptr<SHAMap> snapShot (bool isMutable) const;
     void setLedgerSeq (std::uint32_t lseq);
     bool fetchRoot (uint256 const& hash, SHAMapSyncFilter * filter);
 
@@ -148,7 +148,7 @@ public:
                           SHAMapSyncFilter * filter);
     bool getNodeFat (SHAMapNodeID node, std::vector<SHAMapNodeID>& nodeIDs,
                      std::list<Blob >& rawNode, bool fatRoot, bool fatLeaves);
-    bool getRootNode (Serializer & s, SHANodeFormat format);
+    bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
                                SHAMapSyncFilter * filter);
@@ -167,7 +167,7 @@ public:
     // caution: otherMap must be accessed only by this function
     // return value: true=successfully completed, false=too different
     bool compare (std::shared_ptr<SHAMap> const& otherMap,
-                  Delta& differences, int maxCount);
+                  Delta& differences, int maxCount);  // HINNANT should be const
 
     int flushDirty (NodeObjectType t, std::uint32_t seq);
     void walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
@@ -180,9 +180,9 @@ public:
     void getFetchPack (SHAMap * have, bool includeLeaves, int max,
         std::function<void (uint256 const&, const Blob&)>);
 
-    void setUnbacked ()
+    void setUnbacked ();
 
-    void dump (bool withHashes = false);
+    void dump (bool withHashes = false) const;
 
 private:
     using SharedPtrNodeStack =
@@ -193,8 +193,8 @@ private:
     int unshare ();
 
      // tree node cache operations
-    std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash);
-    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>&);
+    std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash) const;
+    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>&) const;
 
     // database operations
     std::shared_ptr<SHAMapTreeNode> fetchNodeFromDB (uint256 const& hash);
@@ -205,7 +205,7 @@ private:
         SHAMapSyncFilter *filter);
     std::shared_ptr<SHAMapTreeNode> fetchNode (uint256 const& hash);
     std::shared_ptr<SHAMapTreeNode> checkFilter (uint256 const& hash, SHAMapNodeID const& id,
-        SHAMapSyncFilter* filter);
+        SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
     void dirtyUp (SharedPtrNodeStack& stack,
@@ -222,11 +222,11 @@ private:
     void unshareNode (std::shared_ptr<SHAMapTreeNode>&, SHAMapNodeID const& nodeID);
 
     /** prepare a node to be modified before flushing */
-    void preFlushNode (std::shared_ptr<SHAMapTreeNode>& node);
+    void preFlushNode (std::shared_ptr<SHAMapTreeNode>& node) const;
 
     /** write and canonicalize modified node */
     void writeNode (NodeObjectType t, std::uint32_t seq,
-        std::shared_ptr<SHAMapTreeNode>& node);
+        std::shared_ptr<SHAMapTreeNode>& node) const;
 
     SHAMapTreeNode* firstBelow (SHAMapTreeNode*);
     SHAMapTreeNode* lastBelow (SHAMapTreeNode*);
@@ -240,7 +240,7 @@ private:
 
     // Descend with filter
     SHAMapTreeNode* descendAsync (SHAMapTreeNode* parent, int branch,
-        SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending);
+        SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending) const;
 
     std::pair <SHAMapTreeNode*, SHAMapNodeID>
         descend (SHAMapTreeNode* parent, SHAMapNodeID const& parentID,

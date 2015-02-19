@@ -362,7 +362,7 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs
     return true;
 }
 
-bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format)
+bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format) const
 {
     root_->addRaw (s, format);
     return true;
@@ -380,9 +380,8 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
     }
 
     assert (seq_ >= 1);
-    std::shared_ptr<SHAMapTreeNode> node =
-        std::make_shared<SHAMapTreeNode> (rootNode, 0,
-                                          format, uZero, false);
+    auto node = std::make_shared<SHAMapTreeNode> (rootNode, 0,
+                                                  format, uZero, false);
 
     if (!node)
         return SHAMapAddNode::invalid ();
@@ -502,9 +501,8 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 return SHAMapAddNode::invalid ();
             }
 
-            std::shared_ptr<SHAMapTreeNode> newNode =
-                std::make_shared<SHAMapTreeNode> (rawNode, 0, snfWIRE,
-                                                  uZero, false);
+            auto newNode = std::make_shared<SHAMapTreeNode>(rawNode, 0, snfWIRE,
+                                                            uZero, false);
 
             if (!newNode->isInBounds (iNodeID))
             {
@@ -638,7 +636,8 @@ SHAMap::hasInnerNode (SHAMapNodeID const& targetNodeID,
 
 /** Does this map have this leaf node?
 */
-bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash)
+bool
+SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash)
 {
     SHAMapTreeNode* node = root_.get ();
     SHAMapNodeID nodeID;

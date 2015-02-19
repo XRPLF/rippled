@@ -27,6 +27,7 @@ namespace ripple {
 // results of adding nodes
 class SHAMapAddNode
 {
+private:
     int mGood;
     int mBad;
     int mDuplicate;

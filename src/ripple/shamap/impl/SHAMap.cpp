@@ -64,7 +64,7 @@ SHAMap::~SHAMap ()
 }
 
 std::shared_ptr<SHAMap>
-SHAMap::snapShot (bool isMutable)
+SHAMap::snapShot (bool isMutable) const
 {
     auto ret = std::make_shared<SHAMap> (type_, f_, journal_);
     SHAMap& newMap = *ret;
@@ -174,7 +174,8 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id)
     return (inNode->peekItem()->getTag () == id) ? inNode : nullptr;
 }
 
-std::shared_ptr<SHAMapTreeNode> SHAMap::fetchNodeFromDB (uint256 const& hash)
+std::shared_ptr<SHAMapTreeNode>
+SHAMap::fetchNodeFromDB (uint256 const& hash)
 {
     std::shared_ptr<SHAMapTreeNode> node;
 
@@ -210,7 +211,7 @@ std::shared_ptr<SHAMapTreeNode> SHAMap::fetchNodeFromDB (uint256 const& hash)
 std::shared_ptr<SHAMapTreeNode> SHAMap::checkFilter (
     uint256 const& hash,
     SHAMapNodeID const& id,
-    SHAMapSyncFilter* filter)
+    SHAMapSyncFilter* filter) const
 {
     std::shared_ptr<SHAMapTreeNode> node;
     Blob nodeData;
@@ -287,7 +288,8 @@ SHAMapTreeNode* SHAMap::descendThrow (SHAMapTreeNode* parent, int branch)
     return ret;
 }
 
-std::shared_ptr<SHAMapTreeNode> SHAMap::descendThrow (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
+std::shared_ptr<SHAMapTreeNode>
+SHAMap::descendThrow (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
 {
     std::shared_ptr<SHAMapTreeNode> ret = descend (parent, branch);
 
@@ -311,7 +313,8 @@ SHAMapTreeNode* SHAMap::descend (SHAMapTreeNode* parent, int branch)
     return node.get ();
 }
 
-std::shared_ptr<SHAMapTreeNode> SHAMap::descend (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
+std::shared_ptr<SHAMapTreeNode>
+SHAMap::descend (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
 {
     std::shared_ptr<SHAMapTreeNode> node = parent->getChild (branch);
     if (node || !backed_)
@@ -327,7 +330,8 @@ std::shared_ptr<SHAMapTreeNode> SHAMap::descend (std::shared_ptr<SHAMapTreeNode>
 
 // Gets the node that would be hooked to this branch,
 // but doesn't hook it up.
-std::shared_ptr<SHAMapTreeNode> SHAMap::descendNoStore (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
+std::shared_ptr<SHAMapTreeNode>
+SHAMap::descendNoStore (std::shared_ptr<SHAMapTreeNode> const& parent, int branch)
 {
     std::shared_ptr<SHAMapTreeNode> ret = parent->getChild (branch);
     if (!ret && backed_)
@@ -362,7 +366,7 @@ SHAMap::descend (SHAMapTreeNode * parent, SHAMapNodeID const& parentID,
 }
 
 SHAMapTreeNode* SHAMap::descendAsync (SHAMapTreeNode* parent, int branch,
-    SHAMapNodeID const& childID, SHAMapSyncFilter * filter, bool & pending)
+    SHAMapNodeID const& childID, SHAMapSyncFilter * filter, bool & pending) const
 {
     pending = false;
 
@@ -783,8 +787,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
         // easy case, we end on an inner node
         int branch = nodeID.selectBranch (tag);
         assert (node->isEmptyBranch (branch));
-        std::shared_ptr<SHAMapTreeNode> newNode =
-            std::make_shared<SHAMapTreeNode> (item, type, seq_);
+        auto newNode = std::make_shared<SHAMapTreeNode> (item, type, seq_);
         if (! node->setChild (branch, newNode->getNodeHash (), newNode))
         {
             assert (false);
@@ -923,7 +926,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 // 2) An unshareable node is shared. This happens when you make
 // a mutable snapshot of a mutable SHAMap.
 void SHAMap::writeNode (
-    NodeObjectType t, std::uint32_t seq, std::shared_ptr<SHAMapTreeNode>& node)
+    NodeObjectType t, std::uint32_t seq, std::shared_ptr<SHAMapTreeNode>& node) const
 {
     // Node is ours, so we can just make it shareable
     assert (node->getSeq() == seq_);
@@ -941,7 +944,7 @@ void SHAMap::writeNode (
 // We can't modify an inner node someone else might have a
 // pointer to because flushing modifies inner nodes -- it
 // makes them point to canonical/shared nodes.
-void SHAMap::preFlushNode (std::shared_ptr<SHAMapTreeNode>& node)
+void SHAMap::preFlushNode (std::shared_ptr<SHAMapTreeNode>& node) const
 {
     // A shared node should never need to be flushed
     // because that would imply someone modified it
@@ -967,7 +970,8 @@ int SHAMap::flushDirty (NodeObjectType t, std::uint32_t seq)
     return walkSubTree (true, t, seq);
 }
 
-int SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
+int
+SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
 {
     int flushed = 0;
     Serializer s;
@@ -1069,7 +1073,7 @@ int SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
     return flushed;
 }
 
-void SHAMap::dump (bool hash)
+void SHAMap::dump (bool hash) const
 {
     int leafCount = 0;
     if (journal_.info) journal_.info <<
@@ -1114,14 +1118,14 @@ void SHAMap::dump (bool hash)
         leafCount << " resident leaves";
 }
 
-std::shared_ptr<SHAMapTreeNode> SHAMap::getCache (uint256 const& hash)
+std::shared_ptr<SHAMapTreeNode> SHAMap::getCache (uint256 const& hash) const
 {
     std::shared_ptr<SHAMapTreeNode> ret = f_.treecache().fetch (hash);
     assert (!ret || !ret->getSeq());
     return ret;
 }
 
-void SHAMap::canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>& node)
+void SHAMap::canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>& node) const
 {
     assert (backed_);
     assert (node->getSeq() == 0);
