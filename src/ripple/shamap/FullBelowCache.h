@@ -37,7 +37,7 @@ template <class Key>
 class BasicFullBelowCache
 {
 private:
-    typedef KeyCache <Key> CacheType;
+    using CacheType = KeyCache <Key>;
 
 public:
     enum
@@ -46,9 +46,9 @@ public:
         ,defaultCacheExpirationSeconds = 120
     };
 
-    typedef Key key_type;
-    typedef typename CacheType::size_type size_type;
-    typedef typename CacheType::clock_type clock_type;
+    using key_type   = Key;
+    using size_type  = typename CacheType::size_type;
+    using clock_type = typename CacheType::clock_type ;
 
     /** Construct the cache.
 
