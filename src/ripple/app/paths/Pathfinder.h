@@ -176,6 +176,7 @@ private:
 
     Account mSrcAccount;
     Account mDstAccount;
+    Account mEffectiveDst; // The account the paths need to end at
     STAmount mDstAmount;
     Currency mSrcCurrency;
     boost::optional<Account> mSrcIssuer;
