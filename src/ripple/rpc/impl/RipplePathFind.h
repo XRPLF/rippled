@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,11 +17,23 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_RPC_RIPPLEPATHFIND_H_INCLUDED
+#define RIPPLE_RPC_RIPPLEPATHFIND_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+#include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/ledger/Ledger.h>
 
-#include <ripple/app/tests/common_ledger.cpp>
-#include <ripple/app/ledger/tests/Ledger_test.cpp>
-#include <ripple/app/tests/Path_test.cpp>
+namespace ripple {
+
+class RippleAddress;
+
+Json::Value
+buildSrcCurrencies(RippleAddress const& raSrc, RippleLineCache::pointer const& cache);
+
+std::pair<bool, Json::Value>
+ripplePathFind(RippleLineCache::pointer const& cache, RippleAddress const& raSrc, RippleAddress const& raDst,
+    STAmount const& saDstAmount, Ledger::pointer const& lpLedger, Json::Value const& jvSrcCurrencies, boost::optional<Json::Value> const& contextPaths, int const& level);
+
+}
+
+#endif
