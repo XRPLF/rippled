@@ -591,6 +591,12 @@
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\error.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
+      <Filter>beast\asio\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
       <Filter>beast\asio\impl</Filter>
     </ClCompile>
@@ -603,9 +609,6 @@
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -613,6 +616,9 @@
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
