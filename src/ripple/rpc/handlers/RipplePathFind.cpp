@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/rpc/impl/RipplePathFind.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/RippleCalc.h>
@@ -126,15 +127,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
         else
         {
-            auto currencies = accountSourceCurrencies (raSrc, cache, true);
-            jvSrcCurrencies = Json::Value (Json::arrayValue);
-
-            for (auto const& uCurrency: currencies)
-            {
-                Json::Value jvCurrency (Json::objectValue);
-                jvCurrency[jss::currency] = to_string(uCurrency);
-                jvSrcCurrencies.append (jvCurrency);
-            }
+            jvSrcCurrencies = buildSrcCurrencies(raSrc, cache);
         }
 
         // Fill in currencies destination will accept
@@ -148,8 +141,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
         jvResult[jss::destination_currencies] = jvDestCur;
         jvResult[jss::destination_account] = raDst.humanAccountID ();
-
-        Json::Value jvArray (Json::arrayValue);
 
         int level = getConfig().PATH_SEARCH_OLD;
         if ((getConfig().PATH_SEARCH_MAX > level)
@@ -166,158 +157,16 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 level = rLev;
         }
 
-        FindPaths fp (
-            cache,
-            raSrc.getAccountID(),
-            raDst.getAccountID(),
-            saDstAmount,
-            level,
-            4); // max paths
-
-        for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
-        {
-            Json::Value jvSource        = jvSrcCurrencies[i];
-
-            Currency uSrcCurrencyID;
-            Account uSrcIssuerID;
-
-            if (!jvSource.isObject ())
-                return rpcError (rpcINVALID_PARAMS);
-
-            // Parse mandatory currency.
-            if (!jvSource.isMember (jss::currency)
-                || !to_currency (
-                    uSrcCurrencyID, jvSource[jss::currency].asString ()))
-            {
-                WriteLog (lsINFO, RPCHandler) << "Bad currency.";
-
-                return rpcError (rpcSRC_CUR_MALFORMED);
-            }
-
-            if (uSrcCurrencyID.isNonZero ())
-                uSrcIssuerID = raSrc.getAccountID ();
-
-            // Parse optional issuer.
-            if (jvSource.isMember (jss::issuer) &&
-                ((!jvSource[jss::issuer].isString () ||
-                  !to_issuer (uSrcIssuerID, jvSource[jss::issuer].asString ())) ||
-                 (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
-                 (noAccount() == uSrcIssuerID)))
-            {
-                WriteLog (lsINFO, RPCHandler) << "Bad issuer.";
-                return rpcError (rpcSRC_ISR_MALFORMED);
-            }
-
-            STPathSet spsComputed;
-            if (context.params.isMember(jss::paths))
-            {
-                Json::Value pathSet = Json::objectValue;
-                pathSet[jss::Paths] = context.params[jss::paths];
-                STParsedJSONObject paths ("pathSet", pathSet);
-                if (paths.object.get() == nullptr)
-                    return paths.error;
-                else
-                {
-                    spsComputed = paths.object.get()->getFieldPathSet (sfPaths);
-                    WriteLog (lsTRACE, RPCHandler) << "ripple_path_find: Paths: " << spsComputed.getJson (0);
-                }
-            }
-
-            STPath fullLiquidityPath;
-            auto valid = fp.findPathsForIssue (
-                {uSrcCurrencyID, uSrcIssuerID},
-                spsComputed,
-                fullLiquidityPath);
-            if (!valid)
-            {
-                WriteLog (lsWARNING, RPCHandler)
-                    << "ripple_path_find: No paths found.";
-            }
-            else
-            {
-                auto& issuer =
-                    isXRP (uSrcIssuerID) ?
-                        isXRP (uSrcCurrencyID) ? // Default to source account.
-                            xrpAccount() :
-                            Account (raSrc.getAccountID ())
-                        : uSrcIssuerID;            // Use specifed issuer.
-
-                STAmount saMaxAmount ({uSrcCurrencyID, issuer}, 1);
-                saMaxAmount.negate ();
-
-                LedgerEntrySet lesSandbox (lpLedger, tapNONE);
-
-                auto rc = path::RippleCalc::rippleCalculate (
-                    lesSandbox,
-                    saMaxAmount,            // --> Amount to send is unlimited
-                                            //     to get an estimate.
-                    saDstAmount,            // --> Amount to deliver.
-                    raDst.getAccountID (),  // --> Account to deliver to.
-                    raSrc.getAccountID (),  // --> Account sending from.
-                    spsComputed);           // --> Path set.
-
-                WriteLog (lsWARNING, RPCHandler)
-                    << "ripple_path_find:"
-                    << " saMaxAmount=" << saMaxAmount
-                    << " saDstAmount=" << saDstAmount
-                    << " saMaxAmountAct=" << rc.actualAmountIn
-                    << " saDstAmountAct=" << rc.actualAmountOut;
-
-                if (fullLiquidityPath.size() > 0 &&
-                    (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
-                {
-                    WriteLog (lsDEBUG, PathRequest)
-                        << "Trying with an extra path element";
-
-                    spsComputed.push_back (fullLiquidityPath);
-                    lesSandbox.clear ();
-                    rc = path::RippleCalc::rippleCalculate (
-                        lesSandbox,
-                        saMaxAmount,            // --> Amount to send is unlimited
-                        //     to get an estimate.
-                        saDstAmount,            // --> Amount to deliver.
-                        raDst.getAccountID (),  // --> Account to deliver to.
-                        raSrc.getAccountID (),  // --> Account sending from.
-                        spsComputed);         // --> Path set.
-                    WriteLog (lsDEBUG, PathRequest)
-                        << "Extra path element gives "
-                        << transHuman (rc.result ());
-                }
-
-                if (rc.result () == tesSUCCESS)
-                {
-                    Json::Value jvEntry (Json::objectValue);
-
-                    STPathSet   spsCanonical;
-
-                    // Reuse the expanded as it would need to be calcuated
-                    // anyway to produce the canonical.  (At least unless we
-                    // make a direct canonical.)
-
-                    jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
-                    jvEntry[jss::paths_canonical]  = Json::arrayValue;
-                    jvEntry[jss::paths_computed]   = spsComputed.getJson (0);
-
-                    jvArray.append (jvEntry);
-                }
-                else
-                {
-                    std::string strToken;
-                    std::string strHuman;
-
-                    transResultInfo (rc.result (), strToken, strHuman);
-
-                    WriteLog (lsDEBUG, RPCHandler)
-                        << "ripple_path_find: "
-                        << strToken << " "
-                        << strHuman << " "
-                        << spsComputed.getJson (0);
-                }
-            }
-        }
+        auto contextPaths = context.params.isMember(jss::paths) ?
+            boost::optional<Json::Value>(context.params[jss::paths]) :
+                boost::optional<Json::Value>(boost::none);
+        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, 
+            lpLedger, jvSrcCurrencies, contextPaths, level);
+        if (!pathFindResult.first)
+            return pathFindResult.second;
 
         // Each alternative differs by source currency.
-        jvResult[jss::alternatives] = jvArray;
+        jvResult[jss::alternatives] = pathFindResult.second;
     }
 
     WriteLog (lsDEBUG, RPCHandler)
@@ -325,6 +174,185 @@ Json::Value doRipplePathFind (RPC::Context& context)
                            % jvResult);
 
     return jvResult;
+}
+
+Json::Value
+buildSrcCurrencies(RippleAddress const& raSrc, RippleLineCache::pointer const& cache)
+{
+    auto currencies = accountSourceCurrencies(raSrc, cache, true);
+    auto jvSrcCurrencies = Json::Value(Json::arrayValue);
+
+    for (auto const& uCurrency : currencies)
+    {
+        Json::Value jvCurrency(Json::objectValue);
+        jvCurrency[jss::currency] = to_string(uCurrency);
+        jvSrcCurrencies.append(jvCurrency);
+    }
+
+    return jvSrcCurrencies;
+}
+
+std::pair<bool, Json::Value>
+ripplePathFind(RippleLineCache::pointer const& cache, 
+  RippleAddress const& raSrc, RippleAddress const& raDst,
+    STAmount const& saDstAmount, Ledger::pointer const& lpLedger, 
+      Json::Value const& jvSrcCurrencies, 
+        boost::optional<Json::Value> const& contextPaths, int const& level)
+{
+    FindPaths fp(
+        cache,
+        raSrc.getAccountID(),
+        raDst.getAccountID(),
+        saDstAmount,
+        level,
+        4); // max paths
+
+    Json::Value jvArray(Json::arrayValue);
+
+    for (unsigned int i = 0; i != jvSrcCurrencies.size(); ++i)
+    {
+        Json::Value jvSource = jvSrcCurrencies[i];
+
+        Currency uSrcCurrencyID;
+        Account uSrcIssuerID;
+
+        if (!jvSource.isObject())
+            return std::make_pair(false, rpcError(rpcINVALID_PARAMS));
+
+        // Parse mandatory currency.
+        if (!jvSource.isMember(jss::currency)
+            || !to_currency(
+            uSrcCurrencyID, jvSource[jss::currency].asString()))
+        {
+            WriteLog(lsINFO, RPCHandler) << "Bad currency.";
+
+            return std::make_pair(false, rpcError(rpcSRC_CUR_MALFORMED));
+        }
+
+        if (uSrcCurrencyID.isNonZero())
+            uSrcIssuerID = raSrc.getAccountID();
+
+        // Parse optional issuer.
+        if (jvSource.isMember(jss::issuer) &&
+            ((!jvSource[jss::issuer].isString() ||
+            !to_issuer(uSrcIssuerID, jvSource[jss::issuer].asString())) ||
+            (uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
+            (noAccount() == uSrcIssuerID)))
+        {
+            WriteLog(lsINFO, RPCHandler) << "Bad issuer.";
+            return std::make_pair(false, rpcError(rpcSRC_ISR_MALFORMED));
+        }
+
+        STPathSet spsComputed;
+        if (contextPaths)
+        {
+            Json::Value pathSet = Json::objectValue;
+            pathSet[jss::Paths] = contextPaths.get();
+            STParsedJSONObject paths("pathSet", pathSet);
+            if (paths.object.get() == nullptr)
+                return std::make_pair(false, paths.error);
+            else
+            {
+                spsComputed = paths.object.get()->getFieldPathSet(sfPaths);
+                WriteLog(lsTRACE, RPCHandler) << "ripple_path_find: Paths: " <<
+                    spsComputed.getJson(0);
+            }
+        }
+
+        STPath fullLiquidityPath;
+        auto valid = fp.findPathsForIssue(
+            { uSrcCurrencyID, uSrcIssuerID },
+            spsComputed,
+            fullLiquidityPath);
+        if (!valid)
+        {
+            WriteLog(lsWARNING, RPCHandler)
+                << "ripple_path_find: No paths found.";
+        }
+        else
+        {
+            auto& issuer =
+                isXRP(uSrcIssuerID) ?
+                isXRP(uSrcCurrencyID) ? // Default to source account.
+                xrpAccount() :
+                Account(raSrc.getAccountID())
+                : uSrcIssuerID;            // Use specifed issuer.
+
+            STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
+            saMaxAmount.negate();
+
+            LedgerEntrySet lesSandbox(lpLedger, tapNONE);
+
+            auto rc = path::RippleCalc::rippleCalculate(
+                lesSandbox,
+                saMaxAmount,            // --> Amount to send is unlimited
+                //     to get an estimate.
+                saDstAmount,            // --> Amount to deliver.
+                raDst.getAccountID(),  // --> Account to deliver to.
+                raSrc.getAccountID(),  // --> Account sending from.
+                spsComputed);           // --> Path set.
+
+            WriteLog(lsWARNING, RPCHandler)
+                << "ripple_path_find:"
+                << " saMaxAmount=" << saMaxAmount
+                << " saDstAmount=" << saDstAmount
+                << " saMaxAmountAct=" << rc.actualAmountIn
+                << " saDstAmountAct=" << rc.actualAmountOut;
+
+            if (fullLiquidityPath.size() > 0 &&
+                (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
+            {
+                WriteLog(lsDEBUG, PathRequest)
+                    << "Trying with an extra path element";
+
+                spsComputed.push_back(fullLiquidityPath);
+                lesSandbox.clear();
+                rc = path::RippleCalc::rippleCalculate(
+                    lesSandbox,
+                    saMaxAmount,            // --> Amount to send is unlimited
+                    //     to get an estimate.
+                    saDstAmount,            // --> Amount to deliver.
+                    raDst.getAccountID(),  // --> Account to deliver to.
+                    raSrc.getAccountID(),  // --> Account sending from.
+                    spsComputed);         // --> Path set.
+                WriteLog(lsDEBUG, PathRequest)
+                    << "Extra path element gives "
+                    << transHuman(rc.result());
+            }
+
+            if (rc.result() == tesSUCCESS)
+            {
+                Json::Value jvEntry(Json::objectValue);
+
+                STPathSet   spsCanonical;
+
+                // Reuse the expanded as it would need to be calcuated
+                // anyway to produce the canonical.  (At least unless we
+                // make a direct canonical.)
+
+                jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(0);
+                jvEntry[jss::paths_canonical] = Json::arrayValue;
+                jvEntry[jss::paths_computed] = spsComputed.getJson(0);
+
+                jvArray.append(jvEntry);
+            }
+            else
+            {
+                std::string strToken;
+                std::string strHuman;
+
+                transResultInfo(rc.result(), strToken, strHuman);
+
+                WriteLog(lsDEBUG, RPCHandler)
+                    << "ripple_path_find: "
+                    << strToken << " "
+                    << strHuman << " "
+                    << spsComputed.getJson(0);
+            }
+        }
+    }
+
+    return std::make_pair(true, jvArray);
 }
 
 } // ripple

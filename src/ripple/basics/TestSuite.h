@@ -46,6 +46,24 @@ public:
 
     }
 
+    template <class S, class T>
+    bool expectNotEquals(S actual, T expected, std::string const& message = "")
+    {
+        if (actual == expected)
+        {
+            std::stringstream ss;
+            if (!message.empty())
+                ss << message << "\n";
+            ss << "Actual: " << actual << "\n"
+                << "Expected anything but: " << expected;
+            fail(ss.str());
+            return false;
+        }
+        pass();
+        return true;
+
+    }
+
     template <class Collection>
     bool expectCollectionEquals (
         Collection const& actual, Collection const& expected,
