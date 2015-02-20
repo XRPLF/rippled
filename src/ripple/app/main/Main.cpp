@@ -392,7 +392,7 @@ int run (int argc, char** argv)
         {
             // VFALCO TODO This is currently broken
             //getConfig ().setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
-            //getConfig().overwrite("rpc", "ip", vm["rpc_ip"].as<std::string>());
+            //getConfig().overwrite("rpc", jss::ip, vm["rpc_ip"].as<std::string>());
         }
 
         // Override the RPC destination port number
@@ -402,7 +402,7 @@ int run (int argc, char** argv)
             // VFALCO TODO This should be a short.
             // VFALCO TODO This is currently broken
             //getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
-            //getConfig().overwrite("rpc", "port", vm["rpc_port"].as<std::string>());
+            //getConfig().overwrite("rpc", jss::port, vm["rpc_port"].as<std::string>());
         }
 
         if (vm.count ("quorum"))

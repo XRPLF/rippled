@@ -23,6 +23,7 @@
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 
@@ -240,15 +241,15 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
     if (mInLedger)
     {
-        ret["inLedger"] = mInLedger;        // Deprecated.
-        ret["ledger_index"] = mInLedger;
+        ret[jss::inLedger] = mInLedger;        // Deprecated.
+        ret[jss::ledger_index] = mInLedger;
 
         if (options == 1)
         {
             auto ledger = getApp().getLedgerMaster ().
                     getLedgerBySeq (mInLedger);
             if (ledger)
-                ret["date"] = ledger->getCloseTimeNC ();
+                ret[jss::date] = ledger->getCloseTimeNC ();
         }
     }
 

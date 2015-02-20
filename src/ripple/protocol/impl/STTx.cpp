@@ -221,7 +221,7 @@ void STTx::setSourceAccount (RippleAddress const& naSource)
 Json::Value STTx::getJson (int) const
 {
     Json::Value ret = STObject::getJson (0);
-    ret["hash"] = to_string (getTransactionID ());
+    ret[jss::hash] = to_string (getTransactionID ());
     return ret;
 }
 
@@ -231,8 +231,8 @@ Json::Value STTx::getJson (int options, bool binary) const
     {
         Json::Value ret;
         Serializer s = STObject::getSerializer ();
-        ret["tx"] = strHex (s.peekData ());
-        ret["hash"] = to_string (getTransactionID ());
+        ret[jss::tx] = strHex (s.peekData ());
+        ret[jss::hash] = to_string (getTransactionID ());
         return ret;
     }
     return getJson(options);

@@ -81,8 +81,6 @@ class PathState : public CountedObject <PathState>
         umReverse.insert({ai, i});
     }
 
-    Json::Value getJson () const;
-
     static char const* getCountedObjectName () { return "PathState"; }
     OfferIndexList& unfundedOffers() { return unfundedOffers_; }
 
@@ -160,6 +158,8 @@ class PathState : public CountedObject <PathState>
         Account const& account,
         Currency const& currency,
         Account const& issuer);
+    
+    Json::Value getJson () const;
 };
 
 } // ripple

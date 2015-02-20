@@ -86,11 +86,11 @@ bool DirectoryEntryIterator::addJson (Json::Value& j) const
 {
     if (mDirNode && (mEntry != 0))
     {
-        j["dir_root"] = to_string (mRootIndex);
-        j["dir_entry"] = static_cast<Json::UInt> (mEntry);
+        j[jss::dir_root] = to_string (mRootIndex);
+        j[jss::dir_entry] = static_cast<Json::UInt> (mEntry);
 
         if (mDirNode)
-            j["dir_index"] = to_string (mDirIndex);
+            j[jss::dir_index] = to_string (mDirIndex);
 
         return true;
     }
@@ -99,18 +99,18 @@ bool DirectoryEntryIterator::addJson (Json::Value& j) const
 
 bool DirectoryEntryIterator::setJson (Json::Value const& j, LedgerEntrySet& les)
 {
-    if (!j.isMember("dir_root") || !j.isMember("dir_index") || !j.isMember("dir_entry"))
+    if (!j.isMember(jss::dir_root) || !j.isMember(jss::dir_index) || !j.isMember(jss::dir_entry))
         return false;
 #if 0 // WRITEME
-    Json::Value const& dirRoot = j["dir_root"];
-    Json::Value const& dirIndex = j["dir_index"];
-    Json::Value const& dirEntry = j["dir_entry"];
+    Json::Value const& dirRoot = j[jss::dir_root];
+    Json::Value const& dirIndex = j[jss::dir_index];
+    Json::Value const& dirEntry = j[jss::dir_entry];
 
     assert(false); // CAUTION: This function is incomplete
 
-    mEntry = j["dir_entry"].asUInt ();
+    mEntry = j[jss::dir_entry].asUInt ();
 
-    if (!mDirIndex.SetHex(j["dir_index"].asString()))
+    if (!mDirIndex.SetHex(j[jss::dir_index].asString()))
         return false;
 #endif
 

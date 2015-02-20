@@ -1095,9 +1095,9 @@ bool ApplicationImp::loadOldLedger (
 
                      if (ledger.get().isMember ("accountState"))
                      {
-                          if (ledger.get().isMember ("ledger_index"))
+                          if (ledger.get().isMember (jss::ledger_index))
                           {
-                              seq = ledger.get()["ledger_index"].asUInt();
+                              seq = ledger.get()[jss::ledger_index].asUInt();
                           }
                           if (ledger.get().isMember ("close_time"))
                           {
@@ -1135,8 +1135,8 @@ bool ApplicationImp::loadOldLedger (
                              Json::Value& entry = ledger.get()[index];
 
                              uint256 uIndex;
-                             uIndex.SetHex (entry["index"].asString());
-                             entry.removeMember ("index");
+                             uIndex.SetHex (entry[jss::index].asString());
+                             entry.removeMember (jss::index);
 
                              STParsedJSONObject stp ("sle", ledger.get()[index]);
                              // m_journal.info << "json: " << stp.object->getJson(0);

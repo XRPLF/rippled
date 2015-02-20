@@ -28,18 +28,18 @@ namespace ripple {
 Json::Value doOwnerInfo (RPC::Context& context)
 {
     auto lock = getApp().masterLock();
-    if (!context.params.isMember ("account") &&
-        !context.params.isMember ("ident"))
+    if (!context.params.isMember (jss::account) &&
+        !context.params.isMember (jss::ident))
     {
-        return RPC::missing_field_error ("account");
+        return RPC::missing_field_error (jss::account);
     }
 
-    std::string strIdent = context.params.isMember ("account")
-            ? context.params["account"].asString ()
-            : context.params["ident"].asString ();
+    std::string strIdent = context.params.isMember (jss::account)
+            ? context.params[jss::account].asString ()
+            : context.params[jss::ident].asString ();
     bool bIndex;
-    int iIndex = context.params.isMember ("account_index")
-            ? context.params["account_index"].asUInt () : 0;
+    int iIndex = context.params.isMember (jss::account_index)
+            ? context.params[jss::account_index].asUInt () : 0;
     RippleAddress raAccount;
     Json::Value ret;
 
@@ -55,7 +55,7 @@ Json::Value doOwnerInfo (RPC::Context& context)
         false,
         context.netOps);
 
-    ret["accepted"] = jAccepted.empty () ? context.netOps.getOwnerInfo (
+    ret[jss::accepted] = jAccepted.empty () ? context.netOps.getOwnerInfo (
         closedLedger, raAccount) : jAccepted;
 
     auto const& currentLedger = context.netOps.getCurrentLedger ();
@@ -68,7 +68,7 @@ Json::Value doOwnerInfo (RPC::Context& context)
         false,
         context.netOps);
 
-    ret["current"] = jCurrent.empty () ? context.netOps.getOwnerInfo (
+    ret[jss::current] = jCurrent.empty () ? context.netOps.getOwnerInfo (
         currentLedger, raAccount) : jCurrent;
 
     return ret;

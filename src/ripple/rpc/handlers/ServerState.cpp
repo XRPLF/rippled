@@ -27,7 +27,7 @@ Json::Value doServerState (RPC::Context& context)
     auto lock = getApp().masterLock();
     Json::Value ret (Json::objectValue);
 
-    ret["state"] = context.netOps.getServerInfo (
+    ret[jss::state] = context.netOps.getServerInfo (
         false, context.role == Role::ADMIN);
 
     return ret;

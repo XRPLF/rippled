@@ -39,7 +39,7 @@ Json::Value doLedgerHeader (RPC::Context& context)
 
     lpLedger->addRaw (s);
 
-    jvResult["ledger_data"] = strHex (s.peekData ());
+    jvResult[jss::ledger_data] = strHex (s.peekData ());
 
     // This information isn't verified: they should only use it if they trust
     // us.

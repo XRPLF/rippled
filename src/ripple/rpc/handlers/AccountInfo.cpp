@@ -41,15 +41,15 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (!ledger)
         return result;
 
-    if (!params.isMember ("account") && !params.isMember ("ident"))
-        return RPC::missing_field_error ("account");
+    if (!params.isMember (jss::account) && !params.isMember (jss::ident))
+        return RPC::missing_field_error (jss::account);
 
-    std::string strIdent = params.isMember ("account")
-            ? params["account"].asString () : params["ident"].asString ();
+    std::string strIdent = params.isMember (jss::account)
+            ? params[jss::account].asString () : params[jss::ident].asString ();
     bool bIndex;
-    int iIndex = params.isMember ("account_index")
-            ? params["account_index"].asUInt () : 0;
-    bool bStrict = params.isMember ("strict") && params["strict"].asBool ();
+    int iIndex = params.isMember (jss::account_index)
+            ? params[jss::account_index].asUInt () : 0;
+    bool bStrict = params.isMember (jss::strict) && params[jss::strict].asBool ();
     RippleAddress naAccount;
 
     // Get info on account.
@@ -65,11 +65,11 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (asAccepted)
     {
         asAccepted->addJson (jvAccepted);
-        result["account_data"]    = jvAccepted;
+        result[jss::account_data]    = jvAccepted;
     }
     else
     {
-        result["account"] = naAccount.humanAccountID ();
+        result[jss::account] = naAccount.humanAccountID ();
         RPC::inject_error (rpcACT_NOT_FOUND, result);
     }
 

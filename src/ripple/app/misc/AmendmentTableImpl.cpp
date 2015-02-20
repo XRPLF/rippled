@@ -596,16 +596,16 @@ void
 AmendmentTableImpl<AppApiFacade>::setJson (Json::Value& v, const AmendmentState& fs)
 {
     if (!fs.mFriendlyName.empty())
-        v["name"] = fs.mFriendlyName;
+        v[jss::name] = fs.mFriendlyName;
 
-    v["supported"] = fs.mSupported;
-    v["vetoed"] = fs.mVetoed;
+    v[jss::supported] = fs.mSupported;
+    v[jss::vetoed] = fs.mVetoed;
 
     if (fs.mEnabled)
-        v["enabled"] = true;
+        v[jss::enabled] = true;
     else
     {
-        v["enabled"] = false;
+        v[jss::enabled] = false;
 
         if (m_lastReport != 0)
         {

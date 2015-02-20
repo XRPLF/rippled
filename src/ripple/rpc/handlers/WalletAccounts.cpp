@@ -39,8 +39,8 @@ Json::Value doWalletAccounts (RPC::Context& context)
 
     RippleAddress   naSeed;
 
-    if (!context.params.isMember ("seed")
-        || !naSeed.setSeedGeneric (context.params["seed"].asString ()))
+    if (!context.params.isMember (jss::seed)
+        || !naSeed.setSeedGeneric (context.params[jss::seed].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }

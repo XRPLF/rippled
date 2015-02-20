@@ -25,10 +25,10 @@ Json::Value doPrint (RPC::Context& context)
 {
     JsonPropertyStream stream;
     if (context.params.isObject()
-        && context.params["params"].isArray()
-        && context.params["params"][0u].isString ())
+        && context.params[jss::params].isArray()
+        && context.params[jss::params][0u].isString ())
     {
-        getApp().write (stream, context.params["params"][0u].asString());
+        getApp().write (stream, context.params[jss::params][0u].asString());
     }
     else
     {
