@@ -22,8 +22,15 @@
 
 #include <ripple/basics/BasicTypes.h>
 #include <ripple/json/json_value.h>
+#include <cstdint>
+#include <utility>
 
 namespace ripple {
+
+// Forwards
+class STBlob;
+template <class>
+class STInteger;
 
 enum SerializedTypeID
 {
@@ -139,7 +146,7 @@ public:
     {}
 #endif
 
-private:
+protected:
     // These constructors can only be called from FieldNames.cpp
     SField (SerializedTypeID tid, int fv, const char* fn,
             int meta = sMD_Default, bool signing = true);
@@ -253,6 +260,25 @@ private:
     static int num;
 };
 
+/** A field with a type known at compile time. */
+template <class T>
+struct TypedField : SField
+{
+    using type = T;
+
+    template <class... Args>
+    explicit
+    TypedField (Args&&... args)
+        : SField(std::forward<Args>(args)...)
+    {
+    }
+
+    TypedField (TypedField&& u)
+        : SField(std::move(u))
+    {
+    }
+};
+
 extern SField const sfInvalid;
 extern SField const sfGeneric;
 extern SField const sfLedgerEntry;
@@ -272,7 +298,7 @@ extern SField const sfTransactionType;
 // 32-bit integers (common)
 extern SField const sfFlags;
 extern SField const sfSourceTag;
-extern SField const sfSequence;
+extern TypedField<STInteger<std::uint32_t>> const sfSequence;
 extern SField const sfPreviousTxnLgrSeq;
 extern SField const sfLedgerSequence;
 extern SField const sfCloseTime;
@@ -359,12 +385,12 @@ extern SField const sfRippleEscrow;
 extern SField const sfDeliveredAmount;
 
 // variable length
-extern SField const sfPublicKey;
+extern TypedField<STBlob> const sfPublicKey;
 extern SField const sfMessageKey;
-extern SField const sfSigningPubKey;
+extern TypedField<STBlob> const sfSigningPubKey;
 extern SField const sfTxnSignature;
 extern SField const sfGenerator;
-extern SField const sfSignature;
+extern TypedField<STBlob> const sfSignature;
 extern SField const sfDomain;
 extern SField const sfFundCode;
 extern SField const sfRemoveCode;
@@ -412,6 +438,8 @@ extern SField const sfNecessary;
 extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
+
+//------------------------------------------------------------------------------
 
 } // ripple
 
