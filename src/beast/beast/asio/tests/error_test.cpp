@@ -17,13 +17,28 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/asio/error.h>
+#include <beast/unit_test/suite.h>
+#include <string>
 
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
+namespace beast {
+namespace asio {
 
+class error_test : public unit_test::suite
+{
+public:
+    void run ()
+    {        
+        {
+            boost::system::error_code ec = boost::system::error_code (335544539,
+                boost::asio::error::get_ssl_category ());
+            std::string const s = beast::asio::asio_message (ec);
+            expect(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:short read");
+        }
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(error,asio,beast);
+
+}
+}

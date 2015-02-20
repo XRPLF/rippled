@@ -135,6 +135,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\error.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -144,13 +149,14 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">

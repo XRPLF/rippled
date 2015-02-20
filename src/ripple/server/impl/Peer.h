@@ -25,7 +25,7 @@
 #include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/asio/ssl.h> // for is_short_read?
+#include <beast/asio/error.h> // for is_short_read?
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 #include <beast/module/core/time/Time.h>

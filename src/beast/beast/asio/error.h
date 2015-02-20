@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_SSL_H_INCLUDED
-#define BEAST_ASIO_SSL_H_INCLUDED
+#ifndef BEAST_ASIO_ERROR_H_INCLUDED
+#define BEAST_ASIO_ERROR_H_INCLUDED
 
+#include <boost/asio.hpp>
 #include <boost/asio/ssl/error.hpp>
-#include <boost/system/error_code.hpp>
 
 namespace beast {
 namespace asio {
@@ -32,8 +32,12 @@ bool
 is_short_read (boost::system::error_code const& ec)
 {
     return (ec.category() == boost::asio::error::get_ssl_category())
-         && (ERR_GET_REASON(ec.value()) == SSL_R_SHORT_READ);
+        && (ERR_GET_REASON(ec.value()) == SSL_R_SHORT_READ);
 }
+    
+/** Returns a human readable message if the error code is SSL related. */
+std::string
+asio_message(boost::system::error_code const& ec);
 
 }
 }
