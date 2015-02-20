@@ -17,13 +17,43 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/asio/error.h>
+#include <boost/lexical_cast.hpp>
 
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
+namespace beast {
+namespace asio {
 
+// This buffer must be at least 120 bytes, most examples use 256.
+// https://www.openssl.org/docs/crypto/ERR_error_string.html
+static std::uint32_t const errorBufferSize (256);
+
+std::string
+asio_message (boost::system::error_code const& ec)
+{
+    std::string error;
+
+    if (ec.category () == boost::asio::error::get_ssl_category ())
+    {
+        error = " ("
+            + boost::lexical_cast<std::string> (ERR_GET_LIB (ec.value ()))
+            + ","
+            + boost::lexical_cast<std::string> (ERR_GET_FUNC (ec.value ()))
+            + ","
+            + boost::lexical_cast<std::string> (ERR_GET_REASON (ec.value ()))
+            + ") ";
+        
+        // 
+        char buf[errorBufferSize];
+        ::ERR_error_string_n (ec.value (), buf, errorBufferSize);
+        error += buf;
+    }
+    else
+    {
+        error = ec.message ();
+    }
+
+    return error;
+}
+
+}
+}
