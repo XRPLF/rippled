@@ -71,6 +71,10 @@ class Ledger_test : public beast::unit_test::suite
         // gw1 pays alice with FOO
         makeAndApplyPayment(gw1, alice, "FOO", ".3", ledger, sign);
 
+        verifyBalance(ledger, mark, Amount(.1, "FOO", gw2));
+        verifyBalance(ledger, mark, Amount(.2, "FOO", gw3));
+        verifyBalance(ledger, alice, Amount(.3, "FOO", gw1));
+
         LCL = close_and_advance(ledger, LCL);
         ledger = std::make_shared<Ledger>(false, *LCL);
 

@@ -20,25 +20,91 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <ripple/app/tests/common_ledger.h>
 #include <ripple/protocol/RippleAddress.h>
 
+#include <ripple/protocol/Indexes.h>
+#include <ripple/app/paths/FindPaths.h>
+#include <ripple/rpc/impl/RipplePathFind.h>
+#include <ripple/json/json_writer.h>
+
 namespace ripple {
 namespace test {
 
-Amount::Amount(double value_, std::string currency_, TestAccount issuer_)
-    : value(value_)
-    , currency(currency_)
-    , issuer(issuer_)
+Json::Value
+TestJson::getJson() const
+{
+    Json::Value tx_json;
+    getJson(tx_json);
+    return tx_json;
+}
+
+Currency::Currency(std::string currency)
+    : currency_(currency)
 {
 }
 
-Json::Value
-Amount::getJson() const
+void
+Currency::getJson(Json::Value& tx_json) const
 {
-    Json::Value tx_json;
-    tx_json["currency"] = currency;
-    tx_json["issuer"] = issuer.pk.humanAccountID();
-    tx_json["value"] = std::to_string(value);
-    return tx_json;
+    tx_json[jss::currency] = currency_;
 }
+
+std::string
+Currency::getCurrency() const
+{
+    return currency_;
+}
+
+
+Issuer::Issuer(TestAccount issuer)
+    :issuer_(issuer)
+{
+}
+
+void
+Issuer::getJson(Json::Value& tx_json) const
+{
+    tx_json[jss::issuer] = issuer_.pk.humanAccountID();
+}
+
+TestAccount const&
+Issuer::getAccount() const
+{
+    return issuer_;
+}
+
+
+Amount::Amount(double value, std::string currency, TestAccount issuer)
+    : value_(value)
+    , currency_(Currency(currency))
+    , issuer_(Issuer(issuer))
+{
+}
+
+void
+Amount::getJson(Json::Value& tx_json) const
+{
+    currency_.getJson(tx_json);
+    issuer_.getJson(tx_json);
+    tx_json[jss::value] = std::to_string(value_);
+}
+
+double
+Amount::getValue() const
+{
+    return value_;
+}
+
+TestAccount const&
+Amount::getIssuer() const
+{
+    return issuer_.getAccount();
+}
+
+Currency const&
+Amount::getCurrency() const
+{
+    return currency_;
+}
+
 
 // Helper function to parse a transaction in Json, sign it with account,
 // and return it as a STTx
@@ -78,6 +144,7 @@ applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 Ledger::pointer
 createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 {
+    initializePathfinding();
     Ledger::pointer ledger = std::make_shared<Ledger>(master.pk,
         start_amount_drops);
     ledger->updateHash();
@@ -105,15 +172,40 @@ createAccount(std::string const& passphrase, KeyType keyType)
     };
 }
 
+TestAccount
+createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+    KeyType keyType, std::uint64_t amountDrops,
+    Ledger::pointer const& ledger, bool sign)
+{
+    auto to = createAccount(passphrase, keyType);
+    makeAndApplyPayment(from, to, amountDrops, ledger, sign);
+    return to;
+}
+
+std::map<std::string, TestAccount>
+createAndFundAccounts(TestAccount& from, std::vector<std::string> passphrases,
+    KeyType keyType, std::uint64_t amountDrops,
+    Ledger::pointer const& ledger, bool sign)
+{
+    std::map<std::string, TestAccount> accounts;
+    for (auto const& passphrase : passphrases)
+    {
+        auto to = createAndFundAccount(from, passphrase, keyType,
+            amountDrops, ledger, sign);
+        accounts.emplace(passphrase, std::move(to));
+    }
+    return accounts;
+}
+
 void
 freezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign)
 {
     Json::Value tx_json;
-    tx_json["TransactionType"] = "AccountSet";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Account"] = account.pk.humanAccountID();
-    tx_json["SetFlag"] = asfGlobalFreeze;
-    tx_json["Sequence"] = ++account.sequence;
+    tx_json[jss::TransactionType] = "AccountSet";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Account] = account.pk.humanAccountID();
+    tx_json[jss::SetFlag] = asfGlobalFreeze;
+    tx_json[jss::Sequence] = ++account.sequence;
     STTx tx = parseTransaction(account, tx_json, sign);
     applyTransaction(ledger, tx, sign);
 }
@@ -122,13 +214,28 @@ void
 unfreezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign)
 {
     Json::Value tx_json;
-    tx_json["TransactionType"] = "AccountSet";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Account"] = account.pk.humanAccountID();
-    tx_json["ClearFlag"] = asfGlobalFreeze;
-    tx_json["Sequence"] = ++account.sequence;
+    tx_json[jss::TransactionType] = "AccountSet";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Account] = account.pk.humanAccountID();
+    tx_json[jss::ClearFlag] = asfGlobalFreeze;
+    tx_json[jss::Sequence] = ++account.sequence;
     STTx tx = parseTransaction(account, tx_json, sign);
     applyTransaction(ledger, tx, sign);
+}
+
+Json::Value
+getPaymentJson(TestAccount& from, TestAccount const& to,
+    Json::Value amountJson)
+{
+    Json::Value tx_json;
+    tx_json[jss::Account] = from.pk.humanAccountID();
+    tx_json[jss::Amount] = amountJson;
+    tx_json[jss::Destination] = to.pk.humanAccountID();
+    tx_json[jss::TransactionType] = "Payment";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Sequence] = ++from.sequence;
+    tx_json[jss::Flags] = tfUniversal;
+    return tx_json;
 }
 
 STTx
@@ -136,14 +243,8 @@ getPaymentTx(TestAccount& from, TestAccount const& to,
     std::uint64_t amountDrops,
     bool sign)
 {
-    Json::Value tx_json;
-    tx_json["Account"] = from.pk.humanAccountID();
-    tx_json["Amount"] = std::to_string(amountDrops);
-    tx_json["Destination"] = to.pk.humanAccountID();
-    tx_json["TransactionType"] = "Payment";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Sequence"] = ++from.sequence;
-    tx_json["Flags"] = tfUniversal;
+    Json::Value tx_json = getPaymentJson(from, to, 
+        std::to_string(amountDrops));
     return parseTransaction(from, tx_json, sign);
 }
 
@@ -162,14 +263,8 @@ getPaymentTx(TestAccount& from, TestAccount const& to,
     std::string const& currency, std::string const& amount,
     bool sign)
 {
-    Json::Value tx_json;
-    tx_json["Account"] = from.pk.humanAccountID();
-    tx_json["Amount"] = Amount(std::stod(amount), currency, to).getJson();
-    tx_json["Destination"] = to.pk.humanAccountID();
-    tx_json["TransactionType"] = "Payment";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Sequence"] = ++from.sequence;
-    tx_json["Flags"] = tfUniversal;
+    Json::Value tx_json = getPaymentJson(from, to,
+        Amount(std::stod(amount), currency, to).getJson());
     return parseTransaction(from, tx_json, sign);
 }
 
@@ -183,17 +278,56 @@ makeAndApplyPayment(TestAccount& from, TestAccount const& to,
     return tx;
 }
 
+STTx
+getPaymentTx(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, payment_path_option path, bool sign)
+{
+    auto amountJson = Amount(std::stod(amount), currency, to).getJson();
+    Json::Value tx_json = getPaymentJson(from, to, amountJson);
+    if (path != no_path)
+    {
+        // Find path. Note that the sign command can do this transparently
+        // with the "build_path" field, but we don't have that here.
+        auto cache = std::make_shared<RippleLineCache>(ledger);
+        STPathSet pathSet;
+        STPath fullLiquidityPath;
+        auto stDstAmount = amountFromJson(sfGeneric, amountJson);
+        Issue srcIssue = Issue(stDstAmount.getCurrency(), from.pk.getAccountID());
+
+        auto found = findPathsForOneIssuer(cache, from.pk.getAccountID(), to.pk.getAccountID(),
+            srcIssue, stDstAmount, 7, 4, pathSet, fullLiquidityPath);
+        if (!found)
+            throw std::runtime_error(
+            "!found");
+
+        tx_json[jss::Paths] = pathSet.getJson(0);
+    }
+    return parseTransaction(from, tx_json, sign);
+}
+
+STTx
+makeAndApplyPayment(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, payment_path_option path, bool sign)
+{
+    auto tx = getPaymentTx(from, to, currency, amount, ledger, path, sign);
+    applyTransaction(ledger, tx, sign);
+    return tx;
+}
+
+
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
     Ledger::pointer ledger, bool sign)
 {
     Json::Value tx_json;
-    tx_json["TransactionType"] = "OfferCreate";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Account"] = from.pk.humanAccountID();
-    tx_json["TakerPays"] = in.getJson();
-    tx_json["TakerGets"] = out.getJson();
-    tx_json["Sequence"] = ++from.sequence;
+    tx_json[jss::TransactionType] = "OfferCreate";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Account] = from.pk.humanAccountID();
+    tx_json[jss::TakerPays] = in.getJson();
+    tx_json[jss::TakerGets] = out.getJson();
+    tx_json[jss::Sequence] = ++from.sequence;
     STTx tx = parseTransaction(from, tx_json, sign);
     applyTransaction(ledger, tx, sign);
 }
@@ -204,11 +338,11 @@ void
 cancelOffer(TestAccount& from, Ledger::pointer ledger, bool sign)
 {
     Json::Value tx_json;
-    tx_json["TransactionType"] = "OfferCancel";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Account"] = from.pk.humanAccountID();
-    tx_json["OfferSequence"] = from.sequence;
-    tx_json["Sequence"] = ++from.sequence;
+    tx_json[jss::TransactionType] = "OfferCancel";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Account] = from.pk.humanAccountID();
+    tx_json[jss::OfferSequence] = from.sequence;
+    tx_json[jss::Sequence] = ++from.sequence;
     STTx tx = parseTransaction(from, tx_json, sign);
     applyTransaction(ledger, tx, sign);
 }
@@ -219,15 +353,15 @@ makeTrustSet(TestAccount& from, TestAccount const& issuer,
     Ledger::pointer const& ledger, bool sign)
 {
     Json::Value tx_json;
-    tx_json["Account"] = from.pk.humanAccountID();
-    Json::Value& limitAmount = tx_json["LimitAmount"];
-    limitAmount["currency"] = currency;
-    limitAmount["issuer"] = issuer.pk.humanAccountID();
-    limitAmount["value"] = std::to_string(amount);
-    tx_json["TransactionType"] = "TrustSet";
-    tx_json["Fee"] = std::to_string(10);
-    tx_json["Sequence"] = ++from.sequence;
-    tx_json["Flags"] = tfClearNoRipple;
+    tx_json[jss::Account] = from.pk.humanAccountID();
+    Json::Value& limitAmount = tx_json[jss::LimitAmount];
+    limitAmount[jss::currency] = currency;
+    limitAmount[jss::issuer] = issuer.pk.humanAccountID();
+    limitAmount[jss::value] = std::to_string(amount);
+    tx_json[jss::TransactionType] = "TrustSet";
+    tx_json[jss::Fee] = std::to_string(10);
+    tx_json[jss::Sequence] = ++from.sequence;
+    tx_json[jss::Flags] = 0;    // tfClearNoRipple;
     STTx tx = parseTransaction(from, tx_json, sign);
     applyTransaction(ledger, tx, sign);
 }
@@ -258,6 +392,69 @@ close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
     return newLCL;
 }
 
+Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
+    TestAccount const& dest, std::vector<Currency> srcCurrencies,
+    Amount const& dstAmount, beast::abstract_ostream& log,
+    boost::optional<Json::Value> contextPaths)
+{
+    int const level = 8;
+
+    auto cache = std::make_shared<RippleLineCache>(ledger);
+
+    STAmount saDstAmount;
+    if (!amountFromJsonNoThrow(saDstAmount, dstAmount.getJson()))
+        throw std::runtime_error(
+        "!amountFromJsonNoThrow(saDstAmount, dstAmount.getJson())");
+    log << "Dst amount: " << saDstAmount;
+
+    auto jvSrcCurrencies = Json::Value(Json::arrayValue);
+    for (auto const& srcCurrency : srcCurrencies)
+    {
+        jvSrcCurrencies.append(srcCurrency.getJson());
+    }
+    log << "Source currencies: " << jvSrcCurrencies;
+
+    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount, ledger, jvSrcCurrencies, contextPaths, level);
+    if(!result.first)
+        throw std::runtime_error(
+        "ripplePathFind find failed");
+
+    return result.second;
+}
+
+SLE::pointer
+getLedgerEntryRippleState(Ledger::pointer ledger, TestAccount const& account1, TestAccount const& account2, Currency currency)
+{
+    auto uNodeIndex = getRippleStateIndex(
+        account1.pk.getAccountID(), account2.pk.getAccountID(), to_currency(currency.getCurrency()));
+
+    if (!uNodeIndex.isNonZero())
+        throw std::runtime_error(
+        "!uNodeIndex.isNonZero()");
+
+    return ledger->getSLEi(uNodeIndex);
+}
+
+void
+verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount)
+{
+    auto sle = getLedgerEntryRippleState(ledger, account, amount.getIssuer(), amount.getCurrency());
+    if (!sle)
+        throw std::runtime_error(
+        "!sle");
+    STAmount amountReq;
+    amountFromJsonNoThrow(amountReq, amount.getJson());
+
+    auto high = sle->getFieldAmount(sfHighLimit);
+    auto balance = sle->getFieldAmount(sfBalance);
+    if (high.getIssuer() == account.pk.getAccountID())
+    {
+        balance.negate();
+    }
+    if (balance != amountReq)
+        throw std::runtime_error(
+        "balance != amountReq");
+}
 
 }
 }

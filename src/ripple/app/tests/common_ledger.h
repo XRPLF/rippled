@@ -28,11 +28,14 @@
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <beast/unit_test/suite.h>
+#include <beast/streams/abstract_ostream.h>
 #include <chrono>
 #include <string>
 
@@ -43,20 +46,76 @@ struct TestAccount
 {
     RippleAddress pk;
     RippleAddress sk;
+    //RippleAddress const seed;
+    //RippleAddress const generator;
     unsigned sequence;
 };
 
-struct Amount
-{
-    Amount(double value_, std::string currency_, TestAccount issuer_);
+enum payment_path_option { no_path, build_path };
 
+struct TestJson
+{
     Json::Value
     getJson() const;
 
+    virtual void
+    getJson(Json::Value& tx_json) const = 0;
+};
+
+struct Currency : TestJson
+{
+    Currency(std::string currency);
+
+    void
+    getJson(Json::Value& tx_json) const override;
+
+    std::string
+    getCurrency() const;
+
+    using TestJson::getJson;
+
 private:
-    double value;
-    std::string currency;
-    TestAccount issuer;
+    std::string currency_;
+};
+
+struct Issuer : TestJson
+{
+    Issuer(TestAccount issuer);
+
+    void
+    getJson(Json::Value& tx_json) const override;
+
+    TestAccount const&
+    getAccount() const;
+
+    using TestJson::getJson;
+
+private:
+    TestAccount issuer_;
+};
+
+struct Amount : TestJson
+{
+    Amount(double value, std::string currency, TestAccount issuer);
+
+    void
+    getJson(Json::Value& tx_json) const override;
+
+    double
+    getValue() const;
+
+    TestAccount const&
+    getIssuer() const;
+
+    Currency const&
+    getCurrency() const;
+
+    using TestJson::getJson;
+
+private:
+    double value_;
+    Currency currency_;
+    Issuer issuer_;
 };
 
 // Helper function to parse a transaction in Json, sign it with account,
@@ -77,6 +136,16 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 // RippleAddress
 TestAccount
 createAccount(std::string const& passphrase, KeyType keyType);
+
+TestAccount
+createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+    KeyType keyType, std::uint64_t amountDrops,
+    Ledger::pointer const& ledger, bool sign = true);
+
+std::map<std::string, TestAccount>
+createAndFundAccounts(TestAccount& from, std::vector<std::string> passphrases,
+    KeyType keyType, std::uint64_t amountDrops,
+    Ledger::pointer const& ledger, bool sign = true);
 
 void
 freezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign = true);
@@ -104,6 +173,16 @@ makeAndApplyPayment(TestAccount& from, TestAccount const& to,
             std::string const& currency, std::string const& amount,
             Ledger::pointer const& ledger, bool sign = true);
 
+STTx
+getPaymentTx(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, payment_path_option path, bool sign = true);
+
+STTx
+makeAndApplyPayment(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, payment_path_option path, bool sign = true);
+
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
             Ledger::pointer ledger, bool sign = true);
@@ -120,6 +199,17 @@ makeTrustSet(TestAccount& from, TestAccount const& issuer,
 
 Ledger::pointer
 close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL);
+
+Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
+    TestAccount const& dest, std::vector<Currency> srcCurrencies, 
+    Amount const& dstAmount, beast::abstract_ostream& log,
+    boost::optional<Json::Value> contextPaths = boost::none);
+
+SLE::pointer
+get_ledger_entry_ripple_state(Ledger::pointer ledger, RippleAddress account1, RippleAddress account2, Currency currency);
+
+void
+verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount);
 
 } // test
 } // ripple

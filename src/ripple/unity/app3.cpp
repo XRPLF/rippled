@@ -24,3 +24,4 @@
 
 #include <ripple/app/tests/common_ledger.cpp>
 #include <ripple/app/ledger/tests/Ledger_test.cpp>
+#include <ripple/app/tests/Path_test.cpp>
