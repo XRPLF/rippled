@@ -28,6 +28,7 @@
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -37,41 +38,15 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <stack>
 
-namespace std {
-
-template <>
-struct hash <ripple::SHAMapNodeID>
-{
-    std::size_t operator() (ripple::SHAMapNodeID const& value) const
-    {
-        return value.getMHash ();
-    }
-};
-
-}
-
-//------------------------------------------------------------------------------
-
-namespace boost {
-
-template <>
-struct hash <ripple::SHAMapNodeID> : std::hash <ripple::SHAMapNodeID>
-{
-};
-
-}
-
-//------------------------------------------------------------------------------
-
 namespace ripple {
 
-enum SHAMapState
+enum class SHAMapState
 {
-    smsModifying = 0,       // Objects can be added and removed (like an open ledger)
-    smsImmutable = 1,       // Map cannot be changed (like a closed ledger)
-    smsSynching = 2,        // Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-    smsFloating = 3,        // Map is free to change hash (like a synching open ledger)
-    smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
+    Modifying = 0,       // Objects can be added and removed (like an open ledger)
+    Immutable = 1,       // Map cannot be changed (like a closed ledger)
+    Synching  = 2,       // Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+    Floating  = 3,       // Map is free to change hash (like a synching open ledger)
+    Invalid   = 4,       // Map is known not to be valid (usually synching a corrupt ledger)
 };
 
 /** Function object which handles missing nodes. */
@@ -104,33 +79,24 @@ class SHAMap
 private:
     using Family = shamap::Family;
 
-    Family& f_;
-    beast::Journal journal_;
-    std::uint32_t mSeq;
-    std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
-    SHAMapTreeNode::pointer root;
-    SHAMapState mState;
-    SHAMapType mType;
-    bool mBacked = true; // Map is backed by the database
+    Family&                         f_;
+    beast::Journal                  journal_;
+    std::uint32_t                   seq_;
+    std::uint32_t                   ledgerSeq_; // sequence number of ledger this is part of
+    std::shared_ptr<SHAMapTreeNode> root_;
+    SHAMapState                     state_;
+    SHAMapType                      type_;
+    bool                            backed_ = true; // Map is backed by the database
 
 public:
-    enum
-    {
-        STATE_MAP_BUCKETS = 1024
-    };
+    using DeltaItem = std::pair<std::shared_ptr<SHAMapItem>,
+                                std::shared_ptr<SHAMapItem>>;
+    using Delta     = std::map<uint256, DeltaItem>;
 
-    static char const* getCountedObjectName () { return "SHAMap"; }
+    ~SHAMap ();
+    SHAMap(SHAMap const&) = delete;
+    SHAMap& operator=(SHAMap const&) = delete;
 
-    typedef std::shared_ptr<SHAMap> pointer;
-    typedef const std::shared_ptr<SHAMap>& ref;
-
-    typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
-    typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
-    typedef std::map<uint256, DeltaItem> Delta;
-
-    typedef std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> SharedPtrNodeStack;
-
-public:
     // build new map
     SHAMap (
         SHAMapType t,
@@ -145,55 +111,44 @@ public:
         Family& f,
         beast::Journal journal);
 
-    ~SHAMap ();
-
     // Returns a new map that's a snapshot of this one.
     // Handles copy on write for mutable snapshots.
-    SHAMap::pointer snapShot (bool isMutable);
-
-    void setLedgerSeq (std::uint32_t lseq)
-    {
-        mLedgerSeq = lseq;
-    }
-
+    std::shared_ptr<SHAMap> snapShot (bool isMutable) const;
+    void setLedgerSeq (std::uint32_t lseq);
     bool fetchRoot (uint256 const& hash, SHAMapSyncFilter * filter);
 
     // normal hash access functions
     bool hasItem (uint256 const& id);
     bool delItem (uint256 const& id);
     bool addItem (SHAMapItem const& i, bool isTransaction, bool hasMeta);
-
-    uint256 getHash () const
-    {
-        return root->getNodeHash ();
-    }
+    uint256 getHash () const;
 
     // save a copy if you have a temporary anyway
-    bool updateGiveItem (SHAMapItem::ref, bool isTransaction, bool hasMeta);
-    bool addGiveItem (SHAMapItem::ref, bool isTransaction, bool hasMeta);
+    bool updateGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
+    bool addGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
 
     // save a copy if you only need a temporary
-    SHAMapItem::pointer peekItem (uint256 const& id);
-    SHAMapItem::pointer peekItem (uint256 const& id, uint256 & hash);
-    SHAMapItem::pointer peekItem (uint256 const& id, SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id, uint256 & hash);
+    std::shared_ptr<SHAMapItem> peekItem (uint256 const& id, SHAMapTreeNode::TNType & type);
 
     // traverse functions
-    SHAMapItem::pointer peekFirstItem ();
-    SHAMapItem::pointer peekFirstItem (SHAMapTreeNode::TNType & type);
-    SHAMapItem::pointer peekLastItem ();
-    SHAMapItem::pointer peekNextItem (uint256 const& );
-    SHAMapItem::pointer peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
-    SHAMapItem::pointer peekPrevItem (uint256 const& );
+    std::shared_ptr<SHAMapItem> peekFirstItem ();
+    std::shared_ptr<SHAMapItem> peekFirstItem (SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekLastItem ();
+    std::shared_ptr<SHAMapItem> peekNextItem (uint256 const& );
+    std::shared_ptr<SHAMapItem> peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
+    std::shared_ptr<SHAMapItem> peekPrevItem (uint256 const& );
 
     void visitNodes (std::function<bool (SHAMapTreeNode&)> const&);
-    void visitLeaves(std::function<void (SHAMapItem::ref)> const&);
+    void visitLeaves(std::function<void (std::shared_ptr<SHAMapItem> const&)> const&);
 
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
                           SHAMapSyncFilter * filter);
     bool getNodeFat (SHAMapNodeID node, std::vector<SHAMapNodeID>& nodeIDs,
                      std::list<Blob >& rawNode, bool fatRoot, bool fatLeaves);
-    bool getRootNode (Serializer & s, SHANodeFormat format);
+    bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
                                SHAMapSyncFilter * filter);
@@ -203,78 +158,58 @@ public:
                                 SHAMapSyncFilter * filter);
 
     // status functions
-    void setImmutable ()
-    {
-        assert (mState != smsInvalid);
-        mState = smsImmutable;
-    }
-    bool isSynching () const
-    {
-        return (mState == smsFloating) || (mState == smsSynching);
-    }
-    void setSynching ()
-    {
-        mState = smsSynching;
-    }
-    void clearSynching ()
-    {
-        mState = smsModifying;
-    }
-    bool isValid ()
-    {
-        return mState != smsInvalid;
-    }
+    void setImmutable ();
+    bool isSynching () const;
+    void setSynching ();
+    void clearSynching ();
+    bool isValid () const;
 
     // caution: otherMap must be accessed only by this function
     // return value: true=successfully completed, false=too different
-    bool compare (SHAMap::ref otherMap, Delta & differences, int maxCount);
+    bool compare (std::shared_ptr<SHAMap> const& otherMap,
+                  Delta& differences, int maxCount);  // HINNANT should be const
 
     int flushDirty (NodeObjectType t, std::uint32_t seq);
-    int unshare ();
-
     void walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
-
     bool deepCompare (SHAMap & other);
 
     typedef std::pair <uint256, Blob> fetchPackEntry_t;
 
-    void getFetchPack (SHAMap * have, bool includeLeaves, int max, std::function<void (uint256 const&, const Blob&)>);
+    void visitDifferences (SHAMap * have, std::function<bool (SHAMapTreeNode&)>);
 
-    void setUnbacked ()
-    {
-        mBacked = false;
-    }
+    void getFetchPack (SHAMap * have, bool includeLeaves, int max,
+        std::function<void (uint256 const&, const Blob&)>);
 
-    void dump (bool withHashes = false);
+    void setUnbacked ();
+
+    void dump (bool withHashes = false) const;
 
 private:
-    // trusted path operations - prove a particular node is in a particular ledger
-    std::list<Blob > getTrustedPath (uint256 const& index);
+    using SharedPtrNodeStack =
+        std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>>;
+    using DeltaRef = std::pair<std::shared_ptr<SHAMapItem> const&,
+                               std::shared_ptr<SHAMapItem> const&> ;
 
-    bool getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeFormat format);
+    int unshare ();
 
      // tree node cache operations
-    SHAMapTreeNode::pointer getCache (uint256 const& hash);
-    void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
+    std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash) const;
+    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>&) const;
 
     // database operations
-    SHAMapTreeNode::pointer fetchNodeFromDB (uint256 const& hash);
-
-    SHAMapTreeNode::pointer fetchNodeNT (uint256 const& hash);
-
-    SHAMapTreeNode::pointer fetchNodeNT (
+    std::shared_ptr<SHAMapTreeNode> fetchNodeFromDB (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (
         SHAMapNodeID const& id,
         uint256 const& hash,
         SHAMapSyncFilter *filter);
-
-    SHAMapTreeNode::pointer fetchNode (uint256 const& hash);
-
-    SHAMapTreeNode::pointer checkFilter (uint256 const& hash, SHAMapNodeID const& id,
-        SHAMapSyncFilter* filter);
+    std::shared_ptr<SHAMapTreeNode> fetchNode (uint256 const& hash);
+    std::shared_ptr<SHAMapTreeNode> checkFilter (uint256 const& hash, SHAMapNodeID const& id,
+        SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
     void dirtyUp (SharedPtrNodeStack& stack,
-                  uint256 const& target, SHAMapTreeNode::pointer terminal);
+                  uint256 const& target, std::shared_ptr<SHAMapTreeNode> terminal);
 
     /** Get the path from the root to the specified node */
     SharedPtrNodeStack
@@ -284,14 +219,14 @@ private:
     SHAMapTreeNode* walkToPointer (uint256 const& id);
 
     /** Unshare the node, allowing it to be modified */
-    void unshareNode (SHAMapTreeNode::pointer&, SHAMapNodeID const& nodeID);
+    void unshareNode (std::shared_ptr<SHAMapTreeNode>&, SHAMapNodeID const& nodeID);
 
     /** prepare a node to be modified before flushing */
-    void preFlushNode (SHAMapTreeNode::pointer& node);
+    void preFlushNode (std::shared_ptr<SHAMapTreeNode>& node) const;
 
     /** write and canonicalize modified node */
     void writeNode (NodeObjectType t, std::uint32_t seq,
-        SHAMapTreeNode::pointer& node);
+        std::shared_ptr<SHAMapTreeNode>& node) const;
 
     SHAMapTreeNode* firstBelow (SHAMapTreeNode*);
     SHAMapTreeNode* lastBelow (SHAMapTreeNode*);
@@ -300,12 +235,12 @@ private:
     // Get a child of the specified node
     SHAMapTreeNode* descend (SHAMapTreeNode*, int branch);
     SHAMapTreeNode* descendThrow (SHAMapTreeNode*, int branch);
-    SHAMapTreeNode::pointer descend (SHAMapTreeNode::ref, int branch);
-    SHAMapTreeNode::pointer descendThrow (SHAMapTreeNode::ref, int branch);
+    std::shared_ptr<SHAMapTreeNode> descend (std::shared_ptr<SHAMapTreeNode> const&, int branch);
+    std::shared_ptr<SHAMapTreeNode> descendThrow (std::shared_ptr<SHAMapTreeNode> const&, int branch);
 
     // Descend with filter
     SHAMapTreeNode* descendAsync (SHAMapTreeNode* parent, int branch,
-        SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending);
+        SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending) const;
 
     std::pair <SHAMapTreeNode*, SHAMapNodeID>
         descend (SHAMapTreeNode* parent, SHAMapNodeID const& parentID,
@@ -313,22 +248,76 @@ private:
 
     // Non-storing
     // Does not hook the returned node to its parent
-    SHAMapTreeNode::pointer descendNoStore (SHAMapTreeNode::ref, int branch);
+    std::shared_ptr<SHAMapTreeNode> descendNoStore (std::shared_ptr<SHAMapTreeNode> const&, int branch);
 
     /** If there is only one leaf below this node, get its contents */
-    SHAMapItem::pointer onlyBelow (SHAMapTreeNode*);
+    std::shared_ptr<SHAMapItem> onlyBelow (SHAMapTreeNode*);
 
     bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash);
     bool hasLeafNode (uint256 const& tag, uint256 const& hash);
 
     bool walkBranch (SHAMapTreeNode* node,
-                     SHAMapItem::ref otherMapItem, bool isFirstMap,
+                     std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount);
-
-    void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);
-
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
 };
+
+inline
+void
+SHAMap::setLedgerSeq (std::uint32_t lseq)
+{
+    ledgerSeq_ = lseq;
+}
+
+inline
+uint256
+SHAMap::getHash () const
+{
+    return root_->getNodeHash ();
+}
+
+inline
+void
+SHAMap::setImmutable ()
+{
+    assert (state_ != SHAMapState::Invalid);
+    state_ = SHAMapState::Immutable;
+}
+
+inline
+bool
+SHAMap::isSynching () const
+{
+    return (state_ == SHAMapState::Floating) || (state_ == SHAMapState::Synching);
+}
+
+inline
+void
+SHAMap::setSynching ()
+{
+    state_ = SHAMapState::Synching;
+}
+
+inline
+void
+SHAMap::clearSynching ()
+{
+    state_ = SHAMapState::Modifying;
+}
+
+inline
+bool
+SHAMap::isValid () const
+{
+    return state_ != SHAMapState::Invalid;
+}
+
+inline
+void
+SHAMap::setUnbacked ()
+{
+    backed_ = false;
+}
 
 }
 

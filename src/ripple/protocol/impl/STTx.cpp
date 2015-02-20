@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
@@ -221,7 +222,7 @@ void STTx::setSourceAccount (RippleAddress const& naSource)
 Json::Value STTx::getJson (int) const
 {
     Json::Value ret = STObject::getJson (0);
-    ret["hash"] = to_string (getTransactionID ());
+    ret[jss::hash] = to_string (getTransactionID ());
     return ret;
 }
 
@@ -231,8 +232,8 @@ Json::Value STTx::getJson (int options, bool binary) const
     {
         Json::Value ret;
         Serializer s = STObject::getSerializer ();
-        ret["tx"] = strHex (s.peekData ());
-        ret["hash"] = to_string (getTransactionID ());
+        ret[jss::tx] = strHex (s.peekData ());
+        ret[jss::hash] = to_string (getTransactionID ());
         return ret;
     }
     return getJson(options);

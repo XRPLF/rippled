@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,25 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSON_JSON_AUTOLINK_H_INCLUDED
-#define RIPPLE_JSON_JSON_AUTOLINK_H_INCLUDED
+#include <BeastConfig.h>
+#include <ripple/rpc/impl/KeypairForSignature.h>
 
-// VFALCO TODO remove this file
-#error This file is deprecated!
+namespace ripple {
+namespace RPC {
 
-# include "config.h"
+KeyPair keypairForSignature (Json::Value const& params, Json::Value& error)
+{
+    if (! params.isMember ("secret"))
+    {
+        error = RPC::missing_field_error ("secret");
 
-# ifdef JSON_IN_CPPTL
-#  include <cpptl/cpptl_autolink.h>
-# endif
+        return KeyPair();
+    }
 
-# if !defined(JSON_NO_AUTOLINK)  &&  !defined(JSON_DLL_BUILD)  &&  !defined(JSON_IN_CPPTL)
-#  define CPPTL_AUTOLINK_NAME "json"
-#  undef CPPTL_AUTOLINK_DLL
-#  ifdef JSON_DLL
-#   define CPPTL_AUTOLINK_DLL
-#  endif
-#  include "autolink.h"
-# endif
+    RippleAddress seed;
 
-#endif // JSON_AUTOLINK_H_INCLUDED
+    if (! seed.setSeedGeneric (params["secret"].asString ()))
+    {
+        error = RPC::make_error (rpcBAD_SEED,
+            RPC::invalid_field_message ("secret"));
+
+        return KeyPair();
+    }
+
+    KeyPair result;
+
+    RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
+    result.secretKey.setAccountPrivate (generator, seed, 0);
+    result.publicKey.setAccountPublic (generator, 0);
+
+    return result;
+}
+
+} // RPC
+} // ripple

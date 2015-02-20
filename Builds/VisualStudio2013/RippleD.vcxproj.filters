@@ -286,6 +286,9 @@
     <Filter Include="ripple\app\ledger">
       <UniqueIdentifier>{CE126498-A44D-30A2-345B-0F672BCDF947}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\ledger\tests">
+      <UniqueIdentifier>{55A76B5B-A18E-E655-1A07-9492C6F8F356}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\main">
       <UniqueIdentifier>{91D5931B-D981-52BC-BC12-08DA9F7BF606}</UniqueIdentifier>
     </Filter>
@@ -306,6 +309,9 @@
     </Filter>
     <Filter Include="ripple\app\peers">
       <UniqueIdentifier>{07831F2A-6752-E81C-87AF-4D47D425BE8E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\app\tests">
+      <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\app\transactors">
       <UniqueIdentifier>{418BEF0D-AAAB-C368-7D9E-0A97636DE5A6}</UniqueIdentifier>
@@ -2259,9 +2265,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\Ledger.test.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerCleaner.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2316,6 +2319,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\tests\Ledger_test.cpp">
+      <Filter>ripple\app\ledger\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2546,6 +2552,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\peers\UniqueNodeList.h">
       <Filter>ripple\app\peers</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tests\common_ledger.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tests\common_ledger.h">
+      <Filter>ripple\app\tests</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
       <Filter>ripple\app\transactors</Filter>
@@ -3762,6 +3774,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletPropose.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\WalletPropose.h">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletSeed.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -3805,6 +3820,12 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\JsonWriter.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\KeypairForSignature.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\KeypairForSignature.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
@@ -3889,6 +3910,9 @@
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JsonWriter.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">

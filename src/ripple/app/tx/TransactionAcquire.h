@@ -41,7 +41,7 @@ public:
     TransactionAcquire (uint256 const& hash, clock_type& clock);
     ~TransactionAcquire ();
 
-    SHAMap::ref getMap ()
+    std::shared_ptr<SHAMap> const& getMap ()
     {
         return mMap;
     }
@@ -50,8 +50,8 @@ public:
                              const std::list< Blob >& data, Peer::ptr const&);
 
 private:
-    SHAMap::pointer     mMap;
-    bool                mHaveRoot;
+    std::shared_ptr<SHAMap> mMap;
+    bool                    mHaveRoot;
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);
     void newPeer (Peer::ptr const& peer)

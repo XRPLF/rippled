@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {
 
@@ -45,26 +46,26 @@ static void textTime (
 
 Json::Value doFeature (RPC::Context& context)
 {
-    if (!context.params.isMember ("feature"))
+    if (!context.params.isMember (jss::feature))
     {
         Json::Value jvReply = Json::objectValue;
-        jvReply["features"] = getApp().getAmendmentTable ().getJson(0);
+        jvReply[jss::features] = getApp().getAmendmentTable ().getJson(0);
         return jvReply;
     }
 
     uint256 uFeature
             = getApp().getAmendmentTable ().get(
-                context.params["feature"].asString());
+                context.params[jss::feature].asString());
 
     if (uFeature.isZero ())
     {
-        uFeature.SetHex (context.params["feature"].asString ());
+        uFeature.SetHex (context.params[jss::feature].asString ());
 
         if (uFeature.isZero ())
             return rpcError (rpcBAD_FEATURE);
     }
 
-    if (!context.params.isMember ("vote"))
+    if (!context.params.isMember (jss::vote))
         return getApp().getAmendmentTable ().getJson(uFeature);
 
     // WRITEME

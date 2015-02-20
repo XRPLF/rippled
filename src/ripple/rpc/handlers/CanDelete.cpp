@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format.hpp>
 
@@ -32,7 +33,7 @@ Json::Value doCanDelete (RPC::Context& context)
 
     Json::Value ret (Json::objectValue);
 
-    if (context.params.isMember("can_delete"))
+    if (context.params.isMember(jss::can_delete))
     {
         Json::Value canDelete  = context.params.get(jss::can_delete, 0);
         std::uint32_t canDeleteSeq = 0;
@@ -83,12 +84,12 @@ Json::Value doCanDelete (RPC::Context& context)
             }
         }
 
-        ret["can_delete"] =
+        ret[jss::can_delete] =
                 getApp().getSHAMapStore().setCanDelete (canDeleteSeq);
     }
     else
     {
-        ret["can_delete"] = getApp().getSHAMapStore().getCanDelete();
+        ret[jss::can_delete] = getApp().getSHAMapStore().getCanDelete();
     }
 
     return ret;

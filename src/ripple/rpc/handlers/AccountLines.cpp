@@ -78,7 +78,7 @@ Json::Value doAccountLines (RPC::Context& context)
 {
     auto const& params (context.params);
     if (! params.isMember (jss::account))
-        return RPC::missing_field_error ("account");
+        return RPC::missing_field_error (jss::account);
 
     Ledger::pointer ledger;
     Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
@@ -133,7 +133,7 @@ Json::Value doAccountLines (RPC::Context& context)
     {
         auto const& jvLimit (params[jss::limit]);
         if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error ("limit", "unsigned integer");
+            return RPC::expected_field_error (jss::limit, "unsigned integer");
 
         limit = jvLimit.isUInt () ? jvLimit.asUInt () :
             std::max (0, jvLimit.asInt ());
@@ -163,7 +163,7 @@ Json::Value doAccountLines (RPC::Context& context)
         Json::Value const& marker (params[jss::marker]);
 
         if (! marker.isString ())
-            return RPC::expected_field_error ("marker", "string");
+            return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
         SLE::pointer sleLine (ledger->getSLEi (startAfter));

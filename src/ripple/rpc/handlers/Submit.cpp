@@ -31,17 +31,17 @@ Json::Value doSubmit (RPC::Context& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember ("tx_blob"))
+    if (!context.params.isMember (jss::tx_blob))
     {
-        bool bFailHard = context.params.isMember ("fail_hard")
-                && context.params["fail_hard"].asBool ();
+        bool bFailHard = context.params.isMember (jss::fail_hard)
+                && context.params[jss::fail_hard].asBool ();
         return RPC::transactionSign (
             context.params, true, bFailHard, context.netOps, context.role);
     }
 
     Json::Value jvResult;
 
-    std::pair<Blob, bool> ret(strUnHex (context.params["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret(strUnHex (context.params[jss::tx_blob].asString ()));
 
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
@@ -58,7 +58,7 @@ Json::Value doSubmit (RPC::Context& context)
     catch (std::exception& e)
     {
         jvResult[jss::error]           = "invalidTransaction";
-        jvResult["error_exception"] = e.what ();
+        jvResult[jss::error_exception] = e.what ();
 
         return jvResult;
     }
@@ -72,7 +72,7 @@ Json::Value doSubmit (RPC::Context& context)
     catch (std::exception& e)
     {
         jvResult[jss::error]           = "internalTransaction";
-        jvResult["error_exception"] = e.what ();
+        jvResult[jss::error_exception] = e.what ();
 
         return jvResult;
     }
@@ -80,7 +80,7 @@ Json::Value doSubmit (RPC::Context& context)
     if (tpTrans->getStatus() != NEW)
     {
         jvResult[jss::error]            = "invalidTransactions";
-        jvResult["error_exception"] = "fails local checks";
+        jvResult[jss::error_exception] = "fails local checks";
 
         return jvResult;
     }
@@ -89,8 +89,8 @@ Json::Value doSubmit (RPC::Context& context)
     {
         (void) context.netOps.processTransaction (
             tpTrans, context.role == Role::ADMIN, true,
-            context.params.isMember ("fail_hard")
-            && context.params["fail_hard"].asBool ());
+            context.params.isMember (jss::fail_hard)
+            && context.params[jss::fail_hard].asBool ());
     }
     catch (std::exception& e)
     {

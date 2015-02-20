@@ -27,7 +27,7 @@ Json::Value doConsensusInfo (RPC::Context& context)
 
     {
         auto lock = getApp().masterLock();
-        ret["info"] = context.netOps.getConsensusInfo ();
+        ret[jss::info] = context.netOps.getConsensusInfo ();
     }
 
     return ret;

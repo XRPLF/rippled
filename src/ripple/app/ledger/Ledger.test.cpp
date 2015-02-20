@@ -24,6 +24,7 @@
 #include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
@@ -52,9 +53,9 @@ class Ledger_test : public beast::unit_test::suite
         getJson() const
         {
             Json::Value tx_json;
-            tx_json["currency"] = currency;
-            tx_json["issuer"] = issuer.first.humanAccountID();
-            tx_json["value"] = std::to_string(value);
+            tx_json[jss::currency] = currency;
+            tx_json[jss::issuer] = issuer.first.humanAccountID();
+            tx_json[jss::value] = std::to_string(value);
             return tx_json;
         }
     };
@@ -64,7 +65,7 @@ class Ledger_test : public beast::unit_test::suite
     STTx
     parseTransaction(TestAccount& account, Json::Value const& tx_json)
     {
-        STParsedJSONObject parsed("tx_json", tx_json);
+        STParsedJSONObject parsed (std::string (jss::tx_json), tx_json);
         std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
         expect(sopTrans != nullptr);
         sopTrans->setFieldVL(sfSigningPubKey, account.first.getAccountPublic());
@@ -115,11 +116,11 @@ class Ledger_test : public beast::unit_test::suite
     freezeAccount(TestAccount& account, Ledger::pointer const& ledger)
     {
         Json::Value tx_json;
-        tx_json["TransactionType"] = "AccountSet";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Account"] = account.first.humanAccountID();
-        tx_json["SetFlag"] = asfGlobalFreeze;
-        tx_json["Sequence"] = ++account.second;
+        tx_json[jss::TransactionType] = "AccountSet";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Account] = account.first.humanAccountID();
+        tx_json[jss::SetFlag] = asfGlobalFreeze;
+        tx_json[jss::Sequence] = ++account.second;
         STTx tx = parseTransaction(account, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -128,11 +129,11 @@ class Ledger_test : public beast::unit_test::suite
     unfreezeAccount(TestAccount& account, Ledger::pointer const& ledger)
     {
         Json::Value tx_json;
-        tx_json["TransactionType"] = "AccountSet";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Account"] = account.first.humanAccountID();
-        tx_json["ClearFlag"] = asfGlobalFreeze;
-        tx_json["Sequence"] = ++account.second;
+        tx_json[jss::TransactionType] = "AccountSet";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Account] = account.first.humanAccountID();
+        tx_json[jss::ClearFlag] = asfGlobalFreeze;
+        tx_json[jss::Sequence] = ++account.second;
         STTx tx = parseTransaction(account, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -143,13 +144,13 @@ class Ledger_test : public beast::unit_test::suite
                 Ledger::pointer const& ledger)
     {
         Json::Value tx_json;
-        tx_json["Account"] = from.first.humanAccountID();
-        tx_json["Amount"] = std::to_string(amountDrops);
-        tx_json["Destination"] = to.first.humanAccountID();
-        tx_json["TransactionType"] = "Payment";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Sequence"] = ++from.second;
-        tx_json["Flags"] = tfUniversal;
+        tx_json[jss::Account] = from.first.humanAccountID();
+        tx_json[jss::Amount] = std::to_string(amountDrops);
+        tx_json[jss::Destination] = to.first.humanAccountID();
+        tx_json[jss::TransactionType] = "Payment";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Sequence] = ++from.second;
+        tx_json[jss::Flags] = tfUniversal;
         STTx tx = parseTransaction(from, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -160,13 +161,13 @@ class Ledger_test : public beast::unit_test::suite
                 Ledger::pointer const& ledger)
     {
         Json::Value tx_json;
-        tx_json["Account"] = from.first.humanAccountID();
-        tx_json["Amount"] = Amount(std::stod(amount), currency, to).getJson();
-        tx_json["Destination"] = to.first.humanAccountID();
-        tx_json["TransactionType"] = "Payment";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Sequence"] = ++from.second;
-        tx_json["Flags"] = tfUniversal;
+        tx_json[jss::Account] = from.first.humanAccountID();
+        tx_json[jss::Amount] = Amount(std::stod(amount), currency, to).getJson();
+        tx_json[jss::Destination] = to.first.humanAccountID();
+        tx_json[jss::TransactionType] = "Payment";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Sequence] = ++from.second;
+        tx_json[jss::Flags] = tfUniversal;
         STTx tx = parseTransaction(from, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -176,12 +177,12 @@ class Ledger_test : public beast::unit_test::suite
                 Ledger::pointer ledger)
     {
         Json::Value tx_json;
-        tx_json["TransactionType"] = "OfferCreate";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Account"] = from.first.humanAccountID();
-        tx_json["TakerPays"] = in.getJson();
-        tx_json["TakerGets"] = out.getJson();
-        tx_json["Sequence"] = ++from.second;
+        tx_json[jss::TransactionType] = "OfferCreate";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Account] = from.first.humanAccountID();
+        tx_json[jss::TakerPays] = in.getJson();
+        tx_json[jss::TakerGets] = out.getJson();
+        tx_json[jss::Sequence] = ++from.second;
         STTx tx = parseTransaction(from, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -192,11 +193,11 @@ class Ledger_test : public beast::unit_test::suite
     cancelOffer(TestAccount& from, Ledger::pointer ledger)
     {
         Json::Value tx_json;
-        tx_json["TransactionType"] = "OfferCancel";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Account"] = from.first.humanAccountID();
-        tx_json["OfferSequence"] = from.second;
-        tx_json["Sequence"] = ++from.second;
+        tx_json[jss::TransactionType] = "OfferCancel";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Account] = from.first.humanAccountID();
+        tx_json[jss::OfferSequence] = from.second;
+        tx_json[jss::Sequence] = ++from.second;
         STTx tx = parseTransaction(from, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -207,15 +208,15 @@ class Ledger_test : public beast::unit_test::suite
                  Ledger::pointer const& ledger)
     {
         Json::Value tx_json;
-        tx_json["Account"] = from.first.humanAccountID();
-        Json::Value& limitAmount = tx_json["LimitAmount"];
-        limitAmount["currency"] = currency;
-        limitAmount["issuer"] = issuer.first.humanAccountID();
-        limitAmount["value"] = std::to_string(amount);
-        tx_json["TransactionType"] = "TrustSet";
-        tx_json["Fee"] = std::to_string(10);
-        tx_json["Sequence"] = ++from.second;
-        tx_json["Flags"] = tfClearNoRipple;
+        tx_json[jss::Account] = from.first.humanAccountID();
+        Json::Value& limitAmount = tx_json[jss::LimitAmount];
+        limitAmount[jss::currency] = currency;
+        limitAmount[jss::issuer] = issuer.first.humanAccountID();
+        limitAmount[jss::value] = std::to_string(amount);
+        tx_json[jss::TransactionType] = "TrustSet";
+        tx_json[jss::Fee] = std::to_string(10);
+        tx_json[jss::Sequence] = ++from.second;
+        tx_json[jss::Flags] = tfClearNoRipple;
         STTx tx = parseTransaction(from, tx_json);
         applyTransaction(ledger, tx);
     }
@@ -223,7 +224,7 @@ class Ledger_test : public beast::unit_test::suite
     Ledger::pointer
     close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
     {
-        SHAMap::pointer set = ledger->peekTransactionMap();
+        std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
         CanonicalTXSet retriableTransactions(set->getHash());
         Ledger::pointer newLCL = std::make_shared<Ledger>(false, *LCL);
         // Set up to write SHAMap changes to our database,

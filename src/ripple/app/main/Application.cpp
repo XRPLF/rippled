@@ -63,6 +63,7 @@
 #include <ripple/validators/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <beast/asio/io_latency_probe.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/asio/signal_set.hpp>
 #include <fstream>
@@ -1074,7 +1075,7 @@ bool ApplicationImp::loadOldLedger (
             {
                  Json::Reader reader;
                  Json::Value jLedger;
-                 if (!reader.parse (ledgerFile, jLedger, false))
+                 if (!reader.parse (ledgerFile, jLedger))
                      m_journal.fatal << "Unable to parse ledger JSON";
                  else
                  {
@@ -1095,9 +1096,9 @@ bool ApplicationImp::loadOldLedger (
 
                      if (ledger.get().isMember ("accountState"))
                      {
-                          if (ledger.get().isMember ("ledger_index"))
+                          if (ledger.get().isMember (jss::ledger_index))
                           {
-                              seq = ledger.get()["ledger_index"].asUInt();
+                              seq = ledger.get()[jss::ledger_index].asUInt();
                           }
                           if (ledger.get().isMember ("close_time"))
                           {
@@ -1135,8 +1136,8 @@ bool ApplicationImp::loadOldLedger (
                              Json::Value& entry = ledger.get()[index];
 
                              uint256 uIndex;
-                             uIndex.SetHex (entry["index"].asString());
-                             entry.removeMember ("index");
+                             uIndex.SetHex (entry[jss::index].asString());
+                             entry.removeMember (jss::index);
 
                              STParsedJSONObject stp ("sle", ledger.get()[index]);
                              // m_journal.info << "json: " << stp.object->getJson(0);
@@ -1254,7 +1255,7 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
-            SHAMap::ref txns = replayLedger->peekTransactionMap();
+            std::shared_ptr<SHAMap> const& txns = replayLedger->peekTransactionMap();
 
             // Get a mutable snapshot of the open ledger
             Ledger::pointer cur = getLedgerMaster().getCurrentLedger();

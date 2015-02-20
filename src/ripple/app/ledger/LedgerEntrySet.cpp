@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -275,36 +276,36 @@ Json::Value LedgerEntrySet::getJson (int) const
     for (auto it = mEntries.begin (), end = mEntries.end (); it != end; ++it)
     {
         Json::Value entry (Json::objectValue);
-        entry["node"] = to_string (it->first);
+        entry[jss::node] = to_string (it->first);
 
         switch (it->second.mEntry->getType ())
         {
         case ltINVALID:
-            entry["type"] = "invalid";
+            entry[jss::type] = "invalid";
             break;
 
         case ltACCOUNT_ROOT:
-            entry["type"] = "acccount_root";
+            entry[jss::type] = "acccount_root";
             break;
 
         case ltDIR_NODE:
-            entry["type"] = "dir_node";
+            entry[jss::type] = "dir_node";
             break;
 
         case ltGENERATOR_MAP:
-            entry["type"] = "generator_map";
+            entry[jss::type] = "generator_map";
             break;
 
         case ltRIPPLE_STATE:
-            entry["type"] = "ripple_state";
+            entry[jss::type] = "ripple_state";
             break;
 
         case ltNICKNAME:
-            entry["type"] = "nickname";
+            entry[jss::type] = "nickname";
             break;
 
         case ltOFFER:
-            entry["type"] = "offer";
+            entry[jss::type] = "offer";
             break;
 
         default:
@@ -314,19 +315,19 @@ Json::Value LedgerEntrySet::getJson (int) const
         switch (it->second.mAction)
         {
         case taaCACHED:
-            entry["action"] = "cache";
+            entry[jss::action] = "cache";
             break;
 
         case taaMODIFY:
-            entry["action"] = "modify";
+            entry[jss::action] = "modify";
             break;
 
         case taaDELETE:
-            entry["action"] = "delete";
+            entry[jss::action] = "delete";
             break;
 
         case taaCREATE:
-            entry["action"] = "create";
+            entry[jss::action] = "create";
             break;
 
         default:
@@ -336,9 +337,9 @@ Json::Value LedgerEntrySet::getJson (int) const
         nodes.append (entry);
     }
 
-    ret["nodes" ] = nodes;
+    ret[jss::nodes] = nodes;
 
-    ret["metaData"] = mSet.getJson (0);
+    ret[jss::metaData] = mSet.getJson (0);
 
     return ret;
 }
@@ -775,14 +776,14 @@ TER LedgerEntrySet::dirDelete (
             WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: no such entry";
             return tefBAD_LEDGER;
         }
-        
+
         if (uNodeDir < 20)
         {
             // Go the extra mile. Even if entry not in node, try the next node.
             return dirDelete (bKeepRoot, uNodeDir + 1, uRootIndex, uLedgerIndex,
                 bStable, true);
         }
-        
+
         return tefBAD_LEDGER;
     }
 
@@ -1569,7 +1570,7 @@ TER LedgerEntrySet::rippleSend (
 
         return result;
     }
-    
+
     assert (uSenderID != issue.account && uReceiverID != issue.account);
 
     // Sending IOUs to a third party: we must calculate the transit fee, by
@@ -1872,7 +1873,7 @@ TER LedgerEntrySet::redeem_iou (
             bSenderHigh ? issue.account : account,
             bSenderHigh ? account : issue.account);
     }
-    
+
     entryModify (state);
     return tesSUCCESS;
 }
@@ -1912,7 +1913,7 @@ TER LedgerEntrySet::transfer_xrp (
     receiver->setFieldAmount (sfBalance,
         receiver->getFieldAmount (sfBalance) + amount);
     entryModify (receiver);
-    
+
     return tesSUCCESS;
 }
 

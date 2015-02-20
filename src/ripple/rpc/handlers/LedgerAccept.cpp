@@ -28,13 +28,13 @@ Json::Value doLedgerAccept (RPC::Context& context)
 
     if (!getConfig ().RUN_STANDALONE)
     {
-        jvResult["error"] = "notStandAlone";
+        jvResult[jss::error] = "notStandAlone";
     }
     else
     {
         context.netOps.acceptLedger ();
 
-        jvResult["ledger_current_index"]
+        jvResult[jss::ledger_current_index]
                 = context.netOps.getCurrentLedgerID ();
     }
 

@@ -285,10 +285,10 @@ ServerHandlerImp::processRequest (
 
     auto const& admin_allow = getConfig().RPC_ADMIN_ALLOW;
     auto role = Role::FORBID;
-    if (jsonRPC.isObject() && jsonRPC.isMember("params") &&
-            jsonRPC["params"].isArray() && jsonRPC["params"].size() > 0 &&
-                jsonRPC["params"][Json::UInt(0)].isObject())
-        role = adminRole(port, jsonRPC["params"][Json::UInt(0)],
+    if (jsonRPC.isObject() && jsonRPC.isMember(jss::params) &&
+            jsonRPC[jss::params].isArray() && jsonRPC[jss::params].size() > 0 &&
+                jsonRPC[jss::params][Json::UInt(0)].isObject())
+        role = adminRole(port, jsonRPC[jss::params][Json::UInt(0)],
             remoteIPAddress, admin_allow);
     else
         role = adminRole(port, Json::objectValue,
@@ -339,7 +339,7 @@ ServerHandlerImp::processRequest (
     //
     // Otherwise, that field must be an array of length 1 (why?)
     // and we take that first entry and validate that it's an object.
-    Json::Value params = jsonRPC ["params"];
+    Json::Value params = jsonRPC [jss::params];
 
     if (params.isNull () || params.empty())
         params = Json::Value (Json::objectValue);
@@ -393,13 +393,13 @@ ServerHandlerImp::processRequest (
         RPC::doCommand (context, result, setup_.yieldStrategy);
 
         // Always report "status".  On an error report the request as received.
-        if (result.isMember ("error"))
+        if (result.isMember (jss::error))
         {
             result[jss::status] = jss::error;
             result[jss::request] = params;
             WriteLog (lsDEBUG, RPCErr) <<
-                "rpcError: " << result ["error"] <<
-                ": " << result ["error_message"];
+                "rpcError: " << result [jss::error] <<
+                ": " << result [jss::error_message];
         }
         else
         {

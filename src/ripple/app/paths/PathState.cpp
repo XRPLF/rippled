@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <boost/lexical_cast.hpp>
 
 namespace ripple {
@@ -824,9 +825,9 @@ Json::Value PathState::getJson () const
     for (auto const &pnNode: nodes_)
         jvNodes.append (pnNode.getJson ());
 
-    jvPathState["status"]   = terStatus;
-    jvPathState["index"]    = mIndex;
-    jvPathState["nodes"]    = jvNodes;
+    jvPathState[jss::status]   = terStatus;
+    jvPathState[jss::index]    = mIndex;
+    jvPathState[jss::nodes]    = jvNodes;
 
     if (saInReq)
         jvPathState["in_req"]   = saInReq.getJson (0);

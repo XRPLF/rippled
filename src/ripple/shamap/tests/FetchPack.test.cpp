@@ -117,7 +117,7 @@ public:
         beast::Journal const j;                            // debug journal
         TestFamily f(j);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            smtFREE, f, beast::Journal()));
+            SHAMapType::FREE, f, beast::Journal()));
 
         pass ();
 
@@ -141,7 +141,7 @@ public:
 //         {
 //             TestFilter filter (map, beast::Journal());
 //
-//             t3 = std::make_shared <Table> (smtFREE, t2->getHash (),
+//             t3 = std::make_shared <Table> (SHAMapType::FREE, t2->getHash (),
 //                 fullBelowCache);
 //
 //             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");

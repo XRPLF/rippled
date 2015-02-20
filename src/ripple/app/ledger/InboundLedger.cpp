@@ -31,6 +31,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/nodestore/Database.h>
 
 namespace ripple {
@@ -1228,29 +1229,29 @@ Json::Value InboundLedger::getJson (int)
 
     ScopedLockType sl (mLock);
 
-    ret["hash"] = to_string (mHash);
+    ret[jss::hash] = to_string (mHash);
 
     if (mComplete)
-        ret["complete"] = true;
+        ret[jss::complete] = true;
 
     if (mFailed)
-        ret["failed"] = true;
+        ret[jss::failed] = true;
 
     if (!mComplete && !mFailed)
-        ret["peers"] = static_cast<int>(mPeers.size());
+        ret[jss::peers] = static_cast<int>(mPeers.size());
 
-    ret["have_header"] = mHaveHeader;
+    ret[jss::have_header] = mHaveHeader;
 
     if (mHaveHeader)
     {
-        ret["have_state"] = mHaveState;
-        ret["have_transactions"] = mHaveTransactions;
+        ret[jss::have_state] = mHaveState;
+        ret[jss::have_transactions] = mHaveTransactions;
     }
 
     if (mAborted)
-        ret["aborted"] = true;
+        ret[jss::aborted] = true;
 
-    ret["timeouts"] = getTimeouts ();
+    ret[jss::timeouts] = getTimeouts ();
 
     if (mHaveHeader && !mHaveState)
     {
@@ -1262,7 +1263,7 @@ Json::Value InboundLedger::getJson (int)
         {
             hv.append (to_string (h));
         }
-        ret["needed_state_hashes"] = hv;
+        ret[jss::needed_state_hashes] = hv;
     }
 
     if (mHaveHeader && !mHaveTransactions)
@@ -1274,7 +1275,7 @@ Json::Value InboundLedger::getJson (int)
         {
             hv.append (to_string (h));
         }
-        ret["needed_transaction_hashes"] = hv;
+        ret[jss::needed_transaction_hashes] = hv;
     }
 
     return ret;

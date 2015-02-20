@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/server/JsonWriter.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -620,16 +621,16 @@ OverlayImpl::crawl()
         if (sp)
         {
             auto& pv = av.append(Json::Value(Json::objectValue));
-            pv["type"] = "peer";
-            pv["public_key"] = beast::base64_encode(
+            pv[jss::type] = "peer";
+            pv[jss::public_key] = beast::base64_encode(
                 sp->getNodePublic().getNodePublic().data(),
                     sp->getNodePublic().getNodePublic().size());
             if (sp->crawl())
             {
                 if (sp->slot()->inbound())
-                    pv["ip"] = sp->getRemoteAddress().address().to_string();
+                    pv[jss::ip] = sp->getRemoteAddress().address().to_string();
                 else
-                    pv["ip"] = sp->getRemoteAddress().to_string();
+                    pv[jss::ip] = sp->getRemoteAddress().to_string();
             }
         }
     }

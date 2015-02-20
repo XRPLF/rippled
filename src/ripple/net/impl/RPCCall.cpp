@@ -92,16 +92,16 @@ private:
     {
         if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
         {
-            jvRequest["ledger_index"]   = strLedger;
+            jvRequest[jss::ledger_index]   = strLedger;
         }
         else if (strLedger.length () == 64)
         {
             // YYY Could confirm this is a uint256.
-            jvRequest["ledger_hash"]    = strLedger;
+            jvRequest[jss::ledger_hash]    = strLedger;
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
+            jvRequest[jss::ledger_index]   = beast::lexicalCast <std::uint32_t> (strLedger);
         }
 
         return true;
@@ -120,12 +120,12 @@ private:
             std::string strCurrency = smMatch[1];
             std::string strIssuer   = smMatch[2];
 
-            jvResult["currency"]    = strCurrency;
+            jvResult[jss::currency]    = strCurrency;
 
             if (strIssuer.length ())
             {
                 // Could confirm issuer is a valid Ripple address.
-                jvResult["issuer"]      = strIssuer;
+                jvResult[jss::issuer]      = strIssuer;
             }
 
             return jvResult;
@@ -145,7 +145,7 @@ private:
         Json::Value v (Json::objectValue);
 
         if (jvParams.isArray () && (jvParams.size () > 0))
-            v["params"] = jvParams;
+            v[jss::params] = jvParams;
 
         return v;
     }
@@ -153,14 +153,14 @@ private:
     Json::Value parseInternal (Json::Value const& jvParams)
     {
         Json::Value v (Json::objectValue);
-        v["internal_command"] = jvParams[0u];
+        v[jss::internal_command] = jvParams[0u];
 
         Json::Value params (Json::arrayValue);
 
         for (unsigned i = 1; i < jvParams.size (); ++i)
             params.append (jvParams[i]);
 
-        v["params"] = params;
+        v[jss::params] = params;
 
         return v;
     }
@@ -187,25 +187,25 @@ private:
         if (!raAccount.setAccountID (jvParams[0u].asString ()))
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest["account"]    = raAccount.humanAccountID ();
+        jvRequest[jss::account]    = raAccount.humanAccountID ();
 
         bool            bDone   = false;
 
         while (!bDone && iParams >= 2)
         {
-            if (jvParams[iParams - 1].asString () == "binary")
+            if (jvParams[iParams - 1].asString () == jss::binary)
             {
-                jvRequest["binary"]     = true;
+                jvRequest[jss::binary]     = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString () == "count")
+            else if (jvParams[iParams - 1].asString () == jss::count)
             {
-                jvRequest["count"]      = true;
+                jvRequest[jss::count]      = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString () == "descending")
+            else if (jvParams[iParams - 1].asString () == jss::descending)
             {
-                jvRequest["descending"] = true;
+                jvRequest[jss::descending] = true;
                 --iParams;
             }
             else
@@ -232,14 +232,14 @@ private:
                 return rpcError (rpcLGR_IDXS_INVALID);
             }
 
-            jvRequest["ledger_index_min"]   = jvParams[1u].asInt ();
-            jvRequest["ledger_index_max"]   = jvParams[2u].asInt ();
+            jvRequest[jss::ledger_index_min]   = jvParams[1u].asInt ();
+            jvRequest[jss::ledger_index_max]   = jvParams[2u].asInt ();
 
             if (iParams >= 4)
-                jvRequest["limit"]  = jvParams[3u].asInt ();
+                jvRequest[jss::limit]  = jvParams[3u].asInt ();
 
             if (iParams >= 5)
-                jvRequest["offset"] = jvParams[4u].asInt ();
+                jvRequest[jss::offset] = jvParams[4u].asInt ();
         }
 
         return jvRequest;
@@ -255,25 +255,25 @@ private:
         if (!raAccount.setAccountID (jvParams[0u].asString ()))
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest["account"]    = raAccount.humanAccountID ();
+        jvRequest[jss::account]    = raAccount.humanAccountID ();
 
         bool            bDone   = false;
 
         while (!bDone && iParams >= 2)
         {
-            if (jvParams[iParams - 1].asString () == "binary")
+            if (jvParams[iParams - 1].asString () == jss::binary)
             {
-                jvRequest["binary"]     = true;
+                jvRequest[jss::binary]     = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString () == "count")
+            else if (jvParams[iParams - 1].asString () == jss::count)
             {
-                jvRequest["count"]      = true;
+                jvRequest[jss::count]      = true;
                 --iParams;
             }
-            else if (jvParams[iParams - 1].asString () == "forward")
+            else if (jvParams[iParams - 1].asString () == jss::forward)
             {
-                jvRequest["forward"] = true;
+                jvRequest[jss::forward] = true;
                 --iParams;
             }
             else
@@ -300,11 +300,11 @@ private:
                 return rpcError (rpcLGR_IDXS_INVALID);
             }
 
-            jvRequest["ledger_index_min"]   = jvParams[1u].asInt ();
-            jvRequest["ledger_index_max"]   = jvParams[2u].asInt ();
+            jvRequest[jss::ledger_index_min]   = jvParams[1u].asInt ();
+            jvRequest[jss::ledger_index_max]   = jvParams[2u].asInt ();
 
             if (iParams >= 4)
-                jvRequest["limit"]  = jvParams[3u].asInt ();
+                jvRequest[jss::limit]  = jvParams[3u].asInt ();
         }
 
         return jvRequest;
@@ -328,7 +328,7 @@ private:
         }
         else
         {
-            jvRequest["taker_pays"] = jvTakerPays;
+            jvRequest[jss::taker_pays] = jvTakerPays;
         }
 
         if (isRpcError (jvTakerGets))
@@ -337,12 +337,12 @@ private:
         }
         else
         {
-            jvRequest["taker_gets"] = jvTakerGets;
+            jvRequest[jss::taker_gets] = jvTakerGets;
         }
 
         if (jvParams.size () >= 3)
         {
-            jvRequest["issuer"] = jvParams[2u].asString ();
+            jvRequest[jss::issuer] = jvParams[2u].asString ();
         }
 
         if (jvParams.size () >= 4 && !jvParseLedger (jvRequest, jvParams[3u].asString ()))
@@ -353,16 +353,16 @@ private:
             int     iLimit  = jvParams[5u].asInt ();
 
             if (iLimit > 0)
-                jvRequest["limit"]  = iLimit;
+                jvRequest[jss::limit]  = iLimit;
         }
 
         if (jvParams.size () >= 6 && jvParams[5u].asInt ())
         {
-            jvRequest["proof"]  = true;
+            jvRequest[jss::proof]  = true;
         }
 
         if (jvParams.size () == 7)
-            jvRequest["marker"] = jvParams[6u];
+            jvRequest[jss::marker] = jvParams[6u];
 
         return jvRequest;
     }
@@ -390,10 +390,10 @@ private:
     {
         Json::Value     jvRequest (Json::objectValue);
 
-        jvRequest["ip"] = jvParams[0u].asString ();
+        jvRequest[jss::ip] = jvParams[0u].asString ();
 
         if (jvParams.size () == 2)
-            jvRequest["port"]   = jvParams[1u].asUInt ();
+            jvRequest[jss::port]   = jvParams[1u].asUInt ();
 
         return jvRequest;
     }
@@ -410,10 +410,10 @@ private:
         Json::Value     jvRequest (Json::objectValue);
 
         if (jvParams.size () > 0)
-            jvRequest["feature"]    = jvParams[0u].asString ();
+            jvRequest[jss::feature]    = jvParams[0u].asString ();
 
         if (jvParams.size () > 1)
-            jvRequest["vote"]       = beast::lexicalCastThrow <bool> (jvParams[1u].asString ());
+            jvRequest[jss::vote]       = beast::lexicalCastThrow <bool> (jvParams[1u].asString ());
 
         return jvRequest;
     }
@@ -424,7 +424,7 @@ private:
         Json::Value     jvRequest (Json::objectValue);
 
         if (jvParams.size ())
-            jvRequest["min_count"]  = jvParams[0u].asUInt ();
+            jvRequest[jss::min_count]  = jvParams[0u].asUInt ();
 
         return jvRequest;
     }
@@ -465,7 +465,7 @@ private:
 
         if (2 == jvParams.size () && jvParams[1u].asString () == "full")
         {
-            jvRequest["full"]   = bool (1);
+            jvRequest[jss::full]   = bool (1);
         }
 
         return jvRequest;
@@ -480,11 +480,11 @@ private:
 
         if (strLedger.length () == 32)
         {
-            jvRequest["ledger_hash"]    = strLedger;
+            jvRequest[jss::ledger_hash]    = strLedger;
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
+            jvRequest[jss::ledger_index]   = beast::lexicalCast <std::uint32_t> (strLedger);
         }
 
         return jvRequest;
@@ -499,12 +499,12 @@ private:
 
         if (jvParams.size () == 1)
         {
-            jvRequest["severity"] = jvParams[0u].asString ();
+            jvRequest[jss::severity] = jvParams[0u].asString ();
         }
         else if (jvParams.size () == 2)
         {
-            jvRequest["partition"] = jvParams[0u].asString ();
-            jvRequest["severity"] = jvParams[1u].asString ();
+            jvRequest[jss::partition] = jvParams[0u].asString ();
+            jvRequest[jss::severity] = jvParams[1u].asString ();
         }
 
         return jvRequest;
@@ -539,7 +539,7 @@ private:
         bool            bStrict     = false;
         std::string     strPeer;
 
-        if (!bPeer && iCursor >= 2 && jvParams[iCursor - 1] == "strict")
+        if (!bPeer && iCursor >= 2 && jvParams[iCursor - 1] == jss::strict)
         {
             bStrict = true;
             --iCursor;
@@ -559,13 +559,13 @@ private:
         // Get info on account.
         Json::Value jvRequest (Json::objectValue);
 
-        jvRequest["account"]    = strIdent;
+        jvRequest[jss::account]    = strIdent;
 
         if (bStrict)
-            jvRequest["strict"]     = 1;
+            jvRequest[jss::strict]     = 1;
 
         if (iIndex)
-            jvRequest["account_index"]  = iIndex;
+            jvRequest[jss::account_index]  = iIndex;
 
         if (!strPeer.empty ())
         {
@@ -592,7 +592,7 @@ private:
             jvRequest["difficulty"] = jvParams[0u].asInt ();
 
         if (jvParams.size () >= 2)
-            jvRequest["secret"] = jvParams[1u].asString ();
+            jvRequest[jss::secret] = jvParams[1u].asString ();
 
         return jvRequest;
     }
@@ -619,7 +619,7 @@ private:
             jvRequest["difficulty"] = jvParams[2u].asInt ();
 
         if (jvParams.size () >= 4)
-            jvRequest["secret"] = jvParams[3u].asString ();
+            jvRequest[jss::secret] = jvParams[3u].asString ();
 
         return jvRequest;
     }
@@ -663,7 +663,7 @@ private:
 
             Json::Value jvRequest;
 
-            jvRequest["tx_blob"]    = jvParams[0u].asString ();
+            jvRequest[jss::tx_blob]    = jvParams[0u].asString ();
 
             return jvRequest;
         }
@@ -673,11 +673,11 @@ private:
             // Signing or submitting tx_json.
             Json::Value jvRequest;
 
-            jvRequest["secret"]     = jvParams[0u].asString ();
-            jvRequest["tx_json"]    = txJSON;
+            jvRequest[jss::secret]     = jvParams[0u].asString ();
+            jvRequest[jss::tx_json]    = txJSON;
 
             if (bOffline)
-                jvRequest["offline"]    = true;
+                jvRequest[jss::offline]    = true;
 
             return jvRequest;
         }
@@ -690,7 +690,7 @@ private:
     {
         Json::Value     jvRequest;
 
-        jvRequest["text"]   = jvParams[0u].asString ();
+        jvRequest[jss::text]   = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -702,8 +702,8 @@ private:
 
         if (jvParams.size () > 1)
         {
-            if (jvParams[1u].asString () == "binary")
-                jvRequest["binary"] = true;
+            if (jvParams[1u].asString () == jss::binary)
+                jvRequest[jss::binary] = true;
         }
 
         jvRequest["transaction"]    = jvParams[0u].asString ();
@@ -715,7 +715,7 @@ private:
     {
         Json::Value jvRequest;
 
-        jvRequest["start"]  = jvParams[0u].asUInt ();
+        jvRequest[jss::start]  = jvParams[0u].asUInt ();
 
         return jvRequest;
     }
@@ -732,10 +732,10 @@ private:
         {
             Json::Value jvRequest;
 
-            jvRequest["node"]       = strNode;
+            jvRequest[jss::node]       = strNode;
 
             if (strComment.length ())
-                jvRequest["comment"]    = strComment;
+                jvRequest[jss::comment]    = strComment;
 
             return jvRequest;
         }
@@ -748,7 +748,7 @@ private:
     {
         Json::Value jvRequest;
 
-        jvRequest["node"]       = jvParams[0u].asString ();
+        jvRequest[jss::node]       = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -762,7 +762,7 @@ private:
         Json::Value jvRequest;
 
         if (jvParams.size ())
-            jvRequest["secret"]     = jvParams[0u].asString ();
+            jvRequest[jss::secret]     = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -776,7 +776,7 @@ private:
         Json::Value jvRequest;
 
         if (jvParams.size ())
-            jvRequest["secret"]     = jvParams[0u].asString ();
+            jvRequest[jss::secret]     = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -786,7 +786,7 @@ private:
     {
         Json::Value jvRequest;
 
-        jvRequest["seed"]       = jvParams[0u].asString ();
+        jvRequest[jss::seed]       = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -798,7 +798,7 @@ private:
         Json::Value jvRequest;
 
         if (jvParams.size ())
-            jvRequest["passphrase"]     = jvParams[0u].asString ();
+            jvRequest[jss::passphrase]     = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -809,7 +809,7 @@ private:
         Json::Value jvRequest;
 
         if (jvParams.size ())
-            jvRequest["secret"]     = jvParams[0u].asString ();
+            jvRequest[jss::secret]     = jvParams[0u].asString ();
 
         return jvRequest;
     }
@@ -1069,13 +1069,13 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         Json::Value jvRpc   = Json::Value (Json::objectValue);
 
         jvRpc["method"] = vCmd[0];
-        jvRpc["params"] = jvRpcParams;
+        jvRpc[jss::params] = jvRpcParams;
 
         jvRequest   = rpParser.parseCommand (vCmd[0], jvRpcParams, true);
 
         WriteLog (lsTRACE, RPCParser) << "RPC Request: " << jvRequest << std::endl;
 
-        if (jvRequest.isMember ("error"))
+        if (jvRequest.isMember (jss::error))
         {
             jvOutput            = jvRequest;
             jvOutput["rpc"]     = jvRpc;
@@ -1130,19 +1130,19 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
             }
 
             // If had an error, supply invokation in result.
-            if (jvOutput.isMember ("error"))
+            if (jvOutput.isMember (jss::error))
             {
                 jvOutput["rpc"]             = jvRpc;            // How the command was seen as method + params.
                 jvOutput["request_sent"]    = jvRequest;        // How the command was translated.
             }
         }
 
-        if (jvOutput.isMember ("error"))
+        if (jvOutput.isMember (jss::error))
         {
-            jvOutput["status"]  = "error";
+            jvOutput[jss::status]  = "error";
 
-            nRet    = jvOutput.isMember ("error_code")
-                      ? beast::lexicalCast <int> (jvOutput["error_code"].asString ())
+            nRet    = jvOutput.isMember (jss::error_code)
+                      ? beast::lexicalCast <int> (jvOutput[jss::error_code].asString ())
                       : 1;
         }
 

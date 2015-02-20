@@ -35,7 +35,7 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {
     SHAMap& txSet = *ledger->peekTransactionMap ();
 
-    for (SHAMapItem::pointer item = txSet.peekFirstItem (); item;
+    for (std::shared_ptr<SHAMapItem> item = txSet.peekFirstItem (); item;
          item = txSet.peekNextItem (item->getTag ()))
     {
         SerialIter sit (item->peekSerializer ());

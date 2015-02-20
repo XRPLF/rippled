@@ -43,11 +43,11 @@ public:
                   SHAMapNodeID const& id,
                   uint256 const& nodeHash,
                   Blob& nodeData,
-                  SHAMapTreeNode::TNType);
+                  SHAMapTreeNode::TNType) override;
 
     bool haveNode (SHAMapNodeID const& id,
                    uint256 const& nodeHash,
-                   Blob& nodeData);
+                   Blob& nodeData) override;
 
 private:
     NodeCache& m_nodeCache;

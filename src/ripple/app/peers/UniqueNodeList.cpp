@@ -31,6 +31,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/net/HTTPClient.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/algorithm/string.hpp>
@@ -436,7 +437,7 @@ public:
         {
             int          now   = getApp().getOPs().getNetworkTimeNC();
             std::uint32_t ref   = getApp().getFeeTrack().getLoadBase();
-            Json::Value& nodes = (obj["cluster"] = Json::objectValue);
+            Json::Value& nodes = (obj[jss::cluster] = Json::objectValue);
 
             for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
                 end = m_clusterNodes.end(); it != end; ++it)

@@ -31,6 +31,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <boost/log/trivial.hpp>
 #include <tuple>
 
@@ -163,7 +164,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                 lrLedger, raDstAccount);
 
             Json::Value& jvDestCur =
-                    (jvStatus["destination_currencies"] = Json::arrayValue);
+                    (jvStatus[jss::destination_currencies] = Json::arrayValue);
 
             if (!asDst)
             {
@@ -203,8 +204,8 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        jvStatus["ledger_hash"] = to_string (lrLedger->getHash ());
-        jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
+        jvStatus[jss::ledger_hash] = to_string (lrLedger->getHash ());
+        jvStatus[jss::ledger_index] = lrLedger->getLedgerSeq ();
     }
     return bValid;
 }
@@ -256,9 +257,9 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
 {
     int ret = PFR_PJ_NOCHANGE;
 
-    if (jvParams.isMember ("source_account"))
+    if (jvParams.isMember (jss::source_account))
     {
-        if (!raSrcAccount.setAccountID (jvParams["source_account"].asString ()))
+        if (!raSrcAccount.setAccountID (jvParams[jss::source_account].asString ()))
         {
             jvStatus = rpcError (rpcSRC_ACT_MALFORMED);
             return PFR_PJ_INVALID;
@@ -270,9 +271,9 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
         return PFR_PJ_INVALID;
     }
 
-    if (jvParams.isMember ("destination_account"))
+    if (jvParams.isMember (jss::destination_account))
     {
-        if (!raDstAccount.setAccountID (jvParams["destination_account"].asString ()))
+        if (!raDstAccount.setAccountID (jvParams[jss::destination_account].asString ()))
         {
             jvStatus = rpcError (rpcDST_ACT_MALFORMED);
             return PFR_PJ_INVALID;
@@ -284,10 +285,10 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
         return PFR_PJ_INVALID;
     }
 
-    if (jvParams.isMember ("destination_amount"))
+    if (jvParams.isMember (jss::destination_amount))
     {
         if (! amountFromJsonNoThrow (
-                saDstAmount, jvParams["destination_amount"]) ||
+                saDstAmount, jvParams[jss::destination_amount]) ||
             (saDstAmount.getCurrency ().isZero () &&
              saDstAmount.getIssuer ().isNonZero ()) ||
             (saDstAmount.getCurrency () == badCurrency ()) ||
@@ -303,9 +304,9 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
         return PFR_PJ_INVALID;
     }
 
-    if (jvParams.isMember ("source_currencies"))
+    if (jvParams.isMember (jss::source_currencies))
     {
-        Json::Value const& jvSrcCur = jvParams["source_currencies"];
+        Json::Value const& jvSrcCur = jvParams[jss::source_currencies];
 
         if (!jvSrcCur.isArray ())
         {
@@ -321,15 +322,15 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
             Currency uCur;
             Account uIss;
 
-            if (!jvCur.isObject() || !jvCur.isMember ("currency") ||
-                !to_currency (uCur, jvCur["currency"].asString ()))
+            if (!jvCur.isObject() || !jvCur.isMember (jss::currency) ||
+                !to_currency (uCur, jvCur[jss::currency].asString ()))
             {
                 jvStatus = rpcError (rpcSRC_CUR_MALFORMED);
                 return PFR_PJ_INVALID;
             }
 
-            if (jvCur.isMember ("issuer") &&
-                !to_issuer (uIss, jvCur["issuer"].asString ()))
+            if (jvCur.isMember (jss::issuer) &&
+                !to_issuer (uIss, jvCur[jss::issuer].asString ()))
             {
                 jvStatus = rpcError (rpcSRC_ISR_MALFORMED);
             }
@@ -402,9 +403,9 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         }
     }
 
-    jvStatus["source_account"] = raSrcAccount.humanAccountID ();
-    jvStatus["destination_account"] = raDstAccount.humanAccountID ();
-    jvStatus["destination_amount"] = saDstAmount.getJson (0);
+    jvStatus[jss::source_account] = raSrcAccount.humanAccountID ();
+    jvStatus[jss::destination_account] = raDstAccount.humanAccountID ();
+    jvStatus[jss::destination_amount] = saDstAmount.getJson (0);
 
     if (!jvId.isNull ())
         jvStatus["id"] = jvId;
@@ -526,8 +527,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 Json::Value jvEntry (Json::objectValue);
                 rc.actualAmountIn.setIssuer (sourceAccount);
 
-                jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
-                jvEntry["paths_computed"] = spsPaths.getJson (0);
+                jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
+                jvEntry[jss::paths_computed] = spsPaths.getJson (0);
                 found  = true;
                 jvArray.append (jvEntry);
             }
@@ -557,7 +558,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         mOwner.reportFull ((ptFullReply-ptCreated).total_milliseconds());
     }
 
-    jvStatus["alternatives"] = jvArray;
+    jvStatus[jss::alternatives] = jvArray;
     return jvStatus;
 }
 

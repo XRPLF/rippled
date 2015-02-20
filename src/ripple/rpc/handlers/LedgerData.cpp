@@ -45,25 +45,25 @@ Json::Value doLedgerData (RPC::Context& context)
         return jvResult;
 
     uint256 resumePoint;
-    if (params.isMember ("marker"))
+    if (params.isMember (jss::marker))
     {
-        Json::Value const& jMarker = params["marker"];
+        Json::Value const& jMarker = params[jss::marker];
         if (!jMarker.isString ())
-            return RPC::expected_field_error ("marker", "valid");
+            return RPC::expected_field_error (jss::marker, "valid");
         if (!resumePoint.SetHex (jMarker.asString ()))
-            return RPC::expected_field_error ("marker", "valid");
+            return RPC::expected_field_error (jss::marker, "valid");
     }
 
-    bool isBinary = params["binary"].asBool();
+    bool isBinary = params[jss::binary].asBool();
 
     int limit = -1;
     int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
 
-    if (params.isMember ("limit"))
+    if (params.isMember (jss::limit))
     {
-        Json::Value const& jLimit = params["limit"];
+        Json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral ())
-            return RPC::expected_field_error ("limit", "integer");
+            return RPC::expected_field_error (jss::limit, "integer");
 
         limit = jLimit.asInt ();
     }
@@ -71,15 +71,15 @@ Json::Value doLedgerData (RPC::Context& context)
     if ((limit < 0) || ((limit > maxLimit) && (context.role != Role::ADMIN)))
         limit = maxLimit;
 
-    jvResult["ledger_hash"] = to_string (lpLedger->getHash());
-    jvResult["ledger_index"] = std::to_string( lpLedger->getLedgerSeq ());
+    jvResult[jss::ledger_hash] = to_string (lpLedger->getHash());
+    jvResult[jss::ledger_index] = std::to_string( lpLedger->getLedgerSeq ());
 
-    Json::Value& nodes = (jvResult["state"] = Json::arrayValue);
+    Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
     SHAMap& map = *(lpLedger->peekAccountStateMap ());
 
     for (;;)
     {
-       SHAMapItem::pointer item = map.peekNextItem (resumePoint);
+       std::shared_ptr<SHAMapItem> item = map.peekNextItem (resumePoint);
        if (!item)
            break;
        resumePoint = item->getTag();
@@ -87,22 +87,22 @@ Json::Value doLedgerData (RPC::Context& context)
        if (limit-- <= 0)
        {
            --resumePoint;
-           jvResult["marker"] = to_string (resumePoint);
+           jvResult[jss::marker] = to_string (resumePoint);
            break;
        }
 
        if (isBinary)
        {
            Json::Value& entry = nodes.append (Json::objectValue);
-           entry["data"] = strHex (
+           entry[jss::data] = strHex (
                item->peekData().begin(), item->peekData().size());
-           entry["index"] = to_string (item->getTag ());
+           entry[jss::index] = to_string (item->getTag ());
        }
        else
        {
            SLE sle (item->peekSerializer(), item->getTag ());
            Json::Value& entry = nodes.append (sle.getJson (0));
-           entry["index"] = to_string (item->getTag ());
+           entry[jss::index] = to_string (item->getTag ());
        }
     }
 

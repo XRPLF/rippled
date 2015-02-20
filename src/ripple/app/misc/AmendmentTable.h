@@ -208,7 +208,8 @@ public:
     virtual void
     doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) = 0;
     virtual void
-    doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
+    doVoting (Ledger::ref lastClosedLedger,
+              std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 
 std::unique_ptr<AmendmentTable> make_AmendmentTable (

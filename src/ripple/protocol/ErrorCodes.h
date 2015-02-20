@@ -192,6 +192,11 @@ inline Json::Value missing_field_error (std::string const& name)
     return make_param_error (missing_field_message (name));
 }
 
+inline Json::Value missing_field_error (Json::StaticString name)
+{
+    return missing_field_error (std::string (name));
+}
+
 inline std::string object_field_message (std::string const& name)
 {
     return "Invalid field '" + name + "', not object.";
@@ -202,14 +207,29 @@ inline Json::Value object_field_error (std::string const& name)
     return make_param_error (object_field_message (name));
 }
 
+inline Json::Value object_field_error (Json::StaticString name)
+{
+    return object_field_error (std::string (name));
+}
+
 inline std::string invalid_field_message (std::string const& name)
 {
     return "Invalid field '" + name + "'.";
 }
 
+inline std::string invalid_field_message (Json::StaticString name)
+{
+    return invalid_field_message (std::string(name));
+}
+
 inline Json::Value invalid_field_error (std::string const& name)
 {
     return make_param_error (invalid_field_message (name));
+}
+
+inline Json::Value invalid_field_error (Json::StaticString name)
+{
+    return invalid_field_error (std::string (name));
 }
 
 inline std::string expected_field_message (
@@ -218,10 +238,22 @@ inline std::string expected_field_message (
     return "Invalid field '" + name + "', not " + type + ".";
 }
 
+inline std::string expected_field_message (
+    Json::StaticString name, std::string const& type)
+{
+    return expected_field_message (std::string (name), type);
+}
+
 inline Json::Value expected_field_error (
     std::string const& name, std::string const& type)
 {
     return make_param_error (expected_field_message (name, type));
+}
+
+inline Json::Value expected_field_error (
+    Json::StaticString name, std::string const& type)
+{
+    return expected_field_error (std::string (name), type);
 }
 
 /** @} */

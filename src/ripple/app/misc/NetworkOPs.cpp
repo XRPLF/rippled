@@ -56,6 +56,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/Manager.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>
@@ -292,13 +293,13 @@ public:
 
     bool recvValidation (
         STValidation::ref val, std::string const& source);
-    void takePosition (int seq, SHAMap::ref position);
-    SHAMap::pointer getTXMap (uint256 const& hash);
+    void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
+    std::shared_ptr<SHAMap> getTXMap (uint256 const& hash);
     bool hasTXSet (
         const std::shared_ptr<Peer>& peer, uint256 const& set,
         protocol::TxSetStatus status);
 
-    void mapComplete (uint256 const& hash, SHAMap::ref map);
+    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map);
     bool stillNeedTXSet (uint256 const& hash);
     void makeFetchPack (
         Job&, std::weak_ptr<Peer> peer,
@@ -577,7 +578,7 @@ private:
     STValidation::pointer       mLastValidation;
 
     // Recent positions taken
-    std::map<uint256, std::pair<int, SHAMap::pointer> > mRecentPositions;
+    std::map<uint256, std::pair<int, std::shared_ptr<SHAMap>>> mRecentPositions;
 
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
@@ -1657,7 +1658,8 @@ void NetworkOPsImp::processTrustedProposal (
 }
 
 // Must be called while holding the master lock
-SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
+std::shared_ptr<SHAMap>
+NetworkOPsImp::getTXMap (uint256 const& hash)
 {
     auto it = mRecentPositions.find (hash);
 
@@ -1665,13 +1667,14 @@ SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
         return it->second.second;
 
     if (!haveConsensusObject ())
-        return SHAMap::pointer ();
+        return std::shared_ptr<SHAMap> ();
 
     return mConsensus->getTransactionTree (hash, false);
 }
 
 // Must be called while holding the master lock
-void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
+void
+NetworkOPsImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
 {
     mRecentPositions[position->getHash ()] = std::make_pair (seq, position);
 
@@ -1726,7 +1729,9 @@ bool NetworkOPsImp::stillNeedTXSet (uint256 const& hash)
     return mConsensus->stillNeedTXSet (hash);
 }
 
-void NetworkOPsImp::mapComplete (uint256 const& hash, SHAMap::ref map)
+void
+NetworkOPsImp::mapComplete (uint256 const& hash,
+                            std::shared_ptr<SHAMap> const& map)
 {
     if (haveConsensusObject ())
         mConsensus->mapComplete (hash, map, true);
@@ -2313,11 +2318,11 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info [jss::server_state] = strOperatingMode ();
 
     if (mNeedNetworkLedger)
-        info[jss::network_ledger] = jss::waiting;
+        info[jss::network_ledger] = "waiting";
 
     info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
 
-    info["io_latency_ms"] = static_cast<Json::UInt> (
+    info[jss::io_latency_ms] = static_cast<Json::UInt> (
         getApp().getIOLatency().count());
 
     if (admin)
@@ -2329,7 +2334,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         }
         else
         {
-            info[jss::pubkey_validator] = jss::none;
+            info[jss::pubkey_validator] = "none";
         }
     }
 
@@ -2463,7 +2468,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
         Ledger::pointer lpPublished = getPublishedLedger ();
         if (!lpPublished)
-            info[jss::published_ledger] = jss::none;
+            info[jss::published_ledger] = "none";
         else if (lpPublished->getLedgerSeq() != lpClosed->getLedgerSeq())
             info[jss::published_ledger] = lpPublished->getLedgerSeq();
     }
@@ -2490,12 +2495,12 @@ Json::Value NetworkOPsImp::pubBootstrapAccountInfo (
 {
     Json::Value         jvObj (Json::objectValue);
 
-    jvObj["type"]           = "accountInfoBootstrap";
-    jvObj["account"]        = naAccountID.humanAccountID ();
-    jvObj["owner"]          = getOwnerInfo (lpAccepted, naAccountID);
-    jvObj["ledger_index"]   = lpAccepted->getLedgerSeq ();
-    jvObj["ledger_hash"]    = to_string (lpAccepted->getHash ());
-    jvObj["ledger_time"]
+    jvObj[jss::type]           = "accountInfoBootstrap";
+    jvObj[jss::account]        = naAccountID.humanAccountID ();
+    jvObj[jss::owner]          = getOwnerInfo (lpAccepted, naAccountID);
+    jvObj[jss::ledger_index]   = lpAccepted->getLedgerSeq ();
+    jvObj[jss::ledger_hash]    = to_string (lpAccepted->getHash ());
+    jvObj[jss::ledger_time]
             = Json::Value::UInt (utFromSeconds (lpAccepted->getCloseTimeNC ()));
 
     return jvObj;
@@ -2545,7 +2550,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
         {
             Json::Value jvObj (Json::objectValue);
 
-            jvObj[jss::type] = jss::ledgerClosed;
+            jvObj[jss::type] = "ledgerClosed";
             jvObj[jss::ledger_index] = lpAccepted->getLedgerSeq ();
             jvObj[jss::ledger_hash] = to_string (lpAccepted->getHash ());
             jvObj[jss::ledger_time]
@@ -2611,7 +2616,7 @@ Json::Value NetworkOPsImp::transJson(
 
     transResultInfo (terResult, sToken, sHuman);
 
-    jvObj[jss::type]           = jss::transaction;
+    jvObj[jss::type]           = "transaction";
     jvObj[jss::transaction]    = stTxn.getJson (0);
 
     if (bValidated)
@@ -2630,7 +2635,7 @@ Json::Value NetworkOPsImp::transJson(
         jvObj[jss::ledger_current_index]   = lpCurrent->getLedgerSeq ();
     }
 
-    jvObj[jss::status]                 = bValidated ? jss::closed : jss::proposed;
+    jvObj[jss::status]                 = bValidated ? "closed" : "proposed";
     jvObj[jss::engine_result]          = sToken;
     jvObj[jss::engine_result_code]     = terResult;
     jvObj[jss::engine_result_message]  = sHuman;
@@ -3233,8 +3238,8 @@ void NetworkOPsImp::getBookPage (
         }
     }
 
-    //  jvResult["marker"]  = Json::Value(Json::arrayValue);
-    //  jvResult["nodes"]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
 }
 
 
@@ -3384,8 +3389,8 @@ void NetworkOPsImp::getBookPage (
         }
     }
 
-    //  jvResult["marker"]  = Json::Value(Json::arrayValue);
-    //  jvResult["nodes"]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
+    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
 }
 
 #endif

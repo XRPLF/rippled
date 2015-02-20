@@ -45,11 +45,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
     {
         auto const& jsonHash = context.params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
-            return RPC::invalid_field_message ("ledger_hash");
+            return RPC::invalid_field_message (jss::ledger_hash);
     } else {
         auto const& jsonIndex = context.params[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
-            return RPC::invalid_field_message ("ledger_index");
+            return RPC::invalid_field_message (jss::ledger_index);
 
         // We need a validated ledger to get the hash from the sequence
         if (ledgerMaster.getValidatedLedgerAge() > 120)

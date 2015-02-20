@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {
@@ -98,7 +99,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                         {
                             Json::Value update = pRequest->doUpdate (cache, false);
                             pRequest->updateComplete ();
-                            update["type"] = "path_find";
+                            update[jss::type] = "path_find";
                             ipSub->send (update, false);
                             remove = false;
                             ++processed;

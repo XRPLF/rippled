@@ -28,15 +28,15 @@ operator<< (std::ostream& out, const SHAMapMissingNode& mn)
 {
     switch (mn.getMapType ())
     {
-    case smtTRANSACTION:
+    case SHAMapType::TRANSACTION:
         out << "Missing/TXN(" << mn.getNodeHash () << ")";
         break;
 
-    case smtSTATE:
+    case SHAMapType::STATE:
         out << "Missing/STA(" << mn.getNodeHash () << ")";
         break;
 
-    case smtFREE:
+    case SHAMapType::FREE:
     default:
         out << "Missing/" << mn.getNodeHash ();
         break;

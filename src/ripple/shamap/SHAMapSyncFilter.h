@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 
+#include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 
 /** Callback for filtering SHAMap during sync. */
@@ -28,7 +29,10 @@ namespace ripple {
 class SHAMapSyncFilter
 {
 public:
-    virtual ~SHAMapSyncFilter () { }
+    virtual ~SHAMapSyncFilter () = default;
+    SHAMapSyncFilter() = default;
+    SHAMapSyncFilter(SHAMapSyncFilter const&) = delete;
+    SHAMapSyncFilter& operator=(SHAMapSyncFilter const&) = delete;
 
     // Note that the nodeData is overwritten by this call
     virtual void gotNode (bool fromFilter,

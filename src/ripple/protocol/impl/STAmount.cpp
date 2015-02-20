@@ -876,7 +876,7 @@ amountFromJson (SField::ref name, Json::Value const& v)
     if (v.isObject ())
     {
         WriteLog (lsTRACE, STAmount) <<
-            "value='" << v["value"].asString () <<
+            "value='" << v[jss::value].asString () <<
             "', currency='" << v["currency"].asString () <<
             "', issuer='" << v["issuer"].asString () <<
             "')";
