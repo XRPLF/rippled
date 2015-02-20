@@ -25,6 +25,7 @@
 #include <ripple/protocol/RipplePublicKey.h>
 #include <ripple/protocol/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
+#include <beast/utility/noexcept.h>
 
 namespace ripple {
 
@@ -52,6 +53,18 @@ private:
 
 public:
     RippleAddress ();
+
+    void const*
+    data() const noexcept
+    {
+        return vchData.data();
+    }
+
+    std::size_t
+    size() const noexcept
+    {
+        return vchData.size();
+    }
 
     // For public and private key, checks if they are legal.
     bool isValid () const

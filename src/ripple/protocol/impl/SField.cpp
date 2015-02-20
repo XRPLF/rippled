@@ -41,7 +41,6 @@ typedef std::lock_guard <std::mutex> StaticScopedLockType;
 // Give this translation unit only, permission to construct SFields
 struct SField::make
 {
-#ifndef _MSC_VER
     template <class ...Args>
     static SField one(SField const* p, Args&& ...args)
     {
@@ -49,45 +48,14 @@ struct SField::make
         knownCodeToField[result.fieldCode] = p;
         return result;
     }
-#else  // remove this when VS gets variadic templates
-    template <class A0>
-    static SField one(SField const* p, A0&& arg0)
-    {
-        SField result(std::forward<A0>(arg0));
-        knownCodeToField[result.fieldCode] = p;
-        return result;
-    }
 
-    template <class A0, class A1, class A2>
-    static SField one(SField const* p, A0&& arg0, A1&& arg1, A2&& arg2)
+    template <class T, class ...Args>
+    static TypedField<T> one(SField const* p, Args&& ...args)
     {
-        SField result(std::forward<A0>(arg0), std::forward<A1>(arg1),
-                      std::forward<A2>(arg2));
+        TypedField<T> result(std::forward<Args>(args)...);
         knownCodeToField[result.fieldCode] = p;
         return result;
     }
-
-    template <class A0, class A1, class A2, class A3>
-    static SField one(SField const* p, A0&& arg0, A1&& arg1, A2&& arg2,
-                                       A3&& arg3)
-    {
-        SField result(std::forward<A0>(arg0), std::forward<A1>(arg1),
-                      std::forward<A2>(arg2), std::forward<A3>(arg3));
-        knownCodeToField[result.fieldCode] = p;
-        return result;
-    }
-
-    template <class A0, class A1, class A2, class A3, class A4>
-    static SField one(SField const* p, A0&& arg0, A1&& arg1, A2&& arg2,
-                                       A3&& arg3, A4&& arg4)
-    {
-        SField result(std::forward<A0>(arg0), std::forward<A1>(arg1),
-                      std::forward<A2>(arg2), std::forward<A3>(arg3),
-                      std::forward<A4>(arg4));
-        knownCodeToField[result.fieldCode] = p;
-        return result;
-    }
-#endif
 };
 
 using make = SField::make;
@@ -116,7 +84,7 @@ SField const sfTransactionType = make::one(&sfTransactionType, STI_UINT16, 2, "T
 // 32-bit integers (common)
 SField const sfFlags             = make::one(&sfFlags,             STI_UINT32,  2, "Flags");
 SField const sfSourceTag         = make::one(&sfSourceTag,         STI_UINT32,  3, "SourceTag");
-SField const sfSequence          = make::one(&sfSequence,          STI_UINT32,  4, "Sequence");
+TypedField<STInteger<std::uint32_t>> const sfSequence          = make::one<STInteger<std::uint32_t>>(&sfSequence,          STI_UINT32,  4, "Sequence");
 SField const sfPreviousTxnLgrSeq = make::one(&sfPreviousTxnLgrSeq, STI_UINT32,  5, "PreviousTxnLgrSeq", SField::sMD_DeleteFinal);
 SField const sfLedgerSequence    = make::one(&sfLedgerSequence,    STI_UINT32,  6, "LedgerSequence");
 SField const sfCloseTime         = make::one(&sfCloseTime,         STI_UINT32,  7, "CloseTime");
@@ -203,20 +171,20 @@ SField const sfRippleEscrow    = make::one(&sfRippleEscrow,    STI_AMOUNT, 17, "
 SField const sfDeliveredAmount = make::one(&sfDeliveredAmount, STI_AMOUNT, 18, "DeliveredAmount");
 
 // variable length
-SField const sfPublicKey     = make::one(&sfPublicKey,     STI_VL,  1, "PublicKey");
-SField const sfMessageKey    = make::one(&sfMessageKey,    STI_VL,  2, "MessageKey");
-SField const sfSigningPubKey = make::one(&sfSigningPubKey, STI_VL,  3, "SigningPubKey");
-SField const sfTxnSignature  = make::one(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, false);
-SField const sfGenerator     = make::one(&sfGenerator,     STI_VL,  5, "Generator");
-SField const sfSignature     = make::one(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, false);
-SField const sfDomain        = make::one(&sfDomain,        STI_VL,  7, "Domain");
-SField const sfFundCode      = make::one(&sfFundCode,      STI_VL,  8, "FundCode");
-SField const sfRemoveCode    = make::one(&sfRemoveCode,    STI_VL,  9, "RemoveCode");
-SField const sfExpireCode    = make::one(&sfExpireCode,    STI_VL, 10, "ExpireCode");
-SField const sfCreateCode    = make::one(&sfCreateCode,    STI_VL, 11, "CreateCode");
-SField const sfMemoType      = make::one(&sfMemoType,      STI_VL, 12, "MemoType");
-SField const sfMemoData      = make::one(&sfMemoData,      STI_VL, 13, "MemoData");
-SField const sfMemoFormat    = make::one(&sfMemoFormat,    STI_VL, 14, "MemoFormat");
+TypedField<STBlob>  const sfPublicKey       = make::one<STBlob>(&sfPublicKey,     STI_VL,  1, "PublicKey");
+TypedField<STBlob>  const sfSigningPubKey   = make::one<STBlob>(&sfSigningPubKey, STI_VL,  3, "SigningPubKey");
+TypedField<STBlob>  const sfSignature       = make::one<STBlob>(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, false);
+SField              const sfMessageKey      = make::one(&sfMessageKey,    STI_VL,  2, "MessageKey");
+SField              const sfTxnSignature    = make::one(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, false);
+SField              const sfGenerator       = make::one(&sfGenerator,     STI_VL,  5, "Generator");
+SField              const sfDomain          = make::one(&sfDomain,        STI_VL,  7, "Domain");
+SField              const sfFundCode        = make::one(&sfFundCode,      STI_VL,  8, "FundCode");
+SField              const sfRemoveCode      = make::one(&sfRemoveCode,    STI_VL,  9, "RemoveCode");
+SField              const sfExpireCode      = make::one(&sfExpireCode,    STI_VL, 10, "ExpireCode");
+SField              const sfCreateCode      = make::one(&sfCreateCode,    STI_VL, 11, "CreateCode");
+SField              const sfMemoType        = make::one(&sfMemoType,      STI_VL, 12, "MemoType");
+SField              const sfMemoData        = make::one(&sfMemoData,      STI_VL, 13, "MemoData");
+SField              const sfMemoFormat      = make::one(&sfMemoFormat,    STI_VL, 14, "MemoFormat");
 
 // account
 SField const sfAccount     = make::one(&sfAccount,     STI_ACCOUNT, 1, "Account");

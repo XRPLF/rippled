@@ -63,6 +63,18 @@ public:
         ;
     }
 
+    std::size_t
+    size() const noexcept
+    {
+        return mData.size();
+    }
+
+    void const*
+    data() const noexcept
+    {
+        return mData.data();
+    }
+
     // assemble functions
     int add8 (unsigned char byte);
     int add16 (std::uint16_t);
@@ -238,10 +250,6 @@ public:
     Blob ::const_iterator end () const
     {
         return mData.end ();
-    }
-    Blob ::size_type size () const
-    {
-        return mData.size ();
     }
     void reserve (size_t n)
     {

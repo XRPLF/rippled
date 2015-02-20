@@ -221,6 +221,12 @@ public:
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
 
+    /** Set a field.
+        if the field already exists, it is replaced.
+    */
+    void
+    set (std::unique_ptr<STBase> v);
+
     void setFieldU8 (SField::ref field, unsigned char);
     void setFieldU16 (SField::ref field, std::uint16_t);
     void setFieldU32 (SField::ref field, std::uint32_t);
@@ -419,8 +425,8 @@ private:
     }
 
 private:
-    boost::ptr_vector<STBase>   mData;
-    const SOTemplate*                   mType;
+    boost::ptr_vector<STBase> mData;
+    const SOTemplate* mType;
 };
 
 } // ripple

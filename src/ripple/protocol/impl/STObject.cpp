@@ -762,6 +762,24 @@ const STVector256& STObject::getFieldV256 (SField::ref field) const
     return getFieldByConstRef <STVector256> (field, empty);
 }
 
+void
+STObject::set (std::unique_ptr<STBase> v)
+{
+    auto const i =
+        getFieldIndex(v->getFName());
+    if (i != -1)
+    {
+        mData.replace(i, v.release());
+    }
+    else
+    {
+        if (! isFree())
+            throw std::runtime_error(
+                "missing field in templated STObject");
+        mData.push_back(v.release());
+    }
+}
+
 void STObject::setFieldU8 (SField::ref field, unsigned char v)
 {
     setFieldUsingSetValue <STUInt8> (field, v);

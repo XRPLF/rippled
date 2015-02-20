@@ -20,7 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 
+#include <ripple/basics/Buffer.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/protocol/STBase.h>
+#include <cstring>
 #include <memory>
 
 namespace ripple {
@@ -30,19 +33,58 @@ class STBlob
     : public STBase
 {
 public:
+    using value_type = Slice;
+
     STBlob () = default;
 
+    /** Construct with size and initializer.
+        Init will be called as:
+            void(void* data, std::size_t size)
+    */
+    template <class Init>
+    STBlob (SField::ref f, std::size_t size,
+            Init&& init)
+        : STBase(f)
+    {
+        value.resize(size);
+        init(value.data(), value.size());
+    }
+
+    STBlob (SField::ref f,
+            void const* data, std::size_t size)
+        : STBase(f)
+    {
+        value.resize(size);
+        std::memcpy(value.data(), data, size);
+    }
+
+    STBlob (SField const& f, Buffer&& b)
+        : STBase(f)
+    {
+        // VFALCO TODO Really move the buffer
+        value.resize(b.size());
+        std::memcpy(value.data(),
+            b.data(), b.size());
+        auto tmp = std::move(b);
+    }
+
+    // VFALCO DEPRECATED
     STBlob (Blob const& v)
         : value (v)
-    { }
+    {
+    }
 
+    // VFALCO DEPRECATED
     STBlob (SField::ref n, Blob const& v)
-        : STBase (n), value (v)
-    { }
+        : STBase (n)
+        , value (v)
+    {
+    }
 
     STBlob (SField::ref n)
         : STBase (n)
-    { }
+    {
+    }
 
     STBlob (SerialIter&, SField::ref name = sfGeneric);
 
@@ -51,6 +93,19 @@ public:
     deserialize (SerialIter& sit, SField::ref name)
     {
         return std::make_unique<STBlob> (name, sit.getVL ());
+    }
+
+    std::size_t
+    size() const
+    {
+        return value.size();
+    }
+
+    std::uint8_t const*
+    data() const
+    {
+        return reinterpret_cast<
+            std::uint8_t const*>(value.data());
     }
 
     SerializedTypeID
@@ -93,6 +148,13 @@ public:
     setValue (Blob const& v)
     {
         value = v;
+    }
+
+    void
+    setValue (void const* data, std::size_t size)
+    {
+        value.resize(size);
+        std::memcpy(value.data(), data, size);
     }
 
     explicit

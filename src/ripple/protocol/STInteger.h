@@ -29,6 +29,8 @@ class STInteger
     : public STBase
 {
 public:
+    using value_type = Integer;
+
     explicit
     STInteger (Integer v) 
         : value_ (v)
