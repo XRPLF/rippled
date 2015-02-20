@@ -19,7 +19,7 @@ database.
 
 Cluster members are configured in the `rippled.cfg` file under
 `[cluster_nodes]`.  Each member should be configured on a line beginning
-with the node public key, followed optionally be a space and a friendly
+with the node public key, followed optionally by a space and a friendly
 name.
 
 Because cluster members can introduce other cluster members, it is not
