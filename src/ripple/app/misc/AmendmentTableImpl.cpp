@@ -23,6 +23,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/JsonFields.h>
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 #include <algorithm>

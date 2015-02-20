@@ -24,6 +24,7 @@
 #include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>

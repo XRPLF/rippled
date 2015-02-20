@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>

@@ -34,6 +34,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/streams/debug_ostream.h>
 #include <beast/weak_fn.h>
 #include <boost/asio/io_service.hpp>

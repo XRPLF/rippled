@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Thread.h>

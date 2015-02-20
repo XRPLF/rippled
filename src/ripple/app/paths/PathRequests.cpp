@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {
