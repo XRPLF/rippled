@@ -52,18 +52,6 @@ struct Handler
     onAccept (Session& session,
         boost::asio::ip::tcp::endpoint remote_address) = 0;
 
-    /** Called when a legacy peer protocol handshake is detected.
-        If the called function does not take ownership, then the
-        connection is closed.
-        @param buffer The unconsumed bytes in the protocol handshake
-        @param ssl_bundle The active connection.
-    */
-    virtual
-    void
-    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        boost::asio::const_buffer buffer,
-            boost::asio::ip::tcp::endpoint remote_address) = 0;
-
     /** Called to process a complete HTTP request.
         The handler can do one of three things:
             - Ignore the request (return default constructed What)

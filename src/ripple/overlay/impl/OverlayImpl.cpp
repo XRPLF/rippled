@@ -154,37 +154,6 @@ OverlayImpl::~OverlayImpl ()
 
 //------------------------------------------------------------------------------
 
-void
-OverlayImpl::onLegacyPeerHello (
-    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        boost::asio::const_buffer buffer, endpoint_type remote_endpoint)
-{
-    error_code ec;
-    auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
-    if (ec)
-        return;
-
-    auto const slot = m_peerFinder->new_inbound_slot (
-        beast::IPAddressConversion::from_asio(local_endpoint),
-            beast::IPAddressConversion::from_asio(remote_endpoint));
-
-    if (slot == nullptr)
-        // self connect, close
-        return;
-
-    auto const peer = std::make_shared<PeerImp>(next_id_++,
-        remote_endpoint, slot, boost::asio::const_buffers_1(buffer),
-            std::move(ssl_bundle),  *this);
-    {
-        // As we are not on the strand, run() must be called
-        // while holding the lock, otherwise new I/O can be
-        // queued after a call to stop().
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
-        add(peer);    
-        peer->run();
-    }
-}
-
 Handoff
 OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     beast::http::message&& request,
@@ -761,7 +730,6 @@ setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
     auto const& section = config.section("overlay");
-    set (setup.http_handshake, "http_handshake", section);
     set (setup.auto_connect, "auto_connect", section);
     std::string promote;
     set (promote, "become_superpeer", section);

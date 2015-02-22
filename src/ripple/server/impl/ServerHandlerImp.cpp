@@ -106,17 +106,6 @@ ServerHandlerImp::onAccept (HTTP::Session& session,
     return true;
 }
 
-void
-ServerHandlerImp::onLegacyPeerHello (
-    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        boost::asio::const_buffer buffer,
-            boost::asio::ip::tcp::endpoint remote_address)
-{
-    // VFALCO TODO Inject Overlay
-    getApp().overlay().onLegacyPeerHello(std::move(ssl_bundle),
-        buffer, remote_address);
-}
-
 auto
 ServerHandlerImp::onHandoff (HTTP::Session& session,
     std::unique_ptr <beast::asio::ssl_bundle>&& bundle,

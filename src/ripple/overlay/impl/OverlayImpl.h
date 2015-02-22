@@ -154,11 +154,6 @@ public:
         return setup_;
     }
 
-    void
-    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        boost::asio::const_buffer buffer,
-            endpoint_type remote_endpoint) override;
-
     Handoff
     onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
