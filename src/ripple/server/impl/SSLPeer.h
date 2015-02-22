@@ -63,47 +63,6 @@ private:
 
 //------------------------------------------------------------------------------
 
-// Detects the legacy peer protocol handshake. */
-template <class Socket, class StreamBuf, class Yield>
-static
-std::pair <boost::system::error_code, bool>
-detect_peer_protocol (Socket& socket, StreamBuf& buf, Yield yield)
-{
-    std::pair<boost::system::error_code, bool> result;
-    result.second = false;
-    for(;;)
-    {
-        std::size_t const max = 6; // max bytes needed
-        unsigned char data[max];
-        auto const n = boost::asio::buffer_copy(
-            boost::asio::buffer(data), buf.data());
-
-        /* Protocol messages are framed by a 6 byte header which includes
-           a big-endian 4-byte length followed by a big-endian 2-byte type.
-           The type for 'hello' is 1.
-        */
-        if (n>=1 && data[0] != 0)
-            break;
-        if (n>=2 && data[1] != 0)
-            break;
-        if (n>=5 && data[4] != 0)
-            break;
-        if (n>=6)
-        {
-            if (data[5] == 1)
-                result.second = true;
-            break;
-        }
-        std::size_t const bytes_transferred = boost::asio::async_read(
-            socket, buf.prepare(max - n), boost::asio::transfer_at_least(1),
-                yield[result.first]);
-        if (result.first)
-            break;
-        buf.commit(bytes_transferred);
-    }
-    return result;
-}
-
 template <class ConstBufferSequence>
 SSLPeer::SSLPeer (Door& door, beast::Journal journal,
     endpoint_type remote_address, ConstBufferSequence const& buffers,
@@ -138,26 +97,10 @@ SSLPeer::do_handshake (yield_context yield)
     cancel_timer();
     if (ec)
         return fail (ec, "handshake");
-    bool const legacy = port().protocol.count("peer") > 0;
     bool const http =
         port().protocol.count("peer") > 0 ||
         //|| port().protocol.count("wss") > 0
         port().protocol.count("https") > 0;
-    if (legacy)
-    {
-        auto const result = detect_peer_protocol(stream_, read_buf_, yield);
-        if (result.first)
-            return fail (result.first, "detect_legacy_handshake");
-        if (result.second)
-        {
-            std::vector<std::uint8_t> storage (read_buf_.size());
-            boost::asio::mutable_buffers_1 buffer (
-                boost::asio::mutable_buffer(storage.data(), storage.size()));
-            boost::asio::buffer_copy(buffer, read_buf_.data());
-            return door_.server().handler().onLegacyPeerHello(
-                std::move(ssl_bundle_), buffer, remote_address_);
-        }
-    }
     if (http)
     {
         boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,

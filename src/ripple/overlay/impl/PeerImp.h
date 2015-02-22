@@ -156,13 +156,6 @@ public:
                     std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                         OverlayImpl& overlay);
 
-    /** Create an incoming legacy peer from an established ssl connection. */
-    template <class ConstBufferSequence>
-    PeerImp (id_t id, endpoint_type remote_endpoint,
-        PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffer,
-            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-                OverlayImpl& overlay);
-
     /** Create outgoing, handshaked peer. */
     // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
@@ -306,9 +299,6 @@ private:
     void
     doAccept();
 
-    void
-    doLegacyAccept();
-
     static
     beast::http::message
     makeResponse (bool crawl, beast::http::message const& req,
@@ -323,7 +313,7 @@ private:
 
     // Starts the protocol message loop
     void
-    doProtocolStart (bool legacy);
+    doProtocolStart ();
 
     // Called when protocol message bytes are received
     void
@@ -433,34 +423,6 @@ private:
 };
 
 //------------------------------------------------------------------------------
-
-template <class ConstBufferSequence>
-PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
-    PeerFinder::Slot::ptr const& slot, ConstBufferSequence const& buffers,
-        std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-            OverlayImpl& overlay)
-    : Child (overlay)
-    , id_ (id)
-    , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
-    , p_sink_ (deprecatedLogs().journal("Protocol"), makePrefix(id))
-    , journal_ (sink_)
-    , p_journal_ (p_sink_)
-    , ssl_bundle_ (std::move(ssl_bundle))
-    , socket_ (ssl_bundle_->socket)
-    , stream_ (ssl_bundle_->stream)
-    , strand_ (socket_.get_io_service())
-    , timer_ (socket_.get_io_service())
-    , remote_address_ (
-        beast::IPAddressConversion::from_asio(remote_endpoint))
-    , overlay_ (overlay)
-    , m_inbound (true)
-    , state_ (State::connected)
-    , slot_ (slot)
-    , validatorsConnection_(getApp().getValidators().newConnection(id))
-{
-    read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
-        boost::asio::buffer_size(buffers)), buffers));
-}
 
 template <class Buffers>
 PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,

@@ -98,10 +98,7 @@ PeerImp::run()
             &PeerImp::run, shared_from_this()));
     if (m_inbound)
     {
-        if (read_buffer_.size() > 0)
-            doLegacyAccept();
-        else
-            doAccept();
+        doAccept();
     }
     else
     {
@@ -125,7 +122,7 @@ PeerImp::run()
                 previousLedgerHash_.zero();
             }
         }
-        doProtocolStart(false);
+        doProtocolStart();
     }
 }
 
@@ -464,17 +461,6 @@ PeerImp::onShutdown(error_code ec)
 
 //------------------------------------------------------------------------------
 
-void PeerImp::doLegacyAccept()
-{
-    assert(read_buffer_.size() > 0);
-    if(journal_.debug) journal_.debug <<
-        "doLegacyAccept: " << remote_address_;
-    usage_ = overlay_.resourceManager().newInboundEndpoint (remote_address_);
-    if (usage_.disconnect ())
-        return fail("doLegacyAccept: Resources");
-    doProtocolStart(true);
-}
-
 void PeerImp::doAccept()
 {
     assert(read_buffer_.size() == 0);
@@ -574,7 +560,7 @@ PeerImp::onWriteResponse (error_code ec, std::size_t bytes_transferred)
 
     write_buffer_.consume (bytes_transferred);
     if (write_buffer_.size() == 0)
-        return doProtocolStart(false);
+        return doProtocolStart();
 
     setTimer();
     stream_.async_write_some (write_buffer_.data(),
@@ -587,20 +573,9 @@ PeerImp::onWriteResponse (error_code ec, std::size_t bytes_transferred)
 
 // Protocol logic
 
-// We have an encrypted connection to the peer.
-// Have it say who it is so we know to avoid redundant connections.
-// Establish that it really who we are talking to by having it sign a
-// connection detail. Also need to establish no man in the middle attack
-// is in progress.
 void
-PeerImp::doProtocolStart(bool legacy)
+PeerImp::doProtocolStart()
 {
-    if (legacy && !sendHello ())
-    {
-        journal_.error << "Unable to send HELLO to " << remote_address_;
-        return fail ("hello");
-    }
-
     onReadMessage(error_code(), 0);
 }
 
@@ -710,28 +685,9 @@ PeerImp::error_code
 PeerImp::onMessageBegin (std::uint16_t type,
     std::shared_ptr <::google::protobuf::Message> const& m)
 {
-    error_code ec;
-
-    if (type == protocol::mtHELLO && state_ != State::connected)
-    {
-        journal_.warning <<
-            "Unexpected TMHello";
-        ec = invalid_argument_error();
-    }
-    else if (type != protocol::mtHELLO && state_ == State::connected)
-    {
-        journal_.warning <<
-            "Expected TMHello";
-        ec = invalid_argument_error();
-    }
-
-    if (! ec)
-    {
-        load_event_ = getApp().getJobQueue ().getLoadEventAP (
-            jtPEER, protocolMessageName(type));
-    }
-
-    return ec;
+    load_event_ = getApp().getJobQueue ().getLoadEventAP (
+        jtPEER, protocolMessageName(type));
+    return error_code{};
 }
 
 void
@@ -744,117 +700,7 @@ PeerImp::onMessageEnd (std::uint16_t,
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
 {
-    std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
-    std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
-    std::uint32_t const maxTime (ourTime + clockToleranceDeltaSeconds);
-
-#ifdef BEAST_DEBUG
-    if (m->has_nettime ())
-    {
-        std::int64_t to = ourTime;
-        to -= m->nettime ();
-        journal_.debug <<
-            "Time offset: " << to;
-    }
-#endif
-
-    // VFALCO TODO Report these failures in the HTTP response
-
-    auto const protocol = BuildInfo::make_protocol(m->protoversion());
-    if (m->has_nettime () &&
-        ((m->nettime () < minTime) || (m->nettime () > maxTime)))
-    {
-        if (m->nettime () > maxTime)
-        {
-            journal_.info <<
-                "Hello: Clock off by +" << m->nettime () - ourTime;
-        }
-        else if (m->nettime () < minTime)
-        {
-            journal_.info <<
-                "Hello: Clock off by -" << ourTime - m->nettime ();
-        }
-    }
-    else if (m->protoversionmin () > to_packed (BuildInfo::getCurrentProtocol()))
-    {
-        journal_.info <<
-            "Hello: Disconnect: Protocol mismatch [" <<
-            "Peer expects " << to_string (protocol) <<
-            " and we run " << to_string (BuildInfo::getCurrentProtocol()) << "]";
-    }
-    else if (! publicKey_.setNodePublic (m->nodepublic ()))
-    {
-        journal_.info <<
-            "Hello: Disconnect: Bad node public key.";
-    }
-    else if (! publicKey_.verifyNodePublic (
-        sharedValue_, m->nodeproof (), ECDSA::not_strict))
-    {
-        // Unable to verify they have private key for claimed public key.
-        journal_.info <<
-            "Hello: Disconnect: Failed to verify session.";
-    }
-    else
-    {
-        if(journal_.info) journal_.info <<
-            "Protocol: " << to_string(protocol);
-        if(journal_.info) journal_.info <<
-            "Public Key: " << publicKey_.humanNodePublic();
-        bool const cluster = getApp().getUNL().nodeInCluster(publicKey_, name_);
-        if (cluster)
-            if (journal_.info) journal_.info <<
-                "Cluster name: " << name_;
-
-        assert (state_ == State::connected);
-        // VFALCO TODO Remove this needless state
-        state_ = State::handshaked;
-        hello_ = *m;
-
-        auto const result = overlay_.peerFinder().activate (slot_,
-            publicKey_.toPublicKey(), cluster);
-
-        if (result == PeerFinder::Result::success)
-        {
-            state_ = State::active;
-            overlay_.activate(shared_from_this ());
-
-            // XXX Set timer: connection is in grace period to be useful.
-            // XXX Set timer: connection idle (idle may vary depending on connection type.)
-            if ((hello_.has_ledgerclosed ()) && (
-                hello_.ledgerclosed ().size () == (256 / 8)))
-            {
-                memcpy (closedLedgerHash_.begin (),
-                    hello_.ledgerclosed ().data (), 256 / 8);
-                if ((hello_.has_ledgerprevious ()) &&
-                    (hello_.ledgerprevious ().size () == (256 / 8)))
-                {
-                    memcpy (previousLedgerHash_.begin (),
-                        hello_.ledgerprevious ().data (), 256 / 8);
-                    addLedger (previousLedgerHash_);
-                }
-                else
-                {
-                    previousLedgerHash_.zero();
-                }
-            }
-
-            return sendGetPeers();
-        }
-
-        if (result == PeerFinder::Result::full)
-        {
-            // TODO Provide correct HTTP response
-            auto const redirects = overlay_.peerFinder().redirect (slot_);
-            sendEndpoints (redirects.begin(), redirects.end());
-            return gracefulClose();
-        }
-        else if (result == PeerFinder::Result::duplicate)
-        {
-            return fail("Duplicate public key");
-        }
-    }
-
-    fail("TMHello invalid");
+    fail("Deprecated TMHello");
 }
 
 void

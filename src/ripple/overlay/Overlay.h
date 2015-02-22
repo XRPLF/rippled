@@ -63,7 +63,6 @@ public:
     struct Setup
     {
         bool auto_connect = true;
-        bool http_handshake = false;
         Promote promote = Promote::automatic;
         std::shared_ptr<boost::asio::ssl::context> context;
     };
@@ -71,13 +70,6 @@ public:
     typedef std::vector <Peer::ptr> PeerSequence;
 
     virtual ~Overlay() = default;
-
-    /** Accept a legacy protocol handshake connection. */
-    virtual
-    void
-    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        boost::asio::const_buffer buffer,
-            boost::asio::ip::tcp::endpoint remote_address) = 0;
 
     /** Conditionally accept an incoming HTTP request. */
     virtual

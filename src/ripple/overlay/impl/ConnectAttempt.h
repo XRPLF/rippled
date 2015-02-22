@@ -99,11 +99,6 @@ private:
     void onRead (error_code ec, std::size_t bytes_transferred);
     void onShutdown (error_code ec);
 
-    void doLegacy();
-    void onWriteHello (error_code ec, std::size_t bytes_transferred);
-    void onReadHeader (error_code ec, std::size_t bytes_transferred);
-    void onReadBody (error_code ec, std::size_t bytes_transferred);
-
     static
     beast::http::message
     makeRequest (bool crawl,
