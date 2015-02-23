@@ -62,7 +62,9 @@ suite_list::insert (char const* name, char const* module, char const* library,
 {
 #ifndef NDEBUG
     {
-        auto const result (names_.insert (name));
+        std::string s;
+        s = std::string(library) + "." + module + "." + name;
+        auto const result (names_.insert(s));
         assert (result.second); // Duplicate name
     }
 
