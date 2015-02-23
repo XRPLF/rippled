@@ -632,6 +632,9 @@ OverlayImpl::crawl()
                 else
                     pv[jss::ip] = sp->getRemoteAddress().to_string();
             }
+            auto version = sp->getVersion ();
+            if (!version.empty ())
+                pv["version"] = version;
         }
     }
     return jv;
