@@ -237,6 +237,10 @@ public:
         return publicKey_;
     }
 
+    /** Return the version of rippled that the peer is running, if reported. */
+    std::string
+    getVersion() const override;
+
     Json::Value
     json() override;
 

@@ -196,6 +196,17 @@ PeerImp::crawl() const
     return beast::ci_equal(iter->second, "public");
 }
 
+std::string
+PeerImp::getVersion() const
+{
+    std::string version;
+
+    if (hello_.has_fullversion ())
+        version = hello_.fullversion ();
+
+    return version;
+}
+
 Json::Value
 PeerImp::json()
 {

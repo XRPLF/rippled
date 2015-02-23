@@ -81,6 +81,11 @@ public:
     RippleAddress const&
     getNodePublic() const = 0;
 
+    /** Return the version of rippled that the peer is running, if reported. */
+    virtual
+    std::string
+    getVersion() const = 0;
+
     virtual
     Json::Value json() = 0;
 
