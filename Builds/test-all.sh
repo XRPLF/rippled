@@ -1,6 +1,6 @@
-#/bin/bash
+#/bin/sh
 
-# Invoke as "bash ./Builds/test-all.sh"
+# Invoke as "sh ./Builds/test-all.sh"
 # or first make it executable ("chmod a+rx ./Builds/test-all.sh)
 #   then invoke as "./Builds/test-all.sh"
 #
