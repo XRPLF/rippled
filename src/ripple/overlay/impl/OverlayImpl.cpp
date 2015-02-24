@@ -633,7 +633,7 @@ OverlayImpl::crawl()
             }
             auto version = sp->getVersion ();
             if (!version.empty ())
-                pv["version"] = sp->getVersion ();
+                pv["version"] = version;
         }
     }
     return jv;

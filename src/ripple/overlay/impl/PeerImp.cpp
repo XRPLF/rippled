@@ -199,12 +199,10 @@ PeerImp::crawl() const
 std::string
 PeerImp::getVersion() const
 {
-    std::string version;
-
     if (hello_.has_fullversion ())
-        version = hello_.fullversion ();
+        return hello_.fullversion ();
 
-    return version;
+    return std::string ();
 }
 
 Json::Value
