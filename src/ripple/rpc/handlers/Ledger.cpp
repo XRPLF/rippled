@@ -49,10 +49,10 @@ Status LedgerHandler::check ()
     bool bAccounts = params[jss::accounts].asBool();
     bool bExpand = params[jss::expand].asBool();
 
-    options_ = (bFull ? LEDGER_JSON_FULL : 0)
-            | (bExpand ? LEDGER_JSON_EXPAND : 0)
-            | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
-            | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
+    options_ = (bFull ? LedgerFill::full : 0)
+            | (bExpand ? LedgerFill::expand : 0)
+            | (bTransactions ? LedgerFill::dumpTxrp : 0)
+            | (bAccounts ? LedgerFill::dumpState : 0);
 
     if (bFull || bAccounts)
     {

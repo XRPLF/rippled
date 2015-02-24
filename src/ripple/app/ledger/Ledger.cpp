@@ -928,7 +928,7 @@ Ledger::pointer Ledger::getSQL (std::string const& sql)
         {
             WriteLog (lsERROR, Ledger) << "Failed on ledger";
             Json::Value p;
-            addJson (p, {*ret, LEDGER_JSON_FULL});
+            addJson (p, {*ret, LedgerFill::full});
             WriteLog (lsERROR, Ledger) << p;
         }
 
