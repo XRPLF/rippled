@@ -43,6 +43,8 @@ struct LedgerFill
     {
     }
 
+    enum Options {dumpTxrp = 1, dumpState = 2, expand = 4, full = 8};
+
     Ledger const& ledger;
     int options;
     RPC::Yield yield;
@@ -71,8 +73,8 @@ void fillJson (Object& json, LedgerFill const& fill)
 {
     auto const& ledger = fill.ledger;
 
-    bool const bFull (fill.options & LEDGER_JSON_FULL);
-    bool const bExpand (fill.options & LEDGER_JSON_EXPAND);
+    bool const bFull (fill.options & LedgerFill::full);
+    bool const bExpand (fill.options & LedgerFill::expand);
 
     // DEPRECATED
     json[jss::seqNum]       = to_string (ledger.getLedgerSeq());
@@ -114,7 +116,7 @@ void fillJson (Object& json, LedgerFill const& fill)
     }
 
     auto &transactionMap = ledger.peekTransactionMap();
-    if (transactionMap && (bFull || fill.options & LEDGER_JSON_DUMP_TXRP))
+    if (transactionMap && (bFull || fill.options & LedgerFill::dumpTxrp))
     {
         auto&& txns = RPC::addArray (json, jss::transactions);
         SHAMapTreeNode::TNType type;
@@ -159,7 +161,7 @@ void fillJson (Object& json, LedgerFill const& fill)
     }
 
     auto& accountStateMap = ledger.peekAccountStateMap();
-    if (accountStateMap && (bFull || fill.options & LEDGER_JSON_DUMP_STATE))
+    if (accountStateMap && (bFull || fill.options & LedgerFill::dumpState))
     {
         auto&& array = RPC::addArray (json, jss::accountState);
         RPC::CountedYield count (

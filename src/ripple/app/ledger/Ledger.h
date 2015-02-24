@@ -49,11 +49,6 @@ enum LedgerStateParms
     lepERROR        = 32,   // error
 };
 
-#define LEDGER_JSON_DUMP_TXRP   0x1
-#define LEDGER_JSON_DUMP_STATE  0x2
-#define LEDGER_JSON_EXPAND      0x4
-#define LEDGER_JSON_FULL        0x8
-
 class SqliteStatement;
 
 // VFALCO TODO figure out exactly how this thing works.
