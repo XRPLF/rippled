@@ -39,7 +39,7 @@ lowest practical level.
 **What can you do with Ripple?**
 
 The protocol is entirely open-source and the network’s shared ledger is public
-information, so no central authority prevents anyone from participating.Anyone
+information, so no central authority prevents anyone from participating. Anyone
 can become a market maker, create a wallet or a gateway, or monitor network
 behavior. Competition drives down spreads and fees, making the network useful
 to everyone.
@@ -49,12 +49,12 @@ to everyone.
 1. XRP is Ripple’s native [cryptocurrency]
 (http://en.wikipedia.org/wiki/Cryptocurrency) with a fixed supply that
 decreases slowly over time, with no mining. XRP acts as a bridge currency, and
-pays for transaction fees that protect the network against spam
+pays for transaction fees that protect the network against spam.
 ![XRP as a bridge currency](/images/vehicle_currency.png)
 
 2. Pathfinding discovers cheap and efficient payment paths through multiple
 [order books](https://www.ripplecharts.com) allowing anyone to [trade](https://www.rippletrade.com) anything. When two accounts aren’t linked by relationships of trust, the Ripple pathfinding engine considers intermediate links and order books to produce a set of possible paths the transaction can take. When the payment is processed, the liquidity along these paths is iteratively consumed in best-first order.
-![Pathfinding from Euro to Japanese Yen](/images/pathfinding.png)
+![Pathfinding from Dollars to Euro](/images/pathfinding.png)
 
 3. [Consensus](https://www.youtube.com/watch?v=pj1QVb1vlC0) confirms
 transactions in an atomic fashion, without mining, ensuring efficient use of
