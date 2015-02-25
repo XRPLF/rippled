@@ -729,12 +729,17 @@ class _ProjectGenerator(object):
         self.project_file.write('  <ItemGroup>\r\n')
         for item in self.items:
             path = winpath(os.path.relpath(item.path(), self.project_dir))
-            props = ''
             tag = item.tag()
-            if item.is_excluded():
-                props = '      <ExcludedFromBuild>True</ExcludedFromBuild>\r\n'
-            elif item.builder() == 'Object':
+            props = ''
+            if item.builder() == 'Object':
                 props = ''
+                for config in self.configs:
+                    name = config.name
+                    variant = config.variant
+                    platform = config.platform
+                    if not config in item.node:
+                        props += \
+                            '''      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'">True</ExcludedFromBuild>\r\n''' % locals()
                 for config, output in xsorted(item.node.items()):
                     name = config.name
                     env = output.get_build_env()
@@ -744,6 +749,8 @@ class _ProjectGenerator(object):
                         '      ', 'AdditionalIncludeDirectories',
                         ''' Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'"''' % locals(),
                         True)
+            elif item.is_excluded():
+                props = '      <ExcludedFromBuild>True</ExcludedFromBuild>\r\n'
             elif item.builder() == 'Protoc':
                 for config, output in xsorted(item.node.items()):
                     name = config.name
