@@ -32,7 +32,7 @@ namespace ripple {
 
 bool SHAMap::walkBranch (SHAMapTreeNode* node,
                          std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
-                         Delta& differences, int& maxCount)
+                         Delta& differences, int& maxCount) const
 {
     // Walk a branch of a SHAMap that's matched by an empty branch or single item in the other map
     std::stack <SHAMapTreeNode*, std::vector<SHAMapTreeNode*>> nodeStack;
@@ -114,7 +114,7 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node,
 
 bool
 SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
-                 Delta& differences, int maxCount)
+                 Delta& differences, int maxCount) const
 {
     // compare two hash trees, add up to maxCount differences to the difference table
     // return value: true=complete table of differences given, false=too many differences
@@ -219,7 +219,7 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
     return true;
 }
 
-void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
+void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const
 {
     std::stack <std::shared_ptr<SHAMapTreeNode>,
         std::vector <std::shared_ptr<SHAMapTreeNode>>> nodeStack;
