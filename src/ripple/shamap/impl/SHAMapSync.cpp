@@ -39,13 +39,13 @@ static bool visitLeavesHelper (
     return false;
 }
 
-void SHAMap::visitLeaves (std::function<void (std::shared_ptr<SHAMapItem> const& item)> const& leafFunction)
+void SHAMap::visitLeaves (std::function<void (std::shared_ptr<SHAMapItem> const& item)> const& leafFunction) const
 {
     visitNodes (std::bind (visitLeavesHelper,
             std::cref (leafFunction), std::placeholders::_1));
 }
 
-void SHAMap::visitNodes(std::function<bool (SHAMapTreeNode&)> const& function)
+void SHAMap::visitNodes(std::function<bool (SHAMapTreeNode&)> const& function) const
 {
     // Visit every node in a SHAMap
     assert (root_->isValid ());
@@ -284,7 +284,7 @@ std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
 }
 
 bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs,
-                         std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves)
+                         std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves) const
 {
     // Gets a node and some of its children
 
@@ -540,7 +540,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
     return SHAMapAddNode::duplicate ();
 }
 
-bool SHAMap::deepCompare (SHAMap& other)
+bool SHAMap::deepCompare (SHAMap& other) const
 {
     // Intended for debug/test only
     std::stack <std::pair <SHAMapTreeNode*, SHAMapTreeNode*> > stack;
@@ -615,7 +615,7 @@ bool SHAMap::deepCompare (SHAMap& other)
 */
 bool
 SHAMap::hasInnerNode (SHAMapNodeID const& targetNodeID,
-                      uint256 const& targetNodeHash)
+                      uint256 const& targetNodeHash) const
 {
     SHAMapTreeNode* node = root_.get ();
     SHAMapNodeID nodeID;
@@ -637,7 +637,7 @@ SHAMap::hasInnerNode (SHAMapNodeID const& targetNodeID,
 /** Does this map have this leaf node?
 */
 bool
-SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash)
+SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash) const
 {
     SHAMapTreeNode* node = root_.get ();
     SHAMapNodeID nodeID;
@@ -673,7 +673,7 @@ Note: a caller should set includeLeaves to false for transaction trees.
 There's no point in including the leaves of transaction trees.
 */
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
-                           std::function<void (uint256 const&, const Blob&)> func)
+                           std::function<void (uint256 const&, const Blob&)> func) const
 {
     visitDifferences (have,
         [includeLeaves, &max, &func] (SHAMapTreeNode& smn) -> bool
@@ -691,7 +691,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
         });
 }
 
-void SHAMap::visitDifferences (SHAMap* have, std::function <bool (SHAMapTreeNode&)> func)
+void SHAMap::visitDifferences (SHAMap* have, std::function <bool (SHAMapTreeNode&)> func) const
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
