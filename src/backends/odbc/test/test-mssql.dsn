@@ -1,0 +1,8 @@
+[ODBC]
+DRIVER=SQL Native Client
+UID=David
+DATABASE=soci_test
+WSID=NANO
+APP=Microsoft Data Access Components
+Trusted_Connection=Yes
+SERVER=localhost\SQLEXPRESS

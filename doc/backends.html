@@ -1,0 +1,499 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>SOCI - backends</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>Backends reference</h2>
+
+<p>This part of the documentation is provided for those who want to
+write (and contribute!) their own backends. It is anyway recommended
+that authors of new backend see the code of some existing backend for
+hints on how things are really done.</p>
+
+<p>The backend interface is a set of base classes that the actual backends
+are supposed to specialize. The main SOCI interface uses only the
+interface and respecting the protocol (for example, the order of
+function calls) described here. Note that both the interface and the
+protocol were initially designed with the Oracle database in mind,
+which means
+that whereas it is quite natural with respect to the way Oracle API
+(OCI) works, it might impose some implementation burden on other
+backends, where things are done differently and therefore have to be
+adjusted, cached, converted, etc.</p>
+
+<p>The interface to the common SOCI interface is defined in the <code>core/soci-backend.h</code>
+header file. This file is dissected below.</p>
+
+<p>All names are defined in either <code>soci</code> or <code>soci::details</code>
+namespace.</p>
+
+<pre class="example">
+// data types, as seen by the user
+enum data_type
+{
+    dt_string, dt_date, dt_double, dt_integer, dt_long_long, dt_unsigned_long_long
+};
+
+// the enum type for indicator variables
+enum indicator { i_ok, i_null, i_truncated };
+
+// data types, as used to describe exchange format
+enum exchange_type
+{
+    x_char,
+    x_stdstring,
+    x_short,
+    x_integer,
+    x_long_long,
+    x_unsigned_long_long,
+    x_double,
+    x_stdtm,
+    x_statement,
+    x_rowid,
+    x_blob
+};
+
+struct cstring_descriptor
+{
+    cstring_descriptor(char * str, std::size_t bufSize)
+        : str_(str), bufSize_(bufSize) {}
+
+    char * str_;
+    std::size_t bufSize_;
+};
+
+// actually in error.h:
+class soci_error : public std::runtime_error
+{
+public:
+    soci_error(std::string const &amp; msg);
+};
+</pre>
+
+<p>The <code>data_type</code> enumeration type defines all types that
+form the core type support for SOCI. The enum itself can be used by
+clients when dealing with dynamic rowset description.</p>
+
+<p>The <code>indicator</code> enumeration type defines all recognized <i>states</i> of data.
+The <code>i_truncated</code>
+state is provided for the case where the string is retrieved from the
+database into the char buffer that is not long enough to hold the whole
+value.</p>
+
+<p>The <code>exchange_type</code> enumeration type defines all possible
+types that can be used with the <code>into</code> and <code>use</code>
+elements.</p>
+
+<p>The <code>cstring_descriptor</code> is a helper class that allows to
+store the address of <code>char</code> buffer together with its size.
+The objects of this class are passed to the backend when the <code>x_cstring</code>
+type is involved.</p>
+
+<p>The <code>soci_error</code> class is an exception type used for
+database-related (and
+also usage-related) errors. The backends should throw exceptions of
+this or derived type only.</p>
+
+<pre class="example">
+class standard_into_type_backend
+{
+public:
+    standard_into_type_backend() {}
+    virtual ~standard_into_type_backend() {}
+
+    virtual void define_by_pos(int&amp; position, void* data, exchange_type type) = 0;
+
+    virtual void pre_fetch() = 0;
+    virtual void post_fetch(bool gotData, bool calledFromFetch, indicator* ind) = 0;
+
+    virtual void clean_up() = 0;
+};
+</pre>
+
+<p>The <code>standard_into_type_back_end</code> class implements the dynamic
+interactions with the simple (non-bulk) <code>into</code> elements.
+The objects of this class (or, rather, of the derived class implemented
+by the actual backend) are created by the <code>statement</code>
+object when the <code>into</code> element is bound - in terms of
+lifetime management, <code>statement</code> is the master of this
+class.</p>
+<ul>
+  <li><code>define_by_pos</code> - Called when the <code>into</code>
+element is bound, once and before the statement is executed. The <code>data</code>
+pointer points to the variable used for <code>into</code> element (or
+to the <code>cstring_descriptor</code> object, which is artificially
+created when the plain <code>char</code> buffer is used for data
+exchange). The <code>position</code> parameter is a "column number",
+assigned by
+the library. The backend should increase this parameter, according to
+the number of fields actually taken (usually 1).</li>
+  <li><code>pre_fetch</code> - Called before each row is fetched.</li>
+  <li><code>post_fetch</code> - Called after each row is fetched. The <code>gotData</code>
+parameter is <code>true</code> if the fetch operation really retrieved
+some data and <code>false</code> otherwise; <code>calledFromFetch</code>
+is <code>true</code> when the call is from the fetch operation and <code>false</code>
+if it is from the execute operation (this is also the case for simple,
+one-time queries). In particular, <code>(calledFromFetch &amp;&amp;
+!gotData)</code> indicates that there is an end-of-rowset condition. <code>ind</code>
+points to the indicator provided by the user, or is <code>NULL</code>,
+if there is no indicator.</li>
+  <li><code>clean_up</code> - Called once when the statement is
+destroyed.</li>
+</ul>
+
+<p>The intended use of <code>pre_fetch</code> and <code>post_fetch</code>
+functions is to manage any internal buffer and/or data conversion for
+each value retrieved from the database. If the given server supports
+binary data transmission and the data format for the given type agrees
+with what is used on the client machine, then these two functions need
+not do anything; otherwise buffer management and data conversions
+should go there.</p>
+
+<pre class="example">
+class vector_into_type_backend
+{
+public:
+    vector_into_type_backend() {}
+    virtual ~vector_into_type_backend() {}
+
+    virtual void define_by_pos(int&amp; position, void* data, exchange_type type) = 0;
+
+    virtual void pre_fetch() = 0;
+    virtual void post_fetch(bool gotData, indicator* ind) = 0;
+
+    virtual void resize(std::size_t sz) = 0;
+    virtual std::size_t size() = 0;
+
+    virtual void clean_up() = 0;
+};
+</pre>
+
+<p>The <code>vector_into_type_back_end</code> has similar structure and
+purpose as the previous one, but is used for vectors (bulk data
+retrieval).</p>
+
+<p>The <code>data</code> pointer points to the variable of type <code>std::vector&lt;T&gt;</code>
+(and <i>not</i> to its internal buffer), <code>resize</code>
+is supposed to really resize the user-provided vector and <code>size</code>
+is supposed to return the current size of this vector.
+The important difference with regard to the previous class is that <code>ind</code>
+points (if not <code>NULL</code>) to the beginning of the <i>array</i> of indicators. The backend
+should fill this array according to the actual state of the retrieved
+data.</p>
+
+<pre class="example">
+class standard_use_type_backend
+{
+public:
+    virtual ~standard_use_type_backend() {}
+
+    virtual void bind_by_pos(int&amp; position,
+        void* data, exchange_type type, bool readOnly) = 0;
+    virtual void bind_by_name(std::string const&amp; name,
+        void* data, exchange_type type, bool readOnly) = 0;
+
+    virtual void pre_use(indicator const* ind) = 0;
+    virtual void post_use(bool gotData, indicator* ind) = 0;
+
+    virtual void clean_up() = 0;
+};
+</pre>
+
+<p>The <code>standard_use_type_backend</code> implements the interactions
+with the simple (non-bulk) <code>use</code> elements, created and
+destroyed by the <code>statement</code> object.</p>
+<ul>
+  <li><code>bind_by_pos</code> - Called for each <code>use</code>
+element, once and before the statement is executed - for those <code>use</code>
+elements that do not provide explicit names for parameter binding. The
+meaning of parameters is same as in previous classes.</li>
+  <li><code>bind_by_name</code> - Called for those <code>use</code>
+elements that provide the explicit name.</li>
+  <li><code>pre_use</code> - Called before the data is transmitted to
+the server (this means before the statement is executed, which can
+happen many times for the prepared statement). <code>ind</code> points
+to the indicator provided by the user (or is <code>NULL</code>).</li>
+  <li><code>post_use</code> - Called after statement execution. <code>gotData</code>
+and <code>ind</code> have the same meaning as in <code>standard_into_type_back_end::post_fetch</code>,
+and this can be used by those backends whose respective servers support
+two-way data exchange (like in/out parameters in stored procedures).</li>
+</ul>
+
+<p>The intended use for <code>pre_use</code> and <code>post_use</code>
+methods is to manage any internal buffers and/or data conversion. They
+can be called many times with the same statement.</p>
+
+<pre class="example">
+class vector_use_type_backend
+{
+public:
+    virtual ~vector_use_type_backend() {}
+
+    virtual void bind_by_pos(int&amp; position,
+        void* data, exchange_type type) = 0;
+    virtual void bind_by_name(std::string const&amp; name,
+        void* data, exchange_type type) = 0;
+
+    virtual void pre_use(indicator const* ind) = 0;
+
+    virtual std::size_t size() = 0;
+
+    virtual void clean_up() = 0;
+};
+</pre>
+
+<p>Objects of this type (or rather of type derived from this one) are used
+to implement interactions with user-provided vector (bulk) <code>use</code>
+elements and are managed by the <code>statement</code> object.
+The <code>data</code> pointer points to the whole vector object
+provided by the user (and <i>not</i> to
+its internal buffer); <code>ind</code> points to the beginning of the
+array of indicators (or is <code>NULL</code>). The meaning of this
+interface is analogous to those presented above.</p>
+
+<pre class="example">
+class statement_backend
+{
+public:
+    statement_backend() {}
+    virtual ~statement_backend() {}
+
+    virtual void alloc() = 0;
+    virtual void clean_up() = 0;
+
+    virtual void prepare(std::string const&amp; query, statement_type eType) = 0;
+
+    enum exec_fetch_result
+    {
+        ef_success,
+        ef_no_data
+    };
+
+    virtual exec_fetch_result execute(int number) = 0;
+    virtual exec_fetch_result fetch(int number) = 0;
+
+    virtual long long get_affected_rows() = 0;
+    virtual int get_number_of_rows() = 0;
+
+    virtual std::string rewrite_for_procedure_call(std::string const&amp; query) = 0;
+
+    virtual int prepare_for_describe() = 0;
+    virtual void describe_column(int colNum, data_type&amp; dtype,
+        std::string&amp; column_name) = 0;
+
+    virtual standard_into_type_backend* make_into_type_backend() = 0;
+    virtual standard_use_type_backend* make_use_type_backend() = 0;
+    virtual vector_into_type_backend* make_vector_into_type_backend() = 0;
+    virtual vector_use_type_backend* make_vector_use_type_backend() = 0;
+};
+</pre>
+
+<p>The <code>statement_backend</code> type implements the internals of the
+<code>statement</code> objects. The objects of this class are created by the <code>session</code>
+object.</p>
+<ul>
+  <li><code>alloc</code> - Called once to allocate everything that is
+needed for the statement to work correctly.</li>
+  <li><code>clean_up</code> - Supposed to clean up the resources, called
+once.</li>
+  <li><code>prepare</code> - Called once with the text of the SQL
+query. For servers that support explicit query preparation, this is the
+place to do it.</li>
+  <li><code>execute</code> - Called to execute the query; if number is
+zero, the intent is not to exchange data with the user-provided objects
+(<code>into</code> and <code>use</code> elements); positive values
+mean the number of rows to exchange (more than 1 is used only for bulk
+operations).</li>
+  <li><code>fetch</code> - Called to fetch next bunch of rows; number
+is positive and determines the requested number of rows (more than 1 is
+used only for bulk operations).</li>
+  <li><code>get_affected_rows</code> - Called to determine the actual
+number of rows affected by data modifying statement.</li>
+  <li><code>get_number_of_rows</code> - Called to determine the actual
+number of rows retrieved by the previous call to <code>execute</code>
+or <code>fetch</code>.</li>
+  <li><code>rewrite_for_procedure_call</code> - Used when the <code>procedure</code>
+is used instead of <code>statement</code>, to call the stored
+procedure. This function should rewrite the SQL query (if necessary) to
+the form that will allow to execute the given procedure.
+  </li>
+  <li><code>prepare_for_describe</code> - Called once when the <code>into</code>
+element is used with the <code>row</code> type, which means that
+dynamic rowset description should be performed. It is supposed to do
+whatever is needed to later describe the column properties and should
+return the number of columns.</li>
+  <li><code>describe_column</code> - Called once for each column (column
+numbers - <code>colNum</code> - start from 1), should fill its
+parameters according to the column properties.</li>
+  <li><code>make_into_type_backend</code>, <code>make_use_type_backend</code>,
+    <code>make_vector_into_type_backend</code>, <code>make_vector_use_type_backend</code>
+- Called once for each <code>into</code> or <code>use</code> element,
+to create the objects of appropriate classes (described above).</li>
+</ul>
+
+<p>Notes:</p>
+<ol>
+  <li>Whether the query is executed using the simple one-time syntax or
+is prepared, the <code>alloc</code>, <code>prepare</code> and <code>execute</code>
+functions are always called, in this order.</li>
+  <li>All <code>into</code> and <code>use</code> elements are bound
+(their <code>define_by_pos</code> or <code>bind_by_pos</code>/<code>bind_by_name</code>
+functions are called) <i>between</i>
+statement preparation and execution.
+  </li>
+</ol>
+
+<pre class="example">
+class rowid_backend
+{
+public:
+    virtual ~rowid_backend() {}
+};
+</pre>
+
+<p>The <code>rowid_backend</code> class is a hook for the backends to
+provide their own state for the row identifier. It has no functions,
+since the only portable interaction with the row identifier object is
+to use it with <code>into</code> and <code>use</code> elements.</p>
+
+<pre class="example">
+class blob_backend
+{
+public:
+    virtual ~blob_backend() {}
+
+    virtual std::size_t get_len() = 0;
+    virtual std::size_t read(std::size_t offset, char * buf,
+        std::size_t toRead) = 0;
+    virtual std::size_t write(std::size_t offset, char const * buf,
+        std::size_t toWrite) = 0;
+    virtual std::size_t append(char const * buf, std::size_t toWrite) = 0;
+    virtual void trim(std::size_t newLen) = 0;
+};
+</pre>
+
+<p>The <code>blob_backend</code> interface provides the entry points for
+the <code>blob</code> methods.</p>
+
+<pre class="example">
+class session_backend
+{
+public:
+    virtual ~session_backend() {}
+
+    virtual void begin() = 0;
+    virtual void commit() = 0;
+    virtual void rollback() = 0;
+
+    virtual bool get_next_sequence_value(session&amp;, std::string const&amp;, long&amp;);
+    virtual bool get_last_insert_id(session&amp;, std::string const&amp;, long&amp;);
+
+    virtual std::string get_backend_name() const = 0;
+
+    virtual statement_backend * make_statement_backend() = 0;
+    virtual rowid_backend * make_rowid_backend() = 0;
+    virtual blob_backend * make_blob_backend() = 0;
+};
+</pre>
+
+<p>The object of the class derived from <code>session_backend</code> implements the
+internals of the <code>session</code> object.</p>
+<ul>
+  <li><code>begin</code>, <code>commit</code>, <code>rollback</code>
+- Forward-called when the same functions of <code>session</code> are
+called by user.</li>
+  <li><code>get_next_sequence_value</code>, <code>get_last_insert_id</code> 
+- Called to retrieve sequences or auto-generated values and every backend should 
+define at least one of them to allow the code using auto-generated values to work.
+  </li>
+  <li><code>make_statement_backend</code>, <code>make_rowid_backend</code>,
+    <code>make_blob_backend</code> - Called to create respective
+implementations for the <code>statement</code>, <code>rowid</code>
+and <code>blob</code> classes.
+  </li>
+</ul>
+
+<pre class="example">
+struct backend_factory
+{
+    virtual ~backend_factory() {}
+
+    virtual details::session_backend * make_session(
+        std::string const&amp; connectString) const = 0;
+};
+</pre>
+
+<p>The <code>backend_factory</code> is a base class for backend-provided
+factory class that is able to create valid sessions. The <code>connectString</code>
+parameter passed to <code>make_session</code> is provided here by the <code>session</code>
+constructor and contains only the backend-related parameters, without the backend name
+(if the dynamic backend loading is used).</p>
+
+<p>The actual backend factory object is supposed to be provided by the
+backend implementation and declared in its header file. In addition to this,
+the <code>factory_ABC</code> function with the "C" calling convention
+and returning the pointer to concrete factory object should be provided,
+where <code>ABC</code> is the backend name.</p>
+
+<p>The following example is taken from <code>soci-postgresql.h</code>,
+which declares entities of the PostgreSQL backend:</p>
+
+<pre class="example">
+struct postgresql_backend_factory : backend_factory
+{
+    virtual postgresql_session_backend* make_session(
+        std::string const&amp; connectString) const;
+};
+
+extern postgresql_backend_factory const postgresql;
+
+extern "C"
+{
+
+// for dynamic backend loading
+backend_factory const * factory_postgresql();
+
+} // extern "C"
+</pre>
+
+<p>With the above declarations, it is enough to pass the <code>postgresql</code>
+factory name to the constructor of the <code>session</code> object,
+which will use this factory to create concrete implementations for any
+other objects that
+are needed, with the help of appropriate <code>make_XYZ</code>
+functions. Alternatively, the <code>factory_postgresql</code> function will
+be called automatically by the backend loader if the backend name is provided
+at run-time instead.</p>
+
+<p>Note that the backend source code is placed in the <code>backends/<i>name</i></code> directory (for example,
+<code>backends/oracle</code>) and the test driver is in <code>backends/<i>name</i>/test</code>. There is also <code>backends/empty</code>
+directory provided as a skeleton for development of new backends and
+their tests. It is
+recommended that all backends respect naming conventions by just
+appending their name to the base-class names. The backend name used for
+the global factory object should clearly identify the given
+database engine, like <code>oracle</code>, <code>postgresql</code>, <code>mysql</code>,
+and so on.</p>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left">
+      <a href="reference.html">Previous (Client reference)</a>
+    </td>
+    <td class="foot-link-right">
+      <a href="rationale.html">Next (Rationale FAQ)</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2013 Mateusz Loskot</p>
+<p class="copyright">Copyright &copy; 2012 Vadim Zeitlin</p>
+<p class="copyright">Copyright &copy; 2004-2006 Maciej Sobczak, Stephen Hutton</p>
+</body>
+</html>
