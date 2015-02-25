@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="../style.css" />
+  <title>SOCI - Firebird Backend Reference</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>Firebird Backend Reference</h2>
+
+<div class="navigation">
+<a href="#prerequisites">Prerequisites</a><br />
+<div class="navigation-indented">
+  <a href="#versions">Supported Versions</a><br />
+  <a href="#tested">Tested Platforms</a><br />
+  <a href="#required">Required Client Libraries</a><br />
+</div>
+<a href="#connecting">Connecting to the Database</a><br />
+     
+<a href="#support">SOCI Feature Support</a><br />
+<div class="navigation-indented">
+    <a href="#dynamic">Dynamic Binding</a><br />
+    <a href="#bindingbyname">Binding by Name</a><br />
+    <a href="#bulk">Bulk Operations</a><br />
+    <a href="#transactions">Transactions</a><br />
+    <a href="#blob">BLOB Data Type</a><br />
+    <a href="#rowid">RowID Data Type</a><br />
+    <a href="#nested">Nested Statements</a><br />
+    <a href="#procedures">Stored Procedures</a><br />
+</div>
+  <a href="#native">Accessing the Native Database API</a><br />
+  <a href="#extensions">Backend-specific Extensions</a><br />
+<div class="navigation-indented">
+    <a href="#firebird_soci_error">FirebirdSOCIError</a><br />
+</div>
+  <a href="#options">Configuration options</a><br />
+</div>
+
+<h3 id="prerequisites">Prerequisites</h3>
+<h4 id="versions">Supported Versions</h4>
+
+<p>The SOCI Firebird backend is currently supported for use with Firebird 1.5.<br />
+Other versions of Firebird may work as well, but they have not been tested by the SOCI team.</p>
+
+<h4 id="tested">Tested Platforms</h4>
+
+<table border="1" cellpadding="5" cellspacing="0">
+<tbody>
+<tr><th>Firebird version</th><th>Operating System</th><th>Compiler</th></tr>
+<tr><td>1.5.2.4731</td><td>SunOS 5.10</td><td>g++ 3.4.3</td></tr>
+<tr><td>1.5.2.4731</td><td>Windows XP</td><td>Visual C++ 8.0</td></tr>
+<tr><td>1.5.3.4870</td><td>Windows XP</td><td>Visual C++ 8.0 Professional</td></tr>
+</tbody>
+</table>
+
+<h4 id="required">Required Client Libraries</h4>
+
+<p>The Firebird backend requires Firebird's <code>libfbclient</code> client library.</p>
+
+<h4 id="connecting">Connecting to the Database</h4>
+
+<p>To establish a connection to a Firebird database, create a Session object
+using the firebird backend factory together with a connection string:</p>
+
+<pre class="example">
+BackEndFactory const &amp;backEnd = firebird;
+Session sql(backEnd, 
+        "service=/usr/local/firbird/db/test.fdb user=SYSDBA password=masterkey");
+</pre>
+
+<p>or simply:</p>
+
+<pre class="example">
+Session sql(firebird, 
+        "service=/usr/local/firbird/db/test.fdb user=SYSDBA password=masterkey");
+</pre>
+
+<p>The set of parameters used in the connection string for Firebird is:</p>
+<ul>
+  <li>service</li>
+  <li>user</li>
+  <li>password</li>
+  <li>role</li>
+  <li>charset</li>
+</ul>
+<p>The following parameters have to be provided as part of the connection string :
+<i>service</i>, <i>user</i>, <i>password</i>. Role and charset parameters are optional.</p>
+
+<p>Once you have created a <code>Session</code> object as shown above, you can use it to access the database, for example:</p>
+<pre class="example">
+int count;
+sql &lt;&lt; "select count(*) from user_tables", into(count);
+</pre>
+
+<p>(See the <a href="../basics.html">SOCI basics</a> and <a href="../exchange.html">exchanging data</a> documentation for general information on using the <code>Session</code> class.)</p>
+
+<h3 id="support">SOCI Feature Support</h3>
+<h4 id="dynamic">Dynamic Binding</h4>
+
+<p>The Firebird backend supports the use of the SOCI <code>Row</code> class, which facilitates retrieval of data whose type is not known at compile time.</p>
+
+<p>When calling <code>Row::get&lt;T&gt;()</code>, the type you should pass as T depends upon the underlying database type. For the Firebird backend, this type mapping is:</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <tbody>
+    <tr>
+      <th>Firebird Data Type</th>
+      <th>SOCI Data Type</th>
+      <th><code>Row::get&lt;T&gt;</code> specializations</th>
+    </tr>
+    <tr>
+      <td>numeric, decimal <br /><i>(where scale &gt; 0)</i></td>
+      <td><code>eDouble</code></td>
+      <td><code>double</code></td>
+    </tr>
+    <tr>
+      <td>numeric, decimal <sup>[<a href="#note1">1</a>]</sup><br /><i>(where scale = 0)</i></td>
+      <td><code>eInteger, eDouble</code></td>
+      <td><code>int, double</code></td>
+    </tr>
+    <tr>
+      <td>double precision, float</td>
+      <td><code>eDouble</code></td>
+      <td><code>double</code></td>
+    </tr>
+    <tr>
+      <td>smallint, integer</td>
+      <td><code>eInteger</code></td>
+      <td><code>int</code></td>
+    </tr>
+    <tr>
+      <td>char, varchar</td>
+      <td><code>eString</code></td>
+      <td><code>std::string</code></td>
+    </tr>
+    <tr>
+      <td>date, time, timestamp</td>
+      <td><code>eDate</code></td>
+      <td><code>std::tm</code><code></code></td>
+    </tr>
+  </tbody>
+</table>
+<p><a name="note1" />&nbsp;<sup>[1]</sup> &nbsp;There is also 64bit integer type for larger values which is 
+currently not supported.</p>
+<p>(See the <a href="../exchange.html#dynamic">dynamic resultset binding</a> documentation for general information on using the <code>Row</code> class.)</p>
+
+<h4 id="bindingbyname">Binding by Name</h4>
+
+<p>In addition to <a href="../exchange.html#bind_position">binding by position</a>, the Firebird backend supports <a href="../exchange.html#bind_name">binding by name</a>, via an overload of the <code>use()</code> function:</p>
+
+<pre class="example">
+int id = 7;
+sql &lt;&lt; "select name from person where id = :id", use(id, "id")
+</pre>
+
+<p>It should be noted that parameter binding by name is supported only by means of emulation, since the underlying API used by the backend doesn't provide this feature.</p>
+
+<h4 id="bulk">Bulk Operations</h4>
+
+<p>The Firebird backend has full support for SOCI's <a href="../statements.html#bulk">bulk operations</a> interface. This feature is also supported by emulation.</p> 
+
+<h4 id="transactions">Transactions</h4>
+
+<p><a href="../statements.html#transactions">Transactions</a> are also fully 
+supported by the Firebird backend. In fact, there is always a transaction which is automatically commited in <code>Session's</code> destructor.
+<br />See the <a href="#options">Configuration options</a> section for more details.</p>
+
+<h4 id="blob">BLOB Data Type</h4>
+
+<p>The Firebird backend supports working with data stored in columns of type Blob, via SOCI's <a href="../exchange.html#blob"><code>BLOB</code></a> class.</p>
+<p>It should by noted, that entire Blob data is fetched from database to allow random read and write access. 
+This is because Firebird itself allows only writing to a new Blob or reading from existing one -
+modifications of existing Blob means creating a new one. Firebird backend hides those details from user.</p>
+
+<h4 id="rowid">RowID Data Type</h4>
+
+<p>This feature is not supported by Firebird backend.</p>
+
+<h4 id="nested">Nested Statements</h4>
+
+<p>This feature is not supported by Firebird backend.</p>
+
+<h4 id="procedures">Stored Procedures</h4>
+
+<p>Firebird stored procedures can be executed by using SOCI's <a href="../statements.html#procedures">Procedure</a> class.</p>
+
+<h3 id="native">Acessing the native database API</h3>
+
+<p>SOCI provides access to underlying datbabase APIs via several getBackEnd() functions, as described in the <a href="../beyond.html">beyond SOCI</a> documentation.</p>
+
+<p>The Firebird backend provides the following concrete classes for navite API access:</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <tbody>
+    <tr>
+      <th>Accessor Function</th>
+      <th>Concrete Class</th>
+    </tr>
+    <tr>
+      <td><code>SessionBackEnd* Session::getBackEnd()</code></td>
+      <td><code>FirebirdSessionBackEnd</code></td>
+    </tr>
+    <tr>
+      <td><code>StatementBackEnd* Statement::getBackEnd()</code></td>
+      <td><code>FirebirdStatementBackEnd</code></td>
+    </tr>
+    <tr>
+      <td><code>BLOBBackEnd* BLOB::getBackEnd()</code></td>
+      <td><code>FirebirdBLOBBackEnd</code></td>
+    </tr>
+    <tr>
+      <td><code>RowIDBackEnd* RowID::getBackEnd()</code></td>
+      <td><code>FirebirdRowIDBackEnd</code></td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h3 id="extensions">Backend-specific extensions</h3>
+<h4 id="firebird_soci_error">FirebirdSOCIError</h4>
+
+<p>The Firebird backend can throw instances of class <code>FirebirdSOCIError</code>,
+which is publicly derived from <code>SOCIError</code> and has an
+additional public <code>status_</code> member containing the Firebird status vector.</p>
+
+<h3 id="options">Configuration options</h3>
+
+<p>The Firebird backend recognize the following configuration macros :</p>
+<ul>
+<li><code>SOCI_FIREBIRD_NORESTARTTRANSACTION </code> - 
+    Transactions will not be restarted automatically after commit() or rollback().
+    The default is to restart transactions.</li>
+</ul>
+
+<p class="copyright">Copyright &copy; 2004-2006 Maciej Sobczak, Stephen Hutton, Rafal Bobrowski</p>
+</body>
+</html>
