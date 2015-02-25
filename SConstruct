@@ -734,6 +734,10 @@ for tu_style in ['classic', 'unity']:
                 if toolchain in toolchains:
                     aliases['all'].extend(target)
                     aliases[toolchain].extend(target)
+            elif toolchain == 'msvc':
+                config = env.VSProjectConfig(variant + ".classic", 'x64', target, env)
+                msvc_configs.append(config)
+
             if toolchain in toolchains:
                 aliases[variant].extend(target)
                 env.Alias(variant_name, target)
@@ -776,3 +780,4 @@ def do_count(target, source, env):
     print "Total unit test lines: %d" % lines
 
 PhonyTargets(env, count = do_count)
+
