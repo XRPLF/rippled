@@ -46,7 +46,7 @@ GlobalFreeze
 ------------
 
 There is also, a global freeze, toggled by a bit in the AccountRoot Flags, which
-freezes ALL trust lines for an account. 
+freezes ALL trust lines for an account.
 
 Offers can not be created to buy or sell assets issued by an account with
 GlobalFreeze set.
@@ -56,7 +56,7 @@ Use cases (via (David (JoelKatz) Schwartz)):
   There are two basic cases. One is a case where some kind of bug or flaw causes
   a large amount of an asset to somehow be created and the gateway hasn't yet
   decided how it's going to handle it.
-  
+
   The other is a reissue where one asset is replaced by another. In a community
   credit case, say someone tricks you into issuing a huge amount of an asset,
   but you set the no freeze flag. You can still set global freeze to protect
@@ -70,7 +70,7 @@ NoFreeze
 NoFreeze, is a set only flag bit in the account root.
 
 When this bit is set:
-  An account may not freeze it's side of a trustline
+  An account may not freeze its side of a trustline
 
   The NoFreeze bit can not be cleared
 
@@ -84,7 +84,7 @@ LedgerEntry flags
 -----------------
 
 RippleState
-  
+
   LowFreeze     0x00400000
   HighFreeze    0x00800000
 
@@ -128,7 +128,7 @@ request.book_offers
 -------------------
 
 All offers selling assets from a frozen line/acount (offers created before a
-freeze) will be filtered, except where in a global freeze situation where: 
+freeze) will be filtered, except where in a global freeze situation where:
 
   TakerGets.issuer == Account ($frozen_account)
 
@@ -298,11 +298,11 @@ book_offers_factory = (remote) ->
 
 suite_setup = (state) ->
   '''
-  
+
   @state
-  
+
     The ledger state to setup, after starting the server
-  
+
   '''
   opts =
     setup_func: suiteSetup
@@ -557,7 +557,7 @@ execute_if_enabled (suite, enforced) ->
 
               done()
 
-        suite 'it\'s assets can be', ->
+        suite 'its assets can be', ->
 
           test 'bought on the market', (next) ->
             h.create_offer 'A3', '1/BTC/G1', '1.0', (m) ->
@@ -603,7 +603,7 @@ execute_if_enabled (suite, enforced) ->
 
               done()
 
-        suite 'it\'s assets can\'t be', ->
+        suite 'its assets can\'t be', ->
           test_if enforced, 'bought on the market', (next) ->
             h.create_offer 'A3', '1/BTC/G1', '1.0', (m) ->
               assert.equal m.engine_result, 'tecFROZEN'
@@ -614,7 +614,7 @@ execute_if_enabled (suite, enforced) ->
               assert.equal m.engine_result, 'tecFROZEN'
               next()
 
-        suite 'it\'s offers are filtered', ->
+        suite 'its offers are filtered', ->
           test_if enforced, 'account_offers always '+
                             'shows their own offers', (done) ->
             {remote} = h = get_helpers()

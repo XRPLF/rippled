@@ -424,8 +424,8 @@ private:
     // Post-conditions:
     //  job is a valid Job object.
     //  job is removed from mJobQueue.
-    //  Waiting job count of it's type is decremented
-    //  Running job count of it's type is incremented
+    //  Waiting job count of its type is decremented
+    //  Running job count of its type is incremented
     //
     // Invariants:
     //  The calling thread owns the JobLock

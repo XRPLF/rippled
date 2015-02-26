@@ -60,7 +60,7 @@ public:
             arrays/objects.
 
             STObject is an associative container, mapping fields to value, but
-            an STObject may also have a Field as it's name, stored outside the
+            an STObject may also have a Field as its name, stored outside the
             associative structure. The name is important, so to maintain
             fidelity, it will take TWO json objects to represent them.
 

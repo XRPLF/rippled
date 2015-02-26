@@ -23,7 +23,7 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** Wraps a Journal::Sink to prefix it's output. */
+/** Wraps a Journal::Sink to prefix its output. */
 class WrappedSink : public beast::Journal::Sink
 {
 public:

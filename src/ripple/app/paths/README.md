@@ -21,7 +21,7 @@ This is the **rippled** implementation; there are many other possible implementa
  * When searching, limit our search to the rippled cache.
 2. Six degrees of separation.
  * If sending value through individual's account, expect no path to have more than six hops.
- * According to [Facebook studies](https://www.facebook.com/notes/facebook-data-team/anatomy-of-facebook/10150388519243859) as of late 2011, it's users are separated by fewer than five steps.
+ * According to [Facebook studies](https://www.facebook.com/notes/facebook-data-team/anatomy-of-facebook/10150388519243859) as of late 2011, its users are separated by fewer than five steps.
  * By using XRP for bridging the most complicated path expected is usually:
  * source -> gateway -> XRP -> gateway -> destination
 3. Pareto principle.
@@ -135,8 +135,3 @@ If you can compute a path already yourself or know one, you don't need to do ste
  * very little time, can't afford to do a search.
  * that's why we do the path building before the payment is due.
  * The routine used to compute liquidity and ledger change is also called RippleCalc::rippleCalc.
-
-
-
-
-
