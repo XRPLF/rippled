@@ -372,7 +372,7 @@ store<Hasher, Codec, File>::open (
     key_file_header kh;
     read (df, dh);
     read (kf, kh);
-    verify<Codec> (dh);
+    verify (dh);
     verify<Hasher> (kh);
     verify<Hasher> (dh, kh);
     auto s = std::make_unique<state>(

@@ -21,7 +21,7 @@
 #define BEAST_NUDB_TESTS_COMMON_H_INCLUDED
 
 #include <beast/nudb.h>
-#include <beast/nudb/identity_codec.h>
+#include <beast/nudb/identity.h>
 #include <beast/nudb/tests/fail_file.h>
 #include <beast/hash/xxhasher.h>
 #include <beast/random/xor_shift_engine.h>
@@ -37,7 +37,7 @@ using key_type = std::size_t;
 
 // xxhasher is fast and produces good results
 using test_api_base =
-    nudb::api<xxhasher, identity_codec, native_file>;
+    nudb::api<xxhasher, identity, native_file>;
 
 struct test_api : test_api_base
 {
