@@ -26,7 +26,6 @@
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/nudb.h>
 #include <beast/nudb/detail/varint.h>
-#include <beast/nudb/identity_codec.h>
 #include <beast/nudb/visit.h>
 #include <beast/hash/xxhasher.h>
 #include <boost/filesystem.hpp>
