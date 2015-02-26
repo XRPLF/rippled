@@ -1448,6 +1448,28 @@ public:
 
     Ledger::pointer getLedgerBySeq (std::uint32_t index)
     {
+        if (index <= mValidLedgerSeq)
+        {
+            // Always prefer a validated ledger
+            auto valid = mValidLedger.get ();
+            if (valid)
+            {
+                if (valid->getLedgerSeq() == index)
+                    return valid;
+
+                try
+                {
+                    uint256 const& hash = valid->getLedgerHash (index);
+                    if (hash.isNonZero())
+                        return mLedgerHistory.getLedgerByHash (hash);
+                }
+                catch (...)
+                {
+                    // Missing nodes are already handled
+                }
+            }
+        }
+
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
         if (ret)
             return ret;
