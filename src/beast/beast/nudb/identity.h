@@ -26,12 +26,12 @@ namespace beast {
 namespace nudb {
 
 /** Codec which maps input directly to output. */
-class identity_codec
+class identity
 {
 public:
     template <class... Args>
     explicit
-    identity_codec(Args&&... args)
+    identity(Args&&... args)
     {
     }
 

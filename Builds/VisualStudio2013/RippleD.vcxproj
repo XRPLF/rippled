@@ -946,7 +946,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\file.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\nudb\identity_codec.h">
+    <ClInclude Include="..\..\src\beast\beast\nudb\identity.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\nudb\nudb.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
