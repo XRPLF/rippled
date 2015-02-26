@@ -680,7 +680,6 @@ bool SHAMap::delItem (uint256 const& id)
         throw (std::runtime_error ("missing node"));
 
     std::shared_ptr<SHAMapTreeNode> leaf = stack.top ().first;
-    SHAMapNodeID leafID = stack.top ().second;
     stack.pop ();
 
     if (!leaf || !leaf->hasItem () || (leaf->peekItem ()->getTag () != id))
