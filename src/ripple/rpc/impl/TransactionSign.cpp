@@ -123,7 +123,7 @@ bool LedgerFacade::hasAccountRoot () const
         return true;
 
     SLE::pointer const sleAccountRoot =
-        netOPs_->getSLEi (ledger_, getAccountRootIndex (accountID_));
+        ledger_->getSLEi(getAccountRootIndex(accountID_));
 
     return static_cast <bool> (sleAccountRoot);
 }

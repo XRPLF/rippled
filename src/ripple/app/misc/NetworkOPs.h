@@ -137,8 +137,6 @@ public:
 
     virtual STValidation::ref getLastValidation () = 0;
     virtual void setLastValidation (STValidation::ref v) = 0;
-    virtual SLE::pointer getSLE (Ledger::pointer lpLedger, uint256 const& uHash) = 0;
-    virtual SLE::pointer getSLEi (Ledger::pointer lpLedger, uint256 const& uHash) = 0;
 
     //--------------------------------------------------------------------------
     //
