@@ -26,6 +26,7 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/transactors/Transactor.h>
 #include <ripple/basics/seconds_clock.h>
+#include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -75,7 +76,7 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 // Create an account represented by public RippleAddress and private
 // RippleAddress
 TestAccount
-createAccount(std::string const& passphrase);
+createAccount(std::string const& passphrase, KeyType keyType);
 
 void
 freezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign = true);

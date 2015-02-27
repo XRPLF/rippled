@@ -20,8 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_RIPPLEADDRESS_H_INCLUDED
 #define RIPPLE_PROTOCOL_RIPPLEADDRESS_H_INCLUDED
 
+#include <ripple/basics/base_uint.h>
 #include <ripple/crypto/Base58Data.h>
 #include <ripple/crypto/ECDSACanonical.h>
+#include <ripple/crypto/KeyType.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/RipplePublicKey.h>
 #include <ripple/protocol/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
@@ -142,7 +145,7 @@ public:
     void setAccountPublic (Blob const& vPublic);
     void setAccountPublic (RippleAddress const& generator, int seq);
 
-    bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig,
+    bool accountPublicVerify (Blob const& message, Blob const& vucSig,
                               ECDSA mustBeFullyCanonical) const;
 
     static RippleAddress createAccountPublic (Blob const& vPublic)
@@ -172,7 +175,7 @@ public:
     void setAccountPrivate (RippleAddress const& naGenerator,
                             RippleAddress const& naSeed, int seq);
 
-    bool accountPrivateSign (uint256 const& uHash, Blob& vucSig) const;
+    Blob accountPrivateSign (Blob const& message) const;
 
     // Encrypt a message.
     Blob accountPrivateEncrypt (
@@ -284,6 +287,18 @@ operator>=(RippleAddress const& lhs, RippleAddress const& rhs)
 {
     return !(lhs < rhs);
 }
+
+struct KeyPair
+{
+    RippleAddress secretKey;
+    RippleAddress publicKey;
+};
+
+uint256 keyFromSeed (uint128 const& seed);
+
+RippleAddress getSeedFromRPC (Json::Value const& params);
+
+KeyPair generateKeysFromSeed (KeyType keyType, RippleAddress const& seed);
 
 } // ripple
 

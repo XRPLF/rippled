@@ -25,15 +25,39 @@
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/RipplePublicKey.h>
 #include <beast/unit_test/suite.h>
+#include <ed25519-donna/ed25519.h>
 #include <openssl/ripemd.h>
 #include <openssl/pem.h>
+#include <algorithm>
 #include <mutex>
 
 namespace ripple {
+
+static
+bool isCanonicalEd25519Signature (std::uint8_t const* signature)
+{
+    using std::uint8_t;
+
+    // Big-endian `l`, the Ed25519 subgroup order
+    char const* const order = "\x10\x00\x00\x00\x00\x00\x00\x00"
+                              "\x00\x00\x00\x00\x00\x00\x00\x00"
+                              "\x14\xDE\xF9\xDE\xA2\xF7\x9C\xD6"
+                              "\x58\x12\x63\x1A\x5C\xF5\xD3\xED";
+
+    uint8_t const* const l = reinterpret_cast<uint8_t const*> (order);
+
+    // Take the second half of signature and byte-reverse it to big-endian.
+    uint8_t const* S_le = signature + 32;
+    uint8_t S[32];
+    std::reverse_copy (S_le, S_le + 32, S);
+
+    return std::lexicographical_compare (S, S + 32, l, l + 32);
+}
 
 // <-- seed
 static uint128 PassPhraseToKey (std::string const& passPhrase)
@@ -486,8 +510,28 @@ void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
 }
 
 bool RippleAddress::accountPublicVerify (
-    uint256 const& uHash, Blob const& vucSig, ECDSA fullyCanonical) const
+    Blob const& message, Blob const& vucSig, ECDSA fullyCanonical) const
 {
+    if (vchData.size() == 33  &&  vchData[0] == 0xED)
+    {
+        if (vucSig.size() != 64)
+        {
+            return false;
+        }
+
+        uint8_t const* publicKey = &vchData[1];
+        uint8_t const* signature = &vucSig[0];
+
+        if (ed25519_sign_open (message.data(), message.size(), publicKey, signature) != 0)
+        {
+            return false;
+        }
+        
+        return isCanonicalEd25519Signature (signature);
+    }
+
+    uint256 const uHash = getSHA512Half (message);
+
     return verifySignature (getAccountPublic(), uHash, vucSig, fullyCanonical);
 }
 
@@ -521,7 +565,7 @@ uint256 RippleAddress::getAccountPrivate () const
         throw std::runtime_error ("unset source - getAccountPrivate");
 
     case VER_ACCOUNT_PRIVATE:
-        return uint256 (vchData);
+        return uint256::fromVoid (vchData.data() + (vchData.size() - 32));
 
     default:
         throw std::runtime_error ("bad source: " + std::to_string(nVersion));
@@ -556,15 +600,32 @@ void RippleAddress::setAccountPrivate (
     setAccountPrivate (secretKey);
 }
 
-bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) const
+Blob RippleAddress::accountPrivateSign (Blob const& message) const
 {
-    vucSig = ECDSASign (uHash, getAccountPrivate());
-    const bool ok = !vucSig.empty();
+    if (vchData.size() == 33  &&  vchData[0] == 0xED)
+    {
+        uint8_t const*      secretKey = &vchData[1];
+        ed25519_public_key  publicKey;
+        Blob                signature (sizeof (ed25519_signature));
+
+        ed25519_publickey (secretKey, publicKey);
+
+        ed25519_sign (message.data(), message.size(), secretKey, publicKey, &signature[0]);
+        
+        assert (isCanonicalEd25519Signature (signature.data()));
+
+        return signature;
+    }
+
+    uint256 const uHash = getSHA512Half (message);
+
+    Blob result = ECDSASign (uHash, getAccountPrivate());
+    bool const ok = !result.empty();
 
     CondLog (!ok, lsWARNING, RippleAddress)
             << "accountPrivateSign: Signing failed.";
 
-    return ok;
+    return result;
 }
 
 Blob RippleAddress::accountPrivateEncrypt (
@@ -811,6 +872,106 @@ RippleAddress RippleAddress::createSeedGeneric (std::string const& strText)
     naNew.setSeedGeneric (strText);
 
     return naNew;
+}
+
+uint256 keyFromSeed (uint128 const& seed)
+{
+    Serializer s;
+
+    s.add128 (seed);
+    uint256 result = s.getSHA512Half();
+
+    s.secureErase ();
+
+    return result;
+}
+
+RippleAddress getSeedFromRPC (Json::Value const& params)
+{
+    // This function is only called when `key_type` is present.
+    assert (params.isMember (jss::key_type));
+    
+    bool const has_passphrase = params.isMember (jss::passphrase);
+    bool const has_seed       = params.isMember (jss::seed);
+    bool const has_seed_hex   = params.isMember (jss::seed_hex);
+
+    int const n_secrets = has_passphrase + has_seed + has_seed_hex;
+
+    if (n_secrets > 1)
+    {
+        // `passphrase`, `seed`, and `seed_hex` are mutually exclusive.
+        return RippleAddress();
+    }
+
+    RippleAddress result;
+
+    if (has_seed)
+    {
+        std::string const seed = params[jss::seed].asString();
+
+        result.setSeed (seed);
+    }
+    else if (has_seed_hex)
+    {
+        uint128 seed;
+        std::string const seed_hex = params[jss::seed_hex].asString();
+
+        if (seed_hex.size() != 32  ||  !seed.SetHex (seed_hex, true))
+        {
+            return RippleAddress();
+        }
+
+        result.setSeed (seed);
+    }
+    else if (has_passphrase)
+    {
+        std::string const passphrase = params[jss::passphrase].asString();
+
+        // Given `key_type`, `passphrase` is always the passphrase.
+        uint128 const seed = PassPhraseToKey (passphrase);
+        result.setSeed (seed);
+    }
+
+    return result;
+}
+
+KeyPair generateKeysFromSeed (KeyType type, RippleAddress const& seed)
+{
+    KeyPair result;
+
+    if (! seed.isSet())
+    {
+        return result;
+    }
+
+    if (type == KeyType::secp256k1)
+    {
+        RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
+        result.secretKey.setAccountPrivate (generator, seed, 0);
+        result.publicKey.setAccountPublic (generator, 0);
+    }
+    else if (type == KeyType::ed25519)
+    {
+        uint256 secretkey = keyFromSeed (seed.getSeed());
+
+        Blob ed25519_key (33);
+        ed25519_key[0] = 0xED;
+
+        assert (secretkey.size() + 1 == ed25519_key.size());
+        memcpy (&ed25519_key[1], secretkey.data(), secretkey.size());
+        result.secretKey.setAccountPrivate (ed25519_key);
+
+        ed25519_publickey (secretkey.data(), &ed25519_key[1]);
+        result.publicKey.setAccountPublic (ed25519_key);
+
+        secretkey.zero();  // security erase
+    }
+    else
+    {
+        assert (false);  // not reached
+    }
+
+    return result;
 }
 
 } // ripple

@@ -56,6 +56,17 @@ static key_strings const secp256k1_strings =
     "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
 };
 
+static key_strings const ed25519_strings =
+{
+    "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
+    common::master_key,
+    common::master_seed,
+    common::master_seed_hex,
+    "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
+    "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
+    "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
+};
+
 class WalletPropose_test : public ripple::TestSuite
 {
 public:
@@ -65,19 +76,19 @@ public:
         Json::Value result = walletPropose (params);
 
         expect (! contains_error (result));
-        expect (result.isMember ("account_id"));
-        expect (result.isMember ("master_key"));
-        expect (result.isMember ("master_seed"));
-        expect (result.isMember ("master_seed_hex"));
-        expect (result.isMember ("public_key"));
-        expect (result.isMember ("public_key_hex"));
+        expect (result.isMember (jss::account_id));
+        expect (result.isMember (jss::master_key));
+        expect (result.isMember (jss::master_seed));
+        expect (result.isMember (jss::master_seed_hex));
+        expect (result.isMember (jss::public_key));
+        expect (result.isMember (jss::public_key_hex));
 
-        std::string seed = result["master_seed"].asString();
+        std::string seed = result[jss::master_seed].asString();
 
         result = walletPropose (params);
 
         // We asked for two random seeds, so they shouldn't match.
-        expect (result["master_seed"].asString() != seed, seed);
+        expect (result[jss::master_seed].asString() != seed, seed);
     }
 
     void testSecretWallet (Json::Value const& params, key_strings const& s)
@@ -85,12 +96,12 @@ public:
         Json::Value result = walletPropose (params);
 
         expect (! contains_error (result));
-        expectEquals (result["account_id"], s.account_id);
-        expectEquals (result["master_key"], s.master_key);
-        expectEquals (result["master_seed"], s.master_seed);
-        expectEquals (result["master_seed_hex"], s.master_seed_hex);
-        expectEquals (result["public_key"], s.public_key);
-        expectEquals (result["public_key_hex"], s.public_key_hex);
+        expectEquals (result[jss::account_id], s.account_id);
+        expectEquals (result[jss::master_key], s.master_key);
+        expectEquals (result[jss::master_seed], s.master_seed);
+        expectEquals (result[jss::master_seed_hex], s.master_seed_hex);
+        expectEquals (result[jss::public_key], s.public_key);
+        expectEquals (result[jss::public_key_hex], s.public_key_hex);
     }
 
     void testLegacyPassphrase (char const* value)
@@ -98,7 +109,7 @@ public:
         testcase (value);
 
         Json::Value params;
-        params["passphrase"] = value;
+        params[jss::passphrase] = value;
 
         testSecretWallet (params, secp256k1_strings);
     }
@@ -111,10 +122,32 @@ public:
         testLegacyPassphrase (secp256k1_strings.master_seed_hex);
     }
 
+    void testKeyType (char const* keyType, key_strings const& strings)
+    {
+        testcase (keyType);
+        
+        Json::Value params;
+        params[jss::key_type] = keyType;
+        params[jss::passphrase] = common::passphrase;
+
+        testSecretWallet (params, strings);
+        
+        params[jss::seed] = strings.master_seed;
+
+        // Secret fields are mutually exclusive.
+        expect (contains_error (walletPropose (params)));
+
+        params.removeMember (jss::passphrase);
+
+        testSecretWallet (params, strings);
+    }
+
     void run()
     {
         testRandomWallet();
         testLegacyPassphrase();
+        testKeyType ("secp256k1", secp256k1_strings);
+        testKeyType ("ed25519",   ed25519_strings);
     }
 };
 
@@ -151,7 +184,7 @@ public:
         testcase (value);
 
         Json::Value params;
-        params["secret"] = value;
+        params[jss::secret] = value;
 
         testSecretWallet (params, secp256k1_strings);
     }
@@ -164,10 +197,50 @@ public:
         testLegacySecret (secp256k1_strings.master_seed_hex);
     }
 
+    void testInvalidKeyType (char const* keyType)
+    {
+        testcase (keyType);
+
+        Json::Value params;
+        params[jss::key_type] = keyType;
+        params[jss::passphrase] = common::passphrase;
+
+        Json::Value error;
+        keypairForSignature (params, error);
+
+        expect (contains_error (error));
+    }
+
+    void testKeyType (char const* keyType, key_strings const& strings)
+    {
+        testcase (keyType);
+        
+        Json::Value params;
+        params[jss::key_type] = keyType;
+        params[jss::passphrase] = common::passphrase;
+
+        testSecretWallet (params, strings);
+        
+        params[jss::seed] = strings.master_seed;
+
+        // Secret fields are mutually exclusive.
+        Json::Value error;
+        keypairForSignature (params, error);
+
+        expect (contains_error (error));
+
+        params.removeMember (jss::passphrase);
+
+        testSecretWallet (params, strings);
+    }
+
     void run()
     {
         testEmpty();
         testLegacySecret();
+        testInvalidKeyType ("caesarsalad");
+        testKeyType ("secp256k1", secp256k1_strings);
+        testKeyType ("ed25519",   ed25519_strings);
     }
 };
 

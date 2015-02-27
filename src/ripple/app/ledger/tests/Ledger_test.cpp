@@ -24,24 +24,24 @@ namespace test {
 
 class Ledger_test : public beast::unit_test::suite
 {
-    void test_genesisLedger (bool sign)
+    void test_genesisLedger (bool sign, KeyType keyType)
     {
         std::uint64_t const xrp = std::mega::num;
 
-        auto master = createAccount ("masterpassphrase");
+        auto master = createAccount ("masterpassphrase", keyType);
 
         Ledger::pointer LCL = createGenesisLedger(100000*xrp, master);
 
         Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
 
         // User accounts
-        auto gw1 = createAccount ("gw1");
+        auto gw1 = createAccount ("gw1", keyType);
         expect (gw1.pk != master.pk, "gw1.pk != master.pk");
         expect (gw1.sk != master.sk, "gw1.sk != master.sk");
-        auto gw2 = createAccount ("gw2");
-        auto gw3 = createAccount ("gw3");
-        auto alice = createAccount ("alice");
-        auto mark = createAccount ("mark");
+        auto gw2 = createAccount ("gw2", keyType);
+        auto gw3 = createAccount ("gw3", keyType);
+        auto alice = createAccount ("alice", keyType);
+        auto mark = createAccount ("mark", keyType);
 
         // Fund gw1, gw2, gw3, alice, mark from master
         makeAndApplyPayment(master, gw1, 5000 * xrp, ledger, sign);
@@ -90,17 +90,17 @@ class Ledger_test : public beast::unit_test::suite
         pass ();
     }
 
-    void test_unsigned_fails ()
+    void test_unsigned_fails (KeyType keyType)
     {
         std::uint64_t const xrp = std::mega::num;
 
-        auto master = createAccount ("masterpassphrase");
+        auto master = createAccount ("masterpassphrase", keyType);
 
         Ledger::pointer LCL = createGenesisLedger (100000 * xrp, master);
 
         Ledger::pointer ledger = std::make_shared<Ledger> (false, *LCL);
 
-        auto gw1 = createAccount ("gw1");
+        auto gw1 = createAccount ("gw1", keyType);
 
         auto tx = getPaymentTx(master, gw1, 5000 * xrp, false);
 
@@ -129,16 +129,15 @@ class Ledger_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        testcase ("genesisLedger signed transactions");
-        test_genesisLedger (true);
+        test_genesisLedger (true, KeyType::secp256k1);
+        test_genesisLedger (true, KeyType::ed25519);
 
-        testcase ("genesisLedger unsigned transactions");
-        test_genesisLedger (false);
+        test_genesisLedger (false, KeyType::secp256k1);
+        test_genesisLedger (false, KeyType::ed25519);
 
-        testcase ("unsigned invalid");
-        test_unsigned_fails ();
+        test_unsigned_fails (KeyType::secp256k1);
+        test_unsigned_fails (KeyType::ed25519);
 
-        testcase ("getQuality");
         test_getQuality ();
     }
 };

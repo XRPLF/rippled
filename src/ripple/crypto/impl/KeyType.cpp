@@ -17,18 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
-#define RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
-
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <BeastConfig.h>
+#include <ripple/crypto/KeyType.h>
 
 namespace ripple {
-namespace RPC {
 
-KeyPair keypairForSignature (Json::Value const& params, Json::Value& error);
+KeyType keyTypeFromString (std::string const& s)
+{
+    if (s == "secp256k1")  return KeyType::secp256k1;
+    if (s == "ed25519"  )  return KeyType::ed25519;
 
-} // RPC
-} // ripple
+    return KeyType::invalid;
+}
 
-#endif
+const char* to_string (KeyType type)
+{
+    return   type == KeyType::secp256k1 ? "secp256k1"
+           : type == KeyType::ed25519   ? "ed25519"
+           :                              "INVALID";
+}
+
+}

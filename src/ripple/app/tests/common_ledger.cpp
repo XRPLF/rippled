@@ -18,6 +18,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //==============================================================================
 
 #include <ripple/app/tests/common_ledger.h>
+#include <ripple/protocol/RippleAddress.h>
 
 namespace ripple {
 namespace test {
@@ -90,16 +91,16 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 // Create an account represented by public RippleAddress and private
 // RippleAddress
 TestAccount
-createAccount(std::string const& passphrase)
+createAccount(std::string const& passphrase, KeyType keyType)
 {
     RippleAddress const seed
         = RippleAddress::createSeedGeneric(passphrase);
-    RippleAddress const generator
-        = RippleAddress::createGeneratorPublic(seed);
+
+    auto keyPair = generateKeysFromSeed(keyType, seed);
 
     return {
-        std::move(RippleAddress::createAccountPublic(generator, 0)),
-        std::move(RippleAddress::createAccountPrivate(generator, seed, 0)),
+        std::move(keyPair.publicKey),
+        std::move(keyPair.secretKey),
         std::uint64_t(0)
     };
 }

@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_ANYPUBLICKEY_H_INCLUDED
 
 #include <ripple/basics/Buffer.h>
+#include <ripple/crypto/KeyType.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/STObject.h>
@@ -33,15 +34,6 @@
 #include <utility>
 
 namespace ripple {
-
-enum class KeyType
-{
-    unknown,
-    secp256k1,
-    ed25519
-};
-
-//------------------------------------------------------------------------------
 
 /** Variant container for all public keys. */
 class AnyPublicKeySlice

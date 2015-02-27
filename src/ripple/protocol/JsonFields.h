@@ -177,6 +177,7 @@ JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     //     Unsubscribe, BookOffers
                                     // out: paths/Node, STPathSet, STAmount
 JSS ( key );                        // out: WalletSeed
+JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
 JSS ( last );                       // out: RPCVersion
 JSS ( last_close );                 // out: NetworkOPs
 JSS ( ledger );                     // in: NetworkOPs, LedgerCleaner,
@@ -296,6 +297,7 @@ JSS ( search_depth );               // in: RipplePathFind
 JSS ( secret );                     // in: TransactionSign, WalletSeed,
                                     //     ValidationCreate, ValidationSeed
 JSS ( seed );                       // in: WalletAccounts, out: WalletSeed
+JSS ( seed_hex );                   // in: WalletPropose, TransactionSign
 JSS ( send_currencies );            // out: AccountCurrencies
 JSS ( seq );                        // in: LedgerEntry;
                                     // out: NetworkOPs, RPCSub, AccountOffers

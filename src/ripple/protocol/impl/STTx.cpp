@@ -152,6 +152,14 @@ STTx::getMentionedAccounts () const
     return accounts;
 }
 
+static Blob getSigningData (STTx const& that)
+{
+    Serializer s;
+    s.add32 (HashPrefix::txSign);
+    that.add (s, false);
+    return s.getData();
+}
+
 uint256
 STTx::getSigningHash () const
 {
@@ -178,8 +186,7 @@ Blob STTx::getSignature () const
 
 void STTx::sign (RippleAddress const& private_key)
 {
-    Blob signature;
-    private_key.accountPrivateSign (getSigningHash (), signature);
+    Blob const signature = private_key.accountPrivateSign (getSigningData (*this));
     setFieldVL (sfTxnSignature, signature);
 }
 
@@ -196,7 +203,7 @@ bool STTx::checkSign () const
             RippleAddress n;
             n.setAccountPublic (getFieldVL (sfSigningPubKey));
 
-            sig_state_ = n.accountPublicVerify (getSigningHash (),
+            sig_state_ = n.accountPublicVerify (getSigningData (*this),
                 getFieldVL (sfTxnSignature), fullyCanonical);
         }
         catch (...)
