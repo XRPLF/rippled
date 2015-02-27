@@ -841,6 +841,7 @@ store<Hasher, Codec, File>::commit()
         s_->p0.clear();
         buckets_ = buckets;
         modulus_ = modulus;
+        g_.start();
     }
     // Write clean buckets to log file
     // VFALCO Should the bulk_writer buffer size be tunable?
@@ -861,14 +862,11 @@ store<Hasher, Codec, File>::commit()
         w.flush();
         s_->lf.sync();
     }
-    // VFALCO Audit for concurrency
-    {
-        std::lock_guard<gentex> g (g_);
-        // Write new buckets to key file
-        for (auto const e : s_->c1)
-            e.second.write (s_->kf,
-                (e.first + 1) * s_->kh.block_size);
-    }
+    g_.finish();
+    // Write new buckets to key file
+    for (auto const e : s_->c1)
+        e.second.write (s_->kf,
+            (e.first + 1) * s_->kh.block_size);
     // Finalize the commit
     s_->df.sync();
     s_->kf.sync();
