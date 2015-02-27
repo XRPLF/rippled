@@ -197,15 +197,6 @@ public:
         mLastValidation = v;
     }
 
-    SLE::pointer getSLE (Ledger::pointer lpLedger, uint256 const& uHash)
-    {
-        return lpLedger->getSLE (uHash);
-    }
-    SLE::pointer getSLEi (Ledger::pointer lpLedger, uint256 const& uHash)
-    {
-        return lpLedger->getSLEi (uHash);
-    }
-
     //
     // Transaction operations
     //

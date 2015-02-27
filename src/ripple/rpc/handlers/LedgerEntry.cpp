@@ -207,7 +207,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto sleNode = context.netOps.getSLEi (lpLedger, uNodeIndex);
+        auto sleNode = lpLedger->getSLEi(uNodeIndex);
 
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();
