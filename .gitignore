@@ -76,3 +76,6 @@ My Amplifier XE Results - RippleD
 
 # Build Log
 rippled-build.log
+
+# Profiling data
+gmon.out
