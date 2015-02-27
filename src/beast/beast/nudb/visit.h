@@ -56,7 +56,7 @@ visit(
     df.open (file_mode::scan, path);
     dat_file_header dh;
     read (df, dh);
-    verify<Codec> (dh);
+    verify (dh);
     Codec codec;
     // Iterate Data File
     bulk_reader<File> r(
