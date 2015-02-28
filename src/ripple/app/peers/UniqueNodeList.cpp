@@ -1435,19 +1435,6 @@ private:
                        std::placeholders::_3));
     }
 
-    //--------------------------------------------------------------------------
-
-    void fetchTimerHandler (const boost::system::error_code& err)
-    {
-        if (!err)
-        {
-            onDeadlineTimer (m_fetchTimer);
-        }
-    }
-
-
-    //--------------------------------------------------------------------------
-
     // Process IniFileSections [validators_url].
     void getValidatorsUrl (RippleAddress const& naNodePublic,
         IniFileSections secSite)
