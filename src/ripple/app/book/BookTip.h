@@ -44,6 +44,7 @@ private:
     uint256 m_dir;
     uint256 m_index;
     SLE::pointer m_entry;
+    Quality m_quality;
 
     LedgerView&
     view() const noexcept
@@ -67,10 +68,10 @@ public:
         return m_index;
     }
 
-    Quality const
+    Quality const&
     quality() const noexcept
     {
-        return Quality (getQuality (m_dir));
+        return m_quality;
     }
 
     SLE::pointer const&
