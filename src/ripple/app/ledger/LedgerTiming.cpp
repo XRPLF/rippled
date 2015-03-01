@@ -128,7 +128,7 @@ bool ContinuousLedgerTiming::haveConsensus (
     }
 
     // If 80% of current proposers (plus us) agree on a set, we have consensus
-    if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
+    if (((currentAgree * 100 + 100) / (currentProposers + 1)) >= CONSENSUS_PCT)
     {
         CondLog (forReal, lsINFO, LedgerTiming) << "normal consensus";
         failed = false;
@@ -136,7 +136,7 @@ bool ContinuousLedgerTiming::haveConsensus (
     }
 
     // If 80% of the nodes on your UNL have moved on, you should declare consensus
-    if (((currentFinished * 100) / (currentProposers + 1)) > 80)
+    if (((currentFinished * 100) / (currentProposers + 1)) >= CONSENSUS_PCT)
     {
         CondLog (forReal, lsWARNING, LedgerTiming) <<
             "We see no consensus, but 80% of nodes have moved on";
