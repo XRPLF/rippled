@@ -83,6 +83,9 @@ const int AV_STUCK_CONSENSUS_PCT = 95;
 
 const int AV_CT_CONSENSUS_PCT = 75;
 
+// percentage of current proposers plus one required for consensus
+const int CONSENSUS_PCT = 80;
+
 class ContinuousLedgerTiming
 {
 public:
