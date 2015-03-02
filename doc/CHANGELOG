@@ -17,3 +17,4 @@ Previous
 * stream "rt_transactions" --> "transactions_proposed"
 * subscribe "username" --> "url_username"
 * subscribe "password" --> "url_password"
+0.28.0-b12: Includes pulls 836, 887, 902, 903 and 904.
