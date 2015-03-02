@@ -39,15 +39,6 @@ namespace ripple {
 
 class RPCParser;
 
-static inline bool isSwitchChar (char c)
-{
-#ifdef __WXMSW__
-    return c == '-' || c == '/';
-#else
-    return c == '-';
-#endif
-}
-
 //
 // HTTP protocol
 //
