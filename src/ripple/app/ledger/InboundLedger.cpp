@@ -234,8 +234,7 @@ bool InboundLedger::tryLocal ()
 */
 void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 {
-    mRecentTXNodes.clear ();
-    mRecentASNodes.clear ();
+    mRecentNodes.clear ();
 
     if (isDone())
     {
@@ -598,8 +597,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 {
                     // VFALCO Why 128? Make this a constant
                     if (!mAggressive)
-                        filterNodes (nodeIDs, nodeHashes, mRecentASNodes,
-                            128, !isProgress ());
+                        filterNodes (nodeIDs, nodeHashes, 128, !isProgress ());
 
                     if (!nodeIDs.empty ())
                     {
@@ -669,8 +667,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             else
             {
                 if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, mRecentTXNodes,
-                        128, !isProgress ());
+                    filterNodes (nodeIDs, nodeHashes, 128, !isProgress ());
 
                 if (!nodeIDs.empty ())
                 {
@@ -705,8 +702,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
 }
 
 void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
-    std::vector<uint256>& nodeHashes, std::set<SHAMapNodeID>& recentNodes,
-    int max, bool aggressive)
+    std::vector<uint256>& nodeHashes, int max, bool aggressive)
 {
     // ask for new nodes in preference to ones we've already asked for
     assert (nodeIDs.size () == nodeHashes.size ());
@@ -716,9 +712,9 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
 
     int dupCount = 0;
 
-    for(auto const& nodeID : nodeIDs)
+    for (auto const& nodeHash : nodeHashes)
     {
-        if (recentNodes.count (nodeID) != 0)
+        if (mRecentNodes.count (nodeHash) != 0)
         {
             duplicates.push_back (true);
             ++dupCount;
@@ -769,9 +765,9 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
         nodeHashes.resize (max);
     }
 
-    for (auto const& n : nodeIDs)
+    for (auto const& nodeHash : nodeHashes)
     {
-        recentNodes.insert (n);
+        mRecentNodes.insert (nodeHash);
     }
 }
 
