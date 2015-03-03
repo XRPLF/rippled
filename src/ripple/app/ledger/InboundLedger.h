@@ -101,7 +101,7 @@ public:
 
     // VFALCO TODO Replace uint256 with something semanticallyh meaningful
     void filterNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
-                             std::set<SHAMapNodeID>& recentNodes, int max, bool aggressive);
+        int max, bool aggressive);
 
     /** Return a Json::objectValue. */
     Json::Value getJson (int);
@@ -145,9 +145,7 @@ private:
     std::uint32_t      mSeq;
     fcReason           mReason;
 
-    std::set <SHAMapNodeID> mRecentTXNodes;
-    std::set <SHAMapNodeID> mRecentASNodes;
-
+    std::set <uint256> mRecentNodes;
 
     // Data we have received from peers
     PeerSet::LockType mReceivedDataLock;
