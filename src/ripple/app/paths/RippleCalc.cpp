@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/basics/Log.h>
@@ -373,6 +374,16 @@ TER RippleCalc::rippleCalculate ()
                 // Merge best pass' umReverse.
                 mumSource_.insert (
                     pathState->reverse().begin (), pathState->reverse().end ());
+
+                if (iPass >= PAYMENT_MAX_LOOPS)
+                {
+                    // This payment is taking too many passes
+
+                    WriteLog (lsERROR, RippleCalc)
+                       << "rippleCalc: pass limit";
+
+                    resultCode = telFAILED_PROCESSING;
+                }
 
             }
             else if (!inputFlags.partialPaymentAllowed)
