@@ -283,9 +283,6 @@
     <Filter Include="ripple\app\misc\tests">
       <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\node">
-      <UniqueIdentifier>{0FCD3973-E9A6-7172-C8A3-C3401E1A03DD}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\paths">
       <UniqueIdentifier>{03533509-DAC6-636F-9F7E-288894549E95}</UniqueIdentifier>
     </Filter>
@@ -2408,12 +2405,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
       <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\node\SqliteFactory.cpp">
-      <Filter>ripple\app\node</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\node\SqliteFactory.h">
-      <Filter>ripple\app\node</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
       <Filter>ripple\app\paths</Filter>
