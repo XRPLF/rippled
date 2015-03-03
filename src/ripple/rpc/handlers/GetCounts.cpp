@@ -91,12 +91,30 @@ Json::Value doGetCounts (RPC::Context& context)
     ret["uptime"] = uptime;
 
     auto counters = app.getNodeStore().counters();
-    ret["node_writes"] = counters.stores;
-    ret["node_reads_total"] = counters.fetches;
-    ret["node_reads_hit"] = counters.fetchHits;
-    ret["node_written_bytes"] = counters.storeBytes;
-    ret["node_reads_bytes"] = counters.fetchBytes;
-    ret["node_reads_duration"] = counters.fetchDuration;
+    std::uint32_t stores[2];
+    *stores = counters.stores.load();
+    ret["node_writes_h"] = stores[0];
+    ret["node_writes_l"] = stores[1];
+    std::uint32_t fetches[2];
+    *fetches = counters.fetches.load();
+    ret["node_reads_total_h"] = fetches[0];
+    ret["node_reads_total_l"] = fetches[1];
+    std::uint32_t fetchHits[2];
+    *fetchHits = counters.fetchHits.load();
+    ret["node_reads_hit_h"] = fetchHits[0];
+    ret["node_reads_hit_l"] = fetchHits[1];
+    std::uint32_t storeBytes[2];
+    *storeBytes = counters.storeBytes.load();
+    ret["node_written_bytes_h"] = storeBytes[0];
+    ret["node_written_bytes_l"] = storeBytes[1];
+    std::uint32_t fetchBytes[2];
+    *fetchBytes = counters.fetchBytes.load();
+    ret["node_read_bytes_h"] = fetchBytes[0];
+    ret["node_read_bytes_l"] = fetchBytes[1];
+    std::uint32_t fetchTime[2];
+    *fetchTime = counters.fetchTime.load();
+    ret["node_read_time_h"] = fetchTime[0];
+    ret["node_read_time_l"] = fetchTime[1];
 
     return ret;
 }

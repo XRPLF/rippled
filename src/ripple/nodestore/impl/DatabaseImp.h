@@ -223,7 +223,7 @@ public:
             auto const before = std::chrono::steady_clock::now();
             obj = fetchFrom (hash);
             auto const after = std::chrono::steady_clock::now();
-            counters_.fetchDuration += std::chrono::duration_cast
+            counters_.fetchTime += std::chrono::duration_cast
                     <std::chrono::microseconds> (after - before).count();
             ++counters_.fetches;
         }

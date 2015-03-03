@@ -35,7 +35,7 @@ struct Counters
         , fetchHits (0)
         , storeBytes (0)
         , fetchBytes (0)
-        , fetchDuration (0)
+        , fetchTime (0)
     {};
 
     ~Counters() = default;
@@ -46,15 +46,15 @@ struct Counters
         , fetchHits (other.fetchHits.load())
         , storeBytes (other.storeBytes.load())
         , fetchBytes (other.fetchBytes.load())
-        , fetchDuration (other.fetchDuration.load())
+        , fetchTime (other.fetchTime.load())
     {}
 
-    std::atomic <std::uint32_t> stores;
-    std::atomic <std::uint32_t> fetches;
-    std::atomic <std::uint32_t> fetchHits;
-    std::atomic <std::uint32_t> storeBytes;
-    std::atomic <std::uint32_t> fetchBytes;
-    std::atomic <std::uint32_t> fetchDuration;
+    std::atomic <std::uint64_t> stores;
+    std::atomic <std::uint64_t> fetches;
+    std::atomic <std::uint64_t> fetchHits;
+    std::atomic <std::uint64_t> storeBytes;
+    std::atomic <std::uint64_t> fetchBytes;
+    std::atomic <std::uint64_t> fetchTime;
 };
 
 /** Persistency layer for NodeObject
