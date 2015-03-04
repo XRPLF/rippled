@@ -616,13 +616,13 @@ function verify_owner_counts(remote, counts, callback) {
   async.every(tests, iterator, callback);
 };
 
-var isTravis = Boolean(process.env.TRAVIS);
+var isCI = Boolean(process.env.CI);
 
 function ledger_wait(remote, tx) {
   ;(function nextLedger() {
     remote.once('ledger_closed', function() {
       if (!tx.finalized) {
-        setTimeout(nextLedger, isTravis ? 400 : 100);
+        setTimeout(nextLedger, isCI ? 400 : 100);
       }
     });
     remote.ledger_accept();
