@@ -8,7 +8,7 @@ var Server      = require('./server').Server;
 var testutils   = require('./testutils');
 var config      = testutils.init_config();
 
-var make_suite = process.env.TRAVIS != null ? suite.skip : suite;
+var make_suite = process.env.CI ? suite.skip : suite;
 make_suite('Robust transaction submission', function() {
   var $ = { };
 
@@ -288,7 +288,7 @@ make_suite('Robust transaction submission', function() {
             if (++ledgers === 3) {
               callback();
             } else {
-              setTimeout(nextLedger, process.env.TRAVIS ? 400 : 100 );
+              setTimeout(nextLedger, process.env.CI ? 400 : 100 );
             }
           });
           $.remote.ledger_accept();

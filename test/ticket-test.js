@@ -9,8 +9,8 @@ var config      = testutils.init_config();
 /* --------------------------------- CONSTS --------------------------------- */
 
 // some parts of the test take a LONG time
-var SKIP_TICKET_EXPIRY_PHASE = process.env.TRAVIS == null &&
-                               process.env.RUN_TICKET_EXPIRY == null;
+var SKIP_TICKET_EXPIRY_PHASE = !process.env.CI &&
+                               !process.env.RUN_TICKET_EXPIRY;
 
 var ROOT_ACCOUNT = UInt160.json_rewrite('root');
 var ALICE_ACCOUNT = UInt160.json_rewrite('alice');

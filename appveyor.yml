@@ -19,7 +19,7 @@ environment:
 # At the end of each successful build we cache this directory. It must be less
 # than 100MB total compressed.
 cache:
-  - 'C:\\rippled_deps'
+  - "C:\\rippled_deps"
 
 # This means we'll download a zip of the branch we want, rather than the full
 # history.
