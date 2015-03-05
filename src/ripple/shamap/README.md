@@ -72,6 +72,8 @@ be modified must be copied before they are placed in the mutable map.
 
 ## SHAMap Thread Safety ##
 
+*This description is obsolete and needs to be rewritten.*
+
 SHAMaps can be thread safe, depending on how they are used.  The SHAMap
 uses a SyncUnorderedMap for its storage.  The SyncUnorderedMap has three
 thread-safe methods:
