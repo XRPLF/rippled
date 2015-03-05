@@ -24,7 +24,6 @@
 #include <beast/module/core/time/Time.h>
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
 #include <beast/utility/Debug.h>
-#include <ripple/basics/SyncUnorderedMap.h>
 
 namespace ripple {
 
@@ -53,17 +52,6 @@ template <typename Key, typename Value, typename Hash, typename Alloc>
 struct Destroyer <std::unordered_map <Key, Value, Hash, Alloc> >
 {
     static void destroy (std::unordered_map <Key, Value, Hash, Alloc>& v)
-    {
-        v.clear ();
-    }
-};
-
-/** Specialization for SyncUnorderedMapType
-*/
-template <typename Key, typename Value, typename Hash>
-struct Destroyer <SyncUnorderedMapType <Key, Value, Hash> >
-{
-    static void destroy (SyncUnorderedMapType <Key, Value, Hash>& v)
     {
         v.clear ();
     }

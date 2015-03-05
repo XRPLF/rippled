@@ -319,9 +319,6 @@
     <Filter Include="ripple\app\tx">
       <UniqueIdentifier>{50FDCDC1-EC9C-9F3B-34C9-EF4137E132B4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\websocket">
-      <UniqueIdentifier>{CE578C3A-4F3A-7E66-FFC5-0C94982FB975}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\basics">
       <UniqueIdentifier>{B8720E2F-21B1-2847-F96C-4E00A45DC639}</UniqueIdentifier>
     </Filter>
@@ -2700,9 +2697,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMeta.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\websocket\WSConnection.cpp">
-      <Filter>ripple\app\websocket</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -2815,9 +2809,6 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Sustain.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\SyncUnorderedMap.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
