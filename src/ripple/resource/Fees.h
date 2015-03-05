@@ -43,14 +43,16 @@ extern Charge const feeMediumBurdenRPC;       // A somewhat burdensome RPC load
 extern Charge const feeHighBurdenRPC;         // A very burdensome RPC load
 extern Charge const feePathFindUpdate;        // An update to an existing PF request
 
+// Peer loads
+extern Charge const feeLightPeer;             // Requires no reply
+extern Charge const feeLowBurdenPeer;         // Quick/cheap, slight reply
+extern Charge const feeMediumBurdenPeer;      // Requires some work
+extern Charge const feeHighBurdenPeer;        // Extensive work
+
 // Good things
 extern Charge const feeNewTrustedNote;        // A new transaction/validation/proposal we trust
 extern Charge const feeNewValidTx;            // A new, valid transaction
 extern Charge const feeSatisfiedRequest;      // Data we requested
-
-// Requests
-extern Charge const feeRequestedData;         // A request that is hard to satisfy, disk access
-extern Charge const feeCheapQuery;            // A query that is trivial, cached data
 
 // Administrative
 extern Charge const feeWarning;               // The cost of receiving a warning
