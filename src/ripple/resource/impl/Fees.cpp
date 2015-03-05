@@ -26,7 +26,7 @@ namespace Resource {
 Charge const feeInvalidRequest    (  10, "malformed request"      );
 Charge const feeRequestNoReply    (   1, "unsatisfiable request"  );
 Charge const feeInvalidSignature  ( 100, "invalid signature"      );
-Charge const feeUnwantedData      (   5, "useless data"           );
+Charge const feeUnwantedData      (  15, "useless data"           );
 Charge const feeBadData           (  20, "invalid data"           );
 
 Charge const feeInvalidRPC        (  10, "malformed RPC"          );
@@ -38,12 +38,14 @@ Charge const feeMediumBurdenRPC   (  40, "medium RPC"             );
 Charge const feeHighBurdenRPC     ( 300, "heavy RPC"              );
 Charge const feePathFindUpdate    ( 100, "path update"            );
 
+Charge const feeLightPeer         (1, "trivial peer request"      );
+Charge const feeLowBurdenPeer     (2, "simple peer request"       );
+Charge const feeMediumBurdenPeer  (50, "moderate peer request"    );
+Charge const feeHighBurdenPeer    (250, "heavy peer request"      );
+
 Charge const feeNewTrustedNote    (  10, "trusted note"           );
 Charge const feeNewValidTx        (  10, "valid tx"               );
 Charge const feeSatisfiedRequest  (  10, "needed data"            );
-
-Charge const feeRequestedData     (  50, "costly request"         );
-Charge const feeCheapQuery        (  10, "trivial query"          );
 
 Charge const feeWarning           ( 200, "received warning"       );
 Charge const feeDrop              ( 300, "dropped"                );

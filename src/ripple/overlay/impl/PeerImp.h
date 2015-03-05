@@ -26,6 +26,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/Job.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -132,6 +133,7 @@ private:
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;
     Resource::Consumer usage_;
+    Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
     beast::asio::streambuf read_buffer_;
     beast::http::message http_message_;
@@ -448,6 +450,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , publicKey_ (legacyPublicKey)
     , hello_ (std::move(hello))
     , usage_ (usage)
+    , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
     , validatorsConnection_(getApp().getValidators().newConnection(id))
 {
