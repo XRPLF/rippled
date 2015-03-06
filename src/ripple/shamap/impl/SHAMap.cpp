@@ -138,7 +138,7 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
 
         unshareNode (node, nodeID);
 
-        if (! node->setChild (branch, child->getNodeHash(), child))
+        if (! node->setChild (branch, child->getNodeHash(), child, false))
         {
             journal_.fatal <<
                 "dirtyUp terminates early";
@@ -701,11 +701,7 @@ bool SHAMap::delItem (uint256 const& id)
         assert (node->isInner ());
 
         unshareNode (node, nodeID);
-        if (! node->setChild (nodeID.selectBranch (id), prevHash, prevNode))
-        {
-            assert (false);
-            return true;
-        }
+        node->setChild (nodeID.selectBranch (id), prevHash, prevNode);
 
         if (!nodeID.isRoot ())
         {
@@ -1034,6 +1030,7 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                         preFlushNode (child);
 
                         assert (node->getSeq() == seq_);
+                        child->updateHash();
 
                         if (doWrite && backed_)
                             writeNode (t, seq, child);
@@ -1043,6 +1040,9 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                 }
             }
         }
+
+        // update the hash of this inner node
+        node->updateHashDeep();
 
         // This inner node can now be shared
         if (doWrite && backed_)

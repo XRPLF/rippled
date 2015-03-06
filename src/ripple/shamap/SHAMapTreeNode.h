@@ -78,7 +78,7 @@ public:
 
 public:  // public only to SHAMap
     bool setChild (int m, uint256 const& hash,
-                   std::shared_ptr<SHAMapTreeNode> const& child);
+                   std::shared_ptr<SHAMapTreeNode> const& child, bool computeHash = true);
     void shareChild (int m, std::shared_ptr<SHAMapTreeNode> const& child);
 
     // node functions
@@ -118,12 +118,13 @@ public:  // public only to SHAMap
     void dump (SHAMapNodeID const&, beast::Journal journal);
 #endif
     std::string getString (SHAMapNodeID const&) const;
+    bool updateHash ();
+    void updateHashDeep();
 
 private:
     bool isTransaction () const;
     bool hasMetaData () const;
     bool isAccountState () const;
-    bool updateHash ();
 };
 
 inline

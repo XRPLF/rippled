@@ -310,6 +310,17 @@ bool SHAMapTreeNode::updateHash ()
     return true;
 }
 
+void
+SHAMapTreeNode::updateHashDeep()
+{
+    for (auto pos = 0; pos < 16; ++pos)
+    {
+        if (mChildren[pos] != nullptr)
+            mHashes[pos] = mChildren[pos]->mHash;
+    }
+    updateHash();
+}
+
 void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
@@ -490,32 +501,41 @@ std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 }
 
 // We are modifying an inner node
-bool SHAMapTreeNode::setChild (int m, uint256 const& hash, std::shared_ptr<SHAMapTreeNode> const& child)
+bool SHAMapTreeNode::setChild (int m, uint256 const& hash,
+                               std::shared_ptr<SHAMapTreeNode> const& child,
+                               bool computeHash)
 {
     assert ((m >= 0) && (m < 16));
     assert (mType == tnINNER);
     assert (mSeq != 0);
     assert (child.get() != this);
 
-    if (mHashes[m] == hash)
+    if (computeHash && mHashes[m] == hash)
         return false;
 
     mHashes[m] = hash;
 
-    if (hash.isNonZero ())
+    if (computeHash)
     {
-        assert (child && (child->getNodeHash() == hash));
-        mIsBranch |= (1 << m);
+        if (hash.isNonZero ())
+        {
+            assert (child && (child->getNodeHash() == hash));
+            mIsBranch |= (1 << m);
+        }
+        else
+        {
+            assert (!child);
+            mIsBranch &= ~ (1 << m);
+        }
     }
     else
-    {
-        assert (!child);
-        mIsBranch &= ~ (1 << m);
-    }
+        mIsBranch |= (1 << m);
 
     mChildren[m] = child;
 
-    return updateHash ();
+    if (computeHash)
+        return updateHash ();
+    return true;
 }
 
 // finished modifying, now make shareable
@@ -526,7 +546,6 @@ void SHAMapTreeNode::shareChild (int m, std::shared_ptr<SHAMapTreeNode> const& c
     assert (mSeq != 0);
     assert (child);
     assert (child.get() != this);
-    assert (child->getNodeHash() == mHashes[m]);
 
     mChildren[m] = child;
 }

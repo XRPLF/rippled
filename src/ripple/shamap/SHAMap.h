@@ -183,14 +183,13 @@ public:
     void setUnbacked ();
 
     void dump (bool withHashes = false) const;
+    int unshare ();
 
 private:
     using SharedPtrNodeStack =
         std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>>;
     using DeltaRef = std::pair<std::shared_ptr<SHAMapItem> const&,
                                std::shared_ptr<SHAMapItem> const&> ;
-
-    int unshare ();
 
      // tree node cache operations
     std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash) const;
