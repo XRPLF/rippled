@@ -397,9 +397,6 @@ private:
     addLedger (uint256 const& hash);
 
     void
-    addTxSet (uint256 const& hash);
-
-    void
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     void

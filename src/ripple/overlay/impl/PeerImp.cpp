@@ -1146,14 +1146,20 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
     memcpy (hash.begin (), m->hash ().data (), 32);
 
     if (m->status () == protocol::tsHAVE)
-        addTxSet (hash);
-
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
+        std::lock_guard<std::mutex> sl(recentLock_);
 
-        if (!getApp().getOPs ().hasTXSet (
-                shared_from_this (), hash, m->status ()))
+        if (std::find (recentTxSets_.begin (),
+            recentTxSets_.end (), hash) != recentTxSets_.end ())
+        {
             fee_ = Resource::feeUnwantedData;
+            return;
+        }
+
+        if (recentTxSets_.size () == 128)
+            recentTxSets_.pop_front ();
+
+        recentTxSets_.push_back (hash);
     }
 }
 
@@ -1385,21 +1391,6 @@ PeerImp::addLedger (uint256 const& hash)
         recentLedgers_.pop_front ();
 
     recentLedgers_.push_back (hash);
-}
-
-void
-PeerImp::addTxSet (uint256 const& hash)
-{
-    std::lock_guard<std::mutex> sl(recentLock_);
-
-    if (std::find (recentTxSets_.begin (),
-        recentTxSets_.end (), hash) != recentTxSets_.end ())
-        return;
-
-    if (recentTxSets_.size () == 128)
-        recentTxSets_.pop_front ();
-
-    recentTxSets_.push_back (hash);
 }
 
 void
