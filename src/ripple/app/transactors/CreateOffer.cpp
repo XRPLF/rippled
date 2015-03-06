@@ -27,6 +27,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 
+#include <ripple/legacy/0.27/CreateOffer.h>
+
 #include <beast/cxx14/memory.h>
 #include <stdexcept>
 
@@ -827,6 +829,14 @@ transact_CreateOffer (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
+    // Attempt to implement legacy offer creation semantics. If successful,
+    // then return the result. Otherwise, attempt to process using the
+    // new semantics. 
+    auto ret = ripple::legacy::transact_CreateOffer (txn, params, engine);
+
+    if (ret.first)
+        return ret.second;
+
     core::CrossType cross_type = core::CrossType::IouToIou;
 
     bool const pays_xrp = txn.getFieldAmount (sfTakerPays).isNative ();

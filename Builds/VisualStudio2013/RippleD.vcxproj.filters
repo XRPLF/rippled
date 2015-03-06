@@ -355,6 +355,18 @@
     <Filter Include="ripple\json\tests">
       <UniqueIdentifier>{BA646284-836B-B151-F2AA-D18535D6F3C1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\legacy">
+      <UniqueIdentifier>{312AABAF-FDD8-31C7-C7DB-022D83CEA84F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\legacy\0.27">
+      <UniqueIdentifier>{F042ABF9-9B55-1118-07DA-1EECFBF1237B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\legacy\0.27\book">
+      <UniqueIdentifier>{73645AAD-9270-EE60-82A6-DFD2DBF65D6C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\legacy\0.27\book\impl">
+      <UniqueIdentifier>{381C3650-0CBD-536A-DE2D-301216CB03A6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\net">
       <UniqueIdentifier>{6649BD29-BE86-723F-501A-045E39310112}</UniqueIdentifier>
     </Filter>
@@ -3072,6 +3084,54 @@
     <ClInclude Include="..\..\src\ripple\json\Writer.h">
       <Filter>ripple\json</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amount.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amounts.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\BookTip.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip.cpp">
+      <Filter>ripple\legacy\0.27\book\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream.cpp">
+      <Filter>ripple\legacy\0.27\book\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality.cpp">
+      <Filter>ripple\legacy\0.27\book\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker.cpp">
+      <Filter>ripple\legacy\0.27\book\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Offer.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\OfferStream.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Quality.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Taker.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Types.h">
+      <Filter>ripple\legacy\0.27\book</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer.cpp">
+      <Filter>ripple\legacy\0.27</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
+      <Filter>ripple\legacy\0.27</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\Emulate027.cpp">
+      <Filter>ripple\legacy\0.27</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\Emulate027.h">
+      <Filter>ripple\legacy\0.27</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
@@ -4183,6 +4243,9 @@
       <Filter>ripple\unity</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\json.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\legacy.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\lz4.c">
