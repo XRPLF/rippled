@@ -163,9 +163,11 @@ static
 void
 setupConfigForUnitTests (Config* config)
 {
-    config->nodeDatabase = parseDelimitedKeyValueString ("type=memory|path=main");
-    config->ephemeralNodeDatabase = beast::StringPairArray ();
-    config->importNodeDatabase = beast::StringPairArray ();
+    config->overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+    config->overwrite (ConfigSection::nodeDatabase (), "path", "main");
+
+    config->deprecatedClearSection (ConfigSection::tempNodeDatabase ());
+    config->deprecatedClearSection (ConfigSection::importNodeDatabase ());
 }
 
 static int runShutdownTests ()

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
 
-#include <beast/module/core/text/StringPairArray.h>
+#include <ripple/basics/BasicConfig.h>
 #include <beast/Insight.h>
 
 namespace ripple {
@@ -29,7 +29,7 @@ namespace ripple {
 class CollectorManager
 {
 public:
-    static CollectorManager* New (beast::StringPairArray const& params,
+    static CollectorManager* New (Section const& params,
         beast::Journal journal);
     virtual ~CollectorManager () = 0;
     virtual beast::insight::Collector::ptr const& collector () = 0;

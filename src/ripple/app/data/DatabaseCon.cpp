@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/data/SqliteDatabase.h>
+#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 
@@ -54,8 +55,8 @@ setup_DatabaseCon (Config const& c)
 {
     DatabaseCon::Setup setup;
 
-    if (c.nodeDatabase["online_delete"].isNotEmpty())
-        setup.onlineDelete = c.nodeDatabase["online_delete"].getIntValue();
+    auto const& sec = c.section (ConfigSection::nodeDatabase ());
+    get_if_exists (sec, "online_delete", setup.onlineDelete);
     setup.startUp = c.START_UP;
     setup.standAlone = c.RUN_STANDALONE;
     setup.dataDir = c.legacy ("database_path");

@@ -78,7 +78,7 @@ public:
 
     /**
      * Set the legacy value for this section.
-     */ 
+     */
     void
     legacy (std::string value)
     {
@@ -182,6 +182,11 @@ public:
     overwrite (std::string const& section, std::string const& key,
         std::string const& value);
 
+    /** Remove all the key/value pairs from the section.
+     */
+    void
+    deprecatedClearSection (std::string const& section);
+
     /**
      *  Set a value that is not a key/value pair.
      *
@@ -232,7 +237,7 @@ set (T& target, std::string const& name, Section const& section)
         target = boost::lexical_cast <T> (result.first);
         return true;
     }
-    catch(...)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return false;
@@ -256,7 +261,7 @@ set (T& target, T const& defaultValue,
         target = boost::lexical_cast <T> (result.first);
         return true;
     }
-    catch(...)
+    catch (boost::bad_lexical_cast&)
     {
         target = defaultValue;
     }
@@ -280,10 +285,44 @@ get (Section const& section,
     {
         return boost::lexical_cast <T> (result.first);
     }
-    catch(...)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return defaultValue;
+}
+
+template <class T>
+bool
+get_if_exists (Section const& section,
+    std::string const& name, T& v)
+{
+    auto const result = section.find (name);
+    if (! result.second)
+        return false;
+    try
+    {
+        v = boost::lexical_cast <T> (result.first);
+        return true;
+    }
+    catch (boost::bad_lexical_cast&)
+    {
+    }
+    return false;
+}
+
+template <>
+inline
+bool
+get_if_exists<bool> (Section const& section,
+    std::string const& name, bool& v)
+{
+    int intVal = 0;
+    if (get_if_exists (section, name, intVal))
+    {
+        v = bool (intVal);
+        return true;
+    }
+    return false;
 }
 
 } // ripple

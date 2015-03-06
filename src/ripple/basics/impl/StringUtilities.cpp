@@ -221,45 +221,4 @@ bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& s
 
     return bMatch;
 }
-
-beast::StringPairArray parseDelimitedKeyValueString (beast::String parameters,
-                                                   beast::beast_wchar delimiter)
-{
-    beast::StringPairArray keyValues;
-
-    while (parameters.isNotEmpty ())
-    {
-        beast::String pair;
-
-        {
-            int const delimiterPos = parameters.indexOfChar (delimiter);
-
-            if (delimiterPos != -1)
-            {
-                pair = parameters.substring (0, delimiterPos);
-
-                parameters = parameters.substring (delimiterPos + 1);
-            }
-            else
-            {
-                pair = parameters;
-
-                parameters = beast::String::empty;
-            }
-        }
-
-        int const equalPos = pair.indexOfChar ('=');
-
-        if (equalPos != -1)
-        {
-            beast::String const key = pair.substring (0, equalPos);
-            beast::String const value = pair.substring (equalPos + 1, pair.length ());
-
-            keyValues.set (key, value);
-        }
-    }
-
-    return keyValues;
-}
-
 } // ripple

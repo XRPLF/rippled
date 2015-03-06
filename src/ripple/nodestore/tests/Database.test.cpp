@@ -35,9 +35,9 @@ public:
         DummyScheduler scheduler;
 
         beast::UnitTestUtilities::TempDirectory node_db ("node_db");
-        beast::StringPairArray srcParams;
+        Section srcParams;
         srcParams.set ("type", srcBackendType);
-        srcParams.set ("path", node_db.getFullPathName ());
+        srcParams.set ("path", node_db.getFullPathName ().toStdString ());
 
         // Create a batch
         Batch batch;
@@ -61,9 +61,9 @@ public:
 
             // Set up the destination database
             beast::UnitTestUtilities::TempDirectory dest_db ("dest_db");
-            beast::StringPairArray destParams;
+            Section destParams;
             destParams.set ("type", destBackendType);
-            destParams.set ("path", dest_db.getFullPathName ());
+            destParams.set ("path", dest_db.getFullPathName ().toStdString ());
 
             std::unique_ptr <Database> dest = Manager::instance().make_Database (
                 "test", scheduler, j, 2, destParams);
@@ -101,16 +101,16 @@ public:
         testcase (s);
 
         beast::UnitTestUtilities::TempDirectory node_db ("node_db");
-        beast::StringPairArray nodeParams;
+        Section nodeParams;
         nodeParams.set ("type", type);
-        nodeParams.set ("path", node_db.getFullPathName ());
+        nodeParams.set ("path", node_db.getFullPathName ().toStdString ());
 
         beast::UnitTestUtilities::TempDirectory temp_db ("temp_db");
-        beast::StringPairArray tempParams;
+        Section tempParams;
         if (useEphemeralDatabase)
         {
             tempParams.set ("type", type);
-            tempParams.set ("path", temp_db.getFullPathName ());
+            tempParams.set ("path", temp_db.getFullPathName ().toStdString ());
         }
 
         // Create a batch
@@ -164,7 +164,7 @@ public:
             {
                 // Verify the ephemeral db
                 std::unique_ptr <Database> db = Manager::instance().make_Database ("test",
-                    scheduler, j, 2, tempParams, beast::StringPairArray ());
+                    scheduler, j, 2, tempParams, Section ());
 
                 // Read it back in
                 Batch copy;

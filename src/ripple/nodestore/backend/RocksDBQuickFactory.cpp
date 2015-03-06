@@ -95,12 +95,12 @@ public:
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
 
-    RocksDBQuickBackend (int keyBytes, Parameters const& keyValues,
+    RocksDBQuickBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBQuickEnv* env)
         : m_deletePath (false)
         , m_journal (journal)
         , m_keyBytes (keyBytes)
-        , m_name (keyValues ["path"].toStdString ())
+        , m_name (get<std::string>(keyValues, "path"))
     {
         if (m_name.empty())
             throw std::runtime_error ("Missing path in RocksDBQuickFactory backend");
@@ -110,14 +110,9 @@ public:
         std::string style("level");
         std::uint64_t threads=4;
 
-        if (!keyValues["budget"].isEmpty())
-            budget = keyValues["budget"].getIntValue();
-
-        if (!keyValues["style"].isEmpty())
-            style = keyValues["style"].toStdString();
-
-        if (!keyValues["threads"].isEmpty())
-            threads = keyValues["threads"].getIntValue();
+        get_if_exists (keyValues, "budget", budget);
+        get_if_exists (keyValues, "style", style);
+        get_if_exists (keyValues, "threads", threads);
 
 
         // Set options
@@ -163,18 +158,11 @@ public:
         // options.memtable_factory.reset(
         //     rocksdb::NewHashCuckooRepFactory(options.write_buffer_size));
 
-        if (! keyValues["open_files"].isEmpty())
-        {
-            options.max_open_files = keyValues["open_files"].getIntValue();
-        }
- 
-        if (! keyValues["compression"].isEmpty ())  
-        {
-            if (keyValues["compression"].getIntValue () == 0)
-            {
-                options.compression = rocksdb::kNoCompression;
-            }
-        }
+        get_if_exists (keyValues, "open_files", options.max_open_files);
+
+        if (keyValues.exists ("compression") &&
+            (get<int>(keyValues, "compression") == 0))
+            options.compression = rocksdb::kNoCompression;
 
         rocksdb::DB* db = nullptr;
 
@@ -385,7 +373,7 @@ public:
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
-        Parameters const& keyValues,
+        Section const& keyValues,
         Scheduler& scheduler,
         beast::Journal journal)
     {

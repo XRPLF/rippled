@@ -27,7 +27,6 @@
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/core/files/File.h>
-#include <beast/module/core/text/StringPairArray.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -51,14 +50,6 @@ countSectionEntries (IniFileSections& secSource, std::string const& strSection);
 
 IniFileSections::mapped_type*
 getIniFileSection (IniFileSections& secSource, std::string const& strSection);
-
-/** Parse a section of lines as a key/value array.
-    Each line is in the form <key>=<value>.
-    Spaces are considered part of the key and value.
-*/
-// DEPRECATED
-beast::StringPairArray
-parseKeyValueSection (IniFileSections& secSource, std::string const& strSection);
 
 //------------------------------------------------------------------------------
 
@@ -164,40 +155,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Parameters for the insight collection module */
-    beast::StringPairArray insightSettings;
-
-    /** Parameters for the main NodeStore database.
-
-        This is 1 or more strings of the form <key>=<value>
-        The 'type' and 'path' keys are required, see rippled-example.cfg
-
-        @see Database
-    */
-    beast::StringPairArray nodeDatabase;
-
-    /** Parameters for the ephemeral NodeStore database.
-
-        This is an auxiliary database for the NodeStore, usually placed
-        on a separate faster volume. However, the volume data may not persist
-        between launches. Use of the ephemeral database is optional.
-
-        The format is the same as that for @ref nodeDatabase
-
-        @see Database
-    */
-    beast::StringPairArray ephemeralNodeDatabase;
-
-    /** Parameters for importing an old database in to the current node database.
-        If this is not empty, then it specifies the key/value parameters for
-        another node database from which to import all data into the current
-        node database specified by @ref nodeDatabase.
-        The format of this string is in the form:
-            <key>'='<value>['|'<key>'='value]
-        @see parseDelimitedKeyValueString
-    */
     bool doImport;
-    beast::StringPairArray importNodeDatabase;
 
     //
     //

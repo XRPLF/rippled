@@ -30,17 +30,17 @@ public:
     beast::insight::Collector::ptr m_collector;
     std::unique_ptr <beast::insight::Groups> m_groups;
 
-    CollectorManagerImp (beast::StringPairArray const& params,
+    CollectorManagerImp (Section const& params,
         beast::Journal journal)
         : m_journal (journal)
     {
-        std::string const& server (params ["server"].toStdString());
+        std::string const& server  = get<std::string> (params, "server");
 
         if (server == "statsd")
         {
             beast::IP::Endpoint const address (beast::IP::Endpoint::from_string (
-                params ["address"].toStdString ()));
-            std::string const& prefix (params ["prefix"].toStdString ());
+                get<std::string> (params, "address")));
+            std::string const& prefix (get<std::string> (params, "prefix"));
 
             m_collector = beast::insight::StatsDCollector::New (address, prefix, journal);
         }
@@ -73,7 +73,7 @@ CollectorManager::~CollectorManager ()
 {
 }
 
-CollectorManager* CollectorManager::New (beast::StringPairArray const& params,
+CollectorManager* CollectorManager::New (Section const& params,
     beast::Journal journal)
 {
     return new CollectorManagerImp (params, journal);

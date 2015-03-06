@@ -43,8 +43,8 @@ public:
         std::uint32_t deleteInterval = 0;
         bool advisoryDelete = false;
         std::uint32_t ledgerHistory = 0;
-        beast::StringPairArray nodeDatabase;
-        beast::StringPairArray ephemeralNodeDatabase;
+        Section nodeDatabase;
+        Section ephemeralNodeDatabase;
         std::string databasePath;
         std::uint32_t deleteBatch = 100;
         std::uint32_t backOff = 100;
