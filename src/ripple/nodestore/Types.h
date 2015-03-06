@@ -21,7 +21,7 @@
 #define RIPPLE_NODESTORE_TYPES_H_INCLUDED
 
 #include <ripple/nodestore/NodeObject.h>
-#include <beast/module/core/text/StringPairArray.h>
+#include <ripple/basics/BasicConfig.h>
 #include <vector>
 
 namespace ripple {
@@ -48,11 +48,6 @@ enum Status
 
 /** A batch of NodeObjects to write at once. */
 typedef std::vector <NodeObject::Ptr> Batch;
-
-/** A list of key/value parameter pairs passed to the backend. */
-// VFALCO TODO Use std::string, pair, vector
-typedef beast::StringPairArray Parameters;
-
 }
 }
 

@@ -147,36 +147,6 @@ bool getSingleSection (IniFileSections& secSource,
     return bSingle;
 }
 
-beast::StringPairArray
-parseKeyValueSection (IniFileSections& secSource, std::string const& strSection)
-{
-    beast::StringPairArray result;
-
-    typedef IniFileSections::mapped_type Entries;
-
-    Entries* const entries = getIniFileSection (secSource, strSection);
-
-    if (entries != nullptr)
-    {
-        for (Entries::const_iterator iter = entries->begin ();
-            iter != entries->end (); ++iter)
-        {
-            std::string const line (iter->c_str ());
-
-            int const equalPos = line.find ('=');
-
-            if (equalPos != std::string::npos)
-            {
-                result.set (
-                    line.substr (0, equalPos),
-                    line.substr (equalPos + 1));
-            }
-        }
-    }
-
-    return result;
-}
-
 /** Parses a set of strings into IP::Endpoint
       Strings which fail to parse are not included in the output. If a stream is
       provided, human readable diagnostic error messages are written for each
@@ -468,17 +438,6 @@ void Config::loadFromString (std::string const& fileContents)
         RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
                 parsedAddresses.cbegin (), parsedAddresses.cend ());
     }
-
-    insightSettings = parseKeyValueSection (secConfig, SECTION_INSIGHT);
-
-    nodeDatabase = parseKeyValueSection (
-        secConfig, ConfigSection::nodeDatabase ());
-
-    ephemeralNodeDatabase = parseKeyValueSection (
-        secConfig, ConfigSection::tempNodeDatabase ());
-
-    importNodeDatabase = parseKeyValueSection (
-        secConfig, ConfigSection::importNodeDatabase ());
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp))
     {

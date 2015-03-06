@@ -50,11 +50,12 @@ public:
     TestFamily (beast::Journal j)
         : treecache_ ("TreeNodeCache", 65536, 60, clock_, j)
         , fullbelow_ ("full_below", clock_)
-        , db_(NodeStore::Manager::instance().make_Database(
-            "test", scheduler_, j, 1,
-                parseDelimitedKeyValueString(
-                    "type=memory|Path=SHAMap_test")))
     {
+        Section testSection;
+        testSection.set("type", "memory");
+        testSection.set("Path", "SHAMap_test");
+        db_ = NodeStore::Manager::instance ().make_Database (
+            "test", scheduler_, j, 1, testSection);
     }
 
     beast::manual_clock <std::chrono::steady_clock>

@@ -24,7 +24,6 @@
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <boost/format.hpp>
-#include <beast/module/core/text/StringPairArray.h>
 #include <sstream>
 #include <string>
 
@@ -95,16 +94,6 @@ bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
 
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
-
-/** Create a Parameters from a String.
-
-    Parameter strings have the format:
-
-    <key>=<value>['|'<key>=<value>]
-*/
-extern beast::StringPairArray
-parseDelimitedKeyValueString (
-    beast::String s, beast::beast_wchar delimiter='|');
 
 } // ripple
 

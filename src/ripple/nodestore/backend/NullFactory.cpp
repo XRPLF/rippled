@@ -111,7 +111,7 @@ public:
     std::unique_ptr <Backend>
     createInstance (
         size_t,
-        Parameters const&,
+        Section const&,
         Scheduler&, beast::Journal)
     {
         return std::make_unique <NullBackend> ();

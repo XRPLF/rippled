@@ -249,11 +249,11 @@ public:
     }
 
     std::unique_ptr <NodeStore::Backend> createInstance (
-        size_t, NodeStore::Parameters const& keyValues,
+        size_t, Section const& keyValues,
             NodeStore::Scheduler&, beast::Journal)
     {
         return std::make_unique <SqliteBackend> (
-            keyValues ["path"].toStdString (),
+            get<std::string>(keyValues, "path"),
                 getConfig ().getSize(siHashNodeDBCache) * 1024);
     }
 };

@@ -55,13 +55,13 @@ ManagerImp::~ManagerImp()
 
 std::unique_ptr <Backend>
 ManagerImp::make_Backend (
-    Parameters const& parameters,
+    Section const& parameters,
     Scheduler& scheduler,
     beast::Journal journal)
 {
     std::unique_ptr <Backend> backend;
 
-    std::string const type (parameters ["type"].toStdString ());
+    std::string const type (get<std::string>(parameters, "type"));
 
     if (! type.empty ())
     {
@@ -91,8 +91,8 @@ ManagerImp::make_Database (
     Scheduler& scheduler,
     beast::Journal journal,
     int readThreads,
-    Parameters const& backendParameters,
-    Parameters fastBackendParameters)
+    Section const& backendParameters,
+    Section fastBackendParameters)
 {
     std::unique_ptr <Backend> backend (make_Backend (
         backendParameters, scheduler, journal));
@@ -167,11 +167,8 @@ std::unique_ptr <Backend>
 make_Backend (Section const& config,
     Scheduler& scheduler, beast::Journal journal)
 {
-    beast::StringPairArray v;
-    for (auto const& _ : config)
-        v.set (_.first, _.second);
     return Manager::instance().make_Backend (
-        v, scheduler, journal);
+        config, scheduler, journal);
 }
 
 }

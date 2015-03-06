@@ -21,6 +21,7 @@
 #include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -437,7 +438,7 @@ void
 SHAMapStoreImp::dbPaths()
 {
     boost::filesystem::path dbPath =
-            setup_.nodeDatabase["path"].toStdString();
+            get<std::string>(setup_.nodeDatabase, "path");
 
     if (boost::filesystem::exists (dbPath))
     {
@@ -488,7 +489,7 @@ SHAMapStoreImp::dbPaths()
                 << "remove the files matching "
                 << stateDbPathName.string()
                 << " and contents of the directory "
-                << setup_.nodeDatabase["path"].toStdString()
+                << get<std::string>(setup_.nodeDatabase, "path")
                 << std::endl;
 
         throw std::runtime_error ("state db error");
@@ -499,7 +500,7 @@ std::shared_ptr <NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating (std::string path)
 {
     boost::filesystem::path newPath;
-    NodeStore::Parameters parameters = setup_.nodeDatabase;
+    Section parameters = setup_.nodeDatabase;
 
     if (path.size())
     {
@@ -507,7 +508,7 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
     }
     else
     {
-        boost::filesystem::path p = parameters["path"].toStdString();
+        boost::filesystem::path p = get<std::string>(parameters, "path");
         p /= dbPrefix_;
         p += ".%%%%";
         newPath = boost::filesystem::unique_path (p);
@@ -693,20 +694,20 @@ setup_SHAMapStore (Config const& c)
 {
     SHAMapStore::Setup setup;
 
-    if (c.nodeDatabase["online_delete"].isNotEmpty())
-        setup.deleteInterval = c.nodeDatabase["online_delete"].getIntValue();
-    if (c.nodeDatabase["advisory_delete"].isNotEmpty() && setup.deleteInterval)
-        setup.advisoryDelete = c.nodeDatabase["advisory_delete"].getIntValue();
+    auto const& sec = c.section (ConfigSection::nodeDatabase ());
+    get_if_exists (sec, "online_delete", setup.deleteInterval);
+
+    if (setup.deleteInterval)
+        get_if_exists (sec, "advisory_delete", setup.advisoryDelete);
+
     setup.ledgerHistory = c.LEDGER_HISTORY;
-    setup.nodeDatabase = c.nodeDatabase;
-    setup.ephemeralNodeDatabase = c.ephemeralNodeDatabase;
+    setup.nodeDatabase = c[ConfigSection::nodeDatabase ()];
+    setup.ephemeralNodeDatabase = c[ConfigSection::tempNodeDatabase ()];
     setup.databasePath = c.legacy("database_path");
-    if (c.nodeDatabase["delete_batch"].isNotEmpty())
-        setup.deleteBatch = c.nodeDatabase["delete_batch"].getIntValue();
-    if (c.nodeDatabase["backOff"].isNotEmpty())
-        setup.backOff = c.nodeDatabase["backOff"].getIntValue();
-    if (c.nodeDatabase["age_threshold"].isNotEmpty())
-        setup.ageThreshold = c.nodeDatabase["age_threshold"].getIntValue();
+
+    get_if_exists (sec, "delete_batch", setup.deleteBatch);
+    get_if_exists (sec, "backOff", setup.backOff);
+    get_if_exists (sec, "age_threshold", setup.ageThreshold);
 
     return setup;
 }

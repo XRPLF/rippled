@@ -51,7 +51,7 @@ public:
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
-        Parameters const& keyValues,
+        Section const& keyValues,
         Scheduler& scheduler,
         beast::Journal journal);
 
@@ -82,9 +82,9 @@ private:
     MemoryDB* db_;
 
 public:
-    MemoryBackend (size_t keyBytes, Parameters const& keyValues,
+    MemoryBackend (size_t keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
-        : name_ (keyValues ["path"].toStdString ())
+        : name_ (get<std::string>(keyValues, "path"))
         , journal_ (journal)
     {
         if (name_.empty())
@@ -187,7 +187,7 @@ MemoryFactory::getName() const
 std::unique_ptr <Backend>
 MemoryFactory::createInstance (
     size_t keyBytes,
-    Parameters const& keyValues,
+    Section const& keyValues,
     Scheduler& scheduler,
     beast::Journal journal)
 {

@@ -335,7 +335,7 @@ public:
             m_logs.journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
-            getConfig().insightSettings, m_logs.journal("Collector")))
+            getConfig().section (SECTION_INSIGHT), m_logs.journal("Collector")))
 
         , family_ (*m_nodeStore, *m_collectorManager)
 
@@ -1444,7 +1444,7 @@ static void addTxnSeqField ()
 
 void ApplicationImp::updateTables ()
 {
-    if (getConfig ().nodeDatabase.size () <= 0)
+    if (getConfig ().section (ConfigSection::nodeDatabase ()).empty ())
     {
         WriteLog (lsFATAL, Application) << "The [node_db] configuration setting has been updated and must be set";
         exitWithCode(1);
@@ -1467,7 +1467,7 @@ void ApplicationImp::updateTables ()
         std::unique_ptr <NodeStore::Database> source =
             NodeStore::Manager::instance().make_Database ("NodeStore.import", scheduler,
                 deprecatedLogs().journal("NodeObject"), 0,
-                    getConfig ().importNodeDatabase);
+                getConfig ()[ConfigSection::importNodeDatabase ()]);
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"

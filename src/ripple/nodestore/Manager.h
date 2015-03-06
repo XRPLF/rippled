@@ -56,7 +56,7 @@ public:
     /** Create a backend. */
     virtual
     std::unique_ptr <Backend>
-    make_Backend (Parameters const& parameters,
+    make_Backend (Section const& parameters,
         Scheduler& scheduler, beast::Journal journal) = 0;
 
     /** Construct a NodeStore database.
@@ -87,8 +87,8 @@ public:
     std::unique_ptr <Database>
     make_Database (std::string const& name, Scheduler& scheduler,
         beast::Journal journal, int readThreads,
-            Parameters const& backendParameters,
-                Parameters fastBackendParameters = Parameters()) = 0;
+            Section const& backendParameters,
+                Section fastBackendParameters = Section()) = 0;
 
     virtual
     std::unique_ptr <DatabaseRotating>

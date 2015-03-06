@@ -99,16 +99,15 @@ public:
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
 
-    RocksDBBackend (int keyBytes, Parameters const& keyValues,
+    RocksDBBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBEnv* env)
         : m_deletePath (false)
         , m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
-        , m_name (keyValues ["path"].toStdString ())
     {
-        if (m_name.empty())
+        if (!get_if_exists(keyValues, "path", m_name))
             throw std::runtime_error ("Missing path in RocksDBFactory backend");
 
         rocksdb::Options options;
@@ -116,51 +115,45 @@ public:
         options.create_if_missing = true;
         options.env = env;
 
-        if (keyValues["cache_mb"].isEmpty())
+        if (!keyValues.exists ("cache_mb"))
         {
             table_options.block_cache = rocksdb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
         }
         else
         {
-            table_options.block_cache = rocksdb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
+            table_options.block_cache = rocksdb::NewLRUCache (get<int>(keyValues, "cache_mb") * 1024L * 1024L);
         }
 
-        if (keyValues["filter_bits"].isEmpty())
+        if (!keyValues.exists ("filter_bits"))
         {
             if (getConfig ().NODE_SIZE >= 2)
                 table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (10));
         }
-        else if (keyValues["filter_bits"].getIntValue() != 0)
+        else if (auto const v = get<int>(keyValues, "filter_bits"))
         {
-            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue()));
+            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v));
         }
 
-        if (! keyValues["open_files"].isEmpty())
-        {
-            options.max_open_files = keyValues["open_files"].getIntValue();
-        }
+        get_if_exists (keyValues, "open_files", options.max_open_files);
 
-        if (! keyValues["file_size_mb"].isEmpty())
+        if (keyValues.exists ("file_size_mb"))
         {
-            options.target_file_size_base = 1024 * 1024 * keyValues["file_size_mb"].getIntValue();
+            options.target_file_size_base = 1024 * 1024 * get<int>(keyValues,"file_size_mb");
             options.max_bytes_for_level_base = 5 * options.target_file_size_base;
             options.write_buffer_size = 2 * options.target_file_size_base;
         }
 
-        if (! keyValues["file_size_mult"].isEmpty())
-        {
-            options.target_file_size_multiplier = keyValues["file_size_mult"].getIntValue();
-        }
+        get_if_exists (keyValues, "file_size_mult", options.target_file_size_multiplier);
 
-        if (! keyValues["bg_threads"].isEmpty())
+        if (keyValues.exists ("bg_threads"))
         {
             options.env->SetBackgroundThreads
-                (keyValues["bg_threads"].getIntValue(), rocksdb::Env::LOW);
+                (get<int>(keyValues, "bg_threads"), rocksdb::Env::LOW);
         }
 
-        if (! keyValues["high_threads"].isEmpty())
+        if (keyValues.exists ("high_threads"))
         {
-            auto const highThreads = keyValues["high_threads"].getIntValue();
+            auto const highThreads = get<int>(keyValues, "high_threads");
             options.env->SetBackgroundThreads (highThreads, rocksdb::Env::HIGH);
 
             // If we have high-priority threads, presumably we want to
@@ -169,28 +162,21 @@ public:
                 options.max_background_flushes = highThreads;
         }
 
-        if (! keyValues["compression"].isEmpty ())
+        if (keyValues.exists ("compression") &&
+            (get<int>(keyValues, "compression") == 0))
         {
-            if (keyValues["compression"].getIntValue () == 0)
-            {
-                options.compression = rocksdb::kNoCompression;
-            }
+            options.compression = rocksdb::kNoCompression;
         }
 
-        if (! keyValues["block_size"].isEmpty ())
-        {
-            table_options.block_size = keyValues["block_size"].getIntValue ();
-        }
+        get_if_exists (keyValues, "block_size", table_options.block_size);
 
-        if (! keyValues["universal_compaction"].isEmpty ())
+        if (keyValues.exists ("universal_compaction") &&
+            (get<int>(keyValues, "universal_compaction") != 0))
         {
-            if (keyValues["universal_compaction"].getIntValue () != 0)
-            {
-                options.compaction_style = rocksdb:: kCompactionStyleUniversal;
-                options.min_write_buffer_number_to_merge = 2;
-                options.max_write_buffer_number = 6;
-                options.write_buffer_size = 6 * options.target_file_size_base;
-            }
+            options.compaction_style = rocksdb::kCompactionStyleUniversal;
+            options.min_write_buffer_number_to_merge = 2;
+            options.max_write_buffer_number = 6;
+            options.write_buffer_size = 6 * options.target_file_size_base;
         }
 
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
@@ -400,7 +386,7 @@ public:
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
-        Parameters const& keyValues,
+        Section const& keyValues,
         Scheduler& scheduler,
         beast::Journal journal)
     {

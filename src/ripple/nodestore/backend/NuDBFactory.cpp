@@ -62,11 +62,11 @@ public:
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
-    NuDBBackend (int keyBytes, Parameters const& keyValues,
+    NuDBBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
         : journal_ (journal)
         , keyBytes_ (keyBytes)
-        , name_ (keyValues ["path"].toStdString ())
+        , name_ (get<std::string>(keyValues, "path"))
         , deletePath_(false)
         , scheduler_ (scheduler)
     {
@@ -259,7 +259,7 @@ public:
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
-        Parameters const& keyValues,
+        Section const& keyValues,
         Scheduler& scheduler,
         beast::Journal journal)
     {
