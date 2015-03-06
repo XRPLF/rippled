@@ -27,42 +27,57 @@ namespace RPC {
 /** @{ */
 namespace Tuning {
 
-/** Default account lines return per request to the
-account_lines command when no limit param is specified
+/** Default account objects returned per request from the
+    account_objects command when no limit param is specified
 */
-unsigned int const defaultLinesPerRequest (200);
+static unsigned int const defaultObjectsPerRequest (200);
 
-/** Minimum account lines return per request to the
-account_lines command. Specified in the limit param.
+/** Minimum account objects returned per request from the
+    account_objects command. Specified in the limit param.
 */
-unsigned int const minLinesPerRequest (10);
+static unsigned int const minObjectsPerRequest (10);
 
-/** Maximum account lines return per request to the
-account_lines command. Specified in the limit param.
+/** Maximum account objects returned per request from the
+    account_objects command. Specified in the limit param.
 */
-unsigned int const maxLinesPerRequest (400);
+static unsigned int const maxObjectsPerRequest (400);
 
-/** Default offers return per request to the account_offers command
-when no limit param is specified
+/** Default account lines returned per request from the
+    account_lines command when no limit param is specified
 */
-unsigned int const defaultOffersPerRequest (200);
+static unsigned int const defaultLinesPerRequest (200);
 
-/** Minimum offers return per request to the account_offers command.
-Specified in the limit param.
+/** Minimum account lines returned per request from the
+    account_lines command. Specified in the limit param.
 */
-unsigned int const minOffersPerRequest (10);
+static unsigned int const minLinesPerRequest (10);
 
-/** Maximum offers return per request to the account_lines command.
-Specified in the limit param.
+/** Maximum account lines returned per request from the
+    account_lines command. Specified in the limit param.
 */
-unsigned int const maxOffersPerRequest (400);
+static unsigned int const maxLinesPerRequest (400);
 
-int const defaultAutoFillFeeMultiplier (10);
-int const maxPathfindsInProgress (2);
-int const maxPathfindJobCount (50);
-int const maxJobQueueClients (500);
-int const maxValidatedLedgerAge (120);
-int const maxRequestSize (1000000);
+/** Default offers returned per request from the
+    account_offers command when no limit param is specified.
+*/
+static unsigned int const defaultOffersPerRequest (200);
+
+/** Minimum offers returned per request from the
+    account_offers command. Specified in the limit param.
+*/
+static unsigned int const minOffersPerRequest (10);
+
+/** Maximum offers returned per request from the
+    account_lines command. Specified in the limit param.
+*/
+static unsigned int const maxOffersPerRequest (400);
+
+static int const defaultAutoFillFeeMultiplier (10);
+static int const maxPathfindsInProgress (2);
+static int const maxPathfindJobCount (50);
+static int const maxJobQueueClients (500);
+static int const maxValidatedLedgerAge (120);
+static int const maxRequestSize (1000000);
 
 } // Tuning
 /** @} */

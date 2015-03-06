@@ -59,8 +59,10 @@ JSS ( account_data );               // out: AccountInfo
 JSS ( account_hash );               // out: LedgerToJson
 JSS ( account_id );                 // out: WalletPropose
 JSS ( account_index );              // in: AccountCurrencies, AccountOffers,
-                                    //     AccountInfo, AccountLines, OwnerInfo
+                                    //     AccountInfo, AccountLines,
+                                    //     AccountObjects, OwnerInfo
                                     // out: AccountOffers
+JSS ( account_objects );            // out: AccountObjects
 JSS ( account_root );               // in: LedgerEntry
 JSS ( accounts );                   // in: LedgerEntry, Subscribe,
                                     //     handlers/Ledger, Unsubscribe
@@ -200,7 +202,7 @@ JSS ( ledger_min );                 // in, out: AccountTx*
 JSS ( ledger_time );                // out: NetworkOPs
 JSS ( levels );                     // LogLevels
 JSS ( limit );                      // in/out: AccountTx*, AccountOffers,
-                                    //         AccountLines;
+                                    //         AccountLines, AccountObjects
                                     // in: LedgerData, BookOffers
 JSS ( limit_peer );                 // out: AccountLines
 JSS ( lines );                      // out: AccountLines
@@ -214,7 +216,8 @@ JSS ( load_fee );                   // out: LoadFeeTrackImp
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
-                                    //         AccountLines, LedgerData
+                                    //         AccountLines, AccountObjects,
+                                    //         LedgerData
                                     // in: BookOffers
 JSS ( master_key );                 // out: WalletPropose
 JSS ( master_seed );                // out: WalletPropose

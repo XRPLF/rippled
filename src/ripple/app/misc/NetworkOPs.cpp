@@ -246,6 +246,18 @@ public:
     // Account functions
     //
 
+    /** This method gathers all objects for an account in a ledger.
+        @param lpLedger Ledger to be searched for account objects.
+        @param accountID Account to find objects for.
+        @param startAfter Begin gathering account objects after this one.
+        @param hint Provides further granularity to startAfter.
+        @param limit Maximum number of objects to find.
+        @param func Function called on every object found.
+    */
+    bool getAccountObjects (Ledger::pointer lpLedger,
+        Account const& accountID, uint256 const& startAfter,
+        std::uint64_t const hint, unsigned int limit,
+        std::function <bool (SLE::ref)> func) const override;
     AccountState::pointer getAccountState (
         Ledger::ref lrLedger, RippleAddress const& accountID);
     SLE::pointer getGenerator (
@@ -1120,6 +1132,64 @@ int NetworkOPsImp::findTransactionsByDestination (
 //
 // Account functions
 //
+
+bool NetworkOPsImp::getAccountObjects (Ledger::pointer lpLedger,
+    Account const& accountID, uint256 const& startAfter,
+    std::uint64_t const hint, unsigned int limit,
+    std::function <bool (SLE::ref)> func) const
+{
+    auto const rootIndex = getOwnerDirIndex (accountID);
+    auto currentIndex = rootIndex;
+    bool found = true;
+
+    if (startAfter.isNonZero ())
+    {
+        found = false;
+
+        auto const hintIndex = getDirNodeIndex (rootIndex, hint);
+        SLE::pointer hintDir = lpLedger->getSLEi (hintIndex);
+        if (hintDir != nullptr)
+        {
+            for (auto const& node : hintDir->getFieldV256 (sfIndexes))
+            {
+                if (node == startAfter)
+                {
+                    // We found the hint, we can start here
+                    currentIndex = hintIndex;
+                    break;
+                }
+            }
+        }
+    }
+
+    for (;;)
+    {
+        auto const sleNode = lpLedger->getDirNode (currentIndex);
+
+        if (sleNode == nullptr)
+            return found;
+
+        for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
+        {
+            if (! found)
+            {
+                if (uDirEntry == startAfter)
+                    found = true;
+            }
+            else if (func (lpLedger->getSLEi (uDirEntry)) && limit-- <= 1)
+            {
+                return true;
+            }
+        }
+
+        std::uint64_t const uNodeDir (sleNode->getFieldU64 (sfIndexNext));
+
+        if (uNodeDir == 0)
+            return found;
+
+        currentIndex = getDirNodeIndex (rootIndex, uNodeDir);
+    }
+}
 
 AccountState::pointer NetworkOPsImp::getAccountState (
     Ledger::ref lrLedger, RippleAddress const& accountID)

@@ -100,6 +100,7 @@ HandlerTable HANDLERS({
     {   "account_info",         byRef (&doAccountInfo),         Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "account_currencies",   byRef (&doAccountCurrencies),   Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "account_lines",        byRef (&doAccountLines),        Role::USER,  NEEDS_CURRENT_LEDGER  },
+    {   "account_objects",      byRef (&doAccountObjects),      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "account_offers",       byRef (&doAccountOffers),       Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "account_tx",           byRef (&doAccountTxSwitch),     Role::USER,  NEEDS_NETWORK_CONNECTION  },
     {   "blacklist",            byRef (&doBlackList),           Role::ADMIN,   NO_CONDITION     },
