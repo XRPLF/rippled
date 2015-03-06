@@ -604,6 +604,8 @@ for tu_style in ['classic', 'unity']:
                 object_builder.add_source_files(
                     *list_sources('src/ripple/json', '.cpp'))
                 object_builder.add_source_files(
+                    *list_sources('src/ripple/legacy', '.cpp'))
+                object_builder.add_source_files(
                     *list_sources('src/ripple/net', '.cpp'))
                 object_builder.add_source_files(
                     *list_sources('src/ripple/overlay', '.cpp'))
@@ -641,6 +643,7 @@ for tu_style in ['classic', 'unity']:
                     'src/ripple/unity/json.cpp',
                     'src/ripple/unity/protocol.cpp',
                     'src/ripple/unity/shamap.cpp',
+                    'src/ripple/unity/legacy.cpp',
                 )
 
                 object_builder.add_source_files(

@@ -2311,6 +2311,44 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\Writer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amount.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amounts.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\BookTip.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Offer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\OfferStream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Quality.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Taker.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Types.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\Emulate027.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\Emulate027.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPRequest.h">
@@ -3401,6 +3439,10 @@
     <ClInclude Include="..\..\src\ripple\unity\git_id.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\json.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\legacy.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
