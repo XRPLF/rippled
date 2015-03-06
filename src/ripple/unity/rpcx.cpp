@@ -37,6 +37,7 @@
 #include <ripple/rpc/handlers/AccountCurrencies.cpp>
 #include <ripple/rpc/handlers/AccountInfo.cpp>
 #include <ripple/rpc/handlers/AccountLines.cpp>
+#include <ripple/rpc/handlers/AccountObjects.cpp>
 #include <ripple/rpc/handlers/AccountOffers.cpp>
 #include <ripple/rpc/handlers/AccountTx.cpp>
 #include <ripple/rpc/handlers/AccountTxOld.cpp>

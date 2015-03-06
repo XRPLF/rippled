@@ -3681,6 +3681,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountLines.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountObjects.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountOffers.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
