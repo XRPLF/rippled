@@ -1708,19 +1708,6 @@ SHAMapAddNode NetworkOPsImp::gotTXData (
     return mConsensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPsImp::hasTXSet (
-    const std::shared_ptr<Peer>& peer, uint256 const& set,
-    protocol::TxSetStatus status)
-{
-    if (mConsensus == nullptr)
-    {
-        m_journal.info << "Peer has TX set, not during consensus";
-        return false;
-    }
-
-    return mConsensus->peerHasSet (peer, set, status);
-}
-
 bool NetworkOPsImp::stillNeedTXSet (uint256 const& hash)
 {
     if (!mConsensus)

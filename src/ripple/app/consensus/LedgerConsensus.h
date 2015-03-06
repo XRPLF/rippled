@@ -77,9 +77,6 @@ public:
 
     virtual bool peerPosition (LedgerProposal::ref) = 0;
 
-    virtual bool peerHasSet (Peer::ptr const& peer, uint256 const& set,
-        protocol::TxSetStatus status) = 0;
-
     virtual SHAMapAddNode peerGaveNodes (Peer::ptr const& peer,
         uint256 const& setHash,
         const std::list<SHAMapNodeID>& nodeIDs,

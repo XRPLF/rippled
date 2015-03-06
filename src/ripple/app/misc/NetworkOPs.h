@@ -222,9 +222,6 @@ public:
 
     virtual std::shared_ptr<SHAMap> getTXMap (uint256 const& hash) = 0;
 
-    virtual bool hasTXSet (const std::shared_ptr<Peer>& peer,
-        uint256 const& set, protocol::TxSetStatus status) = 0;
-
     virtual void mapComplete (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map) = 0;
 
