@@ -270,13 +270,6 @@ SHAMap::setLedgerSeq (std::uint32_t lseq)
 }
 
 inline
-uint256
-SHAMap::getHash () const
-{
-    return root_->getNodeHash ();
-}
-
-inline
 void
 SHAMap::setImmutable ()
 {
