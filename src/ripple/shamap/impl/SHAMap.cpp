@@ -137,14 +137,7 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
         assert (branch >= 0);
 
         unshareNode (node, nodeID);
-
-        if (! node->setChild (branch, child->getNodeHash(), child))
-        {
-            journal_.fatal <<
-                "dirtyUp terminates early";
-            assert (false);
-            return;
-        }
+        node->setChild (branch, child);
 
     #ifdef ST_DEBUG
         if (journal_.trace) journal_.trace <<
@@ -701,11 +694,7 @@ bool SHAMap::delItem (uint256 const& id)
         assert (node->isInner ());
 
         unshareNode (node, nodeID);
-        if (! node->setChild (nodeID.selectBranch (id), prevHash, prevNode))
-        {
-            assert (false);
-            return true;
-        }
+        node->setChild (nodeID.selectBranch (id), prevNode);
 
         if (!nodeID.isRoot ())
         {
@@ -730,10 +719,7 @@ bool SHAMap::delItem (uint256 const& id)
                     {
                         if (!node->isEmptyBranch (i))
                         {
-                            if (! node->setChild (i, uint256(), nullptr))
-                            {
-                                assert (false);
-                            }
+                            node->setChild (i, nullptr);
                             break;
                         }
                     }
@@ -742,14 +728,12 @@ bool SHAMap::delItem (uint256 const& id)
 
                 prevHash = node->getNodeHash ();
                 prevNode = std::move (node);
-                assert (prevHash.isNonZero ());
             }
             else
             {
                 // This node is now the end of the branch
                 prevHash = node->getNodeHash ();
                 prevNode = std::move (node);
-                assert (prevHash.isNonZero ());
             }
         }
     }
@@ -787,10 +771,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
         int branch = nodeID.selectBranch (tag);
         assert (node->isEmptyBranch (branch));
         auto newNode = std::make_shared<SHAMapTreeNode> (item, type, seq_);
-        if (! node->setChild (branch, newNode->getNodeHash (), newNode))
-        {
-            assert (false);
-        }
+        node->setChild (branch, newNode);
     }
     else
     {
@@ -819,17 +800,11 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
         std::shared_ptr<SHAMapTreeNode> newNode =
             std::make_shared<SHAMapTreeNode> (item, type, seq_);
         assert (newNode->isValid () && newNode->isLeaf ());
-        if (!node->setChild (b1, newNode->getNodeHash (), newNode))
-        {
-            assert (false);
-        }
+        node->setChild (b1, newNode);
 
         newNode = std::make_shared<SHAMapTreeNode> (otherItem, type, seq_);
         assert (newNode->isValid () && newNode->isLeaf ());
-        if (!node->setChild (b2, newNode->getNodeHash (), newNode))
-        {
-            assert (false);
-        }
+        node->setChild (b2, newNode);
     }
 
     dirtyUp (stack, tag, node);
@@ -839,6 +814,18 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
 bool SHAMap::addItem (const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 {
     return addGiveItem (std::make_shared<SHAMapItem> (i), isTransaction, hasMetaData);
+}
+
+uint256
+SHAMap::getHash () const
+{
+    auto hash = root_->getNodeHash();
+    if (hash.isZero())
+    {
+        const_cast<SHAMap&>(*this).unshare();
+        hash = root_->getNodeHash();
+    }
+    return hash;
 }
 
 bool
@@ -1034,6 +1021,7 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                         preFlushNode (child);
 
                         assert (node->getSeq() == seq_);
+                        child->updateHash();
 
                         if (doWrite && backed_)
                             writeNode (t, seq, child);
@@ -1043,6 +1031,9 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                 }
             }
         }
+
+        // update the hash of this inner node
+        node->updateHashDeep();
 
         // This inner node can now be shared
         if (doWrite && backed_)

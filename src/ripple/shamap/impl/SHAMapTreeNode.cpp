@@ -310,6 +310,17 @@ bool SHAMapTreeNode::updateHash ()
     return true;
 }
 
+void
+SHAMapTreeNode::updateHashDeep()
+{
+    for (auto pos = 0; pos < 16; ++pos)
+    {
+        if (mChildren[pos] != nullptr)
+            mHashes[pos] = mChildren[pos]->mHash;
+    }
+    updateHash();
+}
+
 void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
@@ -490,32 +501,20 @@ std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 }
 
 // We are modifying an inner node
-bool SHAMapTreeNode::setChild (int m, uint256 const& hash, std::shared_ptr<SHAMapTreeNode> const& child)
+void
+SHAMapTreeNode::setChild (int m, std::shared_ptr<SHAMapTreeNode> const& child)
 {
     assert ((m >= 0) && (m < 16));
     assert (mType == tnINNER);
     assert (mSeq != 0);
     assert (child.get() != this);
-
-    if (mHashes[m] == hash)
-        return false;
-
-    mHashes[m] = hash;
-
-    if (hash.isNonZero ())
-    {
-        assert (child && (child->getNodeHash() == hash));
+    mHashes[m].zero();
+    mHash.zero();
+    if (child)
         mIsBranch |= (1 << m);
-    }
     else
-    {
-        assert (!child);
         mIsBranch &= ~ (1 << m);
-    }
-
     mChildren[m] = child;
-
-    return updateHash ();
 }
 
 // finished modifying, now make shareable
@@ -526,7 +525,6 @@ void SHAMapTreeNode::shareChild (int m, std::shared_ptr<SHAMapTreeNode> const& c
     assert (mSeq != 0);
     assert (child);
     assert (child.get() != this);
-    assert (child->getNodeHash() == mHashes[m]);
 
     mChildren[m] = child;
 }
@@ -546,7 +544,6 @@ std::shared_ptr<SHAMapTreeNode> SHAMapTreeNode::getChild (int branch)
     assert (isInnerNode ());
 
     std::unique_lock <std::mutex> lock (childLock);
-    assert (!mChildren[branch] || (mHashes[branch] == mChildren[branch]->getNodeHash()));
     return mChildren[branch];
 }
 
