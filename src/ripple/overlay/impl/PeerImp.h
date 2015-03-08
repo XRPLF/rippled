@@ -405,7 +405,7 @@ private:
     void
     checkPropose (Job& job,
         std::shared_ptr<protocol::TMProposeSet> const& packet,
-            LedgerProposal::pointer proposal, uint256 consensusLCL);
+            LedgerProposal::pointer proposal);
 
     void
     checkValidation (Job&, STValidation::pointer val,
