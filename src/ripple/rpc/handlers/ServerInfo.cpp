@@ -24,7 +24,6 @@ namespace ripple {
 
 Json::Value doServerInfo (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
     Json::Value ret (Json::objectValue);
 
     ret[jss::info] = context.netOps.getServerInfo (
