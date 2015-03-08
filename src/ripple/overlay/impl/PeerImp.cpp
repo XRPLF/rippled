@@ -1042,22 +1042,15 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     p_journal_.trace <<
         "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
 
-    uint256 consensusLCL;
-
-    {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
-        consensusLCL = getApp().getOPs ().getConsensusLCL ();
-    }
-
     LedgerProposal::pointer proposal = std::make_shared<LedgerProposal> (
-        prevLedger.isNonZero () ? prevLedger : consensusLCL,
+        prevLedger.isNonZero () ? prevLedger : uint256(),
             set.proposeseq (), proposeHash, set.closetime (),
                 signerPublic, suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose", std::bind(beast::weak_fn(
             &PeerImp::checkPropose, shared_from_this()), std::placeholders::_1,
-            m, proposal, consensusLCL));
+            m, proposal));
 }
 
 void
@@ -1469,7 +1462,7 @@ PeerImp::checkTransaction (Job&, int flags,
 void
 PeerImp::checkPropose (Job& job,
     std::shared_ptr <protocol::TMProposeSet> const& packet,
-        LedgerProposal::pointer proposal, uint256 consensusLCL)
+        LedgerProposal::pointer proposal)
 {
     bool sigGood = false;
     bool isTrusted = (job.getType () == jtPROPOSAL_t);
@@ -1480,14 +1473,22 @@ PeerImp::checkPropose (Job& job,
     assert (packet);
     protocol::TMProposeSet& set = *packet;
 
-    uint256 prevLedger;
 
+    uint256 consensusLCL;
+    if (! set.has_previousledger() || ! isTrusted)
+    {
+        Application::ScopedLockType lock (getApp ().getMasterLock ());
+        consensusLCL = getApp().getOPs ().getConsensusLCL ();
+    }
+
+    uint256 prevLedger;
     if (set.has_previousledger ())
     {
         // proposal includes a previous ledger
         p_journal_.trace <<
             "proposal with previous ledger";
         memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
+        proposal->setPrevLedger (prevLedger);
 
         if (! cluster() && !proposal->checkSign (set.signature ()))
         {
@@ -1501,6 +1502,7 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
+        proposal->setPrevLedger (consensusLCL);
         if (consensusLCL.isNonZero () && proposal->checkSign (set.signature ()))
         {
             prevLedger = consensusLCL;
