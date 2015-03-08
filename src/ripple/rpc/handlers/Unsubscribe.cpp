@@ -26,7 +26,6 @@ namespace ripple {
 // sane.
 Json::Value doUnsubscribe (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
@@ -36,6 +35,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
         // Must be a JSON-RPC call.
         return rpcError (rpcINVALID_PARAMS);
     }
+
+    auto lock = getApp().masterLock();
 
     if (context.params.isMember (jss::url))
     {

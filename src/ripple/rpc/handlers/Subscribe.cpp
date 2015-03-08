@@ -26,11 +26,6 @@ namespace ripple {
 
 Json::Value doSubscribe (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
-
-    // FIXME: This needs to release the master lock immediately
-    // Subscriptions need to be protected by their own lock
-
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
     std::uint32_t uLedgerIndex = context.params.isMember (jss::ledger_index)
@@ -46,6 +41,10 @@ Json::Value doSubscribe (RPC::Context& context)
 
         return rpcError (rpcINVALID_PARAMS);
     }
+
+    // FIXME:
+    // Subscriptions need to be protected by their own lock
+    auto lock = getApp().masterLock();
 
     if (context.params.isMember (jss::url))
     {
@@ -285,6 +284,12 @@ Json::Value doSubscribe (RPC::Context& context)
             {
                 WriteLog (lsWARNING, RPCHandler) << "Bad market: " << book;
                 return rpcError (rpcBAD_MARKET);
+            }
+
+            if (!bHaveMasterLock)
+            {
+                lock->lock ();
+                bHaveMasterLock = true;
             }
 
             context.netOps.subBook (ispSub, book);

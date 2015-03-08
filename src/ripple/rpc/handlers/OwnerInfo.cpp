@@ -27,7 +27,6 @@ namespace ripple {
 // }
 Json::Value doOwnerInfo (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
     if (!context.params.isMember (jss::account) &&
         !context.params.isMember (jss::ident))
     {

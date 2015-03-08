@@ -31,8 +31,6 @@ namespace ripple {
 // }
 Json::Value doGetCounts (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
-
     int minCount = 10;
 
     if (context.params.isMember (jss::min_count))
