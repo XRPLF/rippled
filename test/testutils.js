@@ -269,6 +269,18 @@ function account_dump(remote, account, callback) {
   // construct a json result
 };
 
+function set_account_flag(remote, account, options, callback) {
+  if (typeof options === 'number') {
+    options = { set_flag: options };
+  }
+
+  var tx = remote.createTransaction('AccountSet', extend({
+    account: account
+  }, options));
+
+  submit_transaction(tx, callback);
+}
+
 exports.fund_account =
 fund_account =
 function(remote, src, account, amount, callback) {
@@ -282,7 +294,7 @@ function(remote, src, account, amount, callback) {
 
     tx.once('proposed', function (result) {
       //console.log('proposed: %s', JSON.stringify(result));
-      callback(result.engine_result === 'tesSUCCESS' ? null : new Error());
+      callback(result.engine_result === 'tesSUCCESS' ? null : result);
     });
 
     tx.once('error', function (result) {
@@ -295,7 +307,14 @@ function(remote, src, account, amount, callback) {
 
 exports.create_account =
 create_account =
-function(remote, src, account, amount, callback) {
+function(remote, src, account, amount, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+
+  options = extend({default_rippling: true}, options);
+
   // Before creating the account, check if it exists in the ledger.
   // If it does, regardless of the balance, fail the test, because
   // the ledger is not in the expected state.
@@ -307,25 +326,39 @@ function(remote, src, account, amount, callback) {
   });
 
   info.once('error', function(result) {
-    if (result.error === "remoteError" && result.remote.error === "actNotFound") {
-      // rippled indicated the account does not exist. Create it by funding it.
-      fund_account(remote, src, account, amount, callback);
-    } else {
-      // Some other error occurred. Pass it up to the callback.
-      callback(result);
+    var isNotFoundError = result.error === 'remoteError'
+    && result.remote.error === 'actNotFound';
+
+    if (!isNotFoundError) {
+      return callback(result);
     }
+
+    // rippled indicated the account does not exist. Create it by funding it.
+    fund_account(remote, src, account, amount, function(err) {
+      if (err) {
+        callback(err);
+      } else if (!options.default_rippling) {
+        callback();
+      } else {
+        // Set default rippling on trustlines for account
+        set_account_flag(remote, account, 8, callback);
+      }
+    });
   });
 
   info.request();
 }
 
-function create_accounts(remote, src, amount, accounts, callback) {
-  assert.strictEqual(arguments.length, 5);
+function create_accounts(remote, src, amount, accounts, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
 
   remote.set_account_seq(src, 1);
 
   async.forEach(accounts, function (account, callback) {
-    create_account(remote, src, account, amount, callback);
+    create_account(remote, src, account, amount, options, callback);
   }, callback);
 };
 
@@ -629,6 +662,11 @@ function ledger_wait(remote, tx) {
   })();
 };
 
+function submit_transaction(tx, callback) {
+  tx.submit(callback);
+  ledger_wait(tx.remote, tx);
+}
+
 exports.account_dump           = account_dump;
 exports.build_setup            = build_setup;
 exports.build_teardown         = build_teardown;
@@ -649,6 +687,7 @@ exports.verify_offer_not_found = verify_offer_not_found;
 exports.verify_owner_count     = verify_owner_count;
 exports.verify_owner_counts    = verify_owner_counts;
 exports.ledger_wait            = ledger_wait;
+exports.submit_transaction     = submit_transaction;
 
 // Close up all unclosed servers on exit.
 process.on('exit', function() {

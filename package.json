@@ -7,7 +7,6 @@
     "test": "test"
   },
   "dependencies": {
-    "assert-diff": "0.0.4",
     "async": "~0.2.9",
     "deep-equal": "0.0.0",
     "extend": "~1.2.0",
@@ -16,6 +15,7 @@
     "simple-jsonrpc": "~0.0.2"
   },
   "devDependencies": {
+    "assert-diff": "^1.0.1",
     "coffee-script": "^1.8.0",
     "mocha": "^2.1.0"
   },

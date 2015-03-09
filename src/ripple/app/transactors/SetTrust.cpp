@@ -288,15 +288,17 @@ public:
 
             if (QUALITY_ONE == uHighQualityOut) uHighQualityOut = 0;
 
+            bool const bLowDefRipple        = sleLowAccount->getFlags() & lsfDefaultRipple;
+            bool const bHighDefRipple       = sleHighAccount->getFlags() & lsfDefaultRipple;
 
             bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
-                                              (uFlagsOut & lsfLowNoRipple) ||
+                                              ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
                                               (uFlagsOut & lsfLowFreeze) ||
                                               saLowLimit || saLowBalance > zero;
             bool const  bLowReserveClear    = !bLowReserveSet;
 
             bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
-                                              (uFlagsOut & lsfHighNoRipple) ||
+                                              ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
                                               (uFlagsOut & lsfHighFreeze) ||
                                               saHighLimit || saHighBalance > zero;
             bool const  bHighReserveClear   = !bHighReserveSet;
