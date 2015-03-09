@@ -279,11 +279,6 @@ public:
         std::shared_ptr<protocol::TMProposeSet> set,
         RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
 
-    SHAMapAddNode gotTXData (
-        const std::shared_ptr<Peer>& peer, uint256 const& hash,
-        const std::list<SHAMapNodeID>& nodeIDs,
-        const std::list< Blob >& nodeData);
-
     bool recvValidation (
         STValidation::ref val, std::string const& source);
     void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
@@ -293,7 +288,6 @@ public:
         protocol::TxSetStatus status);
 
     void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map);
-    bool stillNeedTXSet (uint256 const& hash);
     void makeFetchPack (
         Job&, std::weak_ptr<Peer> peer,
         std::shared_ptr<protocol::TMGetObjectByHash> request,
@@ -1550,7 +1544,7 @@ int NetworkOPsImp::beginConsensus (
     assert (!mConsensus);
     prevLedger->setImmutable ();
 
-    mConsensus = make_LedgerConsensus (m_clock, *m_localTX, networkClosed,
+    mConsensus = make_LedgerConsensus (*m_localTX, networkClosed,
         prevLedger, m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC (),
             *m_feeVote);
 
@@ -1658,21 +1652,6 @@ void NetworkOPsImp::processTrustedProposal (
 }
 
 // Must be called while holding the master lock
-std::shared_ptr<SHAMap>
-NetworkOPsImp::getTXMap (uint256 const& hash)
-{
-    auto it = mRecentPositions.find (hash);
-
-    if (it != mRecentPositions.end ())
-        return it->second.second;
-
-    if (!haveConsensusObject ())
-        return std::shared_ptr<SHAMap> ();
-
-    return mConsensus->getTransactionTree (hash, false);
-}
-
-// Must be called while holding the master lock
 void
 NetworkOPsImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
 {
@@ -1693,33 +1672,12 @@ NetworkOPsImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
     }
 }
 
-// Call with the master lock for now
-SHAMapAddNode NetworkOPsImp::gotTXData (
-    const std::shared_ptr<Peer>& peer, uint256 const& hash,
-    const std::list<SHAMapNodeID>& nodeIDs, const std::list< Blob >& nodeData)
-{
-
-    if (!mConsensus)
-    {
-        m_journal.debug << "Got TX data with no consensus object";
-        return SHAMapAddNode ();
-    }
-
-    return mConsensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
-}
-
-bool NetworkOPsImp::stillNeedTXSet (uint256 const& hash)
-{
-    if (!mConsensus)
-        return false;
-
-    return mConsensus->stillNeedTXSet (hash);
-}
-
 void
 NetworkOPsImp::mapComplete (uint256 const& hash,
                             std::shared_ptr<SHAMap> const& map)
 {
+    std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
+
     if (haveConsensusObject ())
         mConsensus->mapComplete (hash, map, true);
 }

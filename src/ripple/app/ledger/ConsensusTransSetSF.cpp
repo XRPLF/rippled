@@ -78,7 +78,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeH
     if (txn)
     {
         // this is a transaction, and we have it
-        WriteLog (lsDEBUG, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
+        WriteLog (lsTRACE, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s, true);

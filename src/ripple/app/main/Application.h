@@ -49,6 +49,7 @@ class LocalCredentials;
 class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
+class InboundTransactions;
 class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
@@ -106,6 +107,7 @@ public:
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
+    virtual InboundTransactions&    getInboundTransactions () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;

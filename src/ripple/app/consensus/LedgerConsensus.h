@@ -28,7 +28,6 @@
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/RippleLedgerHash.h>
-#include <beast/chrono/abstract_clock.h>
 #include <chrono>
 
 namespace ripple {
@@ -41,8 +40,6 @@ namespace ripple {
 class LedgerConsensus
 {
 public:
-    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
-
     virtual ~LedgerConsensus() = 0;
 
     virtual int startup () = 0;
@@ -53,13 +50,8 @@ public:
 
     virtual uint256 getLCL () = 0;
 
-    virtual std::shared_ptr<SHAMap> getTransactionTree (uint256 const& hash,
-        bool doAcquire) = 0;
-
     virtual void mapComplete (uint256 const& hash,
         std::shared_ptr<SHAMap> const& map, bool acquired) = 0;
-
-    virtual bool stillNeedTXSet (uint256 const& hash) = 0;
 
     virtual void checkLCL () = 0;
 
@@ -77,11 +69,6 @@ public:
 
     virtual bool peerPosition (LedgerProposal::ref) = 0;
 
-    virtual SHAMapAddNode peerGaveNodes (Peer::ptr const& peer,
-        uint256 const& setHash,
-        const std::list<SHAMapNodeID>& nodeIDs,
-        const std::list< Blob >& nodeData) = 0;
-
     virtual bool isOurPubKey (const RippleAddress & k) = 0;
 
     // test/debug
@@ -89,7 +76,7 @@ public:
 };
 
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
+make_LedgerConsensus (LocalTxs& localtx,
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);
 

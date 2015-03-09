@@ -39,6 +39,7 @@
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
@@ -276,6 +277,7 @@ public:
     std::unique_ptr <PathRequests> m_pathRequests;
     std::unique_ptr <LedgerMaster> m_ledgerMaster;
     std::unique_ptr <InboundLedgers> m_inboundLedgers;
+    std::unique_ptr <InboundTransactions> m_inboundTransactions;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
@@ -379,6 +381,16 @@ public:
         //
         , m_inboundLedgers (make_InboundLedgers (get_seconds_clock (),
             *m_jobQueue, m_collectorManager->collector ()))
+
+        , m_inboundTransactions (make_InboundTransactions
+            ( get_seconds_clock ()
+            , *m_jobQueue
+            , m_collectorManager->collector ()
+            , [this](uint256 const& setHash,
+                std::shared_ptr <SHAMap> const& set)
+            {
+                gotTXSet (setHash, set);
+            }))
 
         , m_networkOPs (make_NetworkOPs (get_seconds_clock (),
             getConfig ().RUN_STANDALONE, getConfig ().NETWORK_QUORUM,
@@ -502,6 +514,16 @@ public:
     InboundLedgers& getInboundLedgers ()
     {
         return *m_inboundLedgers;
+    }
+
+    InboundTransactions& getInboundTransactions ()
+    {
+        return *m_inboundTransactions;
+    }
+
+    void gotTXSet (uint256 const& setHash, std::shared_ptr<SHAMap> const& set)
+    {
+        m_networkOPs->mapComplete (setHash, set);
     }
 
     TransactionMaster& getMasterTransaction ()

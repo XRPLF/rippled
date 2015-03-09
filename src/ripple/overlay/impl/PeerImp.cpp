@@ -27,6 +27,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/peers/ClusterNodeStatus.h>
 #include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -1613,10 +1614,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         uint256 txHash;
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
 
-        {
-            std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
-            map = getApp().getOPs ().getTXMap (txHash);
-        }
+        map = getApp().getInboundTransactions().getSet (txHash, false);
 
         if (!map)
         {
@@ -1946,44 +1944,12 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
     send (oPacket);
 }
 
-// VFALCO TODO Make this non-static
 void
 PeerImp::peerTXData (Job&, uint256 const& hash,
     std::shared_ptr <protocol::TMLedgerData> const& pPacket,
         beast::Journal journal)
 {
-    protocol::TMLedgerData& packet = *pPacket;
-
-    std::list<SHAMapNodeID> nodeIDs;
-    std::list< Blob > nodeData;
-    for (int i = 0; i < packet.nodes ().size (); ++i)
-    {
-        const protocol::TMLedgerNode& node = packet.nodes (i);
-
-        if (!node.has_nodeid () || !node.has_nodedata () || (
-            node.nodeid ().size () != 33))
-        {
-            journal.warning << "LedgerData request with invalid node ID";
-            charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        nodeIDs.push_back (SHAMapNodeID {node.nodeid ().data (),
-                           static_cast<int>(node.nodeid ().size ())});
-        nodeData.push_back (Blob (node.nodedata ().begin (),
-            node.nodedata ().end ()));
-    }
-
-    SHAMapAddNode san;
-    {
-        std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
-
-        san =  getApp().getOPs().gotTXData (shared_from_this(),
-            hash, nodeIDs, nodeData);
-    }
-
-    if (san.isInvalid ())
-        charge (Resource::feeUnwantedData);
+    getApp().getInboundTransactions().gotData (hash, shared_from_this(), pPacket);
 }
 
 } // ripple
