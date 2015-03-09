@@ -1,10 +1,12 @@
 var async       = require('async');
-var assert      = require('assert-diff')({strict:true});
+var assert      = require('assert-diff');
 var Account     = require('ripple-lib').UInt160;
 var Remote      = require('ripple-lib').Remote;
 var Transaction = require('ripple-lib').Transaction;
 var testutils   = require('./testutils');
 var config      = testutils.init_config();
+
+assert.options.strict = true;
 
 suite('Order Book', function() {
   var $ = { };
@@ -22,15 +24,15 @@ suite('Order Book', function() {
 
     var steps = [
       function(callback) {
-          self.what = 'Create accounts';
+        self.what = 'Create accounts';
 
-          testutils.create_accounts(
-            $.remote,
-            'root',
-            '20000.0',
-            [ 'mtgox', 'alice', 'bob' ],
-            callback
-          );
+        testutils.create_accounts(
+          $.remote,
+          'root',
+          '20000.0',
+          [ 'mtgox', 'alice', 'bob' ],
+          callback
+        );
       },
 
       function waitLedgers(callback) {
@@ -49,7 +51,7 @@ suite('Order Book', function() {
         testutils.verify_balance(
           $.remote,
           [ 'mtgox', 'alice', 'bob' ],
-          '20000000000',
+          '19999999988',
           callback
         );
       },
@@ -123,26 +125,27 @@ suite('Order Book', function() {
 
         ob.getOffers(function(err, offers) {
           assert.ifError(err);
-          // console.log('OFFERS', offers);
+
+          //console.log('OFFERS', offers);
 
           var expected = [
-              { Account: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
-                BookDirectory: 'AE0A97F385FFE42E3096BA3F98A0173090FE66A3C2482FE0570E35FA931A0000',
-                BookNode: '0000000000000000',
-                Flags: 0,
-                LedgerEntryType: 'Offer',
-                OwnerNode: '0000000000000000',
-                Sequence: 2,
-                TakerGets: { currency: 'USD',
-                  issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
-                  value: '10'
-                },
-                TakerPays: '4000',
-                index: 'CD6AE78EE0A5438978501A0404D9093597F57B705D566B5070D58BD48F98468C',
-                owner_funds: '100',
-                is_fully_funded: true,
-                taker_gets_funded: '10',
-                taker_pays_funded: '4000' }
+            { Account: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
+              BookDirectory: 'AE0A97F385FFE42E3096BA3F98A0173090FE66A3C2482FE0570E35FA931A0000',
+              BookNode: '0000000000000000',
+              Flags: 0,
+              LedgerEntryType: 'Offer',
+              OwnerNode: '0000000000000000',
+              Sequence: 3,
+              TakerGets: { currency: 'USD',
+                issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
+                value: '10'
+              },
+              TakerPays: '4000',
+              index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61',
+              owner_funds: '100',
+              is_fully_funded: true,
+              taker_gets_funded: '10',
+              taker_pays_funded: '4000' }
           ]
 
           assert.deepEqual(offers, expected);
@@ -178,19 +181,19 @@ suite('Order Book', function() {
           //console.log('OFFERS', offers);
 
           var expected = [
-              { Account: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
-                BookDirectory: 'AE0A97F385FFE42E3096BA3F98A0173090FE66A3C2482FE0570E35FA931A0000',
-                BookNode: '0000000000000000',
-                Flags: 0,
-                LedgerEntryType: 'Offer',
-                OwnerNode: '0000000000000000',
-                Sequence: 2,
-                TakerGets:
-                 { currency: 'USD',
-                   issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
-                   value: '5' },
+            { Account: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
+              BookDirectory: 'AE0A97F385FFE42E3096BA3F98A0173090FE66A3C2482FE0570E35FA931A0000',
+              BookNode: '0000000000000000',
+              Flags: 0,
+              LedgerEntryType: 'Offer',
+              OwnerNode: '0000000000000000',
+              Sequence: 3,
+              TakerGets: 
+              { currency: 'USD',
+                issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
+                value: '5' },
                 TakerPays: '2000',
-                index: 'CD6AE78EE0A5438978501A0404D9093597F57B705D566B5070D58BD48F98468C',
+                index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61',
                 owner_funds: '94.5',
                 is_fully_funded: true,
                 taker_gets_funded: '5',

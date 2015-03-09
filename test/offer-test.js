@@ -1909,7 +1909,7 @@ suite("Client Issue #535", function() {
             var starting_xrp = $.amount_for({
               ledger_entries: 1,
               default_transactions: 2,
-              extra: '100.0'
+              extra: '100.1'
             });
 
             testutils.create_accounts($.remote, "root", starting_xrp, ["alice", "bob", "mtgox"], callback);
@@ -1938,12 +1938,16 @@ suite("Client Issue #535", function() {
 
             $.remote.transaction()
               .offer_create("alice", "100/XTS/mtgox", "100/XXX/mtgox")
-              .on('submitted', function (m) {
-                  // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.engine_result !== 'tesSUCCESS');
+              .on('submitted', function(m) {
+                if (m.engine_result === 'tesSUCCESS') {
+                  callback();
+                } else {
+                  // console.log("proposed: %s", JSON.stringify(m, undefined, 2));
+                  callback(m);
+                }
 
-                  seq_carol = m.tx_json.sequence;
-                })
+                seq_carol = m.tx_json.sequence;
+              })
               .submit();
           },
           function (callback) {
@@ -1982,13 +1986,12 @@ suite("Client Issue #535", function() {
               },
               callback);
           },
-        ], function (error) {
-          if (error)
-            //console.log("result: %s: error=%s", self.what, error);
-          assert(!error, self.what);
-
-          done();
-        });
+      ], function (error) {
+        if (error)
+          //console.log("result: %s: error=%s", self.what, error);
+        assert(!error, self.what);
+        done();
+      });
   });
 });
 // vim:sw=2:sts=2:ts=8:et
