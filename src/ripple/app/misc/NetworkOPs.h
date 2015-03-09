@@ -209,22 +209,14 @@ public:
         std::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic,
             uint256 checkLedger, bool sigGood) = 0;
 
-    virtual SHAMapAddNode gotTXData (const std::shared_ptr<Peer>& peer,
-        uint256 const& hash, const std::list<SHAMapNodeID>& nodeIDs,
-        const std::list< Blob >& nodeData) = 0;
-
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
 
     virtual void takePosition (int seq,
                                std::shared_ptr<SHAMap> const& position) = 0;
 
-    virtual std::shared_ptr<SHAMap> getTXMap (uint256 const& hash) = 0;
-
     virtual void mapComplete (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map) = 0;
-
-    virtual bool stillNeedTXSet (uint256 const& hash) = 0;
 
     // Fetch packs
     virtual void makeFetchPack (Job&, std::weak_ptr<Peer> peer,

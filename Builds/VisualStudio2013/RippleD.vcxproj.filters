@@ -1707,6 +1707,9 @@
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\make_lock.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -2570,6 +2573,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\transactors\Transactor.h">
       <Filter>ripple\app\transactors</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\InboundTransactions.cpp">
+      <Filter>ripple\app\tx</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\InboundTransactions.h">
+      <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\LocalTxs.cpp">
       <Filter>ripple\app\tx</Filter>
