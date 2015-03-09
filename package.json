@@ -2,13 +2,10 @@
   "name": "rippled",
   "version": "0.0.1",
   "description": "Rippled Server",
-
   "private": true,
-
   "directories": {
     "test": "test"
   },
-
   "dependencies": {
     "ripple-lib": "0.8.2",
     "async": "~0.2.9",
@@ -17,18 +14,16 @@
     "deep-equal": "0.0.0"
   },
   "devDependencies": {
+    "assert-diff": "^1.0.1",
     "coffee-script": "~1.6.3",
     "mocha": "~1.13.0"
   },
-
   "scripts": {
     "test": "mocha test/websocket-test.js test/server-test.js test/*-test.{js,coffee}"
   },
-
   "repository": {
     "type": "git",
     "url": "git://github.com/ripple/rippled.git"
   },
-
   "readmeFilename": "README.md"
 }

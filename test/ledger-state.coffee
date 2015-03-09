@@ -497,8 +497,9 @@ exports.LedgerState = class LedgerState
 
   add_transaction_fees: ->
     extra_fees = {}
+    account_sets = ([k] for k,ac of @accounts)
     fee = Amount.from_json(@remote.fee_cushion * 10)
-    for list in [@trusts, @iou_payments, @offers]
+    for list in [@trusts, @iou_payments, @offers, account_sets]
       for [src, args...] in list
         extra = extra_fees[src]
         extra = if extra? then extra.add(fee) else fee
@@ -532,6 +533,13 @@ exports.LedgerState = class LedgerState
                LOG("Account `#{src}` creating account `#{dest}` by "+
                      "making payment of #{amt.to_text_full()}") ),
             cb)
+      (cb) ->
+        reqs.transactor(
+          Transaction::account_set,
+          accounts_apply_arguments,
+          ((account, tx) ->
+            tx.tx_json.SetFlag = 8
+          ), cb)
       (cb) ->
         reqs.transactor(
             Transaction::ripple_line_set,

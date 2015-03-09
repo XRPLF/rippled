@@ -168,6 +168,15 @@ public:
             uFlagsOut   &= ~lsfDisableMaster;
         }
 
+        if (uSetFlag == asfDefaultRipple)
+        {
+            uFlagsOut   |= lsfDefaultRipple;
+        }
+        else if (uClearFlag == asfDefaultRipple)
+        {
+            uFlagsOut   &= ~lsfDefaultRipple;
+        }
+
         if (uSetFlag == asfNoFreeze)
         {
             m_journal.trace << "Set NoFreeze flag";

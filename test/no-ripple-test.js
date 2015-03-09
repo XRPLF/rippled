@@ -326,3 +326,92 @@ suite('NoRipple', function() {
     });
   });
 });
+
+suite('Default ripple', function() {
+  var $ = { };
+
+  setup(function(done) {
+    testutils.build_setup().call($, done);
+  });
+
+  teardown(function(done) {
+    testutils.build_teardown().call($, done);
+  });
+
+  test('Set default ripple on account, check new trustline', function(done) {
+    var steps = [
+      function (callback) {
+        testutils.create_accounts(
+          $.remote,
+          'root',
+          '10000.0',
+          [ 'alice', 'bob' ],
+          { default_rippling: false },
+          callback);
+      },
+      function (callback) {
+        var tx = $.remote.createTransaction('AccountSet', {
+          account: 'bob',
+          set_flag: 8
+        });
+        testutils.submit_transaction(tx, callback);
+      },
+      function (callback) {
+        var tx = $.remote.createTransaction('TrustSet', {
+          account: 'root',
+          limit: '100/USD/alice'
+        });
+        testutils.submit_transaction(tx, callback);
+      },
+      function (callback) {
+        var tx = $.remote.createTransaction('TrustSet', {
+          account: 'root',
+          limit: '100/USD/bob'
+        });
+        testutils.submit_transaction(tx, callback);
+      },
+      function (callback) {
+        $.remote.requestAccountLines({ account: 'root', peer: 'alice' }, function(err, m) {
+          assert.ifError(err);
+          assert(Array.isArray(m.lines));
+          assert(m.lines[0].no_ripple_peer,
+            'Trustline should have no_ripple_peer set');
+          callback();
+        });
+      },
+      function (callback) {
+        $.remote.requestAccountLines({ account: 'alice', peer: 'root' }, function(err, m) {
+          assert.ifError(err);
+          assert(Array.isArray(m.lines));
+          assert(m.lines[0].no_ripple,
+            'Trustline should have no_ripple set');
+          callback();
+        });
+      },
+      function (callback) {
+        $.remote.requestAccountLines({ account: 'root', peer: 'bob' }, function(err, m) {
+          assert.ifError(err);
+          assert(Array.isArray(m.lines));
+          assert(!m.lines[0].no_ripple,
+            'Trustline should not have no_ripple set');
+          callback();
+        });
+      },
+      function (callback) {
+        $.remote.requestAccountLines({ account: 'bob', peer: 'root' }, function(err, m) {
+          assert.ifError(err);
+          assert(Array.isArray(m.lines));
+          assert(!m.lines[0].no_ripple_peer,
+            'Trustline should not have no_ripple_peer set');
+          callback();
+        });
+      }
+    ]
+
+    async.series(steps, function(error) {
+      assert(!error, error);
+      done();
+    });
+  });
+
+});

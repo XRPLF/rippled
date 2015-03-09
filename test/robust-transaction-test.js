@@ -133,7 +133,7 @@ make_suite('Robust transaction submission', function() {
 
       function verifyBalance(callback) {
         self.what = 'Verify balance';
-        testutils.verify_balance($.remote, 'bob', '20001000000', callback);
+        testutils.verify_balance($.remote, 'bob', '20000999988', callback);
       }
 
     ]
@@ -218,7 +218,7 @@ make_suite('Robust transaction submission', function() {
 
       function verifyBalance(callback) {
         self.what = 'Verify balance';
-        testutils.verify_balance($.remote, 'alice', '20001000000', callback);
+        testutils.verify_balance($.remote, 'alice', '20000999988', callback);
       }
 
     ]
@@ -249,7 +249,7 @@ make_suite('Robust transaction submission', function() {
 
       function verifyBalance(callback) {
         self.what = 'Verify balance';
-        testutils.verify_balance($.remote, 'alice', '20000000000', callback);
+        testutils.verify_balance($.remote, 'alice', '19999999988', callback);
       },
 
       function submitTransaction(callback) {
@@ -317,7 +317,7 @@ make_suite('Robust transaction submission', function() {
 
       function verifyBalance(callback) {
         self.what = 'Verify balance';
-        testutils.verify_balance($.remote, 'alice', '20001000000', callback);
+        testutils.verify_balance($.remote, 'alice', '20000999988', callback);
       }
 
     ]
@@ -381,7 +381,7 @@ make_suite('Robust transaction submission', function() {
 
       function verifyBalance(callback) {
         self.what = 'Verify balance';
-        testutils.verify_balance($.remote, 'alice', '20001000000', callback);
+        testutils.verify_balance($.remote, 'alice', '20000999988', callback);
       }
 
     ]

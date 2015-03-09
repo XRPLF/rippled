@@ -1342,6 +1342,12 @@ TER LedgerEntrySet::trustCreate (
         const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
         const bool bSetHigh = bSrcHigh ^ bSetDst;
 
+        assert (sleAccount->getFieldAccount160 (sfAccount) ==
+            (bSetHigh ? uHighAccountID : uLowAccountID));
+        SLE::pointer slePeer = entryCache (ltACCOUNT_ROOT,
+            getAccountRootIndex (bSetHigh ? uLowAccountID : uHighAccountID));
+        assert (slePeer);
+
         // Remember deletion hints.
         sleRippleState->setFieldU64 (sfLowNode, uLowNode);
         sleRippleState->setFieldU64 (sfHighNode, uHighNode);
@@ -1374,6 +1380,12 @@ TER LedgerEntrySet::trustCreate (
         if (bFreeze)
         {
             uFlags |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
+        }
+
+        if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
+        {
+            // The other side's default is no rippling
+            uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
@@ -1507,7 +1519,9 @@ TER LedgerEntrySet::rippleCredit (
             // Sender is zero or negative.
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
-            && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
+            && static_cast <bool> (uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+               static_cast <bool> (entryCache (ltACCOUNT_ROOT,
+                   getAccountRootIndex (uSenderID))->getFlags() & lsfDefaultRipple)
             && !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze))
             && !sleRippleState->getFieldAmount (
                 !bSenderHigh ? sfLowLimit : sfHighLimit)
