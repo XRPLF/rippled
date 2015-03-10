@@ -78,6 +78,7 @@ public:
         sMap.addItem (i4, true, false);
         sMap.delItem (i2.getTag ());
         sMap.addItem (i3, true, false);
+        sMap.unshare();
         i = sMap.peekFirstItem ();
         unexpected (!i || (*i != i1), "bad traverse");
         i = sMap.peekNextItem (i->getTag ());

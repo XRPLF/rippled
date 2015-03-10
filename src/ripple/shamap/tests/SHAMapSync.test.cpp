@@ -50,6 +50,7 @@ public:
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
+        map.unshare();
         uint256 beforeHash = map.getHash ();
 
         std::list<uint256> items;
@@ -78,7 +79,7 @@ public:
                 return false;
             }
         }
-
+        map.unshare();
         if (beforeHash != map.getHash ())
         {
             log <<
