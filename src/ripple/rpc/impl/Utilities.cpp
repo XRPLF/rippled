@@ -32,7 +32,9 @@ addPaymentDeliveredAmount (
 {
     STTx::pointer serializedTx;
 
-    if (transaction)
+    // We only want to add a "delivered_amount" field if the transaction
+    // succeeded - otherwise nothing could have been delivered.
+    if (transaction && transaction->getResult () == tesSUCCESS)
         serializedTx = transaction->getSTransaction ();
 
     if (serializedTx && serializedTx->getTxnType () == ttPAYMENT)
