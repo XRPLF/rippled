@@ -55,7 +55,6 @@ struct ConfigSection
 #define SECTION_PATH_SEARCH_MAX         "path_search_max"
 #define SECTION_PEER_PRIVATE            "peer_private"
 #define SECTION_PEERS_MAX               "peers_max"
-#define SECTION_RPC_ADMIN_ALLOW         "rpc_admin_allow"
 #define SECTION_RPC_STARTUP             "rpc_startup"
 #define SECTION_SMS_FROM                "sms_from"
 #define SECTION_SMS_KEY                 "sms_key"

@@ -139,6 +139,14 @@ public:
         return m_v6;
     }
 
+    /** Returns `true` if this address represents 0.0.0.0 */
+    bool
+    is_any () const
+    {
+        return is_v4 () ? m_v4 == IP::AddressV4::any ()
+            : false; // m_v6 == IP::AddressV6::any();
+    }
+            
     template <class Hasher>
     friend
     void

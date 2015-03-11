@@ -201,8 +201,6 @@ Config::Config ()
 
     WEBSOCKET_PING_FREQ     = (5 * 60);
 
-    RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
-
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
 
@@ -430,14 +428,6 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_PEERS_MAX, strTemp))
         PEERS_MAX           = beast::lexicalCastThrow <int> (strTemp);
-
-    if (auto s = getIniFileSection (secConfig, SECTION_RPC_ADMIN_ALLOW))
-    {
-        std::vector<beast::IP::Endpoint> parsedAddresses;
-        parseAddresses (parsedAddresses, (*s).cbegin(), (*s).cend());
-        RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
-                parsedAddresses.cbegin (), parsedAddresses.cend ());
-    }
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp))
     {

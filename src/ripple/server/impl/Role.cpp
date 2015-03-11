@@ -26,7 +26,7 @@ bool
 passwordUnrequiredOrSentCorrect (HTTP::Port const& port,
                                  Json::Value const& params) {
 
-    assert(port.allow_admin);
+    assert(! port.admin_ip.empty ());
     bool const passwordRequired = (!port.admin_user.empty() ||
                                    !port.admin_password.empty());
 
@@ -38,29 +38,28 @@ passwordUnrequiredOrSentCorrect (HTTP::Port const& port,
 }
 
 bool
-ipAllowed (beast::IP::Endpoint const& remoteIp,
-           std::vector<beast::IP::Endpoint> const& adminAllow)
+ipAllowed (beast::IP::Address const& remoteIp,
+           std::vector<beast::IP::Address> const& adminIp)
 {
-    return std::find(adminAllow.begin(), adminAllow.end(),
-                     remoteIp.at_port(0)) != adminAllow.end();
+    return std::find_if (adminIp.begin (), adminIp.end (),
+        [&remoteIp](beast::IP::Address const& ip) { return ip.is_any () ||
+            ip == remoteIp; }) != adminIp.end ();
 }
 
 bool
 isAdmin (HTTP::Port const& port, Json::Value const& params,
-         beast::IP::Endpoint const& remoteIp,
-         std::vector<beast::IP::Endpoint> const& adminAllow)
+         beast::IP::Address const& remoteIp)
 {
-    return (port.allow_admin && ipAllowed(remoteIp, adminAllow)) &&
-            passwordUnrequiredOrSentCorrect(port, params);
+    return ipAllowed (remoteIp, port.admin_ip) &&
+        passwordUnrequiredOrSentCorrect (port, params);
 }
 
 Role
 requestRole (Role const& required, HTTP::Port const& port,
-             Json::Value const& params, beast::IP::Endpoint const& remoteIp,
-             std::vector<beast::IP::Endpoint> const& adminAllow)
+             Json::Value const& params, beast::IP::Endpoint const& remoteIp)
 {
     Role role (Role::GUEST);
-    if (isAdmin(port, params, remoteIp, adminAllow))
+    if (isAdmin(port, params, remoteIp.address ()))
         role = Role::ADMIN;
     if (required == Role::ADMIN && role != required)
         role = Role::FORBID;

@@ -291,7 +291,6 @@ ServerHandlerImp::processRequest (
     }
 
     /* ---------------------------------------------------------------------- */
-    auto const& admin_allow = getConfig().RPC_ADMIN_ALLOW;
     auto role = Role::FORBID;
     auto required = RPC::roleRequired(id.asString());
 
@@ -300,12 +299,12 @@ ServerHandlerImp::processRequest (
                 jsonRPC["params"][Json::UInt(0)].isObject())
     {
         role = requestRole(required, port, jsonRPC["params"][Json::UInt(0)],
-            remoteIPAddress, admin_allow);
+            remoteIPAddress);
     }
     else
     {
         role = requestRole(required, port, Json::objectValue,
-            remoteIPAddress, admin_allow);
+            remoteIPAddress);
     }
 
     Resource::Consumer usage;
@@ -521,7 +520,7 @@ struct ParsedPort
 
     boost::optional<boost::asio::ip::address> ip;
     boost::optional<std::uint16_t> port;
-    boost::optional<bool> allow_admin;
+    boost::optional<std::vector<beast::IP::Address>> admin_ip;
 };
 
 void
@@ -579,19 +578,35 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         auto const result = section.find("admin");
         if (result.second)
         {
-            if (result.first == "no")
+            std::stringstream ss (result.first);
+            std::string ip;
+            bool has_any (false);
+
+            port.admin_ip.emplace ();
+            while (std::getline (ss, ip, ','))
             {
-                port.allow_admin = false;
-            }
-            else if (result.first == "allow")
-            {
-                port.allow_admin = true;
-            }
-            else
-            {
-                log << "Invalid value '" << result.first <<
-                    "' for key 'admin' in [" << section.name() << "]\n";
-                throw std::exception();
+                beast::IP::Address const addr(
+                    beast::IP::Endpoint::from_string_altform (ip).address ());
+
+                if (addr.is_any ())
+                {
+                    has_any = true;
+                }
+                else if (is_unspecified (addr))
+                {
+                    log << "Invalid value '" << ip << "' for key 'admin' in ["
+                        << section.name() << "]\n";
+                    throw std::exception ();
+                }
+
+                if (has_any && ! port.admin_ip->empty ())
+                {
+                    log << "IP specified with 0.0.0.0 '" << ip <<
+                        "' for key 'admin' in [" << section.name () << "]\n";
+                    throw std::exception ();
+                }
+
+                port.admin_ip->emplace_back (addr);
             }
         }
     }
@@ -629,11 +644,9 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         throw std::exception();
     }
     p.port = *parsed.port;
-
-    if (! parsed.allow_admin)
-        p.allow_admin = false;
-    else
-        p.allow_admin = *parsed.allow_admin;
+    
+    if (parsed.admin_ip)
+        p.admin_ip = *parsed.admin_ip;
 
     if (parsed.protocol.empty())
     {
