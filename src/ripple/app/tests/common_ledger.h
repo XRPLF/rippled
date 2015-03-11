@@ -210,9 +210,21 @@ payWithPath(TestAccount& from, TestAccount const& to,
     std::string const& currency, std::string const& amount,
     Ledger::pointer const& ledger, bool sign = true);
 
+STTx
+payWithPath(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, Json::Value const& path,
+    std::uint32_t flags,
+    bool sign = true);
+
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
             Ledger::pointer ledger, bool sign = true);
+
+void
+createOfferWithFlags(TestAccount& from, Amount const& in, Amount const& out,
+                     Ledger::pointer ledger, std::uint32_t flags,
+                     bool sign = true);
 
 // As currently implemented, this will cancel only the last offer made
 // from this account.
@@ -231,6 +243,42 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     TestAccount const& dest, std::vector<Currency> srcCurrencies, 
     Amount const& dstAmount, beast::abstract_ostream& log,
     boost::optional<Json::Value> contextPaths = boost::none);
+
+struct OfferPathNode
+{
+    std::string currency;
+    boost::optional<TestAccount> issuer;
+    OfferPathNode(std::string s, TestAccount const& iss)
+            :currency(std::move(s)), issuer(iss) {}
+};
+
+Json::Value pathNode (TestAccount const& acc);
+
+Json::Value pathNode (OfferPathNode const& offer);
+
+inline void createPathHelper (Json::Value& result)
+{
+    // base case
+}
+
+template<class First, class... Rest>
+void createPathHelper (Json::Value& result,
+                       First&& first,
+                       Rest&&... rest)
+{
+    result.append (pathNode (std::forward<First> (first)));
+    createPathHelper(result, rest...);
+}
+
+template<class First, class... Rest>
+Json::Value createPath (First&& first,
+                        Rest&&... rest)
+{
+    Json::Value result;
+    createPathHelper (result, first, rest...);
+    return result;
+}
+
 
 SLE::pointer
 get_ledger_entry_ripple_state(Ledger::pointer ledger,

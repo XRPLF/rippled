@@ -356,6 +356,23 @@ payWithPath(TestAccount& from, TestAccount const& to,
     return tx;
 }
 
+STTx
+payWithPath(TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger, Json::Value const& path,
+    std::uint32_t flags, bool sign)
+{
+    auto amountJson = Amount(std::stod(amount), currency, to).getJson();
+    Json::Value tx_json = getPaymentJson(from, to, amountJson);
+
+    tx_json[jss::Paths] = path;
+    tx_json[jss::Flags] = flags;
+
+    auto tx = parseTransaction(from, tx_json, sign);
+    applyTransaction(ledger, tx, sign);
+    return tx;
+}
+
 
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
@@ -368,6 +385,21 @@ createOffer(TestAccount& from, Amount const& in, Amount const& out,
     STTx tx = parseTransaction(from, tx_json, sign);
     applyTransaction(ledger, tx, sign);
 }
+
+void
+createOfferWithFlags(TestAccount& from, Amount const& in, Amount const& out,
+                     Ledger::pointer ledger, std::uint32_t flags,
+                     bool sign)
+{
+    Json::Value tx_json = getCommonTransactionJson(from);
+    tx_json[jss::TransactionType] = "OfferCreate";
+    tx_json[jss::TakerPays] = in.getJson();
+    tx_json[jss::TakerGets] = out.getJson();
+    tx_json[jss::Flags] = flags;
+    STTx tx = parseTransaction(from, tx_json, sign);
+    applyTransaction(ledger, tx, sign);
+}
+
 
 // As currently implemented, this will cancel only the last offer made
 // from this account.
@@ -495,6 +527,27 @@ verifyBalance(Ledger::pointer ledger, TestAccount const& account,
         throw std::runtime_error(
         "balance != amountReq");
 }
+
+Json::Value pathNode (TestAccount const& acc)
+{
+    Json::Value result;
+    result["account"] = acc.pk.humanAccountID();
+    result["type"] = 1;
+    result["type_hex"] = "0000000000000001";
+    return result;
+}
+
+Json::Value pathNode (OfferPathNode const& offer)
+{
+    Json::Value result;
+    result["currency"] = offer.currency;
+    result["type"] = 48;
+    result["type_hex"] = "0000000000000030";
+    if (offer.issuer)
+        result["issuer"] = offer.issuer->pk.humanAccountID();
+    return result;
+}
+
 
 }
 }

@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/DeferredCredits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -40,6 +41,8 @@ void LedgerEntrySet::init (Ledger::ref ledger, uint256 const& transactionID,
                            std::uint32_t ledgerID, TransactionEngineParams params)
 {
     mEntries.clear ();
+    if (mDeferredCredits)
+        mDeferredCredits->clear ();
     mLedger = ledger;
     mSet.init (transactionID, ledgerID);
     mParams = params;
@@ -50,20 +53,24 @@ void LedgerEntrySet::clear ()
 {
     mEntries.clear ();
     mSet.clear ();
+    if (mDeferredCredits)
+        mDeferredCredits->clear ();
 }
 
 LedgerEntrySet LedgerEntrySet::duplicate () const
 {
-    return LedgerEntrySet (mLedger, mEntries, mSet, mSeq + 1);
+    return LedgerEntrySet (mLedger, mEntries, mSet, mSeq + 1, mDeferredCredits);
 }
 
 void LedgerEntrySet::swapWith (LedgerEntrySet& e)
 {
-    std::swap (mLedger, e.mLedger);
+    using std::swap;
+    swap (mLedger, e.mLedger);
     mEntries.swap (e.mEntries);
     mSet.swap (e.mSet);
-    std::swap (mParams, e.mParams);
-    std::swap (mSeq, e.mSeq);
+    swap (mParams, e.mParams);
+    swap (mSeq, e.mSeq);
+    swap (mDeferredCredits, e.mDeferredCredits);
 }
 
 // Find an entry in the set.  If it has the wrong sequence number, copy it and update the sequence number.
@@ -1125,7 +1132,7 @@ STAmount LedgerEntrySet::rippleHolds (
         saBalance.setIssuer (issuer);
     }
 
-    return saBalance;
+    return adjustedBalance(account, issuer, saBalance);
 }
 
 // Returns the amount an account can spend without going into debt.
@@ -1162,6 +1169,8 @@ STAmount LedgerEntrySet::accountHolds (
             " saAmount=" << saAmount.getFullText () <<
             " saBalance=" << saBalance.getFullText () <<
             " uReserve=" << uReserve;
+
+        return adjustedBalance(account, issuer, saAmount);
     }
     else
     {
@@ -1170,9 +1179,10 @@ STAmount LedgerEntrySet::accountHolds (
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
             " account=" << to_string (account) <<
             " saAmount=" << saAmount.getFullText ();
+
+        return saAmount;
     }
 
-    return saAmount;
 }
 
 bool LedgerEntrySet::isGlobalFrozen (Account const& issuer)
@@ -1268,6 +1278,10 @@ TER LedgerEntrySet::trustCreate (
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut)
 {
+    WriteLog (lsTRACE, LedgerEntrySet)
+        << "trustCreate: " << to_string (uSrcAccountID) << ", "
+        << to_string (uDstAccountID) << ", " << saBalance.getFullText ();
+
     auto const& uLowAccountID   = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID  =  bSrcHigh ? uSrcAccountID : uDstAccountID;
 
@@ -1351,6 +1365,8 @@ TER LedgerEntrySet::trustCreate (
 
         // ONLY: Create ripple balance.
         sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);
+
+        cacheCredit (uSrcAccountID, uDstAccountID, saBalance);
     }
 
     return terResult;
@@ -1394,6 +1410,42 @@ TER LedgerEntrySet::trustDelete (
     entryDelete (sleRippleState);
 
     return terResult;
+}
+
+void LedgerEntrySet::enableDeferredCredits (bool enable)
+{
+    assert(enable == !mDeferredCredits);
+
+    if (!enable)
+    {
+        mDeferredCredits.reset ();
+        return;
+    }
+
+    if (!mDeferredCredits)
+        mDeferredCredits.emplace ();
+}
+
+bool LedgerEntrySet::areCreditsDeferred () const
+{
+    return static_cast<bool> (mDeferredCredits);
+}
+
+STAmount LedgerEntrySet::adjustedBalance (Account const& main,
+                                            Account const& other,
+                                            STAmount const& amount) const
+{
+    if (mDeferredCredits)
+        return mDeferredCredits->adjustedBalance (main, other, amount);
+    return amount;
+}
+
+void LedgerEntrySet::cacheCredit (Account const& sender,
+                                  Account const& receiver,
+                                  STAmount const& amount)
+{
+    if (mDeferredCredits)
+        return mDeferredCredits->credit (sender, receiver, amount);
 }
 
 // Direct send w/o fees:
@@ -1459,6 +1511,8 @@ TER LedgerEntrySet::rippleCredit (
     }
     else
     {
+        cacheCredit (uSenderID, uReceiverID, saAmount);
+
         STAmount    saBalance   = sleRippleState->getFieldAmount (sfBalance);
 
         if (bSenderHigh)
@@ -1633,6 +1687,8 @@ TER LedgerEntrySet::accountSend (
 
         return rippleSend (uSenderID, uReceiverID, saAmount, saActual);
     }
+
+    cacheCredit (uSenderID, uReceiverID, saAmount);
 
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
@@ -1819,6 +1875,8 @@ TER LedgerEntrySet::issue_iou (
     if (bSenderHigh)
         final_balance.negate ();
 
+    cacheCredit (issue.account, account, amount);
+
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time
     // of deletion.
@@ -1883,6 +1941,8 @@ TER LedgerEntrySet::redeem_iou (
 
     if (bSenderHigh)
         final_balance.negate ();
+
+    cacheCredit (account, issue.account, amount);
 
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time
@@ -1962,6 +2022,26 @@ rippleTransferRate (LedgerEntrySet& ledger, Account const& uSenderID,
     return (uSenderID == issuer || uReceiverID == issuer)
            ? QUALITY_ONE
            : rippleTransferRate (ledger, issuer);
+}
+
+ScopedDeferCredits::ScopedDeferCredits (LedgerEntrySet& l)
+    : les_ (l), enabled_ (false)
+{
+    if (!les_.areCreditsDeferred ())
+    {
+        WriteLog (lsTRACE, DeferredCredits) << "Enable";
+        les_.enableDeferredCredits (true);
+        enabled_ = true;
+    }
+}
+
+ScopedDeferCredits::~ScopedDeferCredits ()
+{
+    if (enabled_)
+    {
+        WriteLog (lsTRACE, DeferredCredits) << "Disable";
+        les_.enableDeferredCredits (false);
+    }
 }
 
 } // ripple
