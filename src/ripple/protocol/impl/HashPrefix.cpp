@@ -22,8 +22,8 @@
 
 namespace ripple {
 
-// The prefix codes are part of the Ripple protocol and existing codes cannot be
-// arbitrarily changed.
+// The prefix codes are part of the Ripple protocol
+// and existing codes cannot be arbitrarily changed.
 
 HashPrefix const HashPrefix::transactionID               ('T', 'X', 'N');
 HashPrefix const HashPrefix::txNode                      ('S', 'N', 'D');

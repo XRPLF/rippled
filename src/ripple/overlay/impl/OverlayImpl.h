@@ -97,30 +97,21 @@ private:
     boost::asio::io_service& io_service_;
     boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
-
     std::recursive_mutex mutex_; // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
     boost::container::flat_map<
         Child*, std::weak_ptr<Child>> list_;
-
     Setup setup_;
     beast::Journal journal_;
     ServerHandler& serverHandler_;
-
     Resource::Manager& m_resourceManager;
-
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
-
     hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> m_peers;
-
     hash_map<RippleAddress, std::weak_ptr<PeerImp>> m_publicKeyMap;
-
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
-
     Resolver& m_resolver;
-
     std::atomic <Peer::id_t> next_id_;
 
     int timer_count_;
@@ -212,7 +203,7 @@ public:
     void
     activate (std::shared_ptr<PeerImp> const& peer);
 
-    /** Called when an active peer is destroyed. */
+    // Called when an active peer is destroyed.
     void
     onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
 
@@ -259,6 +250,11 @@ private:
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
 
+    /*  The number of active peers on the network
+        Active peers are only those peers that have completed the handshake
+        and are running the Ripple protocol.
+    */
+    // VFALCO Why private?
     std::size_t
     size() override;
 

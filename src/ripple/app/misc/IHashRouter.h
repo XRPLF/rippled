@@ -80,10 +80,6 @@ public:
     virtual int getFlags (uint256 const& index) = 0;
 
     virtual bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) = 0;
-
-    // VFALCO TODO This appears to be unused!
-    //
-//    virtual Entry getEntry (uint256 const&) = 0;
 };
 
 } // ripple
