@@ -21,8 +21,10 @@
 #define RIPPLE_APP_LEDGER_LEDGERENTRYSET_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/DeferredCredits.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -114,6 +116,7 @@ public:
     void invalidate ()
     {
         mLedger.reset ();
+        mDeferredCredits.reset ();
     }
 
     bool isValid () const
@@ -203,6 +206,9 @@ public:
 
     bool isGlobalFrozen (Account const& issuer);
 
+    void enableDeferredCredits (bool enable=true);
+    bool areCreditsDeferred () const;
+
     TER rippleCredit (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount, bool bCheckIssuer = true);
@@ -285,6 +291,8 @@ public:
 private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
+    // Defers credits made to accounts until later
+    boost::optional<DeferredCredits> mDeferredCredits;
 
     typedef hash_map<uint256, SLE::pointer> NodeToLedgerEntry;
 
@@ -295,9 +303,9 @@ private:
 
     LedgerEntrySet (
         Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry>& e,
-        const TransactionMetaSet & s, int m) :
-        mLedger (ledger), mEntries (e), mSet (s), mParams (tapNONE), mSeq (m),
-        mImmutable (false)
+        const TransactionMetaSet & s, int m, boost::optional<DeferredCredits> const& ft) :
+        mLedger (ledger), mEntries (e), mDeferredCredits (ft), mSet (s), mParams (tapNONE),
+        mSeq (m), mImmutable (false)
     {}
 
     SLE::pointer getForMod (
@@ -328,6 +336,24 @@ private:
 
     bool checkState (SLE::pointer state, bool bSenderHigh,
         Account const& sender, STAmount const& before, STAmount const& after);
+
+    STAmount adjustedBalance (Account const& main,
+                              Account const& other,
+                              STAmount const& amount) const;
+
+    void cacheCredit (Account const& sender,
+                      Account const& receiver,
+                      STAmount const& amount);
+};
+
+class ScopedDeferCredits
+{
+private:
+    LedgerEntrySet& les_;
+    bool enabled_;
+public:
+    ScopedDeferCredits(LedgerEntrySet& l);
+    ~ScopedDeferCredits ();
 };
 
 // NIKB FIXME: move these to the right place

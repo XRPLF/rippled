@@ -292,14 +292,19 @@ public:
                 }
                 else
                 {
-                    auto rc = path::RippleCalc::rippleCalculate (
-                        mEngine->view (),
-                        maxSourceAmount,
-                        saDstAmount,
-                        uDstAccountID,
-                        mTxnAccountID,
-                        spsPaths,
-                        &rcInput);
+
+                    path::RippleCalc::Output rc;
+                    {
+                        ScopedDeferCredits g (mEngine->view ());
+                        rc = path::RippleCalc::rippleCalculate (
+                            mEngine->view (),
+                            maxSourceAmount,
+                            saDstAmount,
+                            uDstAccountID,
+                            mTxnAccountID,
+                            spsPaths,
+                            &rcInput);
+                    }
 
                     // TODO: is this right?  If the amount is the correct amount, was
                     // the delivered amount previously set?

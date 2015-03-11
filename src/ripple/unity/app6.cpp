@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/AcceptedLedger.cpp>
 #include <ripple/app/ledger/DirectoryEntryIterator.cpp>
 #include <ripple/app/ledger/OrderBookIterator.cpp>
+#include <ripple/app/ledger/DeferredCredits.cpp>
 #include <ripple/app/consensus/DisputedTx.cpp>
 #include <ripple/app/misc/HashRouter.cpp>
 #include <ripple/app/paths/AccountCurrencies.cpp>
@@ -31,3 +32,4 @@
 #include <ripple/app/paths/Pathfinder.cpp>
 #include <ripple/app/misc/AmendmentTableImpl.cpp>
 #include <ripple/app/misc/tests/AmendmentTable.test.cpp>
+#include <ripple/app/ledger/tests/DeferredCredits.test.cpp>

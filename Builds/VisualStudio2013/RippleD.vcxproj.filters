@@ -2220,6 +2220,12 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\DeferredCredits.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\DeferredCredits.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2298,6 +2304,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\tests\DeferredCredits.test.cpp">
+      <Filter>ripple\app\ledger\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\tests\Ledger_test.cpp">
       <Filter>ripple\app\ledger\tests</Filter>
     </ClCompile>
