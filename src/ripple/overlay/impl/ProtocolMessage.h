@@ -144,15 +144,15 @@ write (Streambuf& streambuf,
 {
     auto const size = m.ByteSize();
     std::array<std::uint8_t, 6> v;
-    v[0] = static_cast<std::uint8_t> ((size >> 24) & 0xFF);
-    v[1] = static_cast<std::uint8_t> ((size >> 16) & 0xFF);
-    v[2] = static_cast<std::uint8_t> ((size >>  8) & 0xFF);
-    v[3] = static_cast<std::uint8_t> ( size        & 0xFF);
-    v[4] = static_cast<std::uint8_t> ((type >> 8)  & 0xFF);
-    v[5] = static_cast<std::uint8_t> ( type        & 0xFF);
-
+    v[0] = static_cast<std::uint8_t>((size >> 24) & 0xFF);
+    v[1] = static_cast<std::uint8_t>((size >> 16) & 0xFF);
+    v[2] = static_cast<std::uint8_t>((size >>  8) & 0xFF);
+    v[3] = static_cast<std::uint8_t>( size        & 0xFF);
+    v[4] = static_cast<std::uint8_t>((type >>  8) & 0xFF);
+    v[5] = static_cast<std::uint8_t>( type        & 0xFF);
     streambuf.commit(boost::asio::buffer_copy(
-        streambuf.prepare(Message::kHeaderBytes), boost::asio::buffer(v)));
+        streambuf.prepare(Message::kHeaderBytes),
+            boost::asio::buffer(v)));
     ZeroCopyOutputStream<Streambuf> stream (
         streambuf, blockBytes);
     m.SerializeToZeroCopyStream(&stream);
