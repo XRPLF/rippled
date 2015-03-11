@@ -566,10 +566,6 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
     m_publicKeyMap.erase(publicKey);
 }
 
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the Ripple protocol.
-*/
 std::size_t
 OverlayImpl::size()
 {
