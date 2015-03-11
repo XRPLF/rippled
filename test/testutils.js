@@ -267,7 +267,7 @@ function account_dump(remote, account, callback) {
   // get closed ledger hash
   // get account root
   // construct a json result
-};
+}
 
 function set_account_flag(remote, account, options, callback) {
   if (typeof options === 'number') {
@@ -278,7 +278,9 @@ function set_account_flag(remote, account, options, callback) {
     account: account
   }, options));
 
-  submit_transaction(tx, callback);
+  // submit_transaction(tx, callback);
+  tx.submit();
+  tx.once('proposed', function(){callback();});
 }
 
 exports.fund_account =
@@ -313,7 +315,6 @@ function(remote, src, account, amount, options, callback) {
     options = {};
   }
 
-  options = extend({default_rippling: true}, options);
 
   // Before creating the account, check if it exists in the ledger.
   // If it does, regardless of the balance, fail the test, because
@@ -326,28 +327,19 @@ function(remote, src, account, amount, options, callback) {
   });
 
   info.once('error', function(result) {
-    var isNotFoundError = result.error === 'remoteError'
-    && result.remote.error === 'actNotFound';
+    var isNotFoundError = result.error === 'remoteError' && 
+                          result.remote.error === 'actNotFound';
 
     if (!isNotFoundError) {
       return callback(result);
     }
 
     // rippled indicated the account does not exist. Create it by funding it.
-    fund_account(remote, src, account, amount, function(err) {
-      if (err) {
-        callback(err);
-      } else if (!options.default_rippling) {
-        callback();
-      } else {
-        // Set default rippling on trustlines for account
-        set_account_flag(remote, account, 8, callback);
-      }
-    });
+    fund_account(remote, src, account, amount, callback);
   });
 
   info.request();
-}
+};
 
 function create_accounts(remote, src, amount, accounts, options, callback) {
   if (typeof options === 'function') {
@@ -359,8 +351,24 @@ function create_accounts(remote, src, amount, accounts, options, callback) {
 
   async.forEach(accounts, function (account, callback) {
     create_account(remote, src, account, amount, options, callback);
-  }, callback);
-};
+  }, function(){
+    options = extend({default_rippling: true}, options);
+    // If we don't want to set default rippling, then bail, otherwise
+    if (!options.default_rippling) {
+      return callback();
+    }
+
+    // close the ledger, so all the accounts always exist, then
+    remote.ledger_accept(function(){
+      // set the default rippling flag, on all the accounts
+      async.forEach(accounts, function(account, callback){
+        set_account_flag(remote, account, 8, callback);
+      }, function(){
+        remote.ledger_accept(function(){callback();});
+      });
+    });
+  });
+}
 
 function credit_limit(remote, src, amount, callback) {
   assert.strictEqual(arguments.length, 4);
