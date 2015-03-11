@@ -118,6 +118,7 @@ HandlerTable HANDLERS({
     {   "ledger_request",       byRef (&doLedgerRequest),       Role::ADMIN,   NO_CONDITION     },
     {   "log_level",            byRef (&doLogLevel),            Role::ADMIN,   NO_CONDITION     },
     {   "logrotate",            byRef (&doLogRotate),           Role::ADMIN,   NO_CONDITION     },
+    {   "noripple_check",       byRef (&doNoRippleCheck),       Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "owner_info",           byRef (&doOwnerInfo),           Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "peers",                byRef (&doPeers),               Role::ADMIN,   NO_CONDITION     },
     {   "path_find",            byRef (&doPathFind),            Role::USER,  NEEDS_CURRENT_LEDGER  },
