@@ -97,30 +97,21 @@ private:
     boost::asio::io_service& io_service_;
     boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
-
     std::recursive_mutex mutex_; // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
     boost::container::flat_map<
         Child*, std::weak_ptr<Child>> list_;
-
     Setup setup_;
     beast::Journal journal_;
     ServerHandler& serverHandler_;
-
     Resource::Manager& m_resourceManager;
-
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
-
     hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> m_peers;
-
     hash_map<RippleAddress, std::weak_ptr<PeerImp>> m_publicKeyMap;
-
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
-
     Resolver& m_resolver;
-
     std::atomic <Peer::id_t> next_id_;
 
     int timer_count_;
