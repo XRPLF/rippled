@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_PORT_H_INCLUDED
 #define RIPPLE_SERVER_PORT_H_INCLUDED
 
+#include <beast/net/IPEndpoint.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
@@ -39,7 +40,7 @@ struct Port
     boost::asio::ip::address ip;
     std::uint16_t port = 0;
     std::set<std::string, beast::ci_less> protocol;
-    bool allow_admin = false;
+    std::vector<beast::IP::Address> admin_ip;
     std::string user;
     std::string password;
     std::string admin_user;
@@ -97,11 +98,16 @@ inline
 std::ostream&
 operator<< (std::ostream& os, Port const& p)
 {
-    os <<
-        "'" << p.name <<
-        "' (ip=" << p.ip << ":" << p.port <<
-        (p.allow_admin ? ", admin, " : ", ") <<
-        p.protocols() << ")";
+    os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
+
+    if (! p.admin_ip.empty ())
+    {
+        os << "admin IPs:";
+        for (auto const& ip : p.admin_ip)
+            os << ip.to_string () << ", ";
+    }
+
+    os << p.protocols () << ")";
     return os;
 }
 

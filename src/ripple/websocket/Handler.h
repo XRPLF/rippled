@@ -107,7 +107,7 @@ public:
 
     bool getPublic()
     {
-        return port().allow_admin;
+        return ! port ().admin_ip.empty ();
     };
 
     void send (connection_ptr const& cpClient, message_ptr const& mpMessage)

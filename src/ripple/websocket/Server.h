@@ -60,10 +60,7 @@ private:
     void run () override
     {
         WriteLog (lsWARNING, WebSocket)
-                << "Websocket: '" << desc_.port.name
-                << "' creating endpoint " << desc_.port.ip.to_string()
-                << ":" << std::to_string(desc_.port.port)
-                << (desc_.port.allow_admin ? "(Admin)" : "");
+            << "Websocket: creating endpoint " << desc_.port;
 
         auto handler = WebSocket::makeHandler (desc_);
         {
@@ -72,10 +69,7 @@ private:
         }
 
         WriteLog (lsWARNING, WebSocket)
-                << "Websocket: '" << desc_.port.name
-                << "' listening on " << desc_.port.ip.to_string()
-                << ":" << std::to_string(desc_.port.port)
-                << (desc_.port.allow_admin ? "(Admin)" : "");
+            << "Websocket: listening on " << desc_.port;
 
         listen();
         {
@@ -84,26 +78,17 @@ private:
         }
 
         WriteLog (lsWARNING, WebSocket)
-                << "Websocket: '" << desc_.port.name
-                << "' finished listening on " << desc_.port.ip.to_string()
-                << ":" << std::to_string(desc_.port.port)
-                << (desc_.port.allow_admin ? "(Admin)" : "");
+            << "Websocket: finished listening on " << desc_.port;
 
         stopped ();
         WriteLog (lsWARNING, WebSocket)
-                << "Websocket: '" << desc_.port.name
-                << "' stopped on " << desc_.port.ip.to_string()
-                << ":" << std::to_string(desc_.port.port)
-                << (desc_.port.allow_admin ? "(Admin)" : "");
+            << "Websocket: stopped on " << desc_.port;
     }
 
     void onStop () override
     {
         WriteLog (lsWARNING, WebSocket)
-                << "Websocket: '" << desc_.port.name
-                << "' onStop " << desc_.port.ip.to_string()
-                << ":" << std::to_string(desc_.port.port)
-                << (desc_.port.allow_admin ? "(Admin)" : "");
+            << "Websocket: onStop " << desc_.port;
 
         typename WebSocket::EndpointPtr endpoint;
         {

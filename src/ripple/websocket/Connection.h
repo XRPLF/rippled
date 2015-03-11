@@ -100,7 +100,7 @@ public:
     void setPingTimer ();
 
 private:
-    HTTP::Port const& port_;
+    HTTP::Port const& m_port;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     bool const m_isPublic;
@@ -129,7 +129,7 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
     boost::asio::io_service& io_service)
         : InfoSub (source, // usage
                    resourceManager.newInboundEndpoint (remoteAddress))
-        , port_ (handler.port())
+        , m_port (handler.port ())
         , m_resourceManager (resourceManager)
         , m_isPublic (handler.getPublic ())
         , m_remoteAddress (remoteAddress)
@@ -262,8 +262,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (Json::Value& jvRequest)
     Json::Value jvResult (Json::objectValue);
 
     auto required = RPC::roleRequired (jvRequest[jss::command].asString());
-    Role const role = requestRole (required, port_, jvRequest, m_remoteAddress,
-                                   getConfig().RPC_ADMIN_ALLOW);
+    Role const role = requestRole (required, m_port, jvRequest, m_remoteAddress);
 
     if (Role::FORBID == role)
     {

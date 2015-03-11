@@ -213,7 +213,6 @@ public:
     int                         WEBSOCKET_PING_FREQ;
 
     // RPC parameters
-    std::vector<beast::IP::Endpoint>   RPC_ADMIN_ALLOW;
     Json::Value                     RPC_STARTUP;
 
     // Path searching
