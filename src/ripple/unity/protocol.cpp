@@ -30,6 +30,7 @@
 #include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
 #include <ripple/protocol/impl/SField.cpp>
+#include <ripple/protocol/impl/Sign.cpp>
 #include <ripple/protocol/impl/SOTemplate.cpp>
 #include <ripple/protocol/impl/TER.cpp>
 #include <ripple/protocol/impl/TxFormats.cpp>
