@@ -203,7 +203,7 @@ public:
     void
     activate (std::shared_ptr<PeerImp> const& peer);
 
-    /** Called when an active peer is destroyed. */
+    // Called when an active peer is destroyed.
     void
     onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
 
@@ -239,6 +239,11 @@ private:
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
 
+    /*  The number of active peers on the network
+        Active peers are only those peers that have completed the handshake
+        and are running the Ripple protocol.
+    */
+    // VFALCO Why private?
     std::size_t
     size() override;
 
