@@ -75,9 +75,7 @@ public:
 
     /** Create a buffer as a copy of existing memory. */
     Buffer (void const* data, std::size_t size)
-        : p_ (size ?
-            new std::uint8_t[size] : nullptr)
-        , size_ (size)
+        : Buffer (size)
     {
         std::memcpy(p_.get(), data, size);
     }
@@ -87,6 +85,12 @@ public:
     size() const noexcept
     {
         return size_;
+    }
+
+    bool
+    empty () const noexcept
+    {
+        return 0 == size_;
     }
 
     /** Return a pointer to beginning of the storage.
@@ -143,6 +147,18 @@ public:
         return alloc(n);
     }
 };
+
+inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept
+{
+    if (lhs.size () != rhs.size ())
+        return false;
+    return !std::memcmp (lhs.data (), rhs.data (), lhs.size ());
+}
+
+inline bool operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
+{
+    return !(lhs == rhs);
+}
 
 } // ripple
 

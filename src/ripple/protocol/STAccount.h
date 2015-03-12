@@ -30,11 +30,8 @@ class STAccount final
     : public STBlob
 {
 public:
-    STAccount (Blob const& v) : STBlob (v)
-    {
-        ;
-    }
-    STAccount (SField::ref n, Blob const& v) : STBlob (n, v)
+    STAccount (SField::ref n, Buffer&& v)
+            : STBlob (n, std::move(v))
     {
         ;
     }
@@ -64,8 +61,7 @@ public:
     template <typename Tag>
     void setValueH160 (base_uint<160, Tag> const& v)
     {
-        peekValue ().clear ();
-        peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
+        peekValue () = Buffer (v.data (), v.size ());
         assert (peekValue ().size () == (160 / 8));
     }
 
@@ -74,7 +70,7 @@ public:
     {
         auto success = isValueH160 ();
         if (success)
-            memcpy (v.begin (), & (peekValue ().front ()), (160 / 8));
+            memcpy (v.begin (), peekValue ().data (), (160 / 8));
         return success;
     }
 

@@ -735,7 +735,9 @@ Account STObject::getFieldAccount160 (SField::ref field) const
 
 Blob STObject::getFieldVL (SField::ref field) const
 {
-    return getFieldByValue <STBlob> (field);
+    STBlob empty;
+    STBlob const& b = getFieldByConstRef <STBlob> (field, empty);
+    return Blob (b.data (), b.data () + b.size ());
 }
 
 STAmount const& STObject::getFieldAmount (SField::ref field) const
@@ -835,7 +837,8 @@ void STObject::setFieldAccount (SField::ref field, Account const& v)
 
 void STObject::setFieldVL (SField::ref field, Blob const& v)
 {
-    setFieldUsingSetValue <STBlob> (field, v);
+    setFieldUsingSetValue <STBlob>
+            (field, Buffer(v.data (), v.size ()));
 }
 
 void STObject::setFieldAmount (SField::ref field, STAmount const& v)

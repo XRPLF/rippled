@@ -662,24 +662,31 @@ SerialIter::getFieldID (int& type, int& name)
     }
 }
 
-// VFALCO DEPRECATED Returns a copy
-Blob
-SerialIter::getRaw (int size)
+// getRaw for blob or buffer
+template<class T>
+T SerialIter::getRawHelper (int size)
 {
+    static_assert(std::is_same<T, Blob>::value ||
+                  std::is_same<T, Buffer>::value, "");
     if (remain_ < size)
         throw std::runtime_error(
             "invalid SerialIter getRaw");
-    Blob b (p_, p_ + size);
+    T result (size);
+    memcpy(result.data (), p_, size);
     p_ += size;
     used_ += size;
     remain_ -= size;
-    return b;
-
+    return result;
 }
 
 // VFALCO DEPRECATED Returns a copy
 Blob
-SerialIter::getVL()
+SerialIter::getRaw (int size)
+{
+    return getRawHelper<Blob> (size);
+}
+
+int SerialIter::getVLDataLength ()
 {
     int b1 = get8();
     int datLen;
@@ -700,7 +707,20 @@ SerialIter::getVL()
         int b3 = get8();
         datLen = Serializer::decodeVLLength (b1, b2, b3);
     }
-    return getRaw(datLen);
+    return datLen;
+}
+
+// VFALCO DEPRECATED Returns a copy
+Blob
+SerialIter::getVL()
+{
+    return getRaw(getVLDataLength ());
+}
+
+Buffer
+SerialIter::getVLBuffer()
+{
+    return getRawHelper<Buffer> (getVLDataLength ());
 }
 
 

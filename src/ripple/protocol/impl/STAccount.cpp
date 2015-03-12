@@ -37,12 +37,12 @@ std::string STAccount::getText () const
 STAccount*
 STAccount::construct (SerialIter& u, SField::ref name)
 {
-    return new STAccount (name, u.getVL ());
+    return new STAccount (name, u.getVLBuffer ());
 }
 
-STAccount::STAccount (SField::ref n, Account const& v) : STBlob (n)
+STAccount::STAccount (SField::ref n, Account const& v)
+        : STBlob (n, v.data (), v.size ())
 {
-    peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
 }
 
 bool STAccount::isValueH160 () const

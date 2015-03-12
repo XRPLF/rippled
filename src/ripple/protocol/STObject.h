@@ -388,6 +388,8 @@ private:
     template <typename T, typename V>
     void setFieldUsingSetValue (SField::ref field, V value)
     {
+        static_assert(!std::is_lvalue_reference<V>::value, "");
+
         STBase* rf = getPField (field, true);
 
         if (!rf)
@@ -401,7 +403,7 @@ private:
         if (!cf)
             throw std::runtime_error ("Wrong field type");
 
-        cf->setValue (value);
+        cf->setValue (std::move (value));
     }
 
     // Implementation for setting fields using assignment
