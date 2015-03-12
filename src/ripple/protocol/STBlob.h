@@ -36,6 +36,11 @@ public:
     using value_type = Slice;
 
     STBlob () = default;
+    STBlob (STBlob const& rhs)
+        :STBase(rhs)
+        , value_ (rhs.data (), rhs.size ())
+    {
+    }
 
     /** Construct with size and initializer.
         Init will be called as:
@@ -44,40 +49,19 @@ public:
     template <class Init>
     STBlob (SField::ref f, std::size_t size,
             Init&& init)
-        : STBase(f)
+        : STBase(f), value_ (size)
     {
-        value.resize(size);
-        init(value.data(), value.size());
+        init(value_.data(), value_.size());
     }
 
     STBlob (SField::ref f,
             void const* data, std::size_t size)
-        : STBase(f)
+        : STBase(f), value_ (data, size)
     {
-        value.resize(size);
-        std::memcpy(value.data(), data, size);
     }
 
     STBlob (SField const& f, Buffer&& b)
-        : STBase(f)
-    {
-        // VFALCO TODO Really move the buffer
-        value.resize(b.size());
-        std::memcpy(value.data(),
-            b.data(), b.size());
-        auto tmp = std::move(b);
-    }
-
-    // VFALCO DEPRECATED
-    STBlob (Blob const& v)
-        : value (v)
-    {
-    }
-
-    // VFALCO DEPRECATED
-    STBlob (SField::ref n, Blob const& v)
-        : STBase (n)
-        , value (v)
+       : STBase(f), value_(std::move (b))
     {
     }
 
@@ -92,20 +76,20 @@ public:
     std::unique_ptr<STBase>
     deserialize (SerialIter& sit, SField::ref name)
     {
-        return std::make_unique<STBlob> (name, sit.getVL ());
+        return std::make_unique<STBlob> (name, sit.getVLBuffer ());
     }
 
     std::size_t
     size() const
     {
-        return value.size();
+        return value_.size();
     }
 
     std::uint8_t const*
     data() const
     {
         return reinterpret_cast<
-            std::uint8_t const*>(value.data());
+            std::uint8_t const*>(value_.data());
     }
 
     SerializedTypeID
@@ -123,44 +107,38 @@ public:
         assert (fName->isBinary ());
         assert ((fName->fieldType == STI_VL) ||
             (fName->fieldType == STI_ACCOUNT));
-        s.addVL (value);
+        s.addVL (value_.data (), value_.size ());
     }
 
-    Blob const&
+    Buffer const&
     peekValue () const
     {
-        return value;
+        return value_;
     }
 
-    Blob&
+    Buffer&
     peekValue ()
     {
-        return value;
+        return value_;
     }
 
-    Blob
+    Buffer
     getValue () const
     {
-        return value;
+        return Buffer(value_.data (), value_.size ());
     }
 
     void
-    setValue (Blob const& v)
+    setValue (Buffer&& b)
     {
-        value = v;
+        value_ = std::move (b);
     }
 
     void
     setValue (void const* data, std::size_t size)
     {
-        value.resize(size);
-        std::memcpy(value.data(), data, size);
-    }
-
-    explicit
-    operator Blob () const
-    {
-        return value;
+        value_.alloc (size);
+        std::memcpy(value_.data(), data, size);
     }
 
     bool
@@ -169,7 +147,7 @@ public:
     bool
     isDefault () const override
     {
-        return value.empty ();
+        return value_.empty ();
     }
 
     std::unique_ptr<STBase>
@@ -179,7 +157,7 @@ public:
     }
 
 private:
-    Blob value;
+    Buffer value_;
 };
 
 } // ripple

@@ -418,7 +418,8 @@ static std::unique_ptr <STBase> parseLeaf (
             if (!vBlob.second)
                 throw std::invalid_argument ("invalid data");
 
-            ret = std::make_unique <STBlob> (field, vBlob.first);
+            ret = std::make_unique <STBlob> (field, vBlob.first.data (),
+                                             vBlob.first.size ());
         }
         catch (...)
         {

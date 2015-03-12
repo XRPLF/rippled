@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/SField.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Buffer.h>
 #include <beast/utility/noexcept.h>
 #include <cassert>
 #include <cstdint>
@@ -319,7 +320,6 @@ private:
     std::uint8_t const* p_;
     std::size_t remain_;
     std::size_t used_ = 0;
-
 public:
     SerialIter (void const* data,
             std::size_t size) noexcept;
@@ -405,6 +405,15 @@ public:
     // VFALCO DEPRECATED Returns a copy
     Blob
     getVL();
+
+    Buffer
+    getVLBuffer();
+
+private:
+    int getVLDataLength ();
+
+    template<class T>
+    T getRawHelper (int size);
 };
 
 template <int Bits, class Tag>
