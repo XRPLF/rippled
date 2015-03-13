@@ -40,21 +40,22 @@ scons "${@}" || exit 1 && \
       continue
     fi
     echo -e "\n\n\nTesting ${RIPPLED}\n\n\n"
-    LOG=unittest.${RUN}.log
-    ${RIPPLED} --unittest | tee ${LOG} && \
-      grep -q "0 failures" ${LOG} && \
-        npm test --rippled=${RIPPLED} \
-          || break
+    LOG="unittest.${RUN}.log"
+    "${RIPPLED}" --unittest | tee "${LOG}" && \
+      grep -q "0 failures" "${LOG}" && \
+        rm -v "${LOG}" && \
+          npm test --rippled="${RIPPLED}" \
+            || break
     success="${success} ${RUN}"
     RUN=
   done
 
 if [ -n "${success}" ]
 then
-  echo "Success on ${success}"
+  echo -e "\nSuccess on ${success}"
 fi
 if [ -n "${RUN}" ]
 then
-  echo "Failed on ${RUN}" 
+  echo -e "\nFailed on ${RUN}" 
   exit 1
 fi
