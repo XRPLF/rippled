@@ -90,7 +90,8 @@ void PeerSet::invokeOnTimer ()
     if (!isProgress())
     {
         ++mTimeouts;
-        WriteLog (lsWARNING, InboundLedger) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
+        WriteLog (lsDEBUG, InboundLedger) << "Timeout(" << mTimeouts
+            << ") pc=" << mPeers.size () << " acquiring " << mHash;
         onTimer (false, sl);
     }
     else

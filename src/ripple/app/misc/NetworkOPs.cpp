@@ -1040,7 +1040,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
 
         if (r == tesSUCCESS)
         {
-            m_journal.info << "Transaction is now included in open ledger";
+            m_journal.debug << "Transaction is now included in open ledger";
             trans->setStatus (INCLUDED);
 
             // VFALCO NOTE The value of trans can be changed here!
@@ -1702,7 +1702,7 @@ SHAMapAddNode NetworkOPsImp::gotTXData (
 
     if (!mConsensus)
     {
-        m_journal.warning << "Got TX data with no consensus object";
+        m_journal.debug << "Got TX data with no consensus object";
         return SHAMapAddNode ();
     }
 
@@ -2792,7 +2792,7 @@ void NetworkOPsImp::pubAccountTransaction (
             }
         }
     }
-    m_journal.info << "pubAccountTransaction:" <<
+    m_journal.trace << "pubAccountTransaction:" <<
         " iProposed=" << iProposed <<
         " iAccepted=" << iAccepted;
 

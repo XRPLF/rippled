@@ -410,22 +410,22 @@ ledger and then attempts to resume a continuous stream.
 
 ## Implementation ##
 
-LedgerMaster::doAdvance is invoked when work may need to be done to
+`LedgerMaster::doAdvance` is invoked when work may need to be done to
 publish ledgers to clients. This code loops until it cannot make further
 progress.
 
-LedgerMaster::findNewLedgersToPublish is called first. If the last
+`LedgerMaster::findNewLedgersToPublish` is called first. If the last
 fully-valid ledger's sequence number is greater than the last published
 ledger's sequence number, it attempts to publish those ledgers, retrieving
 them if needed.
 
-If there are no new ledgers to publish, doAdvance determines if it can
+If there are no new ledgers to publish, `doAdvance` determines if it can
 backfill history. If the publication is not caught up, bakfilling is not
 attempted to conserve resources.
 
 If history can be backfilled, the missing ledger with the highest
 sequence number is retrieved first. If a historical ledger is retrieved,
-and its predecessor is in the database, tryFill is invoked to update
+and its predecessor is in the database, `tryFill` is invoked to update
 the list of resident ledgers.
 
 ---
