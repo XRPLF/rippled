@@ -870,7 +870,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem> const& item,
     if (!node->setItem (item, !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
                         (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM)))
     {
-        if (journal_.warning) journal_.warning <<
+        journal_.trace <<
             "SHAMap setItem, no change";
         return true;
     }

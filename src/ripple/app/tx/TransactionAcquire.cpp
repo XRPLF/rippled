@@ -71,7 +71,7 @@ void TransactionAcquire::done ()
     }
     else
     {
-        WriteLog (lsINFO, TransactionAcquire) << "Acquired TX set " << mHash;
+        WriteLog (lsDEBUG, TransactionAcquire) << "Acquired TX set " << mHash;
         mMap->setImmutable ();
         map = mMap;
     }

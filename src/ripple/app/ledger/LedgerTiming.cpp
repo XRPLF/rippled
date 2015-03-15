@@ -130,7 +130,7 @@ bool ContinuousLedgerTiming::haveConsensus (
     // If 80% of current proposers (plus us) agree on a set, we have consensus
     if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
     {
-        CondLog (forReal, lsINFO, LedgerTiming) << "normal consensus";
+        CondLog (forReal, lsDEBUG, LedgerTiming) << "normal consensus";
         failed = false;
         return true;
     }

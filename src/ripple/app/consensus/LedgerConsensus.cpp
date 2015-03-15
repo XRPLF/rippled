@@ -385,7 +385,7 @@ public:
         {
             leaveConsensus();
             WriteLog (lsERROR, LedgerConsensus) <<
-                "Missind node processing complete map " << mn;
+                "Missing node processing complete map " << mn;
             throw;
         }
     }
@@ -393,7 +393,7 @@ public:
     void mapCompleteInternal (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map, bool acquired)
     {
-        CondLog (acquired, lsINFO, LedgerConsensus)
+        CondLog (acquired, lsDEBUG, LedgerConsensus)
             << "We have acquired TXS " << hash;
 
         if (!map)  // If the map was invalid
@@ -2090,7 +2090,7 @@ void applyTransactions (std::shared_ptr<SHAMap> const& set,
             if (!checkLedger->hasTransaction (item->getTag ()))
             {
                 // Then try to apply the transaction to applyLedger
-                WriteLog (lsINFO, LedgerConsensus) <<
+                WriteLog (lsDEBUG, LedgerConsensus) <<
                     "Processing candidate transaction: " << item->getTag ();
                 try
                 {

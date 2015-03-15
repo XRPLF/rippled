@@ -46,6 +46,7 @@ namespace ripple {
 
 #define MIN_VALIDATION_RATIO    150     // 150/256ths of validations of previous ledger
 #define MAX_LEDGER_GAP          100     // Don't catch up more than 100 ledgers  (cannot exceed 256)
+#define MAX_LEDGER_AGE_ACQUIRE  60      // Don't acquire history if ledger is too old
 
 class LedgerMasterImp
     : public LedgerMaster
@@ -936,7 +937,7 @@ public:
                 if (!standalone_ && !getApp().getFeeTrack().isLoadedLocal() &&
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                     (mValidLedgerSeq == mPubLedgerSeq) &&
-                    (getValidatedLedgerAge() < 60))
+                    (getValidatedLedgerAge() < MAX_LEDGER_AGE_ACQUIRE))
                 { // We are in sync, so can acquire
                     std::uint32_t missing;
                     {

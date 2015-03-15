@@ -1654,7 +1654,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 return;
             }
 
-            p_journal_.error <<
+            p_journal_.debug <<
                 "GetLedger: Can't provide map ";
             charge (Resource::feeInvalidRequest);
             return;
