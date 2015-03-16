@@ -36,8 +36,6 @@ Json::Value doUnsubscribe (RPC::Context& context)
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    auto lock = getApp().masterLock();
-
     if (context.params.isMember (jss::url))
     {
         if (context.role != Role::ADMIN)
@@ -96,7 +94,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
         if (accounts.empty ())
             jvResult[jss::error]   = "malformedAccount";
         else
-            context.netOps.unsubAccount (ispSub->getSeq (), accounts, true);
+            context.netOps.unsubAccount (ispSub, accounts, true);
     }
 
     if (context.params.isMember (jss::accounts))
@@ -106,7 +104,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
         if (accounts.empty ())
             jvResult[jss::error]   = "malformedAccount";
         else
-            context.netOps.unsubAccount (ispSub->getSeq (), accounts, false);
+            context.netOps.unsubAccount (ispSub, accounts, false);
     }
 
     if (!context.params.isMember (jss::books))

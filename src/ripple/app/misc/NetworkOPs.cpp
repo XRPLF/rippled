@@ -467,10 +467,17 @@ public:
     //
     void subAccount (
         InfoSub::ref ispListener,
-        const hash_set<RippleAddress>& vnaAccountIDs,
-        std::uint32_t uLedgerIndex, bool rt);
+        const hash_set<RippleAddress>& vnaAccountIDs, bool rt);
     void unsubAccount (
-        std::uint64_t uListener, const hash_set<RippleAddress>& vnaAccountIDs,
+        InfoSub::ref ispListener,
+        const hash_set<RippleAddress>& vnaAccountIDs,
+        bool rt);
+
+    // Just remove the subscription from the tracking
+    // not from the InfoSub. Needed for InfoSub destruction
+    void unsubAccountInternal (
+        std::uint64_t seq,
+        const hash_set<RippleAddress>& vnaAccountIDs,
         bool rt);
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
@@ -546,7 +553,7 @@ private:
     std::unique_ptr <LocalTxs> m_localTX;
     std::unique_ptr <FeeVote> m_feeVote;
 
-    LockType mLock;
+    LockType mSubLock;
 
     std::atomic<OperatingMode> mMode;
 
@@ -1755,7 +1762,7 @@ void NetworkOPsImp::pubServer ()
     //             list into a local array while holding the lock then release the
     //             lock and call send on everyone.
     //
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
 
     if (!mSubServer.empty ())
     {
@@ -2499,7 +2506,7 @@ void NetworkOPsImp::pubProposedTransaction (
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl (mSubLock);
 
         auto it = mSubRTTransactions.begin ();
         while (it != mSubRTTransactions.end ())
@@ -2531,7 +2538,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
     Ledger::ref lpAccepted = alpAccepted->getLedger ();
 
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl (mSubLock);
 
         if (!mSubLedger.empty ())
         {
@@ -2655,7 +2662,7 @@ void NetworkOPsImp::pubValidatedTransaction (
     std::string sObj = to_string (jvObj);
 
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl (mSubLock);
 
         auto it = mSubTransactions.begin ();
         while (it != mSubTransactions.end ())
@@ -2698,7 +2705,7 @@ void NetworkOPsImp::pubAccountTransaction (
     int                             iAccepted   = 0;
 
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl (mSubLock);
 
         if (!bAccepted && mSubRTAccount.empty ()) return;
 
@@ -2777,22 +2784,21 @@ void NetworkOPsImp::pubAccountTransaction (
 // Monitoring
 //
 
-void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
-    const hash_set<RippleAddress>& vnaAccountIDs,
-    std::uint32_t uLedgerIndex, bool rt)
+void NetworkOPsImp::subAccount (
+    InfoSub::ref isrListener,
+    const hash_set<RippleAddress>& vnaAccountIDs, bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
-    // For the connection, monitor each account.
     for (auto const& naAccountID : vnaAccountIDs)
     {
         m_journal.trace << "subAccount:"
             " account: " << naAccountID.humanAccountID ();
 
-        isrListener->insertSubAccountInfo (naAccountID, uLedgerIndex);
+        isrListener->insertSubAccountInfo (naAccountID, rt);
     }
 
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
@@ -2814,20 +2820,28 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
 }
 
 void NetworkOPsImp::unsubAccount (
+    InfoSub::ref isrListener,
+    hash_set<RippleAddress> const& vnaAccountIDs,
+    bool rt)
+{
+    for (auto const& naAccountID : vnaAccountIDs)
+    {
+        // Remove from the InfoSub
+        isrListener->deleteSubAccountInfo(naAccountID, rt);
+    }
+
+    // Remove from the server
+    unsubAccountInternal (isrListener->getSeq(), vnaAccountIDs, rt);
+}
+
+void NetworkOPsImp::unsubAccountInternal (
     std::uint64_t uSeq,
     hash_set<RippleAddress> const& vnaAccountIDs,
     bool rt)
 {
+    ScopedLockType sl (mSubLock);
+
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
-
-    // For the connection, unmonitor each account.
-    // FIXME: Don't we need to unsub?
-    // BOOST_FOREACH(RippleAddress const& naAccountID, vnaAccountIDs)
-    // {
-    //  isrListener->deleteSubAccountInfo(naAccountID);
-    // }
-
-    ScopedLockType sl (mLock);
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
@@ -2918,14 +2932,14 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
                 = getApp().getLedgerMaster ().getCompleteLedgers ();
     }
 
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubLedger.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubLedger.erase (uSeq);
 }
 
@@ -2949,21 +2963,21 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     jvResult[jss::pubkey_node]     = getApp ().getLocalCredentials ().
         getNodePublic ().humanNodePublic ();
 
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubServer (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubServer.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubTransactions.emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2971,14 +2985,14 @@ bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubTransactions.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubRTTransactions.emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2986,13 +3000,13 @@ bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
     return mSubRTTransactions.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
 
     subRpcMapType::iterator it = mRpcSubMap.find (strUrl);
 
@@ -3005,7 +3019,7 @@ InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
 InfoSub::pointer NetworkOPsImp::addRpcSub (
     std::string const& strUrl, InfoSub::ref rspEntry)
 {
-    ScopedLockType sl (mLock);
+    ScopedLockType sl (mSubLock);
 
     mRpcSubMap.emplace (strUrl, rspEntry);
 

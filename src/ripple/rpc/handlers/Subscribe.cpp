@@ -28,10 +28,6 @@ Json::Value doSubscribe (RPC::Context& context)
 {
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    std::uint32_t uLedgerIndex = context.params.isMember (jss::ledger_index)
-            && context.params[jss::ledger_index].isNumeric ()
-            ? context.params[jss::ledger_index].asUInt ()
-            : 0;
 
     if (!context.infoSub && !context.params.isMember (jss::url))
     {
@@ -41,10 +37,6 @@ Json::Value doSubscribe (RPC::Context& context)
 
         return rpcError (rpcINVALID_PARAMS);
     }
-
-    // FIXME:
-    // Subscriptions need to be protected by their own lock
-    auto lock = getApp().masterLock();
 
     if (context.params.isMember (jss::url))
     {
@@ -161,7 +153,7 @@ Json::Value doSubscribe (RPC::Context& context)
         if (ids.empty ())
             jvResult[jss::error] = "malformedAccount";
         else
-            context.netOps.subAccount (ispSub, ids, uLedgerIndex, true);
+            context.netOps.subAccount (ispSub, ids, true);
     }
 
     if (!context.params.isMember (jss::accounts))
@@ -181,13 +173,12 @@ Json::Value doSubscribe (RPC::Context& context)
         }
         else
         {
-            context.netOps.subAccount (ispSub, ids, uLedgerIndex, false);
+            context.netOps.subAccount (ispSub, ids, false);
             WriteLog (lsDEBUG, RPCHandler)
                 << "doSubscribe: accounts: " << ids.size ();
         }
     }
 
-    bool bHaveMasterLock = true;
     if (!context.params.isMember (jss::books))
     {
     }
@@ -286,12 +277,6 @@ Json::Value doSubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            if (!bHaveMasterLock)
-            {
-                lock->lock ();
-                bHaveMasterLock = true;
-            }
-
             context.netOps.subBook (ispSub, book);
 
             if (bBoth)
@@ -299,12 +284,6 @@ Json::Value doSubscribe (RPC::Context& context)
 
             if (bSnapshot)
             {
-                if (bHaveMasterLock)
-                {
-                    lock->unlock ();
-                    bHaveMasterLock = false;
-                }
-
                 context.loadType = Resource::feeMediumBurdenRPC;
                 auto lpLedger = getApp().getLedgerMaster ().
                         getPublishedLedger ();
