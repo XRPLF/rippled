@@ -189,18 +189,4 @@ Json::Value Transaction::getJson (int options, bool binary) const
     return ret;
 }
 
-bool Transaction::isHexTxID (std::string const& txid)
-{
-    if (txid.size () != 64)
-        return false;
-
-    auto const ret = std::find_if (txid.begin (), txid.end (),
-        [](std::string::value_type c)
-        {
-            return !std::isxdigit (c);
-        });
-
-    return (ret == txid.end ());
-}
-
 } // ripple

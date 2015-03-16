@@ -25,6 +25,23 @@ namespace ripple {
 // {
 //   transaction: <hex>
 // }
+
+static
+bool
+isHexTxID (std::string const& txid)
+{
+    if (txid.size () != 64)
+        return false;
+
+    auto const ret = std::find_if (txid.begin (), txid.end (),
+        [](std::string::value_type c)
+        {
+            return !std::isxdigit (c);
+        });
+
+    return (ret == txid.end ());
+}
+
 Json::Value doTx (RPC::Context& context)
 {
     if (!context.params.isMember (jss::transaction))
@@ -35,7 +52,7 @@ Json::Value doTx (RPC::Context& context)
 
     auto const txid  = context.params[jss::transaction].asString ();
 
-    if (!Transaction::isHexTxID (txid))
+    if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
     auto txn = getApp().getMasterTransaction ().fetch (uint256 (txid), true);

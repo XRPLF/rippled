@@ -119,8 +119,6 @@ public:
 
     static Transaction::pointer load (uint256 const& id);
 
-    static bool isHexTxID (std::string const&);
-
 private:
     uint256         mTransactionID;
     RippleAddress   mAccountFrom;
