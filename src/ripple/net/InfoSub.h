@@ -61,14 +61,25 @@ public:
         Source (char const* name, beast::Stoppable& parent);
 
     public:
-        // VFALCO TODO Rename the 'rt' parameters to something meaningful.
+
+        // For some reason, these were originally called "rt"
+        // for "real time". They actually refer to whether
+        // you get transactions as they occur or once their
+        // results are confirmed
         virtual void subAccount (ref ispListener,
             const hash_set<RippleAddress>& vnaAccountIDs,
-                std::uint32_t uLedgerIndex, bool rt) = 0;
+            bool realTime) = 0;
 
-        virtual void unsubAccount (std::uint64_t uListener,
+        // for normal use, removes from InfoSub and server
+        virtual void unsubAccount (ref isplistener,
             const hash_set<RippleAddress>& vnaAccountIDs,
-                bool rt) = 0;
+            bool realTime) = 0;
+
+        // for use during InfoSub destruction
+        // Removes only from the server
+        virtual void unsubAccountInternal (std::uint64_t uListener,
+            const hash_set<RippleAddress>& vnaAccountIDs,
+            bool realTime) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool subLedger (ref ispListener, Json::Value& jvResult) = 0;
@@ -104,7 +115,7 @@ public:
 
     virtual void send (Json::Value const& jvObj, bool broadcast) = 0;
 
-    // VFALCO NOTE Why is this virtual?
+    // virtual so that a derived class can optimize this case
     virtual void send (
         Json::Value const& jvObj, std::string const& sObj, bool broadcast);
 
@@ -112,7 +123,13 @@ public:
 
     void onSendEmpty ();
 
-    void insertSubAccountInfo (RippleAddress addr, std::uint32_t uLedgerIndex);
+    void insertSubAccountInfo (
+        RippleAddress addr,
+        bool rt);
+
+    void deleteSubAccountInfo (
+        RippleAddress addr,
+        bool rt);
 
     void clearPathRequest ();
 
@@ -128,7 +145,8 @@ protected:
 private:
     Consumer                      m_consumer;
     Source&                       m_source;
-    hash_set <RippleAddress>      mSubAccountInfo;
+    hash_set <RippleAddress>      mSubAccountInfo_t; // real time subscriptions
+    hash_set <RippleAddress>      mSubAccountInfo_f; // normal subscriptions
     hash_set <RippleAddress>      mSubAccountTransaction;
     std::shared_ptr <PathRequest> mPathRequest;
     std::uint64_t                 mSeq;
