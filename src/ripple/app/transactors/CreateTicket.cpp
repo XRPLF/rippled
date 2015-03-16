@@ -41,6 +41,22 @@ public:
 
     }
 
+    TER
+    preCheck () override
+    {
+        if (mTxn.isFieldPresent (sfExpiration))
+        {
+            if (mTxn.getFieldU32 (sfExpiration) == 0)
+            {
+                m_journal.warning <<
+                    "Malformed transaction: bad expiration";
+                return temBAD_EXPIRATION;
+            }
+        }
+
+        return Transactor::preCheck ();
+    }
+
     TER doApply () override
     {
         assert (mTxnAccount);
@@ -59,14 +75,6 @@ public:
         if (mTxn.isFieldPresent (sfExpiration))
         {
             expiration = mTxn.getFieldU32 (sfExpiration);
-
-            if (!expiration)
-            {
-                m_journal.warning <<
-                    "Malformed ticket requestion: bad expiration";
-
-                return temBAD_EXPIRATION;
-            }
 
             if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
                 return tesSUCCESS;
@@ -104,13 +112,14 @@ public:
         {
             Ledger::ownerDirDescriber(p, b, mTxnAccountID);
         };
+
         TER result = mEngine->view ().dirAdd (
             hint,
             getOwnerDirIndex (mTxnAccountID),
             sleTicket->getIndex (),
             describer);
 
-        m_journal.trace <<
+        if (m_journal.trace) m_journal.trace <<
             "Creating ticket " << to_string (sleTicket->getIndex ()) <<
             ": " << transHuman (result);
 

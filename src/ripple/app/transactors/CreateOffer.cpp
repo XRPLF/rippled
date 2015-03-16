@@ -465,6 +465,96 @@ public:
     }
 
     TER
+    preCheck () override
+    {
+        std::uint32_t const uTxFlags = mTxn.getFlags ();
+
+        if (uTxFlags & tfOfferCreateMask)
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Malformed transaction: Invalid flags set.";
+            return temINVALID_FLAG;
+        }
+
+        bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
+        bool const bFillOrKill (uTxFlags & tfFillOrKill);
+
+        if (bImmediateOrCancel && bFillOrKill)
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Malformed transaction: both IoC and FoK set.";
+            return temINVALID_FLAG;
+        }
+
+        bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
+        
+        if (bHaveExpiration && (mTxn.getFieldU32 (sfExpiration) == 0))
+        {
+            if (m_journal.debug) m_journal.warning <<
+                "Malformed offer: bad expiration";
+            return temBAD_EXPIRATION;
+        }
+        
+        bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
+
+        if (bHaveCancel && (mTxn.getFieldU32 (sfOfferSequence) == 0))
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Malformed offer: bad cancel sequence";
+            return temBAD_SEQUENCE;
+        }
+
+        STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
+        STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
+
+        if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
+            return temBAD_AMOUNT;
+
+        if (saTakerPays.isNative () && saTakerGets.isNative ())
+        {
+            if (m_journal.debug) m_journal.warning <<
+                "Malformed offer: XRP for XRP";
+            return temBAD_OFFER;
+        }
+        if (saTakerPays <= zero || saTakerGets <= zero)
+        {
+            if (m_journal.debug) m_journal.warning <<
+                "Malformed offer: bad amount";
+            return temBAD_OFFER;
+        }
+
+        auto const& uPaysIssuerID = saTakerPays.getIssuer ();
+        auto const& uPaysCurrency = saTakerPays.getCurrency ();
+
+        auto const& uGetsIssuerID = saTakerGets.getIssuer ();
+        auto const& uGetsCurrency = saTakerGets.getCurrency ();
+
+        if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Malformed offer: redundant offer";
+            return temREDUNDANT;
+        }
+        // We don't allow a non-native currency to use the currency code XRP.
+        if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
+        {
+            if (m_journal.debug) m_journal.warning <<
+                "Malformed offer: Bad currency.";
+            return temBAD_CURRENCY;
+        }
+
+        if (saTakerPays.isNative () != !uPaysIssuerID ||
+            saTakerGets.isNative () != !uGetsIssuerID)
+        {
+            if (m_journal.warning) m_journal.warning <<
+                "Malformed offer: bad issuer";
+            return temBAD_ISSUER;
+        }
+
+        return Transactor::preCheck ();
+    }
+
+    TER
     doApply () override
     {
         std::uint32_t const uTxFlags = mTxn.getFlags ();
@@ -484,7 +574,6 @@ public:
         auto const& uPaysCurrency = saTakerPays.getCurrency ();
 
         auto const& uGetsIssuerID = saTakerGets.getIssuer ();
-        auto const& uGetsCurrency = saTakerGets.getCurrency ();
 
         bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
         bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
@@ -519,65 +608,7 @@ public:
         SLE::pointer sleCreator = mEngine->entryCache (
             ltACCOUNT_ROOT, getAccountRootIndex (mTxnAccountID));
 
-        if (uTxFlags & tfOfferCreateMask)
-        {
-            if (m_journal.debug) m_journal.debug <<
-                "Malformed transaction: Invalid flags set.";
-
-            result = temINVALID_FLAG;
-        }
-        else if (bImmediateOrCancel && bFillOrKill)
-        {
-            if (m_journal.debug) m_journal.debug <<
-                "Malformed transaction: both IoC and FoK set.";
-
-            result = temINVALID_FLAG;
-        }
-        else if (bHaveExpiration && !uExpiration)
-        {
-            m_journal.warning <<
-                "Malformed offer: bad expiration";
-
-            result = temBAD_EXPIRATION;
-        }
-        else if (saTakerPays.isNative () && saTakerGets.isNative ())
-        {
-            m_journal.warning <<
-                "Malformed offer: XRP for XRP";
-
-            result = temBAD_OFFER;
-        }
-        else if (saTakerPays <= zero || saTakerGets <= zero)
-        {
-            m_journal.warning <<
-                "Malformed offer: bad amount";
-
-            result = temBAD_OFFER;
-        }
-        else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
-        {
-            m_journal.warning <<
-                "Malformed offer: redundant offer";
-
-            result = temREDUNDANT;
-        }
-        // We don't allow a non-native currency to use the currency code XRP.
-        else if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
-        {
-            m_journal.warning <<
-                "Malformed offer: Bad currency.";
-
-            result = temBAD_CURRENCY;
-        }
-        else if (saTakerPays.isNative () != !uPaysIssuerID ||
-                 saTakerGets.isNative () != !uGetsIssuerID)
-        {
-            m_journal.warning <<
-                "Malformed offer: bad issuer";
-
-            result = temBAD_ISSUER;
-        }
-        else if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
+        if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
         {
             m_journal.warning <<
                 "Offer involves frozen asset";
@@ -594,7 +625,7 @@ public:
         }
         // This can probably be simplified to make sure that you cancel sequences
         // before the transaction sequence number.
-        else if (bHaveCancel && (!uCancelSequence || uAccountSequenceNext - 1 <= uCancelSequence))
+        else if (bHaveCancel && (uAccountSequenceNext - 1 <= uCancelSequence))
         {
             if (m_journal.debug) m_journal.debug <<
                 "uAccountSequenceNext=" << uAccountSequenceNext <<

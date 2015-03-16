@@ -50,6 +50,120 @@ public:
 
     }
 
+    TER preCheck () override
+    {
+        std::uint32_t const uTxFlags = mTxn.getFlags ();
+
+        if (uTxFlags & tfPaymentMask)
+        {
+            m_journal.trace << "Malformed transaction: " <<
+                "Invalid flags set.";
+            return temINVALID_FLAG;
+        }
+
+        bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
+        bool const limitQuality = uTxFlags & tfLimitQuality;
+        bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
+        bool const bPaths = mTxn.isFieldPresent (sfPaths);
+        bool const bMax = mTxn.isFieldPresent (sfSendMax);
+        
+        STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
+        
+        STAmount maxSourceAmount;
+        
+        if (bMax)
+            maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+        else if (saDstAmount.isNative ())
+            maxSourceAmount = saDstAmount;
+        else
+            maxSourceAmount = STAmount (
+                { saDstAmount.getCurrency (), mTxnAccountID },
+                saDstAmount.mantissa(), saDstAmount.exponent (),
+                saDstAmount < zero);
+
+        auto const& uSrcCurrency = maxSourceAmount.getCurrency ();
+        auto const& uDstCurrency = saDstAmount.getCurrency ();
+
+        // isZero() is XRP.  FIX!
+        bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
+
+        if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
+            return temBAD_AMOUNT;
+
+        Account const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
+
+        if (!uDstAccountID)
+        {
+            m_journal.trace << "Malformed transaction: " <<
+                "Payment destination account not specified.";
+            return temDST_NEEDED;
+        }
+        if (bMax && maxSourceAmount <= zero)
+        {
+            m_journal.trace << "Malformed transaction: " <<
+                "bad max amount: " << maxSourceAmount.getFullText ();
+            return temBAD_AMOUNT;
+        }
+        if (saDstAmount <= zero)
+        {
+            m_journal.trace << "Malformed transaction: "<<
+                "bad dst amount: " << saDstAmount.getFullText ();
+            return temBAD_AMOUNT;
+        }
+        if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
+        {
+            m_journal.trace <<"Malformed transaction: " <<
+                "Bad currency.";
+            return temBAD_CURRENCY;
+        }
+        if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
+        {
+            // You're signing yourself a payment.
+            // If bPaths is true, you might be trying some arbitrage.
+            m_journal.trace << "Malformed transaction: " <<
+                "Redundant payment from " << to_string (mTxnAccountID) <<
+                " to self without path for " << to_string (uDstCurrency);
+            return temREDUNDANT;
+        }
+        if (bXRPDirect && bMax)
+        {
+            // Consistent but redundant transaction.
+            m_journal.trace << "Malformed transaction: " <<
+                "SendMax specified for XRP to XRP.";
+            return temBAD_SEND_XRP_MAX;
+        }
+        if (bXRPDirect && bPaths)
+        {
+            // XRP is sent without paths.
+            m_journal.trace << "Malformed transaction: " <<
+                "Paths specified for XRP to XRP.";
+            return temBAD_SEND_XRP_PATHS;
+        }
+        if (bXRPDirect && partialPaymentAllowed)
+        {
+            // Consistent but redundant transaction.
+            m_journal.trace << "Malformed transaction: " <<
+                "Partial payment specified for XRP to XRP.";
+            return temBAD_SEND_XRP_PARTIAL;
+        }
+        if (bXRPDirect && limitQuality)
+        {
+            // Consistent but redundant transaction.
+            m_journal.trace << "Malformed transaction: " <<
+                "Limit quality specified for XRP to XRP.";
+            return temBAD_SEND_XRP_LIMIT;
+        }
+        if (bXRPDirect && !defaultPathsAllowed)
+        {
+            // Consistent but redundant transaction.
+            m_journal.trace << "Malformed transaction: " <<
+                "No ripple direct specified for XRP to XRP.";
+            return temBAD_SEND_XRP_NO_DIRECT;
+        }
+
+        return Transactor::preCheck ();
+    }
+
     TER doApply () override
     {
         // Ripple if source or destination is non-native or if there are paths.
@@ -71,109 +185,11 @@ public:
               {saDstAmount.getCurrency (), mTxnAccountID},
               saDstAmount.mantissa(), saDstAmount.exponent (),
               saDstAmount < zero);
-        auto const& uSrcCurrency = maxSourceAmount.getCurrency ();
-        auto const& uDstCurrency = saDstAmount.getCurrency ();
-
-        // isZero() is XRP.  FIX!
-        bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
 
         m_journal.trace <<
             "maxSourceAmount=" << maxSourceAmount.getFullText () <<
             " saDstAmount=" << saDstAmount.getFullText ();
 
-        if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
-            return temBAD_AMOUNT;
-
-        if (uTxFlags & tfPaymentMask)
-        {
-            m_journal.trace <<
-                "Malformed transaction: Invalid flags set.";
-
-            return temINVALID_FLAG;
-        }
-        else if (!uDstAccountID)
-        {
-            m_journal.trace <<
-                "Malformed transaction: Payment destination account not specified.";
-
-            return temDST_NEEDED;
-        }
-        else if (bMax && maxSourceAmount <= zero)
-        {
-            m_journal.trace <<
-                "Malformed transaction: bad max amount: " << maxSourceAmount.getFullText ();
-
-            return temBAD_AMOUNT;
-        }
-        else if (saDstAmount <= zero)
-        {
-            m_journal.trace <<
-                "Malformed transaction: bad dst amount: " << saDstAmount.getFullText ();
-
-            return temBAD_AMOUNT;
-        }
-        else if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
-        {
-            m_journal.trace <<
-                "Malformed transaction: Bad currency.";
-
-            return temBAD_CURRENCY;
-        }
-        else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
-        {
-            // You're signing yourself a payment.
-            // If bPaths is true, you might be trying some arbitrage.
-            m_journal.trace <<
-                "Malformed transaction: Redundant transaction:" <<
-                " src=" << to_string (mTxnAccountID) <<
-                " dst=" << to_string (uDstAccountID) <<
-                " src_cur=" << to_string (uSrcCurrency) <<
-                " dst_cur=" << to_string (uDstCurrency);
-
-            return temREDUNDANT;
-        }
-        else if (bXRPDirect && bMax)
-        {
-            // Consistent but redundant transaction.
-            m_journal.trace <<
-                "Malformed transaction: SendMax specified for XRP to XRP.";
-
-            return temBAD_SEND_XRP_MAX;
-        }
-        else if (bXRPDirect && bPaths)
-        {
-            // XRP is sent without paths.
-            m_journal.trace <<
-                "Malformed transaction: Paths specified for XRP to XRP.";
-
-            return temBAD_SEND_XRP_PATHS;
-        }
-        else if (bXRPDirect && partialPaymentAllowed)
-        {
-            // Consistent but redundant transaction.
-            m_journal.trace <<
-                "Malformed transaction: Partial payment specified for XRP to XRP.";
-
-            return temBAD_SEND_XRP_PARTIAL;
-        }
-        else if (bXRPDirect && limitQuality)
-        {
-            // Consistent but redundant transaction.
-            m_journal.trace <<
-                "Malformed transaction: Limit quality specified for XRP to XRP.";
-
-            return temBAD_SEND_XRP_LIMIT;
-        }
-        else if (bXRPDirect && !defaultPathsAllowed)
-        {
-            // Consistent but redundant transaction.
-            m_journal.trace <<
-                "Malformed transaction: No ripple direct specified for XRP to XRP.";
-
-            return temBAD_SEND_XRP_NO_DIRECT;
-        }
-
-        //
         // Open a ledger for editing.
         auto const index = getAccountRootIndex (uDstAccountID);
         SLE::pointer sleDst (mEngine->entryCache (ltACCOUNT_ROOT, index));

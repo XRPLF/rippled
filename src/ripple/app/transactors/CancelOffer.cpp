@@ -42,50 +42,52 @@ public:
 
     }
 
-    TER doApply () override
+    TER preCheck () override
     {
-        std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
-        std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
-
-        m_journal.debug <<
-            "uAccountSequenceNext=" << uAccountSequenceNext <<
-            " uOfferSequence=" << uOfferSequence;
-
         std::uint32_t const uTxFlags (mTxn.getFlags ());
 
         if (uTxFlags & tfUniversalMask)
         {
-            m_journal.trace <<
-                "Malformed transaction: Invalid flags set.";
+            m_journal.trace << "Malformed transaction: " <<
+                "Invalid flags set.";
             return temINVALID_FLAG;
         }
 
-        if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
+        std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+
+        if (!uOfferSequence)
         {
-            m_journal.trace <<
-                "uAccountSequenceNext=" << uAccountSequenceNext <<
-                " uOfferSequence=" << uOfferSequence;
+            m_journal.trace << "Malformed transaction: " <<
+                "No sequence specified.";
+            return temBAD_SEQUENCE;
+        }
+
+        return Transactor::preCheck ();
+    }
+
+    TER doApply () override
+    {
+        std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+
+        if (mTxnAccount->getFieldU32 (sfSequence) - 1 <= uOfferSequence)
+        {
+            m_journal.trace << "Malformed transaction: " <<
+                "Sequence " << uOfferSequence << " is invalid.";
             return temBAD_SEQUENCE;
         }
 
         uint256 const offerIndex (getOfferIndex (mTxnAccountID, uOfferSequence));
 
-        SLE::pointer sleOffer (mEngine->entryCache (ltOFFER, offerIndex));
+        SLE::pointer sleOffer (mEngine->entryCache (ltOFFER, 
+            offerIndex));
 
         if (sleOffer)
         {
-            m_journal.debug <<
-                "OfferCancel: uOfferSequence=" << uOfferSequence;
-
+            m_journal.debug << "Trying to cancel offer #" << uOfferSequence;
             return mEngine->view ().offerDelete (sleOffer);
         }
 
-        m_journal.warning <<
-            "OfferCancel: offer not found: " <<
-            to_string (mTxnAccountID) <<
-            " : " << uOfferSequence <<
-            " : " << to_string (offerIndex);
-
+        m_journal.debug << "Offer #" << uOfferSequence << " can't be found.";
         return tesSUCCESS;
     }
 };

@@ -47,6 +47,76 @@ public:
 
     }
 
+    TER preCheck () override
+    {
+        std::uint32_t const uTxFlags = mTxn.getFlags ();
+
+        if (uTxFlags & tfAccountSetMask)
+        {
+            m_journal.trace << "Malformed transaction: Invalid flags set.";
+            return temINVALID_FLAG;
+        }
+
+        std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
+        std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
+
+        if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
+        {
+            m_journal.trace << "Malformed transaction: Set and clear same flag.";
+            return temINVALID_FLAG;
+        }
+
+        //
+        // RequireAuth
+        //
+        bool bSetRequireAuth   = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+        bool bClearRequireAuth = (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+
+        if (bSetRequireAuth && bClearRequireAuth)
+        {
+            m_journal.trace << "Malformed transaction: Contradictory flags set.";
+            return temINVALID_FLAG;
+        }
+
+        //
+        // RequireDestTag
+        //
+        bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
+        bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+
+        if (bSetRequireDest && bClearRequireDest)
+        {
+            m_journal.trace << "Malformed transaction: Contradictory flags set.";
+            return temINVALID_FLAG;
+        }
+
+        //
+        // DisallowXRP
+        //
+        bool bSetDisallowXRP   = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+        bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+
+        if (bSetDisallowXRP && bClearDisallowXRP)
+        {
+            m_journal.trace << "Malformed transaction: Contradictory flags set.";
+            return temINVALID_FLAG;
+        }
+
+        // TransferRate
+        if (mTxn.isFieldPresent (sfTransferRate))
+        {
+            std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
+
+            if (uRate && (uRate < QUALITY_ONE))
+            {
+                m_journal.trace << "Malformed transaction: Bad transfer rate.";
+                return temBAD_TRANSFER_RATE;
+            }
+        }
+
+        return Transactor::preCheck ();
+    }
+
     TER doApply () override
     {
         std::uint32_t const uTxFlags = mTxn.getFlags ();
@@ -57,12 +127,6 @@ public:
         std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
         std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
 
-        if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
-        {
-            m_journal.trace << "Malformed transaction: Set and clear same flag";
-            return temINVALID_FLAG;
-        }
-
         // legacy AccountSet flags
         bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
         bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
@@ -71,22 +135,9 @@ public:
         bool bSetDisallowXRP   = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
         bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
-        if (uTxFlags & tfAccountSetMask)
-        {
-            m_journal.trace << "Malformed transaction: Invalid flags set.";
-            return temINVALID_FLAG;
-        }
-
         //
         // RequireAuth
         //
-
-        if (bSetRequireAuth && bClearRequireAuth)
-        {
-            m_journal.trace << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
-
         if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
         {
             if (!mEngine->view().dirIsEmpty (getOwnerDirIndex (mTxnAccountID)))
@@ -108,13 +159,6 @@ public:
         //
         // RequireDestTag
         //
-
-        if (bSetRequireDest && bClearRequireDest)
-        {
-            m_journal.trace << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
-
         if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
         {
             m_journal.trace << "Set lsfRequireDestTag.";
@@ -130,13 +174,6 @@ public:
         //
         // DisallowXRP
         //
-
-        if (bSetDisallowXRP && bClearDisallowXRP)
-        {
-            m_journal.trace << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
-
         if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
         {
             m_journal.trace << "Set lsfDisallowXRP.";
@@ -152,7 +189,6 @@ public:
         //
         // DisableMaster
         //
-
         if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
         {
             if (!mSigMaster)
@@ -174,6 +210,9 @@ public:
             uFlagsOut &= ~lsfDisableMaster;
         }
 
+        //
+        // DefaultRipple
+        //
         if (uSetFlag == asfDefaultRipple)
         {
             uFlagsOut   |= lsfDefaultRipple;
@@ -183,6 +222,9 @@ public:
             uFlagsOut   &= ~lsfDefaultRipple;
         }
 
+        //
+        // NoFreeze
+        //
         if (uSetFlag == asfNoFreeze)
         {
             if (!mSigMaster && !(uFlagsIn & lsfDisableMaster))
@@ -215,7 +257,6 @@ public:
         //
         // Track transaction IDs signed by this account in its root
         //
-
         if ((uSetFlag == asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
         {
             m_journal.trace << "Set AccountTxnID";
@@ -231,7 +272,6 @@ public:
         //
         // EmailHash
         //
-
         if (mTxn.isFieldPresent (sfEmailHash))
         {
             uint128 const uHash = mTxn.getFieldH128 (sfEmailHash);
@@ -251,7 +291,6 @@ public:
         //
         // WalletLocator
         //
-
         if (mTxn.isFieldPresent (sfWalletLocator))
         {
             uint256 const uHash = mTxn.getFieldH256 (sfWalletLocator);
@@ -271,7 +310,6 @@ public:
         //
         // MessageKey
         //
-
         if (mTxn.isFieldPresent (sfMessageKey))
         {
             Blob const messageKey = mTxn.getFieldVL (sfMessageKey);
@@ -297,7 +335,6 @@ public:
         //
         // Domain
         //
-
         if (mTxn.isFieldPresent (sfDomain))
         {
             Blob const domain = mTxn.getFieldVL (sfDomain);
@@ -323,12 +360,11 @@ public:
         //
         // TransferRate
         //
-
         if (mTxn.isFieldPresent (sfTransferRate))
         {
             std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
 
-            if (!uRate || uRate == QUALITY_ONE)
+            if (uRate == 0 || uRate == QUALITY_ONE)
             {
                 m_journal.trace << "unset transfer rate";
                 mTxnAccount->makeFieldAbsent (sfTransferRate);
@@ -337,11 +373,6 @@ public:
             {
                 m_journal.trace << "set transfer rate";
                 mTxnAccount->setFieldU32 (sfTransferRate, uRate);
-            }
-            else
-            {
-                m_journal.trace << "bad transfer rate";
-                return temBAD_TRANSFER_RATE;
             }
         }
 

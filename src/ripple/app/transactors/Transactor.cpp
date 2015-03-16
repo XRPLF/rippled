@@ -257,16 +257,16 @@ TER Transactor::apply ()
     TER terResult (preCheck ());
 
     if (terResult != tesSUCCESS)
-        return (terResult);
-
-    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
-        getAccountRootIndex (mTxnAccountID));
-    calculateFee ();
+        return terResult;
 
     // Find source account
+    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
+        getAccountRootIndex (mTxnAccountID));
+
+    calculateFee ();
+
     // If are only forwarding, due to resource limitations, we might verifying
     // only some transactions, this would be probabilistic.
-
     if (!mTxnAccount)
     {
         if (mustHaveValidAccount ())

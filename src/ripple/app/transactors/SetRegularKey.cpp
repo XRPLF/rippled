@@ -54,27 +54,30 @@ public:
 
     }
 
-    TER doApply () override
+    TER preCheck () override
     {
         std::uint32_t const uTxFlags = mTxn.getFlags ();
 
         if (uTxFlags & tfUniversalMask)
         {
-            m_journal.trace <<
+            if (m_journal.trace) m_journal.trace <<
                 "Malformed transaction: Invalid flags set.";
 
             return temINVALID_FLAG;
         }
 
+        return Transactor::preCheck ();
+    }
+
+    TER doApply () override
+    {
         if (mFeeDue == zero)
-        {
             mTxnAccount->setFlag (lsfPasswordSpent);
-        }
 
         if (mTxn.isFieldPresent (sfRegularKey))
         {
-            Account uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
-            mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
+            mTxnAccount->setFieldAccount (sfRegularKey,
+                mTxn.getFieldAccount160 (sfRegularKey));
         }
         else
         {

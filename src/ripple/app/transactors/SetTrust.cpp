@@ -42,6 +42,57 @@ public:
     {
     }
 
+    TER preCheck () override
+    {
+        std::uint32_t const uTxFlags = mTxn.getFlags ();
+
+        if (uTxFlags & tfTrustSetMask)
+        {
+            m_journal.trace <<
+                "Malformed transaction: Invalid flags set.";
+            return temINVALID_FLAG;
+        }
+
+        STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
+
+        if (!isLegalNet (saLimitAmount))
+            return temBAD_AMOUNT;
+
+        if (saLimitAmount.isNative ())
+        {
+            if (m_journal.trace) m_journal.trace <<
+                "Malformed transaction: specifies native limit " <<
+                saLimitAmount.getFullText ();
+            return temBAD_LIMIT;
+        }
+
+        if (badCurrency() == saLimitAmount.getCurrency ())
+        {
+            if (m_journal.trace) m_journal.trace <<
+                "Malformed transaction: specifies XRP as IOU";
+            return temBAD_CURRENCY;
+        }
+
+        if (saLimitAmount < zero)
+        {
+            if (m_journal.trace) m_journal.trace <<
+                "Malformed transaction: Negative credit limit.";
+            return temBAD_LIMIT;
+        }
+
+        // Check if destination makes sense.
+        auto const& issuer = saLimitAmount.getIssuer ();
+        
+        if (!issuer || issuer == noAccount())
+        {
+            if (m_journal.trace) m_journal.trace <<
+                "Malformed transaction: no destination account.";
+            return temDST_NEEDED;
+        }
+
+        return Transactor::preCheck ();
+    }
+
     TER doApply () override
     {
         TER terResult = tesSUCCESS;
@@ -77,20 +128,10 @@ public:
         std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
         std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
 
-        if (!isLegalNet (saLimitAmount))
-            return temBAD_AMOUNT;
-
         if (bQualityOut && QUALITY_ONE == uQualityOut)
             uQualityOut = 0;
 
         std::uint32_t const uTxFlags = mTxn.getFlags ();
-
-        if (uTxFlags & tfTrustSetMask)
-        {
-            m_journal.trace <<
-                "Malformed transaction: Invalid flags set.";
-            return temINVALID_FLAG;
-        }
 
         bool const bSetAuth = (uTxFlags & tfSetfAuth);
         bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
@@ -105,32 +146,12 @@ public:
             return tefNO_AUTH_REQUIRED;
         }
 
-        if (saLimitAmount.isNative ())
-        {
-            m_journal.trace <<
-                "Malformed transaction: Native credit limit: " <<
-                saLimitAmount.getFullText ();
-            return temBAD_LIMIT;
-        }
-
-        if (saLimitAmount < zero)
-        {
-            m_journal.trace <<
-                "Malformed transaction: Negative credit limit.";
-            return temBAD_LIMIT;
-        }
-
-        // Check if destination makes sense.
-        if (!uDstAccountID || uDstAccountID == noAccount())
-        {
-            m_journal.trace <<
-                "Malformed transaction: Destination account not specified.";
-
-            return temDST_NEEDED;
-        }
-
         if (mTxnAccountID == uDstAccountID)
         {
+            // The only purpose here is to allow a mistakenly created
+            // trust line to oneself to be deleted. If no such trust
+            // lines exist now, why not remove this code and simply
+            // return an error?
             SLE::pointer selDelete (
                 mEngine->entryCache (ltRIPPLE_STATE,
                     getRippleStateIndex (
@@ -391,10 +412,6 @@ public:
 
             // Another transaction could create the account and then this transaction would succeed.
             terResult = tecNO_LINE_INSUF_RESERVE;
-        }
-        else if (badCurrency() == currency)
-        {
-            terResult = temBAD_CURRENCY;
         }
         else
         {

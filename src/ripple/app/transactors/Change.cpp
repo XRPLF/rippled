@@ -100,7 +100,6 @@ public:
         if (mTxnAccountID.isNonZero ())
         {
             m_journal.warning << "Bad source id";
-
             return temBAD_SRC_ACCOUNT;
         }
 
