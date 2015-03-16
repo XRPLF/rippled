@@ -180,10 +180,11 @@ PeerImp::send (Message::pointer const& m)
 void
 PeerImp::charge (Resource::Charge const& fee)
 {
-    if ((usage_.charge(fee) == Resource::drop) && usage_.disconnect())
+    if ((usage_.charge(fee) == Resource::drop) &&
+        usage_.disconnect() && strand_.running_in_this_thread())
     {
-        if (strand_.running_in_this_thread())
-            fail("charge: Resources");
+        // Sever the connection
+        fail("charge: Resources");
     }
 }
 
@@ -693,7 +694,7 @@ PeerImp::onMessageBegin (std::uint16_t type,
 {
     load_event_ = getApp().getJobQueue ().getLoadEventAP (
         jtPEER, protocolMessageName(type));
-    fee_ = Resource::feeRequestNoReply;
+    fee_ = Resource::feeLightPeer;
     return error_code{};
 }
 

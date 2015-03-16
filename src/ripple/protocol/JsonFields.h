@@ -204,7 +204,7 @@ JSS ( limit );                      // in/out: AccountTx*, AccountOffers,
                                     // in: LedgerData, BookOffers
 JSS ( limit_peer );                 // out: AccountLines
 JSS ( lines );                      // out: AccountLines
-JSS ( load );                       // out: NetworkOPs
+JSS ( load );                       // out: NetworkOPs, PeerImp
 JSS ( load_base );                  // out: NetworkOPs
 JSS ( load_factor );                // out: NetworkOPs
 JSS ( load_factor_cluster );        // out: NetworkOPs
