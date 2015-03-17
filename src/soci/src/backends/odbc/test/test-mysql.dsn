@@ -1,0 +1,4 @@
+[ODBC]
+DRIVER=MySQL
+DATABASE=soci_test
+OPTION=0

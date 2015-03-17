@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>SOCI - connections</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>Connections and simple queries</h2>
+
+<h3>Connecting to the database</h3>
+
+<p>The <code>session</code> class encapsulates the database connection
+and other backend-related details, which are common to all the
+statements
+that will be later executed. It has a couple of overloaded constructors.</p>
+
+<p>The most basic one expects two parameters:
+the requested backend factory object and the generic connection string,
+which meaning is backend-dependent.</p>
+<p>Example:</p>
+
+<pre class="example">
+session sql(oracle, "service=orcl user=scott password=tiger");
+</pre>
+
+<p>Another example might be:</p>
+
+<pre class="example">
+session sql(postgresql, "dbname=mydb");
+</pre>
+
+<p>Above, the <code>sql</code> object is a local (automatic) object
+that encapsulates the connection.</p>
+
+<p>This <code>session</code> constructor either connects successfully, or
+throws an exception.</p>
+
+<p>Another constructor allows to name backends at run-time and supports
+the dynamically loadable backends, which have to be compiled as shared libraries. The usage is similar to the above, but instead of providing the factory object, the backend name is expected:</p>
+
+<pre class="example">
+session sql("postgresql", "dbname=mydb");
+</pre>
+
+<p>For convenience, the URL-like form that combines both the backend name with connection parameters is supported as well:</p>
+
+<pre class="example">
+session sql("postgresql://dbname=mydb");
+</pre>
+
+<p>The last two constructors described above try to locate the shared library with the name <code>libsoci_ABC.so</code> (or <code>libsoci_ABC.dll</code> on Windows), where ABC is the backend name. In the above examples, the expected library name will be <code>libsoci_postgresql.so</code> for Unix-like systems.</p>
+
+<p>The most general form of the constructor takes a single object of <code>connection_parameters</code> type which contains a pointer to the backend to use, the connection string and also any connection options. Using this constructor is the only way to pass any non-default options to the backend. For example, to suppress any interactive prompts when using ODBC backend you could do:</p>
+<pre class="example">
+connection_parameters parameters("odbc", "DSN=mydb");
+parameters.set_option(odbc_option_driver_complete, "0" /* SQL_DRIVER_NOPROMPT */);
+session sql(parameters);
+</pre>
+Notice that you need to <code>#include &lt;soci-odbc.h&gt;</code> to obtain the option name declaration. The existing options are described in the backend-specific part of the documentation.
+
+<div class="note">
+<p><span class="note">Environment configuration:</span></p>
+<p>The <code>SOCI_BACKENDS_PATH</code> environment variable defines the set of paths where the shared libraries will be searched for. There can be many paths, separated by colons, and they are used from left to right until the library with the appropriate name is found. If this variable is not set or is empty, the current directory is used as a default path for dynamically loaded backends.</p>
+</div>
+
+<p>The run-time selection of backends is also supported with libraries
+linked statically. Each backend provides a separate function of the
+form <code>register_factory_<i>name</i></code>, where
+<code><i>name</i></code> is a backend name. Thus:</p>
+
+<pre class="example">
+extern "C" void register_factory_postgresql();
+// ...
+register_factory_postgresql();
+session sql("postgresql://dbname=mydb");
+</pre>
+
+<p>The above example registers the backend for PostgreSQL and later
+creates the session object for that backend. This form is provided for
+those projects that prefer static linking but still wish to benefit
+from run-time backend selection.</p>
+
+<p>An alternative way to set up the session is to create it in the disconnected state and connect later:</p>
+
+<pre class="example">
+session sql;
+
+// some time later:
+sql.open(postgresql, "dbname=mydb");
+
+// or:
+sql.open("postgresql://dbname=mydb");
+
+// or also:
+connection_parameters parameters("postgresql", "dbname=mydb");
+sql.open(parameters);
+</pre>
+
+<p>The rules for backend naming are the same as with the constructors described above.</p>
+<p>The session can be also explicitly <code>close</code>d and <code>reconnect</code>ed, which can help with basic session error recovery. The <code>reconnect</code> function has no parameters and attempts to use the same values as those provided with earlier constructor or <code>open</code> calls.</p>
+
+<p>See also the page devoted to <a href="multithreading.html">multithreading</a> for a detailed description of connection pools.</p>
+
+<p>It is possible to have many active <code>session</code>s at the same
+time, even using different backends.</p>
+
+<div class="note">
+<p><span class="note">Portability note:</span></p>
+<p>The following backend factories are currently (as of 3.1.0 release) available:</p>
+<ul>
+  <li><code><a href="backends/mysql.html">mysql</a></code> (requires <code>#include "soci-mysql.h"</code>)</li>
+  <li><code><a href="backends/oracle.html">oracle</a></code> (requires <code>#include "soci-oracle.h"</code>)</li>
+  <li><code><a href="backends/postgresql.html">postgresql</a></code> (requires <code>#include "soci-postgresql.h"</code>)</li>
+</ul>
+<p>The following backends are also available, with various levels of completeness:</p>
+<ul>
+  <li><code><a href="backends/sqlite3.html">sqlite3</a></code> (requires <code>#include "soci-sqlite3.h"</code>)</li>
+  <li><code><a href="backends/odbc.html">odbc</a></code> (requires <code>#include "soci-odbc.h"</code>)</li>
+  <li><code><a href="backends/firebird.html">firebird</a></code> (requires <code>#include "soci-firebird.h"</code>)</li>
+</ul>
+</div>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left">
+      <a href="errors.html">Previous (Errors)</a>
+    </td>
+    <td class="foot-link-right">
+      <a href="queries.html">Next (Queries)</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2013 Mateusz Loskot</p>
+<p class="copyright">Copyright &copy; 2004-2008 Maciej Sobczak, Stephen Hutton</p>
+
+</body>
+</html>
