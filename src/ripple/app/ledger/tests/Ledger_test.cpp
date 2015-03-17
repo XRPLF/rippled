@@ -29,10 +29,10 @@ class Ledger_test : public beast::unit_test::suite
         std::uint64_t const xrp = std::mega::num;
 
         auto master = createAccount ("masterpassphrase", keyType);
-
-        Ledger::pointer LCL = createGenesisLedger(100000*xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
+        
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger(100000*xrp, master);
 
         // User accounts
         auto gw1 = createAccount ("gw1", keyType);
@@ -50,8 +50,7 @@ class Ledger_test : public beast::unit_test::suite
         makeAndApplyPayment(master, alice, 2000 * xrp, ledger, sign);
         makeAndApplyPayment(master, mark, 1000 * xrp, ledger, sign);
 
-        LCL = close_and_advance(ledger, LCL);
-        ledger = std::make_shared<Ledger>(false, *LCL);
+        close_and_advance(ledger, LCL);
 
         // alice trusts FOO/gw1
         makeTrustSet (alice, gw1, "FOO", 1, ledger, sign);
@@ -63,29 +62,30 @@ class Ledger_test : public beast::unit_test::suite
         makeTrustSet (mark, gw3, "FOO", 1, ledger, sign);
 
         // gw2 pays mark with FOO
-        makeAndApplyPayment(gw2, mark, "FOO", ".1", ledger, sign);
+        makeAndApplyPayment(gw2, mark, "FOO", "0.1", ledger, sign);
 
         // gw3 pays mark with FOO
-        makeAndApplyPayment(gw3, mark, "FOO", ".2", ledger, sign);
+        makeAndApplyPayment(gw3, mark, "FOO", "0.2", ledger, sign);
 
         // gw1 pays alice with FOO
-        makeAndApplyPayment(gw1, alice, "FOO", ".3", ledger, sign);
+        makeAndApplyPayment(gw1, alice, "FOO", "0.3", ledger, sign);
 
-        LCL = close_and_advance(ledger, LCL);
-        ledger = std::make_shared<Ledger>(false, *LCL);
+        verifyBalance(ledger, mark, Amount(0.1, "FOO", gw2));
+        verifyBalance(ledger, mark, Amount(0.2, "FOO", gw3));
+        verifyBalance(ledger, alice, Amount(0.3, "FOO", gw1));
+
+        close_and_advance(ledger, LCL);
 
         createOffer (mark, Amount (1, "FOO", gw1), Amount (1, "FOO", gw2), ledger, sign);
         createOffer (mark, Amount (1, "FOO", gw2), Amount (1, "FOO", gw3), ledger, sign);
         cancelOffer (mark, ledger, sign);
         freezeAccount (alice, ledger, sign);
 
-        LCL = close_and_advance(ledger, LCL);
-        ledger = std::make_shared<Ledger>(false, *LCL);
+        close_and_advance(ledger, LCL);
 
         makeAndApplyPayment(alice, mark, 1 * xrp, ledger, sign);
 
-        LCL = close_and_advance(ledger, LCL);
-        ledger = std::make_shared<Ledger>(false, *LCL);
+        close_and_advance(ledger, LCL);
 
         pass ();
     }
@@ -96,9 +96,9 @@ class Ledger_test : public beast::unit_test::suite
 
         auto master = createAccount ("masterpassphrase", keyType);
 
-        Ledger::pointer LCL = createGenesisLedger (100000 * xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger> (false, *LCL);
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger (100000 * xrp, master);
 
         auto gw1 = createAccount ("gw1", keyType);
 
