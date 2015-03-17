@@ -1,0 +1,24 @@
+# General
+*.swp
+tags
+tmp
+
+# Build directories
+_build*
+src/_build*
+src/build
+
+# Visual Studio
+*.opensdf
+*.sdf
+*.suo
+
+# KDevelop
+*.kate-swp
+*.kdev4
+
+# Qt Creator
+*.config
+*.creator*
+*.files
+*.includes

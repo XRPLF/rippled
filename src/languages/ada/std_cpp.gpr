@@ -1,0 +1,7 @@
+project Std_Cpp is
+   for Externally_Built use "true";
+   for Source_Dirs use ();
+   for Library_Dir use ".";
+   for Library_Name use "stdc++";
+   for Library_Kind use "static";
+end Std_Cpp;
