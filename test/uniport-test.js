@@ -421,7 +421,7 @@ suite("Uniport tests", function () {
       define_suite(name, function () {
         var protocols = client_protocols(conf);
 
-        var allow_admin = conf.admin == 'allow';
+        var allow_admin = conf.admin !== '';
         var require_pass = Boolean(conf.admin_password);
 
         function test_for (protocol, params) {

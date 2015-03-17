@@ -97,52 +97,52 @@ exports.servers.debug = extend({
 
 exports.uniport_test_ports = {
     'port_admin_http':
-        {'admin': 'allow', 'port': 6434, 'protocol': 'http'},
+        {'admin': '127.0.0.1', 'port': 6434, 'protocol': 'http'},
     'port_admin_http_and_https':
-        {'admin': 'allow', 'port': 6437, 'protocol': 'http,https'},
+        {'admin': '127.0.0.1', 'port': 6437, 'protocol': 'http,https'},
     'port_admin_https':
-        {'admin': 'allow', 'port': 6435, 'protocol': 'https'},
+        {'admin': '127.0.0.1', 'port': 6435, 'protocol': 'https'},
     'port_admin_ws':
-        {'admin': 'allow', 'port': 6432, 'protocol': 'ws'},
+        {'admin': '127.0.0.1', 'port': 6432, 'protocol': 'ws'},
     'port_admin_ws_and_wss':
-        {'admin': 'allow', 'port': 6436, 'protocol': 'ws,wss'},
+        {'admin': '127.0.0.1', 'port': 6436, 'protocol': 'ws,wss'},
     'port_admin_wss':
-        {'admin': 'allow', 'port': 6433, 'protocol': 'wss'},
+        {'admin': '127.0.0.1', 'port': 6433, 'protocol': 'wss'},
 
     'port_http':
-        {'admin': 'no', 'port': 6440, 'protocol': 'http'},
+        {'admin': '', 'port': 6440, 'protocol': 'http'},
     'port_http_and_https':
-        {'admin': 'no', 'port': 6443, 'protocol': 'http,https'},
+        {'admin': '', 'port': 6443, 'protocol': 'http,https'},
     'port_https':
-        {'admin': 'no', 'port': 6441, 'protocol': 'https'},
+        {'admin': '', 'port': 6441, 'protocol': 'https'},
     'port_https_and_http_and_peer':
-        {'admin': 'no', 'port': 6450, 'protocol': 'https,peer,http'},
+        {'admin': '', 'port': 6450, 'protocol': 'https,peer,http'},
 
     'port_passworded_admin_http':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6446, 'protocol': 'http'},
     'port_passworded_admin_http_and_https':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6449, 'protocol': 'http,https'},
     'port_passworded_admin_https':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6447, 'protocol': 'https'},
     'port_passworded_admin_ws':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6444, 'protocol': 'ws'},
     'port_passworded_admin_ws_and_wss':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6448, 'protocol': 'ws,wss'},
     'port_passworded_admin_wss':
-        {'admin': 'allow', 'admin_password': 'p', 'admin_user': 'u',
+        {'admin': '127.0.0.1', 'admin_password': 'p', 'admin_user': 'u',
          'port': 6445, 'protocol': 'wss'},
 
     'port_ws':
-        {'admin': 'no', 'port': 6438, 'protocol': 'ws'},
+        {'admin': '', 'port': 6438, 'protocol': 'ws'},
     'port_ws_and_wss':
-        {'admin': 'no', 'port': 6442, 'protocol': 'ws,wss'},
+        {'admin': '', 'port': 6442, 'protocol': 'ws,wss'},
     'port_wss':
-        {'admin': 'no', 'port': 6439, 'protocol': 'wss'}
+        {'admin': '', 'port': 6439, 'protocol': 'wss'}
 };
 
 (function() {
