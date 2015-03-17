@@ -1730,7 +1730,9 @@ bool LedgerEntrySet::checkState (
         // Sender is zero or negative.
         && (flags & (!bIssuerHigh ? lsfLowReserve : lsfHighReserve))
         // Sender reserve is set.
-        && !(flags & (!bIssuerHigh ? lsfLowNoRipple : lsfHighNoRipple))
+        && static_cast <bool> (flags & (!bIssuerHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+           static_cast <bool> (entryCache (ltACCOUNT_ROOT,
+               getAccountRootIndex (sender))->getFlags() & lsfDefaultRipple)
         && !(flags & (!bIssuerHigh ? lsfLowFreeze : lsfHighFreeze))
         && !state->getFieldAmount (
             !bIssuerHigh ? sfLowLimit : sfHighLimit)
