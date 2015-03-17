@@ -20,13 +20,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <ripple/app/tests/common_ledger.h>
 #include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_writer.h>
+#include <ripple/basics/TestSuite.h>
 
 // probably going to be moved to common_ledger.h
 
 namespace ripple {
 namespace test {
 
-class Path_test : public beast::unit_test::suite
+class Path_test : public TestSuite
 {
     void
     test_no_direct_path_no_intermediary_no_alternatives()
@@ -36,20 +37,21 @@ class Path_test : public beast::unit_test::suite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL = createGenesisLedger(100000 * xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
         auto accounts = createAndFundAccounts(master, { "alice", "bob" }, 
             KeyType::ed25519, 10000 * xrp, ledger);
         auto alice = accounts["alice"];
         auto bob = accounts["bob"];
-        expect(alice.pk != master.pk);
+        expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
         
-        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") }, Amount(5, "USD", alice), log.stream());
+        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") },
+            Amount(5, "USD", alice), log.stream());
         log << "ripplePathFind alternatives: " << alternatives;
 
-        expect(alternatives.size() == 0, "alternatives.size() == 0");
+        expectEquals(alternatives.size(), 0);
     }
 
     void
@@ -60,32 +62,33 @@ class Path_test : public beast::unit_test::suite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL = createGenesisLedger(100000 * xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob" },
             KeyType::ed25519, 10000 * xrp, ledger);
         auto alice = accounts["alice"];
         auto bob = accounts["bob"];
-        expect(alice.pk != master.pk);
+        expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limit
         makeTrustSet(bob, alice, "USD", 700, ledger);
 
         // Find path from alice to bob
-        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") }, Amount(5, "USD", bob), log.stream());
+        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") },
+            Amount(5, "USD", bob), log.stream());
         log << "ripplePathFind alternatives: " << alternatives;
 
-        expect(alternatives.size() == 1, "result.second.size() == 1");
+        expectEquals(alternatives.size(), 1);
         auto alt = alternatives[0u];
-        expect(alt[jss::paths_canonical].size() == 0, "alt[jss::paths_canonical].size() == 0");
-        expect(alt[jss::paths_computed].size() == 0, "alt[jss::paths_computed].size() == 0");
+        expectEquals(alt[jss::paths_canonical].size(), 0);
+        expectEquals(alt[jss::paths_computed].size(), 0);
         auto srcAmount = alt[jss::source_amount];
-        expect(srcAmount[jss::currency] == "USD", "srcAmount[jss::currency] == USD");
-        expect(srcAmount[jss::value] == "5", "srcAmount[jss::value] == 5");
-        expect(srcAmount[jss::issuer] == alice.pk.humanAccountID(), "srcAmount[jss::value] == 5");
+        expectEquals(srcAmount[jss::currency], "USD");
+        expectEquals(srcAmount[jss::value], "5");
+        expectEquals(srcAmount[jss::issuer], alice.pk.humanAccountID());
     }
 
     void
@@ -97,9 +100,9 @@ class Path_test : public beast::unit_test::suite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL = createGenesisLedger(100000 * xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob", "mtgox" },
@@ -107,7 +110,7 @@ class Path_test : public beast::unit_test::suite
         auto alice = accounts["alice"];
         auto bob = accounts["bob"];
         auto mtgox = accounts["mtgox"];
-        expect(alice.pk != master.pk);
+        expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limits
         makeTrustSet(alice, mtgox, "USD", 600, ledger);
@@ -137,9 +140,9 @@ class Path_test : public beast::unit_test::suite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL = createGenesisLedger(100000 * xrp, master);
-
-        Ledger::pointer ledger = std::make_shared<Ledger>(false, *LCL);
+        Ledger::pointer LCL;
+        Ledger::pointer ledger;
+        std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob", "mtgox" },
@@ -147,7 +150,7 @@ class Path_test : public beast::unit_test::suite
         auto alice = accounts["alice"];
         auto bob = accounts["bob"];
         auto mtgox = accounts["mtgox"];
-        expect(alice.pk != master.pk);
+        expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limits
         makeTrustSet(alice, mtgox, "USD", 600, ledger);
@@ -161,24 +164,28 @@ class Path_test : public beast::unit_test::suite
         verifyBalance(ledger, bob, Amount(50, "USD", mtgox));
 
         // Find path from alice to mtgox
-        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") }, Amount(5, "USD", mtgox), log.stream());
+        auto alternatives = findPath(ledger, alice, bob, { Currency("USD") },
+            Amount(5, "USD", mtgox), log.stream());
         log << "Path find alternatives: " << alternatives;
-        expect(alternatives.size() == 1, "alternatives.size() == 1");
+        expectEquals(alternatives.size(), 1);
         auto alt = alternatives[0u];
-        expect(alt["paths_canonical"].size() == 0, "alt[\"paths_canonical\"].size() == 0");
-        expect(alt["paths_computed"].size() == 1, "alt[\"paths_computed\"].size() == 0");
+        expectEquals(alt["paths_canonical"].size(), 0);
+        expectEquals(alt["paths_computed"].size(), 1);
         auto computedPaths = alt["paths_computed"];
-        expect(computedPaths.size() == 1, "computedPaths.size() == 1");
+        expectEquals(computedPaths.size(), 1);
         auto computedPath = computedPaths[0u];
-        expect(computedPath.size() == 1, "computedPath.size() == 1");
+        expectEquals(computedPath.size(), 1);
         auto computedPathStep = computedPath[0u];
-        expect(computedPathStep[jss::account] == mtgox.pk.humanAccountID(), "computedPathStep[jss::account] == mtgox");
-        expect(computedPathStep[jss::type] == 1, "computedPathStep[jss::type] == 1");
-        expect(computedPathStep[jss::type_hex] == "0000000000000001", "computedPathStep[jss::type_hex] == 0000000000000001");
+        expectEquals(computedPathStep[jss::account], 
+            mtgox.pk.humanAccountID());
+        expectEquals(computedPathStep[jss::type], 1);
+        expectEquals(computedPathStep[jss::type_hex],
+            "0000000000000001");
         auto srcAmount = alt[jss::source_amount];
-        expect(srcAmount[jss::currency] == "USD", "srcAmount[jss::currency] == USD");
-        expect(srcAmount[jss::value] == "5", "srcAmount[jss::value] == 5");
-        expect(srcAmount[jss::issuer] == alice.pk.humanAccountID(), "srcAmount[jss::issuer] == alice");
+        expectEquals(srcAmount[jss::currency], "USD");
+        expectEquals(srcAmount[jss::value], "5");
+        expectEquals(srcAmount[jss::issuer], 
+            alice.pk.humanAccountID());
     }
 
 

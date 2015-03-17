@@ -141,7 +141,7 @@ applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 
 // Create genesis ledger from a start amount in drops, and the public
 // master RippleAddress
-Ledger::pointer
+std::pair<Ledger::pointer, Ledger::pointer>
 createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 {
     initializePathfinding();
@@ -152,7 +152,7 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
     if (!ledger->assertSane())
         throw std::runtime_error(
         "! ledger->assertSane()");
-    return ledger;
+    return std::make_pair(ledger, std::make_shared<Ledger>(false, *ledger));
 }
 
 // Create an account represented by public RippleAddress and private
@@ -366,8 +366,8 @@ makeTrustSet(TestAccount& from, TestAccount const& issuer,
     applyTransaction(ledger, tx, sign);
 }
 
-Ledger::pointer
-close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
+void
+close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
 {
     std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
     CanonicalTXSet retriableTransactions(set->getHash());
@@ -389,7 +389,9 @@ close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL)
     int closeResolution = seconds(LEDGER_TIME_ACCURACY).count();
     bool closeTimeCorrect = true;
     newLCL->setAccepted(closeTime, closeResolution, closeTimeCorrect);
-    return newLCL;
+
+    LCL = newLCL;
+    ledger = std::make_shared<Ledger>(false, *LCL);
 }
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
@@ -414,7 +416,8 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     }
     log << "Source currencies: " << jvSrcCurrencies;
 
-    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount, ledger, jvSrcCurrencies, contextPaths, level);
+    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount, 
+        ledger, jvSrcCurrencies, contextPaths, level);
     if(!result.first)
         throw std::runtime_error(
         "ripplePathFind find failed");
@@ -423,10 +426,13 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 }
 
 SLE::pointer
-getLedgerEntryRippleState(Ledger::pointer ledger, TestAccount const& account1, TestAccount const& account2, Currency currency)
+getLedgerEntryRippleState(Ledger::pointer ledger, 
+    TestAccount const& account1, TestAccount const& account2, 
+    Currency currency)
 {
     auto uNodeIndex = getRippleStateIndex(
-        account1.pk.getAccountID(), account2.pk.getAccountID(), to_currency(currency.getCurrency()));
+        account1.pk.getAccountID(), account2.pk.getAccountID(), 
+        to_currency(currency.getCurrency()));
 
     if (!uNodeIndex.isNonZero())
         throw std::runtime_error(
@@ -436,9 +442,11 @@ getLedgerEntryRippleState(Ledger::pointer ledger, TestAccount const& account1, T
 }
 
 void
-verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount)
+verifyBalance(Ledger::pointer ledger, TestAccount const& account, 
+    Amount const& amount)
 {
-    auto sle = getLedgerEntryRippleState(ledger, account, amount.getIssuer(), amount.getCurrency());
+    auto sle = getLedgerEntryRippleState(ledger, account, 
+        amount.getIssuer(), amount.getCurrency());
     if (!sle)
         throw std::runtime_error(
         "!sle");

@@ -129,7 +129,7 @@ applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check = tru
 
 // Create genesis ledger from a start amount in drops, and the public
 // master RippleAddress
-Ledger::pointer
+std::pair<Ledger::pointer, Ledger::pointer>
 createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master);
 
 // Create an account represented by public RippleAddress and private
@@ -197,8 +197,8 @@ makeTrustSet(TestAccount& from, TestAccount const& issuer,
                 std::string const& currency, double amount,
                 Ledger::pointer const& ledger, bool sign = true);
 
-Ledger::pointer
-close_and_advance(Ledger::pointer ledger, Ledger::pointer LCL);
+void
+close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL);
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
     TestAccount const& dest, std::vector<Currency> srcCurrencies, 
@@ -206,7 +206,9 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     boost::optional<Json::Value> contextPaths = boost::none);
 
 SLE::pointer
-get_ledger_entry_ripple_state(Ledger::pointer ledger, RippleAddress account1, RippleAddress account2, Currency currency);
+get_ledger_entry_ripple_state(Ledger::pointer ledger,
+    RippleAddress account1, RippleAddress account2,
+    Currency currency);
 
 void
 verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount);
