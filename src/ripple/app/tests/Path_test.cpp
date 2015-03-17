@@ -43,8 +43,8 @@ class Path_test : public TestSuite
 
         auto accounts = createAndFundAccounts(master, { "alice", "bob" }, 
             KeyType::ed25519, 10000 * xrp, ledger);
-        auto alice = accounts["alice"];
-        auto bob = accounts["bob"];
+        auto& alice = accounts["alice"];
+        auto& bob = accounts["bob"];
         expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
         
         auto alternatives = findPath(ledger, alice, bob, { Currency("USD") },
@@ -69,8 +69,8 @@ class Path_test : public TestSuite
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob" },
             KeyType::ed25519, 10000 * xrp, ledger);
-        auto alice = accounts["alice"];
-        auto bob = accounts["bob"];
+        auto& alice = accounts["alice"];
+        auto& bob = accounts["bob"];
         expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limit
@@ -107,9 +107,9 @@ class Path_test : public TestSuite
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob", "mtgox" },
             KeyType::ed25519, 10000 * xrp, ledger);
-        auto alice = accounts["alice"];
-        auto bob = accounts["bob"];
-        auto mtgox = accounts["mtgox"];
+        auto& alice = accounts["alice"];
+        auto& bob = accounts["bob"];
+        auto& mtgox = accounts["mtgox"];
         expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limits
@@ -147,9 +147,9 @@ class Path_test : public TestSuite
         // Create accounts
         auto accounts = createAndFundAccounts(master, { "alice", "bob", "mtgox" },
             KeyType::ed25519, 10000 * xrp, ledger);
-        auto alice = accounts["alice"];
-        auto bob = accounts["bob"];
-        auto mtgox = accounts["mtgox"];
+        auto& alice = accounts["alice"];
+        auto& bob = accounts["bob"];
+        auto& mtgox = accounts["mtgox"];
         expectNotEquals(alice.pk.humanAccountID(), master.pk.humanAccountID());
 
         // Set credit limits
