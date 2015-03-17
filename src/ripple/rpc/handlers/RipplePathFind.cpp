@@ -157,8 +157,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 level = rLev;
         }
 
-        auto contextPaths = context.params.isMember(jss::paths) ? boost::optional<Json::Value>(context.params[jss::paths]) : boost::optional<Json::Value>(boost::none);
-        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, lpLedger, jvSrcCurrencies, contextPaths, level);
+        auto contextPaths = context.params.isMember(jss::paths) ?
+            boost::optional<Json::Value>(context.params[jss::paths]) :
+                boost::optional<Json::Value>(boost::none);
+        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, 
+            lpLedger, jvSrcCurrencies, contextPaths, level);
         if (!pathFindResult.first)
             return pathFindResult.second;
 
@@ -190,8 +193,11 @@ buildSrcCurrencies(RippleAddress const& raSrc, RippleLineCache::pointer const& c
 }
 
 std::pair<bool, Json::Value>
-ripplePathFind(RippleLineCache::pointer const& cache, RippleAddress const& raSrc, RippleAddress const& raDst,
-    STAmount const& saDstAmount, Ledger::pointer const& lpLedger, Json::Value const& jvSrcCurrencies, boost::optional<Json::Value> const& contextPaths, int const& level)
+ripplePathFind(RippleLineCache::pointer const& cache, 
+  RippleAddress const& raSrc, RippleAddress const& raDst,
+    STAmount const& saDstAmount, Ledger::pointer const& lpLedger, 
+      Json::Value const& jvSrcCurrencies, 
+        boost::optional<Json::Value> const& contextPaths, int const& level)
 {
     FindPaths fp(
         cache,
@@ -248,7 +254,8 @@ ripplePathFind(RippleLineCache::pointer const& cache, RippleAddress const& raSrc
             else
             {
                 spsComputed = paths.object.get()->getFieldPathSet(sfPaths);
-                WriteLog(lsTRACE, RPCHandler) << "ripple_path_find: Paths: " << spsComputed.getJson(0);
+                WriteLog(lsTRACE, RPCHandler) << "ripple_path_find: Paths: " <<
+                    spsComputed.getJson(0);
             }
         }
 
