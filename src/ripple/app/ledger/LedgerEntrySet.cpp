@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
+#include <ripple/legacy/0.27/Emulate027.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -1446,14 +1447,22 @@ TER LedgerEntrySet::rippleCredit (
             " -> " << to_string (uReceiverID) <<
             " : " << saAmount.getFullText ();
 
+        SLE::pointer sleAccount = entryCache (ltACCOUNT_ROOT,
+            getAccountRootIndex (uReceiverID));
+
+        bool noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+
+        if (ripple::legacy::emulate027 (mLedger))
+            noRipple = false;
+
         terResult = trustCreate (
             bSenderHigh,
             uSenderID,
             uReceiverID,
             uIndex,
-            entryCache (ltACCOUNT_ROOT, getAccountRootIndex (uReceiverID)),
+            sleAccount,
             false,
-            false,
+            noRipple,
             false,
             saBalance,
             saReceiverLimit);
