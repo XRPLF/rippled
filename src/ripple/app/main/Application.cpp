@@ -248,7 +248,7 @@ private:
 public:
     Logs& m_logs;
     beast::Journal m_journal;
-    Application::LockType m_masterMutex;
+    Application::MutexType m_masterMutex;
 
     // Required by the SHAMapStore
     TransactionMaster m_txMaster;
@@ -524,7 +524,7 @@ public:
         return *m_nodeStore;
     }
 
-    Application::LockType& getMasterLock ()
+    Application::MutexType& getMasterMutex ()
     {
         return m_masterMutex;
     }

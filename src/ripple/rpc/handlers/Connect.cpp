@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/overlay/Overlay.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
@@ -29,7 +30,7 @@ namespace ripple {
 // XXX Might allow domain for manual connections.
 Json::Value doConnect (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
     if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 

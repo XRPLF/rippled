@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/peers/UniqueNodeList.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
@@ -28,7 +29,7 @@ namespace ripple {
 // }
 Json::Value doUnlAdd (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
 
     std::string strNode = context.params.isMember (jss::node)
             ? context.params[jss::node].asString () : "";

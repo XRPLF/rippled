@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/peers/UniqueNodeList.h>
 #include <ripple/overlay/Overlay.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
@@ -29,7 +30,7 @@ Json::Value doPeers (RPC::Context& context)
     Json::Value jvResult (Json::objectValue);
 
     {
-        auto lock = getApp().masterLock();
+        auto lock = beast::make_lock(getApp().getMasterMutex());
 
         jvResult[jss::peers] = getApp().overlay ().json ();
         getApp().getUNL().addClusterStatus(jvResult);
