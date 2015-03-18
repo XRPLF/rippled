@@ -1478,7 +1478,7 @@ PeerImp::checkPropose (Job& job,
     uint256 consensusLCL;
     if (! set.has_previousledger() || ! isTrusted)
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
+        std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
         consensusLCL = getApp().getOPs ().getConsensusLCL ();
     }
 
@@ -1614,7 +1614,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
 
         {
-            Application::ScopedLockType lock (getApp ().getMasterLock ());
+            std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
             map = getApp().getOPs ().getTXMap (txHash);
         }
 
@@ -1976,7 +1976,7 @@ PeerImp::peerTXData (Job&, uint256 const& hash,
 
     SHAMapAddNode san;
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
+        std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
 
         san =  getApp().getOPs().gotTXData (shared_from_this(),
             hash, nodeIDs, nodeData);

@@ -60,6 +60,7 @@
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <beast/utility/make_lock.h>
 #include <boost/optional.hpp>
 #include <tuple>
 
@@ -652,7 +653,7 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 void NetworkOPsImp::processHeartbeatTimer ()
 {
     {
-        auto lock = getApp().masterLock();
+        auto lock = beast::make_lock(getApp().getMasterMutex());
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         Application& app (getApp ());
@@ -1004,7 +1005,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
     }
 
     {
-        auto lock = getApp().masterLock();
+        auto lock = beast::make_lock(getApp().getMasterMutex());
 
         bool didApply;
         TER r = m_ledgerMaster.doTransaction (
@@ -1600,7 +1601,7 @@ void NetworkOPsImp::processTrustedProposal (
     uint256 checkLedger, bool sigGood)
 {
     {
-        auto lock = getApp().masterLock();
+        auto lock = beast::make_lock(getApp().getMasterMutex());
 
         bool relay = true;
 

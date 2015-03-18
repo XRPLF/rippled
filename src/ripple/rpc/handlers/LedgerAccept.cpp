@@ -18,12 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
 Json::Value doLedgerAccept (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
     Json::Value jvResult;
 
     if (!getConfig ().RUN_STANDALONE)

@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/module/core/text/LexicalCast.h>
 #include <ripple/app/consensus/DisputedTx.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -42,6 +41,8 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/UintTypes.h>
+#include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
@@ -976,8 +977,7 @@ private:
     {
 
         {
-            Application::ScopedLockType lock
-                (getApp ().getMasterLock ());
+            std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
 
             // put our set where others can get it later
             if (set->getHash ().isNonZero ())
@@ -1137,11 +1137,10 @@ private:
         }
 
         {
-            Application::ScopedLockType lock
-                (getApp ().getMasterLock ());
-
+            auto lock = beast::make_lock(getApp().getMasterMutex(), std::defer_lock);
             LedgerMaster::ScopedLockType sl
-                (getApp().getLedgerMaster ().peekMutex ());
+                (getApp().getLedgerMaster ().peekMutex (), std::defer_lock);
+            std::lock(lock, sl);
 
             // Apply transactions from the old open ledger
             Ledger::pointer oldOL = getApp().getLedgerMaster().getCurrentLedger();

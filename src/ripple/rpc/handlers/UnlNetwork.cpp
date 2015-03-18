@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
 // Populate the UNL from ripple.com's validators.txt file.
 Json::Value doUnlNetwork (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
     getApp().getUNL ().nodeNetwork ();
 
     return RPC::makeObjectValue ("fetching");

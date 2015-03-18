@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
@@ -26,7 +27,7 @@ namespace ripple {
 // }
 Json::Value doValidationSeed (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
     Json::Value obj (Json::objectValue);
 
     if (!context.params.isMember (jss::secret))

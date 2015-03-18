@@ -70,7 +70,7 @@ class Application : public beast::PropertyStream::Source
 public:
     /* VFALCO NOTE
 
-        The master lock protects:
+        The master mutex protects:
 
         - The open ledger
         - Server global state
@@ -79,16 +79,8 @@ public:
 
         other things
     */
-    typedef std::recursive_mutex LockType;
-    typedef std::unique_lock <LockType> ScopedLockType;
-    typedef std::unique_ptr <ScopedLockType> ScopedLock;
-
-    virtual LockType& getMasterLock () = 0;
-
-    ScopedLock masterLock()
-    {
-        return std::make_unique<ScopedLockType> (getMasterLock());
-    }
+    using MutexType = std::recursive_mutex;
+    virtual MutexType& getMasterMutex () = 0;
 
 public:
     Application ();

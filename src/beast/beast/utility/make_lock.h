@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2015, Howard Hinnant <howard.hinnant@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,18 +17,22 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <beast/utility/make_lock.h>
+#ifndef BEAST_UTILITY_MAKE_LOCK_H_INCLUDED
+#define BEAST_UTILITY_MAKE_LOCK_H_INCLUDED
 
-namespace ripple {
+#include <mutex>
+#include <utility>
 
-// unl_score
-Json::Value doUnlScore (RPC::Context& context)
+namespace beast {
+
+template <class Mutex, class ...Args>
+inline
+std::unique_lock<Mutex>
+make_lock(Mutex& mutex, Args&&... args)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
-    getApp().getUNL ().nodeScore ();
-
-    return RPC::makeObjectValue ("scoring requested");
+    return std::unique_lock<Mutex>(mutex, std::forward<Args>(args)...);
 }
 
-} // ripple
+} // beast
+
+#endif

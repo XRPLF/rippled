@@ -24,6 +24,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/overlay/Overlay.h>
+#include <beast/utility/make_lock.h>
 #include <memory>
 
 namespace ripple {
@@ -52,7 +53,7 @@ TransactionAcquire::~TransactionAcquire ()
 static void TACompletionHandler (uint256 hash, std::shared_ptr<SHAMap> map)
 {
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
+        std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
 
         getApp().getOPs ().mapComplete (hash, map);
 
@@ -88,7 +89,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
         psl.unlock();
         {
-            auto lock = getApp().masterLock();
+            auto lock = beast::make_lock(getApp().getMasterMutex());
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {

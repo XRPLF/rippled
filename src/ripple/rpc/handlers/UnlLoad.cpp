@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/utility/make_lock.h>
 
 namespace ripple {
 
 // Populate the UNL from a local validators.txt file.
 Json::Value doUnlLoad (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    auto lock = beast::make_lock(getApp().getMasterMutex());
 
     if (getConfig ().VALIDATORS_FILE.empty ()
         || !getApp().getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
