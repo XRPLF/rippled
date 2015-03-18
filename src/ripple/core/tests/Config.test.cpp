@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/impl/LoadFeeTrackImp.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/basics/TestSuite.h>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>

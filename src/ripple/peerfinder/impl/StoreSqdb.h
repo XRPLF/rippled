@@ -20,8 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
-#include <beast/module/sqdb/sqdb.h>
+#include <ripple/app/data/SociDB.h>
 #include <beast/utility/Debug.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace PeerFinder {
@@ -32,8 +33,7 @@ class StoreSqdb
 {
 private:
     beast::Journal m_journal;
-    beast::sqdb::session m_session;
-
+    soci::session m_session;
 public:
     enum
     {
@@ -50,19 +50,15 @@ public:
     {
     }
 
-    beast::Error open (beast::File const& file)
+    void open (SociConfig const& sociConfig)
     {
-        beast::Error error (m_session.open (file.getFullPathName ()));
+        sociConfig.open (m_session);
 
-        m_journal.info << "Opening database at '" << file.getFullPathName() << "'";
+        m_journal.info << "Opening database at '" << sociConfig.connectionString ()
+                       << "'";
 
-        if (! error)
-            error = init ();
-
-        if (! error)
-            error = update ();
-
-        return error;
+        init ();
+        update ();
     }
 
     // Loads the bootstrap cache, calling the callback for each entry
@@ -70,42 +66,34 @@ public:
     std::size_t load (load_callback const& cb)
     {
         std::size_t n (0);
-        beast::Error error;
         std::string s;
         int valence;
-        beast::sqdb::statement st = (m_session.prepare <<
+        soci::statement st = (m_session.prepare <<
             "SELECT "
             " address, "
             " valence "
             "FROM PeerFinder_BootstrapCache "
-            , beast::sqdb::into (s)
-            , beast::sqdb::into (valence)
+            , soci::into (s)
+            , soci::into (valence)
             );
 
-        if (st.execute_and_fetch (error))
+        st.execute ();
+        while (st.fetch ())
         {
-            do
+            beast::IP::Endpoint const endpoint (
+                beast::IP::Endpoint::from_string (s));
+
+            if (!is_unspecified (endpoint))
             {
-                beast::IP::Endpoint const endpoint (
-                    beast::IP::Endpoint::from_string (s));
-
-                if (! is_unspecified (endpoint))
-                {
-                    cb (endpoint, valence);
-                    ++n;
-                }
-                else
-                {
-                    m_journal.error <<
-                        "Bad address string '" << s << "' in Bootcache table";
-                }
+                cb (endpoint, valence);
+                ++n;
             }
-            while (st.fetch (error));
+            else
+            {
+                m_journal.error <<
+                    "Bad address string '" << s << "' in Bootcache table";
+            }
         }
-
-        if (error)
-            report (error, __FILE__, __LINE__);
-
         return n;
     }
 
@@ -113,306 +101,243 @@ public:
     //
     void save (std::vector <Entry> const& v)
     {
-        beast::Error error;
-        beast::sqdb::transaction tr (m_session);
-        m_session.once (error) <<
+        soci::transaction tr (m_session);
+        m_session <<
             "DELETE FROM PeerFinder_BootstrapCache";
-        if (! error)
-        {
-            std::string s;
-            int valence;
 
-            beast::sqdb::statement st = (m_session.prepare <<
-                "INSERT INTO PeerFinder_BootstrapCache ( "
-                "  address, "
-                "  valence "
-                ") VALUES ( "
-                "  ?, ? "
-                ");"
-                , beast::sqdb::use (s)
-                , beast::sqdb::use (valence)
-                );
+        if (!v.empty ())
+        {
+            std::vector<std::string> s;
+            std::vector<int> valence;
+            s.reserve (v.size ());
+            valence.reserve (v.size ());
 
             for (auto const& e : v)
             {
-                s = to_string (e.endpoint);
-                valence = e.valence;
-                st.execute_and_fetch (error);
-                if (error)
-                    break;
+                s.emplace_back (to_string (e.endpoint));
+                valence.emplace_back (e.valence);
             }
+
+            m_session <<
+                    "INSERT INTO PeerFinder_BootstrapCache ( "
+                    "  address, "
+                    "  valence "
+                    ") VALUES ( "
+                    "  :s, :valence "
+                    ");"
+                    , soci::use (s)
+                    , soci::use (valence);
         }
 
-        if (! error)
-            error = tr.commit();
-
-        if (error)
-        {
-            tr.rollback ();
-            report (error, __FILE__, __LINE__);
-        }
+        tr.commit ();
     }
 
     // Convert any existing entries from an older schema to the
     // current one, if appropriate.
-    //
-    beast::Error update ()
+    void update ()
     {
-        beast::Error error;
-
-        beast::sqdb::transaction tr (m_session);
-
+        soci::transaction tr (m_session);
         // get version
         int version (0);
-        if (! error)
         {
-            m_session.once (error) <<
+            boost::optional<int> vO;
+            m_session <<
                 "SELECT "
                 "  version "
                 "FROM SchemaVersion WHERE "
                 "  name = 'PeerFinder'"
-                ,beast::sqdb::into (version)
+                , soci::into (vO)
                 ;
 
-            if (! error)
-            {
-                if (!m_session.got_data())
-                    version = 0;
+            version = vO.value_or (0);
 
-                m_journal.info <<
-                    "Opened version " << version << " database";
-            }
+            m_journal.info <<
+                "Opened version " << version << " database";
         }
 
-        if (!error)
         {
             if (version < currentSchemaVersion)
                 m_journal.info <<
                     "Updating database to version " << currentSchemaVersion;
             else if (version > currentSchemaVersion)
-                error.fail (__FILE__, __LINE__,
+            {
+                throw std::runtime_error (
                     "The PeerFinder database version is higher than expected");
+            }
         }
 
-        if (! error && version < 4)
+        if (version < 4)
         {
             //
             // Remove the "uptime" column from the bootstrap table
             //
 
-            if (! error)
-                m_session.once (error) <<
-                    "CREATE TABLE IF NOT EXISTS PeerFinder_BootstrapCache_Next ( "
-                    "  id       INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    "  address  TEXT UNIQUE NOT NULL, "
-                    "  valence  INTEGER"
-                    ");"
-                    ;
-
-            if (! error)
-                m_session.once (error) <<
-                    "CREATE INDEX IF NOT EXISTS "
-                    "  PeerFinder_BootstrapCache_Next_Index ON "
-                    "    PeerFinder_BootstrapCache_Next "
-                    "  ( address ); "
-                    ;
-
-            std::size_t count;
-            if (! error)
-                m_session.once (error) <<
-                    "SELECT COUNT(*) FROM PeerFinder_BootstrapCache "
-                    ,beast::sqdb::into (count)
-                    ;
-
-            std::vector <Store::Entry> list;
-
-            if (! error)
-            {
-                list.reserve (count);
-                std::string s;
-                int valence;
-                beast::sqdb::statement st = (m_session.prepare <<
-                    "SELECT "
-                    " address, "
-                    " valence "
-                    "FROM PeerFinder_BootstrapCache "
-                    , beast::sqdb::into (s)
-                    , beast::sqdb::into (valence)
-                    );
-
-                if (st.execute_and_fetch (error))
-                {
-                    do
-                    {
-                        Store::Entry entry;
-                        entry.endpoint = beast::IP::Endpoint::from_string (s);
-                        if (! is_unspecified (entry.endpoint))
-                        {
-                            entry.valence = valence;
-                            list.push_back (entry);
-                        }
-                        else
-                        {
-                            m_journal.error <<
-                                "Bad address string '" << s << "' in Bootcache table";
-                        }
-                    }
-                    while (st.fetch (error));
-                }
-            }
-
-            if (! error)
-            {
-                std::string s;
-                int valence;
-                beast::sqdb::statement st = (m_session.prepare <<
-                    "INSERT INTO PeerFinder_BootstrapCache_Next ( "
-                    "  address, "
-                    "  valence "
-                    ") VALUES ( "
-                    "  ?, ?"
-                    ");"
-                    , beast::sqdb::use (s)
-                    , beast::sqdb::use (valence)
-                    );
-
-                for (auto iter (list.cbegin());
-                    !error && iter != list.cend(); ++iter)
-                {
-                    s = to_string (iter->endpoint);
-                    valence = iter->valence;
-                    st.execute_and_fetch (error);
-                }
-
-            }
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS PeerFinder_BootstrapCache";
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP INDEX IF EXISTS PeerFinder_BootstrapCache_Index";
-
-            if (! error)
-                m_session.once (error) <<
-                    "ALTER TABLE PeerFinder_BootstrapCache_Next "
-                    "  RENAME TO PeerFinder_BootstrapCache";
-
-            if (! error)
-                m_session.once (error) <<
-                    "CREATE INDEX IF NOT EXISTS "
-                    "  PeerFinder_BootstrapCache_Index ON PeerFinder_BootstrapCache "
-                    "  (  "
-                    "    address "
-                    "  ); "
-                    ;
-        }
-
-        if (! error && version < 3)
-        {
-            //
-            // Remove legacy endpoints from the schema
-            //
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS LegacyEndpoints";
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints";
-
-            if (! error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints_Index";
-        }
-
-        if (! error)
-        {
-            int const version (currentSchemaVersion);
-            m_session.once (error) <<
-                "INSERT OR REPLACE INTO SchemaVersion ("
-                "   name "
-                "  ,version "
-                ") VALUES ( "
-                "  'PeerFinder', ? "
-                ")"
-                ,beast::sqdb::use(version);
-        }
-
-        if (! error)
-            error = tr.commit();
-
-        if (error)
-        {
-            tr.rollback();
-            report (error, __FILE__, __LINE__);
-        }
-
-        return error;
-    }
-
-private:
-    beast::Error init ()
-    {
-        beast::Error error;
-        beast::sqdb::transaction tr (m_session);
-
-        if (! error)
-            m_session.once (error) <<
-                "PRAGMA encoding=\"UTF-8\"";
-
-        if (! error)
-            m_session.once (error) <<
-                "CREATE TABLE IF NOT EXISTS SchemaVersion ( "
-                "  name             TEXT PRIMARY KEY, "
-                "  version          INTEGER"
-                ");"
-                ;
-
-        if (! error)
-            m_session.once (error) <<
-                "CREATE TABLE IF NOT EXISTS PeerFinder_BootstrapCache ( "
+            m_session <<
+                "CREATE TABLE IF NOT EXISTS PeerFinder_BootstrapCache_Next ( "
                 "  id       INTEGER PRIMARY KEY AUTOINCREMENT, "
                 "  address  TEXT UNIQUE NOT NULL, "
                 "  valence  INTEGER"
                 ");"
                 ;
 
-        if (! error)
-            m_session.once (error) <<
+            m_session <<
                 "CREATE INDEX IF NOT EXISTS "
-                "  PeerFinder_BootstrapCache_Index ON PeerFinder_BootstrapCache "
+                "  PeerFinder_BootstrapCache_Next_Index ON "
+                "    PeerFinder_BootstrapCache_Next "
+                "  ( address ); "
+                ;
+
+            std::size_t count;
+            m_session <<
+                "SELECT COUNT(*) FROM PeerFinder_BootstrapCache "
+                , soci::into (count)
+                ;
+
+            std::vector <Store::Entry> list;
+
+            {
+                list.reserve (count);
+                std::string s;
+                int valence;
+                soci::statement st = (m_session.prepare <<
+                    "SELECT "
+                    " address, "
+                    " valence "
+                    "FROM PeerFinder_BootstrapCache "
+                    , soci::into (s)
+                    , soci::into (valence)
+                    );
+
+                st.execute ();
+                while (st.fetch ())
+                {
+                    Store::Entry entry;
+                    entry.endpoint = beast::IP::Endpoint::from_string (s);
+                    if (!is_unspecified (entry.endpoint))
+                    {
+                        entry.valence = valence;
+                        list.push_back (entry);
+                    }
+                    else
+                    {
+                        m_journal.error <<
+                            "Bad address string '" << s << "' in Bootcache table";
+                    }
+                }
+            }
+
+            if (!list.empty ())
+            {
+                std::vector<std::string> s;
+                std::vector<int> valence;
+                s.reserve (list.size ());
+                valence.reserve (list.size ());
+
+                for (auto iter (list.cbegin ());
+                     iter != list.cend (); ++iter)
+                {
+                    s.emplace_back (to_string (iter->endpoint));
+                    valence.emplace_back (iter->valence);
+                }
+
+                m_session <<
+                    "INSERT INTO PeerFinder_BootstrapCache_Next ( "
+                    "  address, "
+                    "  valence "
+                    ") VALUES ( "
+                    "  :s, :valence"
+                    ");"
+                    , soci::use (s)
+                    , soci::use (valence)
+                    ;
+
+            }
+
+            m_session <<
+                "DROP TABLE IF EXISTS PeerFinder_BootstrapCache";
+
+            m_session <<
+                "DROP INDEX IF EXISTS PeerFinder_BootstrapCache_Index";
+
+            m_session <<
+                "ALTER TABLE PeerFinder_BootstrapCache_Next "
+                "  RENAME TO PeerFinder_BootstrapCache";
+
+            m_session <<
+                "CREATE INDEX IF NOT EXISTS "
+                "  PeerFinder_BootstrapCache_Index ON "
+                "PeerFinder_BootstrapCache "
                 "  (  "
                 "    address "
                 "  ); "
                 ;
-
-        if (! error)
-            error = tr.commit();
-
-        if (error)
-        {
-            tr.rollback ();
-            report (error, __FILE__, __LINE__);
         }
 
-        return error;
+        if (version < 3)
+        {
+            //
+            // Remove legacy endpoints from the schema
+            //
+
+            m_session <<
+                "DROP TABLE IF EXISTS LegacyEndpoints";
+
+            m_session <<
+                "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
+
+            m_session <<
+                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints";
+
+            m_session <<
+                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints_Index";
+        }
+
+        {
+            int const version (currentSchemaVersion);
+            m_session <<
+                "INSERT OR REPLACE INTO SchemaVersion ("
+                "   name "
+                "  ,version "
+                ") VALUES ( "
+                "  'PeerFinder', :version "
+                ")"
+                , soci::use (version);
+        }
+
+        tr.commit ();
     }
 
-    void report (beast::Error const& error, char const* fileName, int lineNumber)
+private:
+    void init ()
     {
-        if (error)
-        {
-            m_journal.error <<
-                "Failure: '"<< error.getReasonText() << "' " <<
-                " at " << beast::Debug::getSourceLocation (fileName, lineNumber);
-        }
+        soci::transaction tr (m_session);
+        m_session << "PRAGMA encoding=\"UTF-8\"";
+
+        m_session <<
+            "CREATE TABLE IF NOT EXISTS SchemaVersion ( "
+            "  name             TEXT PRIMARY KEY, "
+            "  version          INTEGER"
+            ");"
+            ;
+
+        m_session <<
+            "CREATE TABLE IF NOT EXISTS PeerFinder_BootstrapCache ( "
+            "  id       INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "  address  TEXT UNIQUE NOT NULL, "
+            "  valence  INTEGER"
+            ");"
+            ;
+
+        m_session <<
+            "CREATE INDEX IF NOT EXISTS "
+            "  PeerFinder_BootstrapCache_Index ON "
+            "PeerFinder_BootstrapCache "
+            "  (  "
+            "    address "
+            "  ); "
+            ;
+
+        tr.commit ();
     }
 };
 

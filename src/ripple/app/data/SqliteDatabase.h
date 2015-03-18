@@ -23,7 +23,7 @@
 #include <ripple/app/data/Database.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/core/JobQueue.h>
-#include <beast/module/sqlite/sqlite.h>
+#include <sqlite/sqlite.h>
 #include <beast/threads/Thread.h>
 #include <mutex>
 
@@ -68,7 +68,6 @@ public:
     {
         return mConnection;
     }
-    sqlite3*    getAuxConnection ();
     virtual bool setupCheckpointing (JobQueue*);
     virtual SqliteDatabase* getSqliteDB ()
     {
@@ -81,6 +80,7 @@ public:
     int getKBUsedAll ();
 
 private:
+
     void run ();
     void runWal ();
 
@@ -89,8 +89,6 @@ private:
     LockType m_walMutex;
 
     sqlite3* mConnection;
-    // VFALCO TODO Why do we need an "aux" connection? Should just use a second SqliteDatabase object.
-    sqlite3* mAuxConnection;
     sqlite3_stmt* mCurrentStmt;
     bool mMoreRows;
 
@@ -110,11 +108,8 @@ protected:
     sqlite3_stmt* statement;
 
 public:
-    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection?
-    //             Why not just have two SqliteDatabase objects?
-    //
-    SqliteStatement (SqliteDatabase* db, const char* statement, bool aux = false);
-    SqliteStatement (SqliteDatabase* db, std::string const& statement, bool aux = false);
+    SqliteStatement (SqliteDatabase* db, const char* statement);
+    SqliteStatement (SqliteDatabase* db, std::string const& statement);
     ~SqliteStatement ();
 
     sqlite3_stmt* peekStatement ();

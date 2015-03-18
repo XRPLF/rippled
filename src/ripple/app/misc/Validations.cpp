@@ -443,21 +443,21 @@ private:
             {
                 ScopedUnlockType sul (mLock);
                 {
-                    auto db = getApp().getLedgerDB ().getDB ();
-                    auto dbl (getApp().getLedgerDB ().lock ());
+                    auto db = getApp().getLedgerDB ().checkoutDb ();
 
                     Serializer s (1024);
-                    db->executeSQL ("BEGIN TRANSACTION;");
+                    soci::transaction tr(*db);
                     for (auto it: vector)
                     {
                         s.erase ();
                         it->add (s);
-                        db->executeSQL (boost::str (
+                        *db << boost::str (
                             insVal % to_string (it->getLedgerHash ()) %
                             it->getSignerPublic ().humanNodePublic () %
-                            it->getSignTime () % sqlEscape (s.peekData ())));
+                            it->getSignTime () % sqlEscape (s.peekData ()));
                     }
-                    db->executeSQL ("END TRANSACTION;");
+
+                    tr.commit ();
                 }
             }
         }

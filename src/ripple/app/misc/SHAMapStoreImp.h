@@ -23,12 +23,13 @@
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/data/SociDB.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-#include <beast/module/sqdb/sqdb.h>
 #include <iostream>
 #include <condition_variable>
 #include <thread>
+
 
 namespace ripple {
 
@@ -52,7 +53,7 @@ private:
     class SavedStateDB
     {
     public:
-        beast::sqdb::session session_;
+        soci::session session_;
         std::mutex mutex_;
         beast::Journal journal_;
 
@@ -60,19 +61,18 @@ private:
         // configured
         SavedStateDB() = default;
 
-        // opens SQLite database and, if necessary, creates & initializes its tables.
-        void init (std::string const& databasePath, std::string const& dbName);
+        // opens database and, if necessary, creates & initializes its tables.
+        void init (BasicConfig const& config, std::string const& dbName);
         // get/set the ledger index that we can delete up to and including
         LedgerIndex getCanDelete();
         LedgerIndex setCanDelete (LedgerIndex canDelete);
         SavedState getState();
         void setState (SavedState const& state);
         void setLastRotated (LedgerIndex seq);
-        void checkError (beast::Error const& error);
     };
 
-    // name of sqlite state database
-    std::string const dbName_ = "state.db";
+    // name of state database
+    std::string const dbName_ = "state";
     // prefix of on-disk nodestore backend instances
     std::string const dbPrefix_ = "rippledb";
     // check health/stop status as records are copied
@@ -110,7 +110,8 @@ public:
             NodeStore::Scheduler& scheduler,
             beast::Journal journal,
             beast::Journal nodeStoreJournal,
-            TransactionMaster& transactionMaster);
+            TransactionMaster& transactionMaster,
+            BasicConfig const& config);
 
     ~SHAMapStoreImp()
     {
@@ -201,7 +202,7 @@ private:
      *  call with mutex object unlocked
      */
     void clearSql (DatabaseCon& database, LedgerIndex lastRotated,
-            std::string const& minQuery, std::string const& deleteQuery);
+                   std::string const& minQuery, std::string const& deleteQuery);
     void clearCaches (LedgerIndex validatedSeq);
     void freshenCaches();
     void clearPrior (LedgerIndex lastRotated);

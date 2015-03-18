@@ -137,9 +137,6 @@ public:
 
     ~Ledger ();
 
-    static Ledger::pointer getSQL (std::string const& sqlStatement);
-    static Ledger::pointer getSQL1 (SqliteStatement*);
-    static void getSQL2 (Ledger::ref);
     static Ledger::pointer getLastFullLedger ();
     static std::uint32_t roundCloseTime (
         std::uint32_t closeTime, std::uint32_t closeResolution);

@@ -139,24 +139,6 @@
     <Filter Include="beast\module\core\time">
       <UniqueIdentifier>{FEAEA931-9FBB-1723-2676-9115C88A7A91}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\module\sqdb">
-      <UniqueIdentifier>{C0E15D88-0464-5647-4456-2B7D1D035D96}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqdb\api">
-      <UniqueIdentifier>{9D06F3E0-B69D-2375-0CDB-EFADCCB10AA7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqdb\detail">
-      <UniqueIdentifier>{4A5C6976-0040-11F9-2847-EF7966479B6D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqdb\source">
-      <UniqueIdentifier>{DE6FE26E-81A4-F99F-CCA4-6E59C53026D1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqlite">
-      <UniqueIdentifier>{81C8331F-4768-BDE6-D058-29BDEE8F322C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\sqlite\sqlite">
-      <UniqueIdentifier>{43A67E22-F261-00BB-B657-C9427E7F2615}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\net">
       <UniqueIdentifier>{02B45E0B-A3F5-ECE5-B83C-AF06DC73AF14}</UniqueIdentifier>
     </Filter>
@@ -280,6 +262,9 @@
     <Filter Include="ripple\app\data">
       <UniqueIdentifier>{44B63F90-BC60-A7C7-24A1-632A358E285B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\data\tests">
+      <UniqueIdentifier>{29C76FB9-636F-FBFC-3CFA-2979281BC279}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\impl">
       <UniqueIdentifier>{17F94278-7CDE-3EBE-7CD3-372F08902314}</UniqueIdentifier>
     </Filter>
@@ -297,9 +282,6 @@
     </Filter>
     <Filter Include="ripple\app\misc\tests">
       <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\node">
-      <UniqueIdentifier>{0FCD3973-E9A6-7172-C8A3-C3401E1A03DD}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\app\paths">
       <UniqueIdentifier>{03533509-DAC6-636F-9F7E-288894549E95}</UniqueIdentifier>
@@ -543,6 +525,27 @@
     </Filter>
     <Filter Include="snappy\snappy">
       <UniqueIdentifier>{575659AE-C11F-C7F6-CEA1-3F2FBB560918}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci">
+      <UniqueIdentifier>{E5334950-60C3-CE41-4DD7-535029F143F7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src">
+      <UniqueIdentifier>{5A1D8022-39F2-67E1-FFBE-EA7D5BF9FBDB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src\backends">
+      <UniqueIdentifier>{AA927DBA-1AF8-6600-04B7-D1C1EBFB4103}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src\backends\sqlite3">
+      <UniqueIdentifier>{75E6832F-A6F7-8360-FA3A-7427A06A9959}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\src\core">
+      <UniqueIdentifier>{D4BF99B9-6486-2124-6103-825710EDD595}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sqlite">
+      <UniqueIdentifier>{FA8496D0-0D5F-AC6F-3422-DEAB4BA19ACA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sqlite\sqlite">
+      <UniqueIdentifier>{D2A046B6-8986-92AC-082F-15B3A01B8E40}</UniqueIdentifier>
     </Filter>
     <Filter Include="websocketpp">
       <UniqueIdentifier>{EE7AC8C9-27EB-C05E-C986-EECB0174B997}</UniqueIdentifier>
@@ -1368,117 +1371,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\time\Time.h">
       <Filter>beast\module\core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\backend.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\blob.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\into.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\session.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\statement.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\transaction.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\type_conversion_traits.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\api\use.h">
-      <Filter>beast\module\sqdb\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\error_codes.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\exchange_traits.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\into_type.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\once_temp_type.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\prepare_temp_type.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\ref_counted_prepare_info.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\ref_counted_statement.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\statement_imp.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\type_conversion.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\type_ptr.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\detail\use_type.h">
-      <Filter>beast\module\sqdb\detail</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\blob.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\error_codes.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\into_type.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\once_temp_type.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\prepare_temp_type.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\ref_counted_prepare_info.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\ref_counted_statement.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\session.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\statement.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\statement_imp.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\transaction.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\source\use_type.cpp">
-      <Filter>beast\module\sqdb\source</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\sqdb\sqdb.h">
-      <Filter>beast\module\sqdb</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\sqdb\sqdb.unity.cpp">
-      <Filter>beast\module\sqdb</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\sqlite\sqlite.h">
-      <Filter>beast\module\sqlite</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\sqlite\sqlite.unity.c">
-      <Filter>beast\module\sqlite</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\sqlite\sqlite\sqlite3.c">
-      <Filter>beast\module\sqlite\sqlite</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\sqlite\sqlite\sqlite3.h">
-      <Filter>beast\module\sqlite\sqlite</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
       <Filter>beast\net\detail</Filter>
     </ClInclude>
@@ -2277,12 +2169,24 @@
     <ClInclude Include="..\..\src\ripple\app\data\DBInit.h">
       <Filter>ripple\app\data</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\data\DummySociDynamicBackend.cpp">
+      <Filter>ripple\app\data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\data\SociDB.cpp">
+      <Filter>ripple\app\data</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\data\SociDB.h">
+      <Filter>ripple\app\data</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\data\SqliteDatabase.cpp">
       <Filter>ripple\app\data</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\data\SqliteDatabase.h">
       <Filter>ripple\app\data</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\data\tests\SociDB.test.cpp">
+      <Filter>ripple\app\data\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\impl\BasicApp.cpp">
       <Filter>ripple\app\impl</Filter>
     </ClCompile>
@@ -2498,12 +2402,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
       <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\node\SqliteFactory.cpp">
-      <Filter>ripple\app\node</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\node\SqliteFactory.h">
-      <Filter>ripple\app\node</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
       <Filter>ripple\app\paths</Filter>
@@ -4293,6 +4191,12 @@
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\soci.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -5132,6 +5036,237 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
       <Filter>snappy\snappy</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\common.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\backends\sqlite3\common.h">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\factory.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\row-id.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\session.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\backends\sqlite3\soci-sqlite3.h">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\standard-into-type.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\standard-use-type.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\statement.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\vector-into-type.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\vector-use-type.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\backend-loader.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\blob-exchange.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\blob.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\blob.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\boost-fusion.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\boost-gregorian-date.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\boost-optional.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\boost-tuple.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\connection-parameters.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\connection-parameters.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\connection-pool.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\connection-pool.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\error.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\error.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\exchange-traits.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\into-type.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\into-type.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\into.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\once-temp-type.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\once-temp-type.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\prepare-temp-type.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\prepare-temp-type.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\procedure.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\procedure.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\query_transformation.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\ref-counted-prepare-info.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\ref-counted-prepare-info.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\ref-counted-statement.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\ref-counted-statement.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\row-exchange.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\row.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\row.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\rowid-exchange.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\rowid.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\rowid.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\rowset.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\session.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\session.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\soci-backend.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\soci-config.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\soci-platform.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\soci-simple.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\soci-simple.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\soci.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\statement.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\statement.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\transaction.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\transaction.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\type-conversion-traits.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\type-conversion.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\type-holder.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\type-ptr.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\unsigned-types.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\use-type.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\use-type.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\use.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\values-exchange.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\core\values.cpp">
+      <Filter>soci\src\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\soci\src\core\values.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sqlite\sqlite.h">
+      <Filter>sqlite</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\sqlite\sqlite.unity.c">
+      <Filter>sqlite</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\sqlite\sqlite3.h">
+      <Filter>sqlite</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\sqlite\sqlite\sqlite3.c">
+      <Filter>sqlite\sqlite</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\sqlite\sqlite\sqlite3.h">
+      <Filter>sqlite\sqlite</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocketpp\websocketpp\base64\base64.hpp">
       <Filter>websocketpp\websocketpp\base64</Filter>

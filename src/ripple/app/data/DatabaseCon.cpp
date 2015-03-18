@@ -19,8 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SqliteDatabase.h>
-#include <ripple/core/ConfigSections.h>
+#include <ripple/app/data/SociDB.h>
+#include <ripple/basics/Log.h>
+#include <beast/cxx14/memory.h>  // <memory>
 
 namespace ripple {
 
@@ -28,6 +29,7 @@ DatabaseCon::DatabaseCon (Setup const& setup,
         std::string const& strName,
         const char* initStrings[],
         int initCount)
+        :session_(std::make_shared<soci::session>())
 {
     auto const useTempFiles  // Use temporary files or regular DB files?
         = setup.standAlone &&
@@ -37,26 +39,28 @@ DatabaseCon::DatabaseCon (Setup const& setup,
     boost::filesystem::path pPath = useTempFiles
         ? "" : (setup.dataDir / strName);
 
-    mDatabase = new SqliteDatabase (pPath.string ().c_str ());
-    mDatabase->connect ();
+    open(*session_, "sqlite", pPath.string());
 
     for (int i = 0; i < initCount; ++i)
-        mDatabase->executeSQL (initStrings[i], true);
+    {
+        try
+        {
+            *session_ << initStrings[i];
+        }
+        catch (soci::soci_error& e)
+        {
+            WriteLog (lsWARNING, DatabaseCon)
+                << "Error executing initial statements for: " << strName
+                << " error: " << e.what () << "\n"
+                << " statement: " << initStrings[i];
+        }
+    }
 }
 
-DatabaseCon::~DatabaseCon ()
-{
-    mDatabase->disconnect ();
-    delete mDatabase;
-}
-
-DatabaseCon::Setup
-setup_DatabaseCon (Config const& c)
+DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 {
     DatabaseCon::Setup setup;
 
-    auto const& sec = c.section (ConfigSection::nodeDatabase ());
-    get_if_exists (sec, "online_delete", setup.onlineDelete);
     setup.startUp = c.START_UP;
     setup.standAlone = c.RUN_STANDALONE;
     setup.dataDir = c.legacy ("database_path");
@@ -64,4 +68,8 @@ setup_DatabaseCon (Config const& c)
     return setup;
 }
 
+void DatabaseCon::setupCheckpointing (JobQueue* q)
+{
+    walCheckpointer_ = std::make_unique<WALCheckpointer> (session_, q);
+}
 } // ripple

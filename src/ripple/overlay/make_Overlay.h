@@ -41,9 +41,9 @@ make_Overlay (
     beast::Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
-    beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
-    boost::asio::io_service& io_service);
+    boost::asio::io_service& io_service,
+    BasicConfig const& config);
 
 } // ripple
 

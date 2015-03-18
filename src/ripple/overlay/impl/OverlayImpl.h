@@ -44,6 +44,7 @@
 namespace ripple {
 
 class PeerImp;
+class BasicConfig;
 
 class OverlayImpl : public Overlay
 {
@@ -122,8 +123,8 @@ private:
 public:
     OverlayImpl (Setup const& setup, Stoppable& parent,
         ServerHandler& serverHandler, Resource::Manager& resourceManager,
-            beast::File const& pathToDbFileOrDirectory,
-                Resolver& resolver, boost::asio::io_service& io_service);
+        Resolver& resolver, boost::asio::io_service& io_service,
+        BasicConfig const& config);
 
     ~OverlayImpl();
 
