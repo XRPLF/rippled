@@ -387,10 +387,10 @@ public:
 
     template <class Cont>
     static
-    std::list <typename Cont::value_type>
+    std::vector <typename Cont::value_type>
     make_list (Cont const& c)
     {
-        return std::list <typename Cont::value_type> (
+        return std::vector <typename Cont::value_type> (
             c.begin(), c.end());
     }
 
