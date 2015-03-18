@@ -296,11 +296,12 @@ TER RippleCalc::rippleCalculate ()
             }
         }
 
+        ++iPass;
         if (ShouldLog (lsDEBUG, RippleCalc))
         {
             WriteLog (lsDEBUG, RippleCalc)
                 << "rippleCalc: Summary:"
-                << " Pass: " << ++iPass
+                << " Pass: " << iPass
                 << " Dry: " << iDry
                 << " Paths: " << pathStateList_.size ();
             for (auto pathState: pathStateList_)
