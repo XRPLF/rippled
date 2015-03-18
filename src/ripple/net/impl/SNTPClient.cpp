@@ -24,6 +24,7 @@
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
+#include <deque>
 #include <mutex>
 
 namespace ripple {
@@ -316,14 +317,10 @@ public:
         mLastOffsetUpdate = now;
 
         // select median time
-        std::list<int> offsetList = mOffsetList;
-        offsetList.sort ();
-        int j = offsetList.size ();
-        std::list<int>::iterator it = offsetList.begin ();
-
-        for (int i = 0; i < (j / 2); ++i)
-            ++it;
-
+        auto offsetList = mOffsetList;
+        std::sort(offsetList.begin(), offsetList.end());
+        auto j = offsetList.size ();
+        auto it = std::next(offsetList.begin (), j/2);
         mOffset = *it;
 
         if ((j % 2) == 0)
@@ -361,7 +358,7 @@ private:
 
     int                                             mOffset;
     time_t                                          mLastOffsetUpdate;
-    std::list<int>                                  mOffsetList;
+    std::deque<int>                                 mOffsetList;
 
     std::vector<uint8_t>                mReceiveBuffer;
     boost::asio::ip::udp::endpoint      mReceiveEndpoint;

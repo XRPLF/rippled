@@ -303,7 +303,7 @@ std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
 }
 
 bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs,
-                         std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves) const
+                         std::vector<Blob >& rawNodes, bool fatRoot, bool fatLeaves) const
 {
     // Gets a node and some of its children
 

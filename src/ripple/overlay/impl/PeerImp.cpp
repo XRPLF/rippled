@@ -1891,7 +1891,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         }
 
         std::vector<SHAMapNodeID> nodeIDs;
-        std::list< Blob > rawNodes;
+        std::vector< Blob > rawNodes;
 
         try
         {
@@ -1901,7 +1901,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 p_journal_.trace <<
                     "GetLedger: getNodeFat got " << rawNodes.size () << " nodes";
                 std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-                std::list< Blob >::iterator rawNodeIterator;
+                std::vector< Blob >::iterator rawNodeIterator;
 
                 for (nodeIDIterator = nodeIDs.begin (),
                         rawNodeIterator = rawNodes.begin ();

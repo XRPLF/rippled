@@ -147,7 +147,7 @@ public:
     void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
                           SHAMapSyncFilter * filter);
     bool getNodeFat (SHAMapNodeID node, std::vector<SHAMapNodeID>& nodeIDs,
-                     std::list<Blob >& rawNode, bool fatRoot, bool fatLeaves) const;
+                     std::vector<Blob >& rawNode, bool fatRoot, bool fatLeaves) const;
     bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,

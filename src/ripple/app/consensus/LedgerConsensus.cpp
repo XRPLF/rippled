@@ -1719,10 +1719,10 @@ private:
     */
     void playbackProposals ()
     {
-        for (auto it: getApp().getOPs ().peekStoredProposals ())
+        for (auto const& it: getApp().getOPs ().peekStoredProposals ())
         {
             bool relay = false;
-            for (auto proposal : it.second)
+            for (auto const& proposal : it.second)
             {
                 if (proposal->hasSignature ())
                 {

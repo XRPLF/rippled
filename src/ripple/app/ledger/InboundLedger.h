@@ -125,7 +125,7 @@ private:
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
     bool takeHeader (std::string const& data);
-    bool takeTxNode (const std::list<SHAMapNodeID>& IDs, const std::list<Blob >& data,
+    bool takeTxNode (const std::vector<SHAMapNodeID>& IDs, const std::vector<Blob>& data,
                      SHAMapAddNode&);
     bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
 
@@ -133,7 +133,7 @@ private:
     //             Don't use acronyms, but if we are going to use them at least
     //             capitalize them correctly.
     //
-    bool takeAsNode (const std::list<SHAMapNodeID>& IDs, const std::list<Blob >& data,
+    bool takeAsNode (const std::vector<SHAMapNodeID>& IDs, const std::vector<Blob>& data,
                      SHAMapAddNode&);
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
 

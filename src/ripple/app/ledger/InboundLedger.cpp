@@ -821,8 +821,8 @@ bool InboundLedger::takeHeader (std::string const& data)
 /** Process TX data received from a peer
     Call with a lock
 */
-bool InboundLedger::takeTxNode (const std::list<SHAMapNodeID>& nodeIDs,
-    const std::list< Blob >& data, SHAMapAddNode& san)
+bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
+    const std::vector< Blob >& data, SHAMapAddNode& san)
 {
     if (!mHaveHeader)
     {
@@ -838,11 +838,11 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNodeID>& nodeIDs,
         return true;
     }
 
-    std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
-    std::list< Blob >::const_iterator nodeDatait = data.begin ();
+    auto nodeIDit = nodeIDs.cbegin ();
+    auto nodeDatait = data.begin ();
     TransactionStateSF tFilter;
 
-    while (nodeIDit != nodeIDs.end ())
+    while (nodeIDit != nodeIDs.cend ())
     {
         if (nodeIDit->isRoot ())
         {
@@ -881,8 +881,8 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNodeID>& nodeIDs,
 /** Process AS data received from a peer
     Call with a lock
 */
-bool InboundLedger::takeAsNode (const std::list<SHAMapNodeID>& nodeIDs,
-    const std::list< Blob >& data, SHAMapAddNode& san)
+bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
+    const std::vector< Blob >& data, SHAMapAddNode& san)
 {
     if (m_journal.trace) m_journal.trace <<
         "got ASdata (" << nodeIDs.size () << ") acquiring ledger " << mHash;
@@ -905,11 +905,11 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNodeID>& nodeIDs,
         return true;
     }
 
-    std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
-    std::list< Blob >::const_iterator nodeDatait = data.begin ();
+    auto nodeIDit = nodeIDs.cbegin ();
+    auto nodeDatait = data.begin ();
     AccountStateSF tFilter;
 
-    while (nodeIDit != nodeIDs.end ())
+    while (nodeIDit != nodeIDs.cend ())
     {
         if (nodeIDit->isRoot ())
         {
@@ -1120,9 +1120,6 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
     if ((packet.type () == protocol::liTX_NODE) || (
         packet.type () == protocol::liAS_NODE))
     {
-        std::list<SHAMapNodeID> nodeIDs;
-        std::list< Blob > nodeData;
-
         if (packet.nodes ().size () == 0)
         {
             if (m_journal.info) m_journal.info <<
@@ -1130,6 +1127,11 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
             peer->charge (Resource::feeInvalidRequest);
             return -1;
         }
+
+        std::vector<SHAMapNodeID> nodeIDs;
+        nodeIDs.reserve(packet.nodes().size());
+        std::vector< Blob > nodeData;
+        nodeData.reserve(packet.nodes().size());
 
         for (int i = 0; i < packet.nodes ().size (); ++i)
         {

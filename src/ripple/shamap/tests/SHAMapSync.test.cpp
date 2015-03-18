@@ -113,11 +113,11 @@ public:
         source.setImmutable ();
 
         std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::list< Blob > gotNodes;
+        std::vector< Blob > gotNodes;
         std::vector<uint256> hashes;
 
         std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-        std::list< Blob >::iterator rawNodeIterator;
+        std::vector< Blob >::iterator rawNodeIterator;
 
         int passes = 0;
         int nodes = 0;
