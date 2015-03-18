@@ -43,6 +43,7 @@
 #include <beast/http/parser.h>
 #include <beast/utility/WrappedSink.h>
 #include <cstdint>
+#include <deque>
 #include <queue>
 
 namespace ripple {
@@ -127,8 +128,8 @@ private:
     LedgerIndex maxLedger_ = 0;
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
-    std::list<uint256> recentLedgers_;
-    std::list<uint256> recentTxSets_;
+    std::deque<uint256> recentLedgers_;
+    std::deque<uint256> recentTxSets_;
     mutable std::mutex recentLock_;
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;

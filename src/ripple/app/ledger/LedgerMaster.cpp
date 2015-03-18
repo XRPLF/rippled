@@ -931,7 +931,7 @@ public:
             mAdvanceWork = false; // If there's work to do, we'll make progress
             bool progress = false;
 
-            std::list<Ledger::pointer> pubLedgers = findNewLedgersToPublish ();
+            auto const pubLedgers = findNewLedgersToPublish ();
             if (pubLedgers.empty())
             {
                 if (!standalone_ && !getApp().getFeeTrack().isLoadedLocal() &&
@@ -1068,9 +1068,9 @@ public:
         } while (mAdvanceWork);
     }
 
-    std::list<Ledger::pointer> findNewLedgersToPublish ()
+    std::vector<Ledger::pointer> findNewLedgersToPublish ()
     {
-        std::list<Ledger::pointer> ret;
+        std::vector<Ledger::pointer> ret;
 
         WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
         if (mValidLedger.empty ())

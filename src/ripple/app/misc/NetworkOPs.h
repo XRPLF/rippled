@@ -28,6 +28,7 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <deque>
 #include <tuple>
 
 #include "ripple.pb.h"
@@ -267,7 +268,7 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef hash_map <NodeID, std::list<LedgerProposal::pointer>> Proposals;
+    typedef hash_map <NodeID, std::deque<LedgerProposal::pointer>> Proposals;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,
