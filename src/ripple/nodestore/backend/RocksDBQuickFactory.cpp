@@ -250,10 +250,23 @@ public:
         return status;
     }
 
+    bool
+    canFetchBatch() override
+    {
+        return false;
+    }
+
     void
     store (NodeObject::ref object)
     {
         storeBatch(Batch{object});
+    }
+
+    std::vector<std::shared_ptr<NodeObject>>
+    fetchBatch (std::size_t n, void const* const* keys) override
+    {
+        throw std::runtime_error("pure virtual called");
+        return {};
     }
 
     void

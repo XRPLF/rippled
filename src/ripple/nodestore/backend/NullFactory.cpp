@@ -53,6 +53,19 @@ public:
         return notFound;
     }
 
+    bool
+    canFetchBatch() override
+    {
+        return false;
+    }
+
+    std::vector<std::shared_ptr<NodeObject>>
+    fetchBatch (std::size_t n, void const* const* keys) override
+    {
+        throw std::runtime_error("pure virtual called");
+        return {};
+    }
+
     void
     store (NodeObject::ref object)
     {
