@@ -513,22 +513,22 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
             {
                 // go through the original node for modified fields saved on modification
                 if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
-                    prevs.addObject (obj);
+                    prevs.emplace_back (obj);
             }
 
             if (!prevs.empty ())
-                mSet.getAffectedNode (it.first).addObject (prevs);
+                mSet.getAffectedNode (it.first).emplace_back (std::move(prevs));
 
             STObject finals (sfFinalFields);
             for (auto const& obj : *curNode)
             {
                 // go through the final node for final fields
                 if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_DeleteFinal))
-                    finals.addObject (obj);
+                    finals.emplace_back (obj);
             }
 
             if (!finals.empty ())
-                mSet.getAffectedNode (it.first).addObject (finals);
+                mSet.getAffectedNode (it.first).emplace_back (std::move(finals));
         }
         else if (type == &sfModifiedNode)
         {
@@ -542,22 +542,22 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
             {
                 // search the original node for values saved on modify
                 if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
-                    prevs.addObject (obj);
+                    prevs.emplace_back (obj);
             }
 
             if (!prevs.empty ())
-                mSet.getAffectedNode (it.first).addObject (prevs);
+                mSet.getAffectedNode (it.first).emplace_back (std::move(prevs));
 
             STObject finals (sfFinalFields);
             for (auto const& obj : *curNode)
             {
                 // search the final node for values saved always
                 if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_ChangeNew))
-                    finals.addObject (obj);
+                    finals.emplace_back (obj);
             }
 
             if (!finals.empty ())
-                mSet.getAffectedNode (it.first).addObject (finals);
+                mSet.getAffectedNode (it.first).emplace_back (std::move(finals));
         }
         else if (type == &sfCreatedNode) // if created, thread to owner(s)
         {
@@ -572,11 +572,11 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
             {
                 // save non-default values
                 if (!obj.isDefault () && obj.getFName ().shouldMeta (SField::sMD_Create | SField::sMD_Always))
-                    news.addObject (obj);
+                    news.emplace_back (obj);
             }
 
             if (!news.empty ())
-                mSet.getAffectedNode (it.first).addObject (news);
+                mSet.getAffectedNode (it.first).emplace_back (std::move(news));
         }
         else assert (false);
     }

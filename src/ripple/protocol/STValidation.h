@@ -52,6 +52,18 @@ public:
     STValidation (uint256 const& ledgerHash, std::uint32_t signTime,
                           const RippleAddress & raPub, bool isFull);
 
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
+    }
+
     uint256         getLedgerHash ()     const;
     std::uint32_t   getSignTime ()       const;
     std::uint32_t   getFlags ()          const;

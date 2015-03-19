@@ -56,6 +56,18 @@ public:
     // Only called from ripple::RPC::transactionSign - can we eliminate this?
     explicit STTx (STObject const& object);
 
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
+    }
+
     // STObject functions
     SerializedTypeID getSType () const override
     {
@@ -142,12 +154,6 @@ public:
         std::uint32_t inLedger,
         char status,
         std::string const& escapedMetaData) const;
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STTx>(*this);
-    }
 
 private:
     TxType tx_type_;

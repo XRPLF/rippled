@@ -47,6 +47,7 @@
 #include <ripple/protocol/impl/STPathSet.cpp>
 #include <ripple/protocol/impl/STTx.cpp>
 #include <ripple/protocol/impl/STValidation.cpp>
+#include <ripple/protocol/impl/STVar.cpp>
 #include <ripple/protocol/impl/STVector256.cpp>
 
 #include <ripple/protocol/tests/BuildInfo.test.cpp>

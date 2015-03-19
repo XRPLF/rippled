@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-class STVector256 final
+class STVector256
     : public STBase
 {
 public:
@@ -41,6 +41,20 @@ public:
         : mValue (vector)
     { }
 
+    STVector256 (SerialIter& sit, SField::ref name);
+
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
+    }
+
     SerializedTypeID
     getSType () const override
     {
@@ -49,10 +63,6 @@ public:
     
     void
     add (Serializer& s) const override;
-
-    static
-    std::unique_ptr<STBase>
-    deserialize (SerialIter& sit, SField::ref name);
 
     Json::Value
     getJson (int) const override;
@@ -70,12 +80,6 @@ public:
     setValue (const STVector256& v)
     {
         mValue = v.mValue;
-    }
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STVector256>(*this);
     }
 
     /** Retrieve a copy of the vector we contain */

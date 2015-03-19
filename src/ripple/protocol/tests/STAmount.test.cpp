@@ -34,7 +34,7 @@ public:
         s.add (ser);
 
         SerialIter sit (ser);
-        return STAmount::deserialize (sit);
+        return STAmount(sit, sfGeneric);
     }
 
     //--------------------------------------------------------------------------

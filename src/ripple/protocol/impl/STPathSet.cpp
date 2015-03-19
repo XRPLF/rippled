@@ -50,14 +50,11 @@ STPathElement::get_hash (STPathElement const& element)
     return (hash_account ^ hash_currency ^ hash_issuer);
 }
 
-std::unique_ptr<STBase>
-STPathSet::deserialize (SerialIter& sit, SField::ref name)
+STPathSet::STPathSet (SerialIter& sit, SField::ref name)
+    : STBase(name)
 {
     std::vector<STPathElement> path;
-
-    auto pathset = std::make_unique <STPathSet> (name);
-
-    do
+    for(;;)
     {
         int iType = sit.get8 ();
 
@@ -71,13 +68,11 @@ STPathSet::deserialize (SerialIter& sit, SField::ref name)
                 throw std::runtime_error ("empty path");
             }
 
-            pathset->push_back (path);
+            push_back (path);
             path.clear ();
 
             if (iType == STPathElement::typeNone)
-            {
-                return std::move (pathset);
-            }
+                return;
         }
         else if (iType & ~STPathElement::typeAll)
         {
@@ -108,7 +103,6 @@ STPathSet::deserialize (SerialIter& sit, SField::ref name)
             path.emplace_back (account, currency, issuer, hasCurrency);
         }
     }
-    while (1);
 }
 
 bool

@@ -44,9 +44,19 @@ public:
     {
         ;
     }
-    static std::unique_ptr<STBase> deserialize (SerialIter& sit, SField::ref name)
+
+    STAccount (SerialIter& sit, SField::ref name);
+
+    STBase*
+    copy (std::size_t n, void* buf) const override
     {
-        return std::unique_ptr<STBase> (construct (sit, name));
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
     }
 
     SerializedTypeID getSType () const override
@@ -75,12 +85,6 @@ public:
     }
 
     bool isValueH160 () const;
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STAccount>(*this);
-    }
 
 private:
     static STAccount* construct (SerialIter&, SField::ref);

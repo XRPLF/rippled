@@ -127,7 +127,7 @@ STTx::getMentionedAccounts () const
 {
     std::vector<RippleAddress> accounts;
 
-    for (auto const& it : peekData ())
+    for (auto const& it : *this)
     {
         if (auto sa = dynamic_cast<STAccount const*> (&it))
         {

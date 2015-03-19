@@ -29,25 +29,22 @@ namespace ripple {
 // VFALCO TODO rename class to TransactionMeta
 
 template<class T>
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledger, T const& data,
-                                        CtorHelper) :
-    mTransactionID (txid), mLedger (ledger), mNodes (sfAffectedNodes, 32)
+TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+    std::uint32_t ledger, T const& data, CtorHelper)
+    : mTransactionID (txid)
+    , mLedger (ledger)
+    , mNodes (sfAffectedNodes, 32)
 {
     Serializer s (data);
     SerialIter sit (s);
 
-    std::unique_ptr<STBase> pobj = STObject::deserialize (sit, sfMetadata);
-    STObject* obj = static_cast<STObject*> (pobj.get ());
+    STObject obj(sit, sfMetadata);
+    mResult = obj.getFieldU8 (sfTransactionResult);
+    mIndex = obj.getFieldU32 (sfTransactionIndex);
+    mNodes = * dynamic_cast<STArray*> (&obj.getField (sfAffectedNodes));
 
-    if (!obj)
-        throw std::runtime_error ("bad metadata");
-
-    mResult = obj->getFieldU8 (sfTransactionResult);
-    mIndex = obj->getFieldU32 (sfTransactionIndex);
-    mNodes = * dynamic_cast<STArray*> (&obj->getField (sfAffectedNodes));
-
-    if (obj->isFieldPresent (sfDeliveredAmount))
-        setDeliveredAmount (obj->getFieldAmount (sfDeliveredAmount));
+    if (obj.isFieldPresent (sfDeliveredAmount))
+        setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
 }
 
 TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
@@ -125,7 +122,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
 
             if (inner)
             {
-                for (auto const& field : inner->peekData ())
+                for (auto const& field : *inner)
                 {
                     const STAccount* sa = dynamic_cast<const STAccount*> (&field);
 
@@ -242,7 +239,7 @@ STObject TransactionMetaSet::getAsObject () const
     assert (mResult != 255);
     metaData.setFieldU8 (sfTransactionResult, mResult);
     metaData.setFieldU32 (sfTransactionIndex, mIndex);
-    metaData.addObject (mNodes);
+    metaData.emplace_back (mNodes);
     if (hasDeliveredAmount ())
         metaData.setFieldAmount (sfDeliveredAmount, getDeliveredAmount ());
     return metaData;
