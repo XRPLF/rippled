@@ -76,14 +76,15 @@ namespace ripple {
 #define REFERRAL_IPS_MAX        50
 
 template<class Iterator>
+static
 std::string
-strJoin (Iterator first, Iterator last, std::string strSeperator)
+strJoin (Iterator first, Iterator last, std::string strSeparator)
 {
     std::ostringstream ossValues;
 
-    for (Iterator start = first; first != last; first++)
+    for (Iterator start = first; first != last; ++first)
     {
-        ossValues << str (boost::format ("%s%s") % (start == first ? "" : strSeperator) % *first);
+        ossValues << str (boost::format ("%s%s") % (start == first ? "" : strSeparator) % *first);
     }
 
     return ossValues.str ();
