@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"  http-equiv="content-type" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>SOCI - integration with Boost</title>
+</head>
+
+<body>
+<p class="banner">SOCI - The C++ Database Access Library</p>
+
+<h2>Integration with Boost</h2>
+
+<p>The SOCI user code can be easily integrated with the <a href="http://www.boost.org/" target="_blank">Boost library</a> thanks to the very flexible type conversion facility. There are three important Boost types that are supported out of the box.</p>
+
+<h4>boost::optional&lt;T&gt;</h4>
+
+<p><code>boost::optional&lt;T&gt;</code> provides an alternative way to support the null data condition and as such relieves the user from necessity to handle separate indicator values.</p>
+<p>The <code>boost::optional&lt;T&gt;</code> objects can be used everywhere where the regular user provided
+values are expected.</p>
+<p>Example:</p>
+
+<pre class="example">
+boost::optional&lt;string&gt; name;
+sql &lt;&lt; "select name from person where id = 7", into(name);
+
+if (name.is_initialized())
+{
+    // OK, the name was retrieved and is not-null
+    cout &lt;&lt; "The name is " &lt;&lt; name.get();
+}
+else
+{
+    // the name is null
+}
+</pre>
+
+<p>The <code>boost::optional&lt;T&gt;</code> objects are fully supported for both <code>into</code> and <code>use</code> elements, in both single and vector forms. They can be also used for user-defined data types.</p>
+
+<h4>boost::tuple&lt;T1, ...&gt;</h4>
+
+<p><code>boost::tuple&lt;T1, ...&gt;</code> allows to work with whole rows of information and in some cases can be more convenient to use than the more dynamically-oriented <code>row</code> type.</p>
+<p>Example:</p>
+
+<pre class="example">
+boost::tuple&lt;string, string, int&gt; person;
+
+sql &lt;&lt; "select name, phone, salary from persons where ...",
+    into(person);
+</pre>
+
+<p>Tuples are supported for both <code>into</code> and <code>use</code> elements. They can be used with <code>rowset</code> as well.</p>
+
+<p>Tuples can be also composed with <code>boost::optional&lt;T&gt;</code>:</p>
+
+<pre class="example">
+boost::tuple&lt;string, boost::optional&lt;string&gt;, int&gt; person;
+
+sql &lt;&lt; "select name, phone, salary from persons where ...",
+    into(person);
+
+if (person.get&lt;1&gt;().is_initialized())
+{
+    // the given person has a phone number
+}
+else
+{
+    // this person does not have a phone number
+}
+</pre>
+
+<h4>boost::fusion::vector&lt;T1, ...&gt;</h4>
+
+<p>The <code>boost::fusion::vector</code> types are supported in the same way as tuples.</p>
+
+<h4>boost::gregorian::date</h4>
+
+<p>The <code>boost::gregorian::date</code> is provided as a conversion for base type <code>std::tm</code> and can be used as a replacement for it.</p>
+
+<div class="note">
+<p><span class="note">Optional integration:</span></p>
+<p>The integration with Boost types is optional and <i>not</i> enabled by default, which means that SOCI can be compiled and used without any dependency on Boost.</p>
+<p>In order to enable the support for any of the above types, the user needs to either include one of these headers:</p>
+<pre class="example">
+#include &lt;boost-optional.h&gt;
+#include &lt;boost-tuple.h&gt;
+#include &lt;boost-fusion.h&gt;
+#include &lt;boost-gregorian-date.h&gt;
+</pre>
+<p>or to define the <code>SOCI_USE_BOOST</code> macro before including the <code>soci.h</code> main header file. Note that in this case the support for <code>boost::fusion::vector</code> is enabled only if the detected Boost version is at least 1.35.</p>
+</div>
+
+<table class="foot-links" border="0" cellpadding="2" cellspacing="2">
+  <tr>
+    <td class="foot-link-left">
+      <a href="statements.html">Previous (Multithreading)</a>
+    </td>
+    <td class="foot-link-right">
+      <a href="interfaces.html">Next (Interfaces)</a>
+    </td>
+  </tr>
+</table>
+
+<p class="copyright">Copyright &copy; 2004-2008 Maciej Sobczak, Stephen Hutton</p>
+</body>
+</html>

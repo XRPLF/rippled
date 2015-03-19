@@ -1,0 +1,22 @@
+# The following variables are specific to this backend and their correct
+# values might depend on your environment - feel free to set it accordingly.
+
+MYSQLLIBDIR = -L/usr/lib/mysql
+MYSQLLIBS = -lmysqlclient -lz
+MYSQLINCLUDEDIR = -I/usr/include/mysql
+
+# The rest of the Makefile is independent of the target environment.
+
+COMPILER = g++
+CXXFLAGS = -Wall -pedantic -Wno-long-long
+INCLUDEDIRS = -I.. -I../../../core ${MYSQLINCLUDEDIR}
+LIBDIRS = -L.. -L../../../core ${MYSQLLIBDIR}
+LIBS = -lsoci_core -lsoci_mysql -ldl ${MYSQLLIBS}
+
+
+test-mysql : test-mysql.cpp
+	${COMPILER} -o $@ $? ${CXXFLAGS} ${INCLUDEDIRS} ${LIBDIRS} ${LIBS}
+
+
+clean :
+	rm -f test-mysql
