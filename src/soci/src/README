@@ -1,0 +1,35 @@
+SOCI - The C++ Database Access Library.
+
+Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton,
+                        David Courtney, Pawel Aleksander Fedorynski,
+                        Rafal Bobrowski, Mateusz Loskot
+
+The homepage of the SOCI library is:
+http://soci.sourceforge.net/
+
+---
+
+You should see the following files and directories here:
+
+- README          - This file.
+- LICENSE_1_0.txt - Full text of the Boost license.
+- CHANGES         - The description of changes.
+
+- contrib         - Acknowledgements for contributions.
+
+- doc/            - Documentation.
+
+- build/          - Additional build scripts and configuration files
+                    for various compilation systems.
+
+- src/            - The source code of the library.
+
+- src/core/       - The main part of the SOCI library.
+
+- src/backends/   - Directory containing implementations and tests for
+                    all available backends.
+
+
+Please see the doc/structure.html file for compilation instructions.
+
+---
