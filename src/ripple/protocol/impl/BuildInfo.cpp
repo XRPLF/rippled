@@ -35,7 +35,7 @@ char const* getRawVersionString ()
     //
     //  The build version number (edit this for each release)
     //
-        "0.28.0-b15"
+        "0.28.0-b16"
     //
     //  Must follow the format described here:
     //
