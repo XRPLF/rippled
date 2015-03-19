@@ -41,6 +41,18 @@ public:
     STLedgerEntry (LedgerEntryType type, uint256 const& index);
     STLedgerEntry (const STObject & object, uint256 const& index);
 
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
+    }
+
     SerializedTypeID getSType () const override
     {
         return STI_LEDGERENTRY;
@@ -93,12 +105,6 @@ public:
     bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STLedgerEntry>(*this);
-    }
 
 private:
     /** Make STObject comply with the template for this SLE type

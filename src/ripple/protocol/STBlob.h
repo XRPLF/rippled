@@ -72,11 +72,16 @@ public:
 
     STBlob (SerialIter&, SField::ref name = sfGeneric);
 
-    static
-    std::unique_ptr<STBase>
-    deserialize (SerialIter& sit, SField::ref name)
+    STBase*
+    copy (std::size_t n, void* buf) const override
     {
-        return std::make_unique<STBlob> (name, sit.getVLBuffer ());
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
     }
 
     std::size_t
@@ -148,12 +153,6 @@ public:
     isDefault () const override
     {
         return value_.empty ();
-    }
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STBlob>(*this);
     }
 
 private:

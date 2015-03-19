@@ -26,7 +26,8 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <string>
 #include <typeinfo>
-
+#include <utility>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 namespace ripple {
 
 // VFALCO TODO fix this restriction on copy assignment.
@@ -69,6 +70,20 @@ public:
 
     bool operator== (const STBase& t) const;
     bool operator!= (const STBase& t) const;
+
+    virtual
+    STBase*
+    copy (std::size_t n, void* buf) const
+    {
+        return emplace(n, buf, *this);
+    }
+
+    virtual
+    STBase*
+    move (std::size_t n, void* buf)
+    {
+        return emplace(n, buf, std::move(*this));
+    }
 
     template <class D>
     D&
@@ -130,26 +145,22 @@ public:
     void
     addFieldID (Serializer& s) const;
 
-    static
-    std::unique_ptr <STBase>
-    deserialize (SField::ref name);
-
-    virtual
-    std::unique_ptr<STBase>
-    duplicate () const
-    {
-        return std::make_unique<STBase>(*fName);
-    }
-
 protected:
     SField::ptr fName;
+
+    template <class T>
+    static
+    STBase*
+    emplace(std::size_t n, void* buf, T&& val)
+    {
+        using U = std::decay_t<T>;
+        if (sizeof(U) > n)
+            return new U(std::forward<T>(val));
+        return new(buf) U(std::forward<T>(val));
+    }
 };
 
 //------------------------------------------------------------------------------
-
-STBase* new_clone (const STBase& s);
-
-void delete_clone (const STBase* s);
 
 std::ostream& operator<< (std::ostream& out, const STBase& t);
 

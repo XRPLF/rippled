@@ -38,7 +38,7 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount final
+class STAmount
     : public STBase
 {
 public:
@@ -73,6 +73,8 @@ public:
 
     struct unchecked { };
 
+    STAmount(SerialIter& sit, SField::ref name);
+
     // Calls canonicalize
     STAmount (SField::ref name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
@@ -104,6 +106,18 @@ public:
 
     STAmount (Issue const& issue, int mantissa, int exponent = 0);
 
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
+    }
+
     //--------------------------------------------------------------------------
 
 private:
@@ -118,18 +132,6 @@ public:
     static
     STAmount
     createFromInt64 (SField::ref n, std::int64_t v);
-
-    static
-    std::unique_ptr <STBase>
-    deserialize (
-        SerialIter& sit, SField::ref name)
-    {
-        return construct (sit, name);
-    }
-
-    static
-    STAmount
-    deserialize (SerialIter&);
 
     //--------------------------------------------------------------------------
     //
@@ -287,12 +289,6 @@ public:
     isDefault() const override
     {
         return (mValue == 0) && mIsNative;
-    }
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STAmount>(*this);
     }
 
     void canonicalize();

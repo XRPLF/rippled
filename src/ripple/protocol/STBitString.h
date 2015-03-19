@@ -57,11 +57,21 @@ public:
         bitString_.SetHex (v);
     }
 
-    static
-    std::unique_ptr<STBase>
-    deserialize (SerialIter& sit, SField::ref name)
+    STBitString (SerialIter& sit, SField::ref name)
+        : STBitString(name, sit.getBitString<Bits>())
     {
-        return std::make_unique<STBitString> (name, sit.getBitString<Bits> ());
+    }
+
+    STBase*
+    copy (std::size_t n, void* buf) const override
+    {
+        return emplace(n, buf, *this);
+    }
+
+    STBase*
+    move (std::size_t n, void* buf) override
+    {
+        return emplace(n, buf, std::move(*this));
     }
 
     SerializedTypeID
@@ -109,12 +119,6 @@ public:
     isDefault () const override
     {
         return bitString_ == zero;
-    }
-
-    std::unique_ptr<STBase>
-    duplicate () const override
-    {
-        return std::make_unique<STBitString>(*this);
     }
 
 private:

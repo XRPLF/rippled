@@ -28,18 +28,17 @@
 
 namespace ripple {
 
+template<>
+STInteger<unsigned char>::STInteger(SerialIter& sit, SField::ref name)
+    : STInteger(name, sit.get8())
+{
+}
+
 template <>
 SerializedTypeID
 STUInt8::getSType () const
 {
     return STI_UINT8;
-}
-
-template <>
-std::unique_ptr<STBase>
-STUInt8::deserialize (SerialIter& sit, SField::ref name)
-{
-    return std::make_unique <STUInt8> (name, sit.get8 ());
 }
 
 template <>
@@ -77,18 +76,17 @@ STUInt8::getJson (int) const
 
 //------------------------------------------------------------------------------
 
+template<>
+STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField::ref name)
+    : STInteger(name, sit.get16())
+{
+}
+
 template <>
 SerializedTypeID
 STUInt16::getSType () const
 {
     return STI_UINT16;
-}
-
-template <>
-std::unique_ptr<STBase>
-STUInt16::deserialize (SerialIter& sit, SField::ref name)
-{
-    return std::make_unique <STUInt16> (name, sit.get16 ());
 }
 
 template <>
@@ -143,18 +141,17 @@ STUInt16::getJson (int) const
 
 //------------------------------------------------------------------------------
 
+template<>
+STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField::ref name)
+    : STInteger(name, sit.get32())
+{
+}
+
 template <>
 SerializedTypeID
 STUInt32::getSType () const
 {
     return STI_UINT32;
-}
-
-template <>
-std::unique_ptr<STBase>
-STUInt32::deserialize (SerialIter& sit, SField::ref name)
-{
-    return std::make_unique <STUInt32> (name, sit.get32 ());
 }
 
 template <>
@@ -173,18 +170,17 @@ STUInt32::getJson (int) const
 
 //------------------------------------------------------------------------------
 
+template<>
+STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField::ref name)
+    : STInteger(name, sit.get64())
+{
+}
+
 template <>
 SerializedTypeID
 STUInt64::getSType () const
 {
     return STI_UINT64;
-}
-
-template <>
-std::unique_ptr<STBase>
-STUInt64::deserialize (SerialIter& sit, SField::ref name)
-{
-    return std::make_unique <STUInt64> (name, sit.get64 ());
 }
 
 template <>

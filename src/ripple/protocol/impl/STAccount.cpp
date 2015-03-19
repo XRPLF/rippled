@@ -22,6 +22,11 @@
 
 namespace ripple {
 
+STAccount::STAccount (SerialIter& sit, SField::ref name)
+    : STAccount(name, sit.getVLBuffer())
+{
+}
+
 std::string STAccount::getText () const
 {
     Account u;

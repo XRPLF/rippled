@@ -25,31 +25,22 @@
 
 namespace ripple {
 
-std::unique_ptr<STBase>
-STVector256::deserialize (SerialIter& sit, SField::ref name)
+STVector256::STVector256(SerialIter& sit, SField::ref name)
+    : STBase(name)
 {
-    auto vec = std::make_unique<STVector256> (name);
-
     Blob data = sit.getVL ();
-
     auto const count = data.size () / (256 / 8);
-
-    vec->mValue.reserve (count);
-
+    mValue.reserve (count);
     Blob::iterator begin = data.begin ();
     unsigned int uStart  = 0;
-
     for (unsigned int i = 0; i != count; i++)
     {
-        unsigned int    uEnd    = uStart + (256 / 8);
-
-        // This next line could be optimized to construct a default uint256
-        // in the vector and then copy into it
-        vec->mValue.push_back (uint256 (Blob (begin + uStart, begin + uEnd)));
+        unsigned int uEnd = uStart + (256 / 8);
+        // This next line could be optimized to construct a default
+        // uint256 in the vector and then copy into it
+        mValue.push_back (uint256 (Blob (begin + uStart, begin + uEnd)));
         uStart  = uEnd;
     }
-
-    return std::move (vec);
 }
 
 void

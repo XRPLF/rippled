@@ -42,6 +42,82 @@ STAmount const saOne (noIssue(), 1u);
 
 //------------------------------------------------------------------------------
 
+STAmount::STAmount(SerialIter& sit, SField::ref name)
+    : STBase(name)
+{
+    std::uint64_t value = sit.get64 ();
+
+    // native
+    if ((value & cNotNative) == 0)
+    {
+        // positive
+        if ((value & cPosNative) != 0)
+        {
+            mValue = value & ~cPosNative;
+            mOffset = 0;
+            mIsNative = true;
+            mIsNegative = false;
+            return;
+        }
+
+        // negative
+        if (value == 0)
+            throw std::runtime_error ("negative zero is not canonical");
+
+        mValue = value;
+        mOffset = 0;
+        mIsNative = true;
+        mIsNegative = true;
+        return;
+    }
+
+    Issue issue;
+    issue.currency.copyFrom (sit.get160 ());
+
+    if (isXRP (issue.currency))
+        throw std::runtime_error ("invalid native currency");
+
+    issue.account.copyFrom (sit.get160 ());
+
+    if (isXRP (issue.account))
+        throw std::runtime_error ("invalid native account");
+
+    // 10 bits for the offset, sign and "not native" flag
+    int offset = static_cast<int> (value >> (64 - 10));
+
+    value &= ~ (1023ull << (64 - 10));
+
+    if (value)
+    {
+        bool isNegative = (offset & 256) == 0;
+        offset = (offset & 255) - 97; // center the range
+
+        if (value < cMinValue ||
+            value > cMaxValue ||
+            offset < cMinOffset ||
+            offset > cMaxOffset)
+        {
+            throw std::runtime_error ("invalid currency value");
+        }
+
+        mIssue = issue;
+        mValue = value;
+        mOffset = offset;
+        mIsNegative = isNegative;
+        canonicalize();
+        return;
+    }
+
+    if (offset != 512)
+        throw std::runtime_error ("invalid currency value");
+
+    mIssue = issue;
+    mValue = 0;
+    mOffset = 0;
+    mIsNegative = false;
+    canonicalize();
+}
+
 STAmount::STAmount (SField::ref name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative)
@@ -140,58 +216,7 @@ STAmount::STAmount (Issue const& issue,
 std::unique_ptr<STAmount>
 STAmount::construct (SerialIter& sit, SField::ref name)
 {
-    std::uint64_t value = sit.get64 ();
-
-    // native
-    if ((value & cNotNative) == 0)
-    {
-        // positive
-        if ((value & cPosNative) != 0)
-            return std::make_unique<STAmount> (name, value & ~cPosNative, false);
-
-        // negative
-        if (value == 0)
-            throw std::runtime_error ("negative zero is not canonical");
-
-        return std::make_unique<STAmount> (name, value, true);
-    }
-
-    Issue issue;
-    issue.currency.copyFrom (sit.get160 ());
-
-    if (isXRP (issue.currency))
-        throw std::runtime_error ("invalid native currency");
-
-    issue.account.copyFrom (sit.get160 ());
-
-    if (isXRP (issue.account))
-        throw std::runtime_error ("invalid native account");
-
-    // 10 bits for the offset, sign and "not native" flag
-    int offset = static_cast<int> (value >> (64 - 10));
-
-    value &= ~ (1023ull << (64 - 10));
-
-    if (value)
-    {
-        bool isNegative = (offset & 256) == 0;
-        offset = (offset & 255) - 97; // center the range
-
-        if (value < cMinValue ||
-            value > cMaxValue ||
-            offset < cMinOffset ||
-            offset > cMaxOffset)
-        {
-            throw std::runtime_error ("invalid currency value");
-        }
-
-        return std::make_unique<STAmount> (name, issue, value, offset, isNegative);
-    }
-
-    if (offset != 512)
-        throw std::runtime_error ("invalid currency value");
-
-    return std::make_unique<STAmount> (name, issue);
+    return std::make_unique<STAmount>(sit, name);
 }
 
 STAmount
@@ -200,16 +225,6 @@ STAmount::createFromInt64 (SField::ref name, std::int64_t value)
     return value >= 0
            ? STAmount (name, static_cast<std::uint64_t> (value), false)
            : STAmount (name, static_cast<std::uint64_t> (-value), true);
-}
-
-STAmount STAmount::deserialize (SerialIter& it)
-{
-    auto s = construct (it, sfGeneric);
-
-    if (!s)
-        throw std::runtime_error("Deserialization error");
-
-    return STAmount (*s);
 }
 
 //------------------------------------------------------------------------------
