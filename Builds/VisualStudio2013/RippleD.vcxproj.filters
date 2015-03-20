@@ -3732,6 +3732,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LogRotate.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\NoRippleCheck.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\OwnerInfo.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
