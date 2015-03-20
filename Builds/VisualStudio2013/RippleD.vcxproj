@@ -3174,6 +3174,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LogRotate.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\NoRippleCheck.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\OwnerInfo.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
