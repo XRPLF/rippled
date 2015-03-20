@@ -489,13 +489,6 @@ public:
         }
     }
 
-    static bool onSMSResponse (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)
-    {
-        WriteLog (lsINFO, HTTPClient) << "SMS: Response:" << iStatus << " :" << strData;
-
-        return true;
-    }
-
 private:
     typedef std::shared_ptr<HTTPClient> pointer;
 
@@ -577,47 +570,6 @@ void HTTPClient::request (
         new HTTPClientImp (io_service, port, responseMax));
 
     client->request (bSSL, deqSites, setRequest, timeout, complete);
-}
-
-void HTTPClient::sendSMS (boost::asio::io_service& io_service, std::string const& strText)
-{
-    std::string strScheme;
-    std::string strDomain;
-    int         iPort;
-    std::string strPath;
-
-    if (getConfig ().SMS_URL == "" || !parseUrl (getConfig ().SMS_URL, strScheme, strDomain, iPort, strPath))
-    {
-        WriteLog (lsWARNING, HTTPClient) << "SMSRequest: Bad URL:" << getConfig ().SMS_URL;
-    }
-    else
-    {
-        bool const bSSL = strScheme == "https";
-
-        std::deque<std::string> deqSites (1, strDomain);
-        std::string strURI  =
-            boost::str (boost::format ("%s?from=%s&to=%s&api_key=%s&api_secret=%s&text=%s")
-                        % (strPath.empty () ? "/" : strPath)
-                        % getConfig ().SMS_FROM
-                        % getConfig ().SMS_TO
-                        % getConfig ().SMS_KEY
-                        % getConfig ().SMS_SECRET
-                        % urlEncode (strText));
-
-        // WriteLog (lsINFO) << "SMS: Request:" << strURI;
-        WriteLog (lsINFO, HTTPClient) << "SMS: Request: '" << strText << "'";
-
-        if (iPort < 0)
-            iPort = bSSL ? 443 : 80;
-
-        std::shared_ptr <HTTPClientImp> client (
-            new HTTPClientImp (io_service, iPort, maxClientHeaderBytes));
-
-        client->get (bSSL, deqSites, strURI, boost::posix_time::seconds (smsTimeoutSeconds),
-                     std::bind (&HTTPClientImp::onSMSResponse,
-                                std::placeholders::_1, std::placeholders::_2,
-                                std::placeholders::_3));
-    }
 }
 
 } // ripple

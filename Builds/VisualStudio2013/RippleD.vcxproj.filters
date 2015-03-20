@@ -3789,9 +3789,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Sign.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\SMS.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Stop.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>

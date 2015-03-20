@@ -3237,9 +3237,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Sign.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\SMS.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Stop.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

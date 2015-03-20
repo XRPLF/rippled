@@ -546,12 +546,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
         ACCOUNT_PROBE_MAX   = beast::lexicalCastThrow <int> (strTemp);
 
-    (void) getSingleSection (secConfig, SECTION_SMS_FROM, SMS_FROM);
-    (void) getSingleSection (secConfig, SECTION_SMS_KEY, SMS_KEY);
-    (void) getSingleSection (secConfig, SECTION_SMS_SECRET, SMS_SECRET);
-    (void) getSingleSection (secConfig, SECTION_SMS_TO, SMS_TO);
-    (void) getSingleSection (secConfig, SECTION_SMS_URL, SMS_URL);
-
     if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp))
     {
         VALIDATORS_FILE     = strTemp;

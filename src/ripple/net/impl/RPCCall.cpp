@@ -635,16 +635,6 @@ private:
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    // sms <text>
-    Json::Value parseSMS (Json::Value const& jvParams)
-    {
-        Json::Value     jvRequest;
-
-        jvRequest[jss::text]   = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
@@ -850,7 +840,6 @@ public:
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
-            {   "sms",                  &RPCParser::parseSMS,                   1,  1   },
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },

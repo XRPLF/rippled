@@ -134,7 +134,6 @@ HandlerTable HANDLERS({
     {   "submit",               byRef (&doSubmit),              Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "server_info",          byRef (&doServerInfo),          Role::USER,  NO_CONDITION     },
     {   "server_state",         byRef (&doServerState),         Role::USER,  NO_CONDITION     },
-    {   "sms",                  byRef (&doSMS),                 Role::ADMIN,   NO_CONDITION     },
     {   "stop",                 byRef (&doStop),                Role::ADMIN,   NO_CONDITION     },
     {   "transaction_entry",    byRef (&doTransactionEntry),    Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "tx",                   byRef (&doTx),                  Role::USER,  NEEDS_NETWORK_CONNECTION  },

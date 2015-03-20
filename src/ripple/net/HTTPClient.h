@@ -67,13 +67,6 @@ public:
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
-
-    enum
-    {
-        smsTimeoutSeconds = 30
-    };
-
-    static void sendSMS (boost::asio::io_service& io_service, std::string const& strText);
 };
 
 } // ripple

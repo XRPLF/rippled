@@ -251,12 +251,6 @@ public:
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;
 
-    std::string                 SMS_FROM;
-    std::string                 SMS_KEY;
-    std::string                 SMS_SECRET;
-    std::string                 SMS_TO;
-    std::string                 SMS_URL;
-
 public:
     Config ();
 

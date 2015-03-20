@@ -131,39 +131,6 @@ std::string strCopy (Blob const& vucSrc)
 
 }
 
-extern std::string urlEncode (std::string const& strSrc)
-{
-    std::string strDst;
-    int         iOutput = 0;
-    int         iSize   = strSrc.length ();
-
-    strDst.resize (iSize * 3);
-
-    for (int iInput = 0; iInput < iSize; iInput++)
-    {
-        unsigned char c = strSrc[iInput];
-
-        if (c == ' ')
-        {
-            strDst[iOutput++]   = '+';
-        }
-        else if (isalnum (c))
-        {
-            strDst[iOutput++]   = c;
-        }
-        else
-        {
-            strDst[iOutput++]   = '%';
-            strDst[iOutput++]   = charHex (c >> 4);
-            strDst[iOutput++]   = charHex (c & 15);
-        }
-    }
-
-    strDst.resize (iOutput);
-
-    return strDst;
-}
-
 //
 // IP Port parsing
 //

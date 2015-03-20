@@ -29,8 +29,6 @@
 
 namespace ripple {
 
-extern std::string urlEncode (std::string const& strSrc);
-
 // NIKB TODO Remove the need for all these overloads. Move them out of here.
 inline const std::string strHex (std::string const& strSrc)
 {
