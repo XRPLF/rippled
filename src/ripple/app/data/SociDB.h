@@ -39,7 +39,7 @@
 #include <vector>
 
 namespace sqlite_api {
-    class sqlite3;
+    struct sqlite3;
 }
 
 namespace ripple {

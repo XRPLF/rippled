@@ -49,10 +49,7 @@ DatabaseCon::DatabaseCon (Setup const& setup,
         }
         catch (soci::soci_error& e)
         {
-            WriteLog (lsWARNING, DatabaseCon)
-                << "Error executing initial statements for: " << strName
-                << " error: " << e.what () << "\n"
-                << " statement: " << initStrings[i];
+            // ignore errors
         }
     }
 }
