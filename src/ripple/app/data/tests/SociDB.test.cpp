@@ -122,7 +122,7 @@ public:
             // Check values in db
             std::vector<std::string> stringResult (20 * stringData.size ());
             std::vector<int> intResult (20 * intData.size ());
-            s << "SELECT StringData, IntData FROM SociTestTable",
+            s << "SELECT StringData, IntData FROM SociTestTable;",
                 soci::into (stringResult), soci::into (intResult);
             expect (stringResult.size () == stringData.size () &&
                     intResult.size () == intData.size ());
@@ -205,7 +205,7 @@ public:
                 std::uint32_t uig = 0;
                 std::int64_t big = 0;
                 std::uint64_t ubig = 0;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (ig),
+                s << "SELECT I, UI, BI, UBI from STT;", soci::into (ig),
                     soci::into (uig), soci::into (big), soci::into (ubig);
                 expect (ig == id[0] && uig == uid[0] && big == bid[0] &&
                         ubig == ubid[0]);
@@ -220,7 +220,7 @@ public:
                 boost::optional<std::uint32_t> uig;
                 boost::optional<std::int64_t> big;
                 boost::optional<std::uint64_t> ubig;
-                s << "SELECT I, UI, BI, UBI from STT", soci::into (ig),
+                s << "SELECT I, UI, BI, UBI from STT;", soci::into (ig),
                     soci::into (uig), soci::into (big), soci::into (ubig);
                 expect (*ig == id[0] && *uig == uid[0] && *big == bid[0] &&
                         *ubig == ubid[0]);

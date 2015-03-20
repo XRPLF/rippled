@@ -366,10 +366,10 @@ public:
             auto db = getApp().getWalletDB ().checkoutDb ();
 
             *db << str (
-                boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") %
+                boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s;") %
                 sqlEscape (naNodePublic.humanNodePublic ()));
             *db << str (
-                boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") %
+                boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s;") %
                 sqlEscape (naNodePublic.humanNodePublic ()));
         }
 
@@ -390,7 +390,7 @@ public:
         {
             auto db = getApp().getWalletDB ().checkoutDb ();
 
-            *db << str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain));
+            *db << str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s;") % sqlEscape (strDomain));
         }
 
         // YYY Only dirty on successful delete.
@@ -404,8 +404,8 @@ public:
         {
             auto db = getApp().getWalletDB ().checkoutDb ();
 
-            *db << "DELETE FROM SeedDomains";
-            *db << "DELETE FROM SeedNodes";
+            *db << "DELETE FROM SeedDomains;";
+            *db << "DELETE FROM SeedNodes;";
         }
 
         fetchDirty ();
