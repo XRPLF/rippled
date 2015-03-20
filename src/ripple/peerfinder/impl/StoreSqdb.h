@@ -72,7 +72,7 @@ public:
             "SELECT "
             " address, "
             " valence "
-            "FROM PeerFinder_BootstrapCache "
+            "FROM PeerFinder_BootstrapCache;"
             , soci::into (s)
             , soci::into (valence)
             );
@@ -103,7 +103,7 @@ public:
     {
         soci::transaction tr (m_session);
         m_session <<
-            "DELETE FROM PeerFinder_BootstrapCache";
+            "DELETE FROM PeerFinder_BootstrapCache;";
 
         if (!v.empty ())
         {
@@ -145,7 +145,7 @@ public:
                 "SELECT "
                 "  version "
                 "FROM SchemaVersion WHERE "
-                "  name = 'PeerFinder'"
+                "  name = 'PeerFinder';"
                 , soci::into (vO)
                 ;
 
@@ -189,7 +189,7 @@ public:
 
             std::size_t count;
             m_session <<
-                "SELECT COUNT(*) FROM PeerFinder_BootstrapCache "
+                "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;"
                 , soci::into (count)
                 ;
 
@@ -203,7 +203,7 @@ public:
                     "SELECT "
                     " address, "
                     " valence "
-                    "FROM PeerFinder_BootstrapCache "
+                    "FROM PeerFinder_BootstrapCache;"
                     , soci::into (s)
                     , soci::into (valence)
                     );
@@ -254,14 +254,14 @@ public:
             }
 
             m_session <<
-                "DROP TABLE IF EXISTS PeerFinder_BootstrapCache";
+                "DROP TABLE IF EXISTS PeerFinder_BootstrapCache;";
 
             m_session <<
-                "DROP INDEX IF EXISTS PeerFinder_BootstrapCache_Index";
+                "DROP INDEX IF EXISTS PeerFinder_BootstrapCache_Index;";
 
             m_session <<
                 "ALTER TABLE PeerFinder_BootstrapCache_Next "
-                "  RENAME TO PeerFinder_BootstrapCache";
+                "  RENAME TO PeerFinder_BootstrapCache;";
 
             m_session <<
                 "CREATE INDEX IF NOT EXISTS "
@@ -280,16 +280,16 @@ public:
             //
 
             m_session <<
-                "DROP TABLE IF EXISTS LegacyEndpoints";
+                "DROP TABLE IF EXISTS LegacyEndpoints;";
 
             m_session <<
-                "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
+                "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints;";
 
             m_session <<
-                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints";
+                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints;";
 
             m_session <<
-                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints_Index";
+                "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints_Index;";
         }
 
         {
@@ -300,7 +300,7 @@ public:
                 "  ,version "
                 ") VALUES ( "
                 "  'PeerFinder', :version "
-                ")"
+                ");"
                 , soci::use (version);
         }
 
@@ -311,7 +311,7 @@ private:
     void init ()
     {
         soci::transaction tr (m_session);
-        m_session << "PRAGMA encoding=\"UTF-8\"";
+        m_session << "PRAGMA encoding=\"UTF-8\";";
 
         m_session <<
             "CREATE TABLE IF NOT EXISTS SchemaVersion ( "

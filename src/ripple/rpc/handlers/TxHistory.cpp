@@ -45,7 +45,7 @@ Json::Value doTxHistory (RPC::Context& context)
     std::string sql =
         boost::str (boost::format (
             "SELECT LedgerSeq, Status, RawTxn "
-            "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
+            "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20;")
                     % startIndex);
 
     {
