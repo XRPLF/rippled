@@ -327,7 +327,6 @@ JSS ( taker_gets );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_gets_funded );          // out: NetworkOPs
 JSS ( taker_pays );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_pays_funded );          // out: NetworkOPs
-JSS ( text );                       // in: SMS
 JSS ( threshold );                  // in: Blacklist
 JSS ( timeouts );                   // out: InboundLedger
 JSS ( totalCoins );                 // out: LedgerToJson
