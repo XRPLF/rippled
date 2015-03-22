@@ -36,9 +36,7 @@ class CreateOffer
 {
 private:
     // What kind of offer we are placing
-#if RIPPLE_ENABLE_AUTOBRIDGING
     bool autobridging_;
-#endif
 
     // Determine if we are authorized to hold the asset we want to get
     TER

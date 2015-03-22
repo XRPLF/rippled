@@ -332,7 +332,11 @@ private:
         Account const& account, Currency const& currency,
         Account const& issuer, FreezeHandling zeroIfFrozen);
 
-    bool checkState (SLE::pointer state, bool bIssuerHigh, 
+    STAmount rippleTransferFee (
+        Account const& from, Account const& to,
+        Account const& issuer, STAmount const& saAmount);
+
+    bool checkState (SLE::pointer state, bool bSenderHigh,
         Account const& sender, STAmount const& before, STAmount const& after);
 };
 

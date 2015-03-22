@@ -29,8 +29,10 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
+#include <ripple/legacy/0.27/Emulate027.h>
 #include <beast/unit_test/suite.h>
 #include <boost/format.hpp>
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include <array>
 
 namespace ripple {
@@ -290,7 +292,14 @@ isMemoOkay (STObject const& st, std::string& reason)
     if (!st.isFieldPresent (sfMemos))
         return true;
 
-    const STArray& memos = st.getFieldArray (sfMemos);
+    // We switch to new semantics on April 15, 2015 at 1:00pm PDT:
+    static boost::posix_time::ptime const cutoff (
+        boost::posix_time::time_from_string ("2015-04-15 20:00:00"));
+
+    bool const emulate027 =
+        boost::posix_time::second_clock::universal_time () < cutoff;
+
+    auto const& memos = st.getFieldArray (sfMemos);
 
     // The number 2048 is a preallocation hint, not a hard limit
     // to avoid allocate/copy/free's
@@ -326,6 +335,9 @@ isMemoOkay (STObject const& st, std::string& reason)
                          "MemoFormat fields.";
                 return false;
             }
+
+            if (emulate027)
+                continue;
 
             // The raw data is stored as hex-octets, which we want to decode.
             auto data = strUnHex (memoElement.getText ());

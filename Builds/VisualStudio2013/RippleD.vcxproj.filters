@@ -3003,16 +3003,16 @@
     <ClInclude Include="..\..\src\ripple\legacy\0.27\book\BookTip.h">
       <Filter>ripple\legacy\0.27\book</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip27.cpp">
       <Filter>ripple\legacy\0.27\book\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream27.cpp">
       <Filter>ripple\legacy\0.27\book\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality27.cpp">
       <Filter>ripple\legacy\0.27\book\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker27.cpp">
       <Filter>ripple\legacy\0.27\book\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Offer.h">
@@ -3030,12 +3030,12 @@
     <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Types.h">
       <Filter>ripple\legacy\0.27\book</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer.cpp">
-      <Filter>ripple\legacy\0.27</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
       <Filter>ripple\legacy\0.27</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer27.cpp">
+      <Filter>ripple\legacy\0.27</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\legacy\0.27\Emulate027.cpp">
       <Filter>ripple\legacy\0.27</Filter>
     </ClCompile>
@@ -5266,9 +5266,6 @@
       <Filter>soci\src\core</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
       <Filter>soci\src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">

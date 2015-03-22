@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/Config.h>
 #include <ripple/app/transactors/Transactor.h>
+#include <ripple/legacy/0.27/Emulate027.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -199,6 +200,11 @@ TER Transactor::checkSeq ()
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
+
+    if (ripple::legacy::emulate027 (mEngine->getLedger()) &&
+            mTxn.isFieldPresent (sfPreviousTxnID) &&
+            (mTxnAccount->getFieldH256 (sfPreviousTxnID) != mTxn.getFieldH256 (sfPreviousTxnID)))
+        return tefWRONG_PRIOR;
 
     if (mTxn.isFieldPresent (sfAccountTxnID) &&
             (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))

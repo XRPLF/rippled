@@ -2442,19 +2442,19 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\legacy\0.27\book\BookTip.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip27.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream27.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality27.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker.cpp">
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker27.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2468,12 +2468,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Types.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer.cpp">
+    <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer27.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\legacy\0.27\Emulate027.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4495,8 +4495,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>
