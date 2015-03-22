@@ -28,6 +28,7 @@
 #include <ripple/json/to_string.h>
 
 #include <ripple/legacy/0.27/CreateOffer.h>
+#include <ripple/legacy/0.27/Emulate027.h>
 
 #include <beast/cxx14/memory.h>
 #include <stdexcept>
@@ -150,7 +151,7 @@ private:
     {
         auto const& taker_amount = taker.original_offer ();
 
-        assert (!isXRP (taker_amount.in)&& !isXRP (taker_amount.in));
+        assert (!isXRP (taker_amount.in) && !isXRP (taker_amount.out));
 
         if (isXRP (taker_amount.in) || isXRP (taker_amount.out))
             throw std::logic_error ("Bridging with XRP and an endpoint.");
@@ -385,7 +386,7 @@ private:
     }
 
     // Fill offer as much as possible by consuming offers already on the books,
-    // and adjusting account balances accordingly. 
+    // and adjusting account balances accordingly.
     //
     // Charges fees on top to taker.
     std::pair<TER, core::Amounts>
@@ -411,10 +412,8 @@ private:
                 m_journal.debug << "    Balance: " << format_amount (funds);
             }
 
-#if RIPPLE_ENABLE_AUTOBRIDGING
             if (cross_type_ == core::CrossType::IouToIou)
                 return bridged_cross (taker, view, cancel_view, when);
-#endif
 
             return direct_cross (taker, view, cancel_view, when);
         }
@@ -641,7 +640,7 @@ public:
         }
 
         // Process a cancellation request that's passed along with an offer.
-        if ((result == tesSUCCESS) && bHaveCancel)
+        if (bHaveCancel)
         {
             SLE::pointer sleCancel = mEngine->entryCache (ltOFFER,
                 getOfferIndex (mTxnAccountID, uCancelSequence));
@@ -682,7 +681,7 @@ public:
             // empty (fully crossed), or something in-between.
             core::Amounts place_offer;
 
-            m_journal.debug << "Attempting cross: " << 
+            m_journal.debug << "Attempting cross: " <<
                 to_string (taker_amount.in.issue ()) << " -> " <<
                 to_string (taker_amount.out.issue ());
 
@@ -724,7 +723,9 @@ public:
             // never be negative. If it is, something went very very wrong.
             if (place_offer.in < zero || place_offer.out < zero)
             {
-                m_journal.fatal << "Cross left offer negative!";
+                m_journal.fatal << "Cross left offer negative!" <<
+                    "     in: " << format_amount (place_offer.in) <<
+                    "    out: " << format_amount (place_offer.out);
                 return tefINTERNAL;
             }
 
@@ -762,7 +763,7 @@ public:
         {
             m_journal.trace << "Fill or Kill: offer killed";
             view.swapWith (view_checkpoint);
-            return result;
+            return tesSUCCESS;
         }
 
         // For 'immediate or cancel' offers, the amount remaining doesn't get
@@ -770,15 +771,18 @@ public:
         if (bImmediateOrCancel)
         {
             m_journal.trace << "Immediate or cancel: offer cancelled";
-            return result;
+            return tesSUCCESS;
         }
 
         if (mPriorBalance.getNValue () < getAccountReserve (sleCreator))
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then
-            // allow this; otherwise, we just claim a fee.
+            // we allow this; otherwise, we just claim a fee.
             if (!crossed)
+                result = tecINSUF_RESERVE_OFFER;
+
+            if (bOpenLedger && ripple::legacy::emulate027 (mEngine->getLedger()))
                 result = tecINSUF_RESERVE_OFFER;
 
             if (result != tesSUCCESS)
@@ -862,7 +866,7 @@ transact_CreateOffer (
 {
     // Attempt to implement legacy offer creation semantics. If successful,
     // then return the result. Otherwise, attempt to process using the
-    // new semantics. 
+    // new semantics.
     auto ret = ripple::legacy::transact_CreateOffer (txn, params, engine);
 
     if (ret.first)

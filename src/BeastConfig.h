@@ -180,13 +180,6 @@
 #define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
-/** Config: RIPPLE_ENABLE_AUTOBRIDGING
-    This determines whether ripple implements offer autobridging via XRP.
-*/
-#ifndef RIPPLE_ENABLE_AUTOBRIDGING
-#define RIPPLE_ENABLE_AUTOBRIDGING 1
-#endif
-
 /** Config: RIPPLE_SINGLE_IO_SERVICE_THREAD
     When set, restricts the number of threads calling io_service::run to one.
     This is useful when debugging.

@@ -19,10 +19,10 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/legacy/0.27/book/impl/BookTip.cpp>
-#include <ripple/legacy/0.27/book/impl/OfferStream.cpp>
-#include <ripple/legacy/0.27/book/impl/Quality.cpp>
-#include <ripple/legacy/0.27/book/impl/Taker.cpp>
-#include <ripple/legacy/0.27/CreateOffer.cpp>
+#include <ripple/legacy/0.27/book/impl/BookTip27.cpp>
+#include <ripple/legacy/0.27/book/impl/OfferStream27.cpp>
+#include <ripple/legacy/0.27/book/impl/Quality27.cpp>
+#include <ripple/legacy/0.27/book/impl/Taker27.cpp>
+#include <ripple/legacy/0.27/CreateOffer27.cpp>
 #include <ripple/legacy/0.27/Emulate027.cpp>
 
