@@ -1,237 +1,288 @@
-var async        = require("async");
-var assert       = require('assert');
-var http         = require("http");
-var jsonrpc      = require("simple-jsonrpc");
-var EventEmitter = require('events').EventEmitter;
-var Remote       = require("ripple-lib").Remote;
-var testutils    = require("./testutils");
+/* -------------------------------- REQUIRES -------------------------------- */
+
+var async        = require('async');
+var assert       = require('assert-diff');
+var lodash       = require('lodash');
+
+var Remote       = require('ripple-lib').Remote;
+var Request      = require('ripple-lib').Request;
+var Account      = require('ripple-lib').UInt160;
+var testutils    = require('./testutils');
+var LedgerState  = require('./ledger-state').LedgerState;
+
 var config       = testutils.init_config();
+// We just use equal instead of strictEqual everywhere.
+assert.options.strict = true;
 
-function build_setup(options) {
-  var setup = testutils.build_setup(options);
+/* --------------------------------- HELPERS -------------------------------- */
 
-  return function (done) {
-    var self  = this;
+function noop() {}
 
-    var http_config = config.http_servers["zed"];
+function account_objects(remote, account, params, callback) {
+  if (lodash.isFunction(params)) {
+    callback = params;
+    params = null;
+  }
 
-    self.server_events = new EventEmitter;
+  var request = new Request(remote, 'account_objects');
+  request.message.account = Account.json_rewrite(account);
+  lodash.forOwn(params || {}, function(v, k) { request.message[k] = v; });
 
-    self.server = http.createServer(function (req, res) {
-      // console.log("REQUEST");
-      var input = "";
+  request.callback(callback);
+}
 
-      req.setEncoding('utf8');
+function filter_threading_fields(entries) {
+  return entries.map(function(entry) {
+    return lodash.omit(entry, ['PreviousTxnID', 'PreviousTxnLgrSeq']);
+  });
+}
 
-      req.on('data', function (buffer) {
-        // console.log("DATA: %s", buffer);
-        input = input + buffer;
-      });
+/* ---------------------------------- TEST ---------------------------------- */
 
-      req.on('end', function () {
-        var request = JSON.parse(input);
-        // console.log("REQ: %s", JSON.stringify(request, undefined, 2));
-        self.server_events.emit('request', request, res);
-      });
+suite('account_objects', function() {
+  // A declarative description of the ledger
+  var ledger_state = {
+    accounts: {
+      // Gateways
+      G1 : {balance: ["1000.0"]},
+      G2 : {balance: ["1000.0"]},
 
-      req.on('close', function () { });
-    });
-
-    self.server.listen(http_config.port, http_config.ip, void(0), function () {
-      // console.log("server up: %s %d", http_config.ip, http_config.port);
-      setup.call(self, done);
-    });
+      // Bob has two RippleState and two Offer account objects.
+      bob : {
+        balance: ["1000.0", "1000/USD/G1",
+                            "1000/USD/G2"],
+        // these offers will be in `Sequence`
+        offers: [["100.0", "1/USD/bob"],
+                 ["100.0", "1/USD/G1"]]
+      }
+    }
   };
-};
 
-function build_teardown() {
-  var teardown = testutils.build_teardown();
+  // build_(setup|teardown) utils functions set state on this context var.
+  var context = {};
 
-  return function (done) {
-    var self  = this;
+  // After setup we bind the remote to `account_objects` helper above.
+  var request_account_objects;
+  var bob;
+  var G1;
+  var G2;
 
-    self.server.close(function () {
-      // console.log("server closed");
+  // This runs only once
+  suiteSetup(function(done) {
+    testutils.build_setup().call(context, function() {
+      request_account_objects = account_objects.bind(null, context.remote);
+      var ledger = new LedgerState(ledger_state,
+                                   assert, context.remote,
+                                   config);
 
-      teardown.call(self, done);
+      // Get references to the account objects for usage later.
+      bob = Account.json_rewrite('bob');
+      G1 = Account.json_rewrite('G1');
+      G2 = Account.json_rewrite('G2');
+
+      // Run the ledger setup util. This compiles the declarative description
+      // into a series of transactions and executes them.
+      ledger.setup(noop /*logger*/, function(){
+        done();
+      })
     });
-  };
-};
-
-suite('ACCOUNT_OBJECTS', function() {
-  var $ = { };
-
-  setup(function(done) {
-    build_setup().call($, done);
   });
 
-  teardown(function(done) {
-    build_teardown().call($, done);
+  suiteTeardown(function(done) {
+    testutils.build_teardown().call(context, done);
   });
 
-  test('account_objects', function(done) {
-    var self = this;
+  // With PreviousTxnID, PreviousTxnLgrSeq omitted.
+  var bobs_objects = [
+    {
+      "Balance": {
+        "currency": "USD",
+        "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+        "value": "-1000"
+      },
+      "Flags": 131072,
+      "HighLimit": {
+        "currency": "USD",
+        "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+        "value": "1000"
+      },
+      "HighNode": "0000000000000000",
+      "LedgerEntryType": "RippleState",
+      "LowLimit": {
+        "currency": "USD",
+        "issuer": "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+        "value": "0"
+      },
+      "LowNode": "0000000000000000",
+      "index":
+        "D89BC239086183EB9458C396E643795C1134963E6550E682A190A5F021766D43"
+    },
+    {
+      "Balance": {
+        "currency": "USD",
+        "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+        "value": "-1000"
+      },
+      "Flags": 131072,
+      "HighLimit": {
+        "currency": "USD",
+        "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+        "value": "1000"
+      },
+      "HighNode": "0000000000000000",
+      "LedgerEntryType": "RippleState",
+      "LowLimit": {
+        "currency": "USD",
+        "issuer": "r9cZvwKU3zzuZK9JFovGg1JC5n7QiqNL8L",
+        "value": "0"
+      },
+      "LowNode": "0000000000000000",
+      "index":
+        "D13183BCFFC9AAC9F96AEBB5F66E4A652AD1F5D10273AEB615478302BEBFD4A4"
+    },
+    {
+      "Account": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+      "BookDirectory":
+        "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
+      "BookNode": "0000000000000000",
+      "Flags": 65536,
+      "LedgerEntryType": "Offer",
+      "OwnerNode": "0000000000000000",
+      "Sequence": 4,
+      "TakerGets": {
+        "currency": "USD",
+        "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+        "value": "1"
+      },
+      "TakerPays": "100000000",
+      "index":
+        "A984D036A0E562433A8377CA57D1A1E056E58C0D04818F8DFD3A1AA3F217DD82"
+    },
+    {
+      "Account": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+      "BookDirectory":
+        "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
+      "BookNode": "0000000000000000",
+      "Flags": 65536,
+      "LedgerEntryType": "Offer",
+      "OwnerNode": "0000000000000000",
+      "Sequence": 5,
+      "TakerGets": {
+        "currency": "USD",
+        "issuer": "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+        "value": "1"
+      },
+      "TakerPays": "100000000",
+      "index":
+        "CAFE32332D752387B01083B60CC63069BA4A969C9730836929F841450F6A718E"
+    }
+  ]
 
-    var rippled_config = testutils.get_server_config(config);
-    var client = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" +
-      rippled_config.rpc_port);
-    var http_config = config.http_servers["zed"];
+  test('stepped 1 at a time using marker/limit', function(done) {
+
+    // We step through bob's account objects one at a time by using `limit` and
+    // `marker` and for each object we see, we `push` them onto this array so we
+    // can later  check it against an un`limit`ed request.
+    var objects_stepped = [];
 
     var steps = [
-      function (callback) {
-        self.what = 'Create accounts';
+      function first_ripple_state(next) {
+        request_account_objects('bob', {limit: 1}, function(e, m) {
+          assert.ifError(e);
 
-        testutils.create_accounts(
-          $.remote,
-          'root',
-          '20000.0',
-          [ 'mtgox', 'alice', 'bob' ],
-          callback
-        );
+          var objects = m.account_objects;
+          var ripple_state = m.account_objects[0];
+
+          assert.equal(m.limit, 1);
+          assert.equal(objects.length, 1);
+          assert.equal(ripple_state.LedgerEntryType, 'RippleState');
+          assert.equal(ripple_state.HighLimit.issuer, bob);
+          assert.equal(ripple_state.LowLimit.issuer, G1);
+
+          objects_stepped.push(ripple_state);
+          next(null, m.marker);
+        });
       },
 
-      function waitLedgers(callback) {
-        self.what = 'Wait ledger';
+      function second_ripple_state(resume_marker, next) {
+        request_account_objects('bob', {limit: 1, marker: resume_marker},
+                                                          function(e, m) {
+          assert.ifError(e);
 
-        $.remote.once('ledger_closed', function() {
-          callback();
+          var objects = m.account_objects;
+          var ripple_state = m.account_objects[0];
+
+
+          assert.equal(m.limit, 1);
+          assert.equal(objects.length, 1);
+          assert.equal(ripple_state.LedgerEntryType, 'RippleState');
+          assert.equal(ripple_state.HighLimit.issuer, bob);
+          assert.equal(ripple_state.LowLimit.issuer, G2);
+
+          objects_stepped.push(ripple_state);
+          next(null, m.marker);
         });
-
-        $.remote.ledger_accept();
       },
 
-      function verifyBalance(callback) {
-        self.what = 'Verify balance';
+      function first_offer(resume_marker, next) {
+        request_account_objects('bob', {limit: 1, marker: resume_marker},
+                                                          function(e, m) {
+          assert.ifError(e);
 
-        testutils.verify_balance(
-          $.remote,
-          [ 'mtgox', 'alice', 'bob' ],
-          '19999999988',
-          callback
-        );
+          var objects = m.account_objects;
+          var offer = m.account_objects[0];
+
+          assert.equal(m.limit, 1);
+          assert.equal(objects.length, 1);
+
+          assert.equal(offer.LedgerEntryType, 'Offer');
+          assert.equal(offer.TakerGets.issuer, bob);
+          assert.equal(offer.Account, bob);
+
+          objects_stepped.push(offer);
+          next(null, m.marker);
+        });
       },
 
-     function (callback) {
-        self.what = 'Set transfer rate';
+      function second_offer(resume_marker, next) {
+        request_account_objects('bob', {limit: 1, marker: resume_marker},
+                                                          function(e, m) {
+          assert.ifError(e);
 
-        var tx = $.remote.transaction('AccountSet', {
-          account: 'mtgox'
+          var objects = m.account_objects;
+          var offer = m.account_objects[0];
+
+          assert.equal(objects.length, 1);
+
+          assert.equal(offer.Account, bob);
+          assert.equal(offer.LedgerEntryType, 'Offer');
+          assert.equal(offer.TakerGets.issuer, G1);
+
+          assert.equal(m.marker, undefined);
+          objects_stepped.push(offer);
+          next();
         });
-
-        tx.transferRate(1.1 * 1e9);
-
-        tx.submit(function(err, m) {
-          assert.ifError(err);
-          assert.strictEqual(m.engine_result, 'tesSUCCESS');
-          callback();
-        });
-
-        testutils.ledger_wait($.remote, tx);
       },
-
-      function (callback) {
-        self.what = 'Set limits';
-
-        testutils.credit_limits($.remote, {
-          'alice' : '1000/USD/mtgox',
-          'bob' : '1000/USD/mtgox'
-        },
-        callback);
-      },
-
-      function (callback) {
-        self.what = 'Distribute funds';
-
-        testutils.payments($.remote, {
-          'mtgox' : [ '100/USD/alice', '50/USD/bob' ]
-        },
-        callback);
-      },      
-
-      function (callback) {
-        self.what = 'Create offer';
-
-        // get 4000/XRP pay 10/USD : offer pays 10 USD for 4000 XRP
-        var tx = $.remote.transaction('OfferCreate', {
-          account: 'alice',
-          taker_pays: '4000',
-          taker_gets: '10/USD/mtgox'
-        });
-
-        tx.submit(function(err, m) {
-          assert.ifError(err);
-          assert.strictEqual(m.engine_result, 'tesSUCCESS');
-          callback();
-        });
-
-        testutils.ledger_wait($.remote, tx);
-      },
-
-      function (callback) {
-        self.what = "Get account objects.";
-
-        client.call('account_objects', [{
-          "account": "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
-          "limit": 10
-        }], function (result) {
-          // console.log(JSON.stringify(result, undefined, 2));
-          assert(typeof result === 'object');
-          
-          assert('account' in result);
-          assert.deepEqual(result['account'], 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn');
-
-          assert('account_objects' in result);
-          var expected = [{
-            Balance: {
-              currency: 'USD',
-              issuer: 'rrrrrrrrrrrrrrrrrrrrBZbvji',
-              value: '-100'
-            },
-            Flags: 131072,
-            HighLimit: {
-              currency: 'USD',
-              issuer: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
-              value: '1000'
-            },
-            HighNode: '0000000000000000',
-            LedgerEntryType: 'RippleState',
-            LowLimit: {
-              currency: 'USD',
-              issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
-              value: '0'
-            },
-            LowNode: '0000000000000000',
-            PreviousTxnID: result['account_objects'][0]['PreviousTxnID'],
-            PreviousTxnLgrSeq: result['account_objects'][0]['PreviousTxnLgrSeq'],
-            index: 'DE9CF5B006C8EA021CAB2ED20F01FC9D3260875C885155E7FA7A4DB534E36D8A'
-          }, {
-            Account: 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
-            BookDirectory:
-              'AE0A97F385FFE42E3096BA3F98A0173090FE66A3C2482FE0570E35FA931A0000',
-            BookNode: '0000000000000000',
-            Flags: 0,
-            LedgerEntryType: 'Offer',
-            OwnerNode: '0000000000000000',
-            PreviousTxnID: result['account_objects'][1]['PreviousTxnID'],
-            PreviousTxnLgrSeq: result['account_objects'][1]['PreviousTxnLgrSeq'],
-            Sequence: 3,
-            TakerGets: {
-              currency: 'USD',
-              issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
-              value: '10'
-            },
-            TakerPays: '4000',
-            index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61'
-          }];
-        
-          assert.deepEqual(result['account_objects'], expected);
-          callback();
-        });
-      }
     ];
 
-    async.waterfall(steps, function(error) {
-      assert(!error, self.what + ': ' + error);
+    async.waterfall(steps, function (err, result) {
+      assert.ifError(err);
+
+      var filtered = filter_threading_fields(objects_stepped);
+      // Compare against a known/inspected exchaustive response.
+      assert.deepEqual(filtered, bobs_objects);
+      done();
+    });
+  });
+
+  test('unstepped', function(done) {
+    request_account_objects('bob', function(e, m){
+      var objects = m.account_objects;
+      assert.equal(m.marker, undefined);
+
+      var filtered = filter_threading_fields(objects);
+      // Compare against a known/inspected exchaustive response.
+      assert.deepEqual(filtered, bobs_objects);
       done();
     });
   });
