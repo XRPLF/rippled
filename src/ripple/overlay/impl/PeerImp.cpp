@@ -1437,10 +1437,14 @@ PeerImp::checkTransaction (Job&, int flags,
         }
 
         auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
-        auto tx = std::make_shared<Transaction> (stx, validate);
+        std::string reason;
+        auto tx = std::make_shared<Transaction> (stx, validate, reason);
 
         if (tx->getStatus () == INVALID)
         {
+            if (! reason.empty ())
+                p_journal_.trace << "Exception checking transaction: " << reason;
+
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
             charge (Resource::feeInvalidSignature);
             return;

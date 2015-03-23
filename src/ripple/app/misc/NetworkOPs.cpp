@@ -900,13 +900,16 @@ void NetworkOPsImp::submitTransaction (
         return;
     }
 
+    std::string reason;
+
     if ((flags & SF_SIGGOOD) == 0)
     {
         try
         {
-            if (!passesLocalChecks (*trans) || !trans->checkSign ())
+            if (! passesLocalChecks (*trans, reason) || ! trans->checkSign ())
             {
-                m_journal.warning << "Submitted transaction has bad signature";
+                m_journal.warning << "Submitted transaction " <<
+                    (reason.empty () ? "has bad signature" : "error: " + reason);
                 getApp().getHashRouter ().setFlag (suppress, SF_BAD);
                 return;
             }
@@ -915,7 +918,9 @@ void NetworkOPsImp::submitTransaction (
         }
         catch (...)
         {
-            m_journal.warning << "Exception checking transaction " << suppress;
+            m_journal.warning << "Exception checking transaction " << suppress
+                << (reason.empty () ? "" : ". error: " + reason);
+
             return;
         }
     }
@@ -923,7 +928,7 @@ void NetworkOPsImp::submitTransaction (
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransactionCbVoid,
                    this,
-                   std::make_shared<Transaction> (trans, Validate::NO),
+                   std::make_shared<Transaction> (trans, Validate::NO, reason),
                    false,
                    false,
                    false,
@@ -986,9 +991,11 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
     if ((newFlags & SF_SIGGOOD) == 0)
     {
         // signature not checked
-        if (!trans->checkSign ())
+        std::string reason;
+
+        if (! trans->checkSign (reason))
         {
-            m_journal.info << "Transaction has bad signature";
+            m_journal.info << "Transaction has bad signature: " << reason;
             trans->setStatus (INVALID);
             trans->setResult (temBAD_SIGNATURE);
             getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);

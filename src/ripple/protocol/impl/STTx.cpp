@@ -404,10 +404,4 @@ bool passesLocalChecks (STObject const& st, std::string& reason)
     return true;
 }
 
-bool passesLocalChecks (STObject const& st)
-{
-    std::string reason;
-    return passesLocalChecks (st, reason);
-}
-
 } // ripple

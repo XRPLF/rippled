@@ -28,7 +28,8 @@
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref sit, Validate validate)
+Transaction::Transaction (STTx::ref sit, Validate validate, std::string& reason)
+    noexcept
     : mInLedger (0),
       mStatus (INVALID),
       mResult (temUNCERTAIN),
@@ -40,13 +41,19 @@ Transaction::Transaction (STTx::ref sit, Validate validate)
         mTransactionID  = mTransaction->getTransactionID ();
         mAccountFrom    = mTransaction->getSourceAccount ();
     }
+    catch (std::exception& e)
+    {
+        reason = e.what();
+        return;
+    }
     catch (...)
     {
+        reason = "Unexpected exception";
         return;
     }
 
     if (validate == Validate::NO ||
-        (passesLocalChecks (*mTransaction) && checkSign ()))
+        (passesLocalChecks (*mTransaction, reason) && checkSign (reason)))
     {
         mStatus = NEW;
     }
@@ -59,30 +66,39 @@ Transaction::pointer Transaction::sharedTransaction (
     {
         Serializer s (vucTransaction);
         SerialIter sit (s);
+        std::string reason;
 
-        return std::make_shared<Transaction> (
-            std::make_shared<STTx> (sit),
-            validate);
+        return std::make_shared<Transaction> (std::make_shared<STTx> (sit),
+            validate, reason);
+    }
+    catch (std::exception& e)
+    {
+        WriteLog(lsWARNING, Ledger) << "Exception constructing transaction" <<
+            e.what ();
     }
     catch (...)
     {
-        WriteLog (lsWARNING, Ledger) << "Exception constructing transaction";
-        return std::shared_ptr<Transaction> ();
+        WriteLog(lsWARNING, Ledger) << "Exception constructing transaction";
     }
+
+    return std::shared_ptr<Transaction> ();
 }
 
 //
 // Misc.
 //
 
-bool Transaction::checkSign () const
+bool Transaction::checkSign (std::string& reason) const
 {
-    if (mFromPubKey.isValid ())
-        return mTransaction->checkSign();
+    if (! mFromPubKey.isValid ())
+        reason = "Transaction has bad source public key";
+    else if (! mTransaction->checkSign ())
+        reason = "Transaction has bad signature";
+    else
+        return true;
 
-    WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
+    WriteLog (lsWARNING, Ledger) << reason;
     return false;
-
 }
 
 void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
@@ -102,7 +118,8 @@ Transaction::pointer Transaction::transactionFromSQL (
 
     SerialIter it (rawTxn);
     auto txn = std::make_shared<STTx> (it);
-    auto tr = std::make_shared<Transaction> (txn, validate);
+    std::string reason;
+    auto tr = std::make_shared<Transaction> (txn, validate, reason);
 
     TransStatus st (INVALID);
 

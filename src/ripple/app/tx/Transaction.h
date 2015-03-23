@@ -62,7 +62,7 @@ public:
     typedef const pointer& ref;
 
 public:
-    Transaction (STTx::ref, Validate);
+    Transaction (STTx::ref, Validate, std::string&) noexcept;
 
     static Transaction::pointer sharedTransaction (Blob const&, Validate);
     static Transaction::pointer transactionFromSQL (
@@ -71,7 +71,7 @@ public:
         Blob const& rawTxn,
         Validate validate);
 
-    bool checkSign () const;
+    bool checkSign (std::string&) const;
 
     STTx::ref getSTransaction ()
     {

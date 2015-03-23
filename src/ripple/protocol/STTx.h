@@ -156,7 +156,6 @@ private:
 };
 
 bool passesLocalChecks (STObject const& st, std::string&);
-bool passesLocalChecks (STObject const& st);
 
 } // ripple
 
