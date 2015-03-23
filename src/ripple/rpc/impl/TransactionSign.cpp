@@ -485,17 +485,8 @@ transactionSign (
 
     stpTrans->sign (keypair.secretKey);
 
-    Transaction::pointer tpTrans;
-
-    try
-    {
-        tpTrans = std::make_shared<Transaction> (stpTrans, Validate::NO);
-    }
-    catch (std::exception&)
-    {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during transaction");
-    }
+    Transaction::pointer tpTrans = std::make_shared<Transaction> (stpTrans,
+        Validate::NO, reason);
 
     try
     {
