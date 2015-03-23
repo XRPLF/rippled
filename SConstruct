@@ -113,6 +113,29 @@ def check_openssl():
                             (CHECK_LINE, CHECK_COMMAND))
 
 
+def set_implicit_cache():
+    '''Use implicit_cache on some targets to improve build times.
+
+    By default, scons scans each file for include dependecies. The implicit
+    cache flag lets you cache these dependencies for later builds, and will
+    only rescan files that change.
+
+    Failure cases are:
+    1) If the include search paths are changed (i.e. CPPPATH), then a file
+       may not be rebuilt.
+    2) If a same-named file has been added to a directory that is earlier in
+       the search path than the directory in which the file was found.
+    Turn on if this build is for a specific debug target (i.e. clang.debug)
+
+    If one of the failure cases applies, you can force a rescan of dependencies
+    using the command line option `--implicit-deps-changed`
+    '''
+    if len(COMMAND_LINE_TARGETS) == 1:
+        s = COMMAND_LINE_TARGETS[0].split('.')
+        if len(s) > 1 and 'debug' in s:
+            SetOption('implicit_cache', 1)
+
+
 def import_environ(env):
     '''Imports environment settings into the construction environment'''
     def set(keys):
@@ -507,6 +530,7 @@ def config_env(toolchain, variant, env):
 # Configure the base construction environment
 root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
 build_dir = os.path.join('build')
+
 base = Environment(
     toolpath=[os.path.join ('src', 'beast', 'site_scons', 'site_tools')],
     tools=['default', 'Protoc', 'VSProject'],
@@ -520,6 +544,9 @@ base.Append(CPPPATH=[
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
     ])
+
+base.Decider('MD5-timestamp')
+set_implicit_cache()
 
 # Configure the toolchains, variants, default toolchain, and default target
 variants = ['debug', 'release', 'profile']
@@ -586,25 +613,140 @@ def list_sources(base, suffixes):
                     yield os.path.normpath(path)
     return list(_iter(base))
 
-def add_soci_sources(env, object_builder, is_unity):
+
+def append_sources(result, *filenames, **kwds):
+    result.append([filenames, kwds])
+
+
+def get_soci_sources(style):
+    result = []
     cpp_path = [
         'src/soci/src/core',
-        'src/sqlite',]
-    object_builder.add_source_files(
-        'src/ripple/unity/soci.cpp',
-        CPPPATH = cpp_path)
-    if is_unity:
-        object_builder.add_source_files(
-            'src/ripple/unity/soci_ripple.cpp',
-            CPPPATH = cpp_path)
+        'src/sqlite', ]
+    append_sources(result,
+                   'src/ripple/unity/soci.cpp',
+                   CPPPATH=cpp_path)
+    if style == 'unity':
+        append_sources(result,
+                       'src/ripple/unity/soci_ripple.cpp',
+                       CPPPATH=cpp_path)
+    return result
+
+
+def get_classic_sources():
+    result = []
+    append_sources(
+        result,
+        *list_sources('src/ripple/app', '.cpp'),
+        CPPPATH=[
+            'src/soci/src/core',
+            'src/sqlite']
+    )
+    append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/core', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/json', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/legacy', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/net', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/overlay', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/peerfinder', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/protocol', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
+    append_sources(
+        result,
+        *list_sources('src/ripple/nodestore', '.cpp'),
+        CPPPATH=[
+            'src/rocksdb2/include',
+            'src/snappy/snappy',
+            'src/snappy/config',
+        ])
+
+    result += get_soci_sources('classic')
+    return result
+
+
+def get_unity_sources():
+    result = []
+    append_sources(
+        result,
+        'src/ripple/unity/app.cpp',
+        'src/ripple/unity/app1.cpp',
+        'src/ripple/unity/app2.cpp',
+        'src/ripple/unity/app3.cpp',
+        'src/ripple/unity/app4.cpp',
+        'src/ripple/unity/app5.cpp',
+        'src/ripple/unity/app6.cpp',
+        'src/ripple/unity/app7.cpp',
+        'src/ripple/unity/app8.cpp',
+        'src/ripple/unity/app9.cpp',
+        'src/ripple/unity/core.cpp',
+        'src/ripple/unity/basics.cpp',
+        'src/ripple/unity/crypto.cpp',
+        'src/ripple/unity/net.cpp',
+        'src/ripple/unity/overlay.cpp',
+        'src/ripple/unity/peerfinder.cpp',
+        'src/ripple/unity/json.cpp',
+        'src/ripple/unity/protocol.cpp',
+        'src/ripple/unity/shamap.cpp',
+        'src/ripple/unity/legacy.cpp',
+    )
+
+    result += get_soci_sources('unity')
+
+    append_sources(
+        result,
+        'src/ripple/unity/nodestore.cpp',
+        CPPPATH=[
+            'src/rocksdb2/include',
+            'src/snappy/snappy',
+            'src/snappy/config',
+        ])
+
+    return result
 
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
 
+
+def should_prepare_target(cl_target,
+                          style, toolchain, variant):
+    if not cl_target:
+        # default target
+        return (style == default_tu_style and
+                toolchain == default_toolchain and
+                variant == default_variant)
+    if 'vcxproj' in cl_target:
+        return toolchain == 'msvc'
+    s = cl_target.split('.')
+    if style == 'unity' and 'nounity' in s:
+        return False
+    if len(s) == 1:
+        return ('all' in cl_target or
+                variant in cl_target or
+                toolchain in cl_target)
+    if len(s) == 2 or len(s) == 3:
+        return s[0] == toolchain and s[1] == variant
+
+    return True  # A target we don't know about, better prepare to build it
+
+
+def should_prepare_targets(style, toolchain, variant):
+    if not COMMAND_LINE_TARGETS:
+        return should_prepare_target(None, style, toolchain, variant)
+    for t in COMMAND_LINE_TARGETS:
+        if should_prepare_target(t, style, toolchain, variant):
+            return True
+
 for tu_style in ['classic', 'unity']:
+    if tu_style == 'classic':
+        sources = get_classic_sources()
+    else:
+        sources = get_unity_sources()
     for toolchain in all_toolchains:
         for variant in variants:
+            if not should_prepare_targets(tu_style, toolchain, variant):
+                continue
             if variant == 'profile' and toolchain == 'msvc':
                 continue
             # Configure this variant's construction environment
@@ -625,74 +767,8 @@ for tu_style in ['classic', 'unity']:
 
             object_builder = ObjectBuilder(env, variant_dirs)
 
-            if tu_style == 'classic':
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/app', '.cpp'),
-                    CPPPATH=[
-                         'src/soci/src/core',
-                         'src/sqlite',]
-                )
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/basics', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/core', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/crypto', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/json', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/legacy', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/net', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/overlay', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/peerfinder', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/protocol', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/shamap', '.cpp'))
-                object_builder.add_source_files(
-                    *list_sources('src/ripple/nodestore', '.cpp'),
-                    CPPPATH=[
-                        'src/rocksdb2/include',
-                        'src/snappy/snappy',
-                        'src/snappy/config',
-                    ])
-                add_soci_sources(env, object_builder, is_unity = False)
-            else:
-                object_builder.add_source_files(
-                    'src/ripple/unity/app.cpp',
-                    'src/ripple/unity/app1.cpp',
-                    'src/ripple/unity/app2.cpp',
-                    'src/ripple/unity/app3.cpp',
-                    'src/ripple/unity/app4.cpp',
-                    'src/ripple/unity/app5.cpp',
-                    'src/ripple/unity/app6.cpp',
-                    'src/ripple/unity/app7.cpp',
-                    'src/ripple/unity/app8.cpp',
-                    'src/ripple/unity/app9.cpp',
-                    'src/ripple/unity/core.cpp',
-                    'src/ripple/unity/basics.cpp',
-                    'src/ripple/unity/crypto.cpp',
-                    'src/ripple/unity/net.cpp',
-                    'src/ripple/unity/overlay.cpp',
-                    'src/ripple/unity/peerfinder.cpp',
-                    'src/ripple/unity/json.cpp',
-                    'src/ripple/unity/protocol.cpp',
-                    'src/ripple/unity/shamap.cpp',
-                    'src/ripple/unity/legacy.cpp',
-                )
-
-                add_soci_sources(env, object_builder, is_unity = True)
-
-                object_builder.add_source_files(
-                    'src/ripple/unity/nodestore.cpp',
-                    CPPPATH=[
-                        'src/rocksdb2/include',
-                        'src/snappy/snappy',
-                        'src/snappy/config',
-                    ])
+            for s, k in sources:
+                object_builder.add_source_files(*s, **k)
 
             git_commit_tag = {}
             if toolchain != 'msvc':
