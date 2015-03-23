@@ -41,6 +41,7 @@ private:
     Blob mData;
 
 public:
+    explicit
     Serializer (int n = 256)
     {
         mData.reserve (n);
@@ -107,7 +108,6 @@ public:
     int addZeros (size_t uBytes);
 
     int addVL (Blob const& vector);
-    int addVL (std::string const& string);
     int addVL (const void* ptr, int len);
 
     // disassemble functions
@@ -232,7 +232,6 @@ public:
     {
         mData.clear ();
     }
-    int removeLastByte ();
     bool chop (int num);
 
     // vector-like functions
@@ -297,17 +296,17 @@ public:
         return h.str ();
     }
 
-    // low-level VL length encode/decode functions
-    static Blob encodeVL (int length);
+    static int decodeLengthLength (int b1);
+    static int decodeVLLength (int b1);
+    static int decodeVLLength (int b1, int b2);
+    static int decodeVLLength (int b1, int b2, int b3);
+private:
     static int lengthVL (int length)
     {
         return length + encodeLengthLength (length);
     }
     static int encodeLengthLength (int length); // length to encode length
-    static int decodeLengthLength (int b1);
-    static int decodeVLLength (int b1);
-    static int decodeVLLength (int b1, int b2);
-    static int decodeVLLength (int b1, int b2, int b3);
+    int addEncoded (int length);
 };
 
 //------------------------------------------------------------------------------

@@ -278,21 +278,6 @@ bool Serializer::chop (int bytes)
     return true;
 }
 
-int Serializer::removeLastByte ()
-{
-    int size = mData.size () - 1;
-
-    if (size < 0)
-    {
-        assert (false);
-        return -1;
-    }
-
-    int ret = mData[size];
-    mData.resize (size);
-    return ret;
-}
-
 bool Serializer::getRaw (Blob& o, int offset, int length) const
 {
     if ((offset + length) > mData.size ()) return false;
@@ -363,7 +348,7 @@ uint256 Serializer::getPrefixHash (std::uint32_t prefix, const unsigned char* da
 
 int Serializer::addVL (Blob const& vector)
 {
-    int ret = addRaw (encodeVL (vector.size ()));
+    int ret = addEncoded (vector.size ());
     addRaw (vector);
     assert (mData.size () == (ret + vector.size () + encodeLengthLength (vector.size ())));
     return ret;
@@ -371,20 +356,10 @@ int Serializer::addVL (Blob const& vector)
 
 int Serializer::addVL (const void* ptr, int len)
 {
-    int ret = addRaw (encodeVL (len));
+    int ret = addEncoded (len);
 
     if (len)
         addRaw (ptr, len);
-
-    return ret;
-}
-
-int Serializer::addVL (std::string const& string)
-{
-    int ret = addRaw (string.size ());
-
-    if (!string.empty ())
-        addRaw (string.data (), string.size ());
 
     return ret;
 }
@@ -470,31 +445,34 @@ bool Serializer::getVLLength (int& length, int offset) const
     return true;
 }
 
-Blob Serializer::encodeVL (int length)
+int Serializer::addEncoded (int length)
 {
-    unsigned char lenBytes[4];
+    std::array<std::uint8_t, 4> bytes;
+    int numBytes = 0;
 
     if (length <= 192)
     {
-        lenBytes[0] = static_cast<unsigned char> (length);
-        return Blob (&lenBytes[0], &lenBytes[1]);
+        bytes[0] = static_cast<unsigned char> (length);
+        numBytes = 1;
     }
     else if (length <= 12480)
     {
         length -= 193;
-        lenBytes[0] = 193 + static_cast<unsigned char> (length >> 8);
-        lenBytes[1] = static_cast<unsigned char> (length & 0xff);
-        return Blob (&lenBytes[0], &lenBytes[2]);
+        bytes[0] = 193 + static_cast<unsigned char> (length >> 8);
+        bytes[1] = static_cast<unsigned char> (length & 0xff);
+        numBytes = 2;
     }
     else if (length <= 918744)
     {
         length -= 12481;
-        lenBytes[0] = 241 + static_cast<unsigned char> (length >> 16);
-        lenBytes[1] = static_cast<unsigned char> ((length >> 8) & 0xff);
-        lenBytes[2] = static_cast<unsigned char> (length & 0xff);
-        return Blob (&lenBytes[0], &lenBytes[3]);
+        bytes[0] = 241 + static_cast<unsigned char> (length >> 16);
+        bytes[1] = static_cast<unsigned char> ((length >> 8) & 0xff);
+        bytes[2] = static_cast<unsigned char> (length & 0xff);
+        numBytes = 3;
     }
     else throw std::overflow_error ("lenlen");
+
+    return addRaw (&bytes[0], numBytes);
 }
 
 int Serializer::encodeLengthLength (int length)

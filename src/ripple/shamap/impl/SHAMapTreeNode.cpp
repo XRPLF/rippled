@@ -79,8 +79,18 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
 {
     if (format == snfWIRE)
     {
-        Serializer s (rawNode);
-        int type = s.removeLastByte ();
+        if (rawNode.empty ())
+        {
+#ifdef BEAST_DEBUG
+            deprecatedLogs().journal("SHAMapTreeNode").fatal <<
+                "Wire format node is empty";
+            assert (false);
+#endif
+            throw std::runtime_error ("invalid node AW type");
+        }
+
+        Serializer s (rawNode.begin (), rawNode.end () - 1);
+        int type = rawNode.back ();
         int len = s.getLength ();
 
         if ((type < 0) || (type > 4))
