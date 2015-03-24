@@ -412,7 +412,7 @@ public:
 
         , m_entropyTimer (this)
 
-        , m_signals(get_io_service(), SIGINT)
+        , m_signals(get_io_service(), SIGINT, SIGTERM)
 
         , m_resolver (ResolverAsio::New (get_io_service(), m_logs.journal("Resolver")))
 
@@ -668,9 +668,9 @@ public:
             m_journal.error << "Received signal: " << signal_number
                             << " with error: " << ec.message();
         }
-        else
+        else if (signal_number == SIGTERM || signal_number == SIGINT)
         {
-            m_journal.debug << "Received signal: " << signal_number;
+            m_journal.debug << "Received killing signal: " << signal_number;
             signalStop();
         }
     }
