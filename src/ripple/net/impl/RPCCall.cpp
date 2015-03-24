@@ -574,47 +574,6 @@ private:
         return jvRequest;
     }
 
-    // proof_create [<difficulty>] [<secret>]
-    Json::Value parseProofCreate (Json::Value const& jvParams)
-    {
-        Json::Value     jvRequest;
-
-        if (jvParams.size () >= 1)
-            jvRequest["difficulty"] = jvParams[0u].asInt ();
-
-        if (jvParams.size () >= 2)
-            jvRequest[jss::secret] = jvParams[1u].asString ();
-
-        return jvRequest;
-    }
-
-    // proof_solve <token>
-    Json::Value parseProofSolve (Json::Value const& jvParams)
-    {
-        Json::Value     jvRequest;
-
-        jvRequest["token"] = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
-    // proof_verify <token> <solution> [<difficulty>] [<secret>]
-    Json::Value parseProofVerify (Json::Value const& jvParams)
-    {
-        Json::Value     jvRequest;
-
-        jvRequest["token"] = jvParams[0u].asString ();
-        jvRequest["solution"] = jvParams[1u].asString ();
-
-        if (jvParams.size () >= 3)
-            jvRequest["difficulty"] = jvParams[2u].asInt ();
-
-        if (jvParams.size () >= 4)
-            jvRequest[jss::secret] = jvParams[3u].asString ();
-
-        return jvRequest;
-    }
-
     // ripple_path_find <json> [<ledger>]
     Json::Value parseRipplePathFind (Json::Value const& jvParams)
     {
@@ -888,9 +847,6 @@ public:
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "print",                &RPCParser::parseAsIs,                  0,  1   },
     //      {   "profile",              &RPCParser::parseProfile,               1,  9   },
-            {   "proof_create",         &RPCParser::parseProofCreate,           0,  2   },
-            {   "proof_solve",          &RPCParser::parseProofSolve,            1,  1   },
-            {   "proof_verify",         &RPCParser::parseProofVerify,           2,  4   },
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
