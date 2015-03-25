@@ -394,8 +394,9 @@ public:
         }
         if (didApply)
         {
-           mCurrentLedger.set (ledger);
-           getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
+            ledger->setImmutable (); // So the next line doesn't have to copy
+            mCurrentLedger.set (ledger);
+            getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
         }
         return result;
     }
