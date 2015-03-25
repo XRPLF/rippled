@@ -1062,6 +1062,7 @@ void ApplicationImp::startNewLedger ()
         firstLedger->updateHash ();
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
+        firstLedger->setImmutable();
         m_ledgerMaster->pushLedger (firstLedger);
 
         Ledger::pointer secondLedger = std::make_shared<Ledger> (true, std::ref (*firstLedger));

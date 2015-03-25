@@ -274,6 +274,7 @@ void
 SHAMap::setImmutable ()
 {
     assert (state_ != SHAMapState::Invalid);
+    unshare ();
     state_ = SHAMapState::Immutable;
 }
 
