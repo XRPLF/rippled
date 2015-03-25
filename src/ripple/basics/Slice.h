@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_SLICE_H_INCLUDED
 #define RIPPLE_BASICS_SLICE_H_INCLUDED
 
+#include <ripple/basics/strHex.h>
 #include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <cassert>
@@ -110,6 +111,13 @@ operator< (Slice const& lhs, Slice const& rhs) noexcept
     return std::lexicographical_compare(
         lhs.data(), lhs.data() + lhs.size(),
             rhs.data(), rhs.data() + rhs.size());
+}
+
+template <class Stream>
+Stream& operator<<(Stream& s, Slice const& v)
+{
+    s << strHex(v.data(), v.size());
+    return s;
 }
 
 } // ripple
