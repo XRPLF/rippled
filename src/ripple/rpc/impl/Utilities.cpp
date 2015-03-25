@@ -30,48 +30,45 @@ addPaymentDeliveredAmount (
     Transaction::pointer transaction,
     TransactionMetaSet::pointer transactionMeta)
 {
-    STTx::pointer serializedTx;
-
     // We only want to add a "delivered_amount" field if the transaction
     // succeeded - otherwise nothing could have been delivered.
-    if (transaction && transaction->getResult () == tesSUCCESS)
-        serializedTx = transaction->getSTransaction ();
+    if (!transaction || transaction->getResult () != tesSUCCESS)
+        return;
 
-    if (serializedTx && serializedTx->getTxnType () == ttPAYMENT)
+    auto serializedTx = transaction->getSTransaction ();
+
+    if (!serializedTx || serializedTx->getTxnType () != ttPAYMENT)
+        return;
+
+    // If the transaction explicitly specifies a DeliveredAmount in the
+    // metadata then we use it.
+    if (transactionMeta && transactionMeta->hasDeliveredAmount ())
     {
-        // If the transaction explicitly specifies a DeliveredAmount in the
-        // metadata then we use it.
-        if (transactionMeta && transactionMeta->hasDeliveredAmount ())
+        meta[jss::delivered_amount] =
+                transactionMeta->getDeliveredAmount ().getJson (1);
+        return;
+    }
+
+    if (auto ledger = context.netOps.getLedgerBySeq (transaction->getLedger ()))
+    {
+        // If the ledger closed at 2014-Jan-24 at 04:50:10 or later, then
+        // the absence of the DeliveredAmount field indicates that the
+        // actual amount delivered is in the Amount field.
+        boost::posix_time::ptime const cutoff (
+            boost::posix_time::time_from_string ("2014-01-24 04:50:10"));
+
+        if (ledger->getCloseTime () >= cutoff)
         {
             meta[jss::delivered_amount] =
-                transactionMeta->getDeliveredAmount ().getJson (1);
+                    serializedTx->getFieldAmount (sfAmount).getJson (1);
             return;
         }
-
-        if (auto ledger = context.netOps.getLedgerBySeq (transaction->getLedger ()))
-        {
-            // The first ledger where the DeliveredAmount flag appears is
-            // which closed on 2014-Jan-24 at 04:50:10. If the transaction we
-            // are dealing with is in a ledger that closed after this date then
-            // the absence of DeliveredAmount indicates that the correct amount
-            // is in the Amount field.
-
-            boost::posix_time::ptime const cutoff (
-                boost::posix_time::time_from_string ("2014-01-24 04:50:10"));
-
-            if (ledger->getCloseTime () >= cutoff)
-            {
-                meta[jss::delivered_amount] =
-                    serializedTx->getFieldAmount (sfAmount).getJson (1);
-                return;
-            }
-        }
-
-        // Otherwise we report "unavailable" which cannot be parsed into a
-        // sensible amount.
-        meta[jss::delivered_amount] = Json::Value ("unavailable");
     }
+
+    // Otherwise we report "unavailable" which cannot be parsed into a
+    // sensible amount.
+    meta[jss::delivered_amount] = Json::Value ("unavailable");
 }
 
-}
-}
+} // ripple
+} // RPC
