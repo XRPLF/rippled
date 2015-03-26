@@ -124,7 +124,7 @@ private:
         detail::key_file_header const kh;
 
         // pool commit high water mark
-        std::size_t pool_thresh = 0;
+        std::size_t pool_thresh = 1;
 
         state (state const&) = delete;
         state& operator= (state const&) = delete;
@@ -916,7 +916,9 @@ store<Hasher, Codec, File>::run()
                 if (timeout)
                 {
                     m.lock();
-                    s_->pool_thresh /= 2;
+                    s_->pool_thresh =
+                        std::max<std::size_t>(
+                            1, s_->pool_thresh / 2);
                     s_->p1.shrink_to_fit();
                     s_->p0.shrink_to_fit();
                     s_->c1.shrink_to_fit();
