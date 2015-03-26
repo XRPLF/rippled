@@ -135,16 +135,17 @@ log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 {
     TransactionMetaSet::pointer metaData;
     ledger->getTransactionMeta(tx, metaData);
+
     if (metaData != nullptr)
     {
-        WriteLog (lsERROR, LedgerMaster) <<
-            "MISMATCH " << msg << " without " << tx <<
-            " metadata is " << metaData->getJson(0);
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+            ": " << msg << " is missing this transaction:\n" <<
+            metaData->getJson (0);
     }
     else
     {
-        WriteLog (lsERROR, LedgerMaster) <<
-            "MISMATCH " << msg << " without " << tx;
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+            ": " << msg << " is missing this transaction.";
     }
 }
 
@@ -158,26 +159,114 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
     TransactionMetaSet::pointer builtMetaData;
     builtLedger->getTransactionMeta(tx, builtMetaData);
     assert(validMetaData != nullptr || builtMetaData != nullptr);
+
     if (validMetaData != nullptr && builtMetaData != nullptr)
     {
-        WriteLog (lsERROR, LedgerMaster) <<
-            "MISMATCH tx differ in metadata only " << tx <<
-            " : built metadata is " << builtMetaData->getJson(0) <<
-            " : valid metadata is " << validMetaData->getJson(0);
+        auto const& validNodes = validMetaData->getNodes ();
+        auto const& builtNodes = builtMetaData->getNodes ();
+
+        bool const result_diff =
+            validMetaData->getResultTER () != builtMetaData->getResultTER ();
+
+        bool const index_diff =
+            validMetaData->getIndex() != builtMetaData->getIndex ();
+
+        bool const nodes_diff = validNodes != builtNodes;
+
+        if (!result_diff && !index_diff && !nodes_diff)
+        {
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                ": No apparent mismatches detected!";
+            return;
+        }
+
+        if (!nodes_diff)
+        {
+            if (result_diff && index_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different result and index!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Result: " << builtMetaData->getResult () <<
+                    " Index: " << builtMetaData->getIndex ();
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Result: " << validMetaData->getResult () <<
+                    " Index: " << validMetaData->getIndex ();
+            }
+            else if (result_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different result!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Result: " << builtMetaData->getResult ();
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Result: " << validMetaData->getResult ();
+            }
+            else if (index_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different index!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Index: " << builtMetaData->getIndex ();
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Index: " << validMetaData->getIndex ();
+            }
+        }
+        else
+        {
+            if (result_diff && index_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different result, index and nodes!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:\n" <<
+                    builtMetaData->getJson (0);
+                WriteLog (lsERROR, LedgerMaster) << " Valid:\n" <<
+                    validMetaData->getJson (0);
+            }
+            else if (result_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different result and nodes!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Result: " << builtMetaData->getResult () <<
+                    " Nodes:\n" << builtNodes.getJson (0);
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Result: " << validMetaData->getResult () <<
+                    " Nodes:\n" << validNodes.getJson (0);
+            }
+            else if (index_diff)
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different index and nodes!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Index: " << builtMetaData->getIndex () <<
+                    " Nodes:\n" << builtNodes.getJson (0);
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Index: " << validMetaData->getIndex () <<
+                    " Nodes:\n" << validNodes.getJson (0);
+            }
+            else // nodes_diff
+            {
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                    ": Different nodes!";
+                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                    " Nodes:\n" << builtNodes.getJson (0);
+                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                    " Nodes:\n" << validNodes.getJson (0);
+            }
+        }
     }
     else if (validMetaData != nullptr)
     {
-        // builtMetaData == nullptr
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ in metadata only " <<
-            tx << " : built has no metadata but valid metadata is " <<
-            validMetaData->getJson(0);
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+            ": Metadata Difference (built has none)\n" <<
+            validMetaData->getJson (0);
     }
     else // builtMetaData != nullptr
     {
-        // validMetaData == nullptr
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ in metadata only " <<
-            tx << " : valid has no metadata but built metadata is " <<
-            builtMetaData->getJson(0);
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+            ": Metadata Difference (valid has none)\n" <<
+            builtMetaData->getJson (0);
     }
 }
 
@@ -189,99 +278,104 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
     Ledger::pointer builtLedger = getLedgerByHash (built);
     Ledger::pointer validLedger = getLedgerByHash (valid);
 
-    if (builtLedger && validLedger)
+    if (!builtLedger || !validLedger)
     {
-        assert (builtLedger->getLedgerSeq() == validLedger->getLedgerSeq());
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH cannot be analyzed:" <<
+            " builtLedger: " << to_string (built) << " -> " << builtLedger <<
+            " validLedger: " << to_string (valid) << " -> " << validLedger;
+        return;
+    }
 
-        // Determine the mismatch reason
-        // Distinguish Byzantine failure from transaction processing difference
+    assert (builtLedger->getLedgerSeq() == validLedger->getLedgerSeq());
 
-        if (builtLedger->getParentHash() != validLedger->getParentHash())
+    // Determine the mismatch reason
+    // Distinguish Byzantine failure from transaction processing difference
+
+    if (builtLedger->getParentHash() != validLedger->getParentHash())
+    {
+        // Disagreement over prior ledger indicates sync issue
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on prior ledger";
+        return;
+    }
+
+    if (builtLedger->getCloseTimeNC() != validLedger->getCloseTimeNC())
+    {
+        // Disagreement over close time indicates Byzantine failure
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on close time";
+        return;
+    }
+
+    // Find differences between built and valid ledgers
+    using SHAMapItemInfo = std::pair<uint256, Blob>;
+    std::vector <SHAMapItemInfo> builtTx, validTx;
+    // Get built ledger hashes and metadata
+    builtLedger->peekTransactionMap()->visitLeaves(
+        [&builtTx](std::shared_ptr<SHAMapItem> const& item)
         {
-            // Disagreement over prior ledger indicates sync issue
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on prior ledger";
+            builtTx.push_back({item->getTag(), item->peekData()});
+        });
+    // Get valid ledger hashes and metadata
+    validLedger->peekTransactionMap()->visitLeaves(
+        [&validTx](std::shared_ptr<SHAMapItem> const& item)
+        {
+            validTx.push_back({item->getTag(), item->peekData()});
+        });
+
+    // Sort both by hash
+    std::sort (builtTx.begin(), builtTx.end(),
+                    [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
+                        {return x.first < y.first;});
+    std::sort (validTx.begin(), validTx.end(),
+                    [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
+                        {return x.first < y.first;});
+
+    if (builtTx == validTx)
+    {
+        WriteLog (lsERROR, LedgerMaster) <<
+            "MISMATCH with same " << builtTx.size() << " transactions";
+        return;
+    }
+
+    WriteLog (lsERROR, LedgerMaster) << "MISMATCH with " <<
+        builtTx.size() << " built and " <<
+        validTx.size() << " valid transactions.";
+
+    // Log all differences between built and valid ledgers
+    auto b = builtTx.cbegin();
+    auto be = builtTx.cend();
+    auto v = validTx.cbegin();
+    auto ve = validTx.cend();
+    while (b != be && v != ve)
+    {
+        if (b->first < v->first)
+        {
+            // b->first in built but not in valid
+            log_one(builtLedger, b->first, "valid");
+            ++b;
         }
-        else if (builtLedger->getCloseTimeNC() != validLedger->getCloseTimeNC())
+        else if (v->first < b->first)
         {
-            // Disagreement over close time indicates Byzantine failure
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on close time";
+            // v->first in valid but not in built
+            log_one(validLedger, v->first, "built");
+            ++v;
         }
-        else
+        else  // b->first == v->first, same transaction
         {
-            // Find differences between built and valid ledgers
-            using SHAMapItemInfo = std::pair<uint256, Blob>;
-            std::vector <SHAMapItemInfo> builtTx, validTx;
-            // Get built ledger hashes and metadata
-            builtLedger->peekTransactionMap()->visitLeaves(
-                [&builtTx](std::shared_ptr<SHAMapItem> const& item)
-                {
-                    builtTx.push_back({item->getTag(), item->peekData()});
-                });
-            // Get valid ledger hashes and metadata
-            validLedger->peekTransactionMap()->visitLeaves(
-                [&validTx](std::shared_ptr<SHAMapItem> const& item)
-                {
-                    validTx.push_back({item->getTag(), item->peekData()});
-                });
-            // Sort both by hash
-            std::sort (builtTx.begin(), builtTx.end(),
-                            [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
-                                {return x.first < y.first;});
-            std::sort (validTx.begin(), validTx.end(),
-                            [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
-                                {return x.first < y.first;});
-
-            if (builtTx == validTx)
+            if (b->second != v->second)
             {
-                WriteLog (lsERROR, LedgerMaster) <<
-                    "MISMATCH with same " << builtTx.size() << " tx";
+                // Same transaction with different metadata
+                log_metadata_difference(builtLedger, validLedger, b->first);
             }
-            else
-            {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ "
-                    << builtTx.size() << " built, " << validTx.size() << " valid";
-                // Log all differences between built and valid ledgers
-                auto b = builtTx.cbegin();
-                auto be = builtTx.cend();
-                auto v = validTx.cbegin();
-                auto ve = validTx.cend();
-                while (b != be && v != ve)
-                {
-                    if (b->first < v->first)
-                    {
-                        // b->first in built but not in valid
-                        log_one(builtLedger, b->first, "valid");
-                        ++b;
-                    }
-                    else if (v->first < b->first)
-                    {
-                        // v->first in valid but not in built
-                        log_one(validLedger, v->first, "built");
-                        ++v;
-                    }
-                    else  // b->first == v->first, same transaction
-                    {
-                        if (b->second != v->second)
-                        {
-                            // Same transaction with different metadata
-                            log_metadata_difference(builtLedger, validLedger,
-                                                                  b->first);
-                        }
-                        ++b;
-                        ++v;
-                    }
-                }
-                // all of these are in built but not in valid
-                for (; b != be; ++b)
-                    log_one(builtLedger, b->first, "valid");
-                // all of these are in valid but not in built
-                for (; v != ve; ++v)
-                    log_one(validLedger, v->first, "built");
-            }
+            ++b;
+            ++v;
         }
     }
-    else
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH cannot be analyzed";
+    // all of these are in built but not in valid
+    for (; b != be; ++b)
+        log_one(builtLedger, b->first, "valid");
+    // all of these are in valid but not in built
+    for (; v != ve; ++v)
+        log_one(validLedger, v->first, "built");
 }
 
 void LedgerHistory::builtLedger (Ledger::ref ledger)
