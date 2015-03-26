@@ -1,4 +1,8 @@
 language: cpp
+env:
+  # Output of `travis encrypt COVERALLS_REPO_TOKEN=$repo_token -r ripple/rippled`
+  # It's possible to have more than one `secure` key
+  secure: "JhYNCqVQRSG0f6qwL//hHPaJS4d2XPseyDGHQxCn3KbMflZcqbVl6fBzjVOiID2CfBs/SZEPDW2B7x2ElXWCwtp+HEyB8la1Gy3xjP5rauIRxe50EWu705v3fWGY4yk5KcXL8UjVBa7EZDlhIbbyX2hfWBp0jHRh0DxX6Ha9D80="
 compiler:
   - clang
   - gcc
@@ -16,8 +20,11 @@ before_install:
   - sudo apt-get install -qq protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
   # We need gcc >= 4.8 for some c++11 features
   - sudo apt-get install -qq gcc-4.8
+  # - sudo apt-get install gcov-4.8
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
+  - sudo update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-4.8 90
   - sudo update-alternatives --set gcc /usr/bin/gcc-4.8
+  - sudo update-alternatives --set gcov /usr/bin/gcov-4.8
   # Stuff is gold. Nuff said ;)
   - sudo apt-get -y install binutils-gold
   # We can get a backtrace if the guy crashes
@@ -30,15 +37,16 @@ before_install:
   - ls -lah ~/.npm || mkdir ~/.npm
   # Make sure we own it
   - sudo chown -R $USER ~/.npm
+  - sudo pip install git+https://github.com/eddyxu/cpp-coveralls.git
 
 script:
   # Set so any failing command will abort the build
   - set -e
-  # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
-  - scons $CC.debug
-  # We can be sure we're using the build/$CC.debug variant (-f so never err)
+  # $CC will be either `clang` or `gcc` (If only we could do -j12 ;) .
+  - scons $CC.coverage
+  # We can be sure we're using the build/$CC.coverage variant (-f so never err)
   - rm -f build/rippled 
-  - export RIPPLED_PATH="$PWD/build/$CC.debug/rippled"
+  - export RIPPLED_PATH="$PWD/build/$CC.coverage/rippled"
   # See what we've actually built
   - ldd $RIPPLED_PATH
   # Run unittests (under gdb)
@@ -47,7 +55,18 @@ script:
     echo "run" >> script.gdb
     echo "backtrace full" >> script.gdb 
     # gdb --help
-  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args $RIPPLED_PATH --unittest
+  - $RIPPLED_PATH --unittest
+  # Only report results to coveralls for ripple/rippled
+  # [ "$TRAVIS_PULL_REQUEST" != "false" ]
+  - | # report coverage to coveralls
+    if [ "$CC" = "gcc" ] &&
+       [ "$TRAVIS_REPO_SLUG" = "ripple/rippled" ];
+    then 
+      # TODO: pipe via `&> /dev/null` once this is debugged. This overflows the
+      # html log output, making it impossible to view npm test results without
+      # consulting raw logs.
+      coveralls -i src/ripple -b "$PWD"
+    fi
   - npm install
   # Use build/(gcc|clang).debug/rippled
   - |
