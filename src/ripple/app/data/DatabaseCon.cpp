@@ -47,7 +47,7 @@ DatabaseCon::DatabaseCon (Setup const& setup,
         {
             *session_ << initStrings[i];
         }
-        catch (soci::soci_error& e)
+        catch (soci::soci_error&)
         {
             // ignore errors
         }
