@@ -116,6 +116,7 @@ size_t getKBUsedAll (soci::session& s)
 {
     auto be = dynamic_cast<soci::sqlite3_session_backend*>(s.get_backend ());
     assert (be);  // Make sure the backend is sqlite
+    (void) be;
     return static_cast<int>(sqlite_api::sqlite3_memory_used () / 1024);
 }
 
@@ -124,6 +125,7 @@ size_t getKBUsedDB (soci::session& s)
     // This function will have to be customized when other backends are added
     auto be = dynamic_cast<soci::sqlite3_session_backend*>(s.get_backend ());
     assert (be);
+    (void) be;
     int cur = 0, hiw = 0;
     sqlite_api::sqlite3_db_status (
         be->conn_, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
