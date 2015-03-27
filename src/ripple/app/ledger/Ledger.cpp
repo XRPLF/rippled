@@ -616,7 +616,8 @@ bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
     return true;
 }
 
-uint256 Ledger::getHash ()
+uint256 const&
+Ledger::getHash ()
 {
     if (!mValidHash)
         updateHash ();

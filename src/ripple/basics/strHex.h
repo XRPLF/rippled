@@ -26,14 +26,24 @@
 #define RIPPLE_BASICS_STRHEX_H_INCLUDED
 
 #include <string>
-    
+
 namespace ripple {
 
 /** Converts an integer to the corresponding hex digit
     @param iDigit 0-15 inclusive
-    @return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
+    @return a character from '0'-'9' or 'A'-'F'.
 */
-char charHex (int iDigit);
+inline
+char
+charHex (unsigned int digit)
+{
+    static
+    char const xtab[] = "0123456789ABCDEF";
+
+    assert (digit < 16);
+
+    return xtab[digit];
+}
 
 /** @{ */
 /** Converts a hex digit to the corresponding integer

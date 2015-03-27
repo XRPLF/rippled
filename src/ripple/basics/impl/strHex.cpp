@@ -19,21 +19,8 @@
 
 #include <BeastConfig.h>
 #include <algorithm>
-    
+
 namespace ripple {
-
-char charHex (int iDigit)
-{
-    if (iDigit >= 0)
-    {
-        if(iDigit < 10)
-            return '0' + iDigit;
-        if(iDigit < 16)
-            return 'A' - 10 + iDigit;
-    }
-
-    return 0;
-}
 
 int charUnHex (unsigned char c)
 {

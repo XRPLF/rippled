@@ -187,7 +187,7 @@ public:
     void addRaw (Serializer & s) const;
     void setRaw (Serializer & s, bool hasPrefix);
 
-    uint256 getHash ();
+    uint256 const& getHash ();
     uint256 const& getParentHash () const
     {
         return mParentHash;
