@@ -1549,7 +1549,16 @@ bool Ledger::walkLedger () const
     std::vector <SHAMapMissingNode> missingNodes1;
     std::vector <SHAMapMissingNode> missingNodes2;
 
-    mAccountStateMap->walkMap (missingNodes1, 32);
+    if (mAccountStateMap->getHash().isZero() &&
+        ! mAccountHash.isZero() &&
+        ! mAccountStateMap->fetchRoot (mAccountHash, nullptr))
+    {
+        missingNodes1.emplace_back (SHAMapType::STATE, mAccountHash);
+    }
+    else
+    {
+        mAccountStateMap->walkMap (missingNodes1, 32);
+    }
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty ())
     {
@@ -1559,7 +1568,16 @@ bool Ledger::walkLedger () const
             << "First: " << missingNodes1[0];
     }
 
-    mTransactionMap->walkMap (missingNodes2, 32);
+    if (mTransactionMap->getHash().isZero() &&
+        mTransHash.isNonZero() &&
+        ! mTransactionMap->fetchRoot (mTransHash, nullptr))
+    {
+        missingNodes2.emplace_back (SHAMapType::TRANSACTION, mTransHash);
+    }
+    else
+    {
+        mTransactionMap->walkMap (missingNodes2, 32);
+    }
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty ())
     {
@@ -1584,12 +1602,12 @@ bool Ledger::assertSane () const
         return true;
     }
 
-    WriteLog (lsFATAL, Ledger) << "ledger is not sane";
-
     Json::Value j = getJson (*this);
 
     j [jss::accountTreeHash] = to_string (mAccountHash);
     j [jss::transTreeHash] = to_string (mTransHash);
+
+    WriteLog (lsFATAL, Ledger) << "ledger is not sane" << j;
 
     assert (false);
 

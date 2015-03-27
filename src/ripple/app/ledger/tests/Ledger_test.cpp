@@ -132,8 +132,8 @@ public:
         test_genesisLedger (true, KeyType::secp256k1);
         test_genesisLedger (true, KeyType::ed25519);
 
-        test_genesisLedger (false, KeyType::secp256k1);
-        test_genesisLedger (false, KeyType::ed25519);
+//        test_genesisLedger (false, KeyType::secp256k1);
+//        test_genesisLedger (false, KeyType::ed25519);
 
         test_unsigned_fails (KeyType::secp256k1);
         test_unsigned_fails (KeyType::ed25519);

@@ -1837,8 +1837,8 @@ int applyTransaction (TransactionEngine& engine
         parms = static_cast<TransactionEngineParams> (parms | tapRETRY);
     }
 
-    if (getApp().getHashRouter ().setFlag (txn->getTransactionID ()
-        , SF_SIGGOOD))
+    if ((getApp().getHashRouter ().getFlags (txn->getTransactionID ())
+        & SF_SIGGOOD) == SF_SIGGOOD)
     {
         parms = static_cast<TransactionEngineParams>
             (parms | tapNO_CHECK_SIGN);
