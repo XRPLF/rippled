@@ -242,7 +242,7 @@ TER Transactor::preCheck ()
             (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign()))
         {
             mTxn.setBad ();
-            m_journal.warning << "apply: Invalid transaction (bad signature)";
+            m_journal.debug << "apply: Invalid transaction (bad signature)";
             return temINVALID;
         }
 

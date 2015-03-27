@@ -1215,10 +1215,12 @@ bool ApplicationImp::loadOldLedger (
             // this ledger holds the transactions we want to replay
             replayLedger = loadLedger;
 
-            // this is the prior ledger
+            m_journal.info << "Loading parent ledger";
+
             loadLedger = Ledger::loadByHash (replayLedger->getParentHash ());
             if (!loadLedger)
             {
+                m_journal.info << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
@@ -1287,6 +1289,7 @@ bool ApplicationImp::loadOldLedger (
                 txn->getSTransaction()->add(s);
                 if (!cur->addTransaction(it->getTag(), s))
                     m_journal.warning << "Unable to add transaction " << it->getTag();
+                getApp().getHashRouter().setFlag (it->getTag(), SF_SIGGOOD);
             }
 
             // Switch to the mutable snapshot
