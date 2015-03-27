@@ -248,8 +248,6 @@ int run (int argc, char** argv)
     ("help,h", "Display this message.")
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
-    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
-    ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("shutdowntest", po::value <std::string> ()->implicit_value (""), "Perform shutdown tests.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
@@ -424,26 +422,6 @@ int run (int argc, char** argv)
     if (iResult == 0)
     {
         // These overrides must happen after the config file is loaded.
-
-        // Override the RPC destination IP address
-        //
-        if (vm.count ("rpc_ip"))
-        {
-            // VFALCO TODO This is currently broken
-            //getConfig ().setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
-            //getConfig().overwrite("rpc", jss::ip, vm["rpc_ip"].as<std::string>());
-        }
-
-        // Override the RPC destination port number
-        //
-        if (vm.count ("rpc_port"))
-        {
-            // VFALCO TODO This should be a short.
-            // VFALCO TODO This is currently broken
-            //getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
-            //getConfig().overwrite("rpc", jss::port, vm["rpc_port"].as<std::string>());
-        }
-
         if (vm.count ("quorum"))
         {
             getConfig ().VALIDATION_QUORUM = vm["quorum"].as <int> ();
