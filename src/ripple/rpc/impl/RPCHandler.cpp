@@ -149,7 +149,9 @@ error_code_i fillHandler (Context& context,
     if (!getConfig ().RUN_STANDALONE
         && (handler->condition_ & NEEDS_CURRENT_LEDGER)
         && (getApp().getLedgerMaster().getValidatedLedgerAge() >
-            Tuning::maxValidatedLedgerAge))
+            Tuning::maxValidatedLedgerAge
+            || context.netOps.getCurrentLedgerID() <=
+                context.netOps.getValidatedLedger ()->getLedgerSeq ()))
     {
         return rpcNO_CURRENT;
     }
