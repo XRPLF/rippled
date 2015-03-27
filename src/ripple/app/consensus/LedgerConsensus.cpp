@@ -43,6 +43,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/utility/make_lock.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -1433,10 +1434,10 @@ private:
 
         s.set_ledgerseq (ledger.getLedgerSeq ());
         s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
-        uint256 hash = ledger.getParentHash ();
-        s.set_ledgerhashprevious (hash.begin (), hash.size ());
-        hash = ledger.getHash ();
-        s.set_ledgerhash (hash.begin (), hash.size ());
+        s.set_ledgerhashprevious(ledger.getParentHash ().begin (),
+            std::decay_t<decltype(ledger.getParentHash ())>::bytes);
+        s.set_ledgerhash (ledger.getHash ().begin (),
+            std::decay_t<decltype(ledger.getHash ())>::bytes);
 
         std::uint32_t uMin, uMax;
         if (!getApp().getOPs ().getFullValidatedRange (uMin, uMax))
