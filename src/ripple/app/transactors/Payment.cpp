@@ -66,11 +66,11 @@ public:
         bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
         bool const bPaths = mTxn.isFieldPresent (sfPaths);
         bool const bMax = mTxn.isFieldPresent (sfSendMax);
-        
+
         STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
-        
+
         STAmount maxSourceAmount;
-        
+
         if (bMax)
             maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
         else if (saDstAmount.isNative ())
@@ -192,7 +192,7 @@ public:
 
         // Open a ledger for editing.
         auto const index = getAccountRootIndex (uDstAccountID);
-        SLE::pointer sleDst (mEngine->entryCache (ltACCOUNT_ROOT, index));
+        SLE::pointer sleDst (mEngine->view().entryCache (ltACCOUNT_ROOT, index));
 
         if (!sleDst)
         {
@@ -234,7 +234,7 @@ public:
 
             // Create the account.
             auto const newIndex = getAccountRootIndex (uDstAccountID);
-            sleDst = mEngine->entryCreate (ltACCOUNT_ROOT, newIndex);
+            sleDst = mEngine->view().entryCreate (ltACCOUNT_ROOT, newIndex);
             sleDst->setFieldAccount (sfAccount, uDstAccountID);
             sleDst->setFieldU32 (sfSequence, 1);
         }
@@ -255,7 +255,7 @@ public:
             // Tell the engine that we are intending to change the the destination
             // account.  The source account gets always charged a fee so it's always
             // marked as modified.
-            mEngine->entryModify (sleDst);
+            mEngine->view().entryModify (sleDst);
         }
 
         TER terResult;

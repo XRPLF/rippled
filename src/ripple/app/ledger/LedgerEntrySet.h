@@ -126,11 +126,6 @@ public:
         return mSeq;
     }
 
-    TransactionEngineParams getParams () const
-    {
-        return mParams;
-    }
-
     void bumpSeq ()
     {
         ++mSeq;
@@ -146,14 +141,9 @@ public:
         return mLedger;
     }
 
-    bool enforceFreeze () const
-    {
-        return mLedger->enforceFreeze ();
-    }
-
     // basic entry functions
     SLE::pointer getEntry (uint256 const& index, LedgerEntryAction&);
-    LedgerEntryAction hasEntry (uint256 const& index) const;
+
     void entryCache (SLE::ref);     // Add this entry to the cache
     void entryCreate (SLE::ref);    // This entry will be created
     void entryDelete (SLE::ref);    // This entry will be deleted

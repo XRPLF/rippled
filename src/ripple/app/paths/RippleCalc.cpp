@@ -109,7 +109,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
     if (pathState->status() == tesSUCCESS)
         pathState->checkNoRipple (uDstAccountID_, uSrcAccountID_);
 
-    if (pathState->status() == tesSUCCESS && mActiveLedger.enforceFreeze ())
+    if (pathState->status() == tesSUCCESS)
         pathState->checkFreeze ();
 
     pathState->setIndex (pathStateList_.size ());

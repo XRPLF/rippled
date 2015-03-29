@@ -344,10 +344,9 @@ public:
                 if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
                     tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
 
-                bool didApply;
-                engine.applyTransaction (*it.second, tepFlags, didApply);
+                auto ret = engine.applyTransaction (*it.second, tepFlags);
 
-                if (didApply)
+                if (ret.second)
                     ++recovers;
 
                 // If a transaction is recovered but hasn't been relayed,
@@ -390,7 +389,7 @@ public:
             ScopedLockType sl (m_mutex);
             ledger = mCurrentLedger.getMutable ();
             engine.setLedger (ledger);
-            result = engine.applyTransaction (*txn, params, didApply);
+            std::tie(result, didApply) = engine.applyTransaction (*txn, params);
         }
         if (didApply)
         {

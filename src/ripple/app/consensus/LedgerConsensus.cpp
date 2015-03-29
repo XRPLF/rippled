@@ -1852,27 +1852,26 @@ int applyTransaction (TransactionEngine& engine
 
     try
     {
-        bool didApply;
-        TER result = engine.applyTransaction (*txn, parms, didApply);
+        auto result = engine.applyTransaction (*txn, parms);
 
-        if (didApply)
+        if (result.second)
         {
             WriteLog (lsDEBUG, LedgerConsensus)
-            << "Transaction success: " << transHuman (result);
+            << "Transaction applied: " << transHuman (result.first);
             return LedgerConsensusImp::resultSuccess;
         }
 
-        if (isTefFailure (result) || isTemMalformed (result) ||
-            isTelLocal (result))
+        if (isTefFailure (result.first) || isTemMalformed (result.first) ||
+            isTelLocal (result.first))
         {
             // failure
             WriteLog (lsDEBUG, LedgerConsensus)
-                << "Transaction failure: " << transHuman (result);
+                << "Transaction failure: " << transHuman (result.first);
             return LedgerConsensusImp::resultFail;
         }
 
         WriteLog (lsDEBUG, LedgerConsensus)
-            << "Transaction retry: " << transHuman (result);
+            << "Transaction retry: " << transHuman (result.first);
         return LedgerConsensusImp::resultRetry;
     }
     catch (...)

@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>
+#include <utility>
 
 namespace ripple {
 
@@ -37,69 +38,47 @@ public:
     static char const* getCountedObjectName () { return "TransactionEngine"; }
 
 private:
-    LedgerEntrySet      mNodes;
+    LedgerEntrySet mNodes;
 
-    TER setAuthorized (const STTx & txn, bool bMustSetGenerator);
-    TER checkSig (const STTx & txn);
+    void txnWrite ();
 
 protected:
-    Ledger::pointer     mLedger;
-    int                 mTxnSeq;
-
-    Account             mTxnAccountID;
-    SLE::pointer        mTxnAccount;
-
-    void                txnWrite ();
+    Ledger::pointer mLedger;
+    int mTxnSeq = 0;
 
 public:
-    typedef std::shared_ptr<TransactionEngine> pointer;
+    TransactionEngine () = default;
 
-    TransactionEngine () : mTxnSeq (0)
-    {
-        ;
-    }
-    TransactionEngine (Ledger::ref ledger) : mLedger (ledger), mTxnSeq (0)
+    TransactionEngine (Ledger::ref ledger)
+        : mLedger (ledger)
     {
         assert (mLedger);
     }
 
-    LedgerEntrySet& view ()
+    LedgerEntrySet&
+    view ()
     {
         return mNodes;
     }
-    Ledger::ref getLedger ()
+
+    Ledger::ref
+    getLedger ()
     {
         return mLedger;
     }
-    void setLedger (Ledger::ref ledger)
+
+    void
+    setLedger (Ledger::ref ledger)
     {
         assert (ledger);
         mLedger = ledger;
     }
 
-    // VFALCO TODO Remove these pointless wrappers
-    SLE::pointer entryCreate (LedgerEntryType type, uint256 const& index)
-    {
-        return mNodes.entryCreate (type, index);
-    }
+    std::pair<TER, bool>
+    applyTransaction (STTx const&, TransactionEngineParams);
 
-    SLE::pointer entryCache (LedgerEntryType type, uint256 const& index)
-    {
-        return mNodes.entryCache (type, index);
-    }
-
-    void entryDelete (SLE::ref sleEntry)
-    {
-        mNodes.entryDelete (sleEntry);
-    }
-
-    void entryModify (SLE::ref sleEntry)
-    {
-        mNodes.entryModify (sleEntry);
-    }
-
-    TER applyTransaction (const STTx&, TransactionEngineParams, bool & didApply);
-    bool checkInvariants (TER result, const STTx & txn, TransactionEngineParams params);
+    bool
+    checkInvariants (TER result, STTx const& txn, TransactionEngineParams params);
 };
 
 inline TransactionEngineParams operator| (const TransactionEngineParams& l1, const TransactionEngineParams& l2)

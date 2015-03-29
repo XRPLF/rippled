@@ -78,7 +78,7 @@ public:
 
         uint256 const offerIndex (getOfferIndex (mTxnAccountID, uOfferSequence));
 
-        SLE::pointer sleOffer (mEngine->entryCache (ltOFFER, 
+        SLE::pointer sleOffer (mEngine->view().entryCache (ltOFFER,
             offerIndex));
 
         if (sleOffer)

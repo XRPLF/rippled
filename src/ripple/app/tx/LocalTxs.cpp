@@ -156,9 +156,7 @@ public:
         {
             try
             {
-                TransactionEngineParams parms = tapOPEN_LEDGER;
-                bool didApply;
-                engine.applyTransaction (*it.second, parms, didApply);
+                engine.applyTransaction (*it.second, tapOPEN_LEDGER);
             }
             catch (...)
             {

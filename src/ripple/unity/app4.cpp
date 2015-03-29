@@ -26,7 +26,6 @@
 #include <ripple/app/paths/RippleState.cpp>
 #include <ripple/app/peers/UniqueNodeList.cpp>
 #include <ripple/app/transactors/Transactor.h>
-#include <ripple/app/tx/TransactionCheck.cpp>
 #include <ripple/app/tx/TransactionMaster.cpp>
 #include <ripple/app/tx/Transaction.cpp>
 #include <ripple/app/tx/TransactionEngine.cpp>
