@@ -262,12 +262,10 @@ public:
     NodeCache m_tempNodeCache;
     std::unique_ptr <CollectorManager> m_collectorManager;
     detail::AppFamily family_;
-    TreeNodeCache m_treeNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
 
     std::unique_ptr <Resource::Manager> m_resourceManager;
-    std::unique_ptr <FullBelowCache> m_fullBelowCache;
 
     // These are Stoppable-related
     std::unique_ptr <JobQueue> m_jobQueue;
@@ -343,18 +341,11 @@ public:
 
         , family_ (*m_nodeStore, *m_collectorManager)
 
-        , m_treeNodeCache ("TreeNodeCache", 65536, 60, get_seconds_clock (),
-            deprecatedLogs().journal("TaggedCache"))
-
         , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
 
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), m_logs.journal("Resource")))
-
-        , m_fullBelowCache (std::make_unique <FullBelowCache> (
-            "full_below", get_seconds_clock (), m_collectorManager->collector (),
-                fullBelowTargetSize, fullBelowExpirationSeconds))
 
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
@@ -469,11 +460,6 @@ public:
         return family_;
     }
 
-    FullBelowCache& getFullBelowCache ()
-    {
-        return *m_fullBelowCache;
-    }
-
     JobQueue& getJobQueue ()
     {
         return *m_jobQueue;
@@ -534,11 +520,6 @@ public:
     NodeCache& getTempNodeCache ()
     {
         return m_tempNodeCache;
-    }
-
-    TreeNodeCache&  getTreeNodeCache ()
-    {
-        return m_treeNodeCache;
     }
 
     NodeStore::Database& getNodeStore ()
@@ -807,8 +788,8 @@ public:
         m_ledgerMaster->tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
         m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
-        m_treeNodeCache.setTargetSize (getConfig ().getSize (siTreeCacheSize));
-        m_treeNodeCache.setTargetAge (getConfig ().getSize (siTreeCacheAge));
+        family().treecache().setTargetSize (getConfig ().getSize (siTreeCacheSize));
+        family().treecache().setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
         //----------------------------------------------------------------------
         //
@@ -1017,7 +998,7 @@ public:
         //         have listeners register for "onSweep ()" notification.
         //
 
-        m_fullBelowCache->sweep ();
+        family_.fullbelow().sweep ();
 
         logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, std::bind (
             &TransactionMaster::sweep, &m_txMaster));
@@ -1044,7 +1025,7 @@ public:
             &AcceptedLedger::sweep);
 
         logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,std::bind (
-            &TreeNodeCache::sweep, &m_treeNodeCache));
+            &TreeNodeCache::sweep, &family().treecache()));
 
         logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, std::bind (
             &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
