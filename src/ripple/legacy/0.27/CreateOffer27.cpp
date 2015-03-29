@@ -39,7 +39,7 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
     /* Only valid for custom currencies */
     assert (!isXRP (issue.currency));
 
-    SLE::pointer const issuerAccount = mEngine->entryCache (
+    SLE::pointer const issuerAccount = mEngine->view().entryCache (
         ltACCOUNT_ROOT, getAccountRootIndex (issue.account));
 
     if (!issuerAccount)
@@ -55,7 +55,7 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
 
     if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
     {
-        SLE::pointer const trustLine (mEngine->entryCache (
+        SLE::pointer const trustLine (mEngine->view().entryCache (
             ltRIPPLE_STATE, getRippleStateIndex (
                 mTxnAccountID, issue.account, issue.currency)));
 
@@ -236,7 +236,7 @@ CreateOffer::doApply()
 
     view.bumpSeq (); // Begin ledger variance.
 
-    SLE::pointer sleCreator = mEngine->entryCache (
+    SLE::pointer sleCreator = mEngine->view().entryCache (
         ltACCOUNT_ROOT, getAccountRootIndex (mTxnAccountID));
 
     if (uTxFlags & tfOfferCreateMask)
@@ -336,7 +336,7 @@ CreateOffer::doApply()
     {
         uint256 const uCancelIndex (
             getOfferIndex (mTxnAccountID, uCancelSequence));
-        SLE::pointer sleCancel = mEngine->entryCache (ltOFFER, uCancelIndex);
+        SLE::pointer sleCancel = mEngine->view().entryCache (ltOFFER, uCancelIndex);
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed as we are processing.
@@ -571,7 +571,7 @@ CreateOffer::doApply()
                     saTakerGets.getHumanCurrency ();
             }
 
-            SLE::pointer sleOffer (mEngine->entryCreate (ltOFFER, uLedgerIndex));
+            SLE::pointer sleOffer (mEngine->view().entryCreate (ltOFFER, uLedgerIndex));
 
             sleOffer->setFieldAccount (sfAccount, mTxnAccountID);
             sleOffer->setFieldU32 (sfSequence, uSequence);

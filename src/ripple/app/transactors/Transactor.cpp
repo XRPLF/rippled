@@ -266,7 +266,7 @@ TER Transactor::apply ()
         return terResult;
 
     // Find source account
-    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
+    mTxnAccount = mEngine->view().entryCache (ltACCOUNT_ROOT,
         getAccountRootIndex (mTxnAccountID));
 
     calculateFee ();
@@ -303,7 +303,7 @@ TER Transactor::apply ()
     if (terResult != tesSUCCESS) return (terResult);
 
     if (mTxnAccount)
-        mEngine->entryModify (mTxnAccount);
+        mEngine->view().entryModify (mTxnAccount);
 
     return doApply ();
 }

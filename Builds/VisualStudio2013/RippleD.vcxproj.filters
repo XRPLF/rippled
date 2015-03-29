@@ -2613,9 +2613,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionAcquire.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TransactionCheck.cpp">
-      <Filter>ripple\app\tx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\TransactionEngine.cpp">
       <Filter>ripple\app\tx</Filter>
     </ClCompile>
@@ -5287,9 +5284,6 @@
       <Filter>soci\src\core</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
       <Filter>soci\src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">

@@ -1045,7 +1045,6 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         if (callback)
             callback (trans, r);
 
-
         if (r == tefFAILURE)
             throw Fault (IO_ERROR);
 

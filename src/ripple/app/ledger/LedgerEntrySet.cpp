@@ -122,16 +122,6 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
     return sleEntry;
 }
 
-LedgerEntryAction LedgerEntrySet::hasEntry (uint256 const& index) const
-{
-    std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find (index);
-
-    if (it == mEntries.end ())
-        return taaNONE;
-
-    return it->second.mAction;
-}
-
 void LedgerEntrySet::entryCache (SLE::ref sle)
 {
     assert (mLedger);
@@ -1187,7 +1177,7 @@ STAmount LedgerEntrySet::accountHolds (
 
 bool LedgerEntrySet::isGlobalFrozen (Account const& issuer)
 {
-    if (!enforceFreeze () || isXRP (issuer))
+    if (isXRP (issuer))
         return false;
 
     SLE::pointer sle = entryCache (ltACCOUNT_ROOT, getAccountRootIndex (issuer));
@@ -1204,7 +1194,7 @@ bool LedgerEntrySet::isFrozen(
     Currency const& currency,
     Account const& issuer)
 {
-    if (!enforceFreeze () || isXRP (currency))
+    if (isXRP (currency))
         return false;
 
     SLE::pointer sle = entryCache (ltACCOUNT_ROOT, getAccountRootIndex (issuer));

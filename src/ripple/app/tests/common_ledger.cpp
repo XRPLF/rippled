@@ -128,15 +128,12 @@ void
 applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 {
     TransactionEngine engine(ledger);
-    bool didApply = false;
-    auto r = engine.applyTransaction(tx, tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN),
-        didApply);
-    if (r != tesSUCCESS)
-        throw std::runtime_error(
-        "r != tesSUCCESS");
-    if (!didApply)
-        throw std::runtime_error(
-        "didApply");
+    auto r = engine.applyTransaction(tx,
+        tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN));
+    if (r.first != tesSUCCESS)
+        throw std::runtime_error("r != tesSUCCESS");
+    if (!r.second)
+        throw std::runtime_error("didApply");
 }
 
 // Create genesis ledger from a start amount in drops, and the public
@@ -173,7 +170,7 @@ createAccount(std::string const& passphrase, KeyType keyType)
 }
 
 TestAccount
-createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+createAndFundAccount(TestAccount& from, std::string const& passphrase,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer const& ledger, bool sign)
 {
@@ -198,14 +195,14 @@ createAndFundAccounts(TestAccount& from, std::vector<std::string> passphrases,
 }
 
 std::map<std::string, TestAccount>
-createAndFundAccountsWithFlags(TestAccount& from, 
+createAndFundAccountsWithFlags(TestAccount& from,
     std::vector<std::string> passphrases,
     KeyType keyType, std::uint64_t amountDrops,
-    Ledger::pointer& ledger, 
+    Ledger::pointer& ledger,
     Ledger::pointer& LCL,
     const std::uint32_t flags, bool sign)
 {
-    auto accounts = createAndFundAccounts(from, 
+    auto accounts = createAndFundAccounts(from,
         passphrases, keyType, amountDrops, ledger, sign);
     close_and_advance(ledger, LCL);
     setAllAccountFlags(accounts, ledger, flags);
@@ -244,7 +241,7 @@ const std::uint32_t flags, bool sign)
     }
 }
 
-void 
+void
 clearAccountFlags(TestAccount& account, Ledger::pointer const& ledger,
     const std::uint32_t flags, bool sign)
 {
@@ -284,7 +281,7 @@ getPaymentTx(TestAccount& from, TestAccount const& to,
     std::uint64_t amountDrops,
     bool sign)
 {
-    Json::Value tx_json = getPaymentJson(from, to, 
+    Json::Value tx_json = getPaymentJson(from, to,
         std::to_string(amountDrops));
     return parseTransaction(from, tx_json, sign);
 }
@@ -451,7 +448,7 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     }
     log << "Source currencies: " << jvSrcCurrencies;
 
-    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount, 
+    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount,
         ledger, jvSrcCurrencies, contextPaths, level);
     if(!result.first)
         throw std::runtime_error(
@@ -461,12 +458,12 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 }
 
 SLE::pointer
-getLedgerEntryRippleState(Ledger::pointer ledger, 
-    TestAccount const& account1, TestAccount const& account2, 
+getLedgerEntryRippleState(Ledger::pointer ledger,
+    TestAccount const& account1, TestAccount const& account2,
     Currency currency)
 {
     auto uNodeIndex = getRippleStateIndex(
-        account1.pk.getAccountID(), account2.pk.getAccountID(), 
+        account1.pk.getAccountID(), account2.pk.getAccountID(),
         to_currency(currency.getCurrency()));
 
     if (!uNodeIndex.isNonZero())
@@ -477,10 +474,10 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
 }
 
 void
-verifyBalance(Ledger::pointer ledger, TestAccount const& account, 
+verifyBalance(Ledger::pointer ledger, TestAccount const& account,
     Amount const& amount)
 {
-    auto sle = getLedgerEntryRippleState(ledger, account, 
+    auto sle = getLedgerEntryRippleState(ledger, account,
         amount.getIssuer(), amount.getCurrency());
     if (!sle)
         throw std::runtime_error(

@@ -119,10 +119,10 @@ private:
 
         auto const index = getLedgerAmendmentIndex ();
 
-        SLE::pointer amendmentObject (mEngine->entryCache (ltAMENDMENTS, index));
+        SLE::pointer amendmentObject (mEngine->view().entryCache (ltAMENDMENTS, index));
 
         if (!amendmentObject)
-            amendmentObject = mEngine->entryCreate(ltAMENDMENTS, index);
+            amendmentObject = mEngine->view().entryCreate(ltAMENDMENTS, index);
 
         STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
 
@@ -134,7 +134,7 @@ private:
 
         amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
-        mEngine->entryModify (amendmentObject);
+        mEngine->view().entryModify (amendmentObject);
 
         getApp().getAmendmentTable ().enable (amendment);
 
@@ -148,10 +148,10 @@ private:
     {
         auto const index = getLedgerFeeIndex ();
 
-        SLE::pointer feeObject = mEngine->entryCache (ltFEE_SETTINGS, index);
+        SLE::pointer feeObject = mEngine->view().entryCache (ltFEE_SETTINGS, index);
 
         if (!feeObject)
-            feeObject = mEngine->entryCreate (ltFEE_SETTINGS, index);
+            feeObject = mEngine->view().entryCreate (ltFEE_SETTINGS, index);
 
         // VFALCO-FIXME this generates errors
         // m_journal.trace <<
@@ -166,7 +166,7 @@ private:
         feeObject->setFieldU32 (
             sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
 
-        mEngine->entryModify (feeObject);
+        mEngine->view().entryModify (feeObject);
 
         // VFALCO-FIXME this generates errors
         // m_journal.trace <<
