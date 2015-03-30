@@ -295,11 +295,94 @@ public:
                 remove (dbPath);
         }
     }
+    void testSQLiteDeleteWithSubselect()
+    {
+        testcase ("deleteWithSubselect");
+        BasicConfig c;
+        setupSQLiteConfig (c, getDatabasePath ());
+        SociConfig sc (c, "SociTestDB");
+        {
+            soci::session s;
+            sc.open (s);
+            const char* dbInit[] = {
+                "BEGIN TRANSACTION;",
+                "CREATE TABLE Ledgers (                     \
+                LedgerHash      CHARACTER(64) PRIMARY KEY,  \
+                LedgerSeq       BIGINT UNSIGNED             \
+            );",
+                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
+
+                "CREATE TABLE Validations   (  \
+                LedgerHash  CHARACTER(64)      \
+            );",
+                "CREATE INDEX ValidationsByHash ON \
+                Validations(LedgerHash);",
+                "END TRANSACTION;"};
+            int dbInitCount = std::extent<decltype(dbInit)>::value;
+            for (int i = 0; i < dbInitCount; ++i)
+            {
+                s << dbInit[i];
+            }
+            char lh[65];
+            memset (lh, 'a', 64);
+            lh[64] = '\0';
+            int toIncIndex = 63;
+            int const numRows = 16;
+            std::vector<std::string> ledgerHashes;
+            std::vector<int> ledgerIndexes;
+            ledgerHashes.reserve(numRows);
+            ledgerIndexes.reserve(numRows);
+            for (int i = 0; i < numRows; ++i)
+            {
+                ++lh[toIncIndex];
+                if (lh[toIncIndex] == 'z')
+                    --toIncIndex;
+                ledgerHashes.emplace_back(lh);
+                ledgerIndexes.emplace_back(i);
+            }
+            std::string slh (lh);
+            s << "INSERT INTO Ledgers (LedgerHash, LedgerSeq) VALUES "
+                 "(:lh, :li);",
+                soci::use (ledgerHashes), soci::use (ledgerIndexes);
+            s << "INSERT INTO Validations (LedgerHash) VALUES "
+                 "(:lh);", soci::use (ledgerHashes);
+
+            std::vector<int> ledgersLS (numRows * 2);
+            std::vector<std::string> validationsLH (numRows * 2);
+            s << "SELECT LedgerSeq FROM Ledgers;", soci::into (ledgersLS);
+            s << "SELECT LedgerHash FROM Validations;",
+                soci::into (validationsLH);
+            expect (ledgersLS.size () == numRows &&
+                    validationsLH.size () == numRows);
+            s << "DELETE FROM Validations WHERE LedgerHash IN "
+                 "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
+                 "Validations.LedgerHash=Ledgers.LedgerHash WHERE "
+                 "Ledgers.LedgerSeq < :num);",
+                soci::use (numRows / 2);
+            validationsLH.resize (numRows * 2);
+            s << "SELECT LedgerHash FROM Validations;",
+                soci::into (validationsLH);
+            expect (validationsLH.size () == numRows / 2);
+            for (auto i = ledgerHashes.begin () + numRows / 2;
+                 i != ledgerHashes.end ();
+                 ++i)
+            {
+                expect (find (validationsLH.begin (), validationsLH.end (), *i)
+                        != validationsLH.end ());
+            }
+        }
+        using namespace boost::filesystem;
+        // Remove the database
+        path dbPath (sc.connectionString ());
+        if (is_regular_file (dbPath))
+            remove (dbPath);
+    }
     void testSQLite ()
     {
         testSQLiteFileNames ();
         testSQLiteSession ();
         testSQLiteSelect ();
+        testSQLiteDeleteWithSubselect();
     }
     void run ()
     {

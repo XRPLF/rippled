@@ -573,8 +573,10 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
     // the validations table
     clearSql (*ledgerDb_, lastRotated,
         "SELECT MIN(LedgerSeq) FROM Ledgers;",
-        "DELETE FROM Validations WHERE Ledgers.LedgerSeq < %u"
-        " AND Validations.LedgerHash = Ledgers.LedgerHash;");
+        "DELETE FROM Validations WHERE LedgerHash IN "
+        "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
+        "Validations.LedgerHash=Ledgers.LedgerHash WHERE Ledgers.LedgerSeq < %u);");
+
     if (health())
         return;
 
