@@ -448,11 +448,6 @@ public:
         return family_;
     }
 
-    FullBelowCache& getFullBelowCache ()
-    {
-        return family_.fullbelow();
-    }
-
     JobQueue& getJobQueue ()
     {
         return *m_jobQueue;
@@ -503,11 +498,6 @@ public:
     NodeCache& getTempNodeCache ()
     {
         return m_tempNodeCache;
-    }
-
-    TreeNodeCache&  getTreeNodeCache ()
-    {
-        return family_.treecache();
     }
 
     NodeStore::Database& getNodeStore ()
@@ -776,8 +766,8 @@ public:
         m_ledgerMaster->tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
         m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
-        getTreeNodeCache().setTargetSize (getConfig ().getSize (siTreeCacheSize));
-        getTreeNodeCache().setTargetAge (getConfig ().getSize (siTreeCacheAge));
+        family().treecache().setTargetSize (getConfig ().getSize (siTreeCacheSize));
+        family().treecache().setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
         //----------------------------------------------------------------------
         //
@@ -986,7 +976,7 @@ public:
         //         have listeners register for "onSweep ()" notification.
         //
 
-        getFullBelowCache().sweep ();
+        family_.fullbelow().sweep ();
 
         logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, std::bind (
             &TransactionMaster::sweep, &m_txMaster));
@@ -1013,7 +1003,7 @@ public:
             &AcceptedLedger::sweep);
 
         logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,std::bind (
-            &TreeNodeCache::sweep, &getTreeNodeCache()));
+            &TreeNodeCache::sweep, &family().treecache()));
 
         logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, std::bind (
             &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));

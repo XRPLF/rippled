@@ -90,11 +90,9 @@ public:
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual shamap::Family&         family() = 0;
-    virtual FullBelowCache&         getFullBelowCache () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual RPC::Manager&           getRPCManager () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
-    virtual TreeNodeCache&          getTreeNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
     virtual Validators::Manager&    getValidators () = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
