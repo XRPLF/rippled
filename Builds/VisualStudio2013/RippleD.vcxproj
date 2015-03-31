@@ -1047,6 +1047,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\make_lock.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\meta.h">
@@ -1945,6 +1947,8 @@
     <ClCompile Include="..\..\src\ripple\app\tests\Path_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -3209,9 +3213,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Sign.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\SMS.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Stop.cpp">
@@ -4483,8 +4484,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>
