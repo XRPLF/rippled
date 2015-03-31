@@ -25,13 +25,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo "deb [arch=amd64] http://mirrors.ripple.com/ubuntu/ trusty stable contrib" | tee /etc/apt/sources.list.d/ripple.list 
     wget -O- -q http://mirrors.ripple.com/mirrors.ripple.com.gpg.key | apt-key add -
     apt-get -y update
-    apt-get install build-essential g++ python-dev autotools-dev libicu-dev build-essential libbz2-dev 
+    apt-get install -y build-essential g++ python-dev autotools-dev libicu-dev build-essential libbz2-dev 
     apt-get install -y boost-all-dev
     cd /src/ && scons build/rippled
     cd /
     cp /src/build/rippled rippled && strip rippled
     cp /src/doc/rippled-example.cfg rippled.cfg
-    /rippled --net
+    export LC_ALL="en_US.UTF-8" && /rippled --net
   SCRIPT
 
   config.vm.provision :shell, :inline => $script
