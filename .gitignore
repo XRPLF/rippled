@@ -76,3 +76,12 @@ My Amplifier XE Results - RippleD
 
 # Build Log
 rippled-build.log
+
+# Eclipse CDT project files
+/.cproject
+/.externalToolBuilders
+/.project
+/.settings
+
+# ignore vagrant files
+.vagrant

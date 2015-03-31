@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu1404"
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 4096
+    v.customize ["modifyvm", :id, "--cpus", 2]
+    # v.cpus = 2
+    # v.gui = true
+  end
+
+  config.vm.synced_folder "../..", "/src"
+
+  $script = <<-SCRIPT
+    #!/bin/bash
+    apt-get update
+    apt-get -y upgrade
+    apt-get -y install git scons pkg-config protobuf-compiler libprotobuf-dev libssl-dev tmux
+    apt-get install python-software-properties
+    echo "deb [arch=amd64] http://mirrors.ripple.com/ubuntu/ trusty stable contrib" | tee /etc/apt/sources.list.d/ripple.list 
+    wget -O- -q http://mirrors.ripple.com/mirrors.ripple.com.gpg.key | apt-key add -
+    apt-get -y update
+    apt-get install build-essential g++ python-dev autotools-dev libicu-dev build-essential libbz2-dev 
+    apt-get install -y boost-all-dev
+    cd /src/ && scons build/rippled
+    cd /
+    cp /src/build/rippled rippled && strip rippled
+    cp /src/doc/rippled-example.cfg rippled.cfg
+    /rippled --net
+  SCRIPT
+
+  config.vm.provision :shell, :inline => $script
+
+end
