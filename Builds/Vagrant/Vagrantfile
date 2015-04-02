@@ -7,8 +7,6 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu1404"
 
-  config.vm.provision "file", source: "init.d_rippled", destination: "init.d_rippled"
-  config.vm.provision "file", source: "rippled-example.cfg", destination: "rippled.cfg"
   config.vm.provision :shell, :inline => <<-EOT
      sudo sed -i '/LC_ALL=/d' /etc/default/locale
      echo 'LC_ALL="en_US.UTF-8"' |sudo tee -a /etc/default/locale
@@ -35,8 +33,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get install -y boost-all-dev
     cd /src/ && scons build/rippled
     cp /src/build/rippled /usr/local/sbin/rippled && strip /usr/local/sbin/rippled/rippled
-    cp /home/vagrant/rippled.cfg /etc/ripple/rippled.cfg
-    cp /home/vagrant/init.d_rippled /etc/init.d/rippled
+    mkdir -p /etc/ripple/
+    cp /vagrant/rippled-example.cfg /etc/ripple/rippled.cfg
+    cp /vagrant/init.d_rippled /etc/init.d/rippled
     chmod +x /etc/init.d/rippled
     service rippled start
   SCRIPT
