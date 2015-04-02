@@ -7,6 +7,7 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu1404"
 
+  config.vm.provision "file", source: "init.d_rippled", destination: "init.d_rippled"
   config.vm.provision "file", source: "rippled-example.cfg", destination: "rippled.cfg"
   config.vm.provision :shell, :inline => <<-EOT
      sudo sed -i '/LC_ALL=/d' /etc/default/locale
@@ -16,7 +17,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 4096
     v.customize ["modifyvm", :id, "--cpus", 2]
-    # v.cpus = 2
     # v.gui = true
   end
 
@@ -34,10 +34,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get install -y build-essential g++ python-dev autotools-dev libicu-dev build-essential libbz2-dev 
     apt-get install -y boost-all-dev
     cd /src/ && scons build/rippled
-    cd /
-    cp /src/build/rippled rippled && strip rippled
-    cp /home/vagrant/rippled.cfg /rippled.cfg
-    /rippled --net
+    cp /src/build/rippled /usr/local/sbin/rippled && strip /usr/local/sbin/rippled/rippled
+    cp /home/vagrant/rippled.cfg /etc/ripple/rippled.cfg
+    cp /home/vagrant/init.d_rippled /etc/init.d/rippled
+    chmod +x /etc/init.d/rippled
+    service rippled enable
   SCRIPT
 
   config.vm.provision :shell, :inline => $script
