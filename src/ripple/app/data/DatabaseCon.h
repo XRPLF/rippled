@@ -68,7 +68,7 @@ public:
     }
     explicit operator bool() const
     {
-        return bool(it_);
+        return bool (it_);
     }
 };
 
@@ -85,27 +85,27 @@ public:
     };
 
     DatabaseCon (Setup const& setup,
-            std::string const& name,
-            const char* initString[],
-            int countInit);
+                 std::string const& name,
+                 const char* initString[],
+                 int countInit);
 
     soci::session& getSession()
     {
-        return *session_;
+        return session_;
     }
 
-    LockedSociSession checkoutDb()
+    LockedSociSession checkoutDb ()
     {
-        return LockedSociSession(session_.get (), lock_);
+        return LockedSociSession (&session_, lock_);
     }
 
     void setupCheckpointing (JobQueue*);
+
 private:
-    std::unique_ptr<WALCheckpointer> walCheckpointer_;
-    // shared_ptr to handle lifetime issues with walCheckpointer_
-    // never null.
-    std::shared_ptr<soci::session> session_;
     LockedSociSession::mutex lock_;
+
+    soci::session session_;
+    std::unique_ptr<Checkpointer> checkpointer_;
 };
 
 DatabaseCon::Setup
