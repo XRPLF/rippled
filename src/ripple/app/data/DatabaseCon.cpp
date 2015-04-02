@@ -25,11 +25,11 @@
 
 namespace ripple {
 
-DatabaseCon::DatabaseCon (Setup const& setup,
-        std::string const& strName,
-        const char* initStrings[],
-        int initCount)
-        :session_(std::make_shared<soci::session>())
+DatabaseCon::DatabaseCon (
+    Setup const& setup,
+    std::string const& strName,
+    const char* initStrings[],
+    int initCount)
 {
     auto const useTempFiles  // Use temporary files or regular DB files?
         = setup.standAlone &&
@@ -39,13 +39,13 @@ DatabaseCon::DatabaseCon (Setup const& setup,
     boost::filesystem::path pPath = useTempFiles
         ? "" : (setup.dataDir / strName);
 
-    open(*session_, "sqlite", pPath.string());
+    open (session_, "sqlite", pPath.string());
 
     for (int i = 0; i < initCount; ++i)
     {
         try
         {
-            *session_ << initStrings[i];
+            session_ << initStrings[i];
         }
         catch (soci::soci_error&)
         {
@@ -67,6 +67,9 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 
 void DatabaseCon::setupCheckpointing (JobQueue* q)
 {
-    walCheckpointer_ = std::make_unique<WALCheckpointer> (session_, q);
+    if (! q)
+        throw std::logic_error ("No JobQueue");
+    checkpointer_ = makeCheckpointer (session_, *q);
 }
+
 } // ripple
