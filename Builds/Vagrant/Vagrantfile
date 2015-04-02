@@ -38,9 +38,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     cp /home/vagrant/rippled.cfg /etc/ripple/rippled.cfg
     cp /home/vagrant/init.d_rippled /etc/init.d/rippled
     chmod +x /etc/init.d/rippled
-    service rippled enable
+    service rippled start
   SCRIPT
 
   config.vm.provision :shell, :inline => $script
 
+  config.vm.define "one", primary: true do |one|
+    one.vm.network "private_network", ip: "192.168.50.4"
+  end
+
+  config.vm.define "two", primary: true do |two|
+    two.vm.network "private_network", ip: "192.168.50.5"
+  end
 end
