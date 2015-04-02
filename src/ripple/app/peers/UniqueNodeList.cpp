@@ -197,6 +197,38 @@ private:
         std::vector<int>    viReferrals;
     };
 
+private:
+    typedef RippleMutex FetchLockType;
+    typedef std::lock_guard <FetchLockType> ScopedFetchLockType;
+    FetchLockType mFetchLock;
+
+    typedef RippleRecursiveMutex UNLLockType;
+    typedef std::lock_guard <UNLLockType> ScopedUNLLockType;
+    UNLLockType mUNLLock;
+
+    // VFALCO TODO Replace ptime with beast::Time
+    // Misc persistent information
+    boost::posix_time::ptime        mtpScoreUpdated;
+    boost::posix_time::ptime        mtpFetchUpdated;
+
+    // XXX Make this faster, make this the contents vector unsigned char or raw public key.
+    // XXX Contents needs to based on score.
+    hash_set<std::string>   mUNL;
+
+    boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
+    boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
+    beast::DeadlineTimer m_scoreTimer;                  // Timer to start scoring.
+
+    int                             mFetchActive;       // Count of active fetches.
+
+    boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.
+    beast::DeadlineTimer m_fetchTimer;                  // Timer to start fetching.
+
+    std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
+
+    std::string node_file_name_;
+    std::string node_file_path_;
+
 public:
     explicit UniqueNodeListImp (Stoppable& parent)
         : UniqueNodeList (parent)
@@ -2165,37 +2197,6 @@ private:
                                                  % getConfig ().VALIDATORS_BASE);
         }
     }
-private:
-    typedef RippleMutex FetchLockType;
-    typedef std::lock_guard <FetchLockType> ScopedFetchLockType;
-    FetchLockType mFetchLock;
-
-    typedef RippleRecursiveMutex UNLLockType;
-    typedef std::lock_guard <UNLLockType> ScopedUNLLockType;
-    UNLLockType mUNLLock;
-
-    // VFALCO TODO Replace ptime with beast::Time
-    // Misc persistent information
-    boost::posix_time::ptime        mtpScoreUpdated;
-    boost::posix_time::ptime        mtpFetchUpdated;
-
-    // XXX Make this faster, make this the contents vector unsigned char or raw public key.
-    // XXX Contents needs to based on score.
-    hash_set<std::string>   mUNL;
-
-    boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
-    boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
-    beast::DeadlineTimer m_scoreTimer;                  // Timer to start scoring.
-
-    int                             mFetchActive;       // Count of active fetches.
-
-    boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.
-    beast::DeadlineTimer m_fetchTimer;                  // Timer to start fetching.
-
-    std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
-
-    std::string node_file_name_;
-    std::string node_file_path_;
 };
 
 //------------------------------------------------------------------------------
