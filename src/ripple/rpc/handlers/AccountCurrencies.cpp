@@ -42,9 +42,16 @@ Json::Value doAccountCurrencies (RPC::Context& context)
         ? params[jss::account].asString ()
         : params[jss::ident].asString ());
 
-    int const iIndex (params.isMember (jss::account_index)
-        ? params[jss::account_index].asUInt ()
-        : 0);
+    int iIndex = 0;
+
+    if (params.isMember (jss::account_index))
+    {
+        auto const& accountIndex = params[jss::account_index];
+        if (!accountIndex.isUInt() && !accountIndex.isInt ())
+            return RPC::invalid_field_message (jss::account_index);
+        iIndex = accountIndex.asUInt ();
+    }
+
     bool const bStrict = params.isMember (jss::strict) &&
             params[jss::strict].asBool ();
 
