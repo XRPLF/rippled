@@ -113,6 +113,18 @@ public:
     PeerSequence
     getActivePeers () = 0;
 
+    /** Calls the checkSanity function on each peer
+    */
+    virtual
+    void
+    checkSanity (std::uint32_t index) = 0;
+
+    /** Calls the check function on each peer
+    */
+    virtual
+    void
+    check () = 0;
+
     /** Returns the peer with the matching short id, or null. */
     virtual
     Peer::ptr

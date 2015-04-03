@@ -947,6 +947,13 @@ public:
         }
     }
 
+    void on_failure (SlotImp::ptr const& slot)
+    {
+        typename SharedState::Access state (m_state);
+
+        state->bootcache.on_failure (slot->remote_endpoint ());
+    }
+
     // Insert a set of redirect IP addresses into the Bootcache
     template <class FwdIter>
     void

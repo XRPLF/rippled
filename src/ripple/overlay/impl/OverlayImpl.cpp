@@ -108,6 +108,9 @@ OverlayImpl::Timer::on_timer (error_code ec)
     overlay_.sendEndpoints();
     overlay_.autoConnect();
 
+    if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0)
+        overlay_.check();
+
     timer_.expires_from_now (std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
         &Timer::on_timer, shared_from_this(),
@@ -136,6 +139,7 @@ OverlayImpl::OverlayImpl (
         get_seconds_clock(), deprecatedLogs().journal("PeerFinder"), config))
     , m_resolver (resolver)
     , next_id_(1)
+    , timer_count_(0)
 {
     beast::PropertyStream::Source::add (m_peerFinder.get());
 }
@@ -646,6 +650,32 @@ OverlayImpl::getActivePeers()
     }
 
     return ret;
+}
+
+void
+OverlayImpl::checkSanity (std::uint32_t index)
+{
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+
+    for (auto const& e : m_publicKeyMap)
+    {
+        auto const sp = e.second.lock();
+        if (sp)
+            sp->checkSanity (index);
+    }
+}
+
+void
+OverlayImpl::check ()
+{
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+
+    for (auto const& e : m_publicKeyMap)
+    {
+        auto const sp = e.second.lock();
+        if (sp)
+            sp->check ();
+    }
 }
 
 Peer::ptr

@@ -155,6 +155,13 @@ public:
     }
 
     void
+    on_failure (Slot::ptr const& slot)  override
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_failure (impl);
+    }
+
+    void
     onRedirects (boost::asio::ip::tcp::endpoint const& remote_address,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
     {

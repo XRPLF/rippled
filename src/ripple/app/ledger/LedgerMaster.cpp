@@ -710,9 +710,18 @@ public:
 
         if (!ledger)
         {
-            // FIXME: We should really only fetch if the ledger
-            //has sufficient validations to accept it
+            if ((seq != 0) && (getValidLedgerIndex() == 0))
+            {
+                // Set peers sane early if we can
+                if (getApp().getValidations().getTrustedValidationCount (hash) >=
+                    mMinValidations)
+                {
+                    getApp().overlay().checkSanity (seq);
+                }
+            }
 
+            // FIXME: We may not want to fetch a ledger with just one
+            // trusted validation
             InboundLedger::pointer l =
                 getApp().getInboundLedgers().findCreate(hash, 0, InboundLedger::fcGENERIC);
             if (l && l->isComplete() && !l->isFailed())

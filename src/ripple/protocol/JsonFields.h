@@ -293,6 +293,7 @@ JSS ( result );                     // RPC
 JSS ( ripple_lines );               // out: NetworkOPs
 JSS ( ripple_state );               // in: LedgerEntr
 JSS ( rt_accounts );                // in: Subscribe, Unsubscribe
+JSS ( sanity );                     // out: PeerImp
 JSS ( search_depth );               // in: RipplePathFind
 JSS ( secret );                     // in: TransactionSign, WalletSeed,
                                     //     ValidationCreate, ValidationSeed
