@@ -34,6 +34,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     cd /src/ && scons build/rippled
     cp /src/build/rippled /usr/local/sbin/rippled && strip /usr/local/sbin/rippled/rippled
     mkdir -p /etc/ripple/
+    mkdir -p /home/vagrant/.config/ripple/
+    cp /vagrant/rippled-example.cfg /home/vagrant/.config/ripple/rippled.cfg
     cp /vagrant/rippled-example.cfg /etc/ripple/rippled.cfg
     mkdir -p /root/.config/ripple/
     cp /vagrant/rippled-example.cfg /root/.config/ripple/rippled.cfg
