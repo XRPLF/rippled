@@ -21,7 +21,7 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
 #include <boost/format.hpp>
-    
+
 // For Sustain Linux variants
 // VFALCO TODO Rewrite Sustain to use beast::Process
 #ifdef __linux__
@@ -38,6 +38,9 @@
 namespace ripple {
 
 #ifdef __unix__
+
+static auto const sleepBeforeWaiting = 10;
+static auto const sleepBetweenWaits = 1;
 
 static pid_t pManager = static_cast<pid_t> (0);
 static pid_t pChild = static_cast<pid_t> (0);
@@ -61,29 +64,28 @@ bool HaveSustain ()
 std::string StopSustain ()
 {
     if (getppid () != pManager)
-        return std::string ();
+        return "";
 
     kill (pManager, SIGHUP);
     return "Terminating monitor";
 }
 
-std::string DoSustain (std::string logFile)
+std::string DoSustain (std::string const& logFile)
 {
-    int childCount = 0;
     pManager = getpid ();
     signal (SIGINT, stop_manager);
     signal (SIGHUP, stop_manager);
     signal (SIGUSR1, pass_signal);
     signal (SIGUSR2, pass_signal);
 
-    while (1)
+    for (auto childCount = 1;; ++childCount)
     {
-        ++childCount;
         pChild = fork ();
 
         if (pChild == -1)
             _exit (0);
 
+        auto cc = std::to_string (childCount);
         if (pChild == 0)
         {
             setCallingThreadName ("main");
@@ -91,26 +93,26 @@ std::string DoSustain (std::string logFile)
             signal (SIGHUP, SIG_DFL);
             signal (SIGUSR1, SIG_DFL);
             signal (SIGUSR2, SIG_DFL);
-            return str (boost::format ("Launching child %d") % childCount);;
+            return "Launching child " + cc;
         }
 
-        setCallingThreadName (boost::str (boost::format ("#%d") % childCount).c_str ());
+        setCallingThreadName (("#" + cc).c_str());
 
-        sleep (9);
-        do
+        sleep (sleepBeforeWaiting);
+
+        for (;;)
         {
             int i;
-            sleep (1);
             waitpid (pChild, &i, 0);
+            if (kill (pChild, 0))
+                break;
+            sleep (sleepBetweenWaits);
         }
-        while (kill (pChild, 0) == 0);
 
-        rename ("core", boost::str (boost::format ("core.%d") % static_cast<int> (pChild)).c_str ());
+        auto pc = std::to_string (pChild);
+        rename ("core", ("core." + pc).c_str ());
         if (!logFile.empty()) // FIXME: logFile hasn't been set yet
-            rename (logFile.c_str(),
-                    boost::str (boost::format ("%s.%d")
-                                % logFile
-                                % static_cast<int> (pChild)).c_str ());
+            rename (logFile.c_str(), (logFile + "." + pc).c_str ());
     }
 }
 
@@ -120,13 +122,15 @@ bool HaveSustain ()
 {
     return false;
 }
-std::string DoSustain (std::string)
+
+std::string DoSustain (const std::string&)
 {
-    return std::string ();
+    return "";
 }
+
 std::string StopSustain ()
 {
-    return std::string ();
+    return "";
 }
 
 #endif
