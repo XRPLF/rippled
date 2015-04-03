@@ -30,9 +30,9 @@ namespace ripple {
 // VFALCO TODO Rename this and put it in a class.
 // VFALCO TODO Reimplement cross-platform using beast::Process and its ilk
 //
-extern bool HaveSustain ();
-extern std::string StopSustain ();
-extern std::string DoSustain (std::string logFile);
+bool HaveSustain ();
+std::string StopSustain ();
+std::string DoSustain (std::string const& logFile);
 
 } // ripple
 
