@@ -196,6 +196,9 @@ public:
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
 
+    /** Called when an outbound connection is deemed to have failed */
+    virtual void on_failure (Slot::ptr const& slot) = 0;
+
     /** Called when we received redirect IPs from a busy peer. */
     virtual
     void

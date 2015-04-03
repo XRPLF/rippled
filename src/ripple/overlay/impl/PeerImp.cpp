@@ -67,6 +67,8 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , overlay_ (overlay)
     , m_inbound (true)
     , state_ (State::active)
+    , sanity_ (Sanity::unknown)
+    , insaneTime_ (clock_type::now())
     , publicKey_(publicKey)
     , hello_(hello)
     , usage_(consumer)
@@ -251,6 +253,21 @@ PeerImp::json()
     if (closedLedgerHash_ != zero)
         ret[jss::ledger] = to_string (closedLedgerHash_);
 
+    switch (sanity_.load ())
+    {
+        case Sanity::insane:
+            ret[jss::sanity] = "insane";
+            break;
+
+        case Sanity::unknown:
+            ret[jss::sanity] = "unknown";
+            break;
+
+        case Sanity::sane:
+            // Nothing to do here
+            break;
+    }
+
     if (last_status_.has_newstatus ())
     {
         switch (last_status_.newstatus ())
@@ -291,7 +308,8 @@ bool
 PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
 {
     std::lock_guard<std::mutex> sl(recentLock_);
-    if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_))
+    if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
+            (sanity_.load() == Sanity::sane))
         return true;
     return std::find (recentLedgers_.begin(),
         recentLedgers_.end(), hash) != recentLedgers_.end();
@@ -801,6 +819,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMPeers> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 {
+    if (sanity_.load() != Sanity::sane)
+    {
+        // Don't allow endpoints from peer not known sane
+        return;
+    }
+
     std::vector <PeerFinder::Endpoint> endpoints;
 
     endpoints.reserve (m->endpoints().size());
@@ -843,6 +867,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 {
+
+    if (sanity_.load() == Sanity::insane)
+        return;
 
     if (getApp().getOPs().isNeedNetworkLedger ())
     {
@@ -1035,6 +1062,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     }
 
     bool isTrusted = getApp().getUNL ().nodeInUNL (signerPublic);
+
+    if (!isTrusted && (sanity_.load() == Sanity::insane))
+    {
+        p_journal_.debug << "Proposal: Dropping UNTRUSTED (insane)";
+        return;
+    }
+
     if (!isTrusted && getApp().getFeeTrack ().isLoadedLocal ())
     {
         p_journal_.debug << "Proposal: Dropping UNTRUSTED (load)";
@@ -1119,6 +1153,85 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
         if (maxLedger_ == 0)
             minLedger_ = 0;
     }
+
+    if (m->has_ledgerseq() &&
+        getApp().getLedgerMaster().getValidatedLedgerAge() < 120)
+    {
+        checkSanity (m->ledgerseq(), getApp().getLedgerMaster().getValidLedgerIndex());
+    }
+}
+
+void
+PeerImp::checkSanity (std::uint32_t validationSeq)
+{
+    std::uint32_t serverSeq;
+    {
+        // Extract the seqeuence number of the highest
+        // ledger this peer has
+        std::lock_guard<std::mutex> sl (recentLock_);
+
+        serverSeq = maxLedger_;
+    }
+    if (serverSeq != 0)
+    {
+        // Compare the peer's ledger sequence to the
+        // sequence of a recently-validated ledger
+        checkSanity (serverSeq, validationSeq);
+    }
+}
+
+void
+PeerImp::checkSanity (std::uint32_t seq1, std::uint32_t seq2)
+{
+        int diff = std::max (seq1, seq2) - std::min (seq1, seq2);
+
+        if (diff < Tuning::saneLedgerLimit)
+        {
+            // The peer's ledger sequence is close to the validation's
+            sanity_ = Sanity::sane;
+        }
+
+        if ((diff > Tuning::insaneLedgerLimit) && (sanity_.load() != Sanity::insane))
+        {
+            // The peer's ledger sequence is way off the validation's
+            std::lock_guard<std::mutex> sl(recentLock_);
+
+            sanity_ = Sanity::insane;
+            insaneTime_ = clock_type::now();
+        }
+}
+
+// Should this connection be rejected
+// and considered a failure
+void PeerImp::check ()
+{
+    if (m_inbound || (sanity_.load() == Sanity::sane))
+        return;
+
+    clock_type::time_point insaneTime;
+    {
+        std::lock_guard<std::mutex> sl(recentLock_);
+
+        insaneTime = insaneTime_;
+    }
+
+    bool reject = false;
+
+    if (sanity_.load() == Sanity::insane)
+        reject = (insaneTime - clock_type::now())
+            > std::chrono::seconds (Tuning::maxInsaneTime);
+
+    if (sanity_.load() == Sanity::unknown)
+        reject = (insaneTime - clock_type::now())
+            > std::chrono::seconds (Tuning::maxUnknownTime);
+
+    if (reject)
+    {
+        overlay_.peerFinder().on_failure (slot_);
+        strand_.post (std::bind (
+            (void (PeerImp::*)(std::string const&)) &PeerImp::fail,
+                shared_from_this(), "Not useful"));
+    }
 }
 
 void
@@ -1192,6 +1305,11 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
         }
 
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
+        if (!isTrusted && (sanity_.load () == Sanity::insane))
+        {
+            p_journal_.debug <<
+                "Validation: dropping untrusted from insane peer";
+        }
         if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
         {
             getApp().getJobQueue ().addJob (isTrusted ?

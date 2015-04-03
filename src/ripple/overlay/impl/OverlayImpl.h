@@ -118,6 +118,8 @@ private:
 
     std::atomic <Peer::id_t> next_id_;
 
+    int timer_count_;
+
     //--------------------------------------------------------------------------
 
 public:
@@ -162,6 +164,12 @@ public:
 
     PeerSequence
     getActivePeers() override;
+
+    void
+    check () override;
+
+    void
+    checkSanity (std::uint32_t) override;
 
     Peer::ptr
     findPeerByShortID (Peer::id_t const& id) override;

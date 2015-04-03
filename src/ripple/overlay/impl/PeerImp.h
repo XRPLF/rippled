@@ -80,6 +80,13 @@ public:
         ,active
     };
 
+    enum class Sanity
+    {
+        insane
+        ,unknown
+        ,sane
+    };
+
     typedef std::shared_ptr <PeerImp> ptr;
 
 private:
@@ -116,6 +123,8 @@ private:
     OverlayImpl& overlay_;
     bool m_inbound;
     State state_;          // Current state
+    std::atomic<Sanity> sanity_;
+    clock_type::time_point insaneTime_;
     bool detaching_ = false;
     // Node public key of peer.
     RippleAddress publicKey_;
@@ -226,6 +235,18 @@ public:
     {
         return slot_->cluster();
     }
+
+    void
+    check();
+
+    /** Check if the peer is sane
+        @param validationSeq The ledger sequence of a recently-validated ledger
+    */
+    void
+    checkSanity (std::uint32_t validationSeq);
+
+    void
+    checkSanity (std::uint32_t seq1, std::uint32_t seq2);
 
     RippleAddress const&
     getNodePublic () const override
@@ -445,6 +466,8 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , overlay_ (overlay)
     , m_inbound (false)
     , state_ (State::active)
+    , sanity_ (Sanity::unknown)
+    , insaneTime_ (clock_type::now())
     , publicKey_ (legacyPublicKey)
     , hello_ (std::move(hello))
     , usage_ (usage)
