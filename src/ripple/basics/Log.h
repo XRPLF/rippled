@@ -35,10 +35,12 @@ namespace ripple {
 enum LogSeverity
 {
     lsINVALID   = -1,   // used to indicate an invalid severity
-    lsTRACE     = 0,    // Very low-level progress information, details inside an operation
+    lsTRACE     = 0,    // Very low-level progress information, details inside
+                        // an operation
     lsDEBUG     = 1,    // Function-level progress information, operations
     lsINFO      = 2,    // Server-level progress information, major operations
-    lsWARNING   = 3,    // Conditions that warrant human attention, may indicate a problem
+    lsWARNING   = 3,    // Conditions that warrant human attention, may indicate
+                        // a problem
     lsERROR     = 4,    // A condition that indicates a problem
     lsFATAL     = 5     // A severe condition that indicates a server problem
 };
@@ -61,7 +63,8 @@ private:
         Sink& operator= (Sink const&) = delete;
 
         void
-        write (beast::Journal::Severity level, std::string const& text) override;
+        write (beast::Journal::Severity level,
+               std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -86,7 +89,8 @@ private:
         ~File ();
 
         /** Determine if a system file is associated with the log.
-            @return `true` if a system file is associated and opened for writing.
+            @return `true` if a system file is associated and opened for
+            writing.
         */
         bool isOpen () const noexcept;
 
@@ -94,7 +98,8 @@ private:
             If the file does not exist an attempt is made to create it
             and open it for writing. If the file already exists an attempt is
             made to open it for appending.
-            If a system file is already associated with the log, it is closed first.
+            If a system file is already associated with the log, it is closed
+            first.
             @return `true` if the file was opened.
         */
         // VFALCO NOTE The parameter is unfortunately a boost type because it
@@ -223,12 +228,24 @@ deprecatedLogs()
     static Logs logs;
     return logs;
 }
+
 // VFALCO DEPRECATED Inject beast::Journal instead
-#define ShouldLog(s, k) deprecatedLogs()[#k].active(Logs::toSeverity(s))
-#define WriteLog(s, k) if (!ShouldLog (s, k)) do {} while (0); else \
-    beast::Journal::Stream(deprecatedLogs()[#k], Logs::toSeverity(s))
-#define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else \
-    beast::Journal::Stream(deprecatedLogs()[#k], Logs::toSeverity(s))
+#define ShouldLog(s, k) \
+    ::ripple::deprecatedLogs()[#k].active(::ripple::Logs::toSeverity (s))
+
+#define WriteLog(s, k)                                              \
+    if (!ShouldLog(s, k))                                           \
+        do {} while (0);                                            \
+    else                                                            \
+        ::beast::Journal::Stream (::ripple::deprecatedLogs()[#k],   \
+                                  ::ripple::Logs::toSeverity(s))
+
+#define CondLog(c, s, k) \
+     if (!ShouldLog(s, k) || !(c))                                  \
+         do {} while(0);                                            \
+     else                                                           \
+         ::beast::Journal::Stream (::ripple::deprecatedLogs()[#k],  \
+                                  ::ripple::Logs::toSeverity(s))
 
 } // ripple
 
