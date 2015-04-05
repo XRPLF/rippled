@@ -29,6 +29,15 @@ int iToSeconds (boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds (int iSeconds);
 uint64_t utFromSeconds (int iSeconds);
 
+/**
+   Get a string timestamp, using a format string appropriate for strftime().
+   If fmtstring is null, use defaultTimeFormat.  If now_gmt is null, use
+   the current time.
+ */
+std::string timestamp (
+    char const* fmtstring = nullptr,
+    time_t now_gmt = 0);
+
 } // ripple
 
 #endif

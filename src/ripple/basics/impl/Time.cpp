@@ -31,7 +31,8 @@ namespace ripple {
 
 boost::posix_time::ptime ptEpoch ()
 {
-    return boost::posix_time::ptime (boost::gregorian::date (2000, boost::gregorian::Jan, 1));
+    return boost::posix_time::ptime (
+        boost::gregorian::date (2000, boost::gregorian::Jan, 1));
 }
 
 int iToSeconds (boost::posix_time::ptime ptWhen)
@@ -52,13 +53,46 @@ boost::posix_time::ptime ptFromSeconds (int iSeconds)
 // Convert from our time to UNIX time in seconds.
 uint64_t utFromSeconds (int iSeconds)
 {
-    boost::posix_time::time_duration    tdDelta =
-        boost::posix_time::ptime (boost::gregorian::date (2000, boost::gregorian::Jan, 1))
-        - boost::posix_time::ptime (boost::gregorian::date (1970, boost::gregorian::Jan, 1))
-        + boost::posix_time::seconds (iSeconds)
-        ;
+    static auto offset =
+        boost::posix_time::ptime (
+            boost::gregorian::date (2000, boost::gregorian::Jan, 1)) -
+        boost::posix_time::ptime (
+            boost::gregorian::date (1970, boost::gregorian::Jan, 1));
 
+    auto tdDelta = offset + boost::posix_time::seconds (iSeconds);
     return tdDelta.total_seconds ();
+}
+
+#if BEAST_WIN32
+inline void gmtime_r(time_t const* now, tm* gmt) { gmtime_s(gmt, now); }
+#endif
+
+std::string timestamp (char const* fmtstring, time_t now)
+{
+    static char const* defaultTimeFormat = "%a, %d %b %Y %H:%M:%S +0000";
+
+    if (! fmtstring)
+        fmtstring = defaultTimeFormat;
+
+    if (! now)
+        time (&now);
+
+    struct tm now_gmt;
+    gmtime_r (&now, &now_gmt);
+
+    // %r is the longest possibility - it expands to ##:##:## ##, 11 characters.
+    static auto const percentCapacity = 10;
+    auto capacity = 1;  // For the trailing /0.
+    for (auto p = fmtstring; *p; ++p)
+        capacity += ((*p == '%') ? percentCapacity : 1);
+
+    std::string result (capacity, 0);
+    assert (result.size() == capacity);
+
+    auto p = &result[0];
+    auto size = strftime (p, capacity, fmtstring, &now_gmt);
+    result.resize (size);
+    return result;
 }
 
 } // ripple
