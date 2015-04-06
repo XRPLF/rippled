@@ -224,12 +224,8 @@ WALCheckpointer::~WALCheckpointer ()
 
 void WALCheckpointer::runCheckpoint (const char* db, int pages)
 {
-    if (pages < checkpointPageCount)
+    if ((pages + 1) % checkpointPageCount)
         return;
-
-    // TODO: after it reaches 1000 pages, won't it checkpoint on every
-    // page after that?
-    // Should the line above be if ((1 + pages) % checkpointPageCount)?
 
     {
         ScopedLockType sl (mutex_);
