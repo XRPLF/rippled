@@ -77,7 +77,7 @@ public:
         TER const result = mEngine->view ().dirDelete (false, hint,
             getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
 
-        mEngine->view ().decrementOwnerCount (mTxnAccount);
+        mEngine->view ().decrementOwnerCount (ticket_owner);
         mEngine->view ().entryDelete (sleTicket);
 
         return result;
