@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 
 #include <ripple/app/peers/ClusterNodeStatus.h>
+#include <ripple/protocol/RippleAddress.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
 #include <boost/filesystem.hpp>
