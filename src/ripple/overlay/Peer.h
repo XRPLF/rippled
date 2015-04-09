@@ -77,15 +77,6 @@ public:
     bool
     cluster() const = 0;
 
-    /** Called periodically */
-    virtual
-    void
-    check() = 0;
-
-    virtual
-    void
-    checkSanity (std::uint32_t seq) = 0;
-
     virtual
     RippleAddress const&
     getNodePublic() const = 0;

@@ -114,6 +114,7 @@ public:
     getActivePeers () = 0;
 
     /** Calls the checkSanity function on each peer
+        @param index the value to pass to the peer's checkSanity function
     */
     virtual
     void

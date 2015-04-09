@@ -1166,23 +1166,36 @@ PeerImp::checkSanity (std::uint32_t validationSeq)
 {
     std::uint32_t serverSeq;
     {
+        // Extract the seqeuence number of the highest
+        // ledger this peer has
         std::lock_guard<std::mutex> sl (recentLock_);
 
         serverSeq = maxLedger_;
     }
     if (serverSeq != 0)
+    {
+        // Compare the peer's ledger sequence to the
+        // sequence of a recently-validated ledger
         checkSanity (serverSeq, validationSeq);
+    }
 }
 
 void
 PeerImp::checkSanity (std::uint32_t seq1, std::uint32_t seq2)
 {
         int diff = std::max (seq1, seq2) - std::min (seq1, seq2);
+
         if (diff < Tuning::saneLedgerLimit)
+        {
+            // The peer's ledger sequence is close to the validation's
             sanity_ = Sanity::sane;
+        }
+
         if ((diff > Tuning::insaneLedgerLimit) && (sanity_.load() != Sanity::insane))
         {
+            // The peer's ledger sequence is way off the validation's
             std::lock_guard<std::mutex> sl(recentLock_);
+
             sanity_ = Sanity::insane;
             insaneTime_ = clock_type::now();
         }

@@ -83,9 +83,7 @@ public:
     enum class Sanity
     {
         insane
-
         ,unknown
-
         ,sane
     };
 
@@ -239,8 +237,11 @@ public:
     }
 
     void
-    check() override;
+    check();
 
+    /** Check if the peer is sane
+        @param validationSeq The ledger sequence of a recently-validated ledger
+    */
     void
     checkSanity (std::uint32_t validationSeq);
 

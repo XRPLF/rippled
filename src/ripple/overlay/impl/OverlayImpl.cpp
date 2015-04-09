@@ -589,8 +589,7 @@ OverlayImpl::crawl()
     std::lock_guard <decltype(mutex_)> lock (mutex_);
     for (auto const& e : m_publicKeyMap)
     {
-        auto const sp = e.second.lock();
-        if (sp)
+        if (auto const sp = e.second.lock())
         {
             auto& pv = av.append(Json::Value(Json::objectValue));
             pv[jss::type] = "peer";
@@ -659,8 +658,7 @@ OverlayImpl::checkSanity (std::uint32_t index)
 
     for (auto const& e : m_publicKeyMap)
     {
-        auto const sp = e.second.lock();
-        if (sp)
+        if (auto const sp = e.second.lock())
             sp->checkSanity (index);
     }
 }
@@ -672,8 +670,7 @@ OverlayImpl::check ()
 
     for (auto const& e : m_publicKeyMap)
     {
-        auto const sp = e.second.lock();
-        if (sp)
+        if (auto const sp = e.second.lock())
             sp->check ();
     }
 }
