@@ -38,18 +38,22 @@ class LockedPointer
 {
 public:
     using mutex = TMutex;
+
 private:
     T* it_;
-    std::unique_lock<mutex> lock_;
+    std::unique_lock <mutex> mutex_;
 
 public:
-    LockedPointer (T* it, mutex& m) : it_ (it), lock_ (m)
+    LockedPointer (T* it, mutex& m) : it_ (it), mutex_ (m)
     {
     }
+
     LockedPointer (LockedPointer&& rhs) noexcept
-        : it_ (rhs.it_), lock_ (std::move (rhs.lock_))
+        : it_ (rhs.it_), mutex_ (std::move (rhs.mutex_))
     {
+        rhs.it_ = nullptr;
     }
+
     LockedPointer () = delete;
     LockedPointer (LockedPointer const& rhs) = delete;
     LockedPointer& operator=(LockedPointer const& rhs) = delete;
@@ -68,7 +72,7 @@ public:
     }
     explicit operator bool() const
     {
-        return bool(it_);
+        return bool (it_);
     }
 };
 
@@ -85,27 +89,27 @@ public:
     };
 
     DatabaseCon (Setup const& setup,
-            std::string const& name,
-            const char* initString[],
-            int countInit);
+                 std::string const& name,
+                 const char* initString[],
+                 int countInit);
 
     soci::session& getSession()
     {
-        return *session_;
+        return session_;
     }
 
-    LockedSociSession checkoutDb()
+    LockedSociSession checkoutDb ()
     {
-        return LockedSociSession(session_.get (), lock_);
+        return LockedSociSession (&session_, mutex_);
     }
 
     void setupCheckpointing (JobQueue*);
+
 private:
-    std::unique_ptr<WALCheckpointer> walCheckpointer_;
-    // shared_ptr to handle lifetime issues with walCheckpointer_
-    // never null.
-    std::shared_ptr<soci::session> session_;
-    LockedSociSession::mutex lock_;
+    LockedSociSession::mutex mutex_;
+
+    soci::session session_;
+    std::unique_ptr<Checkpointer> checkpointer_;
 };
 
 DatabaseCon::Setup

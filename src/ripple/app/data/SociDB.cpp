@@ -27,12 +27,15 @@
 #include <boost/filesystem.hpp>
 
 namespace ripple {
+
+static auto const checkpointPageCount = 1000;
+
 namespace detail {
 
 std::pair<std::string, soci::backend_factory const&>
 getSociSqliteInit (std::string const& name,
-                     std::string const& dir,
-                     std::string const& ext)
+                   std::string const& dir,
+                   std::string const& ext)
 {
     if (dir.empty () || name.empty ())
     {
@@ -43,7 +46,7 @@ getSociSqliteInit (std::string const& name,
     boost::filesystem::path file (dir);
     if (is_directory (file))
         file /= name + ext;
-    return std::make_pair (file.string (), std::ref(soci::sqlite3));
+    return std::make_pair (file.string (), std::ref (soci::sqlite3));
 }
 
 std::pair<std::string, soci::backend_factory const&>
@@ -51,24 +54,21 @@ getSociInit (BasicConfig const& config,
              std::string const& dbName)
 {
     auto const& section = config.section ("sqdb");
-    std::string const backendName(get(section, "backend", "sqlite"));
+    auto const backendName = get(section, "backend", "sqlite");
 
-    if (backendName == "sqlite")
-    {
-        std::string const path = config.legacy ("database_path");
-        std::string const ext =
-            (dbName == "validators" || dbName == "peerfinder") ? ".sqlite"
-                                                               : ".db";
-        return detail::getSociSqliteInit(dbName, path, ext);
-    }
-    else
-    {
+    if (backendName != "sqlite")
         throw std::runtime_error ("Unsupported soci backend: " + backendName);
-    }
+
+    auto const path = config.legacy ("database_path");
+    auto const ext = dbName == "validators" || dbName == "peerfinder"
+                ? ".sqlite" : ".db";
+    return detail::getSociSqliteInit(dbName, path, ext);
 }
+
 } // detail
 
-SociConfig::SociConfig (std::pair<std::string, soci::backend_factory const&> init)
+SociConfig::SociConfig (
+    std::pair<std::string, soci::backend_factory const&> init)
     : connectionString_ (std::move (init.first)),
       backendFactory_ (init.second)
 {
@@ -84,55 +84,63 @@ std::string SociConfig::connectionString () const
     return connectionString_;
 }
 
-void SociConfig::open(soci::session& s) const
+void SociConfig::open (soci::session& s) const
 {
     s.open (backendFactory_, connectionString ());
 }
 
-void open(soci::session& s,
-          BasicConfig const& config,
-          std::string const& dbName)
+void open  (soci::session& s,
+            BasicConfig const& config,
+            std::string const& dbName)
 {
-    SociConfig c(config, dbName);
-    c.open(s);
+    SociConfig (config, dbName).open(s);
 }
 
-void open(soci::session& s,
-          std::string const& beName,
-          std::string const& connectionString)
+void open (soci::session& s,
+           std::string const& beName,
+           std::string const& connectionString)
 {
     if (beName == "sqlite")
-    {
         s.open(soci::sqlite3, connectionString);
-        return;
-    }
     else
-    {
         throw std::runtime_error ("Unsupported soci backend: " + beName);
-    }
+}
+
+static
+sqlite_api::sqlite3* getConnection (soci::session& s)
+{
+    sqlite_api::sqlite3* result = nullptr;
+    auto be = s.get_backend ();
+    if (auto b = dynamic_cast<soci::sqlite3_session_backend*> (be))
+        result = b->conn_;
+
+    if (! result)
+        throw std::logic_error ("Didn't get a database connection.");
+
+    return result;
 }
 
 size_t getKBUsedAll (soci::session& s)
 {
-    auto be = dynamic_cast<soci::sqlite3_session_backend*>(s.get_backend ());
-    assert (be);  // Make sure the backend is sqlite
-    (void) be;
-    return static_cast<int>(sqlite_api::sqlite3_memory_used () / 1024);
+    if (! getConnection (s))
+        throw std::logic_error ("No connection found.");
+    return static_cast <size_t> (sqlite_api::sqlite3_memory_used () / 1024);
 }
 
 size_t getKBUsedDB (soci::session& s)
 {
     // This function will have to be customized when other backends are added
-    auto be = dynamic_cast<soci::sqlite3_session_backend*>(s.get_backend ());
-    assert (be);
-    (void) be;
-    int cur = 0, hiw = 0;
-    sqlite_api::sqlite3_db_status (
-        be->conn_, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
-    return cur / 1024;
+    if (auto conn = getConnection (s))
+    {
+        int cur = 0, hiw = 0;
+        sqlite_api::sqlite3_db_status (
+            conn, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
+        return cur / 1024;
+    }
+    throw std::logic_error ("getKBUsedDB");
 }
 
-void convert(soci::blob& from, std::vector<std::uint8_t>& to)
+void convert (soci::blob& from, std::vector<std::uint8_t>& to)
 {
     to.resize (from.get_len ());
     if (to.empty ())
@@ -140,84 +148,103 @@ void convert(soci::blob& from, std::vector<std::uint8_t>& to)
     from.read (0, reinterpret_cast<char*>(&to[0]), from.get_len ());
 }
 
-void convert(soci::blob& from, std::string& to)
+void convert (soci::blob& from, std::string& to)
 {
     std::vector<std::uint8_t> tmp;
-    convert(from, tmp);
-    to.assign(tmp.begin (), tmp.end());
+    convert (from, tmp);
+    to.assign (tmp.begin (), tmp.end());
 
 }
 
-void convert(std::vector<std::uint8_t> const& from, soci::blob& to)
+void convert (std::vector<std::uint8_t> const& from, soci::blob& to)
 {
     if (!from.empty ())
         to.write (0, reinterpret_cast<char const*>(&from[0]), from.size ());
 }
 
-int SqliteWALHook (void* s,
-                   sqlite_api::sqlite3*,
-                   const char* dbName,
-                   int walSize)
+namespace {
+
+/* Run a thread to checkpoint the write ahead log (wal) for
+   the given soci::session every 1000 pages. This is only implemented
+   for sqlite databases.
+
+   Note: According to: https://www.sqlite.org/wal.html#ckpt this
+   is the default behavior of sqlite. We may be able to remove this
+   class.
+*/
+class WALCheckpointer : public Checkpointer, private beast::Thread
 {
-    (reinterpret_cast<WALCheckpointer*>(s))->doHook (dbName, walSize);
-    return SQLITE_OK;
+public:
+    using Connection = sqlite_api::sqlite3;
+
+    WALCheckpointer (sqlite_api::sqlite3&, JobQueue&);
+    ~WALCheckpointer () override;
+
+    static
+    int sqliteWALHook (void* s, sqlite_api::sqlite3*,
+                       const char* dbName, int walSize);
+
+private:
+    void runCheckpoint (const char* db, int walSize);
+    void run () override;
+    void checkpoint ();
+
+    using MutexType = std::mutex;
+    using ScopedLockType = std::lock_guard <MutexType>;
+
+    sqlite_api::sqlite3& conn_;
+    MutexType mutex_;
+    JobQueue& jobQueue_;
+    bool running_ = false;
+
+};
+
+int WALCheckpointer::sqliteWALHook (
+    void* cp, sqlite_api::sqlite3*, const char* dbName, int walSize)
+{
+    if (auto checkpointer = reinterpret_cast <WALCheckpointer*> (cp))
+    {
+        checkpointer->runCheckpoint (dbName, walSize);
+        return SQLITE_OK;
+    }
+    throw std::logic_error ("Didn't get a WALCheckpointer");
 }
 
-WALCheckpointer::WALCheckpointer (std::shared_ptr<soci::session> const& s,
-                                  JobQueue* q)
-    : Thread ("sqlitedb"), session_(s)
+WALCheckpointer::WALCheckpointer (sqlite_api::sqlite3& conn, JobQueue& q)
+        : Thread ("sqlitedb"), conn_ (conn), jobQueue_ (q)
 {
-    if (auto session =
-            dynamic_cast<soci::sqlite3_session_backend*>(s->get_backend ()))
-        conn_ = session->conn_;
-
-    if (!conn_) return;
     startThread ();
-    setupCheckpointing (q);
+    sqlite_api::sqlite3_wal_hook (&conn_, &sqliteWALHook, this);
 }
 
 WALCheckpointer::~WALCheckpointer ()
 {
-    if (!conn_) return;
     stopThread ();
 }
 
-void WALCheckpointer::setupCheckpointing (JobQueue* q)
+void WALCheckpointer::runCheckpoint (const char* db, int pages)
 {
-    if (!conn_) return;
-    q_ = q;
-    sqlite_api::sqlite3_wal_hook (conn_, SqliteWALHook, this);
-}
+    // pages is called with the number of pages currently in the write-ahead
+    // log file.  It resets to 0 after each checkpoint!
+    // https://www.sqlite.org/c3ref/wal_hook.html
 
-void WALCheckpointer::doHook (const char* db, int pages)
-{
-    if (!conn_) return;
-
-    if (pages < 1000)
+    if (pages < checkpointPageCount)
         return;
 
     {
         ScopedLockType sl (mutex_);
-
         if (running_)
             return;
-
         running_ = true;
     }
 
-    if (q_)
-        q_->addJob (jtWAL,
-                    std::string ("WAL"),
-                    std::bind (&WALCheckpointer::runWal, this));
-    else
-        notify ();
+    jobQueue_.addJob (
+        jtWAL, "WAL", std::bind (&WALCheckpointer::checkpoint, this));
 }
 
 void WALCheckpointer::run ()
 {
-    if (!conn_) return;
-
-    // Simple thread loop runs Wal every time it wakes up via
+    // Simple thread loop checkpoints every time it wakes up via
     // the call to Thread::notify, unless Thread::threadShouldExit returns
     // true in which case we simply break.
     //
@@ -226,32 +253,40 @@ void WALCheckpointer::run ()
         wait ();
         if (threadShouldExit ())
             break;
-        runWal ();
+        checkpoint ();
     }
 }
 
-void WALCheckpointer::runWal ()
+void WALCheckpointer::checkpoint ()
 {
-    if (!conn_) return;
-
     int log = 0, ckpt = 0;
     int ret = sqlite3_wal_checkpoint_v2 (
-        conn_, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        &conn_, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
+    auto fname = sqlite3_db_filename (&conn_, "main");
     if (ret != SQLITE_OK)
     {
         WriteLog ((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING, WALCheckpointer)
-            << "WAL(" << sqlite3_db_filename (conn_, "main") << "): error "
-            << ret;
+            << "WAL(" << fname << "): error " << ret;
     }
     else
-        WriteLog (lsTRACE, WALCheckpointer)
-            << "WAL(" << sqlite3_db_filename (conn_, "main")
-            << "): frames=" << log << ", written=" << ckpt;
-
     {
-        ScopedLockType sl (mutex_);
-        running_ = false;
+        WriteLog (lsTRACE, WALCheckpointer)
+            << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
     }
+
+    ScopedLockType sl (mutex_);
+    running_ = false;
 }
+
+} // namespace
+
+std::unique_ptr <Checkpointer> makeCheckpointer (
+    soci::session& session, JobQueue& queue)
+{
+    if (auto conn = getConnection (session))
+        return std::make_unique <WALCheckpointer> (*conn, queue);
+    return {};
+}
+
 }

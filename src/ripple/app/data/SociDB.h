@@ -33,7 +33,6 @@
 #include <beast/threads/Thread.h>
 #define SOCI_USE_BOOST
 #include <core/soci.h>
-// #include <core/unsigned-types.h>
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -43,6 +42,7 @@ namespace sqlite_api {
 }
 
 namespace ripple {
+
 template <class T, class C>
 T rangeCheckedCast (C c)
 {
@@ -58,41 +58,42 @@ T rangeCheckedCast (C c)
     }
     return static_cast<T>(c);
 }
-}
 
-namespace ripple {
 class BasicConfig;
 
 /**
- *  SociConfig is used when a client wants to delay opening a soci::session after
- *  parsing the config parameters. If a client want to open a session immediately,
- *  use the free function "open" below.
+   SociConfig is used when a client wants to delay opening a soci::session after
+   parsing the config parameters. If a client want to open a session
+   immediately, use the free function "open" below.
  */
 class SociConfig
 {
     std::string connectionString_;
     soci::backend_factory const& backendFactory_;
     SociConfig(std::pair<std::string, soci::backend_factory const&> init);
+
 public:
     SociConfig(BasicConfig const& config,
                std::string const& dbName);
     std::string connectionString () const;
-    void open(soci::session& s) const;
+    void open (soci::session& s) const;
 };
 
 /**
- *  Open a soci session.
- *
- *  @param s Session to open.
- *  @param config Parameters to pick the soci backend and how to connect to that
- *                backend.
- *  @param dbName Name of the database. This has different meaning for different backends.
- *                Sometimes it is part of a filename (sqlite3), othertimes it is a
- *                database name (postgresql).
- */
-void open(soci::session& s,
-          BasicConfig const& config,
-          std::string const& dbName);
+   Open a soci session.
+
+   @param s Session to open.
+
+   @param config Parameters to pick the soci backend and how to connect to that
+                 backend.
+
+   @param dbName Name of the database. This has different meaning for different
+                 backends. Sometimes it is part of a filename (sqlite3),
+                 other times it is a database name (postgresql).
+*/
+void open (soci::session& s,
+           BasicConfig const& config,
+           std::string const& dbName);
 
 /**
  *  Open a soci session.
@@ -103,48 +104,34 @@ void open(soci::session& s,
  *         see the soci::open documentation for how to use this.
  *
  */
-void open(soci::session& s,
-          std::string const& beName,
-          std::string const& connectionString);
+void open (soci::session& s,
+           std::string const& beName,
+           std::string const& connectionString);
 
 size_t getKBUsedAll (soci::session& s);
 size_t getKBUsedDB (soci::session& s);
 
-void convert(soci::blob& from, std::vector<std::uint8_t>& to);
-void convert(soci::blob& from, std::string& to);
-void convert(std::vector<std::uint8_t> const& from, soci::blob& to);
+void convert (soci::blob& from, std::vector<std::uint8_t>& to);
+void convert (soci::blob& from, std::string& to);
+void convert (std::vector<std::uint8_t> const& from, soci::blob& to);
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
-class WALCheckpointer
-        :private beast::Thread
+class Checkpointer
 {
-    friend int SqliteWALHook (void* s, sqlite_api::sqlite3*,
-                              const char* dbName, int walSize);
-public:
-    WALCheckpointer (std::shared_ptr<soci::session> const& s,
-                     JobQueue* q);
-    ~WALCheckpointer ();
-private:
-    void doHook (const char* db, int walSize);
-    void setupCheckpointing (JobQueue*);
-    void run ();
-    void runWal ();
-
-    std::shared_ptr<soci::session> session_;
-    sqlite_api::sqlite3* conn_ = nullptr;
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard<LockType>;
-    LockType mutex_;
-    JobQueue* q_ = nullptr;
-    bool running_ = false;
+  public:
+    virtual ~Checkpointer() = default;
 };
-}
+
+/** Returns a new checkpointer which start a thread that makes checkpoints of a
+    soci database every checkpointPageCount pages, using a new thread initially
+    and then subsequently scheduling later checkpoints on the job queue.
+
+    TODO: couldn't we do without the additional thread?
+
+    The Checkpointer contains references to the session and job queue
+    and so must outlive them both.
+ */
+std::unique_ptr <Checkpointer> makeCheckpointer (soci::session&, JobQueue&);
+
+} // ripple
 
 #endif
