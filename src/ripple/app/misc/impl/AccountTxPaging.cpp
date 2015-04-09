@@ -245,7 +245,7 @@ accountTxPage (
                 if (rawMeta.size() == 0)
                     onUnsavedLedger(ledgerSeq.value_or (0));
 
-                onTransaction(static_cast<std::uint32_t>(ledgerSeq.value_or (0)),
+                onTransaction(rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0)),
                     *status, rawData, rawMeta);
                 --numberOfResults;
             }
