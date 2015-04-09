@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-static auto checkpointPageCount = 1000;
+static auto const checkpointPageCount = 1000;
 
 namespace detail {
 
@@ -137,7 +137,7 @@ size_t getKBUsedDB (soci::session& s)
             conn, SQLITE_DBSTATUS_CACHE_USED, &cur, &hiw, 0);
         return cur / 1024;
     }
-    throw std::logic_error ("");
+    throw std::logic_error ("getKBUsedDB");
 }
 
 void convert (soci::blob& from, std::vector<std::uint8_t>& to)
@@ -164,13 +164,13 @@ void convert (std::vector<std::uint8_t> const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
+/* Run a thread to checkpoint the write ahead log (wal) for
+   the given soci::session every 1000 pages. This is only implemented
+   for sqlite databases.
 
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
+   Note: According to: https://www.sqlite.org/wal.html#ckpt this
+   is the default behavior of sqlite. We may be able to remove this
+   class.
 */
 class WALCheckpointer : public Checkpointer, private beast::Thread
 {
@@ -186,14 +186,14 @@ public:
 
 private:
     void runCheckpoint (const char* db, int walSize);
-    void run ();
+    void run () override;
     void checkpoint ();
 
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard<LockType>;
+    using MutexType = std::mutex;
+    using ScopedLockType = std::lock_guard <MutexType>;
 
     sqlite_api::sqlite3& conn_;
-    LockType mutex_;
+    MutexType mutex_;
     JobQueue& jobQueue_;
     bool running_ = false;
 
@@ -224,7 +224,11 @@ WALCheckpointer::~WALCheckpointer ()
 
 void WALCheckpointer::runCheckpoint (const char* db, int pages)
 {
-    if ((pages + 1) % checkpointPageCount)
+    // pages is called with the number of pages currently in the write-ahead
+    // log file.  It resets to 0 after each checkpoint!
+    // https://www.sqlite.org/c3ref/wal_hook.html
+
+    if (pages < checkpointPageCount)
         return;
 
     {

@@ -47,9 +47,10 @@ DatabaseCon::DatabaseCon (
         {
             session_ << initStrings[i];
         }
-        catch (soci::soci_error&)
+        catch (soci::soci_error const&)
         {
-            // ignore errors
+            // Ignore errors: the pre-soci code did not report errors and we
+            // wanted this new soci code to act similarly.
         }
     }
 }
@@ -67,8 +68,6 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 
 void DatabaseCon::setupCheckpointing (JobQueue* q)
 {
-    if (! q)
-        throw std::logic_error ("No JobQueue");
     checkpointer_ = makeCheckpointer (session_, *q);
 }
 
