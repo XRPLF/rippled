@@ -108,7 +108,7 @@ accountTxPage (
     // we need to clear it in between.
     token = Json::nullValue;
 
-    static std::string const& prefix (
+    static std::string const prefix (
         R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
           Status,RawTxn,TxnMeta
           FROM AccountTransactions INNER JOIN Transactions

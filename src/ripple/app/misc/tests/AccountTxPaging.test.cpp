@@ -18,14 +18,14 @@
 //==============================================================================
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/basics/TestSuite.h>
 #include <beast/cxx14/memory.h>  // <memory>
+#include <beast/unit_test/suite.h>
 #include <cstdlib>
 #include <vector>
 
 namespace ripple {
 
-struct AccountTxPaging_test : TestSuite
+struct AccountTxPaging_test : beast::unit_test::suite
 {
     std::unique_ptr<DatabaseCon> db;
     NetworkOPs::AccountTxs accountTxs;
@@ -241,6 +241,6 @@ struct AccountTxPaging_test : TestSuite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(AccountTxPaging,ripple_app,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AccountTxPaging,app,ripple);
 
 }

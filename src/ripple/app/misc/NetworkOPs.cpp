@@ -1991,9 +1991,7 @@ NetworkOPsImp::getTxsAccount (
     std::int32_t maxLedger, bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
-    static const std::uint32_t page_length (200);
-
-    using namespace std::placeholders;
+    static std::uint32_t const page_length (200);
 
     NetworkOPsImp::AccountTxs ret;
 
@@ -2019,8 +2017,6 @@ NetworkOPsImp::getTxsAccountB (
     int limit, bool bAdmin)
 {
     static const std::uint32_t page_length (500);
-
-    using namespace std::placeholders;
 
     MetaTxsList ret;
 
