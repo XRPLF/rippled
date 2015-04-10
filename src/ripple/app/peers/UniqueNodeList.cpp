@@ -30,6 +30,7 @@
 #include <ripple/basics/Time.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/crypto/Base58.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/JsonFields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
@@ -89,6 +90,18 @@ strJoin (Iterator first, Iterator last, std::string strSeparator)
     }
 
     return ossValues.str ();
+}
+
+static
+std::string
+encodeCredential (AnyPublicKey const& pk, unsigned char type)
+{
+    Blob buffer;
+    buffer.reserve(34);
+    buffer.push_back (type);
+    auto const data = pk.data();
+    buffer.insert (buffer.end(), data, data + pk.size());
+    return Base58::encodeWithCheck (buffer);
 }
 
 template <size_t I, class String>
@@ -215,6 +228,7 @@ private:
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
     hash_set<std::string>   mUNL;
+    hash_set<AnyPublicKey>  ephemeralValidatorKeys_;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
@@ -244,6 +258,9 @@ public:
     // This is called when the application is started.
     // Get update times and start fetching and scoring as needed.
     void start();
+
+    void insertEphemeralKey (AnyPublicKey const& pk, std::string const& comment);
+    void deleteEphemeralKey (AnyPublicKey const& pk);
 
     // Add a trusted node.  Called by RPC or other source.
     void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment);
@@ -469,6 +486,22 @@ void UniqueNodeListImp::start()
 
 //--------------------------------------------------------------------------
 
+void UniqueNodeListImp::insertEphemeralKey (AnyPublicKey const& pk, std::string const& comment)
+{
+    ScopedUNLLockType sl (mUNLLock);
+
+    ephemeralValidatorKeys_.insert (pk);  // JJURAN FIXME:  Store the comment
+}
+
+void UniqueNodeListImp::deleteEphemeralKey (AnyPublicKey const& pk)
+{
+    ScopedUNLLockType sl (mUNLLock);
+
+    ephemeralValidatorKeys_.erase (pk);
+}
+
+//--------------------------------------------------------------------------
+
 // Add a trusted node.  Called by RPC or other source.
 void UniqueNodeListImp::nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment)
 {
@@ -613,7 +646,15 @@ void UniqueNodeListImp::nodeScore()
 
 bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
 {
+    auto const& blob = naNodePublic.getNodePublic();
+    AnyPublicKey const pk (blob.data(), blob.size());
+
     ScopedUNLLockType sl (mUNLLock);
+
+    if (ephemeralValidatorKeys_.find (pk) != ephemeralValidatorKeys_.end())
+    {
+        return true;
+    }
 
     return mUNL.end () != mUNL.find (naNodePublic.humanNodePublic ());
 }
@@ -880,6 +921,18 @@ Json::Value UniqueNodeListImp::getUnlJson()
 
         node["publicKey"]   = strArray[0].value_or("");
         node["comment"]     = strArray[1].value_or("");
+
+        ret.append (node);
+    }
+
+    ScopedUNLLockType sl (mUNLLock);
+
+    for (auto const& key : ephemeralValidatorKeys_)
+    {
+        Json::Value node (Json::objectValue);
+
+        node["publicKey"]   = encodeCredential (key, VER_NODE_PUBLIC);
+        node["comment"]     = "ephemeral";
 
         ret.append (node);
     }

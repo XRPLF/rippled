@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 
 #include <ripple/app/peers/ClusterNodeStatus.h>
+#include <ripple/protocol/AnyPublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
@@ -53,6 +54,9 @@ public:
 
     // VFALCO TODO Roll this into the constructor so there is one less state.
     virtual void start () = 0;
+
+    virtual void insertEphemeralKey (AnyPublicKey const& pk, std::string const& comment) = 0;
+    virtual void deleteEphemeralKey (AnyPublicKey const& pk) = 0;
 
     // VFALCO TODO rename all these, the "node" prefix is redundant (lol)
     virtual void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment) = 0;
