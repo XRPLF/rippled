@@ -59,12 +59,12 @@ make_seed_pair() noexcept
     {
         std::mutex mutex;
         std::random_device rng;
-        std::mt19937_64 gen {rng()};
+        std::mt19937_64 gen;
         std::uniform_int_distribution <std::uint64_t> dist;
 
         state_t() : gen(rng()) {}
-        // state_t(state_t const&) = delete;
-        // state_t& operator=(state_t const&) = delete;
+        state_t(state_t const&) = delete;
+        state_t& operator=(state_t const&) = delete;
     };
     static beast::static_initializer <state_t> state;
     std::lock_guard <std::mutex> lock (state->mutex);
