@@ -34,5 +34,6 @@ HashPrefix const HashPrefix::txSign                      ('S', 'T', 'X');
 HashPrefix const HashPrefix::txMultiSign                 ('S', 'M', 'T');
 HashPrefix const HashPrefix::validation                  ('V', 'A', 'L');
 HashPrefix const HashPrefix::proposal                    ('P', 'R', 'P');
+HashPrefix const HashPrefix::manifest                   ('M', 'A', 'N');
 
 } // ripple

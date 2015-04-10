@@ -188,6 +188,12 @@ public:
     virtual
     ~PeerImp();
 
+    beast::Journal const&
+    pjournal() const
+    {
+        return p_journal_;
+    }
+
     PeerFinder::Slot::ptr const&
     slot()
     {
@@ -395,6 +401,7 @@ public:
         std::shared_ptr <::google::protobuf::Message> const& m);
 
     void onMessage (std::shared_ptr <protocol::TMHello> const& m);
+    void onMessage (std::shared_ptr <protocol::TMManifests> const& m);
     void onMessage (std::shared_ptr <protocol::TMPing> const& m);
     void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);

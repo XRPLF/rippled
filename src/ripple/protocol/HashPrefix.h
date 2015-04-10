@@ -92,6 +92,9 @@ public:
 
     /** proposal for signing */
     static HashPrefix const proposal;
+
+    /** Manifest */
+    static HashPrefix const manifest;
 };
 
 } // ripple

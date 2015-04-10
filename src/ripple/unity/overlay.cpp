@@ -20,12 +20,14 @@
 #include <BeastConfig.h>
 
 #include <ripple/overlay/impl/ConnectAttempt.cpp>
+#include <ripple/overlay/impl/Manifest.cpp>
 #include <ripple/overlay/impl/Message.cpp>
 #include <ripple/overlay/impl/OverlayImpl.cpp>
 #include <ripple/overlay/impl/PeerImp.cpp>
 #include <ripple/overlay/impl/PeerSet.cpp>
 #include <ripple/overlay/impl/TMHello.cpp>
 
+#include <ripple/overlay/tests/manifest_test.cpp>
 #include <ripple/overlay/tests/short_read.test.cpp>
 #include <ripple/overlay/tests/TMHello.test.cpp>
 

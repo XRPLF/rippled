@@ -3,6 +3,7 @@ package protocol;
 enum MessageType
 {
     mtHELLO                 = 1;
+    mtMANIFESTS             = 2;
     mtPING                  = 3;
     mtPROOFOFWORK           = 4;
     mtCLUSTER               = 5;
@@ -18,7 +19,6 @@ enum MessageType
     mtVALIDATION            = 41;
     mtGET_OBJECTS           = 42;
 
-    // <available>          = 2;
     // <available>          = 10;
     // <available>          = 11;
     // <available>          = 14;
@@ -31,6 +31,20 @@ enum MessageType
 // token, iterations, target, challenge = issue demand for proof of work
 // token, response = give solution to proof of work
 // token, result = report result of pow
+
+//------------------------------------------------------------------------------
+
+/* Provides the current ephemeral key for a validator. */
+message TMManifest
+{
+    // A Manifest object in the Ripple serialization format.
+    required bytes stobject = 1;
+}
+
+message TMManifests
+{
+    repeated TMManifest list = 1;
+}
 
 //------------------------------------------------------------------------------
 
