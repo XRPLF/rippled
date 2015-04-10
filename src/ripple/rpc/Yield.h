@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_YIELD_H_INCLUDED
 
 #include <ripple/json/Output.h>
+#include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
 #include <functional>
 
