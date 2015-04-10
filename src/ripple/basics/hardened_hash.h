@@ -59,7 +59,7 @@ make_seed_pair() noexcept
     {
         std::mutex mutex;
         std::random_device rng;
-        std::mt19937_64 gen {rng()};
+        std::mt19937_64 gen;
         std::uniform_int_distribution <std::uint64_t> dist;
 
         state_t() : gen(rng()) {}
