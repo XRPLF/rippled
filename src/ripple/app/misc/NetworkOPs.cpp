@@ -1997,7 +1997,7 @@ NetworkOPsImp::getTxsAccount (
 
     auto bound = [&ret](
         std::uint32_t ledger_index,
-        std::string const& status,
+        boost::optional<std::string> const& status,
         Blob const& rawTxn,
         Blob const& rawMeta)
     {
@@ -2022,7 +2022,7 @@ NetworkOPsImp::getTxsAccountB (
 
     auto bound = [&ret](
         std::uint32_t ledgerIndex,
-        std::string const& status,
+        boost::optional<std::string> const& status,
         Blob const& rawTxn,
         Blob const& rawMeta)
     {

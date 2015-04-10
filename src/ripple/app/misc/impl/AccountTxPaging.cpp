@@ -29,7 +29,7 @@ void
 convertBlobsToTxResult (
     NetworkOPs::AccountTxs& to,
     std::uint32_t ledger_index,
-    std::string const& status,
+    boost::optional<std::string> const& status,
     Blob const& rawTxn,
     Blob const& rawMeta)
 {
@@ -60,7 +60,7 @@ accountTxPage (
     DatabaseCon& connection,
     std::function<void (std::uint32_t)> const& onUnsavedLedger,
     std::function<void (std::uint32_t,
-                        std::string const&,
+                        boost::optional<std::string> const&,
                         Blob const&,
                         Blob const&)> const& onTransaction,
     RippleAddress const& account,
@@ -117,8 +117,6 @@ accountTxPage (
           )");
 
     std::string sql;
-
-    // SQL's BETWEEN uses a closed interval ([a,b])
 
     if (forward && (findLedger == 0))
     {
@@ -182,77 +180,67 @@ accountTxPage (
             % findSeq
             % queryLimit);
     }
-    else
+
+    auto db (connection.checkoutDb());
+
+    Blob rawData;
+    Blob rawMeta;
+
+    boost::optional<std::uint64_t> ledgerSeq64;
+    boost::optional<std::uint32_t> txnSeq;
+    boost::optional<std::string> status;
+    soci::blob txnData (*db);
+    soci::blob txnMeta (*db);
+    soci::indicator dataPresent, metaPresent;
+
+    soci::statement st = (db->prepare << sql,
+        soci::into (ledgerSeq64),
+        soci::into (txnSeq),
+        soci::into (status),
+        soci::into (txnData, dataPresent),
+        soci::into (txnMeta, metaPresent));
+
+    st.execute ();
+
+    while (st.fetch ())
     {
-        assert (false);
-        // sql is empty
-        return;
-    }
+        auto ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq64.value_or (0));
 
-    {
-        auto db (connection.checkoutDb());
-
-        Blob rawData;
-        Blob rawMeta;
-
-        boost::optional<std::uint64_t> ledgerSeq;
-        boost::optional<std::uint32_t> txnSeq;
-        boost::optional<std::string> status;
-        soci::blob txnData (*db);
-        soci::blob txnMeta (*db);
-        soci::indicator dataPresent, metaPresent;
-
-        soci::statement st = (db->prepare << sql,
-            soci::into (ledgerSeq),
-            soci::into (txnSeq),
-            soci::into (status),
-            soci::into (txnData, dataPresent),
-            soci::into (txnMeta, metaPresent));
-
-        st.execute ();
-
-        while (st.fetch ())
+        if (lookingForMarker)
         {
-            if (lookingForMarker)
+            if (findLedger == ledgerSeq && findSeq == txnSeq.value_or (0))
             {
-                if (findLedger == ledgerSeq.value_or (0) &&
-                    findSeq == txnSeq.value_or (0))
-                {
-                    lookingForMarker = false;
-                }
-            }
-            else if (numberOfResults == 0)
-            {
-                token = Json::objectValue;
-                token[jss::ledger] = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
-                token[jss::seq] = txnSeq.value_or (0);
-                break;
-            }
-
-            if (!lookingForMarker)
-            {
-                if (dataPresent == soci::i_ok)
-                    convert (txnData, rawData);
-                else
-                    rawData.clear ();
-
-                if (metaPresent == soci::i_ok)
-                    convert (txnMeta, rawMeta);
-                else
-                    rawMeta.clear ();
-
-                // Work around a bug that could leave the metadata missing
-                if (rawMeta.size() == 0)
-                    onUnsavedLedger(ledgerSeq.value_or (0));
-
-                onTransaction(rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0)),
-                    *status, rawData, rawMeta);
-                --numberOfResults;
+                lookingForMarker = false;
             }
         }
-    }
+        else if (numberOfResults == 0)
+        {
+            token = Json::objectValue;
+            token[jss::ledger] = ledgerSeq;
+            token[jss::seq] = txnSeq.value_or (0);
+            break;
+        }
 
-    return;
+        if (!lookingForMarker)
+        {
+            if (dataPresent == soci::i_ok)
+                convert (txnData, rawData);
+            else
+                rawData.clear ();
+
+            if (metaPresent == soci::i_ok)
+                convert (txnMeta, rawMeta);
+            else
+                rawMeta.clear ();
+
+            // Work around a bug that could leave the metadata missing
+            if (rawMeta.size() == 0)
+                onUnsavedLedger(ledgerSeq);
+
+            onTransaction(ledgerSeq, status, rawData, rawMeta);
+            --numberOfResults;
+        }
+    }
 }
 
 }

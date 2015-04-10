@@ -21,12 +21,10 @@
 #define RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
+#include <boost/optional.hpp>
 #include <cstdint>
 #include <string>
 #include <utility>
-
-
-//------------------------------------------------------------------------------
 
 namespace ripple {
 
@@ -34,7 +32,7 @@ void
 convertBlobsToTxResult (
     NetworkOPs::AccountTxs& to,
     std::uint32_t ledger_index,
-    std::string const& status,
+    boost::optional<std::string> const& status,
     Blob const& rawTxn,
     Blob const& rawMeta);
 
@@ -46,7 +44,7 @@ accountTxPage (
     DatabaseCon& database,
     std::function<void (std::uint32_t)> const& onUnsavedLedger,
     std::function<void (std::uint32_t,
-                        std::string const&,
+                        boost::optional<std::string> const&,
                         Blob const&,
                         Blob const&)> const&,
     RippleAddress const& account,

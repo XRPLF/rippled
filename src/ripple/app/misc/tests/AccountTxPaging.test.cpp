@@ -86,7 +86,7 @@ struct AccountTxPaging_test : beast::unit_test::suite
 
         auto bound = [&txs](
             std::uint32_t ledger_index,
-            std::string const& status,
+            boost::optional<std::string> const& status,
             Blob const& rawTxn,
             Blob const& rawMeta)
         {
