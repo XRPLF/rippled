@@ -35,6 +35,7 @@
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/peers/ClusterNodeStatus.h>
 #include <ripple/app/peers/UniqueNodeList.h>
 #include <ripple/app/tx/TransactionMaster.h>
@@ -1916,7 +1917,6 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
             auto txn = Transaction::transactionFromSQL (
                 ledgerSeq, status, rawTxn, Validate::NO);
 
-            
             if (txnMeta.empty ())
             { // Work around a bug that could leave the metadata missing
                 auto const seq = rangeCheckedCast<std::uint32_t>(
@@ -1942,7 +1942,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     std::uint32_t offset, int limit, bool bAdmin)
 {
     // can be called with no locks
-    std::vector< txnMetaLedgerType> ret;
+    std::vector<txnMetaLedgerType> ret;
 
     std::string sql = NetworkOPsImp::transactionsSQL (
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
@@ -1985,254 +1985,54 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     return ret;
 }
 
-
-NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
+NetworkOPsImp::AccountTxs
+NetworkOPsImp::getTxsAccount (
     RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger, bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
-    AccountTxs ret;
+    static std::uint32_t const page_length (200);
 
-    std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    std::uint32_t EXTRA_LENGTH = 100;
+    NetworkOPsImp::AccountTxs ret;
 
-    bool foundResume = token.isNull() || !token.isObject();
-
-    std::uint32_t numberOfResults, queryLimit;
-    if (limit <= 0)
-        numberOfResults = NONBINARY_PAGE_LENGTH;
-    else if (!bAdmin && (limit > NONBINARY_PAGE_LENGTH))
-        numberOfResults = NONBINARY_PAGE_LENGTH;
-    else
-        numberOfResults = limit;
-    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
-
-    std::uint32_t findLedger = 0, findSeq = 0;
-    if (!foundResume)
+    auto bound = [&ret](
+        std::uint32_t ledger_index,
+        boost::optional<std::string> const& status,
+        Blob const& rawTxn,
+        Blob const& rawMeta)
     {
-        try
-        {
-            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
-                return ret;
-            findLedger = token[jss::ledger].asInt();
-            findSeq = token[jss::seq].asInt();
-        }
-        catch (...)
-        {
-            return ret;
-        }
-    }
+        convertBlobsToTxResult (ret, ledger_index, status, rawTxn, rawMeta);
+    };
 
-    // ST NOTE We're using the token reference both for passing inputs and
-    //         outputs, so we need to clear it in between.
-    token = Json::nullValue;
-
-    std::string sql = boost::str (boost::format
-        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,"
-         "Status,RawTxn,TxnMeta "
-         "FROM AccountTransactions INNER JOIN Transactions "
-         "ON Transactions.TransID = AccountTransactions.TransID "
-         "WHERE AccountTransactions.Account = '%s' "
-         "AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
-         "ORDER BY AccountTransactions.LedgerSeq %s, "
-         "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-         "LIMIT %u;")
-             % account.humanAccountID()
-             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
-             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % queryLimit);
-    {
-        auto db = getApp().getTxnDB ().checkoutDb ();
-
-        boost::optional<std::uint64_t> ledgerSeq64;
-        boost::optional<std::int32_t> txnSeq;
-        boost::optional<std::string> status;
-        soci::blob sociTxnBlob (*db), sociTxnMetaBlob (*db);
-        soci::indicator rti, tmi;
-        Blob rawTxn, txnMeta;
-
-        soci::statement st =
-                (db->prepare << sql,
-                 soci::into(ledgerSeq64),
-                 soci::into(txnSeq),
-                 soci::into(status),
-                 soci::into(sociTxnBlob, rti),
-                 soci::into(sociTxnMetaBlob, tmi));
-
-        st.execute ();
-        while (st.fetch ())
-        {
-            if (soci::i_ok == rti)
-                convert(sociTxnBlob, rawTxn);
-            else
-                rawTxn.clear ();
-
-            if (soci::i_ok == tmi)
-                convert (sociTxnMetaBlob, txnMeta);
-            else
-                txnMeta.clear ();
-
-            auto const ledgerSeq = rangeCheckedCast<std::uint32_t>(
-                ledgerSeq64.value_or (0));
-
-            if (!foundResume)
-            {
-                foundResume = (findLedger == ledgerSeq &&
-                               findSeq == txnSeq.value_or (0));
-            }
-            else if (numberOfResults == 0)
-            {
-                token = Json::objectValue;
-                token[jss::ledger] = ledgerSeq;
-                token[jss::seq] = txnSeq.value_or (0);
-                break;
-            }
-
-            if (foundResume)
-            {
-                auto txn = Transaction::transactionFromSQL (
-                    ledgerSeq64, status, rawTxn, Validate::NO);
-
-                if (txnMeta.empty ())
-                {
-                    // Work around a bug that could leave the metadata missing
-                    m_journal.warning << "Recovering ledger " << ledgerSeq
-                                      << ", txn " << txn->getID();
-                    Ledger::pointer ledger = getLedgerBySeq(ledgerSeq);
-                    if (ledger)
-                        ledger->pendSaveValidated(false, false);
-                }
-
-                --numberOfResults;
-
-                ret.emplace_back (std::move (txn),
-                    std::make_shared<TransactionMetaSet> (
-                        txn->getID (), txn->getLedger (), txnMeta));
-            }
-        }
-    }
+    accountTxPage(getApp().getTxnDB (), saveLedgerAsync, bound, account,
+        minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
 
     return ret;
 }
 
-NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
+NetworkOPsImp::MetaTxsList
+NetworkOPsImp::getTxsAccountB (
     RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger,  bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
+    static const std::uint32_t page_length (500);
+
     MetaTxsList ret;
 
-    std::uint32_t BINARY_PAGE_LENGTH = 500;
-    std::uint32_t EXTRA_LENGTH = 100;
-
-    bool foundResume = token.isNull() || !token.isObject();
-
-    std::uint32_t numberOfResults, queryLimit;
-    if (limit <= 0)
-        numberOfResults = BINARY_PAGE_LENGTH;
-    else if (!bAdmin && (limit > BINARY_PAGE_LENGTH))
-        numberOfResults = BINARY_PAGE_LENGTH;
-    else
-        numberOfResults = limit;
-    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
-
-    std::uint32_t findLedger = 0, findSeq = 0;
-    if (!foundResume)
+    auto bound = [&ret](
+        std::uint32_t ledgerIndex,
+        boost::optional<std::string> const& status,
+        Blob const& rawTxn,
+        Blob const& rawMeta)
     {
-        try
-        {
-            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
-                return ret;
-            findLedger = token[jss::ledger].asInt();
-            findSeq = token[jss::seq].asInt();
-        }
-        catch (...)
-        {
-            return ret;
-        }
-    }
+        ret.emplace_back (strHex(rawTxn), strHex (rawMeta), ledgerIndex);
+    };
 
-    token = Json::nullValue;
-
-    std::string sql = boost::str (boost::format
-        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,"
-         "Status,RawTxn,TxnMeta "
-         "FROM AccountTransactions INNER JOIN Transactions "
-         "ON Transactions.TransID = AccountTransactions.TransID "
-         "WHERE AccountTransactions.Account = '%s' "
-         "AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
-         "ORDER BY AccountTransactions.LedgerSeq %s, "
-         "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-         "LIMIT %u;")
-             % account.humanAccountID()
-             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
-             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % (forward ? "ASC" : "DESC")
-             % queryLimit);
-    {
-        auto db = getApp().getTxnDB ().checkoutDb ();
-
-        boost::optional<std::int64_t> ledgerSeq;
-        boost::optional<std::int32_t> txnSeq;
-        boost::optional<std::string> status;
-        soci::blob sociTxnBlob (*db);
-        soci::indicator rtI;
-        soci::blob sociTxnMetaBlob (*db);
-        soci::indicator tmI;
-
-        soci::statement st = (db->prepare << sql,
-                              soci::into (ledgerSeq),
-                              soci::into (txnSeq),
-                              soci::into (status),
-                              soci::into (sociTxnBlob, rtI),
-                              soci::into (sociTxnMetaBlob, tmI));
-
-        st.execute ();
-        while (st.fetch ())
-        {
-            if (!foundResume)
-            {
-                if (findLedger == ledgerSeq.value_or (0) &&
-                    findSeq == txnSeq.value_or (0))
-                {
-                    foundResume = true;
-                }
-            }
-            else if (numberOfResults == 0)
-            {
-                token = Json::objectValue;
-                token[jss::ledger] = rangeCheckedCast<std::int32_t>(
-                    ledgerSeq.value_or(0));
-                token[jss::seq] = txnSeq.value_or(0);
-                break;
-            }
-
-            if (foundResume)
-            {
-                Blob rawTxn;
-                if (soci::i_ok == rtI)
-                    convert (sociTxnBlob, rawTxn);
-                Blob txnMeta;
-                if (soci::i_ok == tmI)
-                    convert (sociTxnMetaBlob, txnMeta);
-
-                ret.emplace_back (
-                    strHex (rawTxn.begin (), rawTxn.size ()),
-                    strHex (txnMeta.begin (), txnMeta.size ()),
-                    rangeCheckedCast<std::int32_t>(ledgerSeq.value_or (0)));
-                --numberOfResults;
-            }
-        }
-    }
-
+    accountTxPage(getApp().getTxnDB (), saveLedgerAsync, bound, account,
+        minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
     return ret;
 }
-
 
 std::vector<RippleAddress>
 NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
@@ -2256,7 +2056,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
                 convert (accountBlob, accountStr);
             else
                 accountStr.clear ();
-            
+
             if (acct.setAccountID (accountStr))
                 accounts.push_back (acct);
         }

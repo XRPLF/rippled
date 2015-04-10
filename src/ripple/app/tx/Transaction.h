@@ -64,13 +64,22 @@ public:
 public:
     Transaction (STTx::ref, Validate, std::string&) noexcept;
 
-    static Transaction::pointer sharedTransaction (Blob const&, Validate);
-    static Transaction::pointer transactionFromSQL (
+    static
+    Transaction::pointer
+    sharedTransaction (Blob const&, Validate);
+
+    static
+    Transaction::pointer
+    transactionFromSQL (
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,
         Blob const& rawTxn,
         Validate validate);
 
+    static
+    TransStatus
+    sqlTransactionStatus(boost::optional<std::string> const& status);
+    
     bool checkSign (std::string&) const;
 
     STTx::ref getSTransaction ()
