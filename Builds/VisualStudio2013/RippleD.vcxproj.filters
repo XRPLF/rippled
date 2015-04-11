@@ -1770,6 +1770,9 @@
     <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>
     </ClInclude>
