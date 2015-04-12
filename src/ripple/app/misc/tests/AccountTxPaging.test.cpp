@@ -34,16 +34,19 @@ struct AccountTxPaging_test : beast::unit_test::suite
     void
     run() override
     {
-        std::string fixturesPath = std::getenv("TEST_FIXTURES");
+        std::string data_path;
 
-        if (fixturesPath.empty ())
+        if (auto const fixtures = std::getenv("TEST_FIXTURES"))
+            data_path = fixtures;
+
+        if (data_path.empty ())
         {
-            fail("TEST_FIXTURES environment var not declared");
+            fail("The 'TEST_FIXTURES' environment variable is empty.");
             return;
         }
 
         DatabaseCon::Setup dbConf;
-        dbConf.dataDir = fixturesPath + "/";
+        dbConf.dataDir = data_path + "/";
 
         db_ = std::make_unique <DatabaseCon> (
             dbConf, "account-tx-transactions.db", nullptr, 0);
