@@ -20,7 +20,9 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
+#include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
@@ -109,6 +111,8 @@ private:
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
 
+    ManifestCache manifestCache_;
+
     //--------------------------------------------------------------------------
 
 public:
@@ -140,10 +144,30 @@ public:
         return serverHandler_;
     }
 
+    ManifestCache const&
+    manifestCache() const
+    {
+        return manifestCache_;
+    }
+
     Setup const&
     setup() const
     {
         return setup_;
+    }
+
+    // Yet another "for_each"
+    template <class Function>
+    void
+    for_each(Function&& f)
+    {
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        for (auto const& e : m_publicKeyMap)
+        {
+            auto const sp = e.second.lock();
+            if (sp)
+                f(sp);
+        }
     }
 
     Handoff
@@ -174,6 +198,12 @@ public:
     // Called when an active peer is destroyed.
     void
     onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
+
+    // Called when TMManifests is received from a peer
+    void
+    onManifests (Job&,
+        std::shared_ptr<protocol::TMManifests> const& m,
+            std::shared_ptr<PeerImp> const& from);
 
     static
     bool
