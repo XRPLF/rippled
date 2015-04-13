@@ -585,28 +585,25 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             port.admin_ip.emplace ();
             while (std::getline (ss, ip, ','))
             {
-                beast::IP::Address const addr(
-                    beast::IP::Endpoint::from_string_altform (ip).address ());
-
-                if (addr.is_any ())
-                {
-                    has_any = true;
-                }
-                else if (is_unspecified (addr))
+                auto const addr = beast::IP::Endpoint::from_string_checked (ip);
+                if (! addr.second)
                 {
                     log << "Invalid value '" << ip << "' for key 'admin' in ["
-                        << section.name() << "]\n";
+                        << section.name () << "]\n";
                     throw std::exception ();
                 }
 
+                if (is_unspecified (addr.first))
+                    has_any = true;
+
                 if (has_any && ! port.admin_ip->empty ())
                 {
-                    log << "IP specified with 0.0.0.0 '" << ip <<
+                    log << "IP specified along with 0.0.0.0 '" << ip <<
                         "' for key 'admin' in [" << section.name () << "]\n";
                     throw std::exception ();
                 }
 
-                port.admin_ip->emplace_back (addr);
+                port.admin_ip->emplace_back (addr.first.address ());
             }
         }
     }

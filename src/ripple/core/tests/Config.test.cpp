@@ -40,7 +40,7 @@ port_wss_admin
 [port_rpc]
 port = 5005
 ip = 127.0.0.1
-admin = allow
+admin = 127.0.0.1
 protocol = https
 
 [port_peer]
@@ -51,7 +51,7 @@ protocol = peer
 [port_wss_admin]
 port = 6006
 ip = 127.0.0.1
-admin = allow
+admin = 127.0.0.1
 protocol = wss
 
 #[port_ws_public]
