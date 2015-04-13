@@ -28,6 +28,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/TMHello.h>
 #include <ripple/peerfinder/make_Manager.h>
+#include <ripple/protocol/STExchange.h>
 #include <beast/ByteOrder.h>
 #include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
@@ -425,9 +426,47 @@ OverlayImpl::checkStopped ()
         stopped();
 }
 
+static
+void
+prepareValidatorKeyManifests (ManifestCache& mc, beast::Journal const& journal)
+{
+    auto const validator_keys = getConfig().section("validator_keys");
+    auto const validation_manifest = getConfig().section("validation_manifest");
+
+    if (! validator_keys.lines().empty())
+    {
+        for (auto const& line : validator_keys.lines())
+        {
+            mc.configValidatorKey (line, journal);
+        }
+    }
+    else
+    {
+        if (journal.warning)
+            journal.warning << "[validator_keys] is empty";
+    }
+
+    if (! validation_manifest.lines().empty())
+    {
+        std::string s;
+        for (auto const& line : validation_manifest.lines())
+            s += beast::rfc2616::trim(line);
+        s = beast::base64_decode(s);
+        mc.configManifest(std::move(s), journal);
+    }
+    else
+    {
+        if (journal.warning)
+            journal.warning << "No [validation_manifest] section in config";
+    }
+
+}
+
 void
 OverlayImpl::onPrepare()
 {
+    prepareValidatorKeyManifests (manifestCache_, journal_);
+
     PeerFinder::Config config;
 
     if (getConfig ().PEERS_MAX != 0)
@@ -568,6 +607,62 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
     std::lock_guard <decltype(mutex_)> lock (mutex_);
     m_shortIdMap.erase(id);
     m_publicKeyMap.erase(publicKey);
+}
+
+void
+OverlayImpl::onManifests (Job&,
+    std::shared_ptr<protocol::TMManifests> const& inbox,
+        std::shared_ptr<PeerImp> const& from)
+{
+    auto const n = inbox->list_size();
+    auto const& journal = from->pjournal();
+
+    if (journal.debug) journal.debug
+        << "TMManifest, " << n << (n == 1 ? " item" : " items");
+
+    protocol::TMManifests outbox;
+
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        auto& s = inbox->list().Get(i).stobject();
+        STObject st(sfGeneric);
+        try
+        {
+            SerialIter sit(s.data(), s.size());
+            st.set(sit);
+        }
+        catch(...)
+        {
+            if (journal.info) journal.info
+                << "Bad manifest #" << i + 1;
+            continue;
+        }
+        auto const pk = get<AnyPublicKey>(st, sfPublicKey);
+        auto const seq = get(st, sfSequence);
+
+        if (pk && seq && manifestCache_.applyManifest (*pk, *seq, s, journal))
+        {
+            outbox.add_list()->set_stobject(s);
+        }
+    }
+
+    if (outbox.list_size() == 0)
+        return;
+
+    if (journal.debug) journal.debug
+        << "Forwarding " << outbox.list_size() << " manifests...";
+
+    auto const msg = std::make_shared<Message>(outbox, protocol::mtMANIFESTS);
+
+    for_each( [&](std::shared_ptr<PeerImp> const& peer)
+        {
+            if (peer != from)
+            {
+                if (auto const& j = peer->pjournal().debug) j
+                    << "... to " << peer.get();
+                peer->send(msg);
+            }
+        });
 }
 
 std::size_t

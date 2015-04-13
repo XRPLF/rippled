@@ -20,7 +20,9 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
+#include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
@@ -113,7 +115,7 @@ private:
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
-
+    ManifestCache manifestCache_;
     int timer_count_;
 
     //--------------------------------------------------------------------------
@@ -145,6 +147,12 @@ public:
     serverHandler()
     {
         return serverHandler_;
+    }
+
+    ManifestCache const&
+    manifestCache() const
+    {
+        return manifestCache_;
     }
 
     Setup const&
@@ -222,6 +230,12 @@ public:
                 f(std::move(sp));
         }
     }
+
+    // Called when TMManifests is received from a peer
+    void
+    onManifests (Job&,
+        std::shared_ptr<protocol::TMManifests> const& m,
+            std::shared_ptr<PeerImp> const& from);
 
     static
     bool

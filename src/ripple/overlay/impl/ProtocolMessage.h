@@ -42,6 +42,7 @@ protocolMessageName (int type)
     switch (type)
     {
     case protocol::mtHELLO:             return "hello";
+    case protocol::mtMANIFESTS:         return "manifests";
     case protocol::mtPING:              return "ping";
     case protocol::mtPROOFOFWORK:       return "proof_of_work";
     case protocol::mtCLUSTER:           return "cluster";
@@ -112,6 +113,7 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     switch (type)
     {
     case protocol::mtHELLO:         ec = detail::invoke<protocol::TMHello> (type, buffers, handler); break;
+    case protocol::mtMANIFESTS:     ec = detail::invoke<protocol::TMManifests> (type, buffers, handler); break;
     case protocol::mtPING:          ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
     case protocol::mtCLUSTER:       ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
     case protocol::mtGET_PEERS:     ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
