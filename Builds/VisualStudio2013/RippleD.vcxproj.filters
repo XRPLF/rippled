@@ -3216,6 +3216,12 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\ConnectAttempt.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Manifest.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\Manifest.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
@@ -3264,6 +3270,9 @@
     <None Include="..\..\src\ripple\overlay\README.md">
       <Filter>ripple\overlay</Filter>
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\manifest_test.cpp">
+      <Filter>ripple\overlay\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
       <Filter>ripple\overlay\tests</Filter>
     </ClCompile>

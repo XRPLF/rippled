@@ -2690,6 +2690,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ConnectAttempt.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Manifest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\Manifest.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2730,6 +2736,10 @@
     </ClInclude>
     <None Include="..\..\src\ripple\overlay\README.md">
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\manifest_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
