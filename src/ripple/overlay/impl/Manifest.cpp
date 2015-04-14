@@ -145,7 +145,14 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
             return false;
         }
 
-        unl.insertEphemeralKey (m->signingKey, iter->second.comment);
+        if (seq == std::size_t (-1))
+        {
+            // The master key is revoked -- don't insert the signing key
+        }
+        else
+        {
+            unl.insertEphemeralKey (m->signingKey, iter->second.comment);
+        }
 
         old = std::move (m);
     }
