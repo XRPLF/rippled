@@ -102,8 +102,15 @@ private:
 
 public:
     AnyPublicKey() = delete;
-    AnyPublicKey (AnyPublicKey const&) = delete;
     AnyPublicKey& operator= (AnyPublicKey const&) = delete;
+
+    AnyPublicKey (AnyPublicKey const& other)
+        : buffer_type(other.buffer_type::member.data(),
+            other.buffer_type::member.size())
+        , AnyPublicKeySlice (buffer_type::member.data(),
+            buffer_type::member.size())
+    {
+    }
 
 #ifdef _MSC_VER
     AnyPublicKey (AnyPublicKey&& other)

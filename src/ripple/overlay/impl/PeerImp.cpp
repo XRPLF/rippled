@@ -585,6 +585,22 @@ void
 PeerImp::doProtocolStart()
 {
     onReadMessage(error_code(), 0);
+
+    protocol::TMManifests tm;
+
+    overlay_.manifestCache().for_each_manifest(
+        [&](Manifest const& manifest)
+        {
+            auto const& s = manifest.serialized;
+            auto& tm_e = *tm.add_list();
+            tm_e.set_stobject(s.data(), s.size());
+        });
+
+    if (tm.list_size() > 0)
+    {
+        auto m = std::make_shared<Message>(tm, protocol::mtMANIFESTS);
+        send (m);
+    }
 }
 
 // Called repeatedly with protocol message data
@@ -711,6 +727,15 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
 {
     fail("Deprecated TMHello");
+}
+
+void
+PeerImp::onMessage (std::shared_ptr<protocol::TMManifests> const& m)
+{
+    // VFALCO What's the right job type?
+    getApp().getJobQueue().addJob (jtVALIDATION_ut,
+        "receiveManifests", std::bind(&OverlayImpl::onManifests,
+            &overlay_, std::placeholders::_1, m, shared_from_this()));
 }
 
 void

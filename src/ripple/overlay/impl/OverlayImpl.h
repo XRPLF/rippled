@@ -20,7 +20,9 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
+#include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
@@ -92,31 +94,24 @@ private:
     boost::asio::io_service& io_service_;
     boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
-
     std::recursive_mutex mutex_; // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
     boost::container::flat_map<
         Child*, std::weak_ptr<Child>> list_;
-
     Setup setup_;
     beast::Journal journal_;
     ServerHandler& serverHandler_;
-
     Resource::Manager& m_resourceManager;
-
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
-
     hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> m_peers;
-
     hash_map<RippleAddress, std::weak_ptr<PeerImp>> m_publicKeyMap;
-
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
-
     Resolver& m_resolver;
-
     std::atomic <Peer::id_t> next_id_;
+
+    ManifestCache manifestCache_;
 
     //--------------------------------------------------------------------------
 
@@ -149,10 +144,30 @@ public:
         return serverHandler_;
     }
 
+    ManifestCache const&
+    manifestCache() const
+    {
+        return manifestCache_;
+    }
+
     Setup const&
     setup() const
     {
         return setup_;
+    }
+
+    // Yet another "for_each"
+    template <class Function>
+    void
+    for_each(Function&& f)
+    {
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        for (auto const& e : m_publicKeyMap)
+        {
+            auto const sp = e.second.lock();
+            if (sp)
+                f(sp);
+        }
     }
 
     Handoff
@@ -180,9 +195,15 @@ public:
     void
     activate (std::shared_ptr<PeerImp> const& peer);
 
-    /** Called when an active peer is destroyed. */
+    // Called when an active peer is destroyed.
     void
     onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
+
+    // Called when TMManifests is received from a peer
+    void
+    onManifests (Job&,
+        std::shared_ptr<protocol::TMManifests> const& m,
+            std::shared_ptr<PeerImp> const& from);
 
     static
     bool
@@ -200,6 +221,11 @@ private:
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
 
+    /*  The number of active peers on the network
+        Active peers are only those peers that have completed the handshake
+        and are running the Ripple protocol.
+    */
+    // VFALCO Why private?
     std::size_t
     size() override;
 

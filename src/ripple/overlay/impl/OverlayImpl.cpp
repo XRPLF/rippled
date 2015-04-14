@@ -27,6 +27,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/TMHello.h>
 #include <ripple/peerfinder/make_Manager.h>
+#include <ripple/protocol/STExchange.h>
 #include <beast/ByteOrder.h>
 #include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
@@ -424,6 +425,35 @@ OverlayImpl::checkStopped ()
 void
 OverlayImpl::onPrepare()
 {
+    auto const validator_keys = getConfig().section("validator_keys");
+    auto const validation_manifest = getConfig().section("validation_manifest");
+
+    if (! validator_keys.lines().empty())
+    {
+        for (auto const& line : validator_keys.lines())
+        {
+            manifestCache_.configValidatorKey (line, journal_);
+        }
+    }
+    else if (journal_.warning)
+    {
+        journal_.warning << "[validator_keys] is empty";
+    }
+
+    if (! validation_manifest.lines().empty())
+    {
+        std::string s;
+        for (auto const& line : validation_manifest.lines())
+            s += beast::rfc2616::trim(line);
+        s = beast::base64_decode(s);
+        manifestCache_.configManifest(s, journal_);
+    }
+    else
+    {
+        if (journal_.warning)
+            journal_.warning << "No [validation_manifest] section in config";
+    }
+
     PeerFinder::Config config;
 
     if (getConfig ().PEERS_MAX != 0)
@@ -566,10 +596,77 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
     m_publicKeyMap.erase(publicKey);
 }
 
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the Ripple protocol.
-*/
+void
+OverlayImpl::onManifests (Job&,
+    std::shared_ptr<protocol::TMManifests> const& mIn,
+        std::shared_ptr<PeerImp> const& from)
+{
+    auto const n = mIn->list_size();
+    auto const& journal = from->pjournal();
+
+    if (journal.debug) journal.debug
+        << "TMManifest, " << n << (n == 1 ? " item" : " items");
+
+    protocol::TMManifests mOut;
+
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        auto const& manifest = mIn->list().Get(i);
+        auto const& s = manifest.stobject();
+        STObject st(sfGeneric);
+        try
+        {
+            SerialIter sit(s.data(), s.size());
+            st.set(sit);
+        }
+        catch(...)
+        {
+            if (journal.info) journal.info
+                << "Bad manifest #" << i + 1;
+            continue;
+        }
+        auto const pk = get<AnyPublicKey>(st, sfPublicKey);
+        auto const seq = get(st, sfSequence);
+        if (! pk ||
+            ! seq ||
+            ! get(st, sfSignature) ||
+            ! get(st, sfSigningPubKey))           
+        {
+            if (journal.info) journal.info
+                << "Malformed manifest #" << i + 1;
+            continue;
+        }
+        // `continue` if pk is untrusted
+        if (! manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
+        {
+            if (journal.warning) journal.warning
+                << "Ignored manifest seq #" << *seq << " for " << *pk;
+            continue;
+        }
+        if (journal.warning) journal.warning
+            << "Accepted manifest seq #" << *seq << " for " << *pk;
+        mOut.add_list()->set_stobject(s);
+    }
+
+    if (mOut.list_size() == 0)
+        return;
+
+    if (journal.warning) journal.warning
+        << "Forwarding " << mOut.list_size() << " manifests...";
+
+    auto const msg = std::make_shared<Message>(mOut, protocol::mtMANIFESTS);
+
+    for_each( [&](std::shared_ptr<PeerImp> const& peer)
+        {
+            if (peer != from)
+            {
+                if (peer->pjournal().warning) peer->pjournal().warning
+                    << "... to " << peer.get();
+                peer->send(msg);
+            }
+        });
+}
+
 std::size_t
 OverlayImpl::size()
 {

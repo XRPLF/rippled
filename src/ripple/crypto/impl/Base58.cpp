@@ -203,7 +203,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
         bn += bnChar;
     }
 
-    // Get bignum as little endian data
+    // Get bignum as big endian data
     Blob vchTmp = bn.getvch ();
 
     // Trim off sign byte if present
@@ -218,7 +218,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
 
     vchRet.assign (nLeadingZeros + vchTmp.size (), 0);
 
-    // Convert little endian data to big endian
+    // Convert big endian data to little endian
     std::reverse_copy (vchTmp.begin (), vchTmp.end (), vchRet.end () - vchTmp.size ());
     return true;
 }

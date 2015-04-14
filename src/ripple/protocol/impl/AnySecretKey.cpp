@@ -77,7 +77,7 @@ AnySecretKey::publicKey() const
     {
         unsigned char buf[33];
         buf[0] = 0xED;
-        ed25519_publickey(p_.data() + 1, &buf[1]);
+        ed25519_publickey(p_.data(), &buf[1]);
         return AnyPublicKey(buf, sizeof(buf));
     }
     default:
@@ -94,7 +94,7 @@ AnySecretKey::sign (
     {
         case KeyType::ed25519:
         {
-            auto const sk = p_.data() + 1;
+            auto const sk = p_.data();
             ed25519_public_key pk;
             ed25519_publickey(sk, pk);
             Buffer b(64);
