@@ -35,13 +35,12 @@ unpackManifest(void const* data, std::size_t size)
     SerialIter sit(data, size);
     st.set(sit);
     auto const mseq = get(st, sfSequence);
-//    auto const msig = get(st, sfSignature);
     auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
     auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
     if (! mseq || ! mpk || ! mspk)
         return boost::optional<Manifest>();
-//    if (! verify(*mpk, data, size, *msig))
-//        return boost::optional<Manifest>();
+    if (! verify(st, HashPrefix::manifest, *mpk))
+        return boost::optional<Manifest>();
 
     std::string const s (static_cast<char const*>(data), size);
     return Manifest(s, std::move (*mpk), std::move (*mspk), *mseq);
