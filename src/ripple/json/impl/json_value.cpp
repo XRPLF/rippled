@@ -185,8 +185,10 @@ Value::CZString::operator = ( const CZString& other )
 bool
 Value::CZString::operator< ( const CZString& other ) const
 {
+    assert (!cstr_ == !other.cstr_); // either both null, or both non-null
+
     if ( cstr_ )
-        return strcmp ( cstr_, other.cstr_ ) < 0;
+        return other.cstr_ && strcmp ( cstr_, other.cstr_ ) < 0;
 
     return index_ < other.index_;
 }
@@ -194,8 +196,10 @@ Value::CZString::operator< ( const CZString& other ) const
 bool
 Value::CZString::operator== ( const CZString& other ) const
 {
+    assert (!cstr_ == !other.cstr_); // either both null, or both non-null
+
     if ( cstr_ )
-        return strcmp ( cstr_, other.cstr_ ) == 0;
+        return other.cstr_ && strcmp ( cstr_, other.cstr_ ) == 0;
 
     return index_ == other.index_;
 }
