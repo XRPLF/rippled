@@ -25,6 +25,36 @@ namespace RPC {
 
 namespace {
 
+bool
+synced (NetworkOPs& netOps, Ledger::pointer ledger)
+{
+    static auto const minSequenceGap = 10;
+
+    if (getConfig ().RUN_STANDALONE)
+        return true;
+
+    if (ledger == netOps.getValidatedLedger ())
+    {
+        return getApp ().getLedgerMaster ().getValidatedLedgerAge () <=
+            Tuning::maxValidatedLedgerAge;
+    }
+
+    if (ledger != netOps.getCurrentLedger () &&
+        ledger != netOps.getClosedLedger ())
+    {
+        return true;
+    }
+
+    if (getApp ().getLedgerMaster ().getValidatedLedgerAge () >
+        Tuning::maxValidatedLedgerAge)
+    {
+        return false;
+    }
+
+    return ledger->getLedgerSeq () >
+        (netOps.getValidatedSeq () + minSequenceGap);
+}
+
 Status ledgerFromRequest (
     Json::Value const& params,
     Ledger::pointer& ledger,
@@ -47,35 +77,53 @@ Status ledgerFromRequest (
 
     if (!hashValue.empty())
     {
+        if (! hashValue.isString ())
+            return {rpcINVALID_PARAMS, "ledgerHashNotString"};
+
         uint256 ledgerHash;
-        if (hashValue.isString() && ledgerHash.SetHex (hashValue.asString ()))
-            ledger = netOps.getLedgerByHash (ledgerHash);
-        else
+        if (! ledgerHash.SetHex (hashValue.asString ()))
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+           
+        ledger = netOps.getLedgerByHash (ledgerHash);
     }
     else if (indexValue.isNumeric())
     {
-        ledger = netOps.getLedgerBySeq (indexValue.asInt());
+        ledger = netOps.getLedgerBySeq (indexValue.asInt ());
     }
     else
     {
-        auto index = indexValue.asString();
-        auto isCurrent = index.empty() || index == "current";
+        auto const index = indexValue.asString ();
+        auto const isCurrent = index.empty() || index == "current";
         if (isCurrent)
             ledger = netOps.getCurrentLedger ();
         else if (index == "closed")
-            ledger = getApp().getLedgerMaster ().getClosedLedger ();
+            ledger = netOps.getClosedLedger ();
         else if (index == "validated")
             ledger = netOps.getValidatedLedger ();
         else
             return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
+        if (ledger == nullptr)
+            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+
         assert (ledger->isImmutable());
         assert (ledger->isClosed() == !isCurrent);
     }
 
-    if (!ledger)
+    if (ledger == nullptr)
+    {
+        auto cl = netOps.getCurrentLedger ();
+        if (cl == nullptr || ! synced (netOps, cl))
+            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+
         return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
+    }
+
+    if (! synced (netOps, ledger))
+    {
+        ledger.reset ();
+        return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+    }
 
     return Status::OK;
 }
