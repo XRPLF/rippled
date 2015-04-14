@@ -78,8 +78,28 @@ ManifestCache::would_accept (AnyPublicKey const& pk, std::size_t seq) const
     std::lock_guard<std::mutex> lock (mutex_);
 
     auto const iter = map_.find(pk);
+    if (iter == map_.end())
+    {
+        /*
+            We received a manifest for a master key which is not in our
+            store.  Reject it.
+            (Recognized master keys live in [validator_keys] in the config,
+            and are installed via insertTrustedKey().)
+        */
+        return false;
+    }
 
-    return iter != map_.end()  &&  (! iter->second.m  ||  seq > iter->second.m->seq);
+    if (! iter->second.m)
+    {
+        /*
+            We have an entry for this master key but no manifest.  So the
+            key is trusted, and we don't already have its sequence number.
+            Accept it.
+        */
+        return true;
+    }
+
+    return seq > iter->second.m->seq;
 }
 
 bool
