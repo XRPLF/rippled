@@ -109,62 +109,60 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
 
     auto const iter = map_.find(pk);
 
-    if (iter != map_.end())
-    {
-        auto& unl = getApp().getUNL();
-
-        auto& old = iter->second.m;
-
-        if (old  &&  seq <= old->seq)
-        {
-            if (journal.warning) journal.warning
-                << "Ignoring manifest #"      << old->seq
-                << "which isn't newer than #" << seq;
-            return false;  // not a newer manifest, ignore
-        }
-
-        // newer manifest
-        auto m = unpackManifest (s.data(), s.size());
-
-        if (! m)
-        {
-            if (journal.warning) journal.warning
-                << "Failed to unpack manifest #" << seq;
-            return false;
-        }
-
-        if (! old)
-        {
-            if (journal.warning) journal.warning
-                << "Adding new manifest #" << seq;
-        }
-        else
-        {
-            if (journal.warning) journal.warning
-                << "Dropping old manifest #" << old->seq
-                << " in favor of #"          << seq;
-
-            unl.deleteEphemeralKey (old->signingKey);
-        }
-
-        if (seq == std::size_t (-1))
-        {
-            // The master key is revoked -- don't insert the signing key
-        }
-        else
-        {
-            unl.insertEphemeralKey (m->signingKey, iter->second.comment);
-        }
-
-        old = std::move (m);
-    }
-    else
+    if (iter == map_.end())
     {
         // no trusted key
         if (journal.warning) journal.warning
             << "Ignoring untrusted manifest #" << seq;
         return false;
     }
+
+    auto& unl = getApp().getUNL();
+
+    auto& old = iter->second.m;
+
+    if (old  &&  seq <= old->seq)
+    {
+        if (journal.warning) journal.warning
+            << "Ignoring manifest #"      << old->seq
+            << "which isn't newer than #" << seq;
+        return false;  // not a newer manifest, ignore
+    }
+
+    // newer manifest
+    auto m = unpackManifest (s.data(), s.size());
+
+    if (! m)
+    {
+        if (journal.warning) journal.warning
+            << "Failed to unpack manifest #" << seq;
+        return false;
+    }
+
+    if (! old)
+    {
+        if (journal.warning) journal.warning
+            << "Adding new manifest #" << seq;
+    }
+    else
+    {
+        if (journal.warning) journal.warning
+            << "Dropping old manifest #" << old->seq
+            << " in favor of #"          << seq;
+
+        unl.deleteEphemeralKey (old->signingKey);
+    }
+
+    if (seq == std::size_t (-1))
+    {
+        // The master key is revoked -- don't insert the signing key
+    }
+    else
+    {
+        unl.insertEphemeralKey (m->signingKey, iter->second.comment);
+    }
+
+    old = std::move (m);
 
     return true;
 }
