@@ -124,8 +124,8 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
     if (old  &&  seq <= old->seq)
     {
         if (journal.warning) journal.warning
-            << "Ignoring manifest #"      << old->seq
-            << "which isn't newer than #" << seq;
+            << "Ignoring manifest #"      << seq
+            << "which isn't newer than #" << old->seq;
         return false;  // not a newer manifest, ignore
     }
 
