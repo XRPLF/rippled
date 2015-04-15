@@ -53,6 +53,28 @@ struct Manifest
         , seq(seq)
     {
     }
+
+#ifdef _MSC_VER
+    Manifest(Manifest&& other)
+      : serialized(std::move(other.serialized))
+      , masterKey(std::move(other.masterKey))
+      , signingKey(std::move(other.signingKey))
+      , seq(other.seq)
+    {
+    }
+
+    Manifest& operator=(Manifest&& other)
+    {
+        serialized = std::move(other.serialized);
+        masterKey = std::move(other.masterKey);
+        signingKey = std::move(other.signingKey);
+        seq = other.seq;
+        return *this;
+    }
+#else
+    Manifest(Manifest&& other) = default;
+    Manifest& operator=(Manifest&& other) = default;
+#endif
 };
 
 /** Remembers manifests with the highest sequence number. */
