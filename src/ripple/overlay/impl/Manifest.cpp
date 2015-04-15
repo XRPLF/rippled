@@ -72,7 +72,7 @@ ManifestCache::isTrustedKey (AnyPublicKey const& pk) const
 }
 
 bool
-ManifestCache::would_accept (AnyPublicKey const& pk, std::size_t seq) const
+ManifestCache::would_accept (AnyPublicKey const& pk, std::uint32_t seq) const
 {
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -102,7 +102,7 @@ ManifestCache::would_accept (AnyPublicKey const& pk, std::size_t seq) const
 }
 
 bool
-ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
+ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     std::string const& s, beast::Journal const& journal)
 {
     std::lock_guard<std::mutex> lock (mutex_);
@@ -153,7 +153,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
         unl.deleteEphemeralKey (old->signingKey);
     }
 
-    if (seq == std::size_t (-1))
+    if (seq == std::uint32_t (-1))
     {
         // The master key is revoked -- don't insert the signing key
     }
@@ -168,7 +168,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::size_t seq,
 }
 
 bool
-ManifestCache::maybe_accept (AnyPublicKey const& pk, std::size_t seq,
+ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
     std::string const& s, STObject const& st, beast::Journal const& journal)
 {
     return would_accept (pk, seq)

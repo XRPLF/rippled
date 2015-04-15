@@ -44,9 +44,9 @@ struct Manifest
     std::string serialized;
     AnyPublicKey masterKey;
     AnyPublicKey signingKey;
-    std::size_t seq;
+    std::uint32_t seq;
 
-    Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::size_t seq)
+    Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
         : serialized(s)
         , masterKey(pk)
         , signingKey(spk)
@@ -88,16 +88,16 @@ public:
 
     // Returns true if seq introduces a higher sequence number for pk
     bool
-    would_accept (AnyPublicKey const& pk, std::size_t seq) const;
+    would_accept (AnyPublicKey const& pk, std::uint32_t seq) const;
 
     // Returns `true` if its a new, verified manifest
     bool
-    maybe_insert (AnyPublicKey const& pk, std::size_t seq,
+    maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
         std::string const& s, beast::Journal const& journal);
 
     // Returns `true` if its a new, verified manifest
     bool
-    maybe_accept (AnyPublicKey const& pk, std::size_t seq,
+    maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
         std::string const& s, STObject const& st, beast::Journal const& journal);
 
     // A "for_each" for populated manifests only
