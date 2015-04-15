@@ -228,7 +228,7 @@ private:
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
     hash_set<std::string>   mUNL;
-    hash_set<AnyPublicKey>  ephemeralValidatorKeys_;
+    hash_map<AnyPublicKey, std::string>  ephemeralValidatorKeys_;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
@@ -490,7 +490,7 @@ void UniqueNodeListImp::insertEphemeralKey (AnyPublicKey const& pk, std::string 
 {
     ScopedUNLLockType sl (mUNLLock);
 
-    ephemeralValidatorKeys_.insert (pk);  // JJURAN FIXME:  Store the comment
+    ephemeralValidatorKeys_.insert (std::make_pair(pk, comment));
 }
 
 void UniqueNodeListImp::deleteEphemeralKey (AnyPublicKey const& pk)
@@ -931,8 +931,8 @@ Json::Value UniqueNodeListImp::getUnlJson()
     {
         Json::Value node (Json::objectValue);
 
-        node["publicKey"]   = encodeCredential (key, VER_NODE_PUBLIC);
-        node["comment"]     = "ephemeral";
+        node["publicKey"]   = encodeCredential (key.first, VER_NODE_PUBLIC);
+        node["comment"]     = key.second;
 
         ret.append (node);
     }
