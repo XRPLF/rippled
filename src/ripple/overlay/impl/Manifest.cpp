@@ -42,8 +42,8 @@ unpackManifest(void const* data, std::size_t size)
     if (! verify(st, HashPrefix::manifest, *mpk))
         return boost::optional<Manifest>();
 
-    std::string const s (static_cast<char const*>(data), size);
-    return Manifest(s, std::move (*mpk), std::move (*mspk), *mseq);
+    std::string s (static_cast<char const*>(data), size);
+    return Manifest(std::move (s), std::move (*mpk), std::move (*mspk), *mseq);
 }
 
 void
