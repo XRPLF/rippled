@@ -72,8 +72,8 @@ public:
         expect(! cache.would_accept(pk_a, 0), "have to install a trusted key first");
         expect(! cache.maybe_insert(pk_a, 0, s_a0.first, journal), "have to install a trusted key first");
 
-        cache.insertTrustedKey(pk_a, "a");
-        cache.insertTrustedKey(pk_b, "b");
+        cache.primeTrustedKey(pk_a, "a");
+        cache.primeTrustedKey(pk_b, "b");
 
         expect(cache.would_accept(pk_a, 0));
         expect(cache.maybe_insert(pk_a, 0, s_a0.first, journal));

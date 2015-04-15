@@ -104,7 +104,7 @@ public:
     void configValidatorKey(std::string const& line, beast::Journal const& journal);
     void configManifest(std::string const& s, beast::Journal const& journal);
 
-    void insertTrustedKey (AnyPublicKey const& pk, std::string const& comment);
+    void primeTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
     bool isTrustedKey (AnyPublicKey const& pk) const;
 

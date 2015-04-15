@@ -47,7 +47,7 @@ unpackManifest(void const* data, std::size_t size)
 }
 
 void
-ManifestCache::insertTrustedKey (AnyPublicKey const& pk, std::string const& comment)
+ManifestCache::primeTrustedKey (AnyPublicKey const& pk, std::string const& comment)
 {
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -83,7 +83,7 @@ ManifestCache::would_accept (AnyPublicKey const& pk, std::uint32_t seq) const
             We received a manifest for a master key which is not in our
             store.  Reject it.
             (Recognized master keys live in [validator_keys] in the config,
-            and are installed via insertTrustedKey().)
+            and are installed via primeTrustedKey().)
         */
         return false;
     }
@@ -246,7 +246,7 @@ ManifestCache::configValidatorKey(std::string const& line, beast::Journal const&
     if (journal.debug) journal.debug
         << masterKey << " " << comment;
 
-    insertTrustedKey (masterKey, comment);
+    primeTrustedKey (masterKey, comment);
 }
 
 }
