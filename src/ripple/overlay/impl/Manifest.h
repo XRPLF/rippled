@@ -47,9 +47,9 @@ struct Manifest
     std::uint32_t seq;
 
     Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
-        : serialized(s)
-        , masterKey(pk)
-        , signingKey(spk)
+        : serialized(std::move(s))
+        , masterKey(std::move(pk))
+        , signingKey(std::move(spk))
         , seq(seq)
     {
     }
