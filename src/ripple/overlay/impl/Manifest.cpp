@@ -22,7 +22,7 @@
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Sign.h>
-#include <cstring>
+#include <beast/http/rfc2616.h>
 #include <stdexcept>
 
 namespace ripple {

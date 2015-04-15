@@ -24,14 +24,9 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/AnyPublicKey.h>
 #include <ripple/protocol/STExchange.h>
-#include <beast/crypto/base64.h>
-#include <beast/http/rfc2616.h>
-#include <beast/hash/hash_append.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/noexcept.h>
-#include <ed25519-donna/ed25519.h>
 #include <boost/optional.hpp>
-#include <cstring>
+#include <string>
 
 namespace ripple {
 
