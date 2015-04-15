@@ -163,7 +163,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     {
         // The master key is revoked -- don't insert the signing key
         if (auto const& j = journal.warning)
-            j << "Ignoring manifest #" << seq << " for revoked master key.";
+            j << "Revoking master key: " << pk;
     }
     else
     {
