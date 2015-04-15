@@ -237,7 +237,7 @@ ManifestCache::configValidatorKey(std::string const& line, beast::Journal const&
     {
         throw std::runtime_error ("Expected 34-byte validator key");
     }
-    if (key[0] != 28)
+    if (key[0] != VER_NODE_PUBLIC)
     {
         throw std::runtime_error ("Expected VER_NODE_PUBLIC (28)");
     }
