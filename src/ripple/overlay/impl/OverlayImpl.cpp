@@ -598,20 +598,20 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
 
 void
 OverlayImpl::onManifests (Job&,
-    std::shared_ptr<protocol::TMManifests> const& mIn,
+    std::shared_ptr<protocol::TMManifests> const& inbox,
         std::shared_ptr<PeerImp> const& from)
 {
-    auto const n = mIn->list_size();
+    auto const n = inbox->list_size();
     auto const& journal = from->pjournal();
 
     if (journal.debug) journal.debug
         << "TMManifest, " << n << (n == 1 ? " item" : " items");
 
-    protocol::TMManifests mOut;
+    protocol::TMManifests outbox;
 
     for (std::size_t i = 0; i < n; ++i)
     {
-        auto const& manifest = mIn->list().Get(i);
+        auto const& manifest = inbox->list().Get(i);
         auto const& s = manifest.stobject();
         STObject st(sfGeneric);
         try
@@ -645,16 +645,16 @@ OverlayImpl::onManifests (Job&,
         }
         if (journal.warning) journal.warning
             << "Accepted manifest seq #" << *seq << " for " << *pk;
-        mOut.add_list()->set_stobject(s);
+        outbox.add_list()->set_stobject(s);
     }
 
-    if (mOut.list_size() == 0)
+    if (outbox.list_size() == 0)
         return;
 
     if (journal.warning) journal.warning
-        << "Forwarding " << mOut.list_size() << " manifests...";
+        << "Forwarding " << outbox.list_size() << " manifests...";
 
-    auto const msg = std::make_shared<Message>(mOut, protocol::mtMANIFESTS);
+    auto const msg = std::make_shared<Message>(outbox, protocol::mtMANIFESTS);
 
     for_each( [&](std::shared_ptr<PeerImp> const& peer)
         {
