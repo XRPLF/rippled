@@ -21,7 +21,7 @@
 #define RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/hardened_hash.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/AnyPublicKey.h>
 #include <ripple/protocol/STExchange.h>
 #include <beast/crypto/base64.h>
@@ -30,10 +30,8 @@
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <ed25519-donna/ed25519.h>
-#include <boost/unordered_map.hpp>
 #include <boost/optional.hpp>
 #include <cstring>
-#include <unordered_map>
 
 namespace ripple {
 
@@ -89,8 +87,7 @@ private:
         boost::optional<Manifest> m;
     };
 
-    using MapType = boost::unordered_map<
-        AnyPublicKey, MappedType, hardened_hash<>>;
+    using MapType = hash_map<AnyPublicKey, MappedType>;
 
     mutable std::mutex mutex_;
     MapType map_;
