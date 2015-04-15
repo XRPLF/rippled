@@ -97,7 +97,7 @@ std::string
 encodeCredential (AnyPublicKey const& pk, unsigned char type)
 {
     Blob buffer;
-    buffer.reserve(34);
+    buffer.reserve(1 + pk.size());
     buffer.push_back (type);
     auto const data = pk.data();
     buffer.insert (buffer.end(), data, data + pk.size());
