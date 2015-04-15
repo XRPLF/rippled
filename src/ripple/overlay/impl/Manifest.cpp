@@ -153,7 +153,13 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
         unl.deleteEphemeralKey (old->signingKey);
     }
 
-    if (seq == std::uint32_t (-1))
+    /*
+        The maximum possible sequence number means that the master key
+        has been revoked.
+    */
+    auto const revoked = std::uint32_t (-1);
+
+    if (seq == revoked)
     {
         // The master key is revoked -- don't insert the signing key
         if (auto const& j = journal.warning)
