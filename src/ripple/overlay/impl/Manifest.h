@@ -30,6 +30,33 @@
 
 namespace ripple {
 
+/*
+    Validator key manifests
+    -----------------------
+
+    First, a rationale:  Suppose a system adminstrator leaves the company.
+    You err on the side of caution (if not paranoia) and assume that the
+    secret keys installed on Ripple validators are compromised.  Not only
+    do you have to generate and install new key pairs on each validator,
+    EVERY rippled needs to have its config updated with the new public keys,
+    and is vulnerable to forged validation signatures until this is done.
+    The solution is a new layer of indirection:  A master secret key under
+    restrictive access control is used to sign a "manifest": essentially, a
+    certificate including the master public key, an ephemeral key that will
+    be used to sign validations, a sequence number, and a digital signature.
+
+    The manifest has two serialized forms: one which includes the digital
+    signature and one which doesn't.  There is an obvious causal dependency
+    relationship between the (latter) form with no signature, the signature
+    of that form, and the (former) form which includes that signature.  In
+    other words, a manifest can't contain a signature of itself.  The code
+    below stores a serialized manifest which includes the signature, and
+    dynamically generates the signatureless form when it needs to verify
+    the signature.
+
+    To be continued...
+*/
+
 //------------------------------------------------------------------------------
 
 struct Manifest
