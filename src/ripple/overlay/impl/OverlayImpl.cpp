@@ -422,8 +422,9 @@ OverlayImpl::checkStopped ()
         stopped();
 }
 
+static
 void
-OverlayImpl::onPrepare()
+prepareValidatorKeyManifests (ManifestCache& mc, beast::Journal const& journal)
 {
     auto const validator_keys = getConfig().section("validator_keys");
     auto const validation_manifest = getConfig().section("validation_manifest");
@@ -432,12 +433,13 @@ OverlayImpl::onPrepare()
     {
         for (auto const& line : validator_keys.lines())
         {
-            manifestCache_.configValidatorKey (line, journal_);
+            mc.configValidatorKey (line, journal);
         }
     }
-    else if (journal_.warning)
+    else
     {
-        journal_.warning << "[validator_keys] is empty";
+        if (journal.warning)
+            journal.warning << "[validator_keys] is empty";
     }
 
     if (! validation_manifest.lines().empty())
@@ -446,13 +448,20 @@ OverlayImpl::onPrepare()
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
         s = beast::base64_decode(s);
-        manifestCache_.configManifest(s, journal_);
+        mc.configManifest(s, journal);
     }
     else
     {
-        if (journal_.warning)
-            journal_.warning << "No [validation_manifest] section in config";
+        if (journal.warning)
+            journal.warning << "No [validation_manifest] section in config";
     }
+
+}
+
+void
+OverlayImpl::onPrepare()
+{
+    prepareValidatorKeyManifests (manifestCache_, journal_);
 
     PeerFinder::Config config;
 
