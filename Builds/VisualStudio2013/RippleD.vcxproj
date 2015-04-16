@@ -1095,6 +1095,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-64bit.h">
@@ -4519,6 +4521,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>

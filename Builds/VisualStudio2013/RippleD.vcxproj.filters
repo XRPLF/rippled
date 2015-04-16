@@ -1770,6 +1770,9 @@
     <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>
     </ClInclude>
@@ -5287,6 +5290,9 @@
       <Filter>soci\src\core</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
       <Filter>soci\src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
