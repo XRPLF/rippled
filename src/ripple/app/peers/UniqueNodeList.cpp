@@ -259,7 +259,7 @@ public:
     // Get update times and start fetching and scoring as needed.
     void start();
 
-    void insertEphemeralKey (AnyPublicKey const& pk, std::string const& comment);
+    void insertEphemeralKey (AnyPublicKey pk, std::string comment);
     void deleteEphemeralKey (AnyPublicKey const& pk);
 
     // Add a trusted node.  Called by RPC or other source.
@@ -486,11 +486,11 @@ void UniqueNodeListImp::start()
 
 //--------------------------------------------------------------------------
 
-void UniqueNodeListImp::insertEphemeralKey (AnyPublicKey const& pk, std::string const& comment)
+void UniqueNodeListImp::insertEphemeralKey (AnyPublicKey pk, std::string comment)
 {
     ScopedUNLLockType sl (mUNLLock);
 
-    ephemeralValidatorKeys_.insert (std::make_pair(pk, comment));
+    ephemeralValidatorKeys_.insert (std::make_pair(std::move(pk), std::move(comment)));
 }
 
 void UniqueNodeListImp::deleteEphemeralKey (AnyPublicKey const& pk)
