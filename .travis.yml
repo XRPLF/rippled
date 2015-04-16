@@ -34,6 +34,9 @@ before_install:
 script:
   # Set so any failing command will abort the build
   - set -e
+  # Make sure vcxproj is up to date
+  - scons vcxproj
+  - git diff --exit-code
   # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
   - scons $CC.debug
   # We can be sure we're using the build/$CC.debug variant (-f so never err)
