@@ -199,6 +199,12 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
         return false;
     }
 
+    /*
+        The maximum possible sequence number means that the master key
+        has been revoked.
+    */
+    auto const revoked = std::uint32_t (-1);
+
     if (! old)
     {
         if (journal.warning) journal.warning
@@ -206,24 +212,35 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     }
     else
     {
-        if (journal.warning) journal.warning
-            << "Dropping old manifest #" << old->seq
-            << " in favor of #"          << seq;
+        if (seq == revoked)
+        {
+            if (journal.warning) journal.warning
+                << "Dropping old manifest #" << old->seq
+                << " because the master key was revoked";
+        }
+        else
+        {
+            if (journal.warning) journal.warning
+                << "Dropping old manifest #" << old->seq
+                << " in favor of #"          << seq;
+        }
 
         unl.deleteEphemeralKey (old->signingKey);
     }
-
-    /*
-        The maximum possible sequence number means that the master key
-        has been revoked.
-    */
-    auto const revoked = std::uint32_t (-1);
 
     if (seq == revoked)
     {
         // The master key is revoked -- don't insert the signing key
         if (auto const& j = journal.warning)
             j << "Revoking master key: " << pk;
+
+        /*
+            A validator master key has been compromised, so its manifests
+            are now untrustworthy.  In order to prevent us from accepting
+            a forged manifest signed by the compromised master key, store
+            this manifest, which has the highest possible sequence number
+            and therefore can't be superseded by a forged one.
+        */
     }
     else
     {
