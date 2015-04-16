@@ -29,10 +29,10 @@ namespace ripple {
 
 static
 boost::optional<Manifest>
-unpackManifest(void const* data, std::size_t size)
+unpackManifest(std::string s)
 {
     STObject st(sfGeneric);
-    SerialIter sit(data, size);
+    SerialIter sit(s.data(), s.size());
     st.set(sit);
     auto const mseq = get(st, sfSequence);
     auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
@@ -42,7 +42,6 @@ unpackManifest(void const* data, std::size_t size)
     if (! verify(st, HashPrefix::manifest, *mpk))
         return boost::optional<Manifest>();
 
-    std::string s (static_cast<char const*>(data), size);
     return Manifest(std::move (s), std::move (*mpk), std::move (*mspk), *mseq);
 }
 
@@ -130,7 +129,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     }
 
     // newer manifest
-    auto m = unpackManifest (s.data(), s.size());
+    auto m = unpackManifest (s);
 
     if (! m)
     {
