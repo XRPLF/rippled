@@ -42,19 +42,44 @@ namespace ripple {
     and is vulnerable to forged validation signatures until this is done.
     The solution is a new layer of indirection:  A master secret key under
     restrictive access control is used to sign a "manifest": essentially, a
-    certificate including the master public key, an ephemeral key that will
-    be used to sign validations, a sequence number, and a digital signature.
+    certificate including the master public key, an ephemeral public key for
+    verifying validations (which will be signed by its secret counterpart),
+    a sequence number, and a digital signature.
 
     The manifest has two serialized forms: one which includes the digital
     signature and one which doesn't.  There is an obvious causal dependency
     relationship between the (latter) form with no signature, the signature
     of that form, and the (former) form which includes that signature.  In
-    other words, a manifest can't contain a signature of itself.  The code
+    other words, a message can't contain a signature of itself.  The code
     below stores a serialized manifest which includes the signature, and
     dynamically generates the signatureless form when it needs to verify
     the signature.
 
-    To be continued...
+    There are two stores of information within rippled related to manifests.
+    An instance of ManifestCache stores, for each trusted validator, (a) its
+    master public key, and (b) the most senior of all valid manifests it has
+    seen for that validator, if any.  On startup, the [validator_keys] config
+    entries are used to prime the manifest cache with the trusted master keys.
+    At this point, the manifest cache has all the entries it will ever have,
+    but none of them have manifests.  The [validation_manifest] config entry
+    (which is the manifest for this validator) is then decoded and added to
+    the manifest cache.  Other manifests are added as "gossip" is received
+    from rippled peers.
+    
+    The other data store (which does not involve manifests per se) contains
+    the set of active ephemeral validator keys.  Keys are added to the set
+    when a manifest is accepted, and removed when that manifest is obsoleted.
+    
+    When an ephemeral key is compromised, a new signing key pair is created,
+    along with a new manifest vouching for it (with a higher sequence number),
+    signed by the master key.  When a rippled peer receives the new manifest,
+    it verifies it with the master key and (assuming it's valid) discards the
+    old ephemeral key and stores the new one.  If the master key itself gets
+    compromised, a manifest with sequence number 0xFFFFFFFF will supersede a
+    prior manifest and discard any existing ephemeral key without storing a
+    new one.  Since no further manifests for this master key will be accepted
+    (since no higher sequence number is possible), and no signing key is on
+    record, no validations will be accepted from the compromised validator.
 */
 
 //------------------------------------------------------------------------------
