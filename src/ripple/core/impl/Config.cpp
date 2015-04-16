@@ -567,16 +567,16 @@ int Config::getSize (SizedItemName item) const
         { siValidationsSize,    {   256,    256,    512,    1024,       1024    } },
         { siValidationsAge,     {   500,    500,    500,    500,        500     } },
 
-        { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     0       } },
-        { siNodeCacheAge,       {   60,     90,     120,    900,        0       } },
+        { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     524288  } },
+        { siNodeCacheAge,       {   60,     90,     120,    900,        1800    } },
 
-        { siTreeCacheSize,      {   128000, 256000, 512000, 768000,     0       } },
+        { siTreeCacheSize,      {   128000, 256000, 512000, 768000,     2048000 } },
         { siTreeCacheAge,       {   30,     60,     90,     120,        900     } },
 
-        { siSLECacheSize,       {   4096,   8192,   16384,  65536,      0       } },
+        { siSLECacheSize,       {   4096,   8192,   16384,  65536,      131072  } },
         { siSLECacheAge,        {   30,     60,     90,     120,        300     } },
 
-        { siLedgerSize,         {   32,     128,    256,    384,        0       } },
+        { siLedgerSize,         {   32,     128,    256,    384,        768     } },
         { siLedgerAge,          {   30,     90,     180,    240,        900     } },
 
         { siHashNodeDBCache,    {   4,      12,     24,     64,         128      } },
