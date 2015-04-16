@@ -29,6 +29,7 @@ namespace tests {
 class manifest_test : public ripple::TestSuite
 {
 public:
+    // Return a manifest in both serialized and STObject form
     std::pair<std::string, STObject>
     make_manifest(AnySecretKey const& sk, AnyPublicKey const& spk, int seq)
     {
