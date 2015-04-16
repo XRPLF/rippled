@@ -132,16 +132,6 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
 }
 
 bool
-ManifestCache::isTrustedKey (AnyPublicKey const& pk) const
-{
-    std::lock_guard<std::mutex> lock (mutex_);
-
-    auto const it = map_.find(pk);
-    
-    return it != map_.end()  &&  ! it->second.m;
-}
-
-bool
 ManifestCache::would_accept (AnyPublicKey const& pk, std::uint32_t seq) const
 {
     std::lock_guard<std::mutex> lock (mutex_);

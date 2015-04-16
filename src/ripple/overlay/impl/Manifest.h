@@ -125,8 +125,6 @@ public:
 
     void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
-    bool isTrustedKey (AnyPublicKey const& pk) const;
-
     // Returns true if seq introduces a higher sequence number for pk
     bool
     would_accept (AnyPublicKey const& pk, std::uint32_t seq) const;
