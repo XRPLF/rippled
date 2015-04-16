@@ -46,6 +46,77 @@ unpackManifest(std::string s)
 }
 
 void
+ManifestCache::configValidatorKey(std::string const& line, beast::Journal const& journal)
+{
+    auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
+
+    if (words.size() != 2)
+    {
+        throw std::runtime_error ("[validator_keys] format is `<key> <comment>");
+    }
+
+    Blob key;
+    if (! Base58::decodeWithCheck (words[0], key))
+    {
+        throw std::runtime_error ("Error decoding validator key");
+    }
+    if (key.size() != 34)
+    {
+        throw std::runtime_error ("Expected 34-byte validator key");
+    }
+    if (key[0] != VER_NODE_PUBLIC)
+    {
+        throw std::runtime_error ("Expected VER_NODE_PUBLIC (28)");
+    }
+    if (key[1] != 0xED)
+    {
+        throw std::runtime_error ("Expected Ed25519 key (0xED)");
+    }
+
+    auto const masterKey = AnyPublicKey (key.data() + 1, key.size() - 1);
+    auto const& comment = words[1];
+
+    if (journal.debug) journal.debug
+        << masterKey << " " << comment;
+
+    addTrustedKey (masterKey, comment);
+}
+
+void
+ManifestCache::configManifest (std::string const& s, beast::Journal const& journal)
+{
+    STObject st(sfGeneric);
+    try
+    {
+        SerialIter sit(s.data(), s.size());
+        st.set(sit);
+    }
+    catch(...)
+    {
+        throw std::runtime_error("Malformed manifest in config");
+    }
+
+    auto const mseq = get(st, sfSequence);
+    auto const msig = get(st, sfSignature);
+    auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
+    auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
+    if (! mseq || ! msig || ! mpk || ! mspk)
+    {
+        throw std::runtime_error("Missing fields in manifest in config");
+    }
+    auto const seq = *mseq;
+    auto const& sig = *msig;
+    auto const& pk = *mpk;
+
+    if (! verify(st, HashPrefix::manifest, pk))
+    {
+        throw std::runtime_error("Unverifiable manifest in config");
+    }
+
+    maybe_insert (pk, seq, s, journal);
+}
+
+void
 ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment)
 {
     std::lock_guard<std::mutex> lock (mutex_);
@@ -181,77 +252,6 @@ ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
     return would_accept (pk, seq)
         && verify(st, HashPrefix::manifest, pk)
         && maybe_insert (pk, seq, s, journal);
-}
-
-void
-ManifestCache::configManifest (std::string const& s, beast::Journal const& journal)
-{
-    STObject st(sfGeneric);
-    try
-    {
-        SerialIter sit(s.data(), s.size());
-        st.set(sit);
-    }
-    catch(...)
-    {
-        throw std::runtime_error("Malformed manifest in config");
-    }
-
-    auto const mseq = get(st, sfSequence);
-    auto const msig = get(st, sfSignature);
-    auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
-    auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
-    if (! mseq || ! msig || ! mpk || ! mspk)
-    {
-        throw std::runtime_error("Missing fields in manifest in config");
-    }
-    auto const seq = *mseq;
-    auto const& sig = *msig;
-    auto const& pk = *mpk;
-
-    if (! verify(st, HashPrefix::manifest, pk))
-    {
-        throw std::runtime_error("Unverifiable manifest in config");
-    }
-
-    maybe_insert (pk, seq, s, journal);
-}
-
-void
-ManifestCache::configValidatorKey(std::string const& line, beast::Journal const& journal)
-{
-    auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
-
-    if (words.size() != 2)
-    {
-        throw std::runtime_error ("[validator_keys] format is `<key> <comment>");
-    }
-
-    Blob key;
-    if (! Base58::decodeWithCheck (words[0], key))
-    {
-        throw std::runtime_error ("Error decoding validator key");
-    }
-    if (key.size() != 34)
-    {
-        throw std::runtime_error ("Expected 34-byte validator key");
-    }
-    if (key[0] != VER_NODE_PUBLIC)
-    {
-        throw std::runtime_error ("Expected VER_NODE_PUBLIC (28)");
-    }
-    if (key[1] != 0xED)
-    {
-        throw std::runtime_error ("Expected Ed25519 key (0xED)");
-    }
-
-    auto const masterKey = AnyPublicKey (key.data() + 1, key.size() - 1);
-    auto const& comment = words[1];
-
-    if (journal.debug) journal.debug
-        << masterKey << " " << comment;
-
-    addTrustedKey (masterKey, comment);
 }
 
 }
