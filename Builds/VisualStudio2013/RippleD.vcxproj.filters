@@ -5280,6 +5280,9 @@
     <ClInclude Include="..\..\src\soci\src\core\values.h">
       <Filter>soci\src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
+      <Filter>soci\src\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
       <Filter>sqlite</Filter>
     </ClInclude>
