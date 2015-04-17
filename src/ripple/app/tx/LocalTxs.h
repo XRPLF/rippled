@@ -29,6 +29,9 @@ namespace ripple {
 // Ensure we always apply them to our open ledger
 // Hold them until we see them in a fully-validated ledger
 
+// NOTE: This class may be made OBSOLETE by the TxQ.  Consider that when
+// making modifications to LocalTxs.
+
 class LocalTxs
 {
 public:

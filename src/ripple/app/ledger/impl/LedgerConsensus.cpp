@@ -1838,22 +1838,19 @@ int applyTransaction (TransactionEngine& engine
     }
 }
 
-/** Apply a set of transactions to a ledger
-
-  @param set                   The set of transactions to apply
-  @param applyLedger           The ledger to which the transactions should
-                               be applied.
-  @param checkLedger           A reference ledger for determining error
-                               messages (typically new last closed
-                                ledger).
-  @param retriableTransactions collect failed transactions in this set
-  @param openLgr               true if applyLedger is open, else false.
-*/
 void applyTransactions (SHAMap const* set,
     Ledger::ref applyLedger, Ledger::ref checkLedger,
-    CanonicalTXSet& retriableTransactions, bool openLgr)
+    CanonicalTXSet& retriables, bool openLgr)
 {
     TransactionEngine engine (applyLedger);
+    applyTransactions (
+        set, engine, checkLedger, retriables, openLgr);
+}
+
+void applyTransactions (SHAMap const* set,
+    TransactionEngine& engine, Ledger::ref checkLedger,
+    CanonicalTXSet& retriables, bool openLgr)
+{
     if (set)
     {
         for (auto const item : *set)
@@ -1874,7 +1871,7 @@ void applyTransactions (SHAMap const* set,
                     {
                         // On failure, stash the failed transaction for
                         // later retry.
-                        retriableTransactions.push_back (txn);
+                        retriables.push_back (txn);
                     }
                 }
                 catch (...)
@@ -1891,13 +1888,13 @@ void applyTransactions (SHAMap const* set,
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
         WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " << pass << " Txns: "
-            << retriableTransactions.size ()
+            << retriables.size ()
             << (certainRetry ? " retriable" : " final");
         changes = 0;
 
-        auto it = retriableTransactions.begin ();
+        auto it = retriables.begin ();
 
-        while (it != retriableTransactions.end ())
+        while (it != retriables.end ())
         {
             try
             {
@@ -1905,12 +1902,12 @@ void applyTransactions (SHAMap const* set,
                         openLgr, certainRetry))
                 {
                 case LedgerConsensusImp::resultSuccess:
-                    it = retriableTransactions.erase (it);
+                    it = retriables.erase (it);
                     ++changes;
                     break;
 
                 case LedgerConsensusImp::resultFail:
-                    it = retriableTransactions.erase (it);
+                    it = retriables.erase (it);
                     break;
 
                 case LedgerConsensusImp::resultRetry:
@@ -1921,7 +1918,7 @@ void applyTransactions (SHAMap const* set,
             {
                 WriteLog (lsWARNING, LedgerConsensus)
                     << "Transaction throws";
-                it = retriableTransactions.erase (it);
+                it = retriables.erase (it);
             }
         }
 
@@ -1939,7 +1936,7 @@ void applyTransactions (SHAMap const* set,
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert (retriableTransactions.empty() || !certainRetry);
+    assert (retriables.empty() || !certainRetry);
 }
 
 } // ripple

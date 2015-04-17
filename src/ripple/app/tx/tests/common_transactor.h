@@ -324,7 +324,8 @@ STTx getCreateTicketTx (UserAccount& acct);
 STTx getCreateTicketTx (UserAccount& acct, UserAccount const& target);
 
 // Return a transaction that cancels a ticket.
-STTx getCancelTicketTx (UserAccount& acct, uint256 const& ticketID);
+STTx getCancelTicketTx (
+    UserAccount& acct, UserAccount& ticketOwner, std::uint32_t ticketSeq);
 
 // Return an unsigned trust set transaction.
 STTx getTrustSetTx (UserAccount& from, Issue const& issuer, int limit);

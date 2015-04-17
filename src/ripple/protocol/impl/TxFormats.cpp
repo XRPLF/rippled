@@ -34,12 +34,14 @@ TxFormats::TxFormats ()
         << SOElement (sfTransferRate,        SOE_OPTIONAL)
         << SOElement (sfSetFlag,             SOE_OPTIONAL)
         << SOElement (sfClearFlag,           SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("TrustSet", ttTRUST_SET)
         << SOElement (sfLimitAmount,         SOE_OPTIONAL)
         << SOElement (sfQualityIn,           SOE_OPTIONAL)
         << SOElement (sfQualityOut,          SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("OfferCreate", ttOFFER_CREATE)
@@ -47,14 +49,17 @@ TxFormats::TxFormats ()
         << SOElement (sfTakerGets,           SOE_REQUIRED)
         << SOElement (sfExpiration,          SOE_OPTIONAL)
         << SOElement (sfOfferSequence,       SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("OfferCancel", ttOFFER_CANCEL)
         << SOElement (sfOfferSequence,       SOE_REQUIRED)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("SetRegularKey", ttREGULAR_KEY_SET)
         << SOElement (sfRegularKey,          SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("Payment", ttPAYMENT)
@@ -64,6 +69,7 @@ TxFormats::TxFormats ()
         << SOElement (sfPaths,               SOE_DEFAULT)
         << SOElement (sfInvoiceID,           SOE_OPTIONAL)
         << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 
     add ("EnableAmendment", ttAMENDMENT)
@@ -93,6 +99,7 @@ TxFormats::TxFormats ()
     add ("SignerListSet", ttSIGNER_LIST_SET)
         << SOElement (sfSignerQuorum,        SOE_REQUIRED)
         << SOElement (sfSignerEntries,       SOE_OPTIONAL)
+        << SOElement (sfTicketID,            SOE_OPTIONAL)
         ;
 }
 

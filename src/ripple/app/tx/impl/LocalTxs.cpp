@@ -19,9 +19,12 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/LocalTxs.h>
-#include <ripple/app/main/Application.h>
+#include <ripple/app/main/Application.h>        // getApp
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Indexes.h>            // getTicketIndex
+
+// NOTE: This class may be made OBSOLETE by the TxQ.  Consider that when
+// making modifications to LocalTxs.
 
 /*
  This code prevents scenarios like the following:
@@ -61,48 +64,83 @@ public:
     static int const holdLedgers = 5;
 
     LocalTx (LedgerIndex index, STTx::ref txn)
-        : m_txn (txn)
-        , m_expire (index + holdLedgers)
-        , m_id (txn->getTransactionID ())
-        , m_account (txn->getAccountID(sfAccount))
-        , m_seq (txn->getSequence())
+        : txn_ (txn)
+        , expire_ (index + holdLedgers)
+        , id_ (txn->getTransactionID ())
+        , accountID_ (txn->getAccountID(sfAccount))
+        , seq_ (txn->getSequence())
+        , ticketOwnerID_ (0)
+        , ticketSeq_ (0)
+        , ticketIndex_ ()
     {
+        if (txn->isFieldPresent (sfTicketID))
+        {
+            auto const& ticketID = txn->getFieldObject (sfTicketID);
+            ticketOwnerID_ = ticketID.getAccountID (sfAccount);
+            ticketSeq_ = ticketID.getFieldU32 (sfSequence);
+            ticketIndex_ = ripple::getTicketIndex (ticketOwnerID_, ticketSeq_);
+        }
+
         if (txn->isFieldPresent (sfLastLedgerSequence))
-            m_expire = std::min (m_expire, txn->getFieldU32 (sfLastLedgerSequence) + 1);
+            expire_ = std::min (
+                expire_, txn->getFieldU32 (sfLastLedgerSequence) + 1);
     }
 
     uint256 const& getID () const
     {
-        return m_id;
+        return id_;
     }
 
     std::uint32_t getSeq () const
     {
-        return m_seq;
+        return seq_;
     }
 
     bool isExpired (LedgerIndex i) const
     {
-        return i > m_expire;
+        return i > expire_;
     }
 
     STTx::ref getTX () const
     {
-        return m_txn;
+        return txn_;
     }
 
-    AccountID const& getAccount () const
+    AccountID const& getAccountID () const
     {
-        return m_account;
+        return accountID_;
+    }
+
+    bool hasTicket () const
+    {
+        return ticketSeq_ != 0;
+    }
+
+    uint256 const& getTicketIndex () const
+    {
+        return ticketIndex_;
+    }
+
+    AccountID const& getTicketOwnerID () const
+    {
+        return ticketOwnerID_;
+    }
+
+    std::uint32_t getTicketSeq () const
+    {
+        return ticketSeq_;
     }
 
 private:
 
-    STTx::pointer m_txn;
-    LedgerIndex                    m_expire;
-    uint256                        m_id;
-    AccountID                      m_account;
-    std::uint32_t                  m_seq;
+    STTx::pointer txn_;
+    LedgerIndex   expire_;
+    uint256       id_;
+    AccountID     accountID_;
+    std::uint32_t seq_;
+    AccountID     ticketOwnerID_;
+    std::uint32_t ticketSeq_;
+    uint256       ticketIndex_;
 };
 
 //------------------------------------------------------------------------------
@@ -117,39 +155,70 @@ public:
     // Add a new transaction to the set of local transactions
     void push_back (LedgerIndex index, STTx::ref txn) override
     {
-        std::lock_guard <std::mutex> lock (m_lock);
+        std::lock_guard <std::mutex> lock (lock_);
 
-        m_txns.emplace_back (index, txn);
+        txns_.emplace_back (index, txn);
     }
 
     bool can_remove (LocalTx& txn, Ledger::ref ledger)
     {
+        // If the transaction has hung around for too many ledgers remove it.
         if (txn.isExpired (ledger->getLedgerSeq ()))
             return true;
+
+        // If the transaction is already in the ledger remove it.
         if (hasTransaction (*ledger, txn.getID ()))
             return true;
-        auto const sle = cachedRead(*ledger,
-            keylet::account(txn.getAccount()).key,
+
+        auto const sleAccount = cachedRead(*ledger,
+            keylet::account(txn.getAccountID()).key,
                 getApp().getSLECache(), ltACCOUNT_ROOT);
-        if (! sle)
+
+        // If the account that owns the transaction is not yet in the ledger,
+        // keep the transaction.  The account may be funded shortly.
+        if (! sleAccount)
             return false;
-        if (sle->getFieldU32 (sfSequence) > txn.getSeq ())
-            return true;
+
+        // Handling changes depending on whether or not we're using Tickets.
+        auto const txnSeq = txn.getSeq ();
+        if ((txnSeq == 0) && (txn.hasTicket ()))
+        {
+            // If the Ticket is in the Ledger keep the transaction.
+            if (ledger->read (keylet::ticket (txn.getTicketIndex())))
+                return false;
+
+            // If TicketOwner is missing from the ledger remove the transaction.
+            auto const sleOwner = cachedRead (*ledger,
+                getAccountRootIndex(txn.getTicketOwnerID()),
+                    getApp().getSLECache());
+            if (! sleOwner)
+                return true;
+
+            // If the Owner's sequence is greater than the Ticket's sequence
+            // then the ticket either has been consumed or never existed.
+            // Remove the transaction.
+            if (sleOwner->getFieldU32(sfSequence) > txn.getTicketSeq())
+                return true;
+        }
+        else
+        {
+            // No Ticket.  If the transaction's sequence is passed remove this.
+            if (sleAccount->getFieldU32 (sfSequence) > txnSeq)
+                return true;
+        }
         return false;
     }
 
     void apply (TransactionEngine& engine) override
     {
-
         CanonicalTXSet tset (uint256 {});
 
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
         {
-            std::lock_guard <std::mutex> lock (m_lock);
-
-            for (auto& it : m_txns)
-                tset.push_back (it.getTX());
+            std::lock_guard <std::mutex> lock (lock_);
+            for (auto const& localTx : txns_)
+                tset.push_back (localTx.getTX());
         }
 
         for (auto it : tset)
@@ -168,16 +237,16 @@ public:
         }
     }
 
-    // Remove transactions that have either been accepted into a fully-validated
-    // ledger, are (now) impossible, or have expired
+    // Remove transactions that have either been accepted into a
+    // fully-validated ledger, are (now) impossible, or have expired.
     void sweep (Ledger::ref validLedger) override
     {
-        std::lock_guard <std::mutex> lock (m_lock);
+        std::lock_guard <std::mutex> lock (lock_);
 
-        for (auto it = m_txns.begin (); it != m_txns.end (); )
+        for (auto it = txns_.begin (); it != txns_.end (); )
         {
             if (can_remove (*it, validLedger))
-                it = m_txns.erase (it);
+                it = txns_.erase (it);
             else
                 ++it;
         }
@@ -185,15 +254,15 @@ public:
 
     std::size_t size () override
     {
-        std::lock_guard <std::mutex> lock (m_lock);
+        std::lock_guard <std::mutex> lock (lock_);
 
-        return m_txns.size ();
+        return txns_.size ();
     }
 
 private:
 
-    std::mutex m_lock;
-    std::list <LocalTx> m_txns;
+    std::mutex lock_;
+    std::list <LocalTx> txns_;
 };
 
 std::unique_ptr <LocalTxs> LocalTxs::New()

@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/tx/impl/CheckAndConsumeTicket.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/core/Config.h>
@@ -159,7 +160,62 @@ TER Transactor::payFee ()
 
 TER Transactor::checkSeq ()
 {
-    std::uint32_t const t_seq = mTxn.getSequence ();
+    TER ret = tesSUCCESS;
+    {
+        // Handle the sequence number part of this problem.
+        auto const t_seq = mTxn.getSequence ();
+        TER const ter = t_seq == 0 ? checkSeq0 () : checkSeqNon0 (t_seq);
+
+        // If we got back a 'tec' error note that, but continue processing
+        // in case we find a more serious error.  This particular quirk allows
+        // us to add Ticket handling without affecting the historical order
+        // of error checks.
+        if (isTecClaim (ter))
+            ret = ter;
+        else if (ter != tesSUCCESS)
+            return ter;
+    }
+
+    if (mTxn.isFieldPresent (sfAccountTxnID) &&
+            (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
+        return tefWRONG_PRIOR;
+
+    if (mTxn.isFieldPresent (sfLastLedgerSequence))
+    {
+        if ((mEngine->getLedger()->getLedgerSeq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
+            return tefMAX_LEDGER;
+    }
+
+    if (mTxnAccount->isFieldPresent (sfAccountTxnID))
+        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
+
+    return ret;
+}
+
+// Called by checkSeq if the Sequence field is zero.  Looks for a valid Ticket.
+TER Transactor::checkSeq0 ()
+{
+    // We should only get here if the Sequence field is zero.
+    assert (mTxn.getSequence () == 0);
+
+    // If there's no Ticket then the sequence is bogus.
+    if (!mTxn.isFieldPresent (sfTicketID))
+    {
+        // To preserve transaction backward compatibility we return
+        // a "less good" error code if Tickets are disabled.  When
+        // Tickets are enabled we're changing transaction behavior
+        // anyway, so we can return the better code.
+        if (mEngine->enableTickets())
+            return temBAD_SEQUENCE;
+        else
+            return tefPAST_SEQ;
+    }
+    // See if we can legitimately use the Ticket.
+    return checkAndConsumeSeqTicket (mTxn, mTxnAccountID, mEngine);
+}
+
+TER Transactor::checkSeqNon0 (std::uint32_t t_seq)
+{
     std::uint32_t const a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     if (t_seq != a_seq)
@@ -179,20 +235,7 @@ TER Transactor::checkSeq ()
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
-
-    if (mTxn.isFieldPresent (sfAccountTxnID) &&
-            (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
-        return tefWRONG_PRIOR;
-
-    if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
-            (mEngine->getLedger()->getLedgerSeq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
-        return tefMAX_LEDGER;
-
     mTxnAccount->setFieldU32 (sfSequence, t_seq + 1);
-
-    if (mTxnAccount->isFieldPresent (sfAccountTxnID))
-        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
-
     return tesSUCCESS;
 }
 
@@ -248,16 +291,34 @@ TER Transactor::preCheckSigningKey ()
 
 TER Transactor::apply ()
 {
-    // No point in going any further if the transaction fee is malformed.
-    STAmount const saTxnFee = mTxn.getTransactionFee ();
+    // We have to do special handing for TEC codes produced early on, since
+    // we can't process them until we've checked the signature.
+    struct TerHandler
+    {
+        TER err;
+        TER tec;
 
-    if (!saTxnFee.native () || saTxnFee.negative () || !isLegalNet (saTxnFee))
-        return temBAD_FEE;
+        TerHandler ()
+        : err (tesSUCCESS)
+        , tec (tesSUCCESS)
+        { }
 
-    TER terResult = preCheck ();
+        TerHandler& operator= (TER ter)
+        {
+            if (isTecClaim (ter))  tec = ter;
+            else                   err = ter;
+            return *this;
+        }
 
-    if (terResult != tesSUCCESS)
-        return terResult;
+        bool hasErr () { return err != tesSUCCESS; }
+        bool hasTec () { return tec != tesSUCCESS; }
+    };
+    TerHandler terHandler;
+
+    terHandler = preCheck ();
+
+    if (terHandler.hasErr())
+        return terHandler.err;
 
     // Find source account
     mTxnAccount = mEngine->view().peek (keylet::account(mTxnAccountID));
@@ -283,20 +344,27 @@ TER Transactor::apply ()
         mHasAuthKey     = mTxnAccount->isFieldPresent (sfRegularKey);
     }
 
-    terResult = checkSeq ();
+    terHandler = checkSeq ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terHandler.hasErr())
+        return terHandler.err;
 
-    terResult = payFee ();
+    terHandler = payFee ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terHandler.hasErr())
+        return terHandler.err;
 
-    terResult = checkSign ();
+    terHandler = checkSign ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terHandler.hasErr())
+        return terHandler.err;
 
     if (mTxnAccount)
         mEngine->view().update (mTxnAccount);
+
+    // We successfully passed the signature check.  Process any "tec" errors.
+    if (terHandler.hasTec())
+        return terHandler.tec;
 
     return doApply ();
 }
@@ -322,7 +390,6 @@ TER Transactor::checkSingleSign ()
     // Verify the transaction's signing public key is authorized for signing.
     if (calcAccountID(mSigningPubKey) == mTxnAccountID)
     {
-        // Authorized to continue.
         mSigMaster = true;
         if (mTxnAccount->isFlag(lsfDisableMaster))
             return tefMASTER_DISABLED;
@@ -349,7 +416,7 @@ TER Transactor::checkSingleSign ()
     return tesSUCCESS;
 }
 
-namespace TransactorDetail
+namespace
 {
 
 struct GetSignerListResult
@@ -534,12 +601,11 @@ checkSigningAccounts (
     return ret;
 }
 
-} // namespace TransactorDetail
+} // anonymous namespace
 
 TER Transactor::checkMultiSign ()
 {
     // Get mTxnAccountID's SignerList and Quorum.
-    using namespace TransactorDetail;
     GetSignerListResult const outer =
         getSignerList (mTxnAccountID, mEngine, m_journal);
 

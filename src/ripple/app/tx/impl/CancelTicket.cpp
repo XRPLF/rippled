@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/tx/impl/CheckAndConsumeTicket.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
@@ -41,51 +42,31 @@ public:
 
     }
 
+    TER preCheck () override
+    {
+        // A Ticket may not be used to cancel a Ticket.  So a Sequence of
+        // zero (which indicates that a Ticket is being used) is malformed.
+        if (mTxn.getSequence () == 0)
+        {
+            // To preserve transaction backward compatibility we return
+            // a "less good" error code if Tickets are disabled.  When
+            // Tickets are enabled we're changing transaction behavior
+            // anyway, so we can return the better code.
+            if (mEngine->enableTickets())
+                return temBAD_SEQUENCE;
+            else
+                return tefPAST_SEQ;
+        }
+        return Transactor::preCheck ();
+    }
+
     TER doApply () override
     {
         assert (mTxnAccount);
 
-        uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
-
-        // VFALCO This is highly suspicious, we're requiring that the
-        //        transaction provide the return value of getTicketIndex?
-        SLE::pointer sleTicket = mEngine->view().peek (keylet::ticket(ticketId));
-
-        if (!sleTicket)
-            return tecNO_ENTRY;
-
-        auto const ticket_owner =
-            sleTicket->getAccountID (sfAccount);
-
-        bool authorized =
-            mTxnAccountID == ticket_owner;
-
-        // The target can also always remove a ticket
-        if (!authorized && sleTicket->isFieldPresent (sfTarget))
-            authorized = (mTxnAccountID == sleTicket->getAccountID (sfTarget));
-
-        // And finally, anyone can remove an expired ticket
-        if (!authorized && sleTicket->isFieldPresent (sfExpiration))
-        {
-            std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
-
-            if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
-                authorized = true;
-        }
-
-        if (!authorized)
-            return tecNO_PERMISSION;
-
-        std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
-
-        TER const result = dirDelete (mEngine->view (), false, hint,
-            getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
-
-        adjustOwnerCount(mEngine->view(), mEngine->view().peek(
-            keylet::account(ticket_owner)), -1);
-        mEngine->view ().erase (sleTicket);
-
-        return result;
+        // See if we can legitimately use the Ticket.  Note that canceling
+        // an expired Ticket is a tesSUCCESS.
+        return checkAndConsumeCancelTicket (mTxn, mTxnAccountID, mEngine);
     }
 };
 

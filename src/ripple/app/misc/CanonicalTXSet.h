@@ -39,36 +39,54 @@ public:
     class Key
     {
     public:
-        Key (uint256 const& account, std::uint32_t seq, uint256 const& id)
-            : mAccount (account)
-            , mTXid (id)
-            , mSeq (seq)
+        Key (uint256 const& account,
+            std::uint32_t seq,
+            AccountID const& ticketOwner,
+            std::uint32_t ticketSeq,
+            uint256 const& txnId)
+            : account_ (account)
+            , txId_ (txnId)
+            , ticketOwner_ (ticketOwner)
+            , ticketSeq_ (ticketSeq)
+            , seq_ (seq)
         {
         }
 
-        bool operator<  (Key const& rhs) const;
-        bool operator>  (Key const& rhs) const;
-        bool operator<= (Key const& rhs) const;
-        bool operator>= (Key const& rhs) const;
+        friend bool operator<  (Key const& lhs, Key const& rhs);
+
+        inline friend bool operator>  (Key const& lhs, Key const& rhs)
+        {
+            return rhs < lhs;
+        }
+        inline friend bool operator<= (Key const& lhs, Key const& rhs)
+        {
+            return ! (lhs > rhs);
+        }
+        inline friend bool operator>= (Key const& lhs, Key const& rhs)
+        {
+            return ! (lhs < rhs);
+        }
 
         bool operator== (Key const& rhs) const
         {
-            return mTXid == rhs.mTXid;
+            return txId_ == rhs.txId_;
         }
         bool operator!= (Key const& rhs) const
         {
-            return mTXid != rhs.mTXid;
+            return txId_ != rhs.txId_;
         }
 
         uint256 const& getTXID () const
         {
-            return mTXid;
+            return txId_;
         }
 
     private:
-        uint256 mAccount;
-        uint256 mTXid;
-        std::uint32_t mSeq;
+        uint256 account_;
+        uint256 txId_;
+        AccountID ticketOwner_;
+        std::uint32_t ticketSeq_;
+        std::uint32_t seq_;
     };
 
     using iterator = std::map <Key, STTx::pointer>::iterator;

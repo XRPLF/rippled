@@ -40,6 +40,10 @@
 #include <string>
 
 namespace ripple {
+
+// Forward declarations.
+class LocalTxs;
+
 namespace test {
 
 struct TestAccount
@@ -134,7 +138,7 @@ TestAccount
 createAccount(std::string const& passphrase, KeyType keyType);
 
 TestAccount
-createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+createAndFundAccount(TestAccount& from, std::string const& passphrase,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer const& ledger, bool sign = true);
 
@@ -236,11 +240,23 @@ trust(TestAccount& from, TestAccount const& issuer,
                 std::string const& currency, double amount,
                 Ledger::pointer const& ledger, bool sign = true);
 
+// Simplest form of close_and_advance.
 void
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL);
 
-Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
-    TestAccount const& dest, std::vector<Currency> srcCurrencies, 
+// Call this function if you want to advance the ledger time.
+void
+close_and_advance(Ledger::pointer& ledger,
+    std::shared_ptr<Ledger const>& LCL, std::uint32_t advSeconds);
+
+// Call this function if you want to retry transactions that fail with
+// a `ter` or `tec`.
+void
+close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL,
+    std::uint32_t advSeconds, std::unique_ptr<LocalTxs>& retries);
+
+Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
+    TestAccount const& dest, std::vector<Currency> srcCurrencies,
     Amount const& dstAmount, beast::abstract_ostream& log,
     boost::optional<Json::Value> contextPaths = boost::none);
 

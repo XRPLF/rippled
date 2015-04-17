@@ -22,22 +22,27 @@
 
 namespace ripple {
 
-InnerObjectFormats::InnerObjectFormats ()
+InnerObjectFormats::InnerObjectFormats()
 {
-    add (sfSignerEntry.getJsonName ().c_str (), sfSignerEntry.getCode ())
+    add (sfSignerEntry.getJsonName().c_str(), sfSignerEntry.getCode())
         << SOElement (sfAccount,              SOE_REQUIRED)
         << SOElement (sfSignerWeight,         SOE_REQUIRED)
         ;
 
-    add (sfSigningFor.getJsonName ().c_str (), sfSigningFor.getCode ())
+    add (sfSigningFor.getJsonName().c_str(), sfSigningFor.getCode())
         << SOElement (sfAccount,              SOE_REQUIRED)
         << SOElement (sfSigningAccounts,      SOE_REQUIRED)
         ;
 
-    add (sfSigningAccount.getJsonName ().c_str (), sfSigningAccount.getCode ())
+    add (sfSigningAccount.getJsonName().c_str(), sfSigningAccount.getCode())
         << SOElement (sfAccount,              SOE_REQUIRED)
         << SOElement (sfSigningPubKey,        SOE_REQUIRED)
         << SOElement (sfMultiSignature,       SOE_REQUIRED)
+        ;
+
+    add (sfTicketID.getJsonName().c_str(), sfTicketID.getCode())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfSequence,             SOE_REQUIRED)
         ;
 }
 
@@ -46,7 +51,7 @@ void InnerObjectFormats::addCommonFields (Item& item)
 }
 
 InnerObjectFormats const&
-InnerObjectFormats::getInstance ()
+InnerObjectFormats::getInstance()
 {
     static InnerObjectFormats instance;
     return instance;
@@ -56,7 +61,7 @@ SOTemplate const*
 InnerObjectFormats::findSOTemplateBySField (SField const& sField) const
 {
     SOTemplate const* ret = nullptr;
-    auto itemPtr = findByType (sField.getCode ());
+    auto itemPtr = findByType (sField.getCode());
     if (itemPtr)
         ret = &(itemPtr->elements);
 

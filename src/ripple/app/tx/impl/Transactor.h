@@ -60,6 +60,9 @@ protected:
     TER preCheckSigningKey ();
 
     virtual TER checkSeq ();
+    TER checkSeq0 ();                       // If seq == 0 check for Ticket.
+    TER checkSeqNon0 (std::uint32_t t_seq); // If seq != 0 verify seq number.
+
     virtual TER payFee ();
 
     void calculateFee ();

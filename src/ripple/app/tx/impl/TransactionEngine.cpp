@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/CheckAndConsumeTicket.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
@@ -110,15 +111,19 @@ TransactionEngine::applyTransaction (
             terResult = terNO_ACCOUNT;
         else
         {
-            std::uint32_t t_seq = txn.getSequence ();
-            std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
+            auto const t_seq = txn.getSequence ();
+            auto const a_seq = txnAcct->getFieldU32 (sfSequence);
+            auto const hasTicket = txn.isFieldPresent (sfTicketID);
 
             if (a_seq < t_seq)
                 terResult = terPRE_SEQ;
-            else if (a_seq > t_seq)
+            else if ((t_seq != 0) && (a_seq > t_seq))
+                terResult = tefPAST_SEQ;
+            else if ((t_seq == 0) && !hasTicket)
                 terResult = tefPAST_SEQ;
             else
             {
+                // Either a valid Sequence number or a TicketID is present.
                 STAmount fee        = txn.getTransactionFee ();
                 STAmount balance    = txnAcct->getFieldAmount (sfBalance);
 
@@ -133,12 +138,43 @@ TransactionEngine::applyTransaction (
                 }
                 else
                 {
-                    if (fee > balance)
-                        fee = balance;
-                    txnAcct->setFieldAmount (sfBalance, balance - fee);
-                    txnAcct->setFieldU32 (sfSequence, t_seq + 1);
-                    view().update (txnAcct);
-                    didApply = true;
+                    if ((t_seq == 0) && hasTicket)
+                    {
+                        // If a transaction with a Ticket has a 'tec' error
+                        // it is important that the Ticket is:
+                        //  a) consumable by that transaction and
+                        //  b) consumed when the 'tec' occurs.
+                        // Otherwise the consumption of the fee cannot be
+                        // tracked by the ledger (since the account's sequence
+                        // won't be incremented).
+                        TER const terTicket = checkAndConsumeSeqTicket (
+                            txn, txn.getAccountID (sfAccount), this);
+
+                        if ((! isTesSuccess (terTicket)) &&
+                            (! isTecClaim (terTicket)))
+                        {
+                            // Unable to consume Ticket.  Since we can't
+                            // consume the Ticket we can't charge a 'tec'.
+                            // Return a 'tef' instead.
+                            terResult = tefNO_PERMISSION;
+                        }
+                    }
+                    else
+                    {
+                        // No Ticket.  Increment the account sequence.
+                        txnAcct->setFieldU32 (sfSequence, a_seq + 1);
+                    }
+
+                    if (isTecClaim (terResult))
+                    {
+                        // Charge the Fee, or as close to it as we can.
+                        if (fee > balance)
+                            fee = balance;
+                        txnAcct->setFieldAmount (sfBalance, balance - fee);
+
+                        view().update (txnAcct);
+                        didApply = true;
+                    }
                 }
             }
         }

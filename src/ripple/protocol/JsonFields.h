@@ -39,10 +39,13 @@ JSS ( Account );                    // in: TransactionSign; field.
 JSS ( Amount );                     // in: TransactionSign; field.
 JSS ( ClearFlag );                  // field.
 JSS ( Destination );                // in: TransactionSign; field.
+JSS ( Expiration );                 // field.
 JSS ( Fee );                        // in/out: TransactionSign; field.
 JSS ( Flags );                      // in/out: TransactionSign; field.
 JSS ( Invalid );                    //
+JSS ( LastLedgerSequence );         // field.
 JSS ( LimitAmount );                // field.
+JSS ( MessageKey );                 // field.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign
 JSS ( TransferRate );               // in: TransferRate
@@ -54,6 +57,7 @@ JSS ( SetFlag );                    // field.
 JSS ( SigningPubKey );              // field
 JSS ( TakerGets );                  // field.
 JSS ( TakerPays );                  // field.
+JSS ( Target );                     // field.
 JSS ( TxnSignature );               // field
 JSS ( TransactionType );            // in: TransactionSign
 JSS ( aborted );                    // out: InboundLedger
