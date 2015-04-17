@@ -656,7 +656,7 @@ bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
         return true;
     }
 
-    return mUNL.end () != mUNL.find (naNodePublic.humanNodePublic ());
+    return mUNL.find (naNodePublic.humanNodePublic()) != mUNL.end();
 }
 
 //--------------------------------------------------------------------------
