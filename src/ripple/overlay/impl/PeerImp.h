@@ -173,9 +173,10 @@ public:
     template <class Buffers>
     PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-            Resource::Consumer usage, protocol::TMHello&& hello,
-                RippleAddress const& legacyPublicKey, id_t id,
-                    OverlayImpl& overlay);
+            beast::http::message&& response, Resource::Consumer usage,
+                protocol::TMHello&& hello,
+                    RippleAddress const& legacyPublicKey, id_t id,
+                        OverlayImpl& overlay);
 
     virtual
     ~PeerImp();
@@ -448,9 +449,10 @@ private:
 template <class Buffers>
 PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-        Resource::Consumer usage, protocol::TMHello&& hello,
-            RippleAddress const& legacyPublicKey, id_t id,
-                OverlayImpl& overlay)
+        beast::http::message&& response, Resource::Consumer usage,
+            protocol::TMHello&& hello,
+                RippleAddress const& legacyPublicKey, id_t id,
+                    OverlayImpl& overlay)
     : Child (overlay)
     , id_ (id)
     , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
@@ -473,6 +475,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , usage_ (usage)
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
+    , http_message_(std::move(response))
     , validatorsConnection_(getApp().getValidators().newConnection(id))
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
