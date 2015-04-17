@@ -171,9 +171,13 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
     if (iter == map_.end())
     {
-        // no trusted key
-        if (journal.warning) journal.warning
-            << "Ignoring untrusted manifest #" << seq;
+        /*
+            A manifest was received whose master key we don't trust.
+            Since rippled always sends all of its current manifests,
+            this will happen normally any time a peer connects.
+        */
+        if (journal.debug) journal.debug
+            << "Ignoring manifest #" << seq << " from untrusted key " << pk;
         return false;
     }
 
@@ -183,7 +187,13 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
     if (old  &&  seq <= old->seq)
     {
-        if (journal.warning) journal.warning
+        /*
+            A manifest was received for a validator we're tracking, but
+            its sequence number is no higher than the one already stored.
+            This will happen normally when a peer without the latest gossip
+            connects.
+        */
+        if (journal.debug) journal.debug
             << "Ignoring manifest #"      << seq
             << "which isn't newer than #" << old->seq;
         return false;  // not a newer manifest, ignore
@@ -194,6 +204,10 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
     if (! m)
     {
+        /*
+            A manifest is missing a field or the signature is invalid.
+            This shouldn't happen normally.
+        */
         if (journal.warning) journal.warning
             << "Failed to unpack manifest #" << seq;
         return false;
@@ -207,19 +221,33 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
     if (! old)
     {
-        if (journal.warning) journal.warning
+        /*
+            This is the first received manifest for a trusted master key
+            (possibly our own).  This only happens once per validator per
+            run (and possibly not at all, if there's an obsolete entry in
+            [validator_keys] for a validator that no longer exists).
+        */
+        if (journal.info) journal.info
             << "Adding new manifest #" << seq;
     }
     else
     {
         if (seq == revoked)
         {
+            /*
+               The MASTER key for this validator was revoked.  This is
+               expected, but should happen at most *very* rarely.
+            */
             if (journal.warning) journal.warning
                 << "Dropping old manifest #" << old->seq
                 << " because the master key was revoked";
         }
         else
         {
+            /*
+                An ephemeral key was revoked and superseded by a new key.
+                This is expected, but should happen infrequently.
+            */
             if (journal.warning) journal.warning
                 << "Dropping old manifest #" << old->seq
                 << " in favor of #"          << seq;

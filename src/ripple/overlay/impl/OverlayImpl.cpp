@@ -646,19 +646,15 @@ OverlayImpl::onManifests (Job&,
         }
         if (! manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
         {
-            if (journal.warning) journal.warning
-                << "Ignored manifest seq #" << *seq << " for " << *pk;
             continue;
         }
-        if (journal.warning) journal.warning
-            << "Accepted manifest seq #" << *seq << " for " << *pk;
         outbox.add_list()->set_stobject(s);
     }
 
     if (outbox.list_size() == 0)
         return;
 
-    if (journal.warning) journal.warning
+    if (journal.debug) journal.debug
         << "Forwarding " << outbox.list_size() << " manifests...";
 
     auto const msg = std::make_shared<Message>(outbox, protocol::mtMANIFESTS);
@@ -667,7 +663,7 @@ OverlayImpl::onManifests (Job&,
         {
             if (peer != from)
             {
-                if (peer->pjournal().warning) peer->pjournal().warning
+                if (auto const& j = peer->pjournal().debug) j
                     << "... to " << peer.get();
                 peer->send(msg);
             }
