@@ -644,7 +644,7 @@ OverlayImpl::onManifests (Job&,
                 << "Malformed manifest #" << i + 1;
             continue;
         }
-        if (! manifestCache_.maybe_accept (*pk, *seq, std::move(s), st, journal))
+        if (! manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
         {
             if (journal.warning) journal.warning
                 << "Ignored manifest seq #" << *seq << " for " << *pk;
