@@ -38,9 +38,9 @@ unpackManifest(std::string s)
     auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
     auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
     if (! mseq || ! mpk || ! mspk)
-        return boost::optional<Manifest>();
+        return boost::none;
     if (! verify(st, HashPrefix::manifest, *mpk))
-        return boost::optional<Manifest>();
+        return boost::none;
 
     return Manifest(std::move (s), std::move (*mpk), std::move (*mspk), *mseq);
 }
