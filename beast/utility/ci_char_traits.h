@@ -24,8 +24,8 @@
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <cctype>
 #include <iterator>
-#include <locale>
 #include <string>
+#include <utility>
 
 namespace beast {
 
@@ -51,20 +51,48 @@ struct ci_less
     }
 };
 
-/** Returns `true` if strings are case-insensitive equal. */
-template <class Lhs, class Rhs>
-std::enable_if_t<std::is_same<typename Lhs::value_type, char>::value &&
-    std::is_same<typename Lhs::value_type, char>::value, bool>
-ci_equal(Lhs const& lhs, Rhs const& rhs)
+namespace detail {
+
+inline
+bool
+ci_equal(std::pair<const char*, std::size_t> lhs,
+         std::pair<const char*, std::size_t> rhs)
 {
-    using std::begin;
-    using std::end;
-    return std::equal (begin(lhs), end(lhs), begin(rhs), end(rhs),
+    return std::equal (lhs.first, lhs.first + lhs.second,
+                       rhs.first, rhs.first + rhs.second,
         [] (char lhs, char rhs)
         {
             return std::tolower(lhs) == std::tolower(rhs);
         }
     );
+}
+
+template <size_t N>
+inline
+std::pair<const char*, std::size_t>
+view(const char (&s)[N])
+{
+    return {s, N-1};
+}
+
+inline
+std::pair<const char*, std::size_t>
+view(std::string const& s)
+{
+    return {s.data(), s.size()};
+}
+
+}
+
+/** Returns `true` if strings are case-insensitive equal. */
+template <class String1, class String2>
+inline
+bool
+ci_equal(String1 const& lhs, String2 const& rhs)
+{
+    using detail::view;
+    using detail::ci_equal;
+    return ci_equal(view(lhs), view(rhs));
 }
 
 }
