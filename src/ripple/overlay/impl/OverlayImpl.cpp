@@ -644,7 +644,6 @@ OverlayImpl::onManifests (Job&,
                 << "Malformed manifest #" << i + 1;
             continue;
         }
-        // `continue` if pk is untrusted
         if (! manifestCache_.maybe_accept (*pk, *seq, std::move(s), st, journal))
         {
             if (journal.warning) journal.warning
