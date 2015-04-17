@@ -210,8 +210,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
-                    return beast::ci_equal(s,
-                        std::string("peer"));
+                    return beast::ci_equal(s, "peer");
                 }) == types.end())
         {
             handoff.moved = false;
