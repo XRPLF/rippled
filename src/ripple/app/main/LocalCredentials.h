@@ -48,13 +48,6 @@ public:
         return mNodePrivateKey;
     }
 
-    // Local persistence of RPC clients
-    bool dataDelete (std::string const& strKey);
-
-    // VFALCO NOTE why is strValue non-const?
-    bool dataFetch (std::string const& strKey, std::string& strValue);
-    bool dataStore (std::string const& strKey, std::string const& strValue);
-
 private:
     bool nodeIdentityLoad ();
     bool nodeIdentityCreate ();

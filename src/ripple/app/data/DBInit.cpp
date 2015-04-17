@@ -106,19 +106,6 @@ const char* LedgerDBInit[] =
 
 int LedgerDBCount = std::extent<decltype(LedgerDBInit)>::value;
 
-// RPC database holds persistent data for RPC clients.
-const char* RpcDBInit[] =
-{
-
-    // Local persistence of the RPC client
-    "CREATE TABLE IF NOT EXISTS RPCData (                         \
-        Key         TEXT PRIMARY Key,               \
-        Value       TEXT                            \
-    );",
-};
-
-int RpcDBCount = std::extent<decltype(RpcDBInit)>::value;
-
 // NodeIdentity database holds local accounts and trusted nodes
 // VFALCO NOTE but its a table not a database, so...?
 //
