@@ -23,13 +23,11 @@
 namespace ripple {
 
 // VFALCO TODO Tidy these up into a class with functions and return types.
-extern const char* RpcDBInit[];
 extern const char* TxnDBInit[];
 extern const char* LedgerDBInit[];
 extern const char* WalletDBInit[];
 
 // VFALCO TODO Figure out what these counts are for
-extern int RpcDBCount;
 extern int TxnDBCount;
 extern int LedgerDBCount;
 extern int WalletDBCount;

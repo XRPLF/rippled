@@ -116,44 +116,4 @@ bool LocalCredentials::nodeIdentityCreate ()
     return true;
 }
 
-bool LocalCredentials::dataDelete (std::string const& strKey)
-{
-    auto db = getApp().getRpcDB ().checkoutDb ();
-
-    *db << (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
-                 % sqlEscape (strKey)));
-    return true;
-}
-
-bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strValue)
-{
-    auto db = getApp().getRpcDB ().checkoutDb ();
-
-    bool        bSuccess    = false;
-
-    soci::blob value (*db);
-    soci::indicator vi;
-    *db << str (boost::format ("SELECT Value FROM RPCData WHERE Key=%s;")
-                % sqlEscape (strKey)),
-            soci::into(value, vi);
-
-    if (soci::i_ok == vi)
-    {
-        convert (value, strValue);
-        bSuccess    = true;
-    }
-
-    return bSuccess;
-}
-
-bool LocalCredentials::dataStore (std::string const& strKey, std::string const& strValue)
-{
-    auto db = getApp().getRpcDB ().checkoutDb ();
-
-    *db << (str (boost::format ("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
-                 % sqlEscape (strKey)
-                 % sqlEscape (strValue)));
-    return true;
-}
-
 } // ripple
