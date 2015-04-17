@@ -644,11 +644,11 @@ OverlayImpl::onManifests (Job&,
                 << "Malformed manifest #" << i + 1;
             continue;
         }
-        if (! manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
+
+        if (manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
         {
-            continue;
+            outbox.add_list()->set_stobject(s);
         }
-        outbox.add_list()->set_stobject(s);
     }
 
     if (outbox.list_size() == 0)
