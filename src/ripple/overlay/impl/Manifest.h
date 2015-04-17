@@ -146,7 +146,7 @@ public:
     ~ManifestCache() = default;
 
     void configValidatorKey(std::string const& line, beast::Journal const& journal);
-    void configManifest(std::string const& s, beast::Journal const& journal);
+    void configManifest(std::string s, beast::Journal const& journal);
 
     void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
@@ -157,12 +157,12 @@ public:
     // Returns `true` if its a new, verified manifest
     bool
     maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
-        std::string const& s, beast::Journal const& journal);
+        std::string s, beast::Journal const& journal);
 
     // Returns `true` if its a new, verified manifest
     bool
     maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
-        std::string const& s, STObject const& st, beast::Journal const& journal);
+        std::string s, STObject const& st, beast::Journal const& journal);
 
     // A "for_each" for populated manifests only
     template <class Function>

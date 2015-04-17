@@ -448,7 +448,7 @@ prepareValidatorKeyManifests (ManifestCache& mc, beast::Journal const& journal)
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
         s = beast::base64_decode(s);
-        mc.configManifest(s, journal);
+        mc.configManifest(std::move(s), journal);
     }
     else
     {
@@ -620,8 +620,7 @@ OverlayImpl::onManifests (Job&,
 
     for (std::size_t i = 0; i < n; ++i)
     {
-        auto const& manifest = inbox->list().Get(i);
-        auto const& s = manifest.stobject();
+        auto& s = inbox->list().Get(i).stobject();
         STObject st(sfGeneric);
         try
         {
@@ -646,7 +645,7 @@ OverlayImpl::onManifests (Job&,
             continue;
         }
         // `continue` if pk is untrusted
-        if (! manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
+        if (! manifestCache_.maybe_accept (*pk, *seq, std::move(s), st, journal))
         {
             if (journal.warning) journal.warning
                 << "Ignored manifest seq #" << *seq << " for " << *pk;

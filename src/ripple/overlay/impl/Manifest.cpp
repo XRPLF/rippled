@@ -83,7 +83,7 @@ ManifestCache::configValidatorKey(std::string const& line, beast::Journal const&
 }
 
 void
-ManifestCache::configManifest (std::string const& s, beast::Journal const& journal)
+ManifestCache::configManifest (std::string s, beast::Journal const& journal)
 {
     STObject st(sfGeneric);
     try
@@ -113,7 +113,7 @@ ManifestCache::configManifest (std::string const& s, beast::Journal const& journ
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    maybe_insert (pk, seq, s, journal);
+    maybe_insert (pk, seq, std::move(s), journal);
 }
 
 void
@@ -163,7 +163,7 @@ ManifestCache::would_accept (AnyPublicKey const& pk, std::uint32_t seq) const
 
 bool
 ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string const& s, beast::Journal const& journal)
+    std::string s, beast::Journal const& journal)
 {
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -190,7 +190,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     }
 
     // newer manifest
-    auto m = unpackManifest (s);
+    auto m = unpackManifest (std::move(s));
 
     if (! m)
     {
@@ -254,11 +254,11 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
 bool
 ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string const& s, STObject const& st, beast::Journal const& journal)
+    std::string s, STObject const& st, beast::Journal const& journal)
 {
     return would_accept (pk, seq)
         && verify(st, HashPrefix::manifest, pk)
-        && maybe_insert (pk, seq, s, journal);
+        && maybe_insert (pk, seq, std::move(s), journal);
 }
 
 }
