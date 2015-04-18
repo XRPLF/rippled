@@ -125,7 +125,7 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    maybe_accept (pk, seq, std::move(s), journal);
+    applyManifest (pk, seq, std::move(s), journal);
 }
 
 void
@@ -144,7 +144,7 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
 }
 
 bool
-ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
+ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
     std::string s, beast::Journal const& journal)
 {
     std::lock_guard<std::mutex> lock (mutex_);
