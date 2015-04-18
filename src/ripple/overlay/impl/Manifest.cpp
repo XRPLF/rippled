@@ -32,11 +32,23 @@ boost::optional<Manifest>
 unpackManifest(std::string s)
 {
     STObject st(sfGeneric);
-    SerialIter sit(s.data(), s.size());
-    st.set(sit);
+    try
+    {
+        SerialIter sit(s.data(), s.size());
+        st.set(sit);
+    }
+    catch (...)
+    {
+        return boost::none;
+    }
+
     auto const mseq = get(st, sfSequence);
     auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
     auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
+
+    /*
+        Fail if any fields are missing.  Then check the signature.
+    */
     if (! mseq || ! mpk || ! mspk)
         return boost::none;
     if (! verify(st, HashPrefix::manifest, *mpk))
