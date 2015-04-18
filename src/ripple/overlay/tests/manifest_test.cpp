@@ -30,7 +30,7 @@ class manifest_test : public ripple::TestSuite
 {
 public:
     // Return a manifest in both serialized and STObject form
-    std::pair<std::string, STObject>
+    std::string
     make_manifest(AnySecretKey const& sk, AnyPublicKey const& spk, int seq)
     {
         auto const pk = sk.publicKey();
@@ -47,7 +47,7 @@ public:
         st.add(s);
 
         std::string const m (static_cast<char const*> (s.data()), s.size());
-        return std::make_pair(m, st);
+        return m;
     }
 
     void
@@ -66,24 +66,24 @@ public:
         auto const s_a1 = make_manifest(sk_a, kp_a.second, 1);
         auto const s_b0 = make_manifest(sk_b, kp_b.second, 0);
         auto const s_b1 = make_manifest(sk_b, kp_b.second, 1);
-        auto const fake = s_b1.first + '\0';
+        auto const fake = s_b1 + '\0';
 
         ManifestCache cache;
 
-        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal), "have to install a trusted key first");
+        expect(! cache.maybe_accept(pk_a, 0, s_a0, journal), "have to install a trusted key first");
 
         cache.addTrustedKey(pk_a, "a");
         cache.addTrustedKey(pk_b, "b");
 
-        expect(  cache.maybe_accept(pk_a, 0, s_a0.first, journal));
-        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal));
+        expect(  cache.maybe_accept(pk_a, 0, s_a0, journal));
+        expect(! cache.maybe_accept(pk_a, 0, s_a0, journal));
 
-        expect(  cache.maybe_accept(pk_a, 1, s_a1.first, journal));
-        expect(! cache.maybe_accept(pk_a, 1, s_a1.first, journal));
-        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal));
+        expect(  cache.maybe_accept(pk_a, 1, s_a1, journal));
+        expect(! cache.maybe_accept(pk_a, 1, s_a1, journal));
+        expect(! cache.maybe_accept(pk_a, 0, s_a0, journal));
 
-        expect(  cache.maybe_accept(pk_b, 0, s_b0.first, journal));
-        expect(! cache.maybe_accept(pk_b, 0, s_b0.first, journal));
+        expect(  cache.maybe_accept(pk_b, 0, s_b0, journal));
+        expect(! cache.maybe_accept(pk_b, 0, s_b0, journal));
 
         expect(! cache.maybe_accept(pk_b, 1, fake, journal), "wrong sig not accepted");
     }
