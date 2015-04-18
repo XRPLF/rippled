@@ -1,11 +1,9 @@
 language: cpp
-env:
-  # Output of `travis encrypt COVERALLS_REPO_TOKEN=$repo_token -r ripple/rippled`
-  # It's possible to have more than one `secure` key
-  secure: "JhYNCqVQRSG0f6qwL//hHPaJS4d2XPseyDGHQxCn3KbMflZcqbVl6fBzjVOiID2CfBs/SZEPDW2B7x2ElXWCwtp+HEyB8la1Gy3xjP5rauIRxe50EWu705v3fWGY4yk5KcXL8UjVBa7EZDlhIbbyX2hfWBp0jHRh0DxX6Ha9D80="
 compiler:
   - clang
   - gcc
+env:
+  secure: "ohuC3dPIgBwVEszvrelLNmvQyuJDbF37FQUIpdLQxSnRwVem0t7/3zn/BmAySs7DmzM/ZfIB+AIN/eHuc+VdmBQcHgfnYv+zwgeFOykWJNj+ZA6zBwPx0kiZnVnEpVPkujqhlckOX6GpOsNTu6Q4FnORc090P2EBuIxiN6QcHRE="
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-software-properties
