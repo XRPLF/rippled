@@ -292,9 +292,9 @@ isMemoOkay (STObject const& st, std::string& reason)
     if (!st.isFieldPresent (sfMemos))
         return true;
 
-    // We switch to new semantics on April 15, 2015 at 1:00pm PDT:
+    // We switch to new semantics on April 28, 2015 at 1:00pm PDT:
     static boost::posix_time::ptime const cutoff (
-        boost::posix_time::time_from_string ("2015-04-15 20:00:00"));
+        boost::posix_time::time_from_string ("2015-04-28 20:00:00"));
 
     bool const emulate027 =
         boost::posix_time::second_clock::universal_time () < cutoff;
