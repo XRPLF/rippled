@@ -125,7 +125,7 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    maybe_insert (pk, seq, std::move(s), journal);
+    maybe_accept (pk, seq, std::move(s), journal);
 }
 
 void
@@ -144,37 +144,7 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
 }
 
 bool
-ManifestCache::would_accept (AnyPublicKey const& pk, std::uint32_t seq) const
-{
-    std::lock_guard<std::mutex> lock (mutex_);
-
-    auto const iter = map_.find(pk);
-    if (iter == map_.end())
-    {
-        /*
-            We received a manifest for a master key which is not in our
-            store.  Reject it.
-            (Recognized master keys live in [validator_keys] in the config,
-            and are installed via addTrustedKey().)
-        */
-        return false;
-    }
-
-    if (! iter->second.m)
-    {
-        /*
-            We have an entry for this master key but no manifest.  So the
-            key is trusted, and we don't already have its sequence number.
-            Accept it.
-        */
-        return true;
-    }
-
-    return seq > iter->second.m->seq;
-}
-
-bool
-ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
+ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
     std::string s, beast::Journal const& journal)
 {
     std::lock_guard<std::mutex> lock (mutex_);
@@ -290,13 +260,6 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
     old = std::move (m);
 
     return true;
-}
-
-bool
-ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string s, beast::Journal const& journal)
-{
-    return maybe_insert (pk, seq, std::move(s), journal);
 }
 
 }

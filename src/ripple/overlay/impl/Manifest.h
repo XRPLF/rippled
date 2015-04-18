@@ -150,15 +150,6 @@ public:
 
     void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
-    // Returns true if seq introduces a higher sequence number for pk
-    bool
-    would_accept (AnyPublicKey const& pk, std::uint32_t seq) const;
-
-    // Returns `true` if its a new, verified manifest
-    bool
-    maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
-        std::string s, beast::Journal const& journal);
-
     // Returns `true` if its a new, verified manifest
     bool
     maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
