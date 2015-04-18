@@ -66,7 +66,7 @@ public:
         auto const s_a1 = make_manifest(sk_a, kp_a.second, 1);
         auto const s_b0 = make_manifest(sk_b, kp_b.second, 0);
         auto const s_b1 = make_manifest(sk_b, kp_b.second, 1);
-        //auto const fake = s_b1.first + '\0';
+        auto const fake = s_b1.first + '\0';
 
         ManifestCache cache;
 
@@ -97,7 +97,7 @@ public:
         expect(! cache.maybe_accept(pk_b, 0, s_b0.first, s_b0.second, journal));
         expect(cache.maybe_accept(pk_b, 1, s_b1.first, s_b1.second, journal));
 
-        expect(! cache.maybe_accept(pk_b, 2, s_b0.first, s_a0.second, journal), "wrong sig not accepted");
+        expect(! cache.maybe_accept(pk_b, 2, fake, s_a0.second, journal), "wrong sig not accepted");
     }
 };
 

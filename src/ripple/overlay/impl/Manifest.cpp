@@ -297,7 +297,6 @@ ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
     std::string s, STObject const& st, beast::Journal const& journal)
 {
     return would_accept (pk, seq)
-        && verify(st, HashPrefix::manifest, pk)
         && maybe_insert (pk, seq, std::move(s), journal);
 }
 
