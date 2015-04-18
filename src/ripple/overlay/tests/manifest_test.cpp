@@ -70,34 +70,22 @@ public:
 
         ManifestCache cache;
 
-        expect(! cache.would_accept(pk_a, 0), "have to install a trusted key first");
-        expect(! cache.maybe_insert(pk_a, 0, s_a0.first, journal), "have to install a trusted key first");
+        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal), "have to install a trusted key first");
 
         cache.addTrustedKey(pk_a, "a");
         cache.addTrustedKey(pk_b, "b");
 
-        expect(cache.would_accept(pk_a, 0));
-        expect(cache.maybe_insert(pk_a, 0, s_a0.first, journal));
+        expect(  cache.maybe_accept(pk_a, 0, s_a0.first, journal));
+        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal));
 
-        expect(! cache.would_accept(pk_a, 0));
-        expect(! cache.maybe_insert(pk_a, 0, s_a0.first, journal));
+        expect(  cache.maybe_accept(pk_a, 1, s_a1.first, journal));
+        expect(! cache.maybe_accept(pk_a, 1, s_a1.first, journal));
+        expect(! cache.maybe_accept(pk_a, 0, s_a0.first, journal));
 
-        expect(cache.would_accept(pk_a, 1));
-        expect(cache.maybe_insert(pk_a, 1, s_a1.first, journal));
-
-        expect(! cache.would_accept(pk_a, 1));
-        expect(! cache.maybe_insert(pk_a, 1, s_a1.first, journal));
-
-        expect(! cache.would_accept(pk_a, 0));
-        expect(! cache.maybe_insert(pk_a, 0, s_a0.first, journal));
-
-        expect(cache.would_accept(pk_b, 0));
-        expect(cache.maybe_insert(pk_b, 0, s_b0.first, journal));
-
+        expect(  cache.maybe_accept(pk_b, 0, s_b0.first, journal));
         expect(! cache.maybe_accept(pk_b, 0, s_b0.first, journal));
-        expect(cache.maybe_accept(pk_b, 1, s_b1.first, journal));
 
-        expect(! cache.maybe_accept(pk_b, 2, fake, journal), "wrong sig not accepted");
+        expect(! cache.maybe_accept(pk_b, 1, fake, journal), "wrong sig not accepted");
     }
 };
 
