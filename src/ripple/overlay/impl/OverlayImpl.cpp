@@ -635,17 +635,8 @@ OverlayImpl::onManifests (Job&,
         }
         auto const pk = get<AnyPublicKey>(st, sfPublicKey);
         auto const seq = get(st, sfSequence);
-        if (! pk ||
-            ! seq ||
-            ! get(st, sfSignature) ||
-            ! get(st, sfSigningPubKey))           
-        {
-            if (journal.info) journal.info
-                << "Malformed manifest #" << i + 1;
-            continue;
-        }
 
-        if (manifestCache_.maybe_accept (*pk, *seq, s, journal))
+        if (pk && seq && manifestCache_.maybe_accept (*pk, *seq, s, journal))
         {
             outbox.add_list()->set_stobject(s);
         }
