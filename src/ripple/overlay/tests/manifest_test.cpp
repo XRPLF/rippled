@@ -94,10 +94,10 @@ public:
         expect(cache.would_accept(pk_b, 0));
         expect(cache.maybe_insert(pk_b, 0, s_b0.first, journal));
 
-        expect(! cache.maybe_accept(pk_b, 0, s_b0.first, s_b0.second, journal));
-        expect(cache.maybe_accept(pk_b, 1, s_b1.first, s_b1.second, journal));
+        expect(! cache.maybe_accept(pk_b, 0, s_b0.first, journal));
+        expect(cache.maybe_accept(pk_b, 1, s_b1.first, journal));
 
-        expect(! cache.maybe_accept(pk_b, 2, fake, s_a0.second, journal), "wrong sig not accepted");
+        expect(! cache.maybe_accept(pk_b, 2, fake, journal), "wrong sig not accepted");
     }
 };
 

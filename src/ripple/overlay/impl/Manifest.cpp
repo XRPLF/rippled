@@ -294,7 +294,7 @@ ManifestCache::maybe_insert (AnyPublicKey const& pk, std::uint32_t seq,
 
 bool
 ManifestCache::maybe_accept (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string s, STObject const& st, beast::Journal const& journal)
+    std::string s, beast::Journal const& journal)
 {
     return maybe_insert (pk, seq, std::move(s), journal);
 }

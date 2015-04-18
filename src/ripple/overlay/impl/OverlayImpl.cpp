@@ -645,7 +645,7 @@ OverlayImpl::onManifests (Job&,
             continue;
         }
 
-        if (manifestCache_.maybe_accept (*pk, *seq, s, st, journal))
+        if (manifestCache_.maybe_accept (*pk, *seq, s, journal))
         {
             outbox.add_list()->set_stobject(s);
         }
