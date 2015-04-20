@@ -27,6 +27,7 @@
 #include <beast/utility/empty_base_optimization.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
+#include <boost/version.hpp>
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <functional>
 #include <initializer_list>
@@ -45,10 +46,17 @@ struct is_boost_reverse_iterator
     : std::false_type
 {};
 
+#if BOOST_VERSION >= 105800
+template <class It>
+struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>
+    : std::true_type
+{};
+#else
 template <class It>
 struct is_boost_reverse_iterator<boost::intrusive::detail::reverse_iterator<It>>
     : std::true_type
 {};
+#endif
 
 /** Associative container where each element is also indexed by time.
 
