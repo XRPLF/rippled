@@ -282,7 +282,7 @@ public:
             auto const iter = state->connected_addresses.find (remote_endpoint);
             if (iter != state->connected_addresses.end())
             {
-                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                     "Logic dropping inbound " << remote_endpoint <<
                     " as duplicate";
                 return SlotImp::ptr();
@@ -353,7 +353,7 @@ public:
         if (state->slots.find (remote_endpoint) !=
             state->slots.end ())
         {
-            if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                 "Logic dropping " << remote_endpoint <<
                 " as duplicate connect";
             return SlotImp::ptr ();
@@ -768,7 +768,7 @@ public:
                     return ep.address == other.address;
                 }))
             {
-                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " as duplicate";
                 iter = list.erase (iter);
