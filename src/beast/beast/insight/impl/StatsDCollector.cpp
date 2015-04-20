@@ -322,7 +322,10 @@ public:
                 std::move (buffer))));
     }
 
-    void on_send (boost::system::error_code ec, std::size_t)
+    // The keepAlive parameter makes sure the buffers sent to
+    // boost::asio::async_send do not go away until the call is finished
+    void on_send (std::shared_ptr<std::deque<std::string>> /*keepAlive*/,
+                  boost::system::error_code ec, std::size_t)
     {
         if (ec == boost::asio::error::operation_aborted)
             return;
@@ -354,6 +357,9 @@ public:
     // Send what we have
     void send_buffers ()
     {
+        if (m_data.empty ())
+            return;
+
         // Break up the array of strings into blocks
         // that each fit into one UDP packet.
         //
@@ -361,7 +367,12 @@ public:
         std::vector <boost::asio::const_buffer> buffers;
         buffers.reserve (m_data.size ());
         std::size_t size (0);
-        for (auto const& s : m_data)
+
+        auto keepAlive =
+            std::make_shared<std::deque<std::string>>(std::move (m_data));
+        m_data.clear ();
+
+        for (auto const& s : *keepAlive)
         {
             std::size_t const length (s.size ());
             assert (! s.empty ());
@@ -371,7 +382,7 @@ public:
                 log (buffers);
 #endif
                 m_socket.async_send (buffers, std::bind (
-                    &StatsDCollectorImp::on_send, this,
+                    &StatsDCollectorImp::on_send, this, keepAlive,
                         beast::asio::placeholders::error,
                             beast::asio::placeholders::bytes_transferred));
                 buffers.clear ();
@@ -388,11 +399,10 @@ public:
             log (buffers);
 #endif
             m_socket.async_send (buffers, std::bind (
-                &StatsDCollectorImp::on_send, this,
+                &StatsDCollectorImp::on_send, this, keepAlive,
                     beast::asio::placeholders::error,
                         beast::asio::placeholders::bytes_transferred));
         }
-        m_data.clear ();
     }
 
     void set_timer ()
