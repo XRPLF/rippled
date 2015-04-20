@@ -33,7 +33,6 @@ public:
     typedef std::map <JobType, JobTypeInfo> Map;
     typedef Map::const_iterator const_iterator;
 
-
     JobTypes ()
         : m_unknown (jtINVALID, "invalid", 0, true, true, 0, 0)
     {
@@ -51,13 +50,13 @@ public:
         add (jtVALIDATION_ut, "untrustedValidation",
             maxLimit, true,   false, 2000,  5000);
 
-        // A proof of work demand from another server
-        add (jtPROOFWORK,     "proofOfWork",
-            maxLimit, true,   false, 2000,  5000);
-
         // A local transaction
         add (jtTRANSACTION_l, "localTransaction",
             maxLimit, true,   false, 100,   500);
+
+        // A request for ledger/txnset data from another server
+        add (jtLEDGER_REQ,    "ledgerRequest",
+            2,        true,   false,    0,     0);
 
         // A proposal from an untrusted source
         add (jtPROPOSAL_ut,   "untrustedProposal",
@@ -67,10 +66,6 @@ public:
         add (jtLEDGER_DATA,   "ledgerData",
             2,        true,   false, 0,     0);
 
-        // Update pathfinding requests
-        add (jtUPDATE_PF,     "updatePaths",
-            maxLimit, true,   false, 0,     0);
-
         // A websocket command from the client
         add (jtCLIENT,        "clientCommand",
             maxLimit, true,   false, 2000,  5000);
@@ -78,6 +73,10 @@ public:
         // A websocket command from the client
         add (jtRPC,           "RPC",
             maxLimit, false,  false, 0,     0);
+
+        // Update pathfinding requests
+        add (jtUPDATE_PF,     "updatePaths",
+            maxLimit, true,   false, 0,     0);
 
         // A transaction received from the network
         add (jtTRANSACTION,   "transaction",

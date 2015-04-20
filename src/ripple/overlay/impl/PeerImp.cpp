@@ -943,7 +943,7 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMGetLedger> const& m)
 {
     fee_ = Resource::feeMediumBurdenPeer;
-    getApp().getJobQueue().addJob (jtPACK, "recvGetLedger", std::bind(
+    getApp().getJobQueue().addJob (jtLEDGER_REQ, "recvGetLedger", std::bind(
         beast::weak_fn(&PeerImp::getLedger, shared_from_this()), m));
 }
 
