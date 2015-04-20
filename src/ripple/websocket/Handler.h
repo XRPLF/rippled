@@ -208,6 +208,7 @@ public:
                 cpClient,
                 makeBeastEndpoint (remoteEndpoint),
                 WebSocket::getStrand (*cpClient).get_io_service ());
+            connection->setPingTimer ();
             auto result = mMap.emplace (cpClient, std::move (connection));
 
             assert (result.second);

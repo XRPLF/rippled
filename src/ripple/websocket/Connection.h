@@ -139,7 +139,6 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
         , m_handler (handler)
         , m_connection (cpConnection)
 {
-    setPingTimer ();
 }
 
 template <class WebSocket>

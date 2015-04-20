@@ -22,6 +22,7 @@
 #include <ripple/websocket/Server.h>
 
 #include <boost/make_shared.hpp>
+#include <beast/weak_fn.h>
 
 namespace ripple {
 namespace websocket {
@@ -114,16 +115,19 @@ EndpointPtr04  WebSocket04::makeEndpoint (HandlerPtr&& handler)
 template <>
 void ConnectionImpl <WebSocket04>::setPingTimer ()
 {
+    auto freq = getConfig ().WEBSOCKET_PING_FREQ;
+    if (freq <= 0)
+        return;
     if (auto con = m_connection.lock ())
     {
-        auto t = boost::posix_time::seconds (getConfig ().WEBSOCKET_PING_FREQ);
+        auto t = boost::posix_time::seconds (freq);
         auto ms = t.total_milliseconds();
         con->set_timer (
             ms,
-            [this] (WebSocket04::ErrorCode const& e)
-            {
-                this->pingTimer (e);
-            });
+            std::bind (
+                beast::weak_fn (&ConnectionImpl <WebSocket04>::pingTimer,
+                                shared_from_this()),
+                beast::asio::placeholders::error));
     }
 }
 
