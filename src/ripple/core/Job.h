@@ -40,8 +40,8 @@ enum JobType
     jtPACK,          // Make a fetch pack for a peer
     jtPUBOLDLEDGER,  // An old ledger has been accepted
     jtVALIDATION_ut, // A validation from an untrusted source
-    jtPROOFWORK,     // A proof of work demand from another server
     jtTRANSACTION_l, // A local transaction
+    jtLEDGER_REQ,    // Peer request ledger/txnset data
     jtPROPOSAL_ut,   // A proposal from an untrusted source
     jtLEDGER_DATA,   // Received data for a ledger we're acquiring
     jtCLIENT,        // A websocket command from the client
