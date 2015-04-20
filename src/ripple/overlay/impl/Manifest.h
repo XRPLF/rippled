@@ -139,6 +139,9 @@ private:
     mutable std::mutex mutex_;
     MapType map_;
 
+    bool preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
+        beast::Journal const& journal) const;
+
 public:
     ManifestCache() = default;
     ManifestCache (ManifestCache const&) = delete;

@@ -144,11 +144,9 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
 }
 
 bool
-ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string s, beast::Journal const& journal)
+ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
+    beast::Journal const& journal) const
 {
-    std::lock_guard<std::mutex> lock (mutex_);
-
     auto const iter = map_.find(pk);
 
     if (iter == map_.end())
@@ -162,8 +160,6 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
             << "Ignoring manifest #" << seq << " from untrusted key " << pk;
         return false;
     }
-
-    auto& unl = getApp().getUNL();
 
     auto& old = iter->second.m;
 
@@ -181,6 +177,27 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
         return false;  // not a newer manifest, ignore
     }
 
+    return true;
+}
+
+bool
+ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
+    std::string s, beast::Journal const& journal)
+{
+    {
+        std::lock_guard<std::mutex> lock (mutex_);
+
+        /*
+            "Preflight" the manifest -- before we spend time checking the
+            signature, make sure we trust the master key and the sequence
+            number is newer than any we have.
+        */
+        if (! preflightManifest_locked(pk, seq, journal))
+        {
+            return false;
+        }
+    }
+
     // newer manifest
     auto m = unpackManifest (std::move(s));
 
@@ -194,6 +211,23 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
             << "Failed to unpack manifest #" << seq;
         return false;
     }
+
+    auto& unl = getApp().getUNL();
+
+    std::lock_guard<std::mutex> lock (mutex_);
+
+    /*
+        We release the lock above, so we have to preflight again, in case
+        another thread accepted a newer manifest.
+    */
+    if (! preflightManifest_locked(pk, seq, journal))
+    {
+        return false;
+    }
+
+    auto const iter = map_.find(pk);
+
+    auto& old = iter->second.m;
 
     /*
         The maximum possible sequence number means that the master key
