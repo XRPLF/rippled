@@ -72,6 +72,7 @@ boost::asio::io_service::strand& WebSocket02::getStrand (Connection& con)
 template <>
 void ConnectionImpl <WebSocket02>::setPingTimer ()
 {
+#if 0
     connection_ptr ptr = m_connection.lock ();
 
     if (ptr)
@@ -86,6 +87,7 @@ void ConnectionImpl <WebSocket02>::setPingTimer ()
 
         this->m_pingTimer.async_wait (ptr->get_strand ().wrap (pt));
     }
+#endif
 }
 
 template <>
