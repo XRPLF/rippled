@@ -423,8 +423,8 @@ ConnectAttempt::processResponse (beast::http::message const& m,
 
     auto const peer = std::make_shared<PeerImp>(
         std::move(ssl_bundle_), read_buf_.data(),
-            std::move(slot_), usage_, std::move(hello),
-                publicKey, id_, overlay_);
+            std::move(slot_), std::move(response_),
+                usage_, std::move(hello), publicKey, id_, overlay_);
 
     overlay_.add_active (peer);
 }
