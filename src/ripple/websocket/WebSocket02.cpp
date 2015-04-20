@@ -20,6 +20,7 @@
 #include <ripple/websocket/WebSocket02.h>
 #include <ripple/websocket/Handler.h>
 #include <ripple/websocket/Server.h>
+#include <beast/weak_fn.h>
 
 // This file contains websocket::WebSocket02 implementations for the WebSocket
 // generic functions as well as methods on Server and ConnectionImpl.
@@ -72,22 +73,22 @@ boost::asio::io_service::strand& WebSocket02::getStrand (Connection& con)
 template <>
 void ConnectionImpl <WebSocket02>::setPingTimer ()
 {
-#if 0
+    auto freq = getConfig ().WEBSOCKET_PING_FREQ;
+    if (freq <= 0)
+        return;
     connection_ptr ptr = m_connection.lock ();
 
     if (ptr)
     {
-        this->m_pingTimer.expires_from_now (boost::posix_time::seconds
-            (getConfig ().WEBSOCKET_PING_FREQ));
+        this->m_pingTimer.expires_from_now (boost::posix_time::seconds (freq));
 
-        auto pt = [this] (boost::system::error_code const& e)
-        {
-            this->pingTimer (e);
-        };
-
-        this->m_pingTimer.async_wait (ptr->get_strand ().wrap (pt));
+        this->m_pingTimer.async_wait (
+            ptr->get_strand ().wrap (
+                std::bind (
+                    beast::weak_fn (&ConnectionImpl <WebSocket02>::pingTimer,
+                                    shared_from_this()),
+                    beast::asio::placeholders::error)));
     }
-#endif
 }
 
 template <>
