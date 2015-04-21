@@ -640,9 +640,14 @@ OverlayImpl::onManifests (Job&,
         auto const pk = get<AnyPublicKey>(st, sfPublicKey);
         auto const seq = get(st, sfSequence);
 
-        if (pk && seq && manifestCache_.applyManifest (*pk, *seq, s, journal))
+        if (pk && seq)
         {
-            outbox.add_list()->set_stobject(s);
+            auto const result = manifestCache_.applyManifest (*pk, *seq, s, journal);
+
+            if (result == ManifestDisposition::accepted)
+            {
+                outbox.add_list()->set_stobject(s);
+            }
         }
     }
 

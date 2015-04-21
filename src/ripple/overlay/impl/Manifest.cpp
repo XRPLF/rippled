@@ -125,7 +125,12 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    applyManifest (pk, seq, std::move(s), journal);
+    auto const result = applyManifest (pk, seq, std::move(s), journal);
+
+    if (result != ManifestDisposition::accepted)
+    {
+        throw std::runtime_error("Our own validation manifest was not accepted");
+    }
 }
 
 void
@@ -143,7 +148,7 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
     value.comment = comment;
 }
 
-bool
+ManifestDisposition
 ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
     beast::Journal const& journal) const
 {
@@ -158,7 +163,7 @@ ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t s
         */
         if (journal.debug) journal.debug
             << "Ignoring manifest #" << seq << " from untrusted key " << pk;
-        return false;
+        return ManifestDisposition::untrusted;
     }
 
     auto& old = iter->second.m;
@@ -174,16 +179,17 @@ ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t s
         if (journal.debug) journal.debug
             << "Ignoring manifest #"      << seq
             << "which isn't newer than #" << old->seq;
-        return false;  // not a newer manifest, ignore
+        return ManifestDisposition::stale;  // not a newer manifest, ignore
     }
 
-    return true;
+    return ManifestDisposition::accepted;
 }
 
-bool
+ManifestDisposition
 ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
     std::string s, beast::Journal const& journal)
 {
+    // FIXME, check missing fields here
     {
         std::lock_guard<std::mutex> lock (mutex_);
 
@@ -192,9 +198,11 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
             signature, make sure we trust the master key and the sequence
             number is newer than any we have.
         */
-        if (! preflightManifest_locked(pk, seq, journal))
+        auto const preflight = preflightManifest_locked(pk, seq, journal);
+
+        if (preflight != ManifestDisposition::accepted)
         {
-            return false;
+            return preflight;
         }
     }
 
@@ -209,7 +217,7 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
         */
         if (journal.warning) journal.warning
             << "Failed to unpack manifest #" << seq;
-        return false;
+        return ManifestDisposition::invalid;
     }
 
     auto& unl = getApp().getUNL();
@@ -217,12 +225,14 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
     std::lock_guard<std::mutex> lock (mutex_);
 
     /*
-        We release the lock above, so we have to preflight again, in case
+        We released the lock above, so we have to preflight again, in case
         another thread accepted a newer manifest.
     */
-    if (! preflightManifest_locked(pk, seq, journal))
+    auto const preflight = preflightManifest_locked(pk, seq, journal);
+
+    if (preflight != ManifestDisposition::accepted)
     {
-        return false;
+        return preflight;
     }
 
     auto const iter = map_.find(pk);
@@ -293,7 +303,7 @@ ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
 
     old = std::move (m);
 
-    return true;
+    return ManifestDisposition::accepted;
 }
 
 }

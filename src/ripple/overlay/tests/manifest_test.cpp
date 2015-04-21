@@ -53,6 +53,11 @@ public:
     void
     run() override
     {
+        using ManifestDisposition::accepted;
+        using ManifestDisposition::untrusted;
+        using ManifestDisposition::stale;
+        using ManifestDisposition::invalid;
+
         beast::Journal journal;
 
         auto const sk_a = AnySecretKey::make_ed25519();
@@ -70,22 +75,22 @@ public:
 
         ManifestCache cache;
 
-        expect(! cache.applyManifest(pk_a, 0, s_a0, journal), "have to install a trusted key first");
+        expect(cache.applyManifest(pk_a, 0, s_a0, journal) == untrusted, "have to install a trusted key first");
 
         cache.addTrustedKey(pk_a, "a");
         cache.addTrustedKey(pk_b, "b");
 
-        expect(  cache.applyManifest(pk_a, 0, s_a0, journal));
-        expect(! cache.applyManifest(pk_a, 0, s_a0, journal));
+        expect(cache.applyManifest(pk_a, 0, s_a0, journal) == accepted);
+        expect(cache.applyManifest(pk_a, 0, s_a0, journal) == stale);
 
-        expect(  cache.applyManifest(pk_a, 1, s_a1, journal));
-        expect(! cache.applyManifest(pk_a, 1, s_a1, journal));
-        expect(! cache.applyManifest(pk_a, 0, s_a0, journal));
+        expect(cache.applyManifest(pk_a, 1, s_a1, journal) == accepted);
+        expect(cache.applyManifest(pk_a, 1, s_a1, journal) == stale);
+        expect(cache.applyManifest(pk_a, 0, s_a0, journal) == stale);
 
-        expect(  cache.applyManifest(pk_b, 0, s_b0, journal));
-        expect(! cache.applyManifest(pk_b, 0, s_b0, journal));
+        expect(cache.applyManifest(pk_b, 0, s_b0, journal) == accepted);
+        expect(cache.applyManifest(pk_b, 0, s_b0, journal) == stale);
 
-        expect(! cache.applyManifest(pk_b, 1, fake, journal), "wrong sig not accepted");
+        expect(cache.applyManifest(pk_b, 1, fake, journal) == invalid, "wrong sig not accepted");
     }
 };
 

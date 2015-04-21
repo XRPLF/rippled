@@ -149,7 +149,8 @@ private:
     mutable std::mutex mutex_;
     MapType map_;
 
-    bool preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
+    ManifestDisposition
+    preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
         beast::Journal const& journal) const;
 
 public:
@@ -163,8 +164,7 @@ public:
 
     void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
-    // Returns `true` if its a new, verified manifest
-    bool
+    ManifestDisposition
     applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
         std::string s, beast::Journal const& journal);
 
