@@ -630,7 +630,19 @@ OverlayImpl::onManifests (Job&,
 
         if (result == ManifestDisposition::accepted)
         {
+            protocol::TMManifests outbox;
+
             outbox.add_list()->set_stobject(s);
+
+            auto const msg = std::make_shared<Message>(outbox, protocol::mtMANIFESTS);
+
+			for_each( [&](std::shared_ptr<PeerImp> const& peer)
+			{
+				if (peer != from)
+				{
+					peer->send(msg);
+				}
+			});
         }
         else
         {
@@ -638,24 +650,6 @@ OverlayImpl::onManifests (Job&,
                 << "Bad manifest #" << i + 1;
         }
     }
-
-    if (outbox.list_size() == 0)
-        return;
-
-    if (journal.debug) journal.debug
-        << "Forwarding " << outbox.list_size() << " manifests...";
-
-    auto const msg = std::make_shared<Message>(outbox, protocol::mtMANIFESTS);
-
-    for_each( [&](std::shared_ptr<PeerImp> const& peer)
-        {
-            if (peer != from)
-            {
-                if (auto const& j = peer->pjournal().debug) j
-                    << "... to " << peer.get();
-                peer->send(msg);
-            }
-        });
 }
 
 std::size_t
