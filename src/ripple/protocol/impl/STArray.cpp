@@ -80,7 +80,7 @@ STArray::STArray (SerialIter& sit, SField::ref f)
             throw std::runtime_error ("Illegal terminator in array");
         }
 
-        SField::ref const fn = SField::getField (type, field);
+        SField::ref fn = SField::getField (type, field);
 
         if (fn.isInvalid ())
         {
