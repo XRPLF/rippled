@@ -1,5 +1,5 @@
 Name:           rippled
-Version:        0.28.0-rc2
+Version:        0.28.0-rc3
 Release:        1%{?dist}
 Summary:        Ripple peer-to-peer network daemon
 
