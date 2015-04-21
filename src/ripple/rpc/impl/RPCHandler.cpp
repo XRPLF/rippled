@@ -146,14 +146,24 @@ error_code_i fillHandler (Context& context,
         return rpcNO_NETWORK;
     }
 
-    if (!getConfig ().RUN_STANDALONE
-        && (handler->condition_ & NEEDS_CURRENT_LEDGER)
-        && (getApp().getLedgerMaster().getValidatedLedgerAge() >
-            Tuning::maxValidatedLedgerAge
-            || context.netOps.getCurrentLedgerID() <=
-                context.netOps.getValidatedLedger ()->getLedgerSeq ()))
+    if (! getConfig ().RUN_STANDALONE &&
+        handler->condition_ & NEEDS_CURRENT_LEDGER)
     {
-        return rpcNO_CURRENT;
+        if (getApp ().getLedgerMaster ().getValidatedLedgerAge () >
+            Tuning::maxValidatedLedgerAge)
+        {
+            return rpcNO_CURRENT;
+        }
+
+        auto const cID = context.netOps.getCurrentLedgerID ();
+        auto const vID = context.netOps.getValidatedSeq ();
+
+        if (cID + 10 < vID)
+        {
+            WriteLog (lsDEBUG, RPCHandler) << "Current ledger ID(" << cID <<
+                ") is less than validated ledger ID(" << vID << ")";
+            return rpcNO_CURRENT;
+        }
     }
 
     if ((handler->condition_ & NEEDS_CLOSED_LEDGER) &&
