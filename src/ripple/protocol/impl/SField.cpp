@@ -176,7 +176,6 @@ TypedField<STBlob>  const sfSigningPubKey   = make::one<STBlob>(&sfSigningPubKey
 TypedField<STBlob>  const sfSignature       = make::one<STBlob>(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, false);
 SField              const sfMessageKey      = make::one(&sfMessageKey,    STI_VL,  2, "MessageKey");
 SField              const sfTxnSignature    = make::one(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, false);
-SField              const sfGenerator       = make::one(&sfGenerator,     STI_VL,  5, "Generator");
 SField              const sfDomain          = make::one(&sfDomain,        STI_VL,  7, "Domain");
 SField              const sfFundCode        = make::one(&sfFundCode,      STI_VL,  8, "FundCode");
 SField              const sfRemoveCode      = make::one(&sfRemoveCode,    STI_VL,  9, "RemoveCode");

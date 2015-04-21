@@ -50,8 +50,6 @@ enum LedgerEntryType
     */
     ltDIR_NODE          = 'd',
 
-    ltGENERATOR_MAP     = 'g',
-
     /** Describes a trust line.
     */
     ltRIPPLE_STATE      = 'r',

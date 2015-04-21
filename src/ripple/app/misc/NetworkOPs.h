@@ -171,8 +171,6 @@ public:
         std::function <bool (SLE::ref)> func) const = 0;
     virtual AccountState::pointer getAccountState (Ledger::ref lrLedger,
         RippleAddress const& accountID) = 0;
-    virtual SLE::pointer getGenerator (Ledger::ref lrLedger,
-        Account const& uGeneratorID) = 0;
 
     //--------------------------------------------------------------------------
     //

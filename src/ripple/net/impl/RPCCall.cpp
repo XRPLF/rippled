@@ -721,16 +721,6 @@ private:
         return jvRequest;
     }
 
-    // wallet_accounts <seed>
-    Json::Value parseWalletAccounts (Json::Value const& jvParams)
-    {
-        Json::Value jvRequest;
-
-        jvRequest[jss::seed]       = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
     // wallet_propose [<passphrase>]
     // <passphrase> is only for testing. Master seeds should only be generated randomly.
     Json::Value parseWalletPropose (Json::Value const& jvParams)
@@ -859,7 +849,6 @@ public:
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
             {   "version",              &RPCParser::parseAsIs,                  0,  0   },
-            {   "wallet_accounts",      &RPCParser::parseWalletAccounts,        1,  1   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "wallet_seed",          &RPCParser::parseWalletSeed,            0,  1   },
             {   "internal",             &RPCParser::parseInternal,              1,  -1  },

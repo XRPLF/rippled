@@ -148,7 +148,6 @@ HandlerTable HANDLERS({
     {   "unl_score",            byRef (&doUnlScore),            Role::ADMIN,   NO_CONDITION     },
     {   "validation_create",    byRef (&doValidationCreate),    Role::ADMIN,   NO_CONDITION     },
     {   "validation_seed",      byRef (&doValidationSeed),      Role::ADMIN,   NO_CONDITION     },
-    {   "wallet_accounts",      byRef (&doWalletAccounts),      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "wallet_propose",       byRef (&doWalletPropose),       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_seed",          byRef (&doWalletSeed),          Role::ADMIN,   NO_CONDITION     },
 

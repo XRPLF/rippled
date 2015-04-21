@@ -260,8 +260,6 @@ public:
         std::function <bool (SLE::ref)> func) const override;
     AccountState::pointer getAccountState (
         Ledger::ref lrLedger, RippleAddress const& accountID);
-    SLE::pointer getGenerator (
-        Ledger::ref lrLedger, Account const& uGeneratorID);
 
     //
     // Directory functions
@@ -1196,15 +1194,6 @@ AccountState::pointer NetworkOPsImp::getAccountState (
     return lrLedger->getAccountState (accountID);
 }
 
-SLE::pointer NetworkOPsImp::getGenerator (
-    Ledger::ref lrLedger, Account const& uGeneratorID)
-{
-    if (!lrLedger)
-        return SLE::pointer ();
-
-    return lrLedger->getGenerator (uGeneratorID);
-}
-
 //
 // Directory functions
 //
@@ -1295,7 +1284,6 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
                 case ltACCOUNT_ROOT:
                 case ltDIR_NODE:
-                case ltGENERATOR_MAP:
                 default:
                     assert (false);
                     break;

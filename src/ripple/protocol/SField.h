@@ -386,7 +386,6 @@ extern TypedField<STBlob> const sfPublicKey;
 extern SField const sfMessageKey;
 extern TypedField<STBlob> const sfSigningPubKey;
 extern SField const sfTxnSignature;
-extern SField const sfGenerator;
 extern TypedField<STBlob> const sfSignature;
 extern SField const sfDomain;
 extern SField const sfFundCode;
