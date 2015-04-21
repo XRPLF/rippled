@@ -34,8 +34,8 @@ emulate027 (Ledger::ref ledger)
         return false;
 
     // The server also uses 0.28 semantics for all ledgers whose parent
-    // closed after 2015-04-28 13:00:00 PDT.
-    static std::uint32_t const legacy_cutoff = 483566400;
+    // closed after 2015-05-12 13:00:00 PDT.
+    static std::uint32_t const legacy_cutoff = 484776000;
 
     if (ledger->getParentCloseTimeNC () > legacy_cutoff)
         return false;
