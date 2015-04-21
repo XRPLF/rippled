@@ -122,6 +122,16 @@ struct Manifest
 #endif
 };
 
+enum class ManifestDisposition
+{
+    accepted = 0,  // everything checked out
+    
+    incomplete,  // fields are missing
+    untrusted,   // manifest declares a master key we don't trust
+    stale,       // trusted master key, but seq is too old
+    invalid,     // trusted and timely, but invalid signature
+};
+
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache
 {
