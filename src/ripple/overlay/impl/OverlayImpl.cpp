@@ -643,7 +643,14 @@ OverlayImpl::onManifests (Job&,
 			{
 				if (hashRouter.addSuppressionPeer (hash, peer->id())  &&  peer != from)
 				{
+					if (auto& j = peer->pjournal().warning)
+					    j << "Forwarding manifest with hash " << hash;
 					peer->send(msg);
+				}
+				else if (peer != from)
+				{
+					if (auto& j = peer->pjournal().warning)
+					    j << "Suppressed manifest with hash " << hash;
 				}
 			});
         }
