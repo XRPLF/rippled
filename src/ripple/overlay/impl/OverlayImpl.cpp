@@ -614,6 +614,7 @@ OverlayImpl::onManifests (Job&,
     std::shared_ptr<protocol::TMManifests> const& inbox,
         std::shared_ptr<PeerImp> const& from)
 {
+    auto& hashRouter = getApp().getHashRouter();
     auto const n = inbox->list_size();
     auto const& journal = from->pjournal();
 
@@ -625,6 +626,8 @@ OverlayImpl::onManifests (Job&,
     for (std::size_t i = 0; i < n; ++i)
     {
         auto& s = inbox->list().Get(i).stobject();
+
+        uint256 const hash = getSHA512Half (s);
 
         auto const result = manifestCache_.applyManifest (s, journal);
 
@@ -638,7 +641,7 @@ OverlayImpl::onManifests (Job&,
 
 			for_each( [&](std::shared_ptr<PeerImp> const& peer)
 			{
-				if (peer != from)
+				if (hashRouter.addSuppressionPeer (hash, peer->id())  &&  peer != from)
 				{
 					peer->send(msg);
 				}
