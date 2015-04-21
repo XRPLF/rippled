@@ -161,8 +161,10 @@ Transaction::pointer Transaction::load (uint256 const& id)
 
         *db << sql, soci::into (ledgerSeq), soci::into (status),
                 soci::into (sociRawTxnBlob, rti);
-        if (db->got_data () && soci::i_ok == rti)
-            convert(sociRawTxnBlob, rawTxn);
+        if (!db->got_data () || rti != soci::i_ok)
+            return {};
+
+        convert(sociRawTxnBlob, rawTxn);
     }
 
     return Transaction::transactionFromSQL (
