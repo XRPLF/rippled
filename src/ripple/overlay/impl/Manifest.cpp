@@ -27,36 +27,6 @@
 
 namespace ripple {
 
-static
-boost::optional<Manifest>
-unpackManifest(std::string s)
-{
-    STObject st(sfGeneric);
-    try
-    {
-        SerialIter sit(s.data(), s.size());
-        st.set(sit);
-    }
-    catch (...)
-    {
-        return boost::none;
-    }
-
-    auto const mseq = get(st, sfSequence);
-    auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
-    auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
-
-    /*
-        Fail if any fields are missing.  Then check the signature.
-    */
-    if (! mseq || ! mpk || ! mspk)
-        return boost::none;
-    if (! verify(st, HashPrefix::manifest, *mpk))
-        return boost::none;
-
-    return Manifest(std::move (s), std::move (*mpk), std::move (*mspk), *mseq);
-}
-
 void
 ManifestCache::configValidatorKey(std::string const& line, beast::Journal const& journal)
 {
@@ -200,14 +170,17 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
     }
 
     auto const opt_pk = get<AnyPublicKey>(st, sfPublicKey);
+    auto const opt_spk = get<AnyPublicKey>(st, sfSigningPubKey);
     auto const opt_seq = get(st, sfSequence);
+    auto const opt_sig = get(st, sfSignature);
 
-    if (! opt_pk  ||  ! opt_seq)
+    if (! opt_pk  ||  ! opt_spk  ||  ! opt_seq  ||  ! opt_sig)
     {
         return ManifestDisposition::incomplete;
     }
 
     auto const pk = *opt_pk;
+    auto const spk = *opt_spk;
     auto const seq = *opt_seq;
 
     {
@@ -226,17 +199,14 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
         }
     }
 
-    // newer manifest
-    auto m = unpackManifest (std::move(s));
-
-    if (! m)
+    if (! verify(st, HashPrefix::manifest, pk))
     {
         /*
-            A manifest is missing a field or the signature is invalid.
+            A manifest's signature is invalid.
             This shouldn't happen normally.
         */
         if (journal.warning) journal.warning
-            << "Failed to unpack manifest #" << seq;
+            << "Failed to verify manifest #" << seq;
         return ManifestDisposition::invalid;
     }
 
@@ -318,10 +288,10 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
     }
     else
     {
-        unl.insertEphemeralKey (m->signingKey, iter->second.comment);
+        unl.insertEphemeralKey (spk, iter->second.comment);
     }
 
-    old = std::move (m);
+    old = Manifest(std::move (s), std::move (pk), std::move (spk), seq);
 
     return ManifestDisposition::accepted;
 }
