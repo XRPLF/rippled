@@ -486,14 +486,14 @@ public:
         }
 
         bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
-        
+
         if (bHaveExpiration && (mTxn.getFieldU32 (sfExpiration) == 0))
         {
             if (m_journal.debug) m_journal.warning <<
                 "Malformed offer: bad expiration";
             return temBAD_EXPIRATION;
         }
-        
+
         bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
 
         if (bHaveCancel && (mTxn.getFieldU32 (sfOfferSequence) == 0))
@@ -609,7 +609,7 @@ public:
 
         if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
         {
-            m_journal.warning <<
+            if (m_journal.warning) m_journal.warning <<
                 "Offer involves frozen asset";
 
             result = tecFROZEN;
@@ -617,7 +617,7 @@ public:
         else if (view.accountFunds (
             mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
         {
-            m_journal.warning <<
+            if (m_journal.debug) m_journal.debug <<
                 "delay: Offers must be at least partially funded.";
 
             result = tecUNFUNDED_OFFER;

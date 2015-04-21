@@ -299,7 +299,7 @@ CreateOffer::doApply()
     }
     else if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
     {
-        m_journal.warning <<
+        if (m_journal.debug) m_journal.debug <<
             "Offer involves frozen asset";
 
         terResult = tecFROZEN;
@@ -307,7 +307,7 @@ CreateOffer::doApply()
     else if (view.accountFunds (
         mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
     {
-        m_journal.warning <<
+        if (m_journal.debug) m_journal.debug <<
             "delay: Offers must be at least partially funded.";
 
         terResult = tecUNFUNDED_OFFER;
@@ -342,7 +342,7 @@ CreateOffer::doApply()
         // been consumed or removed as we are processing.
         if (sleCancel)
         {
-            m_journal.warning <<
+            if (m_journal.debug) m_journal.debug <<
                 "Cancelling order with sequence " << uCancelSequence;
 
             terResult = view.offerDelete (sleCancel);
