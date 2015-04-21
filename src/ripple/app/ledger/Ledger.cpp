@@ -1386,11 +1386,6 @@ SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex) const
     return getASNodeI (uNodeIndex, ltDIR_NODE);
 }
 
-SLE::pointer Ledger::getGenerator (Account const& uGeneratorID) const
-{
-    return getASNodeI (getGeneratorIndex (uGeneratorID), ltGENERATOR_MAP);
-}
-
 SLE::pointer
 Ledger::getOffer (uint256 const& uIndex) const
 {

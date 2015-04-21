@@ -89,13 +89,11 @@
 #include <ripple/rpc/handlers/Unsubscribe.cpp>
 #include <ripple/rpc/handlers/ValidationCreate.cpp>
 #include <ripple/rpc/handlers/ValidationSeed.cpp>
-#include <ripple/rpc/handlers/WalletAccounts.cpp>
 #include <ripple/rpc/handlers/WalletPropose.cpp>
 #include <ripple/rpc/handlers/WalletSeed.cpp>
 
 #include <ripple/rpc/impl/AccountFromString.cpp>
 #include <ripple/rpc/impl/Accounts.cpp>
-#include <ripple/rpc/impl/GetMasterGenerator.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/KeypairForSignature.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>

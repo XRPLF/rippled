@@ -54,10 +54,6 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfIndexPrevious,       SOE_OPTIONAL)
             ;
 
-    add ("GeneratorMap", ltGENERATOR_MAP)
-            << SOElement (sfGenerator,           SOE_REQUIRED)
-            ;
-
     add ("Offer", ltOFFER)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfSequence,            SOE_REQUIRED)

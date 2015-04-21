@@ -147,9 +147,6 @@ void printHelp (const po::options_description& desc)
            "     unl_reset\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
            "     validation_seed [<seed>|<pass_phrase>|<key>]\n"
-           "     wallet_accounts <seed>\n"
-           "     wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]\n"
-           "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]\n"
            "     wallet_propose [<passphrase>]\n"
            "     wallet_seed [<seed>|<passphrase>|<passkey>]\n";
 }

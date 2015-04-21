@@ -161,7 +161,6 @@ Json::Value doAccountObjects (RPC::Context& context)
 
             // case ltACCOUNT_ROOT:
             // case ltDIR_NODE:
-            // case ltGENERATOR_MAP:
             default:
                 if (! jv.isNull ())
                     jv = Json::nullValue;

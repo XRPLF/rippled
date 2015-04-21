@@ -343,12 +343,6 @@ public:
         int max, SHAMapSyncFilter* filter) const;
 
     //
-    // Generator Map functions
-    //
-
-    SLE::pointer getGenerator (Account const& uGeneratorID) const;
-
-    //
     // Offer functions
     //
 

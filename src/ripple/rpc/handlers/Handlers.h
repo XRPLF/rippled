@@ -79,7 +79,6 @@ Json::Value doUnlScore              (RPC::Context&);
 Json::Value doUnsubscribe           (RPC::Context&);
 Json::Value doValidationCreate      (RPC::Context&);
 Json::Value doValidationSeed        (RPC::Context&);
-Json::Value doWalletAccounts        (RPC::Context&);
 Json::Value doWalletLock            (RPC::Context&);
 Json::Value doWalletPropose         (RPC::Context&);
 Json::Value doWalletSeed            (RPC::Context&);

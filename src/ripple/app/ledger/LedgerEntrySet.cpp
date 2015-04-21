@@ -290,10 +290,6 @@ Json::Value LedgerEntrySet::getJson (int) const
             entry[jss::type] = "dir_node";
             break;
 
-        case ltGENERATOR_MAP:
-            entry[jss::type] = "generator_map";
-            break;
-
         case ltRIPPLE_STATE:
             entry[jss::type] = "ripple_state";
             break;

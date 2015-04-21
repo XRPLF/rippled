@@ -3290,9 +3290,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\handlers\Version.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletAccounts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletPropose.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3315,11 +3312,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\GetMasterGenerator.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\GetMasterGenerator.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
