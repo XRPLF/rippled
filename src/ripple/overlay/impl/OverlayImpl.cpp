@@ -625,29 +625,17 @@ OverlayImpl::onManifests (Job&,
     for (std::size_t i = 0; i < n; ++i)
     {
         auto& s = inbox->list().Get(i).stobject();
-        STObject st(sfGeneric);
-        try
+
+        auto const result = manifestCache_.applyManifest (s, journal);
+
+        if (result == ManifestDisposition::accepted)
         {
-            SerialIter sit(s.data(), s.size());
-            st.set(sit);
+            outbox.add_list()->set_stobject(s);
         }
-        catch(...)
+        else
         {
             if (journal.info) journal.info
                 << "Bad manifest #" << i + 1;
-            continue;
-        }
-        auto const pk = get<AnyPublicKey>(st, sfPublicKey);
-        auto const seq = get(st, sfSequence);
-
-        if (pk && seq)
-        {
-            auto const result = manifestCache_.applyManifest (*pk, *seq, s, journal);
-
-            if (result == ManifestDisposition::accepted)
-            {
-                outbox.add_list()->set_stobject(s);
-            }
         }
     }
 

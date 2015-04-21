@@ -125,7 +125,8 @@ struct Manifest
 enum class ManifestDisposition
 {
     accepted = 0,  // everything checked out
-    
+
+    malformed,   // deserialization fails
     incomplete,  // fields are missing
     untrusted,   // manifest declares a master key we don't trust
     stale,       // trusted master key, but seq is too old
@@ -165,8 +166,7 @@ public:
     void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
 
     ManifestDisposition
-    applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
-        std::string s, beast::Journal const& journal);
+    applyManifest (std::string s, beast::Journal const& journal);
 
     // A "for_each" for populated manifests only
     template <class Function>

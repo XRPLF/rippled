@@ -125,7 +125,7 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    auto const result = applyManifest (pk, seq, std::move(s), journal);
+    auto const result = applyManifest (std::move(s), journal);
 
     if (result != ManifestDisposition::accepted)
     {
@@ -186,10 +186,30 @@ ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t s
 }
 
 ManifestDisposition
-ManifestCache::applyManifest (AnyPublicKey const& pk, std::uint32_t seq,
-    std::string s, beast::Journal const& journal)
+ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
 {
-    // FIXME, check missing fields here
+    STObject st(sfGeneric);
+    try
+    {
+        SerialIter sit(s.data(), s.size());
+        st.set(sit);
+    }
+    catch(...)
+    {
+        return ManifestDisposition::malformed;
+    }
+
+    auto const opt_pk = get<AnyPublicKey>(st, sfPublicKey);
+    auto const opt_seq = get(st, sfSequence);
+
+    if (! opt_pk  ||  ! opt_seq)
+    {
+        return ManifestDisposition::incomplete;
+    }
+
+    auto const pk = *opt_pk;
+    auto const seq = *opt_seq;
+
     {
         std::lock_guard<std::mutex> lock (mutex_);
 
