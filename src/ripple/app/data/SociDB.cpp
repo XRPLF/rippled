@@ -172,112 +172,75 @@ namespace {
     is the default behavior of sqlite. We may be able to remove this
     class.
 */
-class WALCheckpointer : public Checkpointer, private beast::Thread
+class WALCheckpointer : public Checkpointer
 {
 public:
-    using Connection = sqlite_api::sqlite3;
+    WALCheckpointer (sqlite_api::sqlite3& conn, JobQueue& q)
+            : conn_ (conn), jobQueue_ (q)
+    {
+        sqlite_api::sqlite3_wal_hook (&conn_, &sqliteWALHook, this);
+    }
 
-    WALCheckpointer (sqlite_api::sqlite3&, JobQueue&);
-    ~WALCheckpointer () override;
-
-    static
-    int sqliteWALHook (void* s, sqlite_api::sqlite3*,
-                       const char* dbName, int walSize);
+    ~WALCheckpointer () override = default;
 
 private:
-    void runCheckpoint (const char* db, int walSize);
-    void run ();
-    void checkpoint ();
-
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard<LockType>;
-
     sqlite_api::sqlite3& conn_;
-    LockType mutex_;
+    std::mutex mutex_;
     JobQueue& jobQueue_;
+
     bool running_ = false;
 
-};
-
-int WALCheckpointer::sqliteWALHook (
-    void* cp, sqlite_api::sqlite3*, const char* dbName, int walSize)
-{
-    if (auto checkpointer = reinterpret_cast <WALCheckpointer*> (cp))
+    static
+    int sqliteWALHook (
+        void* cp, sqlite_api::sqlite3*, const char* dbName, int walSize)
     {
-        checkpointer->runCheckpoint (dbName, walSize);
+        if (walSize >= checkpointPageCount)
+        {
+            if (auto checkpointer = reinterpret_cast <WALCheckpointer*> (cp))
+                checkpointer->scheduleCheckpoint();
+            else
+                throw std::logic_error ("Didn't get a WALCheckpointer");
+        }
         return SQLITE_OK;
     }
-    throw std::logic_error ("Didn't get a WALCheckpointer");
-}
 
-WALCheckpointer::WALCheckpointer (sqlite_api::sqlite3& conn, JobQueue& q)
-        : Thread ("sqlitedb"), conn_ (conn), jobQueue_ (q)
-{
-    startThread ();
-    sqlite_api::sqlite3_wal_hook (&conn_, &sqliteWALHook, this);
-}
-
-WALCheckpointer::~WALCheckpointer ()
-{
-    stopThread ();
-}
-
-void WALCheckpointer::runCheckpoint (const char* db, int pages)
-{
-    if (pages < checkpointPageCount)
-        return;
-
-    // TODO: after it reaches 1000 pages, won't it checkpoint on every
-    // page after that?
-    // Should the line above be if ((1 + pages) % checkpointPageCount)?
-
+    void scheduleCheckpoint ()
     {
-        ScopedLockType sl (mutex_);
-        if (running_)
-            return;
-        running_ = true;
+        {
+            std::lock_guard <std::mutex> lock (mutex_);
+            if (running_)
+                return;
+            running_ = true;
+        }
+
+        jobQueue_.addJob (
+            jtWAL, "WAL", std::bind (&WALCheckpointer::checkpoint, this));
     }
 
-    jobQueue_.addJob (
-        jtWAL, "WAL", std::bind (&WALCheckpointer::checkpoint, this));
-}
-
-void WALCheckpointer::run ()
-{
-    // Simple thread loop checkpoints every time it wakes up via
-    // the call to Thread::notify, unless Thread::threadShouldExit returns
-    // true in which case we simply break.
-    //
-    for (;;)
+    void checkpoint ()
     {
-        wait ();
-        if (threadShouldExit ())
-            break;
-        checkpoint ();
-    }
-}
+        int log = 0, ckpt = 0;
+        int ret = sqlite3_wal_checkpoint_v2 (
+            &conn_, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
-void WALCheckpointer::checkpoint ()
-{
-    int log = 0, ckpt = 0;
-    int ret = sqlite3_wal_checkpoint_v2 (
-        &conn_, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        auto fname = sqlite3_db_filename (&conn_, "main");
+        if (ret != SQLITE_OK)
+        {
+            WriteLog ((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING,
+                      WALCheckpointer)
+                << "WAL(" << fname << "): error " << ret;
+        }
+        else
+        {
+            WriteLog (lsTRACE, WALCheckpointer)
+                << "WAL(" << fname << "): frames="
+                << log << ", written=" << ckpt;
+        }
 
-    auto fname = sqlite3_db_filename (&conn_, "main");
-    if (ret != SQLITE_OK)
-    {
-        WriteLog ((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING, WALCheckpointer)
-            << "WAL(" << fname << "): error " << ret;
+        std::lock_guard <std::mutex> lock (mutex_);
+        running_ = false;
     }
-    else
-    {
-        WriteLog (lsTRACE, WALCheckpointer)
-            << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
-    }
-
-    ScopedLockType sl (mutex_);
-    running_ = false;
-}
+};
 
 } // namespace
 

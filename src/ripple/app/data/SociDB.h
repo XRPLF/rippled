@@ -121,11 +121,8 @@ class Checkpointer
     virtual ~Checkpointer() = default;
 };
 
-/** Returns a new checkpointer which start a thread that makes checkpoints of a
-    soci database every checkpointPageCount pages, using a new thread initially
-    and then subsequently scheduling later checkpoints on the job queue.
-
-    TODO: couldn't we do without the additional thread?
+/** Returns a new checkpointer which makes checkpoints of a
+    soci database every checkpointPageCount pages, using a job on the job queue.
 
     The Checkpointer contains references to the session and job queue
     and so must outlive them both.
