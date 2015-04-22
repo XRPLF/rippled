@@ -14,8 +14,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   EOT
 
   config.vm.provider "virtualbox" do |v|
-    v.memory = 4096
-    v.customize ["modifyvm", :id, "--cpus", 2]
+    v.memory = 1024
+    v.customize ["modifyvm", :id, "--cpus", 1]
     # v.gui = true
   end
 
@@ -49,9 +49,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "one", primary: true do |one|
     one.vm.network "private_network", ip: "192.168.50.4"
+    one.vm.provider :virtualbox do |vb|
+      vb.memory = 4096
+      vb.customize ["modifyvm", :id, "--cpus", 2]
+    end
   end
 
   config.vm.define "two", primary: true do |two|
     two.vm.network "private_network", ip: "192.168.50.5"
+  end
+
+  config.vm.define "tree", primary: true do |tree|
+    tree.vm.network "private_network", ip: "192.168.50.6"
+  end
+
+  config.vm.define "four", primary: true do |four|
+    four.vm.network "private_network", ip: "192.168.50.7"
+  end
+
+  config.vm.define "five", primary: true do |five|
+    five.vm.network "private_network", ip: "192.168.50.8"
   end
 end
