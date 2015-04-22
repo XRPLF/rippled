@@ -118,11 +118,11 @@ public:
         return mProposeSeq == seqLeave;
     }
 
-    const boost::posix_time::ptime getCreateTime ()
+    std::chrono::steady_clock::time_point getCreateTime ()
     {
         return mTime;
     }
-    bool isStale (boost::posix_time::ptime cutoff)
+    bool isStale (std::chrono::steady_clock::time_point cutoff)
     {
         return mTime <= cutoff;
     }
@@ -143,12 +143,12 @@ private:
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
     std::uint32_t mCloseTime, mProposeSeq;
 
-    NodeID         mPeerID;
+    NodeID          mPeerID;
     RippleAddress   mPublicKey;
     RippleAddress   mPrivateKey;    // If ours
 
-    std::string                 mSignature; // set only if needed
-    boost::posix_time::ptime    mTime;
+    std::string     mSignature; // set only if needed
+    std::chrono::steady_clock::time_point mTime;
 };
 
 } // ripple

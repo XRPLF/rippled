@@ -103,7 +103,7 @@ public:
         , mClosePercent (0)
         , mHaveCloseTimeConsensus (false)
         , mConsensusStartTime
-            (boost::posix_time::microsec_clock::universal_time ())
+            (std::chrono::steady_clock::now ())
     {
         WriteLog (lsDEBUG, LedgerConsensus) << "Creating consensus object";
         WriteLog (lsTRACE, LedgerConsensus)
@@ -594,9 +594,8 @@ public:
         if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
             checkLCL ();
 
-        mCurrentMSeconds =
-            (boost::posix_time::microsec_clock::universal_time ()
-            - mConsensusStartTime).total_milliseconds ();
+        mCurrentMSeconds = std::chrono::duration_cast <std::chrono::milliseconds>
+            (std::chrono::steady_clock::now() - mConsensusStartTime).count ();
         mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
         switch (mState)
@@ -1425,11 +1424,11 @@ private:
     void updateOurPositions ()
     {
         // Compute a cutoff time
-        boost::posix_time::ptime peerCutoff
-            = boost::posix_time::second_clock::universal_time ();
-        boost::posix_time::ptime ourCutoff
-            = peerCutoff - boost::posix_time::seconds (PROPOSE_INTERVAL);
-        peerCutoff -= boost::posix_time::seconds (PROPOSE_FRESHNESS);
+        auto peerCutoff
+            = std::chrono::steady_clock::now ();
+        auto ourCutoff
+            = peerCutoff - std::chrono::seconds (PROPOSE_INTERVAL);
+        peerCutoff -= std::chrono::seconds (PROPOSE_FRESHNESS);
 
         bool changes = false;
         std::shared_ptr<SHAMap> ourPosition;
@@ -1654,7 +1653,7 @@ private:
         checkOurValidation ();
         mState = lcsESTABLISH;
         mConsensusStartTime
-            = boost::posix_time::microsec_clock::universal_time ();
+            = std::chrono::steady_clock::now ();
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
         getApp().getOPs ().setLastCloseTime (mCloseTime);
         statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
@@ -1782,7 +1781,7 @@ private:
     int mCurrentMSeconds, mClosePercent, mCloseResolution;
     bool mHaveCloseTimeConsensus;
 
-    boost::posix_time::ptime        mConsensusStartTime;
+    std::chrono::steady_clock::time_point   mConsensusStartTime;
     int                             mPreviousProposers;
     int                             mPreviousMSeconds;
 

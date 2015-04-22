@@ -37,7 +37,7 @@ LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
     // throw std::runtime_error("Invalid public key in proposal");
 
     mPeerID         = mPublicKey.getNodeID ();
-    mTime           = boost::posix_time::second_clock::universal_time ();
+    mTime           = std::chrono::steady_clock::now ();
 }
 
 LedgerProposal::LedgerProposal (RippleAddress const& naPub, RippleAddress const& naPriv,
@@ -47,14 +47,14 @@ LedgerProposal::LedgerProposal (RippleAddress const& naPub, RippleAddress const&
     mPublicKey (naPub), mPrivateKey (naPriv)
 {
     mPeerID      = mPublicKey.getNodeID ();
-    mTime        = boost::posix_time::second_clock::universal_time ();
+    mTime        = std::chrono::steady_clock::now ();
 }
 
 LedgerProposal::LedgerProposal (uint256 const& prevLgr, uint256 const& position,
                                 std::uint32_t closeTime) :
     mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0)
 {
-    mTime       = boost::posix_time::second_clock::universal_time ();
+    mTime       = std::chrono::steady_clock::now ();
 }
 
 uint256 LedgerProposal::getSigningHash () const
@@ -103,14 +103,14 @@ bool LedgerProposal::changePosition (uint256 const& newPosition, std::uint32_t c
 
     mCurrentHash    = newPosition;
     mCloseTime      = closeTime;
-    mTime           = boost::posix_time::second_clock::universal_time ();
+    mTime           = std::chrono::steady_clock::now ();
     ++mProposeSeq;
     return true;
 }
 
 void LedgerProposal::bowOut ()
 {
-    mTime           = boost::posix_time::second_clock::universal_time ();
+    mTime           = std::chrono::steady_clock::now ();
     mProposeSeq     = seqLeave;
 }
 
