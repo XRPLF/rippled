@@ -143,13 +143,13 @@ static Json::Value singleton_expected (std::string const& object,
 static std::unique_ptr <STBase> parseLeaf (
     std::string const& json_name,
     std::string const& fieldName,
-    SField::ptr name,
+    SField const* name,
     Json::Value const& value,
     Json::Value& error)
 {
     std::unique_ptr <STBase> ret;
 
-    SField::ref field = SField::getField (fieldName);
+    auto const& field = SField::getField (fieldName);
 
     if (field == sfInvalid)
     {
@@ -664,7 +664,7 @@ static const int maxDepth = 64;
 static bool parseArray (
     std::string const& json_name,
     Json::Value const& json,
-    SField::ref inName,
+    SField const& inName,
     int depth,
     std::unique_ptr <STArray>& sub_array,
     Json::Value& error);
@@ -674,7 +674,7 @@ static bool parseArray (
 static bool parseObject (
     std::string const& json_name,
     Json::Value const& json,
-    SField::ref inName,
+    SField const& inName,
     int depth,
     std::unique_ptr <STObject>& sub_object,
     Json::Value& error)
@@ -691,7 +691,7 @@ static bool parseObject (
         return false;
     }
 
-    SField::ptr name (&inName);
+    auto name (&inName);
 
     boost::ptr_vector<STBase> data;
     Json::Value::Members members (json.getMemberNames ());
@@ -700,7 +700,7 @@ static bool parseObject (
     {
         Json::Value const& value = json [fieldName];
 
-        SField::ref field = SField::getField (fieldName);
+        auto const& field = SField::getField (fieldName);
 
         if (field == sfInvalid)
         {
@@ -781,7 +781,7 @@ static bool parseObject (
 static bool parseArray (
     std::string const& json_name,
     Json::Value const& json,
-    SField::ref inName,
+    SField const& inName,
     int depth,
     std::unique_ptr <STArray>& sub_array,
     Json::Value& error)
@@ -817,7 +817,7 @@ static bool parseArray (
             // first/only key in an object without copying all keys into
             // a vector
             std::string const objectName (json[i].getMemberNames()[0]);;
-            SField::ref       nameField (SField::getField(objectName));
+            auto const&       nameField (SField::getField(objectName));
 
             if (nameField == sfInvalid)
             {

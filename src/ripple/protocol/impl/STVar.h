@@ -77,9 +77,9 @@ public:
         p_ = t.copy(sizeof(d_), &d_);
     }
 
-    STVar (defaultObject_t, SField::ref name);
-    STVar (nonPresentObject_t, SField::ref name);
-    STVar (SerialIter& sit, SField::ref name);
+    STVar (defaultObject_t, SField const& name);
+    STVar (nonPresentObject_t, SField const& name);
+    STVar (SerialIter& sit, SField const& name);
 
     STBase& get() { return *p_; }
     STBase& operator*() { return get(); }
@@ -89,7 +89,7 @@ public:
     STBase const* operator->() const { return &get(); }
 
 private:
-    STVar (SerializedTypeID id, SField::ref name);
+    STVar (SerializedTypeID id, SField const& name);
 
     void destroy();
 

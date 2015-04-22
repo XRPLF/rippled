@@ -73,24 +73,24 @@ public:
 
     struct unchecked { };
 
-    STAmount(SerialIter& sit, SField::ref name);
+    STAmount(SerialIter& sit, SField const& name);
 
     // Calls canonicalize
-    STAmount (SField::ref name, Issue const& issue,
+    STAmount (SField const& name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative);
 
     // Does not call canonicalize
-    STAmount (SField::ref name, Issue const& issue,
+    STAmount (SField const& name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative, unchecked);
 
-    STAmount (SField::ref name, std::int64_t mantissa);
+    STAmount (SField const& name, std::int64_t mantissa);
 
-    STAmount (SField::ref name,
+    STAmount (SField const& name,
         std::uint64_t mantissa = 0, bool negative = false);
 
-    STAmount (SField::ref name, Issue const& issue,
+    STAmount (SField const& name, Issue const& issue,
         std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
 
     STAmount (std::uint64_t mantissa = 0, bool negative = false);
@@ -123,7 +123,7 @@ public:
 private:
     static
     std::unique_ptr<STAmount>
-    construct (SerialIter&, SField::ref name);
+    construct (SerialIter&, SField const& name);
 
     void
     setSNValue (std::int64_t);
@@ -131,7 +131,7 @@ private:
 public:
     static
     STAmount
-    createFromInt64 (SField::ref n, std::int64_t v);
+    createFromInt64 (SField const& n, std::int64_t v);
 
     //--------------------------------------------------------------------------
     //
@@ -306,7 +306,7 @@ STAmount
 amountFromQuality (std::uint64_t rate);
 
 STAmount
-amountFromJson (SField::ref name, Json::Value const& v);
+amountFromJson (SField const& name, Json::Value const& v);
 
 STAmount
 amountFromRate (std::uint64_t uRate);

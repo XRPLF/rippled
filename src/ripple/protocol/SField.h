@@ -104,9 +104,6 @@ field_code(int id, int index)
 class SField
 {
 public:
-    typedef const SField&   ref;
-    typedef SField const*   ptr;
-
     enum
     {
         sMD_Never          = 0x00,
@@ -155,13 +152,13 @@ protected:
 
 public:
     // getField will dynamically construct a new SField if necessary
-    static SField::ref getField (int fieldCode);
-    static SField::ref getField (std::string const& fieldName);
-    static SField::ref getField (int type, int value)
+    static const SField& getField (int fieldCode);
+    static const SField& getField (std::string const& fieldName);
+    static const SField& getField (int type, int value)
     {
         return getField (field_code (type, value));
     }
-    static SField::ref getField (SerializedTypeID type, int value)
+    static const SField& getField (SerializedTypeID type, int value)
     {
         return getField (field_code (type, value));
     }
@@ -252,7 +249,7 @@ public:
         return fieldCode != f.fieldCode;
     }
 
-    static int compare (SField::ref f1, SField::ref f2);
+    static int compare (const SField& f1, const SField& f2);
 
     struct make;  // public, but still an implementation detail
 

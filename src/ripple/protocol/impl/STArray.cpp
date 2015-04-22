@@ -50,19 +50,19 @@ STArray::STArray (int n)
     v_.reserve(n);
 }
 
-STArray::STArray (SField::ref f)
+STArray::STArray (SField const& f)
     : STBase (f)
 {
     v_.reserve(reserveSize);
 }
 
-STArray::STArray (SField::ref f, int n)
+STArray::STArray (SField const& f, int n)
     : STBase (f)
 {
     v_.reserve(n);
 }
 
-STArray::STArray (SerialIter& sit, SField::ref f)
+STArray::STArray (SerialIter& sit, SField const& f)
     : STBase(f)
 {
     while (!sit.empty ())
@@ -80,7 +80,7 @@ STArray::STArray (SerialIter& sit, SField::ref f)
             throw std::runtime_error ("Illegal terminator in array");
         }
 
-        SField::ref const fn = SField::getField (type, field);
+        auto const& fn = SField::getField (type, field);
 
         if (fn.isInvalid ())
         {

@@ -459,7 +459,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
 
     for (auto& it : mEntries)
     {
-        SField::ptr type = &sfGeneric;
+        auto type = &sfGeneric;
 
         switch (it.second.mAction)
         {

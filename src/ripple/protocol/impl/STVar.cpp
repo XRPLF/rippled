@@ -111,17 +111,17 @@ STVar::operator= (STVar&& rhs)
     return *this;
 }
 
-STVar::STVar (defaultObject_t, SField::ref name)
+STVar::STVar (defaultObject_t, SField const& name)
     : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar (nonPresentObject_t, SField::ref name)
+STVar::STVar (nonPresentObject_t, SField const& name)
     : STVar(STI_NOTPRESENT, name)
 {
 }
 
-STVar::STVar (SerialIter& sit, SField::ref name)
+STVar::STVar (SerialIter& sit, SField const& name)
 {
     switch (name.fieldType)
     {
@@ -145,7 +145,7 @@ STVar::STVar (SerialIter& sit, SField::ref name)
     }
 }
 
-STVar::STVar (SerializedTypeID id, SField::ref name)
+STVar::STVar (SerializedTypeID id, SField const& name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)

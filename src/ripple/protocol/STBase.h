@@ -62,7 +62,7 @@ public:
     STBase();
 
     explicit
-    STBase (SField::ref n);
+    STBase (SField const& n);
 
     virtual ~STBase() = default;
 
@@ -137,16 +137,16 @@ public:
         This sets the name.
     */
     void
-    setFName (SField::ref n);
+    setFName (SField const& n);
 
-    SField::ref
+    SField const&
     getFName() const;
 
     void
     addFieldID (Serializer& s) const;
 
 protected:
-    SField::ptr fName;
+    SField const* fName;
 
     template <class T>
     static

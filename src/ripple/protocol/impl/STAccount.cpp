@@ -22,7 +22,7 @@
 
 namespace ripple {
 
-STAccount::STAccount (SerialIter& sit, SField::ref name)
+STAccount::STAccount (SerialIter& sit, SField const& name)
     : STAccount(name, sit.getVLBuffer())
 {
 }
@@ -40,12 +40,12 @@ std::string STAccount::getText () const
 }
 
 STAccount*
-STAccount::construct (SerialIter& u, SField::ref name)
+STAccount::construct (SerialIter& u, SField const& name)
 {
     return new STAccount (name, u.getVLBuffer ());
 }
 
-STAccount::STAccount (SField::ref n, Account const& v)
+STAccount::STAccount (SField const& n, Account const& v)
         : STBlob (n, v.data (), v.size ())
 {
 }

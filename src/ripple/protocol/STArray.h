@@ -52,10 +52,10 @@ public:
     STArray();
     STArray (STArray&&);
     STArray (STArray const&) = default;
-    STArray (SField::ref f, int n);
-    STArray (SerialIter& sit, SField::ref f);
+    STArray (SField const& f, int n);
+    STArray (SerialIter& sit, SField const& f);
     explicit STArray (int n);
-    explicit STArray (SField::ref f);
+    explicit STArray (SField const& f);
     STArray& operator= (STArray const&) = default;
     STArray& operator= (STArray&&);
 

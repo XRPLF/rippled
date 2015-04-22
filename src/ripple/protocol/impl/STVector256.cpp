@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-STVector256::STVector256(SerialIter& sit, SField::ref name)
+STVector256::STVector256(SerialIter& sit, SField const& name)
     : STBase(name)
 {
     Blob data = sit.getVL ();

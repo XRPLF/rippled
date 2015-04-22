@@ -36,11 +36,11 @@ public:
         : value_ (v)
     { }
 
-    STInteger (SField::ref n, Integer v = 0)
+    STInteger (SField const& n, Integer v = 0)
         : STBase (n), value_ (v)
     { }
 
-    STInteger(SerialIter& sit, SField::ref name);
+    STInteger(SerialIter& sit, SField const& name);
 
     STBase*
     copy (std::size_t n, void* buf) const override
