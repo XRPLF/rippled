@@ -31,7 +31,7 @@ namespace ripple {
 // file-scope.  The following 3 objects must have scope prior to
 // the file-scope SFields.
 static std::mutex SField_mutex;
-static std::map<int, SField::ptr> knownCodeToField;
+static std::map<int, SField const*> knownCodeToField;
 static std::map<int, std::unique_ptr<SField const>> unknownCodeToField;
 
 int SField::num = 0;
@@ -267,7 +267,8 @@ SField::SField (SerializedTypeID tid, int fv)
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
 
-SField::ref SField::getField (int code)
+SField const&
+SField::getField (int code)
 {
     auto it = knownCodeToField.find (code);
 
@@ -323,7 +324,7 @@ SField::ref SField::getField (int code)
     }
 }
 
-int SField::compare (SField::ref f1, SField::ref f2)
+int SField::compare (SField const& f1, SField const& f2)
 {
     // -1 = f1 comes before f2, 0 = illegal combination, 1 = f1 comes after f2
     if ((f1.fieldCode <= 0) || (f2.fieldCode <= 0))
@@ -350,7 +351,8 @@ std::string SField::getName () const
             std::to_string(fieldValue);
 }
 
-SField::ref SField::getField (std::string const& fieldName)
+SField const&
+SField::getField (std::string const& fieldName)
 {
     for (auto const & fieldPair : knownCodeToField)
     {

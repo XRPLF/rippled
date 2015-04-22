@@ -33,7 +33,7 @@ class STVector256
 public:
     STVector256 () = default;
 
-    explicit STVector256 (SField::ref n)
+    explicit STVector256 (SField const& n)
         : STBase (n)
     { }
 
@@ -41,7 +41,7 @@ public:
         : mValue (vector)
     { }
 
-    STVector256 (SerialIter& sit, SField::ref name);
+    STVector256 (SerialIter& sit, SField const& name);
 
     STBase*
     copy (std::size_t n, void* buf) const override

@@ -86,8 +86,9 @@ public:
     }
 
     bool isNodeAffected (uint256 const& ) const;
-    void setAffectedNode (uint256 const& , SField::ref type, std::uint16_t nodeType);
-    STObject& getAffectedNode (SLE::ref node, SField::ref type); // create if needed
+    void setAffectedNode (uint256 const& , SField const& type,
+                          std::uint16_t nodeType);
+    STObject& getAffectedNode (SLE::ref node, SField const& type); // create if needed
     STObject& getAffectedNode (uint256 const& );
     const STObject& peekAffectedNode (uint256 const& ) const;
     std::vector<RippleAddress> getAffectedAccounts ();

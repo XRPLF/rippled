@@ -50,7 +50,7 @@ STPathElement::get_hash (STPathElement const& element)
     return (hash_account ^ hash_currency ^ hash_issuer);
 }
 
-STPathSet::STPathSet (SerialIter& sit, SField::ref name)
+STPathSet::STPathSet (SerialIter& sit, SField const& name)
     : STBase(name)
 {
     std::vector<STPathElement> path;

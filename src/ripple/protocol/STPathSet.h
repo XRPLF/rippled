@@ -233,11 +233,11 @@ class STPathSet final
 public:
     STPathSet () = default;
 
-    STPathSet (SField::ref n)
+    STPathSet (SField const& n)
         : STBase (n)
     { }
 
-    STPathSet (SerialIter& sit, SField::ref name);
+    STPathSet (SerialIter& sit, SField const& name);
 
     STBase*
     copy (std::size_t n, void* buf) const override

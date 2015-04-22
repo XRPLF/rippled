@@ -41,10 +41,10 @@ enum SOE_Flags
 class SOElement
 {
 public:
-    SField::ref       e_field;
+    SField const&     e_field;
     SOE_Flags const   flags;
 
-    SOElement (SField::ref fieldName, SOE_Flags flags)
+    SOElement (SField const& fieldName, SOE_Flags flags)
         : e_field (fieldName)
         , flags (flags)
     {
@@ -82,7 +82,7 @@ public:
     void push_back (SOElement const& r);
 
     /** Retrieve the position of a named field. */
-    int getIndex (SField::ref) const;
+    int getIndex (SField const&) const;
 
 private:
     list_type mTypes;

@@ -29,7 +29,7 @@
 namespace ripple {
 
 template<>
-STInteger<unsigned char>::STInteger(SerialIter& sit, SField::ref name)
+STInteger<unsigned char>::STInteger(SerialIter& sit, SField const& name)
     : STInteger(name, sit.get8())
 {
 }
@@ -77,7 +77,7 @@ STUInt8::getJson (int) const
 //------------------------------------------------------------------------------
 
 template<>
-STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField::ref name)
+STInteger<std::uint16_t>::STInteger(SerialIter& sit, SField const& name)
     : STInteger(name, sit.get16())
 {
 }
@@ -142,7 +142,7 @@ STUInt16::getJson (int) const
 //------------------------------------------------------------------------------
 
 template<>
-STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField::ref name)
+STInteger<std::uint32_t>::STInteger(SerialIter& sit, SField const& name)
     : STInteger(name, sit.get32())
 {
 }
@@ -171,7 +171,7 @@ STUInt32::getJson (int) const
 //------------------------------------------------------------------------------
 
 template<>
-STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField::ref name)
+STInteger<std::uint64_t>::STInteger(SerialIter& sit, SField const& name)
     : STInteger(name, sit.get64())
 {
 }

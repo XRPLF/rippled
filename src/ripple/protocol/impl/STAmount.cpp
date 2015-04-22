@@ -42,7 +42,7 @@ STAmount const saOne (noIssue(), 1u);
 
 //------------------------------------------------------------------------------
 
-STAmount::STAmount(SerialIter& sit, SField::ref name)
+STAmount::STAmount(SerialIter& sit, SField const& name)
     : STBase(name)
 {
     std::uint64_t value = sit.get64 ();
@@ -118,7 +118,7 @@ STAmount::STAmount(SerialIter& sit, SField::ref name)
     canonicalize();
 }
 
-STAmount::STAmount (SField::ref name, Issue const& issue,
+STAmount::STAmount (SField const& name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative)
     : STBase (name)
@@ -131,7 +131,7 @@ STAmount::STAmount (SField::ref name, Issue const& issue,
     canonicalize();
 }
 
-STAmount::STAmount (SField::ref name, Issue const& issue,
+STAmount::STAmount (SField const& name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative, unchecked)
     : STBase (name)
@@ -143,7 +143,7 @@ STAmount::STAmount (SField::ref name, Issue const& issue,
 {
 }
 
-STAmount::STAmount (SField::ref name, std::int64_t mantissa)
+STAmount::STAmount (SField const& name, std::int64_t mantissa)
     : STBase (name)
     , mOffset (0)
     , mIsNative (true)
@@ -151,7 +151,7 @@ STAmount::STAmount (SField::ref name, std::int64_t mantissa)
     set (mantissa);
 }
 
-STAmount::STAmount (SField::ref name,
+STAmount::STAmount (SField const& name,
         std::uint64_t mantissa, bool negative)
     : STBase (name)
     , mValue (mantissa)
@@ -161,7 +161,7 @@ STAmount::STAmount (SField::ref name,
 {
 }
 
-STAmount::STAmount (SField::ref name, Issue const& issue,
+STAmount::STAmount (SField const& name, Issue const& issue,
         std::uint64_t mantissa, int exponent, bool negative)
     : STBase (name)
     , mIssue (issue)
@@ -214,13 +214,13 @@ STAmount::STAmount (Issue const& issue,
 }
 
 std::unique_ptr<STAmount>
-STAmount::construct (SerialIter& sit, SField::ref name)
+STAmount::construct (SerialIter& sit, SField const& name)
 {
     return std::make_unique<STAmount>(sit, name);
 }
 
 STAmount
-STAmount::createFromInt64 (SField::ref name, std::int64_t value)
+STAmount::createFromInt64 (SField const& name, std::int64_t value)
 {
     return value >= 0
            ? STAmount (name, static_cast<std::uint64_t> (value), false)
@@ -877,7 +877,7 @@ amountFromQuality (std::uint64_t rate)
 }
 
 STAmount
-amountFromJson (SField::ref name, Json::Value const& v)
+amountFromJson (SField const& name, Json::Value const& v)
 {
     STAmount::mantissa_type mantissa = 0;
     STAmount::exponent_type exponent = 0;

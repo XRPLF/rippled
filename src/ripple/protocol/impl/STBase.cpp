@@ -30,7 +30,7 @@ STBase::STBase()
 {
 }
 
-STBase::STBase (SField::ref n)
+STBase::STBase (SField const& n)
     : fName(&n)
 {
     assert(fName);
@@ -126,13 +126,13 @@ STBase::isDefault() const
 }
 
 void
-STBase::setFName (SField::ref n)
+STBase::setFName (SField const& n)
 {
     fName = &n;
     assert (fName);
 }
 
-SField::ref
+SField const&
 STBase::getFName() const
 {
     return *fName;

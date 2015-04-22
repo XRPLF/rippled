@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-STBlob::STBlob (SerialIter& st, SField::ref name)
+STBlob::STBlob (SerialIter& st, SField const& name)
     : STBase (name)
     , value_ (st.getVLBuffer ())
 {

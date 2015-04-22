@@ -55,7 +55,7 @@ void SOTemplate::push_back (SOElement const& r)
     mTypes.push_back (value_type (new SOElement (r)));
 }
 
-int SOTemplate::getIndex (SField::ref f) const
+int SOTemplate::getIndex (SField const& f) const
 {
     // The mapping table should be large enough for any possible field
     //

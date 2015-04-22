@@ -47,14 +47,14 @@ public:
             void(void* data, std::size_t size)
     */
     template <class Init>
-    STBlob (SField::ref f, std::size_t size,
+    STBlob (SField const& f, std::size_t size,
             Init&& init)
         : STBase(f), value_ (size)
     {
         init(value_.data(), value_.size());
     }
 
-    STBlob (SField::ref f,
+    STBlob (SField const& f,
             void const* data, std::size_t size)
         : STBase(f), value_ (data, size)
     {
@@ -65,12 +65,12 @@ public:
     {
     }
 
-    STBlob (SField::ref n)
+    STBlob (SField const& n)
         : STBase (n)
     {
     }
 
-    STBlob (SerialIter&, SField::ref name = sfGeneric);
+    STBlob (SerialIter&, SField const& name = sfGeneric);
 
     STBase*
     copy (std::size_t n, void* buf) const override

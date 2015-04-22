@@ -30,13 +30,13 @@ class STAccount final
     : public STBlob
 {
 public:
-    STAccount (SField::ref n, Buffer&& v)
+    STAccount (SField const& n, Buffer&& v)
             : STBlob (n, std::move(v))
     {
         ;
     }
-    STAccount (SField::ref n, Account const& v);
-    STAccount (SField::ref n) : STBlob (n)
+    STAccount (SField const& n, Account const& v);
+    STAccount (SField const& n) : STBlob (n)
     {
         ;
     }
@@ -45,7 +45,7 @@ public:
         ;
     }
 
-    STAccount (SerialIter& sit, SField::ref name);
+    STAccount (SerialIter& sit, SField const& name);
 
     STBase*
     copy (std::size_t n, void* buf) const override
@@ -87,7 +87,7 @@ public:
     bool isValueH160 () const;
 
 private:
-    static STAccount* construct (SerialIter&, SField::ref);
+    static STAccount* construct (SerialIter&, SField const&);
 };
 
 } // ripple

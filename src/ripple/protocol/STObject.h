@@ -97,14 +97,14 @@ public:
 
     STObject(STObject&&);
     STObject(STObject const&) = default;
-    STObject (const SOTemplate & type, SField::ref name);
-    STObject (const SOTemplate & type, SerialIter & sit, SField::ref name);
-    STObject (SField::ref name, boost::ptr_vector<STBase>& data);
-    STObject (SerialIter& sit, SField::ref name);
+    STObject (const SOTemplate & type, SField const& name);
+    STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
+    STObject (SField const& name, boost::ptr_vector<STBase>& data);
+    STObject (SerialIter& sit, SField const& name);
     STObject& operator= (STObject const&) = default;
     STObject& operator= (STObject&& other);
 
-    explicit STObject (SField::ref name);
+    explicit STObject (SField const& name);
 
     virtual ~STObject();
 
@@ -137,7 +137,7 @@ public:
 
     bool setType (const SOTemplate & type);
     bool isValidForType ();
-    bool isFieldAllowed (SField::ref);
+    bool isFieldAllowed (SField const&);
     bool isFree () const
     {
         return mType == nullptr;
@@ -217,33 +217,33 @@ public:
         return &v_[offset].get();
     }
 
-    int getFieldIndex (SField::ref field) const;
-    SField::ref getFieldSType (int index) const;
+    int getFieldIndex (SField const& field) const;
+    SField const& getFieldSType (int index) const;
 
-    const STBase& peekAtField (SField::ref field) const;
-    STBase& getField (SField::ref field);
-    const STBase* peekAtPField (SField::ref field) const;
-    STBase* getPField (SField::ref field, bool createOkay = false);
+    const STBase& peekAtField (SField const& field) const;
+    STBase& getField (SField const& field);
+    const STBase* peekAtPField (SField const& field) const;
+    STBase* getPField (SField const& field, bool createOkay = false);
 
     // these throw if the field type doesn't match, or return default values
     // if the field is optional but not present
-    std::string getFieldString (SField::ref field) const;
-    unsigned char getFieldU8 (SField::ref field) const;
-    std::uint16_t getFieldU16 (SField::ref field) const;
-    std::uint32_t getFieldU32 (SField::ref field) const;
-    std::uint64_t getFieldU64 (SField::ref field) const;
-    uint128 getFieldH128 (SField::ref field) const;
+    std::string getFieldString (SField const& field) const;
+    unsigned char getFieldU8 (SField const& field) const;
+    std::uint16_t getFieldU16 (SField const& field) const;
+    std::uint32_t getFieldU32 (SField const& field) const;
+    std::uint64_t getFieldU64 (SField const& field) const;
+    uint128 getFieldH128 (SField const& field) const;
 
-    uint160 getFieldH160 (SField::ref field) const;
-    uint256 getFieldH256 (SField::ref field) const;
-    RippleAddress getFieldAccount (SField::ref field) const;
-    Account getFieldAccount160 (SField::ref field) const;
+    uint160 getFieldH160 (SField const& field) const;
+    uint256 getFieldH256 (SField const& field) const;
+    RippleAddress getFieldAccount (SField const& field) const;
+    Account getFieldAccount160 (SField const& field) const;
 
-    Blob getFieldVL (SField::ref field) const;
-    STAmount const& getFieldAmount (SField::ref field) const;
-    STPathSet const& getFieldPathSet (SField::ref field) const;
-    const STVector256& getFieldV256 (SField::ref field) const;
-    const STArray& getFieldArray (SField::ref field) const;
+    Blob getFieldVL (SField const& field) const;
+    STAmount const& getFieldAmount (SField const& field) const;
+    STPathSet const& getFieldPathSet (SField const& field) const;
+    const STVector256& getFieldV256 (SField const& field) const;
+    const STArray& getFieldArray (SField const& field) const;
 
     /** Set a field.
         if the field already exists, it is replaced.
@@ -251,25 +251,25 @@ public:
     void
     set (std::unique_ptr<STBase> v);
 
-    void setFieldU8 (SField::ref field, unsigned char);
-    void setFieldU16 (SField::ref field, std::uint16_t);
-    void setFieldU32 (SField::ref field, std::uint32_t);
-    void setFieldU64 (SField::ref field, std::uint64_t);
-    void setFieldH128 (SField::ref field, uint128 const&);
-    void setFieldH256 (SField::ref field, uint256 const& );
-    void setFieldVL (SField::ref field, Blob const&);
-    void setFieldAccount (SField::ref field, Account const&);
-    void setFieldAccount (SField::ref field, RippleAddress const& addr)
+    void setFieldU8 (SField const& field, unsigned char);
+    void setFieldU16 (SField const& field, std::uint16_t);
+    void setFieldU32 (SField const& field, std::uint32_t);
+    void setFieldU64 (SField const& field, std::uint64_t);
+    void setFieldH128 (SField const& field, uint128 const&);
+    void setFieldH256 (SField const& field, uint256 const& );
+    void setFieldVL (SField const& field, Blob const&);
+    void setFieldAccount (SField const& field, Account const&);
+    void setFieldAccount (SField const& field, RippleAddress const& addr)
     {
         setFieldAccount (field, addr.getAccountID ());
     }
-    void setFieldAmount (SField::ref field, STAmount const&);
-    void setFieldPathSet (SField::ref field, STPathSet const&);
-    void setFieldV256 (SField::ref field, STVector256 const& v);
-    void setFieldArray (SField::ref field, STArray const& v);
+    void setFieldAmount (SField const& field, STAmount const&);
+    void setFieldPathSet (SField const& field, STPathSet const&);
+    void setFieldV256 (SField const& field, STVector256 const& v);
+    void setFieldArray (SField const& field, STArray const& v);
 
     template <class Tag>
-    void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
+    void setFieldH160 (SField const& field, base_uint<160, Tag> const& v)
     {
         STBase* rf = getPField (field, true);
 
@@ -286,12 +286,12 @@ public:
             throw std::runtime_error ("Wrong field type");
     }
 
-    STObject& peekFieldObject (SField::ref field);
+    STObject& peekFieldObject (SField const& field);
 
-    bool isFieldPresent (SField::ref field) const;
-    STBase* makeFieldPresent (SField::ref field);
-    void makeFieldAbsent (SField::ref field);
-    bool delField (SField::ref field);
+    bool isFieldPresent (SField const& field) const;
+    STBase* makeFieldPresent (SField const& field);
+    void makeFieldAbsent (SField const& field);
+    bool delField (SField const& field);
     void delField (int index);
 
     bool hasMatchingEntry (const STBase&);
@@ -311,7 +311,7 @@ private:
     template <typename T, typename V =
         typename std::remove_cv < typename std::remove_reference <
             decltype (std::declval <T> ().getValue ())>::type >::type >
-    V getFieldByValue (SField::ref field) const
+    V getFieldByValue (SField const& field) const
     {
         const STBase* rf = peekAtPField (field);
 
@@ -337,7 +337,7 @@ private:
     // obvious to return.  So we insist on having the call provide an
     // 'empty' value we return in that circumstance.
     template <typename T, typename V>
-    V const& getFieldByConstRef (SField::ref field, V const& empty) const
+    V const& getFieldByConstRef (SField const& field, V const& empty) const
     {
         const STBase* rf = peekAtPField (field);
 
@@ -359,7 +359,7 @@ private:
 
     // Implementation for setting most fields with a setValue() method.
     template <typename T, typename V>
-    void setFieldUsingSetValue (SField::ref field, V value)
+    void setFieldUsingSetValue (SField const& field, V value)
     {
         static_assert(!std::is_lvalue_reference<V>::value, "");
 
@@ -381,7 +381,7 @@ private:
 
     // Implementation for setting fields using assignment
     template <typename T>
-    void setFieldUsingAssignment (SField::ref field, T const& value)
+    void setFieldUsingAssignment (SField const& field, T const& value)
     {
         STBase* rf = getPField (field, true);
 

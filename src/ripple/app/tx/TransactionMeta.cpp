@@ -72,7 +72,7 @@ bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
     return false;
 }
 
-void TransactionMetaSet::setAffectedNode (uint256 const& node, SField::ref type,
+void TransactionMetaSet::setAffectedNode (uint256 const& node, SField const& type,
                                           std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
@@ -158,7 +158,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
     return accounts;
 }
 
-STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField::ref type)
+STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField const& type)
 {
     assert (&type);
     uint256 index = node->getIndex ();
