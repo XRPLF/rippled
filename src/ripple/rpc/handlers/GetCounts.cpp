@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/nodestore/Database.h>

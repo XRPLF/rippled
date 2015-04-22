@@ -19,9 +19,7 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/data/Database.cpp>
 #include <ripple/app/data/DatabaseCon.cpp>
-#include <ripple/app/data/SqliteDatabase.cpp>
 #include <ripple/app/data/DBInit.cpp>
 #include <ripple/app/ledger/AccountStateSF.cpp>
 #include <ripple/app/ledger/BookListeners.cpp>

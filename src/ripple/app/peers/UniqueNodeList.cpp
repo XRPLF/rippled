@@ -21,7 +21,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SqliteDatabase.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/peers/ClusterNodeStatus.h>
 #include <ripple/app/peers/UniqueNodeList.h>

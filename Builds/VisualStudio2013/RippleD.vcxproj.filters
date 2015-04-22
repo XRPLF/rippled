@@ -2160,12 +2160,6 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\LedgerConsensus.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\Database.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\data\Database.h">
-      <Filter>ripple\app\data</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\data\DatabaseCon.cpp">
       <Filter>ripple\app\data</Filter>
     </ClCompile>
@@ -2185,12 +2179,6 @@
       <Filter>ripple\app\data</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\data\SociDB.h">
-      <Filter>ripple\app\data</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\SqliteDatabase.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\data\SqliteDatabase.h">
       <Filter>ripple\app\data</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\data\tests\SociDB.test.cpp">
