@@ -40,14 +40,16 @@ public:
         seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
         seed2.SetHex ("CF0C3BE4485961858C4198515AE5B965");
 
-        uint256 const priv1 = GenerateRootDeterministicPrivateKey (seed1);
-        uint256 const priv2 = GenerateRootDeterministicPrivateKey (seed2);
+        uint256 const priv1 = generateRootDeterministicPrivateKey (seed1);
+        uint256 const priv2 = generateRootDeterministicPrivateKey (seed2);
 
-        unexpected (to_string (priv1) != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8",
-            "Incorrect private key for generator");
+        unexpected (to_string (priv1) != "7CFBA64F771E93E817E15039215430B53F74"
+                    "01C34931D111EAB3510B22DBB0D8",
+                    "Incorrect private key for generator");
 
-        unexpected (to_string (priv2) != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B",
-            "Incorrect private key for generator");
+        unexpected (to_string (priv2) != "98BC2EACB26EB021D1A6293C044D88BA2F0B"
+                    "6729A2772DEEBF2E21A263C1740B",
+                    "Incorrect private key for generator");
     }
 };
 

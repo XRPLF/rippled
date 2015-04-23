@@ -30,8 +30,10 @@ namespace ripple {
 
 namespace openssl {
 
-static EC_GROUP const* const secp256k1_group = EC_GROUP_new_by_curve_name (NID_secp256k1);
-static bignum          const secp256k1_order = get_order (secp256k1_group);
+static EC_GROUP const* const secp256k1_group =
+        EC_GROUP_new_by_curve_name (NID_secp256k1);
+static bignum const secp256k1_order =
+        get_order (secp256k1_group);
 
 }  // namespace openssl
 
@@ -71,7 +73,7 @@ copy_uint32 (FwdIt out, std::uint32_t v)
 
 // --> seed
 // <-- private root generator + public root generator
-static bignum GenerateRootDeterministicKey (uint128 const& seed)
+static bignum generateRootDeterministicKey (uint128 const& seed)
 {
     // find non-zero private key less than the curve's order
     bignum privKey;
@@ -97,11 +99,11 @@ static bignum GenerateRootDeterministicKey (uint128 const& seed)
 
 // --> seed
 // <-- private root generator + public root generator
-Blob GenerateRootDeterministicPublicKey (uint128 const& seed)
+Blob generateRootDeterministicPublicKey (uint128 const& seed)
 {
     bn_ctx ctx;
 
-    bignum privKey = GenerateRootDeterministicKey (seed);
+    bignum privKey = generateRootDeterministicKey (seed);
 
     // compute the corresponding public key point
     ec_point pubKey = multiply (secp256k1_group, privKey, ctx);
@@ -111,9 +113,9 @@ Blob GenerateRootDeterministicPublicKey (uint128 const& seed)
     return serialize_ec_point (pubKey);
 }
 
-uint256 GenerateRootDeterministicPrivateKey (uint128 const& seed)
+uint256 generateRootDeterministicPrivateKey (uint128 const& seed)
 {
-    bignum key = GenerateRootDeterministicKey (seed);
+    bignum key = generateRootDeterministicKey (seed);
 
     return uint256_from_bignum_clear (key);
 }
@@ -121,7 +123,7 @@ uint256 GenerateRootDeterministicPrivateKey (uint128 const& seed)
 // Take ripple address.
 // --> root public generator (consumes)
 // <-- root public generator in EC format
-static ec_point GenerateRootPubKey (bignum&& pubGenerator)
+static ec_point generateRootPubKey (bignum&& pubGenerator)
 {
     ec_point pubPoint = bn2point (secp256k1_group, pubGenerator.get());
 
@@ -155,10 +157,10 @@ static bignum makeHash (Blob const& pubGen, int seq, bignum const& order)
 }
 
 // --> public generator
-Blob GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
+Blob generatePublicDeterministicKey (Blob const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-    ec_point rootPubKey = GenerateRootPubKey (bignum (pubGen));
+    ec_point rootPubKey = generateRootPubKey (bignum (pubGen));
 
     bn_ctx ctx;
 
@@ -175,10 +177,11 @@ Blob GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 }
 
 // --> root private key
-uint256 GeneratePrivateDeterministicKey (Blob const& pubGen, uint128 const& seed, int seq)
+uint256 generatePrivateDeterministicKey (
+    Blob const& pubGen, uint128 const& seed, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
-    bignum rootPrivKey = GenerateRootDeterministicKey (seed);
+    bignum rootPrivKey = generateRootDeterministicKey (seed);
 
     bn_ctx ctx;
 

@@ -60,12 +60,13 @@ bool isCanonicalEd25519Signature (std::uint8_t const* signature)
 }
 
 // <-- seed
-static uint128 PassPhraseToKey (std::string const& passPhrase)
+static
+uint128 PassPhraseToKey (std::string const& passPhrase)
 {
     Serializer s;
 
     s.addRaw (passPhrase);
-    // NIKB TODO this caling sequence is a bit ugly; this should be improved.
+    // NIKB TODO this calling sequence is a bit ugly; this should be improved.
     uint256 hash256 = s.getSHA512Half ();
     uint128 ret (uint128::fromVoid (hash256.data()));
 
@@ -74,7 +75,9 @@ static uint128 PassPhraseToKey (std::string const& passPhrase)
     return ret;
 }
 
-static bool verifySignature (Blob const& pubkey, uint256 const& hash, Blob const& sig, ECDSA fullyCanonical)
+static
+bool verifySignature (Blob const& pubkey, uint256 const& hash, Blob const& sig,
+                      ECDSA fullyCanonical)
 {
     if (! isCanonicalECDSASig (sig, fullyCanonical))
     {
@@ -106,7 +109,8 @@ bool RippleAddress::isSet () const
 // NodePublic
 //
 
-static uint160 Hash160 (Blob const& vch)
+static
+uint160 Hash160 (Blob const& vch)
 {
     uint256 hash1;
     SHA256 (vch.data (), vch.size (), hash1.data ());
@@ -122,7 +126,7 @@ RippleAddress RippleAddress::createNodePublic (RippleAddress const& naSeed)
     RippleAddress   naNew;
 
     // YYY Should there be a GetPubKey() equiv that returns a uint256?
-    naNew.setNodePublic (GenerateRootDeterministicPublicKey (naSeed.getSeed()));
+    naNew.setNodePublic (generateRootDeterministicPublicKey (naSeed.getSeed()));
 
     return naNew;
 }
@@ -152,6 +156,12 @@ RippleAddress::toPublicKey() const
     return RipplePublicKey (vchData.begin(), vchData.end());
 }
 
+static
+std::runtime_error badSourceError (int nVersion)
+{
+    return std::runtime_error ("bad source: " + std::to_string (nVersion));
+}
+
 NodeID RippleAddress::getNodeID () const
 {
     switch (nVersion)
@@ -167,7 +177,7 @@ NodeID RippleAddress::getNodeID () const
     }
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -182,7 +192,7 @@ Blob const& RippleAddress::getNodePublic () const
         return vchData;
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -197,13 +207,14 @@ std::string RippleAddress::humanNodePublic () const
         return ToString ();
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
 bool RippleAddress::setNodePublic (std::string const& strPublic)
 {
-    mIsValid = SetString (strPublic, VER_NODE_PUBLIC, Base58::getRippleAlphabet ());
+    mIsValid = SetString (
+        strPublic, VER_NODE_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -215,12 +226,14 @@ void RippleAddress::setNodePublic (Blob const& vPublic)
     SetData (VER_NODE_PUBLIC, vPublic);
 }
 
-bool RippleAddress::verifyNodePublic (uint256 const& hash, Blob const& vchSig, ECDSA fullyCanonical) const
+bool RippleAddress::verifyNodePublic (
+    uint256 const& hash, Blob const& vchSig, ECDSA fullyCanonical) const
 {
     return verifySignature (getNodePublic(), hash, vchSig, fullyCanonical);
 }
 
-bool RippleAddress::verifyNodePublic (uint256 const& hash, std::string const& strSig, ECDSA fullyCanonical) const
+bool RippleAddress::verifyNodePublic (
+    uint256 const& hash, std::string const& strSig, ECDSA fullyCanonical) const
 {
     Blob vchSig (strSig.begin (), strSig.end ());
 
@@ -235,7 +248,7 @@ RippleAddress RippleAddress::createNodePrivate (RippleAddress const& naSeed)
 {
     RippleAddress   naNew;
 
-    naNew.setNodePrivate (GenerateRootDeterministicPrivateKey (naSeed.getSeed()));
+    naNew.setNodePrivate (generateRootDeterministicPrivateKey (naSeed.getSeed()));
 
     return naNew;
 }
@@ -251,7 +264,7 @@ Blob const& RippleAddress::getNodePrivateData () const
         return vchData;
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -266,7 +279,7 @@ uint256 RippleAddress::getNodePrivate () const
         return uint256 (vchData);
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -281,13 +294,14 @@ std::string RippleAddress::humanNodePrivate () const
         return ToString ();
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
 bool RippleAddress::setNodePrivate (std::string const& strPrivate)
 {
-    mIsValid = SetString (strPrivate, VER_NODE_PRIVATE, Base58::getRippleAlphabet ());
+    mIsValid = SetString (
+        strPrivate, VER_NODE_PRIVATE, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -337,7 +351,7 @@ Account RippleAddress::getAccountID () const
     }
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -412,7 +426,7 @@ std::string RippleAddress::humanAccountID () const
     }
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -468,7 +482,7 @@ Blob const& RippleAddress::getAccountPublic () const
         return vchData;
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -486,13 +500,14 @@ std::string RippleAddress::humanAccountPublic () const
         return ToString ();
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
 bool RippleAddress::setAccountPublic (std::string const& strPublic)
 {
-    mIsValid = SetString (strPublic, VER_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
+    mIsValid = SetString (
+        strPublic, VER_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -506,7 +521,8 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
 
 void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
 {
-    setAccountPublic (GeneratePublicDeterministicKey (generator.getGenerator(), seq));
+    setAccountPublic (generatePublicDeterministicKey (
+        generator.getGenerator(), seq));
 }
 
 bool RippleAddress::accountPublicVerify (
@@ -522,16 +538,12 @@ bool RippleAddress::accountPublicVerify (
         uint8_t const* publicKey = &vchData[1];
         uint8_t const* signature = &vucSig[0];
 
-        if (ed25519_sign_open (message.data(), message.size(), publicKey, signature) != 0)
-        {
-            return false;
-        }
-        
-        return isCanonicalEd25519Signature (signature);
+        return !ed25519_sign_open (message.data(), message.size(),
+                                   publicKey, signature)
+                && isCanonicalEd25519Signature (signature);
     }
 
     uint256 const uHash = getSHA512Half (message);
-
     return verifySignature (getAccountPublic(), uHash, vucSig, fullyCanonical);
 }
 
@@ -568,7 +580,7 @@ uint256 RippleAddress::getAccountPrivate () const
         return uint256::fromVoid (vchData.data() + (vchData.size() - 32));
 
     default:
-        throw std::runtime_error ("bad source: " + std::to_string(nVersion));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -595,7 +607,8 @@ void RippleAddress::setAccountPrivate (uint256 hash256)
 void RippleAddress::setAccountPrivate (
     RippleAddress const& generator, RippleAddress const& naSeed, int seq)
 {
-    uint256 secretKey = GeneratePrivateDeterministicKey (generator.getGenerator(), naSeed.getSeed(), seq);
+    uint256 secretKey = generatePrivateDeterministicKey (
+        generator.getGenerator(), naSeed.getSeed(), seq);
 
     setAccountPrivate (secretKey);
 }
@@ -610,8 +623,10 @@ Blob RippleAddress::accountPrivateSign (Blob const& message) const
 
         ed25519_publickey (secretKey, publicKey);
 
-        ed25519_sign (message.data(), message.size(), secretKey, publicKey, &signature[0]);
-        
+        ed25519_sign (
+            message.data(), message.size(), secretKey, publicKey,
+            &signature[0]);
+
         assert (isCanonicalEd25519Signature (signature.data()));
 
         return signature;
@@ -643,6 +658,7 @@ Blob RippleAddress::accountPrivateEncrypt (
         }
         catch (...)
         {
+            // TODO: log this or explain why this is unimportant!
         }
     }
 
@@ -664,6 +680,7 @@ Blob RippleAddress::accountPrivateDecrypt (
         }
         catch (...)
         {
+            // TODO: log this or explain why this is unimportant!
         }
     }
 
@@ -687,7 +704,7 @@ Blob const& RippleAddress::getGenerator () const
         return vchData;
 
     default:
-        throw std::runtime_error ("bad source: " + std::to_string(nVersion));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -702,7 +719,7 @@ std::string RippleAddress::humanGenerator () const
         return ToString ();
 
     default:
-        throw std::runtime_error ("bad source: " + std::to_string(nVersion));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -715,7 +732,7 @@ void RippleAddress::setGenerator (Blob const& vPublic)
 RippleAddress RippleAddress::createGeneratorPublic (RippleAddress const& naSeed)
 {
     RippleAddress   naNew;
-    naNew.setGenerator (GenerateRootDeterministicPublicKey (naSeed.getSeed()));
+    naNew.setGenerator (generateRootDeterministicPublicKey (naSeed.getSeed()));
     return naNew;
 }
 
@@ -734,7 +751,7 @@ uint128 RippleAddress::getSeed () const
         return uint128 (vchData);
 
     default:
-        throw std::runtime_error ("bad source: " + std::to_string(nVersion));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -762,7 +779,7 @@ std::string RippleAddress::humanSeed1751 () const
     }
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -777,7 +794,7 @@ std::string RippleAddress::humanSeed () const
         return ToString ();
 
     default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
+        throw badSourceError (nVersion);
     }
 }
 
@@ -890,7 +907,7 @@ RippleAddress getSeedFromRPC (Json::Value const& params)
 {
     // This function is only called when `key_type` is present.
     assert (params.isMember (jss::key_type));
-    
+
     bool const has_passphrase = params.isMember (jss::passphrase);
     bool const has_seed       = params.isMember (jss::seed);
     bool const has_seed_hex   = params.isMember (jss::seed_hex);
