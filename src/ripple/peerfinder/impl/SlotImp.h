@@ -22,9 +22,11 @@
 
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/Manager.h>
+#include <beast/config/CompilerConfig.h>
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_container_utility.h>
 #include <boost/optional.hpp>
+#include <atomic>
 
 namespace ripple {
 namespace PeerFinder {
@@ -79,6 +81,19 @@ public:
     boost::optional <RipplePublicKey> const& public_key () const
     {
         return m_public_key;
+    }
+
+    boost::optional<std::uint16_t> listening_port () const
+    {
+        std::uint32_t const value = m_listening_port;
+        if (value == unknownPort)
+            return boost::none;
+        return value;
+    }
+
+    void set_listening_port (std::uint16_t port)
+    {
+        m_listening_port = port;
     }
 
     void local_endpoint (beast::IP::Endpoint const& endpoint)
@@ -146,6 +161,9 @@ private:
     beast::IP::Endpoint m_remote_endpoint;
     boost::optional <beast::IP::Endpoint> m_local_endpoint;
     boost::optional <RipplePublicKey> m_public_key;
+
+    static std::int32_t BEAST_CONSTEXPR unknownPort = -1;
+    std::atomic <std::int32_t> m_listening_port;
 
 public:
     // DEPRECATED public data members

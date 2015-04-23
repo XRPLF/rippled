@@ -262,6 +262,7 @@ public:
         }
 
         slot.canAccept = true;
+        slot.set_listening_port (checkedAddress.port ());
         if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Logic testing " << checkedAddress << " succeeded";
     }
