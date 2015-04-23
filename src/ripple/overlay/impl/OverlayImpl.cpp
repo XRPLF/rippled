@@ -595,12 +595,21 @@ OverlayImpl::crawl()
             pv[jss::public_key] = beast::base64_encode(
                 sp->getNodePublic().getNodePublic().data(),
                     sp->getNodePublic().getNodePublic().size());
+            pv[jss::type] = sp->slot()->inbound() ?
+                "in" : "out";
             if (sp->crawl())
             {
+                pv[jss::ip] = sp->getRemoteAddress().address().to_string();
                 if (sp->slot()->inbound())
-                    pv[jss::ip] = sp->getRemoteAddress().address().to_string();
+                {
+                    if (auto port = sp->slot()->listening_port())
+                        pv[jss::port] = *port;
+                }
                 else
-                    pv[jss::ip] = sp->getRemoteAddress().to_string();
+                {
+                    pv[jss::port] = std::to_string(
+                        sp->getRemoteAddress().port());
+                }
             }
             auto version = sp->getVersion ();
             if (!version.empty ())
