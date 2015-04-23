@@ -354,7 +354,8 @@ JSS ( tx_signing_hash );            // out: TransactionSign
 JSS ( tx_unsigned );                // out: TransactionSign
 JSS ( txn_count );                  // out: NetworkOPs
 JSS ( txs );                        // out: TxHistory
-JSS ( type );                       // rpc; out: NetworkOPs, LedgerEntrySet
+JSS ( type );                       // in: AccountObjects
+                                    // out: NetworkOPs, LedgerEntrySet
                                     //      paths/Node.cpp, OverlayImpl, Logic
 JSS ( type_hex );                   // out: STPathSet
 JSS ( unl );                        // out: UnlList

@@ -3873,6 +3873,12 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\GetAccountObjects.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>

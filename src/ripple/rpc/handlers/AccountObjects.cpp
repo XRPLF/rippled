@@ -20,6 +20,11 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/rpc/impl/GetAccountObjects.h>
+
+#include <string>
+#include <sstream>
+#include <vector>
 
 namespace ripple {
 
@@ -29,10 +34,12 @@ namespace ripple {
       account_index: <integer> // optional, defaults to 0
       ledger_hash: <string> // optional
       ledger_index: <string | unsigned integer> // optional
+      type: <string> // optional, defaults to all account objects types
       limit: <integer> // optional
       marker: <opaque> // optional, resume previous query
     }
 */
+
 Json::Value doAccountObjects (RPC::Context& context)
 {
     auto const& params = context.params;
@@ -40,17 +47,17 @@ Json::Value doAccountObjects (RPC::Context& context)
         return RPC::missing_field_error (jss::account);
 
     Ledger::pointer ledger;
-    Json::Value result = RPC::lookupLedger (params, ledger, context.netOps);
+    auto result = RPC::lookupLedger (params, ledger, context.netOps);
     if (ledger == nullptr)
         return result;
 
-    RippleAddress rippleAddress;    
+    RippleAddress raAccount;
     {
         bool bIndex;
-        std::string const strIdent = params[jss::account].asString ();
-        int const iIndex = context.params.isMember (jss::account_index)
+        auto const strIdent = params[jss::account].asString ();
+        auto iIndex = context.params.isMember (jss::account_index)
             ? context.params[jss::account_index].asUInt () : 0;
-        Json::Value const jv = RPC::accountFromString(ledger, rippleAddress, bIndex,
+        auto jv = RPC::accountFromString (ledger, raAccount, bIndex,
             strIdent, iIndex, false, context.netOps);
         if (! jv.empty ())
         {
@@ -61,10 +68,42 @@ Json::Value doAccountObjects (RPC::Context& context)
         }
     }
 
-    if (! ledger->hasAccount (rippleAddress))
+    if (! ledger->hasAccount (raAccount))
         return rpcError (rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    auto type = ltINVALID;
+    if (params.isMember (jss::type))
+    {
+        using filter_types = std::vector <std::pair <std::string, LedgerEntryType>>;
+        static
+        beast::static_initializer <filter_types> const types ([]() -> filter_types {
+            return {
+                { "account", ltACCOUNT_ROOT },
+                { "amendments", ltAMENDMENTS },
+                { "directory", ltDIR_NODE },
+                { "fee", ltFEE_SETTINGS },
+                { "hashes", ltLEDGER_HASHES },
+                { "offer", ltOFFER },
+                { "state", ltRIPPLE_STATE },
+                { "ticket", ltTICKET }
+            };
+        }());
+
+        auto const& p = params[jss::type];
+        if (! p.isString ())
+            return RPC::expected_field_error (jss::type, "string");
+
+        auto const filter = p.asString ();
+        auto iter = std::find_if (types->begin (), types->end (),
+            [&filter](decltype (types->front ())& t)
+                { return t.first == filter; });
+        if (iter == types->end ())
+            return RPC::invalid_field_error (jss::type);
+        
+        type = iter->second;
+    }
+
+    auto limit = RPC::Tuning::defaultObjectsPerRequest;
     if (params.isMember (jss::limit))
     {
         auto const& jvLimit = params[jss::limit];
@@ -80,112 +119,37 @@ Json::Value doAccountObjects (RPC::Context& context)
                 std::min (limit, RPC::Tuning::maxObjectsPerRequest));
         }
     }
-    else
-    {
-        limit = RPC::Tuning::defaultObjectsPerRequest;
-    }
     
-    Account const& raAccount = rippleAddress.getAccountID ();
-    unsigned int reserve = limit;
-    uint256 startAfter;
-    std::uint64_t startHint = 0;
-
+    uint256 dirIndex;
+    uint256 entryIndex;
     if (params.isMember (jss::marker))
     {
-        // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.
-        Json::Value const& marker = params[jss::marker];
-
+        auto const& marker = params[jss::marker];
         if (! marker.isString ())
             return RPC::expected_field_error (jss::marker, "string");
-
-        startAfter.SetHex (marker.asString ());
-        SLE::pointer sleObj = ledger->getSLEi (startAfter);
-
-        if (sleObj == nullptr)
-            return rpcError (rpcINVALID_PARAMS);
-
-        switch (sleObj->getType ())
-        {
-        case ltRIPPLE_STATE:
-            if (sleObj->getFieldAmount (sfLowLimit).getIssuer () == raAccount)
-                startHint = sleObj->getFieldU64 (sfLowNode);
-            else if (sleObj->getFieldAmount (sfHighLimit).getIssuer () == raAccount)
-                startHint = sleObj->getFieldU64 (sfHighNode);
-            else
-                return rpcError (rpcINVALID_PARAMS);
-            
-            break;
-
-        case ltOFFER:
-            startHint = sleObj->getFieldU64 (sfOwnerNode);
-            break;
         
-        default:
-            break;
-        }
+        std::stringstream ss (marker.asString ());
+        std::string s;
+        if (!std::getline(ss, s, ','))
+            return RPC::invalid_field_error (jss::marker);
+
+        if (! dirIndex.SetHex (s))
+            return RPC::invalid_field_error (jss::marker);
+
+        if (! std::getline (ss, s, ','))
+            return RPC::invalid_field_error (jss::marker);
         
-        // Caller provided the first object (startAfter), add it as first result
-        result[jss::account_objects].append (sleObj->getJson (0));
+        if (! entryIndex.SetHex (s))
+            return RPC::invalid_field_error (jss::marker);
     }
-    else
+
+    if (! RPC::getAccountObjects (*ledger, raAccount.getAccountID (), type,
+        dirIndex, entryIndex, limit, result))
     {
-        // We have no start point, limit should be one higher than requested.
-        ++reserve;
+        return RPC::invalid_field_error (jss::marker);
     }
 
-    Json::Value jv = Json::nullValue;
-        
-    if (! context.netOps.getAccountObjects(ledger, raAccount, startAfter,
-        startHint, reserve, [&](SLE::ref sleCur)
-        {
-            if (! jv.isNull ())
-                result[jss::account_objects].append (jv);
-
-            switch (sleCur->getType ())
-            {
-            case ltRIPPLE_STATE:
-            case ltOFFER: // Deprecated
-                jv = sleCur->getJson (0);
-                return true;
-
-            case ltTICKET:
-            {
-                jv = sleCur->getJson (0);
-
-                Account const acc (sleCur->getFieldAccount160 (sfAccount));
-                uint32_t const seq (sleCur->getFieldU32 (sfSequence));
-                jv[jss::index] = to_string (getTicketIndex (acc, seq));
-                return true;
-            }
-
-            // case ltACCOUNT_ROOT:
-            // case ltDIR_NODE:
-            default:
-                if (! jv.isNull ())
-                    jv = Json::nullValue;
-                return false;
-            }
-        }))
-    {
-        return rpcError (rpcINVALID_PARAMS);
-    }
-
-    if (! jv.isNull ())
-    { 
-        if (result[jss::account_objects].size () == limit)
-        {
-            result[jss::limit] = limit;
-            result[jss::marker] = jv[jss::index];     
-        }
-        else
-        {
-            result[jss::account_objects].append (jv);
-        }
-    }
-                
-    result[jss::account] = rippleAddress.humanAccountID ();
-    
+    result[jss::account] = raAccount.humanAccountID ();    
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
