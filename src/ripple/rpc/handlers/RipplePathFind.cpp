@@ -249,11 +249,11 @@ ripplePathFind(RippleLineCache::pointer const& cache,
             Json::Value pathSet = Json::objectValue;
             pathSet[jss::Paths] = contextPaths.get();
             STParsedJSONObject paths("pathSet", pathSet);
-            if (paths.object.get() == nullptr)
+            if (! paths.object)
                 return std::make_pair(false, paths.error);
             else
             {
-                spsComputed = paths.object.get()->getFieldPathSet(sfPaths);
+                spsComputed = paths.object->getFieldPathSet(sfPaths);
                 WriteLog(lsTRACE, RPCHandler) << "ripple_path_find: Paths: " <<
                     spsComputed.getJson(0);
             }

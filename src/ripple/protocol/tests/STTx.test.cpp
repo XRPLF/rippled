@@ -61,15 +61,13 @@ public:
         }
 
         STParsedJSONObject parsed ("test", j.getJson (0));
-        std::unique_ptr <STObject> new_obj (std::move (parsed.object));
-
-        if (new_obj.get () == nullptr)
+        if (!parsed.object)
             fail ("Unable to build object from json");
 
-        if (STObject (j) != *new_obj)
+        if (STObject (j) != parsed.object)
         {
             log << "ORIG: " << j.getJson (0);
-            log << "BUILT " << new_obj->getJson (0);
+            log << "BUILT " << parsed.object->getJson (0);
             fail ("Built a different transaction");
         }
         else

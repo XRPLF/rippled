@@ -53,8 +53,7 @@ public:
     explicit STTx (SerialIter& sit);
     explicit STTx (TxType type);
 
-    // Only called from ripple::RPC::transactionSign - can we eliminate this?
-    explicit STTx (STObject const& object);
+    explicit STTx (STObject&& object);
 
     STBase*
     copy (std::size_t n, void* buf) const override

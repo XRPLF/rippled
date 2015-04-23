@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STPARSEDJSON_H_INCLUDED
 
 #include <ripple/protocol/STArray.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -45,7 +46,7 @@ public:
     ~STParsedJSONObject () = default;
 
     /** The STObject if the parse was successful. */
-    std::unique_ptr <STObject> object;
+    boost::optional <STObject> object;
 
     /** On failure, an appropriate set of error values. */
     Json::Value error;
@@ -72,7 +73,7 @@ public:
     ~STParsedJSONArray () = default;
 
     /** The STArray if the parse was successful. */
-    std::unique_ptr <STArray> array;
+    boost::optional <STArray> array;
 
     /** On failure, an appropriate set of error values. */
     Json::Value error;

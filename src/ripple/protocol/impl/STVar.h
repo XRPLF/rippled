@@ -88,7 +88,14 @@ public:
     STBase const& operator*() const { return get(); }
     STBase const* operator->() const { return &get(); }
 
+    template <class T, class... Args>
+    friend
+    STVar
+    make_stvar(Args&&... args);
+
 private:
+    STVar() = default;
+
     STVar (SerializedTypeID id, SField const& name);
 
     void destroy();
@@ -112,6 +119,16 @@ private:
             static_cast<void const*>(&d_);
     }
 };
+
+template <class T, class... Args>
+inline
+STVar
+make_stvar(Args&&... args)
+{
+    STVar st;
+    st.construct<T>(std::forward<Args>(args)...);
+    return std::move(st);
+}
 
 inline
 bool

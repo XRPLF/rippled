@@ -27,7 +27,6 @@
 #include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <utility>
 
 #include <beast/streams/debug_ostream.h>
@@ -99,7 +98,6 @@ public:
     STObject(STObject const&) = default;
     STObject (const SOTemplate & type, SField const& name);
     STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
-    STObject (SField const& name, boost::ptr_vector<STBase>& data);
     STObject (SerialIter& sit, SField const& name);
     STObject& operator= (STObject const&) = default;
     STObject& operator= (STObject&& other);

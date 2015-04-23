@@ -71,9 +71,35 @@ public:
         return emplace(n, buf, std::move(*this));
     }
 
-    void push_back (const STObject & object)
+    STObject& operator[] (std::size_t j)
+    {
+        return v_[j];
+    }
+
+    STObject const& operator[] (std::size_t j) const
+    {
+        return v_[j];
+    }
+
+    STObject& back() { return v_.back(); }
+
+    STObject const& back() const { return v_.back(); }
+
+    template <class... Args>
+    void
+    emplace_back(Args&&... args)
+    {
+        v_.emplace_back(std::forward<Args>(args)...);
+    }
+
+    void push_back (STObject const& object)
     {
         v_.push_back(object);
+    }
+
+    void push_back (STObject&& object)
+    {
+        v_.push_back(std::move(object));
     }
 
     iterator begin ()
@@ -99,11 +125,6 @@ public:
     size_type size () const
     {
         return v_.size ();
-    }
-
-    STObject& back ()
-    {
-        return v_.back ();
     }
 
     bool empty () const

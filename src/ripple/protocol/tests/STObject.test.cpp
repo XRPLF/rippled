@@ -75,7 +75,7 @@ public:
             bool parsedOK (parseJSONString(faulty, faultyJson));
             unexpected(!parsedOK, "failed to parse");
             STParsedJSONObject parsed ("test", faultyJson);
-            expect (parsed.object.get() == nullptr,
+            expect (! parsed.object,
                 "It should have thrown. "
                   "Immediate children of STArray encoded as json must "
                   "have one key only.");
