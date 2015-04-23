@@ -570,12 +570,18 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
 
     // TODO This won't remove validations for ledgers that do not get
     // validated. That will likely require inserting LedgerSeq into
-    // the validations table
+    // the validations table.
+    //
+    // This query has poor performance with large data sets.
+    // The schema needs to be redesigned to avoid the JOIN, or an
+    // RDBMS that supports concurrency should be used.
+    /*
     clearSql (*ledgerDb_, lastRotated,
         "SELECT MIN(LedgerSeq) FROM Ledgers;",
         "DELETE FROM Validations WHERE LedgerHash IN "
         "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
         "Validations.LedgerHash=Ledgers.LedgerHash WHERE Ledgers.LedgerSeq < %u);");
+     */
 
     if (health())
         return;
