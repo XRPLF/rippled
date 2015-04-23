@@ -3313,6 +3313,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\GetAccountObjects.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4501,6 +4506,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
     </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>

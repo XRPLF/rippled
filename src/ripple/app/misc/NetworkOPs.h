@@ -165,10 +165,6 @@ public:
     // Account functions
     //
 
-    virtual bool getAccountObjects(Ledger::pointer lpLedger,
-        Account const& accountID, uint256 const& startAfter,
-        std::uint64_t const hint, unsigned int limit,
-        std::function <bool (SLE::ref)> func) const = 0;
     virtual AccountState::pointer getAccountState (Ledger::ref lrLedger,
         RippleAddress const& accountID) = 0;
 
