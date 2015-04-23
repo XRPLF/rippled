@@ -774,7 +774,7 @@ public:
             return tesSUCCESS;
         }
 
-        if (mPriorBalance.getNValue () < getAccountReserve (sleCreator))
+        if (mPriorBalance < getAccountReserve (sleCreator))
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then

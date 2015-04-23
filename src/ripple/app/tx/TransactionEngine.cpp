@@ -242,8 +242,7 @@ TransactionEngine::applyTransaction (
             }
 
             // Charge whatever fee they specified.
-            STAmount saPaid = txn.getTransactionFee ();
-            mLedger->destroyCoins (saPaid.getNValue ());
+            mLedger->destroyCoins (getNValue (txn.getTransactionFee ()));
         }
     }
 

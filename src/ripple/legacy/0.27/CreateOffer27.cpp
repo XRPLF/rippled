@@ -466,7 +466,7 @@ CreateOffer::doApply()
     {
         // Complete as is.
     }
-    else if (mPriorBalance.getNValue () < accountReserve)
+    else if (mPriorBalance < accountReserve)
     {
         // If we are here, the signing account had an insufficient reserve
         // *prior* to our processing. We use the prior balance to simplify
