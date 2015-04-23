@@ -60,14 +60,14 @@ Taker::remaining_offer () const
 
         // We scale the output based on the remaining input:
         return Amounts (m_remain.in, divRound (
-            m_remain.in, m_quality.rate (), m_remain.out, true));
+            m_remain.in, m_quality.rate (), m_remain.out.issue (), true));
     }
 
     assert (m_remain.out > zero);
 
     // We scale the input based on the remaining output:
     return Amounts (mulRound (
-        m_remain.out, m_quality.rate (), m_remain.in, true), m_remain.out);
+        m_remain.out, m_quality.rate (), m_remain.in.issue (), true), m_remain.out);
 }
 
 /** Calculate the amount particular user could get through an offer.
@@ -96,7 +96,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     {
         Amount const taker_charge (amountFromRate (taker_charge_rate));
         amount = offer.quality ().ceil_in (amount,
-            divide (taker_funds, taker_charge));
+            divide (taker_funds, taker_charge, taker_funds.issue ()));
     }
 
     // Best flow the owner can get.
@@ -120,7 +120,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     {
         Amount const owner_charge (amountFromRate (owner_charge_rate));
         owner_amount = offer.quality ().ceil_out (owner_amount,
-            divide (owner_funds, owner_charge));
+            divide (owner_funds, owner_charge, owner_funds.issue ()));
     }
 
     // Calculate the amount that will flow through the offer

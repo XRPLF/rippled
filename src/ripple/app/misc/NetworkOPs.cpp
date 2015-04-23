@@ -3007,7 +3007,9 @@ void NetworkOPsImp::getBookPage (
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
                     saOwnerFundsLimit   = divide (
-                        saOwnerFunds, STAmount (noIssue(), uOfferRate, -9));
+                        saOwnerFunds,
+                        STAmount (noIssue(), uOfferRate, -9),
+                        saOwnerFunds.issue ());
                     // TODO(tom): why -9?
                 }
                 else
@@ -3030,7 +3032,7 @@ void NetworkOPsImp::getBookPage (
                     saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
                     std::min (
                         saTakerPays, multiply (
-                            saTakerGetsFunded, saDirRate, saTakerPays)).setJson
+                            saTakerGetsFunded, saDirRate, saTakerPays.issue ())).setJson
                             (jvOffer[jss::taker_pays_funded]);
                 }
 
@@ -3040,8 +3042,8 @@ void NetworkOPsImp::getBookPage (
                         saOwnerFunds,
                         multiply (
                             saTakerGetsFunded,
-                            STAmount (noIssue(),
-                                      uOfferRate, -9)));
+                            STAmount (noIssue(), uOfferRate, -9),
+                            saTakerGetsFunded.issue ()));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -3196,7 +3198,7 @@ void NetworkOPsImp::getBookPage (
                 // TOOD(tom): The result of this expression is not used - what's
                 // going on here?
                 std::min (saTakerPays, multiply (
-                    saTakerGetsFunded, saDirRate, saTakerPays)).setJson (
+                    saTakerGetsFunded, saDirRate, saTakerPays.issue ())).setJson (
                         jvOffer[jss::taker_pays_funded]);
             }
 

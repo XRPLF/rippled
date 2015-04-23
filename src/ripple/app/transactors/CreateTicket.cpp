@@ -67,7 +67,7 @@ public:
         auto const accountReserve (mEngine->getLedger ()->getReserve (
             mTxnAccount->getFieldU32 (sfOwnerCount) + 1));
 
-        if (mPriorBalance.getNValue () < accountReserve)
+        if (mPriorBalance < accountReserve)
             return tecINSUFFICIENT_RESERVE;
 
         std::uint32_t expiration (0);

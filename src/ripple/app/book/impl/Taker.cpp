@@ -136,14 +136,14 @@ BasicTaker::remaining_offer () const
 
         // We scale the output based on the remaining input:
         return Amounts (remaining_.in, divRound (
-            remaining_.in, quality_.rate (), remaining_.out, true));
+            remaining_.in, quality_.rate (), issue_out_, true));
     }
 
     assert (remaining_.out > zero);
 
     // We scale the input based on the remaining output:
     return Amounts (mulRound (
-        remaining_.out, quality_.rate (), remaining_.in, true), remaining_.out);
+        remaining_.out, quality_.rate (), issue_in_, true), remaining_.out);
 }
 
 Amounts const&
@@ -327,7 +327,7 @@ BasicTaker::do_cross (Amounts offer, Quality quality, Account const& owner)
 
     if (cross_type_ == CrossType::XrpToIou)
     {
-        result = flow_xrp_to_iou (offer, quality, owner_funds, taker_funds, 
+        result = flow_xrp_to_iou (offer, quality, owner_funds, taker_funds,
             out_rate (owner, account ()));
     }
     else if (cross_type_ == CrossType::IouToXrp)

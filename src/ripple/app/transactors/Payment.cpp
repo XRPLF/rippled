@@ -218,7 +218,7 @@ public:
                 // transaction would succeed.
                 return telNO_DST_PARTIAL;
             }
-            else if (saDstAmount.getNValue () < mEngine->getLedger ()->getReserve (0))
+            else if (saDstAmount < mEngine->getLedger ()->getReserve (0))
             {
                 // getReserve() is the minimum amount that an account can have.
                 // Reserve is not scaled by load.
@@ -344,7 +344,7 @@ public:
             //
             // Make sure have enough reserve to send. Allow final spend to use
             // reserve for fee.
-            auto const mmm = std::max(uReserve, mTxn.getTransactionFee ().getNValue ());
+            auto const mmm = std::max(uReserve, getNValue (mTxn.getTransactionFee ()));
             if (mPriorBalance < saDstAmount + mmm)
             {
                 // Vote no.

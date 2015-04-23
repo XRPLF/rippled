@@ -165,14 +165,6 @@ public:
         return STAmount (mIssue);
     }
 
-    // When the currency is XRP, the value in raw unsigned units.
-    std::uint64_t
-    getNValue() const;
-
-    // When the currency is XRP, the value in raw signed units.
-    std::int64_t
-    getSNValue() const;
-
     // VFALCO TODO This can be a free function or just call the
     //             member on the issue.
     std::string
@@ -197,10 +189,7 @@ public:
 
     STAmount& operator+= (STAmount const&);
     STAmount& operator-= (STAmount const&);
-    STAmount& operator+= (std::uint64_t);
-    STAmount& operator-= (std::uint64_t);
 
-    STAmount& operator= (std::uint64_t);
     STAmount& operator= (beast::Zero)
     {
         clear();
@@ -359,96 +348,28 @@ STAmount operator- (STAmount const& value);
 STAmount
 divide (STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-inline
-STAmount
-divide (STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
-{
-    return divide (v1, v2, saUnit.issue());
-}
-
-inline
-STAmount
-divide (STAmount const& v1, STAmount const& v2)
-{
-    return divide (v1, v2, v1);
-}
-
 STAmount
 multiply (STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-inline
-STAmount
-multiply (STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
-{
-    return multiply (v1, v2, saUnit.issue());
-}
-
-inline
-STAmount
-multiply (STAmount const& v1, STAmount const& v2)
-{
-    return multiply (v1, v2, v1);
-}
-
-void
-canonicalizeRound (bool native, std::uint64_t& mantissa,
-    int& exponent, bool roundUp);
-
-/* addRound, subRound can end up rounding if the amount subtracted is too small
-    to make a change. Consder (X-d) where d is very small relative to X.
-    If you ask to round down, then (X-d) should not be X unless d is zero.
-    If you ask to round up, (X+d) should never be X unless d is zero. (Assuming X and d are positive).
-*/
-// Add, subtract, multiply, or divide rounding result in specified direction
-STAmount
-addRound (STAmount const& v1, STAmount const& v2, bool roundUp);
-
-STAmount
-subRound (STAmount const& v1, STAmount const& v2, bool roundUp);
+// multiply, or divide rounding result in specified direction
 
 STAmount
 mulRound (STAmount const& v1, STAmount const& v2,
     Issue const& issue, bool roundUp);
 
-inline
-STAmount
-mulRound (STAmount const& v1, STAmount const& v2,
-    STAmount const& saUnit, bool roundUp)
-{
-    return mulRound (v1, v2, saUnit.issue(), roundUp);
-}
-
-inline
-STAmount
-mulRound (STAmount const& v1, STAmount const& v2, bool roundUp)
-{
-    return mulRound (v1, v2, v1.issue(), roundUp);
-}
-
 STAmount
 divRound (STAmount const& v1, STAmount const& v2,
     Issue const& issue, bool roundUp);
-
-inline
-STAmount
-divRound (STAmount const& v1, STAmount const& v2,
-    STAmount const& saUnit, bool roundUp)
-{
-    return divRound (v1, v2, saUnit.issue(), roundUp);
-}
-
-inline
-STAmount
-divRound (STAmount const& v1, STAmount const& v2, bool roundUp)
-{
-    return divRound (v1, v2, v1.issue(), roundUp);
-}
 
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
 // VFALCO TODO Return a Quality object
 std::uint64_t
 getRate (STAmount const& offerOut, STAmount const& offerIn);
+
+// When the currency is XRP, the value in raw unsigned units.
+std::uint64_t
+getNValue(STAmount const& amount);
 
 //------------------------------------------------------------------------------
 

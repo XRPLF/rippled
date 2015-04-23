@@ -379,8 +379,8 @@ public:
 
                 terResult = mEngine->view ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
             }
-            else if (bReserveIncrease
-                     && mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
+            // Reserve is not scaled by load.
+            else if (bReserveIncrease && mPriorBalance < uReserveCreate)
             {
                 m_journal.trace <<
                     "Delay transaction: Insufficent reserve to add trust line.";
@@ -405,7 +405,7 @@ public:
                 "Redundant: Setting non-existent ripple line to defaults.";
             return tecNO_LINE_REDUNDANT;
         }
-        else if (mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
+        else if (mPriorBalance < uReserveCreate) // Reserve is not scaled by load.
         {
             m_journal.trace <<
                 "Delay transaction: Line does not exist. Insufficent reserve to create line.";

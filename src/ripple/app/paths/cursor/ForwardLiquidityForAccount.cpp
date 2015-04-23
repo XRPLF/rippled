@@ -158,6 +158,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                     : mulRound (
                           previousNode().saFwdIssue,
                           STAmount (noIssue(), uQualityIn, -9),
+                          previousNode().saFwdIssue.issue (),
                           true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.

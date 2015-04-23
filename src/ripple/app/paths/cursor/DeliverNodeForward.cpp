@@ -102,11 +102,12 @@ TER PathCursor::deliverNodeForward (
             auto saInFunded = mulRound (
                 saOutPassFunded,
                 node().saOfrRate,
-                node().saTakerPays,
+                node().saTakerPays.issue (),
                 true);
 
             // Offer maximum in with fees.
-            auto saInTotal = mulRound (saInFunded, saInFeeRate, true);
+            auto saInTotal = mulRound (saInFunded, saInFeeRate,
+                saInFunded.issue (), true);
             auto saInRemaining = saInReq - saInAct - saInFees;
 
             if (saInRemaining < zero)
@@ -118,11 +119,11 @@ TER PathCursor::deliverNodeForward (
             // In without fees.
             auto saInPassAct = std::min (
                 node().saTakerPays, divRound (
-                    saInSum, saInFeeRate, true));
+                    saInSum, saInFeeRate, saInSum.issue (), true));
 
             // Out limited by in remaining.
             auto outPass = divRound (
-                saInPassAct, node().saOfrRate, node().saTakerGets, true);
+                saInPassAct, node().saOfrRate, node().saTakerGets.issue (), true);
             STAmount saOutPassMax    = std::min (saOutPassFunded, outPass);
 
             STAmount saInPassFeesMax = saInSum - saInPassAct;
@@ -238,10 +239,10 @@ TER PathCursor::deliverNodeForward (
 
                     assert (saOutPassAct < saOutPassMax);
                     auto inPassAct = mulRound (
-                        saOutPassAct, node().saOfrRate, saInReq, true);
+                        saOutPassAct, node().saOfrRate, saInReq.issue (), true);
                     saInPassAct = std::min (node().saTakerPays, inPassAct);
                     auto inPassFees = mulRound (
-                        saInPassAct, saInFeeRate, true);
+                        saInPassAct, saInFeeRate, saInPassAct.issue (), true);
                     saInPassFees    = std::min (saInPassFeesMax, inPassFees);
                 }
 

@@ -430,7 +430,7 @@ namespace {
 // total number of paths we have to evaluate.
 STAmount smallestUsefulAmount (STAmount const& amount, int maxPaths)
 {
-    return divide (amount, STAmount (maxPaths + 2), amount);
+    return divide (amount, STAmount (maxPaths + 2), amount.issue ());
 }
 
 } // namespace
