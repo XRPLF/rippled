@@ -31,6 +31,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/TxFormats.h>
+#include <ripple/protocol/impl/STVar.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>
@@ -140,14 +141,14 @@ static Json::Value singleton_expected (std::string const& object,
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
-static std::unique_ptr <STBase> parseLeaf (
+static boost::optional<detail::STVar> parseLeaf (
     std::string const& json_name,
     std::string const& fieldName,
     SField const* name,
     Json::Value const& value,
     Json::Value& error)
 {
-    std::unique_ptr <STBase> ret;
+    boost::optional <detail::STVar> ret;
 
     auto const& field = SField::getField (fieldName);
 
@@ -174,7 +175,7 @@ static std::unique_ptr <STBase> parseLeaf (
                     return ret;
                 }
 
-                ret = std::make_unique <STUInt8> (field,
+                ret = detail::make_stvar <STUInt8> (field,
                     range_check_cast <unsigned char> (
                         value.asInt (), 0, 255));
             }
@@ -186,7 +187,7 @@ static std::unique_ptr <STBase> parseLeaf (
                     return ret;
                 }
 
-                ret = std::make_unique <STUInt8> (field,
+                ret = detail::make_stvar <STUInt8> (field,
                     range_check_cast <unsigned char> (
                         value.asUInt (), 0, 255));
             }
@@ -218,7 +219,7 @@ static std::unique_ptr <STBase> parseLeaf (
                         TxType const txType (TxFormats::getInstance().
                             findTypeByName (strValue));
 
-                        ret = std::make_unique <STUInt16> (field,
+                        ret = detail::make_stvar <STUInt16> (field,
                             static_cast <std::uint16_t> (txType));
 
                         if (*name == sfGeneric)
@@ -230,7 +231,7 @@ static std::unique_ptr <STBase> parseLeaf (
                             LedgerFormats::getInstance().
                                 findTypeByName (strValue));
 
-                        ret = std::make_unique <STUInt16> (field,
+                        ret = detail::make_stvar <STUInt16> (field,
                             static_cast <std::uint16_t> (type));
 
                         if (*name == sfGeneric)
@@ -244,19 +245,19 @@ static std::unique_ptr <STBase> parseLeaf (
                 }
                 else
                 {
-                    ret = std::make_unique <STUInt16> (field,
+                    ret = detail::make_stvar <STUInt16> (field,
                         beast::lexicalCastThrow <std::uint16_t> (strValue));
                 }
             }
             else if (value.isInt ())
             {
-                ret = std::make_unique <STUInt16> (field,
+                ret = detail::make_stvar <STUInt16> (field,
                     range_check_cast <std::uint16_t> (
                         value.asInt (), 0, 65535));
             }
             else if (value.isUInt ())
             {
-                ret = std::make_unique <STUInt16> (field,
+                ret = detail::make_stvar <STUInt16> (field,
                     range_check_cast <std::uint16_t> (
                         value.asUInt (), 0, 65535));
             }
@@ -279,19 +280,19 @@ static std::unique_ptr <STBase> parseLeaf (
         {
             if (value.isString ())
             {
-                ret = std::make_unique <STUInt32> (field,
+                ret = detail::make_stvar <STUInt32> (field,
                     beast::lexicalCastThrow <std::uint32_t> (
                         value.asString ()));
             }
             else if (value.isInt ())
             {
-                ret = std::make_unique <STUInt32> (field,
+                ret = detail::make_stvar <STUInt32> (field,
                     range_check_cast <std::uint32_t> (
                         value.asInt (), 0u, 4294967295u));
             }
             else if (value.isUInt ())
             {
-                ret = std::make_unique <STUInt32> (field,
+                ret = detail::make_stvar <STUInt32> (field,
                     static_cast <std::uint32_t> (value.asUInt ()));
             }
             else
@@ -313,18 +314,18 @@ static std::unique_ptr <STBase> parseLeaf (
         {
             if (value.isString ())
             {
-                ret = std::make_unique <STUInt64> (field,
+                ret = detail::make_stvar <STUInt64> (field,
                     uintFromHex (value.asString ()));
             }
             else if (value.isInt ())
             {
-                ret = std::make_unique <STUInt64> (field,
+                ret = detail::make_stvar <STUInt64> (field,
                     range_check_cast<std::uint64_t> (
                         value.asInt (), 0, 18446744073709551615ull));
             }
             else if (value.isUInt ())
             {
-                ret = std::make_unique <STUInt64> (field,
+                ret = detail::make_stvar <STUInt64> (field,
                     static_cast <std::uint64_t> (value.asUInt ()));
             }
             else
@@ -346,7 +347,7 @@ static std::unique_ptr <STBase> parseLeaf (
         {
             if (value.isString ())
             {
-                ret = std::make_unique <STHash128> (field, value.asString ());
+                ret = detail::make_stvar <STHash128> (field, value.asString ());
             }
             else
             {
@@ -367,7 +368,7 @@ static std::unique_ptr <STBase> parseLeaf (
         {
             if (value.isString ())
             {
-                ret = std::make_unique <STHash160> (field, value.asString ());
+                ret = detail::make_stvar <STHash160> (field, value.asString ());
             }
             else
             {
@@ -388,7 +389,7 @@ static std::unique_ptr <STBase> parseLeaf (
         {
             if (value.isString ())
             {
-                ret = std::make_unique <STHash256> (field, value.asString ());
+                ret = detail::make_stvar <STHash256> (field, value.asString ());
             }
             else
             {
@@ -418,7 +419,7 @@ static std::unique_ptr <STBase> parseLeaf (
             if (!vBlob.second)
                 throw std::invalid_argument ("invalid data");
 
-            ret = std::make_unique <STBlob> (field, vBlob.first.data (),
+            ret = detail::make_stvar <STBlob> (field, vBlob.first.data (),
                                              vBlob.first.size ());
         }
         catch (...)
@@ -432,7 +433,7 @@ static std::unique_ptr <STBase> parseLeaf (
     case STI_AMOUNT:
         try
         {
-            ret = std::make_unique <STAmount> (amountFromJson (field, value));
+            ret = detail::make_stvar <STAmount> (amountFromJson (field, value));
         }
         catch (...)
         {
@@ -451,15 +452,14 @@ static std::unique_ptr <STBase> parseLeaf (
 
         try
         {
-            std::unique_ptr <STVector256> tail =
-                std::make_unique <STVector256> (field);
+            STVector256 tail (field);
             for (Json::UInt i = 0; value.isValidIndex (i); ++i)
             {
                 uint256 s;
                 s.SetHex (value[i].asString ());
-                tail->push_back (s);
+                tail.push_back (s);
             }
-            ret = std::move (tail);
+            ret = detail::make_stvar <STVector256> (std::move (tail));
         }
         catch (...)
         {
@@ -478,8 +478,7 @@ static std::unique_ptr <STBase> parseLeaf (
 
         try
         {
-            std::unique_ptr <STPathSet> tail =
-                std::make_unique <STPathSet> (field);
+            STPathSet tail (field);
 
             for (Json::UInt i = 0; value.isValidIndex (i); ++i)
             {
@@ -597,9 +596,9 @@ static std::unique_ptr <STBase> parseLeaf (
                     p.emplace_back (uAccount, uCurrency, uIssuer, hasCurrency);
                 }
 
-                tail->push_back (p);
+                tail.push_back (p);
             }
-            ret = std::move (tail);
+            ret = detail::make_stvar <STPathSet> (std::move (tail));
         }
         catch (...)
         {
@@ -625,7 +624,7 @@ static std::unique_ptr <STBase> parseLeaf (
                 {
                     Account account;
                     account.SetHex (strValue);
-                    ret = std::make_unique <STAccount> (field, account);
+                    ret = detail::make_stvar <STAccount> (field, account);
                 }
                 else
                 {
@@ -639,7 +638,7 @@ static std::unique_ptr <STBase> parseLeaf (
                     }
 
                     ret =
-                        std::make_unique <STAccount> (field, a.getAccountID ());
+                        detail::make_stvar <STAccount> (field, a.getAccountID ());
                 }
             }
             catch (...)
@@ -661,42 +660,37 @@ static std::unique_ptr <STBase> parseLeaf (
 static const int maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
-static bool parseArray (
+static boost::optional <detail::STVar> parseArray (
     std::string const& json_name,
     Json::Value const& json,
     SField const& inName,
     int depth,
-    std::unique_ptr <STArray>& sub_array,
     Json::Value& error);
 
 
 
-static bool parseObject (
+static boost::optional <STObject> parseObject (
     std::string const& json_name,
     Json::Value const& json,
     SField const& inName,
     int depth,
-    std::unique_ptr <STObject>& sub_object,
     Json::Value& error)
 {
     if (! json.isObject ())
     {
         error = not_an_object (json_name);
-        return false;
+        return boost::none;
     }
 
     if (depth > maxDepth)
     {
         error = too_deep (json_name);
-        return false;
+        return boost::none;
     }
 
-    auto name (&inName);
+    STObject data (inName);
 
-    boost::ptr_vector<STBase> data;
-    Json::Value::Members members (json.getMemberNames ());
-
-    for (auto const& fieldName : members)
+    for (auto const& fieldName : json.getMemberNames ())
     {
         Json::Value const& value = json [fieldName];
 
@@ -705,7 +699,7 @@ static bool parseObject (
         if (field == sfInvalid)
         {
             error = unknown_field (json_name, fieldName);
-            return false;
+            return boost::none;
         }
 
         switch (field.fieldType)
@@ -719,22 +713,21 @@ static bool parseObject (
             if (! value.isObject ())
             {
                 error = not_an_object (json_name, fieldName);
-                return false;
+                return boost::none;
             }
 
             try
             {
-                std::unique_ptr <STObject> sub_object_;
-                bool const success (parseObject (json_name + "." + fieldName,
-                    value, field, depth + 1, sub_object_, error));
-                if (! success)
-                    return false;
-                data.push_back (sub_object_.release ());
+                auto ret = parseObject (json_name + "." + fieldName,
+                    value, field, depth + 1, error);
+                if (! ret)
+                    return boost::none;
+                data.emplace_back (std::move (*ret));
             }
             catch (...)
             {
                 error = invalid_data (json_name, fieldName);
-                return false;
+                return boost::none;
             }
 
             break;
@@ -743,17 +736,16 @@ static bool parseObject (
         case STI_ARRAY:
             try
             {
-                std::unique_ptr <STArray> sub_array_;
-                bool const success (parseArray (json_name + "." + fieldName,
-                    value, field, depth + 1, sub_array_, error));
-                if (! success)
-                    return false;
-                data.push_back (sub_array_.release ());
+                auto array = parseArray (json_name + "." + fieldName,
+                    value, field, depth + 1, error);
+                if (array == boost::none)
+                    return boost::none;
+                data.emplace_back (std::move (*array));
             }
             catch (...)
             {
                 error = invalid_data (json_name, fieldName);
-                return false;
+                return boost::none;
             }
 
             break;
@@ -761,46 +753,44 @@ static bool parseObject (
         // Everything else (types that don't recurse).
         default:
             {
-                std::unique_ptr <STBase> serTyp =
-                    parseLeaf (json_name, fieldName, name, value, error);
+                auto leaf =
+                    parseLeaf (json_name, fieldName, &inName, value, error);
 
-                if (!serTyp)
-                    return false;
+                if (!leaf)
+                    return boost::none;
 
-                data.push_back (serTyp.release ());
+                data.emplace_back (std::move (*leaf));
             }
 
             break;
         }
     }
 
-    sub_object = std::make_unique <STObject> (*name, data);
-    return true;
+    return std::move (data);
 }
 
-static bool parseArray (
+static boost::optional <detail::STVar> parseArray (
     std::string const& json_name,
     Json::Value const& json,
     SField const& inName,
     int depth,
-    std::unique_ptr <STArray>& sub_array,
     Json::Value& error)
 {
     if (! json.isArray ())
     {
         error = not_an_array (json_name);
-        return false;
+        return boost::none;
     }
 
     if (depth > maxDepth)
     {
         error = too_deep (json_name);
-        return false;
+        return boost::none;
     }
 
     try
     {
-        std::unique_ptr <STArray> tail = std::make_unique <STArray> (inName);
+        STArray tail (inName);
 
         for (Json::UInt i = 0; json.isValidIndex (i); ++i)
         {
@@ -810,7 +800,7 @@ static bool parseArray (
             if (!isObject || !singleKey)
             {
                 error = singleton_expected (json_name, i);
-                return false;
+                return boost::none;
             }
 
             // TODO: There doesn't seem to be a nice way to get just the
@@ -822,35 +812,34 @@ static bool parseArray (
             if (nameField == sfInvalid)
             {
                 error = unknown_field (json_name, objectName);
-                return false;
+                return boost::none;
             }
 
             Json::Value const objectFields (json[i][objectName]);
 
-            std::unique_ptr <STObject> sub_object_;
-            {
-                std::stringstream ss;
-                ss << json_name << "." <<
-                    "[" << i << "]." << objectName;
-                bool const success (parseObject (ss.str (), objectFields,
-                    nameField, depth + 1, sub_object_, error));
+            std::stringstream ss;
+            ss << json_name << "." <<
+                "[" << i << "]." << objectName;
 
-                if (! success ||
-                    (sub_object_->getFName().fieldType != STI_OBJECT))
-                {
-                    return false;
-                }
-            }
-            tail->push_back (*sub_object_);
+            auto ret = parseObject (ss.str (), objectFields,
+                nameField, depth + 1, error);
+
+            if (! ret ||
+                (ret->getFName().fieldType != STI_OBJECT))
+	    {
+	        return boost::none;
+	    }
+
+            tail.push_back (std::move (*ret));
         }
-        sub_array = std::move (tail);
+
+        return detail::make_stvar <STArray> (std::move (tail));
     }
     catch (...)
     {
         error = invalid_data (json_name);
-        return false;
+        return boost::none;
     }
-    return true;
 }
 
 } // STParsedJSONDetail
@@ -862,7 +851,7 @@ STParsedJSONObject::STParsedJSONObject (
     Json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    parseObject (name, json, sfGeneric, 0, object, error);
+    object = std::move (parseObject (name, json, sfGeneric, 0, error));
 }
 
 //------------------------------------------------------------------------------
@@ -872,7 +861,17 @@ STParsedJSONArray::STParsedJSONArray (
     Json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    parseArray (name, json, sfGeneric, 0, array, error);
+    auto arr = parseArray (name, json, sfGeneric, 0, error);
+    if (!arr)
+        array = boost::none;
+    else
+    {
+        auto p = dynamic_cast <STArray*> (&arr->get());
+        if (p == nullptr)
+            array = boost::none;
+        else
+            array = std::move (*p);
+    }
 }
 
 

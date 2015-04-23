@@ -445,15 +445,14 @@ transactionSign (
     }
 
     STParsedJSONObject parsed (std::string (jss::tx_json), tx_json);
-    if (!parsed.object.get())
+    if (! parsed.object)
     {
         jvResult [jss::error] = parsed.error [jss::error];
         jvResult [jss::error_code] = parsed.error [jss::error_code];
         jvResult [jss::error_message] = parsed.error [jss::error_message];
         return jvResult;
     }
-    std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
-    sopTrans->setFieldVL (
+    parsed.object->setFieldVL (
         sfSigningPubKey,
         keypair.publicKey.getAccountPublic());
 
@@ -461,7 +460,7 @@ transactionSign (
 
     try
     {
-        stpTrans = std::make_shared<STTx> (*sopTrans);
+        stpTrans = std::make_shared<STTx> (std::move (*parsed.object));
     }
     catch (std::exception&)
     {

@@ -71,16 +71,6 @@ STObject::STObject (SOTemplate const& type,
     setType (type);
 }
 
-STObject::STObject (SField const& name,
-        boost::ptr_vector<STBase>& data)
-    : STBase (name)
-    , mType (nullptr)
-{
-    v_.reserve(data.size());
-    for (auto const& b : data)
-        v_.emplace_back(b);
-}
-
 STObject::STObject (SerialIter& sit, SField const& name)
     : STBase(name)
     , mType(nullptr)

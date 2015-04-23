@@ -112,12 +112,11 @@ STTx
 parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign)
 {
     STParsedJSONObject parsed("tx_json", tx_json);
-    std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
-    if (sopTrans == nullptr)
+    if (!parsed.object)
         throw std::runtime_error(
-        "sopTrans == nullptr");
-    sopTrans->setFieldVL(sfSigningPubKey, account.pk.getAccountPublic());
-    auto tx = STTx(*sopTrans);
+        "object not parseable");
+    parsed.object->setFieldVL(sfSigningPubKey, account.pk.getAccountPublic());
+    auto tx = STTx(std::move (*parsed.object));
     if (sign)
         tx.sign(account.sk);
     return tx;

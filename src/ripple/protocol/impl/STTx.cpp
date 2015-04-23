@@ -25,7 +25,6 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -54,8 +53,8 @@ STTx::STTx (TxType type)
     setFieldU16 (sfTransactionType, format->getType ());
 }
 
-STTx::STTx (STObject const& object)
-    : STObject (object)
+STTx::STTx (STObject&& object)
+    : STObject (std::move (object))
     , sig_state_ (boost::indeterminate)
 {
     tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
