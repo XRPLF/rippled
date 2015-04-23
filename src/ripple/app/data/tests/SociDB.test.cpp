@@ -354,22 +354,6 @@ public:
                 soci::into (validationsLH);
             expect (ledgersLS.size () == numRows &&
                     validationsLH.size () == numRows);
-            s << "DELETE FROM Validations WHERE LedgerHash IN "
-                 "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
-                 "Validations.LedgerHash=Ledgers.LedgerHash WHERE "
-                 "Ledgers.LedgerSeq < :num);",
-                soci::use (numRows / 2);
-            validationsLH.resize (numRows * 2);
-            s << "SELECT LedgerHash FROM Validations;",
-                soci::into (validationsLH);
-            expect (validationsLH.size () == numRows / 2);
-            for (auto i = ledgerHashes.begin () + numRows / 2;
-                 i != ledgerHashes.end ();
-                 ++i)
-            {
-                expect (find (validationsLH.begin (), validationsLH.end (), *i)
-                        != validationsLH.end ());
-            }
         }
         using namespace boost::filesystem;
         // Remove the database
