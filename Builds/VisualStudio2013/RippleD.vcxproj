@@ -4496,6 +4496,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\core\values.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\src\core\version.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>
     <ClCompile Include="..\..\src\sqlite\sqlite.unity.c">
