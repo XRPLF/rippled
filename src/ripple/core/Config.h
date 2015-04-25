@@ -28,8 +28,10 @@
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/core/files/File.h>
 #include <beast/utility/ci_char_traits.h>
-#include <boost/filesystem.hpp>
+#include <boost/asio/ip/tcp.hpp> // VFALCO FIX: This include should not be here
+#include <boost/filesystem.hpp> // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -250,6 +252,10 @@ public:
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;
+
+    // These override the command line client settings
+    boost::optional<boost::asio::ip::address_v4> rpc_ip;
+    boost::optional<std::uint16_t> rpc_port;
 
 public:
     Config ();
