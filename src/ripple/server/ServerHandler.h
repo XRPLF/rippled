@@ -47,9 +47,9 @@ public:
         // Memberspace
         struct client_t
         {
-            bool secure;
+            bool secure = false;
             std::string ip;
-            std::uint16_t port;
+            std::uint16_t port = 0;
             std::string user;
             std::string password;
             std::string admin_user;

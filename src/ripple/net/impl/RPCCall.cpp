@@ -1019,7 +1019,21 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         }
         else
         {
-            auto const setup = setup_ServerHandler(getConfig(), std::cerr);
+            ServerHandler::Setup setup;
+            try
+            {
+                std::stringstream ss;
+                setup = setup_ServerHandler(getConfig(), ss);
+            }
+            catch(...)
+            {
+                // eat this
+            }
+
+            if (getConfig().rpc_ip)
+                setup.client.ip = getConfig().rpc_ip->to_string();
+            if (getConfig().rpc_port)
+                setup.client.port = *getConfig().rpc_port;
 
             Json::Value jvParams (Json::arrayValue);
 

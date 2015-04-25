@@ -245,6 +245,8 @@ int run (int argc, char** argv)
     ("help,h", "Display this message.")
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
+    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
+    ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("shutdowntest", po::value <std::string> ()->implicit_value (""), "Perform shutdown tests.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
@@ -419,6 +421,41 @@ int run (int argc, char** argv)
     if (iResult == 0)
     {
         // These overrides must happen after the config file is loaded.
+
+        // Override the RPC destination IP address
+        //
+        if (vm.count ("rpc_ip"))
+        {
+            try
+            {
+                getConfig().rpc_ip =
+                    boost::asio::ip::address_v4::from_string(
+                        vm["rpc_ip"].as<std::string>());
+            }
+            catch(...)
+            {
+                std::cerr <<
+                    "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>();
+                return -1;
+            }
+        }
+
+        // Override the RPC destination port number
+        //
+        if (vm.count ("rpc_port"))
+        {
+            try
+            {
+                getConfig().rpc_port = vm["rpc_port"].as<int>();
+            }
+            catch(...)
+            {
+                std::cerr <<
+                    "Invalid rpc_port = " << vm["rpc_port"].as<std::string>();
+                return -1;
+            }
+        }
+
         if (vm.count ("quorum"))
         {
             getConfig ().VALIDATION_QUORUM = vm["quorum"].as <int> ();
