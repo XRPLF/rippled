@@ -26,6 +26,7 @@
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_container_utility.h>
 #include <boost/optional.hpp>
+#include <atomic>
 
 namespace ripple {
 namespace PeerFinder {
@@ -162,7 +163,7 @@ private:
     boost::optional <RipplePublicKey> m_public_key;
 
     static std::int32_t BEAST_CONSTEXPR unknownPort = -1;
-    std::atomic <std::int32_t> m_listening_port = unknownPort;
+    std::atomic <std::int32_t> m_listening_port;
 
 public:
     // DEPRECATED public data members
