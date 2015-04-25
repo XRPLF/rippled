@@ -18,30 +18,35 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/Time.h>
+#include <ripple/basics/TestSuite.h>
 
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/make_SSLContext.cpp>
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/strHex.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/TestSuite.test.cpp>
-#include <ripple/basics/impl/ThreadName.cpp>
-#include <ripple/basics/impl/Time.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
+namespace ripple {
 
-#include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
-#include <ripple/basics/tests/hardened_hash_test.cpp>
-#include <ripple/basics/tests/KeyCache.test.cpp>
-#include <ripple/basics/tests/RangeSet.test.cpp>
-#include <ripple/basics/tests/StringUtilities.test.cpp>
-#include <ripple/basics/tests/TaggedCache.test.cpp>
-#include <ripple/basics/tests/Time.test.cpp>
+class Time_test : public TestSuite
+{
+public:
+    void test_timestamp() {
+        expectEquals (timestamp (nullptr, 1428444687),
+                      "Tue, 07 Apr 2015 22:11:27 +0000");
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
-#endif
+        expectEquals (timestamp ("%A %B %C %G %p", 1428444687),
+                      "Tuesday April 20 2015 PM");
+
+        // Check we calculate capacity properly.
+        expectEquals (timestamp ("%r", 11428444687),
+                      "03:58:07 PM");
+
+        expectEquals (timestamp ("%r %r", 11428444687),
+                      "03:58:07 PM 03:58:07 PM");
+    }
+
+    void run ()
+    {
+        test_timestamp();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(Time, basics, ripple);
+
+} // ripple

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/Time.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/BuildInfo.h>
@@ -29,21 +30,6 @@
 namespace ripple {
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
-
-std::string getHTTPHeaderTimestamp ()
-{
-    // CHECKME This is probably called often enough that optimizing it makes
-    //         sense. There's no point in doing all this work if this function
-    //         gets called multiple times a second.
-    char buffer[96];
-    time_t now;
-    time (&now);
-    struct tm* now_gmt = gmtime (&now);
-    strftime (buffer, sizeof (buffer),
-        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
-        now_gmt);
-    return std::string (buffer);
-}
 
 void HTTPReply (
     int nStatus, std::string const& content, Json::Output const& output)
@@ -56,12 +42,16 @@ void HTTPReply (
     if (nStatus == 401)
     {
         output ("HTTP/1.0 401 Authorization Required\r\n");
-        output (getHTTPHeaderTimestamp ());
+        output ("Date: ");
+        output (timestamp ());
+        output ("\r\n");
 
         // CHECKME this returns a different version than the replies below. Is
         //         this by design or an accident or should it be using
         //         BuildInfo::getFullVersionString () as well?
-        output ("Server: " + systemName () + "-json-rpc/v1");
+        output ("Server: ");
+        output (systemName ());
+        output ("-json-rpc/v1");
         output ("\r\n");
 
         // Be careful in modifying this! If you change the contents you MUST
@@ -95,7 +85,9 @@ void HTTPReply (
     case 500: output ("HTTP/1.1 500 Internal Server Error\r\n"); break;
     }
 
-    output (getHTTPHeaderTimestamp ());
+    output ("Date: ");
+    output (timestamp ());
+    output ("\r\n");
 
     output ("Connection: Keep-Alive\r\n"
             "Content-Length: ");
@@ -108,7 +100,9 @@ void HTTPReply (
     output ("\r\n"
             "Content-Type: application/json; charset=UTF-8\r\n");
 
-    output ("Server: " + systemName () + "-json-rpc/");
+    output ("Server: ");
+    output (systemName ());
+    output ("-json-rpc/");
     output (BuildInfo::getFullVersionString ());
     output ("\r\n"
             "\r\n");
