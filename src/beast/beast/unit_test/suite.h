@@ -23,6 +23,7 @@
 #include <beast/unit_test/runner.h>
 
 #include <beast/utility/noexcept.h>
+#include <beast/utility/Journal.h>
 #include <string>
 #include <sstream>
 
@@ -116,6 +117,28 @@ private:
         operator<< (T const& t);
         /** @} */
     };
+
+protected:
+    // Memberspace
+    class TestSink : public Journal::Sink
+    {
+        beast::unit_test::suite& suite_;
+
+    public:
+        TestSink(beast::unit_test::suite& suite)
+            : suite_(suite)
+        {
+        }
+
+        void
+        write(beast::Journal::Severity level,
+            std::string const& text) override
+        {
+            suite_.log << text;
+        }
+    };
+
+
 
 public:
     /** Type for scoped stream logging.
