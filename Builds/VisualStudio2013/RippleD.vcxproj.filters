@@ -3213,6 +3213,12 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\ConnectAttempt.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\GetLedgerTracker.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\GetLedgerTracker.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>

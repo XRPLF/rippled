@@ -57,6 +57,7 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , id_(id)
     , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
     , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
+    , g_sink_ (deprecatedLogs().journal("GetLedger"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_(p_sink_)
     , ssl_bundle_(std::move(ssl_bundle))
@@ -78,6 +79,7 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , slot_ (slot)
     , http_message_(std::move(request))
     , validatorsConnection_(getApp().getValidators().newConnection(id))
+    , getLedgerTracker_ (beast::Journal(g_sink_))
 {
 }
 
@@ -180,7 +182,8 @@ PeerImp::send (Message::pointer const& m)
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind (
-            &PeerImp::send, shared_from_this(), m));
+            (void(PeerImp::*)(Message::pointer const&))
+                &PeerImp::send, shared_from_this(), m));
     if(gracefulClose_)
         return;
     if(detaching_)
@@ -194,6 +197,30 @@ PeerImp::send (Message::pointer const& m)
             &PeerImp::onWriteMessage, shared_from_this(),
                 beast::asio::placeholders::error,
                     beast::asio::placeholders::bytes_transferred)));
+}
+
+void
+PeerImp::send (protocol::TMGetLedger& m)
+{
+    getLedgerTracker_.onSend(m);
+    send(std::make_shared<Message>(
+        m, protocol::mtGET_LEDGER));
+}
+
+void
+PeerImp::send (protocol::TMLedgerData& m)
+{
+    getLedgerTracker_.onSend(m);
+    send(std::make_shared<Message>(
+        m, protocol::mtLEDGER_DATA));
+}
+
+void
+PeerImp::send (protocol::TMGetObjectByHash const& m)
+{
+    getLedgerTracker_.onSend(m);
+    send(std::make_shared<Message>(
+        m, protocol::mtGET_OBJECTS));
 }
 
 void
@@ -968,6 +995,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
 {
     protocol::TMLedgerData& packet = *m;
 
+    getLedgerTracker_.onReceive(packet);
+
     if (m->nodes ().size () <= 0)
     {
         p_journal_.warning << "Ledger/TXset data with no nodes";
@@ -980,8 +1009,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
         if (target)
         {
             m->clear_requestcookie ();
-            target->send (std::make_shared<Message> (
-                packet, protocol::mtLEDGER_DATA));
+            target->send (packet);
         }
         else
         {
@@ -1367,6 +1395,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 {
     protocol::TMGetObjectByHash& packet = *m;
 
+    getLedgerTracker_.onReceive(packet);
+
     if (packet.query ())
     {
         // this is a query
@@ -1422,7 +1452,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
         p_journal_.trace <<
             "GetObj: " << reply.objects_size () <<
                 " of " << packet.objects_size ();
-        send (std::make_shared<Message> (reply, protocol::mtGET_OBJECTS));
+        send (reply);
     }
     else
     {
@@ -1800,11 +1830,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                     return;
                 }
 
-                auto const& p =
-                    v[rand () % v.size ()];
+                auto const& p = v[rand () % v.size ()];
                 packet.set_requestcookie (id ());
-                p->send (std::make_shared<Message> (
-                    packet, protocol::mtGET_LEDGER));
+                p->send (packet);
                 return;
             }
 
@@ -1874,8 +1902,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
                 auto const& p = v[rand () % v.size ()];
                 packet.set_requestcookie (id ());
-                p->send (std::make_shared<Message>(
-                    packet, protocol::mtGET_LEDGER));
+                p->send (packet);
                 p_journal_.debug <<
                     "GetLedger: Request routed";
                 return;
@@ -1981,9 +2008,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 }
             }
 
-            Message::pointer oPacket = std::make_shared<Message> (
-                reply, protocol::mtLEDGER_DATA);
-            send (oPacket);
+            send (reply);
             return;
         }
 
@@ -2075,9 +2100,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    Message::pointer oPacket = std::make_shared<Message> (
-        reply, protocol::mtLEDGER_DATA);
-    send (oPacket);
+    send (reply);
 }
 
 void

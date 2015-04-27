@@ -56,6 +56,18 @@ public:
     send (Message::pointer const& m) = 0;
 
     virtual
+    void
+    send (protocol::TMGetLedger& m) = 0;
+
+    virtual
+    void
+    send (protocol::TMLedgerData& m) = 0;
+
+    virtual
+    void
+    send (protocol::TMGetObjectByHash const& m) = 0;
+
+    virtual
     beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
