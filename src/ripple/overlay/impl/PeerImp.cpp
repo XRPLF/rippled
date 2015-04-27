@@ -1706,6 +1706,42 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
     }
 }
 
+// Returns the set of peers that can help us get
+// the TX tree with the specified root hash.
+//
+static
+std::vector<std::shared_ptr<PeerImp>>
+getPeersWithTree (OverlayImpl& ov,
+    uint256 const& rootHash, PeerImp const* skip)
+{
+    std::vector<std::shared_ptr<PeerImp>> v;
+    ov.for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (p->hasTxSet(rootHash) && p.get() != skip)
+            v.push_back(p);
+    });
+    return v;
+}
+
+// Returns the set of peers that claim
+// to have the specified ledger.
+//
+static
+std::vector<std::shared_ptr<PeerImp>>
+getPeersWithLedger (OverlayImpl& ov,
+    uint256 const& ledgerHash, LedgerIndex ledger,
+        PeerImp const* skip)
+{
+    std::vector<std::shared_ptr<PeerImp>> v;
+    ov.for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (p->hasLedger(ledgerHash, ledger) &&
+                p.get() != skip)
+            v.push_back(p);
+    });
+    return v;
+}
+
 // VFALCO NOTE This function is way too big and cumbersome.
 void
 PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
@@ -1745,44 +1781,19 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 p_journal_.debug <<
                     "GetLedger: Routing Tx set request";
 
-                struct get_usable_peers
-                {
-                    typedef Overlay::PeerSequence return_type;
-
-                    Overlay::PeerSequence usablePeers;
-                    uint256 const& txHash;
-                    Peer const* skip;
-
-                    get_usable_peers(uint256 const& hash, Peer const* s)
-                        : txHash(hash), skip(s)
-                    { }
-
-                    void operator() (Peer::ptr const& peer)
-                    {
-                        if (peer->hasTxSet (txHash) && (peer.get () != skip))
-                            usablePeers.push_back (peer);
-                    }
-
-                    return_type operator() ()
-                    {
-                        return usablePeers;
-                    }
-                };
-
-                Overlay::PeerSequence usablePeers (overlay_.foreach (
-                    get_usable_peers (txHash, this)));
-
-                if (usablePeers.empty ())
+                auto const v = getPeersWithTree(
+                    overlay_, txHash, this);
+                if (v.empty())
                 {
                     p_journal_.info <<
                         "GetLedger: Route TX set failed";
                     return;
                 }
 
-                Peer::ptr const& selectedPeer = usablePeers [
-                    rand () % usablePeers.size ()];
+                auto const& p =
+                    v[rand () % v.size ()];
                 packet.set_requestcookie (id ());
-                selectedPeer->send (std::make_shared<Message> (
+                p->send (std::make_shared<Message> (
                     packet, protocol::mtGET_LEDGER));
                 return;
             }
@@ -1842,26 +1853,19 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (packet.has_ledgerseq ())
                     seq = packet.ledgerseq ();
 
-                Overlay::PeerSequence peerList = overlay_.getActivePeers ();
-                Overlay::PeerSequence usablePeers;
-                for (auto const& peer : peerList)
-                {
-                    if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
-                        usablePeers.push_back (peer);
-                }
-
-                if (usablePeers.empty ())
+                auto const v = getPeersWithLedger(
+                    overlay_, ledgerhash, seq, this);
+                if (v.empty ())
                 {
                     p_journal_.trace <<
                         "GetLedger: Cannot route";
                     return;
                 }
 
-                Peer::ptr const& selectedPeer = usablePeers [
-                    rand () % usablePeers.size ()];
+                auto const& p = v[rand () % v.size ()];
                 packet.set_requestcookie (id ());
-                selectedPeer->send (
-                    std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
+                p->send (std::make_shared<Message>(
+                    packet, protocol::mtGET_LEDGER));
                 p_journal_.debug <<
                     "GetLedger: Request routed";
                 return;
