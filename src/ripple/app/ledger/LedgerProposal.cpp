@@ -70,6 +70,15 @@ uint256 LedgerProposal::getSigningHash () const
     return s.getSHA512Half ();
 }
 
+/*
+The "id" is a unique value computed on all fields that contribute to
+the signature, and including the signature. There is one caveat, the
+"last closed ledger" field may be omitted. However, the signer still
+computes the signature as if this field was present. Recipients of
+the proposal need to inject the last closed ledger in order to
+validate the signature. If the last closed ledger is left out, then
+it is considered as all zeroes for the purposes of signing.
+*/
 // Compute a unique identifier for this signed proposal
 uint256 LedgerProposal::computeSuppressionID (
     uint256 const& proposeHash,
