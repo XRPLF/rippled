@@ -123,8 +123,8 @@ private:
         // need to see the container declaration.
         struct stashed
         {
-            typedef typename aged_unordered_container::value_type value_type;
-            typedef typename aged_unordered_container::time_point time_point;
+            using value_type = typename aged_unordered_container::value_type;
+            using time_point = typename aged_unordered_container::time_point;
         };
 
         element (
@@ -248,11 +248,10 @@ private:
         }
     };
 
-    typedef typename boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <false>
-            >::type list_type;
+    using list_type = typename boost::intrusive::make_list <element,
+        boost::intrusive::constant_time_size <false>>::type ;
 
-    typedef typename std::conditional <
+    using cont_type = typename std::conditional <
         IsMulti,
         typename boost::intrusive::make_unordered_multiset <element,
             boost::intrusive::constant_time_size <true>,
@@ -266,18 +265,18 @@ private:
             boost::intrusive::equal <KeyValueEqual>,
             boost::intrusive::cache_begin <true>
                     >::type
-        >::type cont_type;
+        >::type;
 
-    typedef typename cont_type::bucket_type bucket_type;
-    typedef typename cont_type::bucket_traits bucket_traits;
+    using bucket_type = typename cont_type::bucket_type;
+    using bucket_traits = typename cont_type::bucket_traits;
 
-    typedef typename std::allocator_traits <
-        Allocator>::template rebind_alloc <element> ElementAllocator;
+    using ElementAllocator = typename std::allocator_traits <
+        Allocator>::template rebind_alloc <element>;
 
     using ElementAllocatorTraits = std::allocator_traits <ElementAllocator>;
 
-    typedef typename std::allocator_traits <
-        Allocator>::template rebind_alloc <element> BucketAllocator;
+    using BucketAllocator = typename std::allocator_traits <
+        Allocator>::template rebind_alloc <element>;
 
     using BucketAllocatorTraits = std::allocator_traits <BucketAllocator>;
 
@@ -471,10 +470,10 @@ private:
     class Buckets
     {
     public:
-        typedef std::vector <
+        using vec_type = std::vector<
             bucket_type,
             typename std::allocator_traits <Allocator>::
-                template rebind_alloc <bucket_type>> vec_type;
+                template rebind_alloc <bucket_type>>;
 
         Buckets ()
             : m_max_load_factor (1.f)
@@ -607,27 +606,27 @@ private:
     }
 
 public:
-    typedef Hash hasher;
-    typedef KeyEqual key_equal;
-    typedef Allocator allocator_type;
-    typedef value_type& reference;
-    typedef value_type const& const_reference;
-    typedef typename std::allocator_traits <
-        Allocator>::pointer pointer;
-    typedef typename std::allocator_traits <
-        Allocator>::const_pointer const_pointer;
+    using hasher = Hash;
+    using key_equal = KeyEqual;
+    using allocator_type = Allocator;
+    using reference = value_type&;
+    using const_reference = value_type const&;
+    using pointer = typename std::allocator_traits <
+        Allocator>::pointer;
+    using const_pointer = typename std::allocator_traits <
+        Allocator>::const_pointer;
 
-    // A set (that is, !IsMap) iterator is aways const because the elements
-    // of a set are immutable.
-    typedef detail::aged_container_iterator <!IsMap,
-        typename cont_type::iterator> iterator;
-    typedef detail::aged_container_iterator <true,
-        typename cont_type::iterator> const_iterator;
+    // A set iterator (IsMap==false) is always const
+    // because the elements of a set are immutable.
+    using iterator= detail::aged_container_iterator <!IsMap,
+        typename cont_type::iterator>;
+    using const_iterator = detail::aged_container_iterator <true,
+        typename cont_type::iterator>;
 
-    typedef detail::aged_container_iterator <!IsMap,
-        typename cont_type::local_iterator> local_iterator;
-    typedef detail::aged_container_iterator <true,
-        typename cont_type::local_iterator> const_local_iterator;
+    using local_iterator = detail::aged_container_iterator <!IsMap,
+        typename cont_type::local_iterator>;
+    using const_local_iterator = detail::aged_container_iterator <true,
+        typename cont_type::local_iterator>;
 
     //--------------------------------------------------------------------------
     //
@@ -641,16 +640,16 @@ public:
     class chronological_t
     {
     public:
-        // A set (that is, !IsMap) iterator is aways const because the elements
-        // of a set are immutable.
-        typedef detail::aged_container_iterator <!IsMap,
-            typename list_type::iterator> iterator;
-        typedef detail::aged_container_iterator <true,
-            typename list_type::iterator> const_iterator;
-        typedef detail::aged_container_iterator <!IsMap,
-            typename list_type::reverse_iterator> reverse_iterator;
-        typedef detail::aged_container_iterator <true,
-            typename list_type::reverse_iterator> const_reverse_iterator;
+        // A set iterator (IsMap==false) is always const
+        // because the elements of a set are immutable.
+        using iterator = detail::aged_container_iterator <
+            ! IsMap, typename list_type::iterator>;
+        using const_iterator = detail::aged_container_iterator <
+            true, typename list_type::iterator>;
+        using reverse_iterator = detail::aged_container_iterator <
+            ! IsMap, typename list_type::reverse_iterator>;
+        using const_reverse_iterator = detail::aged_container_iterator <
+            true, typename list_type::reverse_iterator>;
 
         iterator begin ()
          {
@@ -747,6 +746,8 @@ public:
     // Construction
     //
     //--------------------------------------------------------------------------
+
+    aged_unordered_container() = delete;
 
     explicit aged_unordered_container (clock_type& clock);
 
@@ -2436,7 +2437,7 @@ operator== (
 {
     if (size() != other.size())
         return false;
-    typedef std::pair <const_iterator, const_iterator> EqRng;
+    using EqRng = std::pair <const_iterator, const_iterator>;
     for (auto iter (cbegin()), last (cend()); iter != last;)
     {
         auto const& k (extract (*iter));
