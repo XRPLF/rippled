@@ -1619,28 +1619,6 @@ private:
                         << "We should do delayed relay of this proposal,"
                         << " but we cannot";
                 }
-
-    #if 0
-    // FIXME: We can't do delayed relay because we don't have the signature
-                std::set<Peer::id_t> peers
-
-                if (relay && getApp().getHashRouter ().swapSet (proposal.getSuppress (), set, SF_RELAYED))
-                {
-                    WriteLog (lsDEBUG, LedgerConsensus) << "Stored proposal delayed relay";
-                    protocol::TMProposeSet set;
-                    set.set_proposeseq
-                    set.set_currenttxhash (, 256 / 8);
-                    previousledger
-                    closetime
-                    nodepubkey
-                    signature
-                    getApp ().overlay ().foreach (send_if_not (
-                        std::make_shared<Message> (
-                            set, protocol::mtPROPOSE_LEDGER),
-                                peer_in_set(peers)));
-                }
-
-    #endif
             }
         }
     }
