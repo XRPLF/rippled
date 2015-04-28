@@ -415,7 +415,7 @@ public:
 
         , m_entropyTimer (this)
 
-        , m_signals(get_io_service(), SIGINT)
+        , m_signals (get_io_service())
 
         , m_resolver (ResolverAsio::New (get_io_service(), m_logs.journal("Resolver")))
 
@@ -687,9 +687,11 @@ public:
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
         m_jobQueue->setThreadCount (0, getConfig ().RUN_STANDALONE);
 
+        // We want to intercept and wait for CTRL-C to terminate the process
+        m_signals.add (SIGINT);
+
         m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
-                                      std::placeholders::_1,
-                                      std::placeholders::_2));
+            std::placeholders::_1, std::placeholders::_2));
 
         assert (mTxnDB == nullptr);
 
@@ -1413,7 +1415,7 @@ static void addTxnSeqField ()
     Blob txnMeta;
 
     soci::statement st =
-            (session.prepare << 
+            (session.prepare <<
              "SELECT TransID, TxnMeta FROM Transactions;",
              soci::into(strTransId),
              soci::into(sociTxnMetaBlob, tmi));
