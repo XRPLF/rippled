@@ -232,50 +232,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& node
 
 void TransactionAcquire::addPeers (int numPeers)
 {
-    std::vector <Peer::ptr> peerVec1, peerVec2;
-
-    {
-        auto peers = getApp().overlay().getActivePeers();
-        for (auto const& peer : peers)
-        {
-            if (peer->hasTxSet (mHash))
-                peerVec1.push_back (peer);
-            else
-                peerVec2.push_back (peer);
-        }
-    }
-
-    WriteLog (lsDEBUG, TransactionAcquire) << peerVec1.size() << " peers known to have " << mHash;
-
-    if (peerVec1.size() != 0)
-    {
-        // First try peers known to have the set
-        std::random_shuffle (peerVec1.begin (), peerVec1.end ());
-
-        for (auto const& peer : peerVec1)
-        {
-            if (peerHas (peer))
-            {
-                if (--numPeers <= 0)
-                    return;
-            }
-        }
-    }
-
-    if (peerVec2.size() != 0)
-    {
-        // Then try peers not known to have the set
-        std::random_shuffle (peerVec2.begin (), peerVec2.end ());
-
-        for (auto const& peer : peerVec2)
-        {
-            if (peerHas (peer))
-            {
-                if (--numPeers <= 0)
-                    return;
-            }
-        }
-    }
+    getApp().overlay().selectPeers (*this, numPeers, ScoreHasTxSet (getHash()));
 }
 
 void TransactionAcquire::init (int numPeers)

@@ -570,6 +570,33 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
     m_publicKeyMap.erase(publicKey);
 }
 
+std::size_t
+OverlayImpl::selectPeers (PeerSet& set, std::size_t limit,
+    std::function<bool(std::shared_ptr<Peer> const&)> score)
+{
+    using item = std::pair<int, std::shared_ptr<PeerImp>>;
+    std::vector<item> v;
+    {
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        v.reserve(m_publicKeyMap.size());
+        for_each_unlocked ([&](std::shared_ptr<PeerImp> && e)
+        {
+            v.emplace_back(
+                e->getScore(score(e)), std::move(e));
+        });
+    }
+    std::sort(v.begin(), v.end(),
+    [](item const& lhs, item const&rhs)
+    {
+        return lhs.first > rhs.first;
+    });
+    std::size_t accepted = 0;
+    for (auto const& e : v)
+        if (set.peerHas(e.second) && ++accepted >= limit)
+            break;
+    return accepted;
+}
+
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
     and are running the Ripple protocol.
@@ -829,6 +856,19 @@ OverlayImpl::sendEndpoints()
     }
 }
 
+//------------------------------------------------------------------------------
+
+bool ScoreHasLedger::operator()(std::shared_ptr<Peer> const& bp) const
+{
+    auto const& p = std::dynamic_pointer_cast<PeerImp>(bp);
+    return p->hasLedger (hash_, seq_);
+}
+
+bool ScoreHasTxSet::operator()(std::shared_ptr<Peer> const& bp) const
+{
+    auto const& p = std::dynamic_pointer_cast<PeerImp>(bp);
+    return p->hasTxSet (hash_);
+}
 
 //------------------------------------------------------------------------------
 

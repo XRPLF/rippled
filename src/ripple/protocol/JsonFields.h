@@ -180,6 +180,7 @@ JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     // out: paths/Node, STPathSet, STAmount
 JSS ( key );                        // out: WalletSeed
 JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
+JSS ( latency );                    // out: PeerImp
 JSS ( last );                       // out: RPCVersion
 JSS ( last_close );                 // out: NetworkOPs
 JSS ( ledger );                     // in: NetworkOPs, LedgerCleaner,

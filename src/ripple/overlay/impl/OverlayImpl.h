@@ -221,9 +221,8 @@ public:
     //
     template <class UnaryFunc>
     void
-    for_each (UnaryFunc&& f)
+    for_each_unlocked (UnaryFunc&& f)
     {
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
         for (auto const& e : m_publicKeyMap)
         {
             auto sp = e.second.lock();
@@ -231,6 +230,18 @@ public:
                 f(std::move(sp));
         }
     }
+
+    template <class UnaryFunc>
+    void
+    for_each (UnaryFunc&& f)
+    {
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        for_each_unlocked(f);
+    }
+
+    std::size_t
+    selectPeers (PeerSet& set, std::size_t limit, std::function<
+        bool(std::shared_ptr<Peer> const&)> score) override;
 
     static
     bool

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
+#include <ripple/app/peers/PeerSet.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/server/Handoff.h>
@@ -31,7 +32,7 @@
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/optional.hpp>
+#include <functional>
 
 namespace boost { namespace asio { namespace ssl { class context; } } }
 
@@ -203,6 +204,48 @@ public:
         for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
             f (*i);
     }
+
+    /** Select from active peers
+
+        Scores all active peers.
+        Tries to accept the highest scoring peers, up to the requested count,
+        Returns the number of selected peers accepted.
+
+        The score function must:
+        - Be callable as:
+           bool (PeerImp::ptr)
+        - Return a true if the peer is prefered
+
+        The accept function must:
+        - Be callable as:
+           bool (PeerImp::ptr)
+        - Return a true if the peer is accepted
+
+    */
+    virtual
+    std::size_t
+    selectPeers (PeerSet& set, std::size_t limit, std::function<
+        bool(std::shared_ptr<Peer> const&)> score) = 0;
+};
+
+struct ScoreHasLedger
+{
+    uint256 const& hash_;
+    std::uint32_t seq_;
+    bool operator()(std::shared_ptr<Peer> const&) const;
+
+    ScoreHasLedger (uint256 const& hash, std::uint32_t seq)
+        : hash_ (hash), seq_ (seq)
+    {}
+};
+
+struct ScoreHasTxSet
+{
+    uint256 const& hash_;
+    bool operator()(std::shared_ptr<Peer> const&) const;
+
+    ScoreHasTxSet (uint256 const& hash) : hash_ (hash)
+    {}
 };
 
 }
