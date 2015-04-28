@@ -78,10 +78,6 @@ SYSTEM_FEE_OWNER_RESERVE = 50 * SYSTEM_CURRENCY_PARTS;
 
 static
 std::uint64_t const
-SYSTEM_FEE_OFFER = SYSTEM_FEE_DEFAULT;
-
-static
-std::uint64_t const
 SYSTEM_TRANSACTION_FEE_BASE = 10;
 
 static

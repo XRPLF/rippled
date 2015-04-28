@@ -201,7 +201,6 @@ Config::Config ()
 
     FEE_ACCOUNT_RESERVE     = SYSTEM_FEE_ACCOUNT_RESERVE;
     FEE_OWNER_RESERVE       = SYSTEM_FEE_OWNER_RESERVE;
-    FEE_OFFER               = SYSTEM_FEE_OFFER;
     FEE_DEFAULT             = SYSTEM_FEE_DEFAULT;
     FEE_CONTRACT_OPERATION  = SYSTEM_FEE_CONTRACT_OPERATION;
 
@@ -487,9 +486,6 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
         FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
-
-    if (getSingleSection (secConfig, SECTION_FEE_OFFER, strTemp))
-        FEE_OFFER           = beast::lexicalCastThrow <int> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_FEE_DEFAULT, strTemp))
         FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
