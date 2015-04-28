@@ -49,7 +49,7 @@ class aged_container_iterator
     : public Base
 {
 public:
-    typedef typename Iterator::value_type::stashed::time_point time_point;
+    using time_point = typename Iterator::value_type::stashed::time_point;
 
     // Could be '= default', but Visual Studio 2013 chokes on it [Aug 2014]
     aged_container_iterator ()

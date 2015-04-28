@@ -125,8 +125,8 @@ private:
         // need to see the container declaration.
         struct stashed
         {
-            typedef typename aged_ordered_container::value_type value_type;
-            typedef typename aged_ordered_container::time_point time_point;
+            using value_type = typename aged_ordered_container::value_type;
+            using time_point = typename aged_ordered_container::time_point;
         };
 
         element (
@@ -243,11 +243,10 @@ private:
         }
     };
 
-    typedef typename boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <false>
-            >::type list_type;
+    using list_type = typename boost::intrusive::make_list <element,
+        boost::intrusive::constant_time_size <false>>::type;
 
-    typedef typename std::conditional <
+    using cont_type = typename std::conditional <
         IsMulti,
         typename boost::intrusive::make_multiset <element,
             boost::intrusive::constant_time_size <true>
@@ -255,10 +254,10 @@ private:
         typename boost::intrusive::make_set <element,
             boost::intrusive::constant_time_size <true>
                 >::type
-        >::type cont_type;
+        >::type;
 
-    typedef typename std::allocator_traits <
-        Allocator>::template rebind_alloc <element> ElementAllocator;
+    using ElementAllocator = typename std::allocator_traits <
+        Allocator>::template rebind_alloc <element>;
 
     using ElementAllocatorTraits = std::allocator_traits <ElementAllocator>;
 
@@ -426,29 +425,29 @@ private:
     }
 
 public:
-    typedef Compare key_compare;
-    typedef typename std::conditional <
+    using key_compare = Compare;
+    using value_compare = typename std::conditional <
         IsMap,
         pair_value_compare,
-        Compare>::type value_compare;
-    typedef Allocator allocator_type;
-    typedef value_type& reference;
-    typedef value_type const& const_reference;
-    typedef typename std::allocator_traits <
-        Allocator>::pointer pointer;
-    typedef typename std::allocator_traits <
-        Allocator>::const_pointer const_pointer;
+        Compare>::type;
+    using allocator_type = Allocator;
+    using reference = value_type&;
+    using const_reference = value_type const&;
+    using pointer = typename std::allocator_traits <
+        Allocator>::pointer;
+    using const_pointer = typename std::allocator_traits <
+        Allocator>::const_pointer;
 
-    // A set (that is, !IsMap) iterator is aways const because the elements
-    // of a set are immutable.
-    typedef detail::aged_container_iterator <!IsMap,
-        typename cont_type::iterator> iterator;
-    typedef detail::aged_container_iterator <true,
-        typename cont_type::iterator> const_iterator;
-    typedef detail::aged_container_iterator <!IsMap,
-        typename cont_type::reverse_iterator> reverse_iterator;
-    typedef detail::aged_container_iterator <true,
-        typename cont_type::reverse_iterator> const_reverse_iterator;
+    // A set iterator (IsMap==false) is always const
+    // because the elements of a set are immutable.
+    using iterator = detail::aged_container_iterator<
+        ! IsMap, typename cont_type::iterator>;
+    using const_iterator = detail::aged_container_iterator<
+        true, typename cont_type::iterator>;
+    using reverse_iterator = detail::aged_container_iterator<
+        ! IsMap, typename cont_type::reverse_iterator>;
+    using const_reverse_iterator = detail::aged_container_iterator<
+        true, typename cont_type::reverse_iterator>;
 
     //--------------------------------------------------------------------------
     //
@@ -462,16 +461,16 @@ public:
     class chronological_t
     {
     public:
-        // A set (that is, !IsMap) iterator is aways const because the elements
-        // of a set are immutable.
-        typedef detail::aged_container_iterator <!IsMap,
-            typename list_type::iterator> iterator;
-        typedef detail::aged_container_iterator <true,
-            typename list_type::iterator> const_iterator;
-        typedef detail::aged_container_iterator <!IsMap,
-            typename list_type::reverse_iterator> reverse_iterator;
-        typedef detail::aged_container_iterator <true,
-            typename list_type::reverse_iterator> const_reverse_iterator;
+        // A set iterator (IsMap==false) is always const
+        // because the elements of a set are immutable.
+        using iterator = detail::aged_container_iterator<
+            ! IsMap, typename list_type::iterator>;
+        using const_iterator = detail::aged_container_iterator<
+            true, typename list_type::iterator>;
+        using reverse_iterator = detail::aged_container_iterator<
+            ! IsMap, typename list_type::reverse_iterator>;
+        using const_reverse_iterator = detail::aged_container_iterator<
+            true, typename list_type::reverse_iterator>;
 
         iterator begin ()
          {
@@ -568,6 +567,8 @@ public:
     // Construction
     //
     //--------------------------------------------------------------------------
+
+    aged_ordered_container() = delete;
 
     explicit aged_ordered_container (clock_type& clock);
 
@@ -1848,9 +1849,9 @@ operator== (
         Key, OtherT, OtherDuration, Compare,
             OtherAllocator> const& other) const
 {
-    typedef aged_ordered_container <OtherIsMulti, OtherIsMap,
+    using Other = aged_ordered_container <OtherIsMulti, OtherIsMap,
         Key, OtherT, OtherDuration, Compare,
-            OtherAllocator> Other;
+            OtherAllocator>;
     if (size() != other.size())
         return false;
     std::equal_to <void> eq;

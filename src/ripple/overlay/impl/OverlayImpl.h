@@ -174,6 +174,11 @@ public:
     Peer::ptr
     findPeerByShortID (Peer::id_t const& id) override;
 
+    //--------------------------------------------------------------------------
+    //
+    // OverlayImpl
+    //
+
     void
     add_active (std::shared_ptr<PeerImp> const& peer);
 
@@ -191,6 +196,22 @@ public:
     /** Called when an active peer is destroyed. */
     void
     onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
+
+    // UnaryFunc will be called as
+    //  void(std::shared_ptr<PeerImp> const&)
+    //
+    template <class UnaryFunc>
+    void
+    for_each (UnaryFunc&& f)
+    {
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        for (auto const& e : m_publicKeyMap)
+        {
+            auto const sp = e.second.lock();
+            if (sp)
+                f(sp);
+        }
+    }
 
     static
     bool
