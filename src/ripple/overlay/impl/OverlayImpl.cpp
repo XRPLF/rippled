@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/IHashRouter.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
@@ -693,6 +694,75 @@ OverlayImpl::findPeerByShortID (Peer::id_t const& id)
     return Peer::ptr();
 }
 
+void
+OverlayImpl::send (protocol::TMProposeSet& m)
+{
+    if (setup_.expire)
+        m.set_hops(0);
+    auto const sm = std::make_shared<Message>(
+        m, protocol::mtPROPOSE_LEDGER);
+    for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (! m.has_hops() || p->hopsAware())
+            p->send(sm);
+    });
+}
+void
+OverlayImpl::send (protocol::TMValidation& m)
+{
+    if (setup_.expire)
+        m.set_hops(0);
+    auto const sm = std::make_shared<Message>(
+        m, protocol::mtVALIDATION);
+    for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (! m.has_hops() || p->hopsAware())
+            p->send(sm);
+    });
+}
+
+void
+OverlayImpl::relay (protocol::TMProposeSet& m,
+    uint256 const& uid)
+{
+    if (m.has_hops() && m.hops() >= maxTTL)
+        return;
+    std::set<Peer::id_t> skip;
+    if (! getApp().getHashRouter().swapSet (
+            uid, skip, SF_RELAYED))
+        return;
+    auto const sm = std::make_shared<Message>(
+        m, protocol::mtPROPOSE_LEDGER);
+    for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (skip.find(p->id()) != skip.end())
+            return;
+        if (! m.has_hops() || p->hopsAware())
+            p->send(sm);
+    });
+}
+
+void
+OverlayImpl::relay (protocol::TMValidation& m,
+    uint256 const& uid)
+{
+    if (m.has_hops() && m.hops() >= maxTTL)
+        return;
+    std::set<Peer::id_t> skip;
+    if (! getApp().getHashRouter().swapSet (
+            uid, skip, SF_RELAYED))
+        return;
+    auto const sm = std::make_shared<Message>(
+        m, protocol::mtVALIDATION);
+    for_each([&](std::shared_ptr<PeerImp> const& p)
+    {
+        if (skip.find(p->id()) != skip.end())
+            return;
+        if (! m.has_hops() || p->hopsAware())
+            p->send(sm);
+    });
+}
+
 //------------------------------------------------------------------------------
 
 void
@@ -777,6 +847,7 @@ setup_Overlay (BasicConfig const& config)
     else
         setup.promote = Overlay::Promote::automatic;
     setup.context = make_SSLContext();
+    setup.expire = get<bool>(section, "expire", false);
     return setup;
 }
 

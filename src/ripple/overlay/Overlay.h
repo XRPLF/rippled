@@ -31,6 +31,7 @@
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/optional.hpp>
 
 namespace boost { namespace asio { namespace ssl { class context; } } }
 
@@ -65,6 +66,7 @@ public:
         bool auto_connect = true;
         Promote promote = Promote::automatic;
         std::shared_ptr<boost::asio::ssl::context> context;
+        bool expire = false;
     };
 
     typedef std::vector <Peer::ptr> PeerSequence;
@@ -130,6 +132,28 @@ public:
     virtual
     Peer::ptr
     findPeerByShortID (Peer::id_t const& id) = 0;
+
+    /** Broadcast a proposal. */
+    virtual
+    void
+    send (protocol::TMProposeSet& m) = 0;
+
+    /** Broadcast a validation. */
+    virtual
+    void
+    send (protocol::TMValidation& m) = 0;
+
+    /** Relay a proposal. */
+    virtual
+    void
+    relay (protocol::TMProposeSet& m,
+        uint256 const& uid) = 0;
+
+    /** Relay a validation. */
+    virtual
+    void
+    relay (protocol::TMValidation& m,
+        uint256 const& uid) = 0;
 
     /** Visit every active peer and return a value
         The functor must:

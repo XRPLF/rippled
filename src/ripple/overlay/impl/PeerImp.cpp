@@ -36,8 +36,10 @@
 #include <ripple/server/ServerHandler.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/JsonFields.h>
+#include <beast/module/core/diagnostic/SemanticVersion.h>
 #include <beast/streams/debug_ostream.h>
 #include <beast/weak_fn.h>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
 #include <functional>
 #include <beast/cxx14/memory.h> // <memory>
@@ -100,6 +102,20 @@ PeerImp::run()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind (
             &PeerImp::run, shared_from_this()));
+    {
+        auto s = getVersion();
+        if (boost::starts_with(s, "rippled-"))
+        {
+            s.erase(s.begin(), s.begin() + 8);
+            beast::SemanticVersion v;
+            if (v.parse(s))
+            {
+                beast::SemanticVersion av;
+                av.parse("0.28.0-rc3");
+                hopsAware_ = v >= av;
+            }
+        }
+    }
     if (m_inbound)
     {
         doAccept();
@@ -1008,6 +1024,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 {
     protocol::TMProposeSet& set = *m;
 
+    if (overlay_.setup().expire &&
+            set.has_hops() && ! slot_->cluster())
+        set.set_hops(set.hops() + 1);
+
     // VFALCO Magic numbers are bad
     if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
         return;
@@ -1275,6 +1295,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
+
+    if (overlay_.setup().expire &&
+            m->has_hops() && ! slot_->cluster())
+        m->set_hops(m->hops() + 1);
 
     if (m->validation ().size () < 50)
     {
@@ -1651,15 +1675,7 @@ PeerImp::checkPropose (Job& job,
         // relay untrusted proposal
         p_journal_.trace <<
             "relaying UNTRUSTED proposal";
-        std::set<Peer::id_t> peers;
-
-        if (getApp().getHashRouter ().swapSet (
-            proposal->getSuppressionID (), peers, SF_RELAYED))
-        {
-            overlay_.foreach (send_if_not (
-                std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
-                peer_in_set(peers)));
-        }
+        overlay_.relay(set, proposal->getSuppressionID());
     }
     else
     {
@@ -1688,15 +1704,9 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
         validatorsConnection_->onValidation(*val);
     #endif
 
-        std::set<Peer::id_t> peers;
-        if (getApp().getOPs ().recvValidation (val, std::to_string(id())) &&
-                getApp().getHashRouter ().swapSet (
-                    signingHash, peers, SF_RELAYED))
-        {
-            overlay_.foreach (send_if_not (
-                std::make_shared<Message> (*packet, protocol::mtVALIDATION),
-                peer_in_set(peers)));
-        }
+        if (getApp().getOPs ().recvValidation(
+                val, std::to_string(id())))
+            overlay_.relay(*packet, signingHash);
     }
     catch (...)
     {

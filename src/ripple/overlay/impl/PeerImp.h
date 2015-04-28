@@ -153,6 +153,7 @@ private:
     bool gracefulClose_ = false;
     std::unique_ptr <LoadEvent> load_event_;
     std::unique_ptr<Validators::Connection> validatorsConnection_;
+    bool hopsAware_ = false;
 
     //--------------------------------------------------------------------------
 
@@ -235,6 +236,12 @@ public:
     cluster() const override
     {
         return slot_->cluster();
+    }
+
+    bool
+    hopsAware() const
+    {
+        return hopsAware_;
     }
 
     void
