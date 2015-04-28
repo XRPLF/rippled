@@ -63,6 +63,23 @@ systemCurrencyCode ()
     return code;
 }
 
+/** Default fees for system */
+static
+std::uint64_t const
+SYSTEM_FEE_DEFAULT = 10;
+
+static
+std::uint64_t const
+SYSTEM_FEE_ACCOUNT_RESERVE = 200 * SYSTEM_CURRENCY_PARTS;
+
+static
+std::uint64_t const
+SYSTEM_FEE_OWNER_RESERVE = 50 * SYSTEM_CURRENCY_PARTS;
+
+static
+std::uint64_t const
+SYSTEM_TRANSACTION_FEE_BASE = 10;
+
 } // ripple
 
 #endif
