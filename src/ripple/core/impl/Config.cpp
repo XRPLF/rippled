@@ -43,16 +43,6 @@ namespace ripple {
 // TODO: Check permissions on config file before using it.
 //
 
-// Fees are in XRP.
-#define DEFAULT_FEE_DEFAULT             10
-#define DEFAULT_FEE_ACCOUNT_RESERVE     200*SYSTEM_CURRENCY_PARTS
-#define DEFAULT_FEE_OWNER_RESERVE       50*SYSTEM_CURRENCY_PARTS
-#define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
-#define DEFAULT_FEE_OPERATION           1
-
-// Fee in fee units
-#define DEFAULT_TRANSACTION_FEE_BASE    10
-
 #define SECTION_DEFAULT_NAME    ""
 
 IniFileSections
@@ -204,16 +194,16 @@ Config::Config ()
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
 
-    TRANSACTION_FEE_BASE    = DEFAULT_TRANSACTION_FEE_BASE;
+    TRANSACTION_FEE_BASE    = SYSTEM_TRANSACTION_FEE_BASE;
 
     NETWORK_QUORUM          = 0;    // Don't need to see other nodes
     VALIDATION_QUORUM       = 1;    // Only need one node to vouch
 
-    FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
-    FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
-    FEE_OFFER               = DEFAULT_FEE_OFFER;
-    FEE_DEFAULT             = DEFAULT_FEE_DEFAULT;
-    FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
+    FEE_ACCOUNT_RESERVE     = SYSTEM_FEE_ACCOUNT_RESERVE;
+    FEE_OWNER_RESERVE       = SYSTEM_FEE_OWNER_RESERVE;
+    FEE_OFFER               = SYSTEM_FEE_OFFER;
+    FEE_DEFAULT             = SYSTEM_FEE_DEFAULT;
+    FEE_CONTRACT_OPERATION  = SYSTEM_FEE_CONTRACT_OPERATION;
 
     LEDGER_HISTORY          = 256;
     FETCH_DEPTH             = 1000000000;
@@ -415,7 +405,7 @@ void Config::loadFromString (std::string const& fileContents)
         if (getSingleSection (secConfig, "database_path", dbPath))
         {
             boost::filesystem::path p(dbPath);
-            legacy("database_path", 
+            legacy("database_path",
                    boost::filesystem::absolute (p).string ());
         }
     }
