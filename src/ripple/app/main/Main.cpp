@@ -202,6 +202,9 @@ static int runUnitTests (std::string const& pattern,
     setupConfigForUnitTests (getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
     std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
+
+    signal (SIGINT, SIG_DFL);  // Let Ctrl-C work during unit testing.
+
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
