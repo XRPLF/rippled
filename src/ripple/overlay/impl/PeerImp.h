@@ -139,6 +139,11 @@ private:
     uint256 previousLedgerHash_;
     std::deque<uint256> recentLedgers_;
     std::deque<uint256> recentTxSets_;
+
+    std::chrono::milliseconds latency_ = std::chrono::milliseconds (-1);
+    std::uint64_t lastPingSeq_ = 0;
+    clock_type::time_point lastPingTime_;
+
     mutable std::mutex recentLock_;
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;
@@ -151,6 +156,7 @@ private:
     beast::asio::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
+    bool recent_empty_ = true;
     std::unique_ptr <LoadEvent> load_event_;
     std::unique_ptr<Validators::Connection> validatorsConnection_;
     bool hopsAware_ = false;
@@ -297,6 +303,10 @@ public:
     bool
     hasRange (std::uint32_t uMin, std::uint32_t uMax) override;
 
+    // Called to determine our priority for querying
+    int
+    getScore (bool haveItem);
+
 private:
     void
     close();
@@ -395,8 +405,6 @@ public:
     void onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
     void onMessage (std::shared_ptr <protocol::TMValidation> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
-
-    //--------------------------------------------------------------------------
 
 private:
     State state() const

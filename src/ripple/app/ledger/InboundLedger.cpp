@@ -38,8 +38,14 @@ namespace ripple {
 
 enum
 {
+    // Number of peers to start with
+    peerCountStart = 4
+
+    // Number of peers to add on a timeout
+    ,peerCountAdd = 2
+
     // millisecond for each ledger timeout
-    ledgerAcquireTimeoutMillis = 2500
+    ,ledgerAcquireTimeoutMillis = 2500
 
     // how many timeouts before we giveup
     ,ledgerTimeoutRetriesMax = 10
@@ -282,7 +288,9 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 /** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    getApp().overlay().selectPeers (&this, 6, ScoreHasLedger (getHash(), mSeq));
+    getApp().overlay().selectPeers (*this,
+        (getPeerCount() > 0) ? peerCountStart : peerCountAdd,
+        ScoreHasLedger (getHash(), mSeq));
 }
 
 std::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
