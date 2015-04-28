@@ -80,10 +80,6 @@ static
 std::uint64_t const
 SYSTEM_TRANSACTION_FEE_BASE = 10;
 
-static
-int const
-SYSTEM_FEE_CONTRACT_OPERATION = 1;
-
 } // ripple
 
 #endif

@@ -238,7 +238,6 @@ public:
     std::uint64_t                      FEE_DEFAULT;            // Default fee.
     std::uint64_t                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
     std::uint64_t                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
-    int                                FEE_CONTRACT_OPERATION; // fee for each contract operation
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY;

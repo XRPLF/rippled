@@ -202,7 +202,6 @@ Config::Config ()
     FEE_ACCOUNT_RESERVE     = SYSTEM_FEE_ACCOUNT_RESERVE;
     FEE_OWNER_RESERVE       = SYSTEM_FEE_OWNER_RESERVE;
     FEE_DEFAULT             = SYSTEM_FEE_DEFAULT;
-    FEE_CONTRACT_OPERATION  = SYSTEM_FEE_CONTRACT_OPERATION;
 
     LEDGER_HISTORY          = 256;
     FETCH_DEPTH             = 1000000000;
@@ -489,9 +488,6 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_FEE_DEFAULT, strTemp))
         FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
-
-    if (getSingleSection (secConfig, SECTION_FEE_OPERATION, strTemp))
-        FEE_CONTRACT_OPERATION  = beast::lexicalCastThrow <int> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_LEDGER_HISTORY, strTemp))
     {
