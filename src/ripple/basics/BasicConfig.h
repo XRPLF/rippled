@@ -23,6 +23,7 @@
 #include <beast/container/const_container.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 #include <map>
 #include <ostream>
 #include <string>
@@ -138,6 +139,16 @@ public:
     */
     std::pair <std::string, bool>
     find (std::string const& name) const;
+
+    template <class T>
+    boost::optional<T>
+    get (std::string const& name) const
+    {
+        auto const iter = cont().find(name);
+        if (iter == cont().end())
+            return boost::none;
+        return boost::lexical_cast<T>(iter->second);
+    }
 
     friend
     std::ostream&

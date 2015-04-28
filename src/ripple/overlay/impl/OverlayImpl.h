@@ -46,6 +46,11 @@ namespace ripple {
 class PeerImp;
 class BasicConfig;
 
+enum
+{
+    maxTTL = 2
+};
+
 class OverlayImpl : public Overlay
 {
 public:
@@ -173,6 +178,20 @@ public:
 
     Peer::ptr
     findPeerByShortID (Peer::id_t const& id) override;
+
+    void
+    send (protocol::TMProposeSet& m) override;
+
+    void
+    send (protocol::TMValidation& m) override;
+
+    void
+    relay (protocol::TMProposeSet& m,
+        uint256 const& uid) override;
+
+    void
+    relay (protocol::TMValidation& m,
+        uint256 const& uid) override;
 
     //--------------------------------------------------------------------------
     //

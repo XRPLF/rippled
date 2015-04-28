@@ -1710,21 +1710,10 @@ void NetworkOPsImp::processTrustedProposal (
         }
 
         if (relay)
-        {
-            std::set<Peer::id_t> peers;
-            if (getApp().getHashRouter ().swapSet (
-                proposal->getSuppressionID (), peers, SF_RELAYED))
-            {
-                getApp ().overlay ().foreach (send_if_not (
-                    std::make_shared<Message> (
-                        *set, protocol::mtPROPOSE_LEDGER),
-                    peer_in_set(peers)));
-            }
-        }
+            getApp().overlay().relay(*set,
+                proposal->getSuppressionID());
         else
-        {
             m_journal.info << "Not relaying trusted proposal";
-        }
     }
 }
 

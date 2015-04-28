@@ -988,9 +988,7 @@ private:
             protocol::TMValidation val;
             val.set_validation (&validation[0], validation.size ());
             // Send signed validation to all of our directly connected peers
-            getApp ().overlay ().foreach (send_always (
-                std::make_shared <Message> (
-                    val, protocol::mtVALIDATION)));
+            getApp().overlay().send(val);
             WriteLog (lsINFO, LedgerConsensus)
                 << "CNF Val " << newLCLHash;
         }
@@ -1256,9 +1254,7 @@ private:
         Blob sig = mOurPosition->sign ();
         prop.set_nodepubkey (&pubKey[0], pubKey.size ());
         prop.set_signature (&sig[0], sig.size ());
-        getApp ().overlay ().foreach (send_always (
-            std::make_shared<Message> (
-                prop, protocol::mtPROPOSE_LEDGER)));
+        getApp().overlay().send(prop);
     }
 
     /** Let peers know that we a particular transactions set so they
@@ -1681,11 +1677,6 @@ private:
         Blob validation = v->getSigned ();
         protocol::TMValidation val;
         val.set_validation (&validation[0], validation.size ());
-    #if 0
-        getApp ().overlay ().visit (RelayMessage (
-            std::make_shared <Message> (
-                val, protocol::mtVALIDATION)));
-    #endif
         getApp().getOPs ().setLastValidation (v);
         WriteLog (lsWARNING, LedgerConsensus) << "Sending partial validation";
     }
