@@ -59,7 +59,7 @@ public:
 
     static Condition condition()
     {
-        return NEEDS_NETWORK_CONNECTION;
+        return NO_CONDITION;
     }
 
 private:
