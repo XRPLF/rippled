@@ -35,7 +35,7 @@ public:
     {
         auto const pk = sk.publicKey();
         
-        STObject st;
+        STObject st(sfGeneric);
         set(st, sfSequence, seq);
         set(st, sfPublicKey, pk);
         set(st, sfSigningPubKey, spk);
@@ -53,11 +53,11 @@ public:
     void
     run() override
     {
-        using ManifestDisposition::accepted;
-        using ManifestDisposition::malformed;
-        using ManifestDisposition::untrusted;
-        using ManifestDisposition::stale;
-        using ManifestDisposition::invalid;
+        auto const accepted  = ManifestDisposition::accepted;
+        auto const malformed = ManifestDisposition::malformed;
+        auto const untrusted = ManifestDisposition::untrusted;
+        auto const stale     = ManifestDisposition::stale;
+        auto const invalid   = ManifestDisposition::invalid;
 
         beast::Journal journal;
 
