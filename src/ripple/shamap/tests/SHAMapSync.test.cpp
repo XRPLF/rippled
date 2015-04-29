@@ -124,7 +124,8 @@ public:
 
         destination.setSynching ();
 
-        unexpected (!source.getNodeFat (SHAMapNodeID (), nodeIDs, gotNodes, (rand () % 2) == 0, (rand () % 2) == 0),
+        unexpected (!source.getNodeFat (SHAMapNodeID (), nodeIDs, gotNodes,
+            (rand () % 2) == 0, rand () % 3),
             "GetNodeFat");
 
         unexpected (gotNodes.size () < 1, "NodeSize");
@@ -152,7 +153,8 @@ public:
             // get as many nodes as possible based on this information
             for (nodeIDIterator = nodeIDs.begin (); nodeIDIterator != nodeIDs.end (); ++nodeIDIterator)
             {
-                if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes, (rand () % 2) == 0, (rand () % 2) == 0))
+                if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes,
+                    (rand () % 2) == 0, rand () % 3))
                 {
                     fail ("GetNodeFat");
                 }

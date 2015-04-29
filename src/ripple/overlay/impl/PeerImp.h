@@ -144,7 +144,7 @@ private:
     std::uint64_t lastPingSeq_ = 0;
     clock_type::time_point lastPingTime_;
 
-    mutable std::mutex recentLock_;
+    std::mutex mutable recentLock_;
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;
     Resource::Consumer usage_;
@@ -306,6 +306,9 @@ public:
     // Called to determine our priority for querying
     int
     getScore (bool haveItem);
+
+    bool
+    isHighLatency() const override;
 
 private:
     void
