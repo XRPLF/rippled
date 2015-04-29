@@ -302,18 +302,24 @@ std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
     return nodeHashes;
 }
 
-bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs,
-                         std::vector<Blob >& rawNodes, bool fatRoot, bool fatLeaves) const
+bool SHAMap::getNodeFat (SHAMapNodeID wanted,
+    std::vector<SHAMapNodeID>& nodeIDs,
+        std::vector<Blob>& rawNodes, bool fatLeaves,
+            std::uint32_t depth) const
 {
     // Gets a node and some of its children
+    // to a specified depth
 
     SHAMapTreeNode* node = root_.get ();
-
     SHAMapNodeID nodeID;
 
     while (node && node->isInner () && (nodeID.getDepth() < wanted.getDepth()))
     {
         int branch = nodeID.selectBranch (wanted.getNodeID());
+
+        if (node->isEmptyBranch (branch))
+            return false;
+
         node = descendThrow (node, branch);
         nodeID = nodeID.getChildNodeID (branch);
     }
@@ -322,7 +328,7 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs
     {
         if (journal_.warning) journal_.warning <<
             "peer requested node that is not in the map: " << wanted;
-        throw std::runtime_error ("Peer requested node not in map");
+        return false;
     }
 
     if (node->isInner () && node->isEmpty ())
@@ -332,51 +338,56 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs
         return false;
     }
 
-    int count;
-    bool skipNode = false;
-    do
+    std::stack<std::tuple <SHAMapTreeNode*, SHAMapNodeID, int>> stack;
+    stack.emplace (node, nodeID, depth);
+
+    while (! stack.empty ())
     {
+        std::tie (node, nodeID, depth) = stack.top ();
+        stack.pop ();
 
-        if (skipNode)
-            skipNode = false;
-        else
+        // Add this node to the reply
+        Serializer s;
+        node->addRaw (s, snfWIRE);
+        nodeIDs.push_back (nodeID);
+        rawNodes.push_back (std::move (s.peekData()));
+
+        if (node->isInner())
         {
-            Serializer s;
-            node->addRaw (s, snfWIRE);
-            nodeIDs.push_back (wanted);
-            rawNodes.push_back (std::move (s.peekData ()));
-        }
-
-        if ((!fatRoot && wanted.isRoot ()) || node->isLeaf ()) // don't get a fat root_, can't get a fat leaf
-            return true;
-
-        SHAMapTreeNode* nextNode = nullptr;
-        SHAMapNodeID nextNodeID;
-
-        count = 0;
-        for (int i = 0; i < 16; ++i)
-        {
-            if (!node->isEmptyBranch (i))
+            // We descend inner nodes with only a single child
+            // without decrementing the depth
+            int bc = node->getBranchCount();
+            if ((depth > 0) || (bc == 1))
             {
-                SHAMapNodeID nextNodeID = wanted.getChildNodeID (i);
-                nextNode = descendThrow (node, i);
-                ++count;
-                if (fatLeaves || nextNode->isInner ())
+                // We need to process this node's children
+                for (int i = 0; i < 16; ++i)
                 {
-                    Serializer s;
-                    nextNode->addRaw (s, snfWIRE);
-                    nodeIDs.push_back (nextNodeID);
-                    rawNodes.push_back (std::move (s.peekData ()));
-                    skipNode = true; // Don't add this node again if we loop
+                    if (! node->isEmptyBranch (i))
+                    {
+                        SHAMapNodeID childID = nodeID.getChildNodeID (i);
+                        SHAMapTreeNode* childNode = descendThrow (node, i);
+
+                        if (childNode->isInner () &&
+                            ((depth > 1) || (bc == 1)))
+                        {
+                            // If there's more than one child, reduce the depth
+                            // If only one child, follow the chain
+                            stack.emplace (childNode, childID,
+                                (bc > 1) ? (depth - 1) : depth);
+                        }
+                        else if (childNode->isInner() || fatLeaves)
+                        {
+                            // Just include this node
+                            Serializer s;
+                            childNode->addRaw (s, snfWIRE);
+                            nodeIDs.push_back (childID);
+                            rawNodes.push_back (std::move (s.peekData ()));
+                        }
+                    }
                 }
             }
         }
-
-        node = nextNode;
-        wanted = nextNodeID;
-
-    // So long as there's exactly one inner node, we take it
-    } while ((count == 1) && node->isInner());
+    }
 
     return true;
 }

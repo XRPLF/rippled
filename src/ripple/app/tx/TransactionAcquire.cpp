@@ -124,6 +124,7 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
         protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
         tmGL.set_itype (protocol::liTS_CANDIDATE);
+        tmGL.set_querydepth (3); // We probably need the whole thing
 
         if (getTimeouts () != 0)
             tmGL.set_querytype (protocol::qtINDIRECT);

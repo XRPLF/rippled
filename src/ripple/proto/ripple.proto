@@ -300,6 +300,7 @@ message TMGetLedger
     repeated bytes nodeIDs          = 5;
     optional uint64 requestCookie   = 6;
     optional TMQueryType queryType  = 7;
+    optional uint32 queryDepth      = 8;    // How deep to go, number of extra levels
 }
 
 enum TMReplyError

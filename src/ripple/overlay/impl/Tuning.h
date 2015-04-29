@@ -46,6 +46,10 @@ enum
         consider it insane */
     insaneLedgerLimit   =  128,
 
+    /** How many milliseconds to consider high latency
+        on a peer connection */
+    peerHighLatency     =  120,
+
     /** How often we check connections (seconds) */
     checkSeconds        =   10,
 };

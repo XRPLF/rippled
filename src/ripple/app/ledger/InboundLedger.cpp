@@ -52,6 +52,9 @@ enum
 
     // how many timeouts before we get aggressive
     ,ledgerBecomeAggressiveThreshold = 6
+
+    // How many nodes to consider a fetch "small"
+    ,fetchSmallNodes = 32
 };
 
 InboundLedger::InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason,
@@ -505,6 +508,12 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->getLedgerSeq ());
 
+    // If the peer has high latency, query extra deep
+    if (peer && peer->isHighLatency ())
+        tmGL.set_querydepth (2);
+    else
+        tmGL.set_querydepth (1);
+
     // Get the state data first because it's the most likely to be useful
     // if we wind up abandoning this fetch.
     if (mHaveHeader && !mHaveState && !mFailed)
@@ -568,6 +577,12 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                         {
                             * (tmGL.add_nodeids ()) = id.getRawString ();
                         }
+
+                        // If we're not querying for a lot of entries,
+                        // query extra deep
+                        if (nodeIDs.size() <= fetchSmallNodes)
+                            tmGL.set_querydepth (tmGL.querydepth() + 1);
+
                         if (m_journal.trace) m_journal.trace <<
                             "Sending AS node " << nodeIDs.size () <<
                                 " request to " << (
