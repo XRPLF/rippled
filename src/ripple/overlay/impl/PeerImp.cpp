@@ -111,7 +111,7 @@ PeerImp::run()
             if (v.parse(s))
             {
                 beast::SemanticVersion av;
-                av.parse("0.28.0-rc3");
+                av.parse("0.28.1-b7");
                 hopsAware_ = v >= av;
             }
         }
