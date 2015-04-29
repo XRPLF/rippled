@@ -287,8 +287,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
             trigger (Peer::ptr ());
-        if (pc < 4)
-            addPeers ();
+        addPeers ();
         if (mReason == fcHISTORY)
             trigger (Peer::ptr ());
     }
@@ -297,72 +296,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 /** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
-
-    int vSize = peerList.size ();
-
-    if (vSize == 0)
-    {
-        WriteLog (lsERROR, InboundLedger) <<
-            "No peers to add for ledger acquisition";
-        return;
-    }
-
-    // FIXME-NIKB why are we doing this convoluted thing here instead of simply
-    // shuffling this vector and then pulling however many entries we need?
-
-    // We traverse the peer list in random order so as not to favor
-    // any particular peer
-    //
-    // VFALCO Use random_shuffle
-    //        http://en.cppreference.com/w/cpp/algorithm/random_shuffle
-    //
-    int firstPeer = rand () % vSize;
-
-    int found = 0;
-
-    // First look for peers that are likely to have this ledger
-    for (int i = 0; i < vSize; ++i)
-    {
-        Peer::ptr const& peer = peerList[ (i + firstPeer) % vSize];
-
-        if (peer->hasLedger (getHash (), mSeq))
-        {
-           if (peerHas (peer) && (++found > 6))
-               break;
-        }
-    }
-
-    if (!found)
-    { // Oh well, try some random peers
-        for (int i = 0; (i < 6) && (i < vSize); ++i)
-        {
-            if (peerHas (peerList[ (i + firstPeer) % vSize]))
-                ++found;
-        }
-        if (mSeq != 0)
-        {
-            if (m_journal.debug) m_journal.debug <<
-                "Chose " << found << " peer(s) for ledger " << mSeq;
-        }
-        else
-        {
-            if (m_journal.debug) m_journal.debug <<
-                "Chose " << found << " peer(s) for ledger " <<
-                    to_string (getHash ());
-        }
-    }
-    else if (mSeq != 0)
-    {
-        if (m_journal.debug) m_journal.debug <<
-            "Found " << found << " peer(s) with ledger " << mSeq;
-    }
-    else
-    {
-        if (m_journal.debug) m_journal.debug <<
-            "Found " << found << " peer(s) with ledger " <<
-                to_string (getHash ());
-    }
+    getApp().overlay().selectPeers (&this, 6, ScoreHasLedger (getHash(), mSeq));
 }
 
 std::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
@@ -996,7 +930,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 */
 bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    if (mFailed || mHaveState)
+    if (mFailed || mHaveTransactions)
     {
         san.incDuplicate();
         return true;
