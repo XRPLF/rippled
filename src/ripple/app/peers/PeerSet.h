@@ -134,8 +134,8 @@ protected:
     }
     void invokeOnTimer ();
 
-    void sendRequest (const protocol::TMGetLedger& message);
-    void sendRequest (const protocol::TMGetLedger& message, Peer::ptr const& peer);
+    void sendRequest (protocol::TMGetLedger& message);
+    void sendRequest (protocol::TMGetLedger& message, Peer::ptr const& peer);
 
 protected:
     beast::Journal m_journal;

@@ -3364,8 +3364,7 @@ void NetworkOPsImp::makeFetchPack (
 
         m_journal.info
             << "Built fetch pack with " << reply.objects ().size () << " nodes";
-        auto msg = std::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
-        peer->send (msg);
+        peer->send (reply);
     }
     catch (...)
     {

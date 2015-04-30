@@ -24,6 +24,7 @@
 #include <ripple/basics/Log.h> // deprecated
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/overlay/impl/GetLedgerTracker.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/resource/Fees.h>
@@ -103,6 +104,7 @@ private:
     id_t const id_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
+    beast::WrappedSink g_sink_;
     beast::Journal journal_;
     beast::Journal p_journal_;
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
@@ -154,6 +156,7 @@ private:
     std::unique_ptr <LoadEvent> load_event_;
     std::unique_ptr<Validators::Connection> validatorsConnection_;
     bool hopsAware_ = false;
+    GetLedgerTracker getLedgerTracker_;
 
     //--------------------------------------------------------------------------
 
@@ -202,6 +205,15 @@ public:
 
     void
     send (Message::pointer const& m) override;
+
+    void
+    send (protocol::TMGetLedger& m) override;
+
+    void
+    send (protocol::TMLedgerData& m) override;
+
+    void
+    send (protocol::TMGetObjectByHash const& m) override;
 
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <class FwdIt, class = typename std::enable_if_t<std::is_same<
@@ -464,6 +476,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , id_ (id)
     , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
     , p_sink_ (deprecatedLogs().journal("Protocol"), makePrefix(id))
+    , g_sink_ (deprecatedLogs().journal("GetLedger"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_ (p_sink_)
     , ssl_bundle_(std::move(ssl_bundle))
@@ -484,6 +497,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , slot_ (std::move(slot))
     , http_message_(std::move(response))
     , validatorsConnection_(getApp().getValidators().newConnection(id))
+    , getLedgerTracker_ (beast::Journal(g_sink_))
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

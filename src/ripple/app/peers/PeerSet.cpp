@@ -151,30 +151,27 @@ bool PeerSet::isActive ()
     return !isDone ();
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& peer)
+void PeerSet::sendRequest (protocol::TMGetLedger& tmGL, Peer::ptr const& peer)
 {
     if (!peer)
         sendRequest (tmGL);
     else
-        peer->send (std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
+        peer->send (tmGL);
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
+void PeerSet::sendRequest (protocol::TMGetLedger& tmGL)
 {
     ScopedLockType sl (mLock);
 
     if (mPeers.empty ())
         return;
 
-    Message::pointer packet (
-        std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
-
     for (auto const& p : mPeers)
     {
         Peer::ptr peer (getApp().overlay ().findPeerByShortID (p.first));
 
         if (peer)
-            peer->send (packet);
+            peer->send (tmGL);
     }
 }
 
