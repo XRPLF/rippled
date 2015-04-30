@@ -36,10 +36,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     cp /src/build/rippled /usr/local/sbin/rippled && strip /usr/local/sbin/rippled/rippled
     mkdir -p /etc/ripple/
     mkdir -p /home/vagrant/.config/ripple/
-    cp /vagrant/rippled-example.cfg /home/vagrant/.config/ripple/rippled.cfg
-    cp /vagrant/rippled-example.cfg /etc/ripple/rippled.cfg
+    cp /src/Builds/Vagrant/rippled.cfg /home/vagrant/.config/ripple/rippled.cfg
+    cp /src/Builds/Vagrant/rippled.cfg /etc/ripple/rippled.cfg
     mkdir -p /root/.config/ripple/
-    cp /vagrant/rippled-example.cfg /root/.config/ripple/rippled.cfg
+    cp /src/Builds/Vagrant/rippled.cfg /root/.config/ripple/rippled.cfg
     cp /vagrant/init.d_rippled /etc/init.d/rippled
     chmod +x /etc/init.d/rippled
     service rippled start
