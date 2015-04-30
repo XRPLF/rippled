@@ -12,7 +12,7 @@ RUN apt-get -y upgrade
 RUN apt-get -y install git scons pkg-config protobuf-compiler libprotobuf-dev libssl-dev libboost1.55-all-dev
 
 # download source code from official repository
-RUN git clone https://github.com/ripple/rippled.git src; cd src/; git checkout master
+RUN git clone https://github.com/crazyquark/rippled.git src; cd src/; git checkout master
 
 # compile
 RUN cd src/; scons build/rippled
