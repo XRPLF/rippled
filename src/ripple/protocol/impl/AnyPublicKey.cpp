@@ -90,4 +90,15 @@ AnyPublicKeySlice::verify (
     return false;
 }
 
+std::string
+toString (AnyPublicKey const& pk)
+{
+    Blob buffer;
+    buffer.reserve (1 + pk.size ());
+    buffer.push_back (VER_NODE_PUBLIC);
+    auto const data = pk.data ();
+    buffer.insert (buffer.end (), data, data + pk.size ());
+    return Base58::encodeWithCheck (buffer);
+}
+
 } // ripple

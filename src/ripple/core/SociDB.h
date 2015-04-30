@@ -114,6 +114,7 @@ size_t getKBUsedDB (soci::session& s);
 void convert (soci::blob& from, std::vector<std::uint8_t>& to);
 void convert (soci::blob& from, std::string& to);
 void convert (std::vector<std::uint8_t> const& from, soci::blob& to);
+void convert (std::string const& from, soci::blob& to);
 
 class Checkpointer
 {

@@ -231,6 +231,13 @@ const char* WalletDBInit[] =
         PRIMARY KEY (Validator,Entry)               \
     );",
 
+    // Validator Manifests
+    R"(
+        CREATE TABLE IF NOT EXISTS ValidatorManifests (
+        RawData          BLOB NOT NULL
+        );
+    )",
+
     // List of referrals from ripple.txt files.
     // Validator:
     //  Public key of referree.

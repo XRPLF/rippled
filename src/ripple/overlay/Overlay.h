@@ -38,6 +38,9 @@ namespace boost { namespace asio { namespace ssl { class context; } } }
 
 namespace ripple {
 
+class DatabaseCon;
+class BasicConfig;
+
 /** Manages the set of connected peers. */
 class Overlay
     : public beast::Stoppable
@@ -156,6 +159,15 @@ public:
     relay (protocol::TMValidation& m,
         uint256 const& uid) = 0;
 
+    virtual
+    void
+    setupValidatorKeyManifests (BasicConfig const& config,
+                                DatabaseCon& db) = 0;
+
+    virtual
+    void
+    saveValidatorKeyManifests (DatabaseCon& db) const = 0;
+
     /** Visit every active peer and return a value
         The functor must:
         - Be callable as:
@@ -170,12 +182,11 @@ public:
 
         @note The functor is passed by value!
     */
-    template<typename Function>
-    std::enable_if_t <
-        ! std::is_void <typename Function::return_type>::value,
-        typename Function::return_type
-    >
-    foreach(Function f)
+    template <typename UnaryFunc>
+    std::enable_if_t<! std::is_void<
+            typename UnaryFunc::return_type>::value,
+                typename UnaryFunc::return_type>
+    foreach (UnaryFunc f)
     {
         PeerSequence peers (getActivePeers());
         for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)

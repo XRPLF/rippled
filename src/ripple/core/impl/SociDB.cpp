@@ -160,6 +160,16 @@ void convert (std::vector<std::uint8_t> const& from, soci::blob& to)
 {
     if (!from.empty ())
         to.write (0, reinterpret_cast<char const*>(&from[0]), from.size ());
+    else
+        to.trim (0);
+}
+
+void convert (std::string const& from, soci::blob& to)
+{
+    if (!from.empty ())
+        to.write (0, from.data (), from.size ());
+    else
+        to.trim (0);
 }
 
 namespace {

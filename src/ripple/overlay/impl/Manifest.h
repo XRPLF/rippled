@@ -34,17 +34,15 @@ namespace ripple {
     Validator key manifests
     -----------------------
 
-    First, a rationale:  Suppose a system adminstrator leaves the company.
-    You err on the side of caution (if not paranoia) and assume that the
-    secret keys installed on Ripple validators are compromised.  Not only
-    do you have to generate and install new key pairs on each validator,
-    EVERY rippled needs to have its config updated with the new public keys,
-    and is vulnerable to forged validation signatures until this is done.
-    The solution is a new layer of indirection:  A master secret key under
+    Suppose the secret keys installed on a Ripple validator are compromised.  Not
+    only do you have to generate and install new key pairs on each validator,
+    EVERY rippled needs to have its config updated with the new public keys, and
+    is vulnerable to forged validation signatures until this is done.  The
+    solution is a new layer of indirection: A master secret key under
     restrictive access control is used to sign a "manifest": essentially, a
     certificate including the master public key, an ephemeral public key for
-    verifying validations (which will be signed by its secret counterpart),
-    a sequence number, and a digital signature.
+    verifying validations (which will be signed by its secret counterpart), a
+    sequence number, and a digital signature.
 
     The manifest has two serialized forms: one which includes the digital
     signature and one which doesn't.  There is an obvious causal dependency
@@ -89,22 +87,16 @@ struct Manifest
     std::string serialized;
     AnyPublicKey masterKey;
     AnyPublicKey signingKey;
-    std::uint32_t seq;
+    std::uint32_t sequence;
 
-    Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
-        : serialized(std::move(s))
-        , masterKey(std::move(pk))
-        , signingKey(std::move(spk))
-        , seq(seq)
-    {
-    }
+    Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq);
 
 #ifdef _MSC_VER
     Manifest(Manifest&& other)
       : serialized(std::move(other.serialized))
       , masterKey(std::move(other.masterKey))
       , signingKey(std::move(other.signingKey))
-      , seq(other.seq)
+      , sequence(other.sequence)
     {
     }
 
@@ -113,26 +105,42 @@ struct Manifest
         serialized = std::move(other.serialized);
         masterKey = std::move(other.masterKey);
         signingKey = std::move(other.signingKey);
-        seq = other.seq;
+        sequence = other.sequence;
         return *this;
     }
 #else
     Manifest(Manifest&& other) = default;
     Manifest& operator=(Manifest&& other) = default;
 #endif
+
+    bool verify () const;
+    uint256 hash () const;
+    bool revoked () const;
 };
+
+boost::optional<Manifest> make_Manifest(std::string s);
+
+inline bool operator==(Manifest const& lhs, Manifest const& rhs)
+{
+    return lhs.serialized == rhs.serialized && lhs.masterKey == rhs.masterKey &&
+           lhs.signingKey == rhs.signingKey && lhs.sequence == rhs.sequence;
+}
+
+inline bool operator!=(Manifest const& lhs, Manifest const& rhs)
+{
+    return !(lhs == rhs);
+}
 
 enum class ManifestDisposition
 {
-    accepted = 0,  // everything checked out
+    accepted = 0, // everything checked out
 
-    malformed,   // deserialization fails
-    incomplete,  // fields are missing
-    untrusted,   // manifest declares a master key we don't trust
-    stale,       // trusted master key, but seq is too old
-    invalid,     // trusted and timely, but invalid signature
+    untrusted,    // manifest declares a master key we don't trust
+    stale,        // trusted master key, but seq is too old
+    invalid,      // trusted and timely, but invalid signature
 };
 
+class DatabaseCon;
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache
 {
@@ -140,6 +148,30 @@ private:
     struct MappedType
     {
         MappedType() = default;
+#ifdef _MSC_VER
+        MappedType(MappedType&& rhs)
+            :comment (std::move (rhs.comment))
+            , m (std::move (rhs.m))
+        {
+        }
+        MappedType& operator=(MappedType&& rhs)
+        {
+            comment = std::move (rhs.comment);
+            m = std::move (rhs.m);
+            return *this;
+        }
+#else
+        MappedType(MappedType&&) = default;
+        MappedType& operator=(MappedType&&) = default;
+#endif
+        MappedType(std::string comment,
+                   std::string serialized,
+                   AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
+            :comment (std::move(comment))
+        {
+            m.emplace (std::move(serialized), std::move(pk), std::move(spk),
+                       seq);
+        }
 
         std::string comment;
         boost::optional<Manifest> m;
@@ -151,7 +183,7 @@ private:
     MapType map_;
 
     ManifestDisposition
-    preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
+    canApply (AnyPublicKey const& pk, std::uint32_t seq,
         beast::Journal const& journal) const;
 
 public:
@@ -161,12 +193,15 @@ public:
     ~ManifestCache() = default;
 
     void configValidatorKey(std::string const& line, beast::Journal const& journal);
-    void configManifest(std::string s, beast::Journal const& journal);
+    void configManifest(Manifest m, beast::Journal const& journal);
 
-    void addTrustedKey (AnyPublicKey const& pk, std::string const& comment);
+    void addTrustedKey (AnyPublicKey const& pk, std::string comment);
 
     ManifestDisposition
-    applyManifest (std::string s, beast::Journal const& journal);
+    applyManifest (Manifest m, beast::Journal const& journal);
+
+    void load (DatabaseCon& dbCon, beast::Journal const& journal);
+    void save (DatabaseCon& dbCon) const;
 
     // A "for_each" for populated manifests only
     template <class Function>
@@ -174,6 +209,22 @@ public:
     for_each_manifest(Function&& f) const
     {
         std::lock_guard<std::mutex> lock (mutex_);
+        for (auto const& e : map_)
+        {
+            if (auto const& m = e.second.m)
+                f(*m);
+        }
+    }
+
+    // A "for_each" for populated manifests only
+    // The PreFun is called with the maximum number of
+    // times EachFun will be called (useful for memory allocations)
+    template <class PreFun, class EachFun>
+    void
+    for_each_manifest(PreFun&& pf, EachFun&& f) const
+    {
+        std::lock_guard<std::mutex> lock (mutex_);
+        pf(map_.size ());
         for (auto const& e : map_)
         {
             if (auto const& m = e.second.m)

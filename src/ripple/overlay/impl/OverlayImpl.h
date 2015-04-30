@@ -192,6 +192,15 @@ public:
     relay (protocol::TMValidation& m,
         uint256 const& uid) override;
 
+    virtual
+    void
+    setupValidatorKeyManifests (BasicConfig const& config,
+                                DatabaseCon& db) override;
+
+    virtual
+    void
+    saveValidatorKeyManifests (DatabaseCon& db) const override;
+
     //--------------------------------------------------------------------------
     //
     // OverlayImpl

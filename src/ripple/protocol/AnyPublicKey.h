@@ -123,7 +123,8 @@ public:
     AnyPublicKey& operator= (AnyPublicKey&& other)
     {
         buffer_type::member =
-            std::move(other.buffer_type::member);
+            std::move (other.buffer_type::member);
+        AnyPublicKeySlice::operator= (other);
         return *this;
     }
 #else
@@ -178,6 +179,9 @@ struct STExchange<STBlob, AnyPublicKey>
             f, t.releaseBuffer());
     }
 };
+
+std::string
+toString (AnyPublicKey const& pk);
 
 } // ripple
 

@@ -20,21 +20,76 @@
 #include <BeastConfig.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/overlay/impl/Manifest.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/app/main/DBInit.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STExchange.h>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace ripple {
 namespace tests {
 
 class manifest_test : public ripple::TestSuite
 {
+private:
+    static void cleanupDatabaseDir (boost::filesystem::path const& dbPath)
+    {
+        using namespace boost::filesystem;
+        if (!exists (dbPath) || !is_directory (dbPath) || !is_empty (dbPath))
+            return;
+        remove (dbPath);
+    }
+
+    static void setupDatabaseDir (boost::filesystem::path const& dbPath)
+    {
+        using namespace boost::filesystem;
+        if (!exists (dbPath))
+        {
+            create_directory (dbPath);
+            return;
+        }
+
+        if (!is_directory (dbPath))
+        {
+            // someone created a file where we want to put our directory
+            throw std::runtime_error ("Cannot create directory: " +
+                                      dbPath.string ());
+        }
+    }
+    static boost::filesystem::path getDatabasePath ()
+    {
+        return boost::filesystem::current_path () / "manifest_test_databases";
+    }
 public:
-    // Return a manifest in both serialized and STObject form
-    std::string
-    make_manifest(AnySecretKey const& sk, AnyPublicKey const& spk, int seq, bool broken = false)
+    manifest_test ()
+    {
+        try
+        {
+            setupDatabaseDir (getDatabasePath ());
+        }
+        catch (...)
+        {
+        }
+    }
+    ~manifest_test ()
+    {
+        try
+        {
+            cleanupDatabaseDir (getDatabasePath ());
+        }
+        catch (...)
+        {
+        }
+    }
+
+    Manifest
+    make_Manifest
+        (AnySecretKey const& sk, AnyPublicKey const& spk, int seq,
+         bool broken = false)
     {
         auto const pk = sk.publicKey();
-        
+
         STObject st(sfGeneric);
         set(st, sfSequence, seq);
         set(st, sfPublicKey, pk);
@@ -52,53 +107,125 @@ public:
         st.add(s);
 
         std::string const m (static_cast<char const*> (s.data()), s.size());
-        return m;
+        if (auto r = ripple::make_Manifest (std::move (m)))
+        {
+            return std::move (*r);
+        }
+        throw std::runtime_error("Could not create a manifest");
+    }
+
+    Manifest
+    clone (Manifest const& m)
+    {
+        return Manifest (m.serialized, m.masterKey, m.signingKey, m.sequence);
+    }
+
+    void testLoadStore (ManifestCache const& m)
+    {
+        testcase ("load/store");
+
+        std::string const dbName("ManifestCacheTestDB");
+        { 
+            // create a database, save the manifest to the db and reload and
+            // check that the manifest caches are the same
+            DatabaseCon::Setup setup;
+            setup.dataDir = getDatabasePath ();
+            DatabaseCon dbCon(setup, dbName, WalletDBInit, WalletDBCount);
+
+            m.save (dbCon);
+
+            ManifestCache loaded;
+            beast::Journal journal;
+            loaded.load (dbCon, journal);
+
+            auto getPopulatedManifests =
+                    [](ManifestCache const& cache) -> std::vector<Manifest const*>
+                    {
+                        std::vector<Manifest const*> result;
+                        result.reserve (32);
+                        cache.for_each_manifest (
+                            [&result](Manifest const& m)
+            {result.push_back (&m);});
+                        return result;
+                    };
+            auto sort =
+                    [](std::vector<Manifest const*> mv) -> std::vector<Manifest const*>
+                    {
+                        std::sort (mv.begin (),
+                                   mv.end (),
+                                   [](Manifest const* lhs, Manifest const* rhs)
+            {return lhs->serialized < rhs->serialized;});
+                        return mv;
+                    };
+            std::vector<Manifest const*> const inManifests (
+                sort (getPopulatedManifests (m)));
+            std::vector<Manifest const*> const loadedManifests (
+                sort (getPopulatedManifests (loaded)));
+            if (inManifests.size () == loadedManifests.size ())
+            {
+                expect (std::equal
+                        (inManifests.begin (), inManifests.end (),
+                         loadedManifests.begin (),
+                         [](Manifest const* lhs, Manifest const* rhs)
+                         {return *lhs == *rhs;}));
+            }
+            else
+            {
+                fail ();
+            }
+        }
+        boost::filesystem::remove (getDatabasePath () /
+                                   boost::filesystem::path (dbName));
     }
 
     void
     run() override
     {
-        auto const accepted  = ManifestDisposition::accepted;
-        auto const malformed = ManifestDisposition::malformed;
-        auto const untrusted = ManifestDisposition::untrusted;
-        auto const stale     = ManifestDisposition::stale;
-        auto const invalid   = ManifestDisposition::invalid;
-
-        beast::Journal journal;
-
-        auto const sk_a = AnySecretKey::make_ed25519();
-        auto const sk_b = AnySecretKey::make_ed25519();
-        auto const pk_a = sk_a.publicKey();
-        auto const pk_b = sk_b.publicKey();
-        auto const kp_a = AnySecretKey::make_secp256k1_pair();
-        auto const kp_b = AnySecretKey::make_secp256k1_pair();
-
-        auto const s_a0 = make_manifest(sk_a, kp_a.second, 0);
-        auto const s_a1 = make_manifest(sk_a, kp_a.second, 1);
-        auto const s_b0 = make_manifest(sk_b, kp_b.second, 0);
-        auto const s_b1 = make_manifest(sk_b, kp_b.second, 1);
-        auto const s_b2 = make_manifest(sk_b, kp_b.second, 2, true);  // broken
-        auto const fake = s_b1 + '\0';
-
         ManifestCache cache;
+        {
+            testcase ("apply");
+            auto const accepted = ManifestDisposition::accepted;
+            auto const untrusted = ManifestDisposition::untrusted;
+            auto const stale = ManifestDisposition::stale;
+            auto const invalid = ManifestDisposition::invalid;
 
-        expect(cache.applyManifest(s_a0, journal) == untrusted, "have to install a trusted key first");
+            beast::Journal journal;
 
-        cache.addTrustedKey(pk_a, "a");
-        cache.addTrustedKey(pk_b, "b");
+            auto const sk_a = AnySecretKey::make_ed25519 ();
+            auto const sk_b = AnySecretKey::make_ed25519 ();
+            auto const pk_a = sk_a.publicKey ();
+            auto const pk_b = sk_b.publicKey ();
+            auto const kp_a = AnySecretKey::make_secp256k1_pair ();
+            auto const kp_b = AnySecretKey::make_secp256k1_pair ();
 
-        expect(cache.applyManifest(s_a0, journal) == accepted);
-        expect(cache.applyManifest(s_a0, journal) == stale);
+            auto const s_a0 = make_Manifest (sk_a, kp_a.second, 0);
+            auto const s_a1 = make_Manifest (sk_a, kp_a.second, 1);
+            auto const s_b0 = make_Manifest (sk_b, kp_b.second, 0);
+            auto const s_b1 = make_Manifest (sk_b, kp_b.second, 1);
+            auto const s_b2 =
+                make_Manifest (sk_b, kp_b.second, 2, true);  // broken
+            auto const fake = s_b1.serialized + '\0';
 
-        expect(cache.applyManifest(s_a1, journal) == accepted);
-        expect(cache.applyManifest(s_a1, journal) == stale);
-        expect(cache.applyManifest(s_a0, journal) == stale);
+            expect (cache.applyManifest (clone (s_a0), journal) == untrusted,
+                    "have to install a trusted key first");
 
-        expect(cache.applyManifest(s_b0, journal) == accepted);
-        expect(cache.applyManifest(s_b0, journal) == stale);
+            cache.addTrustedKey (pk_a, "a");
+            cache.addTrustedKey (pk_b, "b");
 
-        expect(cache.applyManifest(fake, journal) == malformed);
-        expect(cache.applyManifest(s_b2, journal) == invalid);
+            expect (cache.applyManifest (clone (s_a0), journal) == accepted);
+            expect (cache.applyManifest (clone (s_a0), journal) == stale);
+
+            expect (cache.applyManifest (clone (s_a1), journal) == accepted);
+            expect (cache.applyManifest (clone (s_a1), journal) == stale);
+            expect (cache.applyManifest (clone (s_a0), journal) == stale);
+
+            expect (cache.applyManifest (clone (s_b0), journal) == accepted);
+            expect (cache.applyManifest (clone (s_b0), journal) == stale);
+
+            expect (!ripple::make_Manifest(fake));
+            expect (cache.applyManifest (clone (s_b2), journal) == invalid);
+        }
+        testLoadStore (cache);
     }
 };
 

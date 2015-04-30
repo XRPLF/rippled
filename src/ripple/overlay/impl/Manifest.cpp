@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Sign.h>
@@ -27,12 +28,102 @@
 
 namespace ripple {
 
+boost::optional<Manifest>
+make_Manifest (std::string s)
+{
+    try
+    {
+        STObject st (sfGeneric);
+        SerialIter sit (s.data (), s.size ());
+        st.set (sit);
+        auto const opt_pk = get<AnyPublicKey>(st, sfPublicKey);
+        auto const opt_spk = get<AnyPublicKey>(st, sfSigningPubKey);
+        auto const opt_seq = get (st, sfSequence);
+        auto const opt_sig = get (st, sfSignature);
+        if (!opt_pk || !opt_spk || !opt_seq || !opt_sig)
+        {
+            return boost::none;
+        }
+        return Manifest (std::move (s), *opt_pk, *opt_spk, *opt_seq);
+    }
+    catch (...)
+    {
+        return boost::none;
+    }
+}
+
+template<class Stream>
+Stream&
+logMftAct (
+    Stream& s,
+    std::string const& action,
+    AnyPublicKey const& pk,
+    std::uint32_t seq)
+{
+    s << "Manifest: " << action <<
+         ";Pk: " << toString (pk) <<
+         ";Seq: " << seq << ";";
+    return s;
+}
+
+template<class Stream>
+Stream& logMftAct (
+    Stream& s,
+    std::string const& action,
+    AnyPublicKey const& pk,
+    std::uint32_t seq,
+    std::uint32_t oldSeq)
+{
+    s << "Manifest: " << action <<
+         ";Pk: " << toString (pk) <<
+         ";Seq: " << seq <<
+         ";OldSeq: " << oldSeq << ";";
+    return s;
+}
+
+Manifest::Manifest (std::string s,
+                    AnyPublicKey pk,
+                    AnyPublicKey spk,
+                    std::uint32_t seq)
+    : serialized (std::move (s))
+    , masterKey (std::move (pk))
+    , signingKey (std::move (spk))
+    , sequence (seq)
+{
+}
+
+bool Manifest::verify () const
+{
+    STObject st (sfGeneric);
+    SerialIter sit (serialized.data (), serialized.size ());
+    st.set (sit);
+    return ripple::verify (st, HashPrefix::manifest, masterKey);
+}
+
+uint256 Manifest::hash () const
+{
+    STObject st (sfGeneric);
+    SerialIter sit (serialized.data (), serialized.size ());
+    st.set (sit);
+    return st.getHash (HashPrefix::manifest);
+}
+
+bool Manifest::revoked () const
+{
+    /*
+        The maximum possible sequence number means that the master key
+        has been revoked.
+    */
+    return sequence == std::numeric_limits<std::uint32_t>::max ();
+}
+
 void
-ManifestCache::configValidatorKey(std::string const& line, beast::Journal const& journal)
+ManifestCache::configValidatorKey(
+    std::string const& line, beast::Journal const& journal)
 {
     auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
 
-    if (words.size() != 2)
+    if (words.size () != 2)
     {
         throw std::runtime_error ("[validator_keys] format is `<key> <comment>");
     }
@@ -56,44 +147,23 @@ ManifestCache::configValidatorKey(std::string const& line, beast::Journal const&
     }
 
     auto const masterKey = AnyPublicKey (key.data() + 1, key.size() - 1);
-    auto const& comment = words[1];
+    std::string comment = std::move(words[1]);
 
     if (journal.debug) journal.debug
         << masterKey << " " << comment;
 
-    addTrustedKey (masterKey, comment);
+    addTrustedKey (masterKey, std::move(comment));
 }
 
 void
-ManifestCache::configManifest (std::string s, beast::Journal const& journal)
+ManifestCache::configManifest(Manifest m, beast::Journal const& journal)
 {
-    STObject st(sfGeneric);
-    try
-    {
-        SerialIter sit(s.data(), s.size());
-        st.set(sit);
-    }
-    catch(...)
-    {
-        throw std::runtime_error("Malformed manifest in config");
-    }
-
-    auto const mseq = get(st, sfSequence);
-    auto const msig = get(st, sfSignature);
-    auto mpk  = get<AnyPublicKey>(st, sfPublicKey);
-    auto mspk = get<AnyPublicKey>(st, sfSigningPubKey);
-    if (! mseq || ! msig || ! mpk || ! mspk)
-    {
-        throw std::runtime_error("Missing fields in manifest in config");
-    }
-    auto const& pk = *mpk;
-
-    if (! verify(st, HashPrefix::manifest, pk))
+    if (!m.verify())
     {
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    auto const result = applyManifest (std::move(s), journal);
+    auto const result = applyManifest (std::move(m), journal);
 
     if (result != ManifestDisposition::accepted)
     {
@@ -102,7 +172,7 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
 }
 
 void
-ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment)
+ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string comment)
 {
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -110,14 +180,15 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string const& comment
 
     if (value.m)
     {
-        throw std::runtime_error ("New trusted validator key already has a manifest");
+        throw std::runtime_error (
+            "New trusted validator key already has a manifest");
     }
 
-    value.comment = comment;
+    value.comment = std::move(comment);
 }
 
 ManifestDisposition
-ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t seq,
+ManifestCache::canApply (AnyPublicKey const& pk, std::uint32_t seq,
     beast::Journal const& journal) const
 {
     auto const iter = map_.find(pk);
@@ -129,14 +200,14 @@ ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t s
             Since rippled always sends all of its current manifests,
             this will happen normally any time a peer connects.
         */
-        if (journal.debug) journal.debug
-            << "Ignoring manifest #" << seq << " from untrusted key " << pk;
+        if (journal.debug)
+            logMftAct(journal.debug, "Untrusted", pk, seq);
         return ManifestDisposition::untrusted;
     }
 
     auto& old = iter->second.m;
 
-    if (old  &&  seq <= old->seq)
+    if (old  &&  seq <= old->sequence)
     {
         /*
             A manifest was received for a validator we're tracking, but
@@ -144,67 +215,41 @@ ManifestCache::preflightManifest_locked (AnyPublicKey const& pk, std::uint32_t s
             This will happen normally when a peer without the latest gossip
             connects.
         */
-        if (journal.debug) journal.debug
-            << "Ignoring manifest #"      << seq
-            << "which isn't newer than #" << old->seq;
+        if (journal.debug)
+            logMftAct(journal.debug, "Stale", pk, seq, old->sequence);
         return ManifestDisposition::stale;  // not a newer manifest, ignore
     }
 
     return ManifestDisposition::accepted;
 }
 
+
 ManifestDisposition
-ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
+ManifestCache::applyManifest (Manifest m, beast::Journal const& journal)
 {
-    STObject st(sfGeneric);
-    try
-    {
-        SerialIter sit(s.data(), s.size());
-        st.set(sit);
-    }
-    catch(...)
-    {
-        return ManifestDisposition::malformed;
-    }
-
-    auto const opt_pk = get<AnyPublicKey>(st, sfPublicKey);
-    auto const opt_spk = get<AnyPublicKey>(st, sfSigningPubKey);
-    auto const opt_seq = get(st, sfSequence);
-    auto const opt_sig = get(st, sfSignature);
-
-    if (! opt_pk  ||  ! opt_spk  ||  ! opt_seq  ||  ! opt_sig)
-    {
-        return ManifestDisposition::incomplete;
-    }
-
-    auto const pk = *opt_pk;
-    auto const spk = *opt_spk;
-    auto const seq = *opt_seq;
-
     {
         std::lock_guard<std::mutex> lock (mutex_);
 
         /*
-            "Preflight" the manifest -- before we spend time checking the
-            signature, make sure we trust the master key and the sequence
-            number is newer than any we have.
+            before we spend time checking the signature, make sure we trust the
+            master key and the sequence number is newer than any we have.
         */
-        auto const preflight = preflightManifest_locked(pk, seq, journal);
+        auto const chk = canApply(m.masterKey, m.sequence, journal);
 
-        if (preflight != ManifestDisposition::accepted)
+        if (chk != ManifestDisposition::accepted)
         {
-            return preflight;
+            return chk;
         }
     }
 
-    if (! verify(st, HashPrefix::manifest, pk))
+    if (! m.verify())
     {
         /*
-            A manifest's signature is invalid.
-            This shouldn't happen normally.
+          A manifest's signature is invalid.
+          This shouldn't happen normally.
         */
-        if (journal.warning) journal.warning
-            << "Failed to verify manifest #" << seq;
+        if (journal.warning)
+            logMftAct(journal.warning, "Invalid", m.masterKey, m.sequence);
         return ManifestDisposition::invalid;
     }
 
@@ -213,25 +258,19 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
     std::lock_guard<std::mutex> lock (mutex_);
 
     /*
-        We released the lock above, so we have to preflight again, in case
+        We released the lock above, so we have to check again, in case
         another thread accepted a newer manifest.
     */
-    auto const preflight = preflightManifest_locked(pk, seq, journal);
+    auto const chk = canApply(m.masterKey, m.sequence, journal);
 
-    if (preflight != ManifestDisposition::accepted)
+    if (chk != ManifestDisposition::accepted)
     {
-        return preflight;
+        return chk;
     }
 
-    auto const iter = map_.find(pk);
+    auto const iter = map_.find(m.masterKey);
 
     auto& old = iter->second.m;
-
-    /*
-        The maximum possible sequence number means that the master key
-        has been revoked.
-    */
-    auto const revoked = std::uint32_t (-1);
 
     if (! old)
     {
@@ -241,20 +280,20 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
             run (and possibly not at all, if there's an obsolete entry in
             [validator_keys] for a validator that no longer exists).
         */
-        if (journal.info) journal.info
-            << "Adding new manifest #" << seq;
+        if (journal.info)
+            logMftAct(journal.info, "AcceptedNew", m.masterKey, m.sequence);
     }
     else
     {
-        if (seq == revoked)
+        if (m.revoked ())
         {
             /*
                The MASTER key for this validator was revoked.  This is
                expected, but should happen at most *very* rarely.
             */
-            if (journal.warning) journal.warning
-                << "Dropping old manifest #" << old->seq
-                << " because the master key was revoked";
+            if (journal.info)
+                logMftAct(journal.info, "Revoked",
+                          m.masterKey, m.sequence, old->sequence);
         }
         else
         {
@@ -262,19 +301,19 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
                 An ephemeral key was revoked and superseded by a new key.
                 This is expected, but should happen infrequently.
             */
-            if (journal.warning) journal.warning
-                << "Dropping old manifest #" << old->seq
-                << " in favor of #"          << seq;
+            if (journal.info)
+                logMftAct(journal.info, "AcceptedUpdate",
+                          m.masterKey, m.sequence, old->sequence);
         }
 
         unl.deleteEphemeralKey (old->signingKey);
     }
 
-    if (seq == revoked)
+    if (m.revoked ())
     {
         // The master key is revoked -- don't insert the signing key
-        if (auto const& j = journal.warning)
-            j << "Revoking master key: " << pk;
+        if (journal.warning)
+            logMftAct(journal.warning, "Revoked", m.masterKey, m.sequence);
 
         /*
             A validator master key has been compromised, so its manifests
@@ -286,12 +325,68 @@ ManifestCache::applyManifest (std::string s, beast::Journal const& journal)
     }
     else
     {
-        unl.insertEphemeralKey (spk, iter->second.comment);
+        unl.insertEphemeralKey (m.signingKey, iter->second.comment);
     }
 
-    old = Manifest(std::move (s), std::move (pk), std::move (spk), seq);
+    old = std::move(m);
 
     return ManifestDisposition::accepted;
 }
 
+void ManifestCache::load (
+    DatabaseCon& dbCon, beast::Journal const& journal)
+{
+    static const char* const sql =
+        "SELECT RawData FROM ValidatorManifests;";
+    auto db = dbCon.checkoutDb ();
+    soci::blob sociRawData (*db);
+    soci::statement st =
+        (db->prepare << sql,
+             soci::into (sociRawData));
+    st.execute ();
+    while (st.fetch ())
+    {
+        std::string serialized;
+        convert (sociRawData, serialized);
+        if (auto mo = make_Manifest (std::move (serialized)))
+        {
+            if (!mo->verify())
+            {
+                throw std::runtime_error("Unverifiable manifest in db");
+            }
+            // add trusted key
+            map_[mo->masterKey];
+
+            // OK if not accepted (may have been loaded from the config file)
+            applyManifest (std::move(*mo), journal);
+        }
+        else
+        {
+            if (journal.warning)
+                journal.warning << "Malformed manifest in database";
+        }
+    }
+}
+
+void ManifestCache::save (DatabaseCon& dbCon) const
+{
+    auto db = dbCon.checkoutDb ();
+
+    soci::transaction tr(*db);
+    *db << "DELETE FROM ValidatorManifests";
+    static const char* const sql =
+        "INSERT INTO ValidatorManifests (RawData) VALUES (:rawData);";
+    // soci does not support bulk insertion of blob data
+    soci::blob rawData(*db);
+    for (auto const& v : map_)
+    {
+        if (!v.second.m)
+            continue;
+
+        convert (v.second.m->serialized, rawData);
+        *db << sql,
+            soci::use (rawData);
+    }
+    tr.commit ();
+}
 }

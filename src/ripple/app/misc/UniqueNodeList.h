@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 
-#include <ripple/app/peers/ClusterNodeStatus.h>
+#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/protocol/AnyPublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <beast/cxx14/memory.h> // <memory>

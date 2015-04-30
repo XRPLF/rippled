@@ -806,6 +806,8 @@ public:
             getConfig());
         add (*m_overlay); // add to PropertyStream
 
+        m_overlay->setupValidatorKeyManifests (getConfig (), getWalletDB ());
+
         {
             auto setup = setup_ServerHandler(getConfig(), std::cerr);
             setup.makeContexts();
@@ -899,6 +901,8 @@ public:
         m_entropyTimer.cancel ();
 
         mValidations->flush ();
+
+        m_overlay->saveValidatorKeyManifests (getWalletDB ());
 
         RippleAddress::clearCache ();
         stopped ();
