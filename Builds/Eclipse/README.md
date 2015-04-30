@@ -13,5 +13,5 @@ Point the importer to the folder where the SConstruct resides (the root foolder 
 
 **Build**
 
-Just hit build. And remember for God's sake to not let it run 16 threads! 
+Just hit Project->Build All in Eclipse to let it rip. And remember for God's sake to not let it run 16 threads! 
 
