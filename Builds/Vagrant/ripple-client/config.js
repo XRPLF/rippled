@@ -28,7 +28,7 @@ var Options = {
   //
   // The blobvault URL for the new login protocol is set via authinfo. You can
   // still use this setting for the fallback feature.
-  blobvault: 'https://blobvault.ripple.com',
+  blobvault: 'http://local.id.ripple.com:8080',
 
   // If set, login will persist across sessions (page reload). This is mostly
   // intended for developers, be careful about using this in a real setting.
@@ -56,9 +56,9 @@ var Options = {
   },
 
   // production
-  // activate_link: 'http://rippletrade.com/#/register/activate',
+  activate_link: 'http://rippletrade.com/#/register/activate',
   // staging
-  activate_link: 'http://staging.ripple.com/client/#/register/activate',
+  // activate_link: 'http://staging.ripple.com/client/#/register/activate',
 
   b2rAddress: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
   snapswapApi: 'https://snapswap.us/api/v1',
