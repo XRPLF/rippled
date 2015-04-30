@@ -86,8 +86,6 @@ ManifestCache::configManifest (std::string s, beast::Journal const& journal)
     {
         throw std::runtime_error("Missing fields in manifest in config");
     }
-    auto const seq = *mseq;
-    auto const& sig = *msig;
     auto const& pk = *mpk;
 
     if (! verify(st, HashPrefix::manifest, pk))
