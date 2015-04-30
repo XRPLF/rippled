@@ -77,6 +77,7 @@ public:
         auto const s_a1 = make_manifest(sk_a, kp_a.second, 1);
         auto const s_b0 = make_manifest(sk_b, kp_b.second, 0);
         auto const s_b1 = make_manifest(sk_b, kp_b.second, 1);
+        auto const s_b2 = make_manifest(sk_b, kp_b.second, 2, true);  // broken
         auto const fake = s_b1 + '\0';
 
         ManifestCache cache;
@@ -97,7 +98,7 @@ public:
         expect(cache.applyManifest(s_b0, journal) == stale);
 
         expect(cache.applyManifest(fake, journal) == malformed);
-        // TODO:  Test invalid
+        expect(cache.applyManifest(s_b2, journal) == invalid);
     }
 };
 
