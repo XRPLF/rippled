@@ -31,7 +31,7 @@ class manifest_test : public ripple::TestSuite
 public:
     // Return a manifest in both serialized and STObject form
     std::string
-    make_manifest(AnySecretKey const& sk, AnyPublicKey const& spk, int seq)
+    make_manifest(AnySecretKey const& sk, AnyPublicKey const& spk, int seq, bool broken = false)
     {
         auto const pk = sk.publicKey();
         
@@ -42,6 +42,11 @@ public:
 
         sign(st, HashPrefix::manifest, sk);
         expect(verify(st, HashPrefix::manifest, pk));
+
+        if (broken)
+        {
+            set(st, sfSequence, seq + 1);
+        }
 
         Serializer s;
         st.add(s);
