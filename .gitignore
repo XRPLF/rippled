@@ -80,3 +80,12 @@ rippled-build.log
 
 # Profiling data
 gmon.out
+
+# Eclipse CDT project files
+/.cproject
+/.externalToolBuilders
+/.project
+/.settings
+
+# ignore vagrant files
+.vagrant

@@ -1125,8 +1125,8 @@ public:
     {
         if (is_unspecified (address))
             return false;
-        if (! is_public (address))
-            return false;
+//        if (! is_public (address))
+//            return false;
         if (address.port() == 0)
             return false;
         return true;
