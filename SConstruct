@@ -56,7 +56,7 @@ The following environment variables modify the build environment:
       If set, used to detect a toolchain.
 
     BOOST_ROOT
-      Path to the boost directory.
+      Path to the boost directory. 
     OPENSSL_ROOT
       Path to the openssl directory.
 
@@ -903,6 +903,5 @@ def do_count(target, source, env):
         lines = lines + sum(1 for line in open(f))
     print "Total unit test lines: %d" % lines
 
-env = None # Humm, why no environment?
 PhonyTargets(env, count = do_count)
 
