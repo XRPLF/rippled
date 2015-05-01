@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/STValidation.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <vector>
 
 namespace ripple {
 
@@ -63,6 +64,10 @@ public:
     // VFALCO TODO make a typedef for this ugly return value!
     virtual LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 previousLedger) = 0;
+
+    /** Return the times of all validations for a particular ledger hash. */
+    virtual std::vector<std::uint32_t> getValidationTimes (
+        uint256 const& ledger) = 0;
 
     virtual std::list <STValidation::pointer>
     getCurrentTrustedValidations () = 0;

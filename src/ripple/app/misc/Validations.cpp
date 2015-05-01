@@ -387,6 +387,18 @@ private:
         return ret;
     }
 
+    std::vector<uint32_t>
+    getValidationTimes (uint256 const& hash)
+    {
+        std::vector <std::uint32_t> times;
+        ScopedLockType sl (mLock);
+        if (auto j = findSet (hash))
+            for (auto& it : *j)
+                if (it.second->isTrusted())
+                    times.push_back (it.second->getSignTime());
+        return times;
+    }
+
     void flush ()
     {
         bool anyNew = false;
