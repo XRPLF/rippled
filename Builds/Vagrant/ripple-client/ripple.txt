@@ -1,0 +1,2 @@
+[authinfo_url]
+http://local.id.ripple.com:8080/v1/authinfo
