@@ -725,7 +725,7 @@ public:
             // Enforce hop limit
             if (ep.hops > Tuning::maxHops)
             {
-                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " for excess hops " << ep.hops;
                 iter = list.erase (iter);
@@ -744,7 +744,7 @@ public:
                 }
                 else
                 {
-                    if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                         "Endpoints drop " << ep.address <<
                         " for extra self";
                     iter = list.erase (iter);
@@ -755,7 +755,7 @@ public:
             // Discard invalid addresses
             if (! is_valid_address (ep.address))
             {
-                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " as invalid";
                 iter = list.erase (iter);
