@@ -78,7 +78,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 // they want. Try to get it.
 
                 if (auto il = getApp().getInboundLedgers().findCreate (
-                        refHash, refIndex, InboundLedger::fcGENERIC))
+                        refHash, refIndex, fcGENERIC))
                 {
                     Json::Value jvResult = il->getJson (0);
 
@@ -108,7 +108,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
     {
         // Try to get the desired ledger
         if (auto il = getApp ().getInboundLedgers ().findCreate (
-                ledgerHash, 0, InboundLedger::fcGENERIC))
+                ledgerHash, 0, fcGENERIC))
         {
             return il->getJson (0);
         }

@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/ledger/InboundLedgers.cpp>
-#include <ripple/app/ledger/LedgerHistory.cpp>
+#include <ripple/app/ledger/impl/LedgerHistory.cpp>
 #include <ripple/app/tx/TransactionAcquire.cpp>
 #include <ripple/app/tx/LocalTxs.cpp>
 #include <ripple/app/tx/InboundTransactions.cpp>

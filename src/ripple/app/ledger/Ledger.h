@@ -49,7 +49,15 @@ enum LedgerStateParms
     lepERROR        = 32,   // error
 };
 
-class SqliteStatement;
+// These are the reasons we might acquire a ledger
+enum fcReason
+{
+    fcHISTORY,      // Acquiring past ledger
+    fcGENERIC,      // Generic other reasons
+    fcVALIDATION,   // Validations suggest this ledger is important
+    fcCURRENT,      // This might be the current ledger
+    fcCONSENSUS,    // We believe the consensus round requires this ledger
+};
 
 // VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the

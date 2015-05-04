@@ -40,16 +40,6 @@ public:
     typedef std::shared_ptr <InboundLedger> pointer;
     typedef std::pair < std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
-    // These are the reasons we might acquire a ledger
-    enum fcReason
-    {
-        fcHISTORY,      // Acquiring past ledger
-        fcGENERIC,      // Generic other reasons
-        fcVALIDATION,   // Validations suggest this ledger is important
-        fcCURRENT,      // This might be the current ledger
-        fcCONSENSUS,    // We believe the consensus round requires this ledger
-    };
-
 public:
     InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock);
 

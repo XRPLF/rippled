@@ -1540,7 +1540,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
         if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
             mAcquiringLedger = getApp().getInboundLedgers ().findCreate (
-                closedLedger, 0, InboundLedger::fcCONSENSUS);
+                closedLedger, 0, fcCONSENSUS);
 
         if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
         {
@@ -3440,7 +3440,7 @@ void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)
     {
         m_journal.warning << "Missing a node in ledger " << seq << " fetching";
         getApp().getInboundLedgers ().findCreate (
-            hash, seq, InboundLedger::fcGENERIC);
+            hash, seq, fcGENERIC);
     }
 }
 

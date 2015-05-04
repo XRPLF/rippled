@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerHistory.h>
+#include <ripple/app/ledger/impl/LedgerHistory.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/json/to_string.h>

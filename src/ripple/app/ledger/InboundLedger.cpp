@@ -107,7 +107,7 @@ void InboundLedger::init (ScopedLockType& collectionLock)
             "Acquiring ledger we already have locally: " << getHash ();
         mLedger->setClosed ();
         mLedger->setImmutable ();
-        getApp ().getLedgerMaster ().storeLedger (mLedger);
+        getApp ().getLedgerMaster ().storeLedger (mLedger, mReason);
 
         // Check if this could be a newer fully-validated ledger
         if ((mReason == fcVALIDATION) || (mReason == fcCURRENT) || (mReason ==  fcCONSENSUS))
@@ -395,7 +395,7 @@ void InboundLedger::done ()
     {
         mLedger->setClosed ();
         mLedger->setImmutable ();
-        getApp().getLedgerMaster ().storeLedger (mLedger);
+        getApp().getLedgerMaster ().storeLedger (mLedger, mReason);
     }
     else
         getApp().getInboundLedgers ().logFailure (mHash);

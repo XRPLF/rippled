@@ -550,7 +550,7 @@ public:
                     std::bind (
                         &InboundLedgers::findCreate,
                         &getApp().getInboundLedgers(),
-                        mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
+                        mPrevLedgerHash, 0, fcCONSENSUS));
                 mHaveCorrectLCL = false;
             }
             return;
@@ -942,7 +942,8 @@ private:
         newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
 
         // And stash the ledger in the ledger master
-        if (getApp().getLedgerMaster().storeLedger (newLCL))
+        // VFALCO Why aren't we calling checkAccept if storeLedger returns true?
+        if (getApp().getLedgerMaster().storeLedger (newLCL, fcCURRENT))
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Consensus built ledger we already had";
         else if (getApp().getInboundLedgers().find (newLCL->getHash()))

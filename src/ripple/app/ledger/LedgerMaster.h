@@ -87,7 +87,11 @@ public:
 
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
-    virtual bool storeLedger (Ledger::pointer) = 0;
+
+    // Returns true if we already had the ledger
+    // VFALCO This should return `true` if it was new...
+    virtual bool storeLedger (Ledger::pointer, fcReason why) = 0;
+
     virtual void forceValid (Ledger::pointer) = 0;
 
     virtual void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
