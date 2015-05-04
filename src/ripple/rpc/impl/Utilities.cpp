@@ -17,9 +17,6 @@
 */
 //==============================================================================
 
-#include "boost/date_time/posix_time/posix_time.hpp"
-#include <utility>
-
 namespace ripple {
 namespace RPC {
 
@@ -45,24 +42,18 @@ addPaymentDeliveredAmount (
     if (transactionMeta && transactionMeta->hasDeliveredAmount ())
     {
         meta[jss::delivered_amount] =
-                transactionMeta->getDeliveredAmount ().getJson (1);
+            transactionMeta->getDeliveredAmount ().getJson (1);
         return;
     }
 
-    if (auto ledger = context.netOps.getLedgerBySeq (transaction->getLedger ()))
+    // Ledger 4594095 is the first ledger in which the DeliveredAmount field
+    // was present when a partial payment was made and its absence indicates
+    // that the amount delivered is listed in the Amount field.
+    if (transaction->getLedger () >= 4594095)
     {
-        // If the ledger closed at 2014-Jan-24 at 04:50:10 or later, then
-        // the absence of the DeliveredAmount field indicates that the
-        // actual amount delivered is in the Amount field.
-        boost::posix_time::ptime const cutoff (
-            boost::posix_time::time_from_string ("2014-01-24 04:50:10"));
-
-        if (ledger->getCloseTime () >= cutoff)
-        {
-            meta[jss::delivered_amount] =
-                    serializedTx->getFieldAmount (sfAmount).getJson (1);
-            return;
-        }
+        meta[jss::delivered_amount] =
+            serializedTx->getFieldAmount (sfAmount).getJson (1);
+        return;
     }
 
     // Otherwise we report "unavailable" which cannot be parsed into a
