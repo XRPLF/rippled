@@ -309,9 +309,8 @@ public:
         return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
     }
 
-    bool storeLedger (Ledger::pointer ledger)
+    bool storeLedger (Ledger::pointer ledger, fcReason why)
     {
-        // Returns true if we already had the ledger
         return mLedgerHistory.addLedger (ledger, false);
     }
 
