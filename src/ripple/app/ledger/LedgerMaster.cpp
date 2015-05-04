@@ -106,6 +106,8 @@ public:
 
     int const ledger_fetch_size_;
 
+    std::shared_ptr<Ledger> lastHistorical_;
+
     //--------------------------------------------------------------------------
 
     LedgerMasterImp (Config const& config, Stoppable& parent,
@@ -311,6 +313,17 @@ public:
 
     bool storeLedger (Ledger::pointer ledger, fcReason why)
     {
+        if (why == fcHISTORY)
+        {
+            std::shared_ptr<Ledger> temp;
+            {
+                ScopedLockType sl (m_mutex);
+                // Destroy temp outside the lock
+                temp = lastHistorical_;
+                lastHistorical_ = ledger;
+            }
+            return true;
+        }
         return mLedgerHistory.addLedger (ledger, false);
     }
 
