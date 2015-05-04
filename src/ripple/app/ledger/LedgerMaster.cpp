@@ -687,7 +687,7 @@ public:
     void failedSave(std::uint32_t seq, uint256 const& hash)
     {
         clearLedger(seq);
-        getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
+        getApp().getInboundLedgers().findCreate(hash, seq, fcGENERIC);
     }
 
     // Check if the specified ledger can become the new last fully-validated ledger
@@ -722,7 +722,7 @@ public:
             // FIXME: We may not want to fetch a ledger with just one
             // trusted validation
             InboundLedger::pointer l =
-                getApp().getInboundLedgers().findCreate(hash, 0, InboundLedger::fcGENERIC);
+                getApp().getInboundLedgers().findCreate(hash, 0, fcGENERIC);
             if (l && l->isComplete() && !l->isFailed())
                 ledger = l->getLedger();
             else
@@ -974,7 +974,7 @@ public:
                                         InboundLedger::pointer acq =
                                             getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                                     nextLedger->getLedgerSeq() - 1,
-                                                                                    InboundLedger::fcHISTORY);
+                                                                                    fcHISTORY);
                                         if (!acq)
                                         {
                                             // On system shutdown, findCreate may return a nullptr
@@ -1021,7 +1021,7 @@ public:
                                             uint256 hash = nextLedger->getLedgerHash(seq);
                                             if (hash.isNonZero())
                                                 getApp().getInboundLedgers().findCreate(hash,
-                                                     seq, InboundLedger::fcHISTORY);
+                                                     seq, fcHISTORY);
                                         }
                                     }
                                     catch (...)
@@ -1136,7 +1136,7 @@ public:
                     if (!ledger && (++acqCount < 4))
                     { // We can try to acquire the ledger we need
                         InboundLedger::pointer acq =
-                            getApp().getInboundLedgers ().findCreate (hash, seq, InboundLedger::fcGENERIC);
+                            getApp().getInboundLedgers ().findCreate (hash, seq, fcGENERIC);
 
                         if (!acq)
                         {
@@ -1156,7 +1156,7 @@ public:
                         {
                             WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                             getApp().getInboundLedgers().dropLedger(hash);
-                            acq = getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
+                            acq = getApp().getInboundLedgers().findCreate(hash, seq, fcGENERIC);
 
                             if (!acq)
                             {
@@ -1294,7 +1294,7 @@ public:
             {
                 WriteLog (lsINFO, LedgerMaster) << "Missing node detected during pathfinding";
                 getApp().getInboundLedgers().findCreate(lastLedger->getHash (), lastLedger->getLedgerSeq (),
-                    InboundLedger::fcGENERIC);
+                    fcGENERIC);
             }
         }
     }
@@ -1393,7 +1393,7 @@ public:
         if (!ledger)
         {
             InboundLedger::pointer inboundLedger =
-                getApp().getInboundLedgers().findCreate (hash, index, InboundLedger::fcGENERIC);
+                getApp().getInboundLedgers().findCreate (hash, index, fcGENERIC);
             if (inboundLedger && inboundLedger->isComplete() && !inboundLedger->isFailed())
                 ledger = inboundLedger->getLedger();
         }

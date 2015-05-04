@@ -550,7 +550,7 @@ public:
                     std::bind (
                         &InboundLedgers::findCreate,
                         &getApp().getInboundLedgers(),
-                        mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
+                        mPrevLedgerHash, 0, fcCONSENSUS));
                 mHaveCorrectLCL = false;
             }
             return;

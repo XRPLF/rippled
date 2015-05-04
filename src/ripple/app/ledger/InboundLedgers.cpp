@@ -49,7 +49,7 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
+    InboundLedger::pointer findCreate (uint256 const& hash, std::uint32_t seq, fcReason reason)
     {
         assert (hash.isNonZero ());
         InboundLedger::pointer ret;
@@ -63,7 +63,7 @@ public:
             if (! isStopping ())
             {
 
-                if (reason == InboundLedger::fcCONSENSUS)
+                if (reason == fcCONSENSUS)
                 {
                     if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
                     {
@@ -76,7 +76,7 @@ public:
                     }
                     mConsensusLedger = hash;
                 }
-                else if (reason == InboundLedger::fcVALIDATION)
+                else if (reason == fcVALIDATION)
                 {
                     if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
                     {

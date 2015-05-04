@@ -1186,7 +1186,7 @@ bool ApplicationImp::loadOldLedger (
             if (!loadLedger)
             {
                 // Try to build the ledger from the back end
-                auto il = std::make_shared <InboundLedger> (hash, 0, InboundLedger::fcGENERIC,
+                auto il = std::make_shared <InboundLedger> (hash, 0, fcGENERIC,
                     get_seconds_clock ());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
@@ -1220,7 +1220,7 @@ bool ApplicationImp::loadOldLedger (
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
-                    replayLedger->getParentHash(), 0, InboundLedger::fcGENERIC,
+                    replayLedger->getParentHash(), 0, fcGENERIC,
                     get_seconds_clock ());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
