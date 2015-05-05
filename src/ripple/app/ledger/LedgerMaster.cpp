@@ -1026,7 +1026,7 @@ public:
                                     }
                                     catch (...)
                                     {
-                                        WriteLog (lsWARNING, LedgerMaster) << "Threw while prefecthing";
+                                        WriteLog (lsWARNING, LedgerMaster) << "Threw while prefetching";
                                     }
                                 }
                             }
