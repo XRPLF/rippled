@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/peers/PeerSet.h>
+#include <ripple/overlay/PeerSet.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
 #include <beast/asio/placeholders.h>
@@ -57,7 +57,7 @@ PeerSet::~PeerSet ()
 {
 }
 
-bool PeerSet::peerHas (Peer::ptr const& ptr)
+bool PeerSet::insert (Peer::ptr const& ptr)
 {
     ScopedLockType sl (mLock);
 
@@ -66,12 +66,6 @@ bool PeerSet::peerHas (Peer::ptr const& ptr)
 
     newPeer (ptr);
     return true;
-}
-
-void PeerSet::badPeer (Peer::ptr const& ptr)
-{
-    ScopedLockType sl (mLock);
-    mPeers.erase (ptr->id ());
 }
 
 void PeerSet::setTimer ()
@@ -96,7 +90,7 @@ void PeerSet::invokeOnTimer ()
     }
     else
     {
-        clearProgress ();
+        mProgress = false;
         onTimer (true, sl);
     }
 
@@ -176,20 +170,6 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
         if (peer)
             peer->send (packet);
     }
-}
-
-std::size_t PeerSet::takePeerSetFrom (const PeerSet& s)
-{
-    std::size_t ret = 0;
-    mPeers.clear ();
-
-    for (auto const& p : s.mPeers)
-    {
-        mPeers.insert (std::make_pair (p.first, 0));
-        ++ret;
-    }
-
-    return ret;
 }
 
 std::size_t PeerSet::getPeerCount () const

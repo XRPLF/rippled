@@ -2532,12 +2532,6 @@
     <ClInclude Include="..\..\src\ripple\app\peers\ClusterNodeStatus.h">
       <Filter>ripple\app\peers</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\peers\PeerSet.cpp">
-      <Filter>ripple\app\peers</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\peers\PeerSet.h">
-      <Filter>ripple\app\peers</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\peers\UniqueNodeList.cpp">
       <Filter>ripple\app\peers</Filter>
     </ClCompile>
@@ -3228,6 +3222,9 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerSet.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ProtocolMessage.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
@@ -3253,6 +3250,9 @@
       <Filter>ripple\overlay</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\Peer.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\PeerSet.h">
       <Filter>ripple\overlay</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\predicates.h">

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
 
-#include <ripple/app/peers/PeerSet.h>
+#include <ripple/overlay/PeerSet.h>
 #include <ripple/shamap/SHAMap.h>
 
 namespace ripple {

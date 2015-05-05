@@ -29,30 +29,45 @@
 
 namespace ripple {
 
-/** A set of peers used to acquire data.
+/** Supports data retrieval by managing a set of peers.
 
-    A peer set is used to acquire a ledger or a transaction set.
+    When desired data (such as a ledger or a transaction set)
+    is missing locally it can be obtained by querying connected
+    peers. This class manages common aspects of the retrieval.
+    Callers maintain the set by adding and removing peers depending
+    on whether the peers have useful information.
+
+    This class is an "active" object. It maintains its own timer
+    and dispatches work to a job queue. Implementations derive
+    from this class and override the abstract hook functions in
+    the base.
+
+    The data is represented by its hash.
 */
 class PeerSet
 {
 public:
     typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
 
+    /** Returns the hash of the data we want. */
     uint256 const& getHash () const
     {
         return mHash;
     }
 
+    /** Returns true if we got all the data. */
     bool isComplete () const
     {
         return mComplete;
     }
 
+    /** Returns false if we failed to get the data. */
     bool isFailed () const
     {
         return mFailed;
     }
 
+    /** Returns the number of times we timed out. */
     int getTimeouts () const
     {
         return mTimeouts;
@@ -60,20 +75,11 @@ public:
 
     bool isActive ();
 
+    /** Called to indicate that forward progress has been made. */
     void progress ()
     {
         mProgress = true;
         mAggressive = false;
-    }
-
-    void clearProgress ()
-    {
-        mProgress = false;
-    }
-
-    bool isProgress ()
-    {
-        return mProgress;
     }
 
     void touch ()
@@ -86,22 +92,12 @@ public:
         return mLastAction;
     }
 
-    // VFALCO TODO Rename this to addPeerToSet
-    //
-    bool peerHas (Peer::ptr const&);
-
-    // VFALCO Workaround for MSVC std::function which doesn't swallow return types.
-    void peerHasVoid (Peer::ptr const& peer)
-    {
-        peerHas (peer);
-    }
-
-    void badPeer (Peer::ptr const&);
-
-    void setTimer ();
-
-    std::size_t takePeerSetFrom (const PeerSet& s);
-    std::size_t getPeerCount () const;
+    /** Insert a peer to the managed set.
+        This will call the derived class hook function.
+        @return `true` If the peer was added
+    */
+    bool insert (Peer::ptr const&);
+    
     virtual bool isDone () const
     {
         return mComplete || mFailed;
@@ -118,11 +114,19 @@ protected:
 
     PeerSet (uint256 const& hash, int interval, bool txnData,
         clock_type& clock, beast::Journal journal);
+
     virtual ~PeerSet () = 0;
 
     virtual void newPeer (Peer::ptr const&) = 0;
+
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
+
     virtual std::weak_ptr<PeerSet> pmDowncast () = 0;
+
+    bool isProgress ()
+    {
+        return mProgress;
+    }
 
     void setComplete ()
     {
@@ -132,10 +136,16 @@ protected:
     {
         mFailed = true;
     }
+
     void invokeOnTimer ();
 
     void sendRequest (const protocol::TMGetLedger& message);
+
     void sendRequest (const protocol::TMGetLedger& message, Peer::ptr const& peer);
+
+    void setTimer ();
+
+    std::size_t getPeerCount () const;
 
 protected:
     beast::Journal m_journal;
@@ -153,9 +163,8 @@ protected:
     clock_type::time_point mLastAction;
     bool mProgress;
 
-
     // VFALCO TODO move the responsibility for the timer to a higher level
-    boost::asio::deadline_timer             mTimer;
+    boost::asio::deadline_timer mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
     typedef Peer::id_t PeerIdentifier;
