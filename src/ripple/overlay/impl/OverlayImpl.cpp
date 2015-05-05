@@ -592,7 +592,7 @@ OverlayImpl::selectPeers (PeerSet& set, std::size_t limit,
     });
     std::size_t accepted = 0;
     for (auto const& e : v)
-        if (set.peerHas(e.second) && ++accepted >= limit)
+        if (set.insert(e.second) && ++accepted >= limit)
             break;
     return accepted;
 }

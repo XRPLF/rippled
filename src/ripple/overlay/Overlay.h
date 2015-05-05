@@ -20,9 +20,9 @@
 #ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
-#include <ripple/app/peers/PeerSet.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
+#include <ripple/overlay/PeerSet.h>
 #include <ripple/server/Handoff.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
