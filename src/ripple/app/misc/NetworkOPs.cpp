@@ -3309,17 +3309,17 @@ void NetworkOPsImp::makeFetchPack (
             newObj.set_ledgerseq (lSeq);
 
             wantLedger->peekAccountStateMap ()->getFetchPack
-                (haveLedger->peekAccountStateMap ().get (), true, 1024,
+                (haveLedger->peekAccountStateMap ().get (), true, 16384,
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
                                std::placeholders::_2));
 
             if (wantLedger->getTransHash ().isNonZero ())
                 wantLedger->peekTransactionMap ()->getFetchPack (
-                    nullptr, true, 256,
+                    nullptr, true, 512,
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
                                std::placeholders::_2));
 
-            if (reply.objects ().size () >= 256)
+            if (reply.objects ().size () >= 512)
                 break;
 
             // move may save a ref/unref

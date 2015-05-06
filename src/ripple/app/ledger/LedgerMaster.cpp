@@ -648,8 +648,11 @@ public:
         assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
         ledger->setValidated();
-        mLedgerHistory.addLedger(ledger, true);
         ledger->setFull();
+
+        if (isCurrent)
+            mLedgerHistory.addLedger(ledger, true);
+
         ledger->pendSaveValidated (isSynchronous, isCurrent);
 
         {
