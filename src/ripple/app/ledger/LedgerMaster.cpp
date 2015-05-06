@@ -687,7 +687,7 @@ public:
     void failedSave(std::uint32_t seq, uint256 const& hash)
     {
         clearLedger(seq);
-        getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
+        getApp().getInboundLedgers().acquire(hash, seq, InboundLedger::fcGENERIC);
     }
 
     // Check if the specified ledger can become the new last fully-validated ledger
@@ -721,15 +721,8 @@ public:
 
             // FIXME: We may not want to fetch a ledger with just one
             // trusted validation
-            InboundLedger::pointer l =
-                getApp().getInboundLedgers().findCreate(hash, 0, InboundLedger::fcGENERIC);
-            if (l && l->isComplete() && !l->isFailed())
-                ledger = l->getLedger();
-            else
-            {
-                WriteLog (lsDEBUG, LedgerMaster) <<
-                    "checkAccept triggers acquire " << to_string (hash);
-            }
+            ledger =
+                getApp().getInboundLedgers().acquire(hash, 0, InboundLedger::fcGENERIC);
         }
 
         if (ledger)
@@ -971,21 +964,11 @@ public:
                                 {
                                     if (!getApp().getInboundLedgers().isFailure(nextLedger->getParentHash()))
                                     {
-                                        InboundLedger::pointer acq =
-                                            getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
-                                                                                    nextLedger->getLedgerSeq() - 1,
-                                                                                    InboundLedger::fcHISTORY);
-                                        if (!acq)
-                                        {
-                                            // On system shutdown, findCreate may return a nullptr
-                                            WriteLog (lsTRACE, LedgerMaster)
-                                                    << "findCreate failed to return an inbound ledger";
-                                            return;
-                                        }
-
-                                        if (acq->isComplete() && !acq->isFailed())
-                                            ledger = acq->getLedger();
-                                        else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
+                                        ledger =
+                                            getApp().getInboundLedgers().acquire(nextLedger->getParentHash(),
+                                                                                 nextLedger->getLedgerSeq() - 1,
+                                                                                 InboundLedger::fcHISTORY);
+                                        if (! ledger && (missing > 32600) && getApp().getOPs().shouldFetchPack(missing))
                                         {
                                             WriteLog (lsTRACE, LedgerMaster) << "tryAdvance want fetch pack " << missing;
                                             getFetchPack(nextLedger);
@@ -1020,7 +1003,7 @@ public:
                                             std::uint32_t seq = missing - i;
                                             uint256 hash = nextLedger->getLedgerHash(seq);
                                             if (hash.isNonZero())
-                                                getApp().getInboundLedgers().findCreate(hash,
+                                                getApp().getInboundLedgers().acquire(hash,
                                                      seq, InboundLedger::fcHISTORY);
                                         }
                                     }
@@ -1133,47 +1116,10 @@ public:
                         ledger = mLedgerHistory.getLedgerByHash (hash);
                     }
 
-                    if (!ledger && (++acqCount < 4))
+                    if (! ledger && (++acqCount < 4))
                     { // We can try to acquire the ledger we need
-                        InboundLedger::pointer acq =
-                            getApp().getInboundLedgers ().findCreate (hash, seq, InboundLedger::fcGENERIC);
-
-                        if (!acq)
-                        {
-                            // On system shutdown, findCreate may return a nullptr
-                            WriteLog (lsTRACE, LedgerMaster)
-                                << "findCreate failed to return an inbound ledger";
-                            return {};
-                        }
-
-                        if (!acq->isDone()) {
-                        }
-                        else if (acq->isComplete () && !acq->isFailed ())
-                        {
-                            ledger = acq->getLedger();
-                        }
-                        else
-                        {
-                            WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
-                            getApp().getInboundLedgers().dropLedger(hash);
-                            acq = getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
-
-                            if (!acq)
-                            {
-                                // On system shutdown, findCreate may return a nullptr
-                                WriteLog (lsTRACE, LedgerMaster)
-                                    << "findCreate failed to return an inbound ledger";
-                                return {};
-                            }
-
-                            if (acq->isComplete())
-                            {
-                                if (acq->isFailed())
-                                    getApp().getInboundLedgers().dropLedger(hash);
-                                else
-                                    ledger = acq->getLedger();
-                            }
-                        }
+                        ledger =
+                            getApp().getInboundLedgers ().acquire (hash, seq, InboundLedger::fcGENERIC);
                     }
 
                     if (ledger && (ledger->getLedgerSeq() == pubSeq))
@@ -1293,7 +1239,7 @@ public:
             catch (SHAMapMissingNode&)
             {
                 WriteLog (lsINFO, LedgerMaster) << "Missing node detected during pathfinding";
-                getApp().getInboundLedgers().findCreate(lastLedger->getHash (), lastLedger->getLedgerSeq (),
+                getApp().getInboundLedgers().acquire(lastLedger->getHash (), lastLedger->getLedgerSeq (),
                     InboundLedger::fcGENERIC);
             }
         }
@@ -1384,22 +1330,6 @@ public:
         return mCompleteLedgers.toString ();
     }
 
-    /** Find or acquire the ledger with the specified index and the specified hash
-        Return a pointer to that ledger if it is immediately available
-    */
-    Ledger::pointer findAcquireLedger (std::uint32_t index, uint256 const& hash)
-    {
-        Ledger::pointer ledger (getLedgerByHash (hash));
-        if (!ledger)
-        {
-            InboundLedger::pointer inboundLedger =
-                getApp().getInboundLedgers().findCreate (hash, index, InboundLedger::fcGENERIC);
-            if (inboundLedger && inboundLedger->isComplete() && !inboundLedger->isFailed())
-                ledger = inboundLedger->getLedger();
-        }
-        return ledger;
-    }
-
     uint256 getHashBySeq (std::uint32_t index)
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);
@@ -1448,7 +1378,9 @@ public:
             if (nonzero)
             {
                 // We found the hash and sequence of a better reference ledger
-                Ledger::pointer ledger = findAcquireLedger (refIndex, refHash);
+                Ledger::pointer ledger =
+                    getApp().getInboundLedgers().acquire (
+                        refHash, refIndex, InboundLedger::fcGENERIC);
                 if (ledger)
                 {
                     ledgerHash = ledger->getLedgerHash (index);

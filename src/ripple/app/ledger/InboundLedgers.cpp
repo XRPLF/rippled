@@ -47,12 +47,10 @@ public:
     {
     }
 
-    // VFALCO TODO Should this be called findOrAdd ?
-    //
-    InboundLedger::pointer findCreate (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
+    Ledger::pointer acquire (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
-        InboundLedger::pointer ret;
+        Ledger::pointer ret;
 
         {
             ScopedLockType sl (mLock);
@@ -62,15 +60,16 @@ public:
                 auto it = mLedgers.find (hash);
                 if (it != mLedgers.end ())
                 {
-                    ret = it->second;
-                    ret->update (seq);
+                    it->second->update (seq);
+                    if (it->second->isComplete() && !it->second->isFailed())
+                        ret = it->second->getLedger();
+
                 }
                 else
                 {
-                    ret = std::make_shared <InboundLedger> (hash, seq, reason, std::ref (m_clock));
-                    assert (ret);
-                    mLedgers.insert (std::make_pair (hash, ret));
-                    ret->init (sl);
+                    auto il = std::make_shared <InboundLedger> (hash, seq, reason, std::ref (m_clock));
+                    mLedgers.insert (std::make_pair (hash, il));
+                    il->init (sl);
                     ++mCounter;
                 }
             }

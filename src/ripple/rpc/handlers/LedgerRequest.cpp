@@ -77,8 +77,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 // We don't have the ledger we need to figure out which ledger
                 // they want. Try to get it.
 
-                if (auto il = getApp().getInboundLedgers().findCreate (
+                if (auto il = getApp().getInboundLedgers().acquire (
                         refHash, refIndex, InboundLedger::fcGENERIC))
+                    return getJson (LedgerFill (*il));
+
+                if (auto il = getApp().getInboundLedgers().find (refHash))
                 {
                     Json::Value jvResult = il->getJson (0);
 
@@ -86,7 +89,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
                     return jvResult;
                 }
 
-                // findCreate failed to return an inbound ledger. App is likely shutting down
+                // Likely the app is shutting down
                 return Json::Value();
             }
 
@@ -107,11 +110,13 @@ Json::Value doLedgerRequest (RPC::Context& context)
     else
     {
         // Try to get the desired ledger
-        if (auto il = getApp ().getInboundLedgers ().findCreate (
+        if (auto il = getApp ().getInboundLedgers ().acquire (
                 ledgerHash, 0, InboundLedger::fcGENERIC))
-        {
+            return getJson (LedgerFill (*il));
+
+        if (auto il = getApp().getInboundLedgers().find (ledgerHash))
             return il->getJson (0);
-        }
+
         return RPC::make_error (
             rpcNOT_READY, "findCreate failed to return an inbound ledger");
     }

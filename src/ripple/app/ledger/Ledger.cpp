@@ -1274,7 +1274,7 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
     {
         if (mHash.isNonZero ())
         {
-            getApp().getInboundLedgers().findCreate(
+            getApp().getInboundLedgers().acquire(
                 mHash, mLedgerSeq, InboundLedger::fcGENERIC);
         }
         throw;
