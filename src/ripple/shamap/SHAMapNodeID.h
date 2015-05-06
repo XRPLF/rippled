@@ -102,7 +102,7 @@ inline
 bool
 SHAMapNodeID::isValid () const
 {
-    return (mDepth >= 0) && (mDepth < 64);
+    return (mDepth >= 0) && (mDepth <= 64);
 }
 
 inline
