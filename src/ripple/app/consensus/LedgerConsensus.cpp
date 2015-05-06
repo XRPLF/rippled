@@ -548,7 +548,7 @@ public:
                 mAcquiringLedger = mPrevLedgerHash;
                 getApp().getJobQueue().addJob (jtADVANCE, "getConsensusLedger",
                     std::bind (
-                        &InboundLedgers::findCreate,
+                        &InboundLedgers::acquire,
                         &getApp().getInboundLedgers(),
                         mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
                 mHaveCorrectLCL = false;

@@ -109,8 +109,6 @@ public:
     virtual uint256 walkHashBySeq (std::uint32_t index) = 0;
     virtual uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger) = 0;
 
-    virtual Ledger::pointer findAcquireLedger (std::uint32_t index, uint256 const& hash) = 0;
-
     virtual Ledger::pointer getLedgerBySeq (std::uint32_t index) = 0;
 
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;

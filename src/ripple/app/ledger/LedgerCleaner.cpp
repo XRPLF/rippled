@@ -259,7 +259,7 @@ public:
         {
             m_journal.warning <<
                 "Node missing from ledger " << ledger->getLedgerSeq();
-            getApp().getInboundLedgers().findCreate (
+            getApp().getInboundLedgers().acquire (
                 ledger->getHash(), ledger->getLedgerSeq(), InboundLedger::fcGENERIC);
         }
         return hash;
@@ -278,7 +278,9 @@ public:
         bool doNodes,
         bool doTxns)
     {
-        Ledger::pointer nodeLedger = getApp().getLedgerMaster().findAcquireLedger(ledgerIndex, ledgerHash);
+        Ledger::pointer nodeLedger =
+            getApp().getInboundLedgers().acquire (
+                ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
         if (!nodeLedger)
         {
             m_journal.debug << "Ledger " << ledgerIndex << " not available";
@@ -305,7 +307,8 @@ public:
         if (doNodes && !nodeLedger->walkLedger())
         {
             m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
-            getApp().getInboundLedgers().findCreate(ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
+            getApp().getInboundLedgers().acquire(
+                ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
             return false;
         }
 
@@ -355,7 +358,9 @@ public:
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference ledger
-                    referenceLedger = getApp().getLedgerMaster().findAcquireLedger (refIndex, refHash);
+                    referenceLedger =
+                        getApp().getInboundLedgers().acquire(
+                            refHash, refIndex, InboundLedger::fcGENERIC);
                     if (referenceLedger)
                         ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
                 }

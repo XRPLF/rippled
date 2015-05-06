@@ -1431,17 +1431,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         networkClosed = closedLedger;
 
     if (!switchLedgers)
-    {
-        if (mAcquiringLedger)
-        {
-            mAcquiringLedger->abort ();
-            getApp().getInboundLedgers ().dropLedger (
-                mAcquiringLedger->getHash ());
-            mAcquiringLedger.reset ();
-        }
-
         return false;
-    }
 
     m_journal.warning << "We are not running on the consensus ledger";
     m_journal.info << "Our LCL: " << getJson (*ourClosed);
@@ -1453,31 +1443,18 @@ bool NetworkOPsImp::checkLastClosedLedger (
     Ledger::pointer consensus = m_ledgerMaster.getLedgerByHash (closedLedger);
 
     if (!consensus)
+        consensus = getApp().getInboundLedgers().acquire (
+            closedLedger, 0, InboundLedger::fcCONSENSUS);
+
+    if (consensus)
     {
-        m_journal.info << "Acquiring consensus ledger " << closedLedger;
-
-        if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
-            mAcquiringLedger = getApp().getInboundLedgers ().findCreate (
-                closedLedger, 0, InboundLedger::fcCONSENSUS);
-
-        if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
-        {
-            getApp().getInboundLedgers ().dropLedger (closedLedger);
-            m_journal.error << "Network ledger cannot be acquired";
-            return true;
-        }
-
-        if (!mAcquiringLedger->isComplete ())
-            return true;
-
         clearNeedNetworkLedger ();
-        consensus = mAcquiringLedger->getLedger ();
-    }
 
-    // FIXME: If this rewinds the ledger sequence, or has the same sequence, we
-    // should update the status on any stored transactions in the invalidated
-    // ledgers.
-    switchLastClosedLedger (consensus, false);
+        // FIXME: If this rewinds the ledger sequence, or has the same sequence, we
+        // should update the status on any stored transactions in the invalidated
+        // ledgers.
+        switchLastClosedLedger (consensus, false);
+    }
 
     return true;
 }
@@ -3359,7 +3336,7 @@ void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)
     else
     {
         m_journal.warning << "Missing a node in ledger " << seq << " fetching";
-        getApp().getInboundLedgers ().findCreate (
+        getApp().getInboundLedgers ().acquire (
             hash, seq, InboundLedger::fcGENERIC);
     }
 }
