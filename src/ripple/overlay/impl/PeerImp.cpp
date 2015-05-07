@@ -1080,8 +1080,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 {
     protocol::TMProposeSet& set = *m;
 
-    if (overlay_.setup().expire &&
-            set.has_hops() && ! slot_->cluster())
+    if (set.has_hops() && ! slot_->cluster())
         set.set_hops(set.hops() + 1);
 
     // VFALCO Magic numbers are bad
@@ -1352,8 +1351,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
     error_code ec;
     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
 
-    if (overlay_.setup().expire &&
-            m->has_hops() && ! slot_->cluster())
+    if (m->has_hops() && ! slot_->cluster())
         m->set_hops(m->hops() + 1);
 
     if (m->validation ().size () < 50)
