@@ -25,34 +25,13 @@ namespace RPC {
 
 namespace {
 
-bool
-synced (NetworkOPs& netOps, Ledger::pointer ledger)
+bool isValidatedOld ()
 {
-    static auto const minSequenceGap = 10;
-
     if (getConfig ().RUN_STANDALONE)
-        return true;
-
-    if (ledger == netOps.getValidatedLedger ())
-    {
-        return getApp ().getLedgerMaster ().getValidatedLedgerAge () <=
-            Tuning::maxValidatedLedgerAge;
-    }
-
-    if (ledger != netOps.getCurrentLedger () &&
-        ledger != netOps.getClosedLedger ())
-    {
-        return true;
-    }
-
-    if (getApp ().getLedgerMaster ().getValidatedLedgerAge () >
-        Tuning::maxValidatedLedgerAge)
-    {
         return false;
-    }
 
-    return ledger->getLedgerSeq () >
-        (netOps.getValidatedSeq () + minSequenceGap);
+    return getApp ().getLedgerMaster ().getValidatedLedgerAge () >
+        Tuning::maxValidatedLedgerAge;
 }
 
 Status ledgerFromRequest (
@@ -60,6 +39,8 @@ Status ledgerFromRequest (
     Ledger::pointer& ledger,
     NetworkOPs& netOps)
 {
+    static auto const minSequenceGap = 10;
+    
     ledger.reset();
 
     auto indexValue = params[jss::ledger_index];
@@ -83,46 +64,66 @@ Status ledgerFromRequest (
         uint256 ledgerHash;
         if (! ledgerHash.SetHex (hashValue.asString ()))
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
-           
+
         ledger = netOps.getLedgerByHash (ledgerHash);
+        if (ledger == nullptr)
+            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
     }
     else if (indexValue.isNumeric())
     {
         ledger = netOps.getLedgerBySeq (indexValue.asInt ());
+        if (ledger == nullptr)
+            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
+
+        if (ledger->getLedgerSeq () > netOps.getValidatedSeq () &&
+            isValidatedOld ())
+        {
+            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+        }
     }
     else
     {
+        if (isValidatedOld ())
+            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+
         auto const index = indexValue.asString ();
-        auto const isCurrent = index.empty() || index == "current";
-        if (isCurrent)
-            ledger = netOps.getCurrentLedger ();
-        else if (index == "closed")
-            ledger = netOps.getClosedLedger ();
-        else if (index == "validated")
-            ledger = netOps.getValidatedLedger ();
+        if (index == "validated")
+        {
+            ledger = netOps.getValidatedLedger ();            
+            if (ledger == nullptr)
+                return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+
+            assert (ledger->isClosed ());
+        }
         else
-            return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+        {
+            if (index.empty () || index == "current")
+            {
+                ledger = netOps.getCurrentLedger ();
+                assert (! ledger->isClosed ());
+            }
+            else if (index == "closed")
+            {
+                ledger = netOps.getClosedLedger ();
+                assert (ledger->isClosed ());
+            }
+            else
+            {
+                return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+            }
 
-        if (ledger == nullptr)
-            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+            if (ledger == nullptr)
+                return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
-        assert (ledger->isImmutable());
-        assert (ledger->isClosed() == !isCurrent);
-    }
+            if (ledger->getLedgerSeq () + minSequenceGap <
+                netOps.getValidatedSeq ())
+            {
+                ledger.reset ();
+                return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+            }
+        }
 
-    if (ledger == nullptr)
-    {
-        auto cl = netOps.getCurrentLedger ();
-        if (cl == nullptr || ! synced (netOps, cl))
-            return {rpcNO_NETWORK, "InsufficientNetworkMode"};
-
-        return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
-    }
-
-    if (! synced (netOps, ledger))
-    {
-        ledger.reset ();
-        return {rpcNO_NETWORK, "InsufficientNetworkMode"};
+        assert (ledger->isImmutable ());
     }
 
     return Status::OK;
