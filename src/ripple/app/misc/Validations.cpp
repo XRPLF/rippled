@@ -387,6 +387,39 @@ private:
         return ret;
     }
 
+    std::uint32_t getValidationTime (uint256 const& hash, int minValidations)
+    {
+        if (minValidations < 1)
+            minValidations = 1;
+
+        std::vector <std::uint32_t> times;
+        times.reserve (minValidations);
+
+        {
+            ScopedLockType sl (mLock);
+
+            if (auto j = findSet (hash))
+            {
+                for (auto& it : *j)
+                {
+                    if (it.second->isTrusted())
+                        times.push_back (it.second->getSignTime());
+                }
+            }
+        }
+
+        if (times.size() < minValidations)
+            return 0;
+
+        // Return median signing time
+        std::sort (times.begin (), times.end ());
+
+        // In the case of an odd number of elements, this adds the same element
+        // to itself and takes the average; for an even number of elements, it
+        // will add the two "middle" elements and average them.
+        return (times[times.size() / 2] + times[(times.size() - 1) / 2]) / 2;
+    }
+
     void flush ()
     {
         bool anyNew = false;

@@ -91,7 +91,7 @@ public:
 
     std::atomic <std::uint32_t> mPubLedgerClose;
     std::atomic <std::uint32_t> mPubLedgerSeq;
-    std::atomic <std::uint32_t> mValidLedgerClose;
+    std::atomic <std::uint32_t> mValidLedgerSign;
     std::atomic <std::uint32_t> mValidLedgerSeq;
     std::atomic <std::uint32_t> mBuildingLedgerSeq;
 
@@ -125,7 +125,7 @@ public:
         , mPathFindNewRequest (false)
         , mPubLedgerClose (0)
         , mPubLedgerSeq (0)
-        , mValidLedgerClose (0)
+        , mValidLedgerSign (0)
         , mValidLedgerSeq (0)
         , mBuildingLedgerSeq (0)
         , standalone_ (config.RUN_STANDALONE)
@@ -168,7 +168,7 @@ public:
 
     int getValidatedLedgerAge ()
     {
-        std::uint32_t valClose = mValidLedgerClose.load();
+        std::uint32_t valClose = mValidLedgerSign.load();
         if (!valClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
@@ -190,7 +190,7 @@ public:
             reason = "No recently-published ledger";
             return false;
         }
-        std::uint32_t validClose = mValidLedgerClose.load();
+        std::uint32_t validClose = mValidLedgerSign.load();
         std::uint32_t pubClose = mPubLedgerClose.load();
         if (!validClose || !pubClose)
         {
@@ -207,8 +207,17 @@ public:
 
     void setValidLedger(Ledger::ref l)
     {
+        std::uint32_t signTime = 0;
+
+        if (! getConfig().RUN_STANDALONE)
+            signTime = getApp().getValidations().getValidationTime(
+                l->getHash(), mMinValidations);
+
+        if (signTime == 0)
+            signTime = l->getCloseTimeNC();
+
         mValidLedger.set (l);
-        mValidLedgerClose = l->getCloseTimeNC();
+        mValidLedgerSign = signTime;
         mValidLedgerSeq = l->getLedgerSeq();
         getApp().getOPs().updateLocalTx (l);
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());

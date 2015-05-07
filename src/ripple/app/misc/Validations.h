@@ -64,6 +64,9 @@ public:
     virtual LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 previousLedger) = 0;
 
+    virtual std::uint32_t getValidationTime (
+        uint256 const& ledger, int minValidations) = 0;
+
     virtual std::list <STValidation::pointer>
     getCurrentTrustedValidations () = 0;
 
