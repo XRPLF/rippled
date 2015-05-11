@@ -566,7 +566,7 @@ public:
         }
     }
 
-    /** Request a fetch pack to get the ledger prior to 'nextLedger'
+    /** Request a fetch pack to get to the specified ledger
     */
     void getFetchPack (LedgerHash missingHash, LedgerIndex missingIndex)
     {
