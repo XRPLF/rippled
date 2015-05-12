@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
@@ -32,6 +33,11 @@ class InboundLedgersImp
     : public InboundLedgers
     , public beast::Stoppable
 {
+private:
+    std::mutex fetchRateMutex_;
+    // measures ledgers per second, constants are important
+    DecayWindow<30, clock_type> fetchRate_;
+
 public:
     typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     // How long before we try again to acquire the same ledger
@@ -40,6 +46,7 @@ public:
     InboundLedgersImp (clock_type& clock, Stoppable& parent,
                        beast::insight::Collector::ptr const& collector)
         : Stoppable ("InboundLedgers", parent)
+        , fetchRate_(clock.now())
         , m_clock (clock)
         , mRecentFailures ("LedgerAcquireRecentFailures",
             clock, 0, kReacquireIntervalSeconds)
@@ -248,6 +255,23 @@ public:
 
         mRecentFailures.clear();
         mLedgers.clear();
+    }
+
+    std::size_t fetchRate()
+    {
+        std::lock_guard<std::mutex
+            > lock(fetchRateMutex_);
+        return 60 * fetchRate_.value(m_clock.now());
+    }
+
+    void onLedgerFetched (
+        InboundLedger::fcReason why)
+    {
+        if (why != InboundLedger::fcHISTORY)
+            return;
+        std::lock_guard<std::mutex
+            > lock(fetchRateMutex_);
+        fetchRate_.add(1, m_clock.now());
     }
 
     Json::Value getInfo()

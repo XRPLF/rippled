@@ -71,6 +71,12 @@ public:
 
     virtual Json::Value getInfo() = 0;
 
+    /** Returns the rate of historical ledger fetches per minute. */
+    virtual std::size_t fetchRate() = 0;
+
+    /** Called when a complete ledger is obtained. */
+    virtual void onLedgerFetched (InboundLedger::fcReason why) = 0;
+
     virtual void gotFetchPack (Job&) = 0;
     virtual void sweep () = 0;
 
