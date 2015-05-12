@@ -818,7 +818,7 @@ public:
             {
                 if (slot->connectivityCheckInProgress)
                 {
-                    if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                         "Logic testing " << ep.address << " already in progress";
                     continue;
                 }
