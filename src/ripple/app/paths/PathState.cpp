@@ -335,7 +335,7 @@ TER PathState::pushNode (
                                 node.issue_.currency);
                             if (-saOwed >= saLimit)
                             {
-                                WriteLog (lsWARNING, RippleCalc) <<
+                                WriteLog (lsDEBUG, RippleCalc) <<
                                     "pushNode: dry:" <<
                                     " saOwed=" << saOwed <<
                                     " saLimit=" << saLimit;

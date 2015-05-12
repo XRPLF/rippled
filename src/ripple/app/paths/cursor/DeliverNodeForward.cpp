@@ -322,7 +322,7 @@ TER PathCursor::deliverNodeForward (
             {
                 // Offer became unfunded.
 
-                WriteLog (lsWARNING, RippleCalc)
+                WriteLog (lsDEBUG, RippleCalc)
                     << "deliverNodeForward: unfunded:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;

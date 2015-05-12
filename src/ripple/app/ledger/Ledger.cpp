@@ -1460,7 +1460,7 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
 
     if ((ledgerIndex & 0xff) != 0)
     {
-        WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex
+        WriteLog (lsDEBUG, Ledger) << "Can't get seq " << ledgerIndex
                                      << " from " << mLedgerSeq << " past";
         return uint256 ();
     }
