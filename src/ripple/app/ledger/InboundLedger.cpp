@@ -353,9 +353,9 @@ void InboundLedger::done ()
     {
         mLedger->setClosed ();
         mLedger->setImmutable ();
-
         if (mReason != fcHISTORY)
             getApp().getLedgerMaster ().storeLedger (mLedger);
+        getApp().getInboundLedgers().onLedgerFetched(mReason);
     }
     else
         getApp().getInboundLedgers ().logFailure (mHash);
