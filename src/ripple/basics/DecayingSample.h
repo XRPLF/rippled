@@ -21,7 +21,8 @@
 #define RIPPLE_BASICS_DECAYINGSAMPLE_H_INCLUDED
 
 #include <chrono>
-    
+#include <cmath>
+
 namespace ripple {
 
 /** Sampling function using exponential decay to provide a continuous value.
@@ -98,6 +99,58 @@ private:
 
     // Last time the aging function was applied
     time_point m_when;
+};
+
+//------------------------------------------------------------------------------
+
+/** Sampling function using exponential decay to provide a continuous value.
+    @tparam HalfLife The half life of a sample, in seconds.
+*/
+template <int HalfLife, class Clock>
+class DecayWindow
+{
+public:
+    using time_point = typename Clock::time_point;
+
+    explicit
+    DecayWindow (time_point now)
+        : value_(0)
+        , when_(now)
+    {
+    }
+
+    void
+    add (double value, time_point now)
+    {
+        decay(now);
+        value_ += value;
+    }
+
+    double
+    value (time_point now)
+    {
+        decay(now);
+        return value_ / HalfLife;
+    }
+
+private:
+    static_assert(HalfLife > 0,
+        "half life must be positive");
+
+    void
+    decay (time_point now)
+    {
+        if (now <= when_)
+            return;
+        using namespace std::chrono;
+        auto const elapsed =
+            duration<double>(now - when_).count();
+        value_ *= std::pow(2.0, - elapsed / HalfLife);
+        when_ = now;
+    }
+
+    double value_;
+    time_point when_;
 };
 
 }
