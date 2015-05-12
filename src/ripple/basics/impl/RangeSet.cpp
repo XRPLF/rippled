@@ -235,6 +235,15 @@ void RangeSet::simplify ()
     }
 }
 
+std::size_t
+RangeSet::lebesgue_sum() const
+{
+    std::size_t sum = mRanges.size();
+    for (auto const& e : mRanges)
+        sum += e.second - e.first;
+    return sum;
+}
+
 void RangeSet::checkInternalConsistency () const noexcept
 {
 #ifndef NDEBUG

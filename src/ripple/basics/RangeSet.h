@@ -57,6 +57,10 @@ public:
 
     std::string toString () const;
 
+    /** Returns the sum of the Lebesgue measures of all sub-ranges. */
+    std::size_t
+    lebesgue_sum() const;
+
     /** Check invariants of the data.
 
         This is for diagnostics, and does nothing in release builds.
