@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 
@@ -52,7 +53,8 @@ Json::Value doLedgerRequest (RPC::Context& context)
             return RPC::invalid_field_message (jss::ledger_index);
 
         // We need a validated ledger to get the hash from the sequence
-        if (ledgerMaster.getValidatedLedgerAge() > 120)
+        if (ledgerMaster.getValidatedLedgerAge() >
+            RPC::Tuning::maxValidatedLedgerAge)
             return rpcError (rpcNO_CURRENT);
 
         auto ledgerIndex = jsonIndex.asInt();

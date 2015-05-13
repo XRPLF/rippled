@@ -486,7 +486,8 @@ checkTxJsonFields (
 
     // Check for current ledger.
     if (verify && !getConfig ().RUN_STANDALONE &&
-        (apiFacade.getValidatedLedgerAge() > 120))
+        (apiFacade.getValidatedLedgerAge() > 
+          Tuning::maxValidatedLedgerAge))
     {
         ret.first = rpcError (rpcNO_CURRENT);
         return ret;
