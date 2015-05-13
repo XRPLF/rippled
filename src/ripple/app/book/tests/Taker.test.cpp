@@ -229,8 +229,6 @@ private:
                 "  Actual: " << format_amount (result.in) <<
                 " : " << format_amount (result.out);
         }
-
-        assert (expected == result);
     }
 
     Quality get_quality(std::string in, std::string out)
@@ -239,10 +237,6 @@ private:
     }
 
 public:
-    Taker_test ()
-    {
-    }
-
     // Notation for clamp scenario descriptions:
     // 
     // IN:OUT (with the last in the list being limiting factor)
@@ -356,6 +350,7 @@ public:
         attempt (Buy,  "N:T",   q1, { "1", "1" },  "10",  q1, { "2", "2" }, "10",   { "1",                  "1" },                  eur(), usd(), rate, rate);
         attempt (Buy,  "N:BT",  q1, { "2", "2" },  "10",  q1, { "6", "6" },  "5",   { "2",                  "2" },                  eur(), usd(), rate, rate);
         attempt (Buy,  "N:TB",  q1, { "2", "2" },   "2",  q1, { "6", "6" },  "1",   { "0.6666666666666667", "0.6666666666666667" }, eur(), usd(), rate, rate);
+        attempt (Sell, "A:N",   q1, { "2", "2" },  "2.5", q1, { "2", "2" }, "10",   { "1.666666666666666",  "1.666666666666666" },  eur(), usd(), rate, rate);
     }
 
     void

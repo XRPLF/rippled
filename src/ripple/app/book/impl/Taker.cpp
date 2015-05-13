@@ -294,7 +294,7 @@ BasicTaker::flow_iou_to_iou (
         f.issuers.in = rate_in.multiply (f.order.in);
     }
 
-    // Clamp on the taker's input balance and input offer
+    // Clamp on the taker's input offer
     if (remaining_.in < f.order.in)
     {
         f.order.in = remaining_.in;
@@ -303,7 +303,8 @@ BasicTaker::flow_iou_to_iou (
         f.issuers.out = rate_out.multiply (f.order.out);
     }
 
-    if (taker_funds < f.order.in)
+    // Clamp on the taker's input balance
+    if (taker_funds < f.issuers.in)
     {
         f.issuers.in = taker_funds;
         f.order.in = rate_in.divide (f.issuers.in);
@@ -503,7 +504,15 @@ TER Taker::redeem_iou (
     if (account == issue.account)
         return tesSUCCESS;
 
-    return m_view.redeem_iou (account, amount, issue);
+    if (get_funds (account, amount) <= zero)
+        throw std::logic_error ("redeem_iou has no funds to redeem");
+
+    auto ret = m_view.redeem_iou (account, amount, issue);
+
+    if (get_funds (account, amount) < zero)
+        throw std::logic_error ("redeem_iou redeemed more funds than available");
+
+    return ret;
 }
 
 TER Taker::issue_iou (
