@@ -42,7 +42,7 @@ public:
     using pointer = std::shared_ptr <RippleState>;
 
 public:
-    RippleState() = delete;
+    RippleState () = delete;
 
     virtual ~RippleState() = default;
 

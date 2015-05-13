@@ -790,6 +790,46 @@ private:
         return jvRequest;
     }
 
+    // parse gateway balances
+    // gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet> ]]
+
+    Json::Value parseGatewayBalances (Json::Value const& jvParams)
+    {
+        unsigned int index = 0;
+        const unsigned int size = jvParams.size ();
+
+        Json::Value jvRequest;
+
+        std::string param = jvParams[index++].asString ();
+        if (param.empty ())
+            return RPC::make_param_error ("Invalid first parameter");
+
+        if (param[0] != 'r')
+        {
+            if (param.size() == 64)
+                jvRequest[jss::ledger_hash] = param;
+            else
+                jvRequest[jss::ledger_index] = param;
+
+            if (size <= index)
+                return RPC::make_param_error ("Invalid hotwallet");
+
+            param = jvParams[index++].asString ();
+        }
+
+        jvRequest[jss::account] = param;
+
+        if (index < size)
+        {
+            Json::Value& hotWallets =
+                (jvRequest["hotwallet"] = Json::arrayValue);
+            while (index < size)
+                hotWallets.append (jvParams[index++].asString ());
+        }
+
+        return jvRequest;
+    }
+
 public:
     //--------------------------------------------------------------------------
 
@@ -858,6 +898,7 @@ public:
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
+            {   "gateway_balances",     &RPCParser::parseGatewayBalances  ,     1,  -1  },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
             {   "json",                 &RPCParser::parseJson,                  2,  2   },
             {   "ledger",               &RPCParser::parseLedger,                0,  2   },

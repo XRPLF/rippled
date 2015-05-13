@@ -2967,6 +2967,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\FetchInfo.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\GatewayBalances.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\GetCounts.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
