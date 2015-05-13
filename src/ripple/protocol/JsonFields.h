@@ -79,8 +79,10 @@ JSS ( age );                        // out: UniqueNodeList, NetworkOPs
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( asks );                       // out: Subscribe
+JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
 JSS ( balance );                    // out: AccountLines
+JSS ( balances );                   // out: GatewayBalances
 JSS ( base );                       // out: LogLevel
 JSS ( base_fee );                   // out: NetworkOPs
 JSS ( base_fee_xrp );               // out: NetworkOPs
@@ -252,6 +254,7 @@ JSS ( node_reads_total );           // out: GetCounts
 JSS ( node_writes );                // out: GetCounts
 JSS ( node_written_bytes );         // out: GetCounts
 JSS ( nodes );                      // out: LedgerEntrySet, PathState
+JSS ( obligations );                // out: GatewayBalances
 JSS ( offer );                      // in: LedgerEntry
 JSS ( offers );                     // out: NetworkOPs, AccountOffers, Subscribe
 JSS ( offline );                    // in: TransactionSign

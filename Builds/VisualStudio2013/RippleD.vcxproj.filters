@@ -3648,6 +3648,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\FetchInfo.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\GatewayBalances.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\GetCounts.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>

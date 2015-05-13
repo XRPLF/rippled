@@ -43,6 +43,9 @@ public:
 
 public:
     RippleState() = delete;
+    RippleState (
+        STLedgerEntry::ref ledgerEntry,
+        Account const& viewAccount);
 
     virtual ~RippleState() = default;
 

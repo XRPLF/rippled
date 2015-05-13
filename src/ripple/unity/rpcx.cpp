@@ -49,6 +49,7 @@
 #include <ripple/rpc/handlers/ConsensusInfo.cpp>
 #include <ripple/rpc/handlers/Feature.cpp>
 #include <ripple/rpc/handlers/FetchInfo.cpp>
+#include <ripple/rpc/handlers/GatewayBalances.cpp>
 #include <ripple/rpc/handlers/GetCounts.cpp>
 #include <ripple/rpc/handlers/Internal.cpp>
 #include <ripple/rpc/handlers/Ledger.cpp>
