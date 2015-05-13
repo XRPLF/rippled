@@ -849,7 +849,7 @@ bool NetworkOPsImp::haveLedger (std::uint32_t seq)
 
 std::uint32_t NetworkOPsImp::getValidatedSeq ()
 {
-    return m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ();
+    return m_ledgerMaster.getValidLedgerIndex ();
 }
 
 bool NetworkOPsImp::isValidated (std::uint32_t seq, uint256 const& hash)
