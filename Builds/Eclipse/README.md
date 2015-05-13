@@ -5,7 +5,7 @@
 3. Eclipse SCons plugin: http://sconsolidator.com/  
 **WARNING**: by default the SCons plugin uses 16 threads. Go to *Window->Preferences->SCons->Build Settings* in Eclipse and make it use only 4-8 jobs(threads) or whatever you feel confortable with. It will positively freeze your system if you run with 16 threads/jobs.  
 
-![scons](https://raw.githubusercontent.com/crazyquark/rippled/master/Builds/Eclipse/scons.png) 
+![scons](https://raw.githubusercontent.com/ripple/rippled/master/Builds/Eclipse/scons.png) 
 
 **Getting Started**
 
@@ -13,7 +13,7 @@ After setting up Eclipse just do a File->New->Other...
 Select: C/C++ / New SCons project from existing source
 Point the importer to the folder where the SConstruct resides (the root folder of your git workspace normally)  
 
-![new](https://raw.githubusercontent.com/crazyquark/rippled/master/Builds/Eclipse/new.png) 
+![new](https://raw.githubusercontent.com/ripple/rippled/master/Builds/Eclipse/new.png) 
 
 **Build**
 
@@ -23,4 +23,4 @@ Just hit Project->Build All in Eclipse to get started. And remember to not let i
 
 Start a new Eclipse debug configuration and set binary to run to build/rippled (assuming you have built it).  
 
-![debug](https://raw.githubusercontent.com/crazyquark/rippled/master/Builds/Eclipse/debug.png) 
+![debug](https://raw.githubusercontent.com/ripple/rippled/master/Builds/Eclipse/debug.png) 
