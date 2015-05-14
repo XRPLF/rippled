@@ -21,12 +21,14 @@
 #define BEAST_HTTP_HEADERS_H_INCLUDED
 
 #include <beast/utility/ci_char_traits.h>
+#include <beast/utility/empty_base_optimization.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <algorithm>
 #include <cctype>
 #include <map>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -34,13 +36,15 @@
 namespace beast {
 namespace http {
 
-/** Holds a collection of HTTP headers. */
-class headers
+namespace detail {
+
+template <class = void>
+class basic_headers_helper
 {
 public:
     using value_type = std::pair<std::string, std::string>;
 
-private:
+protected:
     struct element
         : boost::intrusive::set_base_hook <
             boost::intrusive::link_mode <
@@ -49,7 +53,6 @@ private:
             boost::intrusive::link_mode <
                 boost::intrusive::normal_link>>
     {
-        template <class = void>
         element (std::string const& f, std::string const& v);
 
         value_type data;
@@ -67,8 +70,10 @@ private:
     };
 
     struct transform
-        : public std::unary_function <element, value_type>
     {
+        using argument_type = element;
+        using result_type = value_type;
+
         value_type const&
         operator() (element const& e) const
         {
@@ -76,69 +81,100 @@ private:
         }
     };
 
-    typedef boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <false>
-            >::type list_t;
+    template <class Alloc>
+    using make_alloc = typename std::allocator_traits<
+        Alloc>::template rebind_alloc<element>;
 
-    typedef boost::intrusive::make_set <element,
-        boost::intrusive::constant_time_size <true>
-            >::type set_t;
+    using list_type = typename boost::intrusive::make_list <element,
+        boost::intrusive::constant_time_size <false>>::type;
 
-    list_t list_;
-    set_t set_;
+    using set_type = typename boost::intrusive::make_set <element,
+        boost::intrusive::constant_time_size <true>>::type;
 
 public:
-    typedef boost::transform_iterator <transform,
-        list_t::const_iterator> iterator;
-    typedef iterator const_iterator;
+    using iterator = typename boost::transform_iterator <
+        transform, typename list_type::const_iterator>;
 
-    ~headers()
-    {
-        clear();
-    }
+    using const_iterator = iterator;
+};
 
-    headers() = default;
+} // detail
 
-    headers (headers&& other);
-    headers& operator= (headers&& other);
+/** Holds a collection of HTTP headers */
+template <class Alloc>
+class basic_headers
+    : public detail::basic_headers_helper<>
+    , private empty_base_optimization<
+        typename detail::basic_headers_helper<
+            >::make_alloc<Alloc>>
+{
+public:
+    using allocator_type = make_alloc<Alloc>;
 
-    headers (headers const& other);
-    headers& operator= (headers const& other);
+private:
+    using alloc_traits =
+        typename std::allocator_traits<
+            allocator_type>;
 
-    /** Returns an iterator to headers in order of appearance. */
+    list_type list_;
+    set_type set_;
+
+public:
+    ~basic_headers();
+
+    basic_headers (Alloc alloc = Alloc{});
+
+    basic_headers (basic_headers&& other);
+    basic_headers& operator= (basic_headers&& other);
+
+    template <class OtherAlloc>
+    basic_headers (basic_headers<OtherAlloc> const& other);
+
+    template <class OtherAlloc>
+    basic_headers& operator= (basic_headers<OtherAlloc> const& other);
+
+    /** Returns an iterator to field/value pairs in order of appearance. */
     /** @{ */
     iterator
-    begin() const;
+    begin() const
+    {
+        return {list_.cbegin(), transform{}};
+    }
 
     iterator
-    end() const;
+    end() const
+    {
+        return {list_.cend(), transform{}};
+    }
 
     iterator
-    cbegin() const;
+    cbegin() const
+    {
+        return {list_.cbegin(), transform{}};
+    }
 
     iterator
-    cend() const;
+    cend() const
+    {
+        return {list_.cend(), transform{}};
+    }
     /** @} */
 
     /** Returns an iterator to the case-insensitive matching header. */
-    template <class = void>
     iterator
     find (std::string const& field) const;
 
     /** Returns the value for a case-insensitive matching header, or "" */
-    template <class = void>
     std::string const&
     operator[] (std::string const& field) const;
 
-    /** Clear the contents of the headers. */
-    template <class = void>
+    /** Clear the contents of the basic_headers<Alloc>::. */
     void
     clear() noexcept;
 
     /** Remove a field.
         @return The number of fields removed.
     */
-    template <class = void>
     std::size_t
     erase (std::string const& field);
 
@@ -147,61 +183,79 @@ public:
         extended as per RFC2616 Section 4.2.
     */
     // VFALCO TODO Consider allowing rvalue references for std::move
-    template <class = void>
     void
     append (std::string const& field, std::string const& value);
 };
 
-template <class = void>
+template <class Alloc>
 std::string
-to_string (headers const& h);
+to_string (basic_headers<Alloc> const& h);
 
 // HACK!
-template <class = void>
+template <class Alloc>
 std::map <std::string, std::string>
-build_map (headers const& h);
+build_map (basic_headers<Alloc> const& h);
 
 //------------------------------------------------------------------------------
 
-template <class>
-headers::element::element (
+namespace detail {
+
+template <class _>
+basic_headers_helper<_>::element::element (
     std::string const& f, std::string const& v)
 {
     data.first = f;
     data.second = v;
 }
 
+template <class _>
 template <class String>
 bool
-headers::less::operator() (
+basic_headers_helper<_>::less::operator() (
     String const& lhs, element const& rhs) const
 {
-    return beast::ci_less::operator() (lhs, rhs.data.first);
+    return beast::ci_less::operator()(lhs, rhs.data.first);
 }
 
+template <class _>
 template <class String>
 bool
-headers::less::operator() (
+basic_headers_helper<_>::less::operator() (
     element const& lhs, String const& rhs) const
 {
-    return beast::ci_less::operator() (lhs.data.first, rhs);
+    return beast::ci_less::operator()(lhs.data.first, rhs);
 }
+
+} // detail
 
 //------------------------------------------------------------------------------
 
-inline
-headers::headers (headers&& other)
-    : list_ (std::move (other.list_))
-    , set_ (std::move (other.set_))
+template <class Alloc>
+basic_headers<Alloc>::~basic_headers()
+{
+    clear();
+}
+
+template <class Alloc>
+basic_headers<Alloc>::basic_headers(Alloc alloc)
+    : empty_base_optimization<allocator_type>(alloc)
+{
+}
+
+template <class Alloc>
+basic_headers<Alloc>::basic_headers (basic_headers<Alloc>&& other)
+    : list_(std::move(other.list_))
+    , set_(std::move(other.set_))
 {
     other.list_.clear();
     other.set_.clear();
 }
 
-inline
-headers&
-headers::operator= (headers&& other)
+template <class Alloc>
+basic_headers<Alloc>&
+basic_headers<Alloc>::operator=(basic_headers<Alloc>&& other)
 {
+    clear();
     list_ = std::move(other.list_);
     set_ = std::move(other.set_);
     other.list_.clear();
@@ -209,16 +263,19 @@ headers::operator= (headers&& other)
     return *this;
 }
 
-inline
-headers::headers (headers const& other)
+template <class Alloc>
+template <class OtherAlloc>
+basic_headers<Alloc>::basic_headers(
+    basic_headers<OtherAlloc> const& other)
 {
     for (auto const& e : other.list_)
         append (e.data.first, e.data.second);
 }
 
-inline
-headers&
-headers::operator= (headers const& other)
+template <class Alloc>
+template <class OtherAlloc>
+basic_headers<Alloc>&
+basic_headers<Alloc>::operator= (basic_headers<OtherAlloc> const& other)
 {
     clear();
     for (auto const& e : other.list_)
@@ -226,37 +283,10 @@ headers::operator= (headers const& other)
     return *this;
 }
 
-inline
-headers::iterator
-headers::begin() const
-{
-    return {list_.cbegin(), transform{}};
-}
-
-inline
-headers::iterator
-headers::end() const
-{
-    return {list_.cend(), transform{}};
-}
-
-inline
-headers::iterator
-headers::cbegin() const
-{
-    return {list_.cbegin(), transform{}};
-}
-
-inline
-headers::iterator
-headers::cend() const
-{
-    return {list_.cend(), transform{}};
-}
-
-template <class>
-headers::iterator
-headers::find (std::string const& field) const
+template <class Alloc>
+auto
+basic_headers<Alloc>::find (std::string const& field) const ->
+    iterator
 {
     auto const iter (set_.find (field, less{}));
     if (iter == set_.end())
@@ -264,9 +294,9 @@ headers::find (std::string const& field) const
     return {list_.iterator_to (*iter), transform{}};
 }
 
-template <class>
+template <class Alloc>
 std::string const&
-headers::operator[] (std::string const& field) const
+basic_headers<Alloc>::operator[] (std::string const& field) const
 {
     static std::string none;
     auto const found (find (field));
@@ -275,17 +305,24 @@ headers::operator[] (std::string const& field) const
     return found->second;
 }
 
-template <class>
+template <class Alloc>
 void
-headers::clear() noexcept
+basic_headers<Alloc>::clear() noexcept
 {
     for (auto iter (list_.begin()); iter != list_.end();)
-        delete &(*iter++);
+    {
+        element& e = *iter++;
+        alloc_traits::destroy(
+            this->member(), &e);
+        alloc_traits::deallocate(
+            this->member(), &e, 1);
+    }
+    list_.clear();
 }
 
-template <class>
+template <class Alloc>
 std::size_t
-headers::erase (std::string const& field)
+basic_headers<Alloc>::erase (std::string const& field)
 {
     auto const iter = set_.find(field, less{});
     if (iter == set_.end())
@@ -293,22 +330,29 @@ headers::erase (std::string const& field)
     element& e = *iter;
     set_.erase(set_.iterator_to(e));
     list_.erase(list_.iterator_to(e));
-    delete &e;
+    alloc_traits::destroy(
+        this->member(), &e);
+    alloc_traits::deallocate(
+        this->member(), &e, 1);
     return 1;
 }
 
-template <class>
+template <class Alloc>
 void
-headers::append (std::string const& field,
+basic_headers<Alloc>::append (std::string const& field,
     std::string const& value)
 {
-    set_t::insert_commit_data d;
-    auto const result (set_.insert_check (field, less{}, d));
+    set_type::insert_commit_data d;
+    auto const result (
+        set_.insert_check (field, less{}, d));
     if (result.second)
     {
-        element* const p = new element (field, value);
-        list_.push_back (*p);
-        set_.insert_commit (*p, d);
+        element& e = *alloc_traits::allocate(
+            this->member(), 1);
+        alloc_traits::construct(
+            this->member(), &e, field, value);
+        list_.push_back (e);
+        set_.insert_commit (e, d);
         return;
     }
     // If field already exists, append comma
@@ -338,9 +382,9 @@ write (Streambuf& stream, char const* s)
         stream.prepare (len), boost::asio::buffer (s, len)));
 }
 
-template <class Streambuf>
+template <class Streambuf, class Alloc>
 void
-write (Streambuf& stream, headers const& h)
+write (Streambuf& stream, basic_headers<Alloc> const& h)
 {
     for (auto const& _ : h)
     {
@@ -351,9 +395,9 @@ write (Streambuf& stream, headers const& h)
     }
 }
 
-template <class>
+template <class Alloc>
 std::string
-to_string (headers const& h)
+to_string (basic_headers<Alloc> const& h)
 {
     std::string s;
     std::size_t n (0);
@@ -370,17 +414,17 @@ to_string (headers const& h)
     return s;
 }
 
-inline
+template <class Alloc>
 std::ostream&
-operator<< (std::ostream& s, headers const& h)
+operator<< (std::ostream& s, basic_headers<Alloc> const& h)
 {
     s << to_string(h);
     return s;
 }
 
-template <class>
+template <class Alloc>
 std::map <std::string, std::string>
-build_map (headers const& h)
+build_map (basic_headers<Alloc> const& h)
 {
     std::map <std::string, std::string> c;
     for (auto const& e : h)
@@ -392,6 +436,8 @@ build_map (headers const& h)
     }
     return c;
 }
+
+using headers = basic_headers<std::allocator<char>>;
 
 } // http
 } // beast
