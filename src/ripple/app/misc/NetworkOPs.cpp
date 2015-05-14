@@ -205,34 +205,14 @@ public:
 
     // must complete immediately
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
-    void submitTransaction (
-        Job&, STTx::pointer,
-        stCallback callback = stCallback ());
+    void submitTransaction (Job&, STTx::pointer);
 
     Transaction::pointer submitTransactionSync (
         Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit);
 
-    Transaction::pointer processTransactionCb (
-        Transaction::pointer,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback);
-    Transaction::pointer processTransaction (
-        Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard)
-    {
-        return processTransactionCb (
-            transaction, bAdmin, bLocal, bFailHard, stCallback ());
-    }
-
-    // VFALCO Workaround for MSVC std::function which doesn't swallow return
-    // types.
-    //
-    void processTransactionCbVoid (
-        Transaction::pointer p,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback cb)
-    {
-        processTransactionCb (p, bAdmin, bLocal, bFailHard, cb);
-    }
+    void processTransaction (
+        Transaction::pointer p, bool bAdmin, bool bLocal, bool bFailHard);
 
     Transaction::pointer findTransactionByID (uint256 const& transactionID);
 
@@ -867,8 +847,7 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq)
             seq <= m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ();
 }
 
-void NetworkOPsImp::submitTransaction (
-    Job&, STTx::pointer iTrans, stCallback callback)
+void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
 {
     if (isNeedNetworkLedger ())
     {
@@ -925,13 +904,12 @@ void NetworkOPsImp::submitTransaction (
     }
 
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
-        std::bind (&NetworkOPsImp::processTransactionCbVoid,
+        std::bind (&NetworkOPsImp::processTransaction,
                    this,
                    std::make_shared<Transaction> (trans, Validate::NO, reason),
                    false,
                    false,
-                   false,
-                   callback));
+                   false));
 }
 
 // Sterilize transaction through serialization.
@@ -972,131 +950,32 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (
     return tpTransNew;
 }
 
-Transaction::pointer NetworkOPsImp::processTransactionCb (
+void NetworkOPsImp::processTransaction (
     Transaction::pointer trans,
-    bool bAdmin, bool bLocal, bool bFailHard, stCallback callback)
+    bool bAdmin, bool bLocal, bool bFailHard)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
     int newFlags = getApp().getHashRouter ().getFlags (trans->getID ());
 
     if ((newFlags & SF_BAD) != 0)
-    {
-        // cached bad
-        trans->setStatus (INVALID);
-        trans->setResult (temBAD_SIGNATURE);
-        return trans;
-    }
+        return; // cached bad
 
     if ((newFlags & SF_SIGGOOD) == 0)
     {
-        // signature not checked
         std::string reason;
 
+        // signature not checked
         if (! trans->checkSign (reason))
         {
             m_journal.info << "Transaction has bad signature: " << reason;
-            trans->setStatus (INVALID);
-            trans->setResult (temBAD_SIGNATURE);
             getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-            return trans;
+            return;
         }
 
         getApp().getHashRouter ().setFlag (trans->getID (), SF_SIGGOOD);
     }
 
-    {
-        auto lock = beast::make_lock(getApp().getMasterMutex());
-
-        bool didApply;
-        TER r = m_ledgerMaster.doTransaction (
-            trans->getSTransaction (),
-            bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN)
-            : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
-        trans->setResult (r);
-
-        if (isTemMalformed (r)) // malformed, cache bad
-            getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-
-#ifdef BEAST_DEBUG
-        if (r != tesSUCCESS)
-        {
-            std::string token, human;
-            if (transResultInfo (r, token, human))
-                m_journal.info << "TransactionResult: "
-                               << token << ": " << human;
-        }
-
-#endif
-
-        if (callback)
-            callback (trans, r);
-
-        if (r == tefFAILURE)
-            throw Fault (IO_ERROR);
-
-        bool addLocal = bLocal;
-
-        if (r == tesSUCCESS)
-        {
-            m_journal.debug << "Transaction is now included in open ledger";
-            trans->setStatus (INCLUDED);
-
-            // VFALCO NOTE The value of trans can be changed here!
-            getApp().getMasterTransaction ().canonicalize (&trans);
-        }
-        else if (r == tefPAST_SEQ)
-        {
-            // duplicate or conflict
-            m_journal.info << "Transaction is obsolete";
-            trans->setStatus (OBSOLETE);
-        }
-        else if (isTerRetry (r))
-        {
-            if (bFailHard)
-                addLocal = false;
-            else
-            {
-                // transaction should be held
-                m_journal.debug << "Transaction should be held: " << r;
-                trans->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (&trans);
-                m_ledgerMaster.addHeldTransaction (trans);
-            }
-        }
-        else
-        {
-            m_journal.debug << "Status other than success " << r;
-            trans->setStatus (INVALID);
-        }
-
-        if (addLocal)
-        {
-            addLocalTx (m_ledgerMaster.getCurrentLedger (),
-                        trans->getSTransaction ());
-        }
-
-        if (didApply || ((mMode != omFULL) && !bFailHard && bLocal))
-        {
-            std::set<Peer::id_t> peers;
-
-            if (getApp().getHashRouter ().swapSet (
-                    trans->getID (), peers, SF_RELAYED))
-            {
-                protocol::TMTransaction tx;
-                Serializer s;
-                trans->getSTransaction ()->add (s);
-                tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-                tx.set_status (protocol::tsCURRENT);
-                tx.set_receivetimestamp (getNetworkTimeNC ());
-                // FIXME: This should be when we received it
-                getApp ().overlay ().foreach (send_if_not (
-                    std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-                    peer_in_set(peers)));
-            }
-        }
-    }
-
-    return trans;
+    m_ledgerMaster.doTransactions (trans, bAdmin, bLocal, bFailHard);
 }
 
 Transaction::pointer NetworkOPsImp::findTransactionByID (

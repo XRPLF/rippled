@@ -51,6 +51,10 @@ public:
     typedef RippleRecursiveMutex LockType;
     typedef std::unique_lock <LockType> ScopedLockType;
     typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
+    // TransactionStatus fields:
+    // transaction, applied, result, bAdmin, bLocal, bFailHard
+    using TransactionStatus = std::tuple <Transaction::pointer, bool, TER,
+        bool, bool, bool>;
 
     virtual ~LedgerMaster () = 0;
 
@@ -75,9 +79,8 @@ public:
     virtual int getValidatedLedgerAge () = 0;
     virtual bool isCaughtUp(std::string& reason) = 0;
 
-    virtual TER doTransaction (
-        STTx::ref txn,
-            TransactionEngineParams params, bool& didApply) = 0;
+    virtual void doTransactions (Transaction::ref trans, bool const admin,
+        bool const local, bool const failHard) = 0;
 
     virtual int getMinValidations () = 0;
 
@@ -148,7 +151,7 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t currentLedgerID, 
+    static bool shouldAcquire (std::uint32_t currentLedgerID,
         std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
         std::uint32_t targetLedger);
 

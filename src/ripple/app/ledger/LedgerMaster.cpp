@@ -397,28 +397,6 @@ public:
         mBuildingLedgerSeq.store (i);
     }
 
-    TER doTransaction (STTx::ref txn, TransactionEngineParams params, bool& didApply)
-    {
-        Ledger::pointer ledger;
-        TransactionEngine engine;
-        TER result;
-        didApply = false;
-
-        {
-            ScopedLockType sl (m_mutex);
-            ledger = mCurrentLedger.getMutable ();
-            engine.setLedger (ledger);
-            std::tie(result, didApply) = engine.applyTransaction (*txn, params);
-        }
-        if (didApply)
-        {
-            ledger->setImmutable (); // So the next line doesn't have to copy
-            mCurrentLedger.set (ledger);
-            getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
-        }
-        return result;
-    }
-
     bool haveLedgerRange (std::uint32_t from, std::uint32_t to)
     {
         ScopedLockType sl (mCompleteLock);
@@ -1553,7 +1531,193 @@ public:
     {
         mLedgerHistory.clearLedgerCachePrior (seq);
     }
+
+    bool batchApplyTransactions (Ledger::pointer& ledger,
+        TransactionEngine& engine,
+        std::vector<TransactionStatus>& transactions);
+
+    void applyTransactions (std::vector<TransactionStatus>& transactions);
+
+    void doTransactions (Transaction::ref trans, bool const admin,
+        bool const local, bool const failHard) override;
+
+    bool checkApplying (std::vector <TransactionStatus>& batch)
+    {
+        std::lock_guard <std::mutex> lock (mBatchMutex);
+
+        if (mApplying || !mTransactions.size())
+            return false;
+
+        mApplying = true;
+        mTransactions.swap (batch);
+        return true;
+    }
+
+private:
+    std::vector <TransactionStatus> mTransactions;
+    bool mApplying = false;
+    std::mutex mBatchMutex;
 };
+
+//------------------------------------------------------------------------------
+
+bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
+    TransactionEngine& engine, std::vector<TransactionStatus>& transactions)
+{
+    bool applied = false;
+    ScopedLockType sl (m_mutex);
+
+    ledger = mCurrentLedger.getMutable();
+    engine.setLedger (ledger);
+
+    for (auto& e : transactions)
+    {
+        auto transaction = std::get<0> (e);
+        bool& didApply = std::get<1> (e);
+        TER& result = std::get<2> (e);
+        bool const& bAdmin = std::get<3> (e);
+
+        std::tie (result, didApply) = engine.applyTransaction (
+            *transaction->getSTransaction(),
+            bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
+            tapOPEN_LEDGER | tapNO_CHECK_SIGN));
+
+        if (didApply && !applied)
+            applied = true;
+    }
+
+    return applied;
+}
+
+void LedgerMasterImp::applyTransactions (
+    std::vector<TransactionStatus>& transactions)
+{
+    Ledger::pointer ledger;
+    TransactionEngine engine;
+    auto lock = beast::make_lock(getApp().getMasterMutex());
+
+    if (batchApplyTransactions (ledger, engine, transactions))
+    {
+        ledger->setImmutable();
+        mCurrentLedger.set (ledger);
+    }
+
+    for (auto& e : transactions)
+    {
+        auto transaction = std::get<0> (e);
+        auto applied = std::get<1> (e);
+        auto result = std::get<2> (e);
+        bool const& bLocal = std::get<4> (e);
+        bool const& bFailHard = std::get<5>(e);
+
+        if (applied)
+            getApp().getOPs().pubProposedTransaction (ledger,
+                transaction->getSTransaction(), result);
+
+        transaction->setResult (result);
+
+        if (isTemMalformed (result))
+            getApp().getHashRouter().setFlag(transaction->getID(), SF_BAD);
+
+#ifdef BEAST_DEBUG
+        if (result != tesSUCCESS && m_journal.info)
+        {
+            std::string token, human;
+            if (transResultInfo (result, token, human))
+                m_journal.info << "TransactionResult: "
+                               << token << ": " << human;
+        }
+#endif
+
+        bool addLocal = bLocal;
+
+        if (result == tesSUCCESS)
+        {
+            if (m_journal.info) m_journal.info <<
+                "Transaction is now included in open ledger";
+            transaction->setStatus (INCLUDED);
+            getApp().getMasterTransaction ().canonicalize (&transaction);
+        }
+        else if (result == tefPAST_SEQ)
+        {
+            // duplicate or conflict
+            if (m_journal.info) m_journal.info <<
+                "Transaction is obsolete";
+            transaction->setStatus (OBSOLETE);
+        }
+        else if (isTerRetry (result))
+        {
+            if (bFailHard)
+            {
+                addLocal = false;
+            }
+            else
+            {
+                // transaction should be held
+                if (m_journal.debug) m_journal.debug <<
+                    "Transaction should be held: " << result;
+                transaction->setStatus (HELD);
+                getApp().getMasterTransaction().canonicalize (&transaction);
+                addHeldTransaction (transaction);
+            }
+        }
+        else
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Status other than success " << result;
+            transaction->setStatus (INVALID);
+        }
+
+        if (addLocal)
+        {
+            getApp().getOPs().addLocalTx (getCurrentLedger(),
+                transaction->getSTransaction());
+        }
+
+        if (applied || (!getApp().getOPs().isFull() && !bFailHard && bLocal))
+        {
+            std::set<Peer::id_t> peers;
+
+            if (getApp().getHashRouter().swapSet (
+                    transaction->getID(), peers, SF_RELAYED))
+            {
+                protocol::TMTransaction tx;
+                Serializer s;
+                transaction->getSTransaction()->add (s);
+                tx.set_rawtransaction (&s.getData().front(), s.getLength());
+                tx.set_status (protocol::tsCURRENT);
+                tx.set_receivetimestamp (getApp().getOPs().getNetworkTimeNC ());
+                // FIXME: This should be when we received it
+                getApp().overlay().foreach(send_if_not (
+                    std::make_shared<Message> (tx, protocol::mtTRANSACTION),
+                    peer_in_set(peers)));
+            }
+        }
+    }
+}
+
+void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
+    bool const local, bool const failHard)
+{
+    {
+        std::lock_guard <std::mutex> lock (mBatchMutex);
+        mTransactions.push_back (std::make_tuple (trans, bool(), TER(), admin,
+                local, failHard));
+    }
+
+    while (true)
+    {
+        std::vector <TransactionStatus> batch;
+
+        if (!checkApplying (batch))
+            break;
+
+        applyTransactions (batch);
+
+        std::lock_guard<std::mutex> lock (mBatchMutex);
+        mApplying = false;
+    }
+}
 
 //------------------------------------------------------------------------------
 
