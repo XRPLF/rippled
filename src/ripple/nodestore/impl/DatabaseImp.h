@@ -40,20 +40,20 @@ namespace NodeStore {
 class DatabaseImp
     : public Database
 {
-public:
+private:
     beast::Journal m_journal;
     Scheduler& m_scheduler;
     // Persistent key/value storage.
     std::unique_ptr <Backend> m_backend;
     // Larger key/value storage, but not necessarily persistent.
     std::unique_ptr <Backend> m_fastBackend;
-
+protected:
     // Positive cache
     TaggedCache <uint256, NodeObject> m_cache;
 
     // Negative cache
     KeyCache <uint256> m_negCache;
-
+private:
     std::mutex                m_readLock;
     std::condition_variable   m_readCondVar;
     std::condition_variable   m_readGenCondVar;
@@ -62,7 +62,7 @@ public:
     std::vector <std::thread> m_readThreads;
     bool                      m_readShut;
     uint64_t                  m_readGen;        // current read generation
-
+public:
     DatabaseImp (std::string const& name,
                  Scheduler& scheduler,
                  int readThreads,
