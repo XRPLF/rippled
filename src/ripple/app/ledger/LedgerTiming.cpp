@@ -20,31 +20,26 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/basics/Log.h>
+#include <algorithm>
+#include <iterator>
 
 namespace ripple {
 
-// VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
-
-// NOTE: First and last times must be repeated
-int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 10, 20, 30, 60, 90, 120, 120 };
-
-// Called when a ledger is open and no close is in progress -- when a transaction is received and no close
-// is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
-bool ContinuousLedgerTiming::shouldClose (
+bool shouldCloseLedger (
     bool anyTransactions,
-    int previousProposers,      // proposers in the last closing
-    int proposersClosed,        // proposers who have currently closed this ledgers
-    int proposersValidated,     // proposers who have validated the last closed ledger
-    int previousMSeconds,       // milliseconds the previous ledger took to reach consensus
-    int currentMSeconds,        // milliseconds since the previous ledger closed
-    int openMSeconds,           // milliseconds since the previous LCL was computed
-    int idleInterval)           // network's desired idle interval
+    int previousProposers,
+    int proposersClosed,
+    int proposersValidated,
+    int previousMSeconds,
+    int currentMSeconds,
+    int openMSeconds,
+    int idleInterval)
 {
     if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
             (currentMSeconds < -1000) || (currentMSeconds > 600000))
     {
         WriteLog (lsWARNING, LedgerTiming) <<
-            "CLC::shouldClose range Trans=" << (anyTransactions ? "yes" : "no") <<
+            "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no") <<
             " Prop: " << previousProposers << "/" << proposersClosed <<
             " Secs: " << currentMSeconds << " (last: " << previousMSeconds << ")";
         return true;
@@ -52,8 +47,8 @@ bool ContinuousLedgerTiming::shouldClose (
 
     if (!anyTransactions)
     {
-        // no transactions so far this interval
-        if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
+        // did we miss a transaction?
+        if (proposersClosed > (previousProposers / 4))
         {
             WriteLog (lsTRACE, LedgerTiming) <<
                 "no transactions, many proposers: now (" << proposersClosed <<
@@ -61,118 +56,124 @@ bool ContinuousLedgerTiming::shouldClose (
             return true;
         }
 
-#if 0 // This false triggers on the genesis ledger
 
-        if (previousMSeconds > (1000 * (LEDGER_IDLE_INTERVAL + 2))) // the last ledger was very slow to close
-        {
-            WriteLog (lsTRACE, LedgerTiming) << "was slow to converge (p=" << (previousMSeconds) << ")";
-
-            if (previousMSeconds < 2000)
-                return previousMSeconds;
-
-            return previousMSeconds - 1000;
-        }
-
-#endif
+        // Only close if we have idled for too long.
         return currentMSeconds >= (idleInterval * 1000); // normal idle
     }
 
-    if ((openMSeconds < LEDGER_MIN_CLOSE) && ((proposersClosed + proposersValidated) < (previousProposers / 2 )))
+    // If we have any transactions, we don't want to close too frequently:
+    if (openMSeconds < LEDGER_MIN_CLOSE)
     {
-        WriteLog (lsDEBUG, LedgerTiming) <<
-            "Must wait minimum time before closing";
-        return false;
-    }
-
-    if ((currentMSeconds < previousMSeconds) && ((proposersClosed + proposersValidated) < previousProposers))
-    {
-        WriteLog (lsDEBUG, LedgerTiming) <<
-            "We are waiting for more closes/validations";
-        return false;
-    }
-
-    return true; // this ledger should close now
-}
-
-// Returns whether we have a consensus or not. If so, we expect all honest nodes
-// to already have everything they need to accept a consensus. Our vote is 'locked in'.
-bool ContinuousLedgerTiming::haveConsensus (
-    int previousProposers,      // proposers in the last closing (not including us)
-    int currentProposers,       // proposers in this closing so far (not including us)
-    int currentAgree,           // proposers who agree with us
-    int currentFinished,        // proposers who have validated a ledger after this one
-    int previousAgreeTime,      // how long it took to agree on the last ledger
-    int currentAgreeTime,       // how long we've been trying to agree
-    bool forReal,               // deciding whether to stop consensus process
-    bool& failed)               // we can't reach a consensus
-{
-    WriteLog (lsTRACE, LedgerTiming) <<
-        "CLC::haveConsensus: prop=" << currentProposers <<
-        "/" << previousProposers <<
-        " agree=" << currentAgree << " validated=" << currentFinished <<
-        " time=" << currentAgreeTime <<  "/" << previousAgreeTime <<
-        (forReal ? "" : "X");
-
-    if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
-        return false;
-
-    if (currentProposers < (previousProposers * 3 / 4))
-    {
-        // Less than 3/4 of the last ledger's proposers are present, we may need more time
-        if (currentAgreeTime < (previousAgreeTime + LEDGER_MIN_CONSENSUS))
+        if ((proposersClosed + proposersValidated) < (previousProposers / 2 ))
         {
-            CondLog (forReal, lsTRACE, LedgerTiming) <<
-                "too fast, not enough proposers";
+            WriteLog (lsDEBUG, LedgerTiming) <<
+                "Must wait minimum time before closing";
             return false;
         }
     }
 
-    // If 80% of current proposers (plus us) agree on a set, we have consensus
-    if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
+    if (currentMSeconds < previousMSeconds)
     {
-        CondLog (forReal, lsDEBUG, LedgerTiming) << "normal consensus";
-        failed = false;
-        return true;
+        if ((proposersClosed + proposersValidated) < previousProposers)
+        {
+            WriteLog (lsDEBUG, LedgerTiming) <<
+                "We are waiting for more closes/validations";
+            return false;
+        }
     }
 
-    // If 80% of the nodes on your UNL have moved on, you should declare consensus
-    if (((currentFinished * 100) / (currentProposers + 1)) > 80)
+    return true;
+}
+
+bool
+checkConsensusReached (int agreeing, int proposing)
+{
+    int currentPercentage = (agreeing * 100) / (proposing + 1);
+
+    return currentPercentage > minimumConsensusPercentage;
+}
+
+ConsensusState checkConsensus (
+    int previousProposers,
+    int currentProposers,
+    int currentAgree,
+    int currentFinished,
+    int previousAgreeTime,
+    int currentAgreeTime)
+{
+    WriteLog (lsTRACE, LedgerTiming) <<
+        "checkConsensus: prop=" << currentProposers <<
+        "/" << previousProposers <<
+        " agree=" << currentAgree << " validated=" << currentFinished <<
+        " time=" << currentAgreeTime <<  "/" << previousAgreeTime;
+
+    if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
+        return ConsensusState::No;
+
+    if (currentProposers < (previousProposers * 3 / 4))
     {
-        CondLog (forReal, lsWARNING, LedgerTiming) <<
+        // Less than 3/4 of the last ledger's proposers are present; don't
+        // rush: we may need more time.
+        if (currentAgreeTime < (previousAgreeTime + LEDGER_MIN_CONSENSUS))
+        {
+            WriteLog (lsTRACE, LedgerTiming) <<
+                "too fast, not enough proposers";
+            return ConsensusState::No;
+        }
+    }
+
+    // Have we, together with the nodes on our UNL list, reached the treshold
+    // to declare consensus?
+    if (checkConsensusReached (currentAgree + 1, currentProposers))
+    {
+        WriteLog (lsDEBUG, LedgerTiming) << "normal consensus";
+        return ConsensusState::Yes;
+    }
+
+    // Have sufficient nodes on our UNL list moved on and reached the threshold
+    // to declare consensus?
+    if (checkConsensusReached (currentFinished, currentProposers))
+    {
+        WriteLog (lsWARNING, LedgerTiming) <<
             "We see no consensus, but 80% of nodes have moved on";
-        failed = true;
-        return true;
+        return ConsensusState::MovedOn;
     }
 
     // no consensus yet
-    CondLog (forReal, lsTRACE, LedgerTiming) << "no consensus";
-    return false;
+    WriteLog (lsTRACE, LedgerTiming) << "no consensus";
+    return ConsensusState::No;
 }
 
-int ContinuousLedgerTiming::getNextLedgerTimeResolution (int previousResolution, bool previousAgree, int ledgerSeq)
+int getNextLedgerTimeResolution (
+    int previousResolution,
+    bool previousAgree,
+    std::uint32_t ledgerSeq)
 {
     assert (ledgerSeq);
 
-    if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
+    // Find the current resolution:
+    auto iter = std::find (std::begin (ledgerPossibleTimeResolutions),
+        std::end (ledgerPossibleTimeResolutions), previousResolution);
+    assert (iter != std::end (ledgerPossibleTimeResolutions));
+
+    // This should never happen, but just as a precaution
+    if (iter == std::end (ledgerPossibleTimeResolutions))
+        return previousResolution;
+
+    // If we did not previously agree, we try to decrease the resolution to
+    // improve the chance that we will agree now.
+    if (!previousAgree && ((ledgerSeq % decreaseLedgerTimeResolutionEvery) == 0))
     {
-        // reduce resolution
-        int i = 1;
-
-        while (LedgerTimeResolution[i] != previousResolution)
-            ++i;
-
-        return LedgerTimeResolution[i + 1];
+        if (++iter != std::end (ledgerPossibleTimeResolutions))
+            return *iter;
     }
 
-    if ((previousAgree) && ((ledgerSeq % LEDGER_RES_INCREASE) == 0))
+    // If we previously agreed, we try to increase the resolution to determine
+    // if we can continue to agree.
+    if (previousAgree && ((ledgerSeq % increaseLedgerTimeResolutionEvery) == 0))
     {
-        // increase resolution
-        int i = 1;
-
-        while (LedgerTimeResolution[i] != previousResolution)
-            ++i;
-
-        return LedgerTimeResolution[i - 1];
+        if (iter-- != std::begin (ledgerPossibleTimeResolutions))
+            return *iter;
     }
 
     return previousResolution;

@@ -115,7 +115,7 @@ public:
         getApp().getInboundTransactions().newRound (mPreviousLedger->getLedgerSeq());
 
         // Adapt close time resolution to recent network conditions
-        mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution (
+        mCloseResolution = getNextLedgerTimeResolution (
             mPreviousLedger->getCloseResolution (),
             mPreviousLedger->getCloseAgree (),
             previousLedger->getLedgerSeq () + 1);
@@ -290,11 +290,6 @@ public:
         }
 
         return ret;
-    }
-
-    Ledger::ref peekPreviousLedger ()
-    {
-        return mPreviousLedger;
     }
 
     uint256 getLCL ()
@@ -564,9 +559,10 @@ public:
         WriteLog (lsINFO, LedgerConsensus) << "Have the consensus ledger " << mPrevLedgerHash;
         mHaveCorrectLCL = true;
 
-        mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution (
-                               mPreviousLedger->getCloseResolution (), mPreviousLedger->getCloseAgree (),
-                               mPreviousLedger->getLedgerSeq () + 1);
+        mCloseResolution = getNextLedgerTimeResolution (
+            mPreviousLedger->getCloseResolution (),
+            mPreviousLedger->getCloseAgree (),
+            mPreviousLedger->getLedgerSeq () + 1);
     }
 
 
@@ -666,7 +662,7 @@ public:
         idleInterval = std::max (idleInterval, 2 * mPreviousLedger->getCloseResolution ());
 
         // Decide if we should close the ledger
-        if (ContinuousLedgerTiming::shouldClose (anyTransactions
+        if (shouldCloseLedger (anyTransactions
             , mPreviousProposers, proposersClosed, proposersValidated
             , mPreviousMSeconds, sinceClose, mCurrentMSeconds
             , idleInterval))
@@ -681,26 +677,27 @@ public:
     */
     void stateEstablish ()
     {
-
         // Give everyone a chance to take an initial position
         if (mCurrentMSeconds < LEDGER_MIN_CONSENSUS)
             return;
 
         updateOurPositions ();
 
+        // Nothing to do if we don't have consensus.
+        if (!haveConsensus ())
+            return;
+
         if (!mHaveCloseTimeConsensus)
         {
-            CondLog (haveConsensus (false), lsINFO, LedgerConsensus)
-                << "We have TX consensus but not CT consensus";
+            WriteLog (lsINFO, LedgerConsensus) <<
+                "We have TX consensus but not CT consensus";
+            return;
         }
-        else if (haveConsensus (true))
-        {
-            WriteLog (lsINFO, LedgerConsensus)
-                << "Converge cutoff (" << mPeerPositions.size ()
-                << " participants)";
-            mState = lcsFINISHED;
-            beginAccept (false);
-        }
+
+        WriteLog (lsINFO, LedgerConsensus) <<
+            "Converge cutoff (" << mPeerPositions.size () << " participants)";
+        mState = lcsFINISHED;
+        beginAccept (false);
     }
 
     void stateFinished ()
@@ -717,7 +714,7 @@ public:
 
     /** Check if we've reached consensus
     */
-    bool haveConsensus (bool forReal)
+    bool haveConsensus ()
     {
         // CHECKME: should possibly count unacquired TX sets as disagreeing
         int agree = 0, disagree = 0;
@@ -762,9 +759,20 @@ public:
             << ", disagree=" << disagree;
 
         // Determine if we actually have consensus or not
-        return ContinuousLedgerTiming::haveConsensus (mPreviousProposers,
-            agree + disagree, agree, currentValidations
-            , mPreviousMSeconds, mCurrentMSeconds, forReal, mConsensusFail);
+        auto ret = checkConsensus (mPreviousProposers, agree + disagree, agree,
+            currentValidations, mPreviousMSeconds, mCurrentMSeconds);
+
+        if (ret == ConsensusState::No)
+            return false;
+
+        // There is consensus, but we need to track if the network moved on
+        // without us.
+        if (ret == ConsensusState::MovedOn)
+            mConsensusFail = true;
+        else
+            mConsensusFail = false;
+
+        return true;
     }
 
     std::shared_ptr<SHAMap> getTransactionTree (uint256 const& hash)
@@ -853,11 +861,6 @@ public:
         }
 
         return true;
-    }
-
-    bool isOurPubKey (const RippleAddress & k)
-    {
-        return k == mValPublic;
     }
 
     /** Simulate a consensus round without any network traffic

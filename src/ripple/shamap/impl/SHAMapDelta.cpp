@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
-    
+
 namespace ripple {
 
 // This code is used to compare another node's transaction tree
@@ -123,11 +123,11 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
 
     assert (isValid () && otherMap && otherMap->isValid ());
 
-    using StackEntry = std::pair <SHAMapTreeNode*, SHAMapTreeNode*>;
-    std::stack <StackEntry, std::vector<StackEntry>> nodeStack; // track nodes we've pushed
-
     if (getHash () == otherMap->getHash ())
         return true;
+
+    using StackEntry = std::pair <SHAMapTreeNode*, SHAMapTreeNode*>;
+    std::stack <StackEntry, std::vector<StackEntry>> nodeStack; // track nodes we've pushed
 
     nodeStack.push ({root_.get(), otherMap->root_.get()});
     while (!nodeStack.empty ())
@@ -221,11 +221,11 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
 
 void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const
 {
-    std::stack <std::shared_ptr<SHAMapTreeNode>,
-        std::vector <std::shared_ptr<SHAMapTreeNode>>> nodeStack;
-
     if (!root_->isInner ())  // root_ is only node, and we have it
         return;
+
+    using StackEntry = std::shared_ptr<SHAMapTreeNode>;
+    std::stack <StackEntry, std::vector <StackEntry>> nodeStack;
 
     nodeStack.push (root_);
 
