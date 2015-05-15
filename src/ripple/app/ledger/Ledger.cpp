@@ -53,7 +53,7 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
     , mParentCloseTime (0)
-    , mCloseResolution (LEDGER_TIME_ACCURACY)
+    , mCloseResolution (ledgerDefaultTimeResolution)
     , mCloseFlags (0)
     , mClosed (false)
     , mValidated (false)
@@ -179,10 +179,8 @@ Ledger::Ledger (bool /* dummy */,
 
     assert (mParentHash.isNonZero ());
 
-    mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution (
-                           prevLedger.mCloseResolution,
-                           prevLedger.getCloseAgree (),
-                           mLedgerSeq);
+    mCloseResolution = getNextLedgerTimeResolution (prevLedger.mCloseResolution,
+        prevLedger.getCloseAgree (), mLedgerSeq);
 
     if (prevLedger.mCloseTime == 0)
     {
@@ -230,7 +228,7 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mLedgerSeq (ledgerSeq),
       mCloseTime (closeTime),
       mParentCloseTime (0),
-      mCloseResolution (LEDGER_TIME_ACCURACY),
+      mCloseResolution (ledgerDefaultTimeResolution),
       mCloseFlags (0),
       mClosed (false),
       mValidated (false),

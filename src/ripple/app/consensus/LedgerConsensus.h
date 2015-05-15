@@ -46,30 +46,14 @@ public:
 
     virtual Json::Value getJson (bool full) = 0;
 
-    virtual Ledger::ref peekPreviousLedger () = 0;
-
     virtual uint256 getLCL () = 0;
 
     virtual void mapComplete (uint256 const& hash,
         std::shared_ptr<SHAMap> const& map, bool acquired) = 0;
 
-    virtual void checkLCL () = 0;
-
-    virtual void handleLCL (uint256 const& lclHash) = 0;
-
     virtual void timerEntry () = 0;
 
-    // state handlers
-    virtual void statePreClose () = 0;
-    virtual void stateEstablish () = 0;
-    virtual void stateFinished () = 0;
-    virtual void stateAccepted () = 0;
-
-    virtual bool haveConsensus (bool forReal) = 0;
-
     virtual bool peerPosition (LedgerProposal::ref) = 0;
-
-    virtual bool isOurPubKey (const RippleAddress & k) = 0;
 
     // test/debug
     virtual void simulate () = 0;

@@ -449,7 +449,7 @@ close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
     std::uint32_t closeTime = time_point_cast<seconds>  // now
         (system_clock::now() - epoch_offset).
         time_since_epoch().count();
-    int closeResolution = seconds(LEDGER_TIME_ACCURACY).count();
+    int closeResolution = seconds(ledgerDefaultTimeResolution).count();
     bool closeTimeCorrect = true;
     newLCL->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
