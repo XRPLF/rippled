@@ -199,14 +199,7 @@ void
 static_initializer_test::run ()
 {
     test <Case<  4, cxx11_tag>> ();
-    test <Case< 16, cxx11_tag>> ();
-    test <Case< 64, cxx11_tag>> ();
-    test <Case<256, cxx11_tag>> ();
-
     test <Case<  4, beast_tag>> ();
-    test <Case< 16, beast_tag>> ();
-    test <Case< 64, beast_tag>> ();
-    test <Case<256, beast_tag>> ();
 }
 
 //------------------------------------------------------------------------------
