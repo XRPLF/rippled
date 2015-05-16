@@ -241,8 +241,17 @@ TransactionEngine::applyTransaction (
                 throw std::runtime_error ("Duplicate transaction applied to closed ledger");
             }
 
-            // Charge whatever fee they specified.
-            mLedger->destroyCoins (getNValue (txn.getTransactionFee ()));
+            // Charge whatever fee they specified. We break the encapsulation of
+            // STAmount here and use "special knowledge" - namely that a native
+            // amount is stored fully in the mantissa:
+            auto const fee = txn.getTransactionFee ();
+
+            // The transactor guarantees these will never trigger
+            if (!fee.native () || fee.negative ())
+                throw std::runtime_error ("amount is negative!");
+
+            if (fee != zero)
+                mLedger->destroyCoins (fee.mantissa ());
         }
     }
 
