@@ -67,9 +67,13 @@ public:
                 auto it = mLedgers.find (hash);
                 if (it != mLedgers.end ())
                 {
-                    it->second->update (seq);
-                    if (it->second->isComplete() && !it->second->isFailed())
-                        ret = it->second->getLedger();
+                    // Don't touch failed acquires so they can expire
+                    if (! it->second->isFailed ())
+                    {
+                        it->second->update (seq);
+                        if (it->second->isComplete ())
+                            ret = it->second->getLedger ();
+                    }
 
                 }
                 else
