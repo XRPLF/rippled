@@ -1163,22 +1163,23 @@ STAmount LedgerEntrySet::accountHolds (
         std::uint64_t uReserve = mLedger->getReserve (
             sleAccount->getFieldU32 (sfOwnerCount));
 
-        STAmount saBalance   = sleAccount->getFieldAmount (sfBalance);
+        STAmount const saBalance = sleAccount->getFieldAmount (sfBalance);
+        STAmount const saReserve (uReserve);
 
-        if (saBalance < uReserve)
+        if (saBalance < saReserve)
         {
             saAmount.clear ();
         }
         else
         {
-            saAmount = saBalance - uReserve;
+            saAmount = saBalance - saReserve;
         }
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
             " account=" << to_string (account) <<
             " saAmount=" << saAmount.getFullText () <<
             " saBalance=" << saBalance.getFullText () <<
-            " uReserve=" << uReserve;
+            " saReserve=" << saReserve.getFullText ();
 
         return adjustedBalance(account, issuer, saAmount);
     }
@@ -1248,7 +1249,7 @@ STAmount LedgerEntrySet::accountFunds (
 {
     STAmount    saFunds;
 
-    if (!saDefault.isNative () && saDefault.getIssuer () == account)
+    if (!saDefault.native () && saDefault.getIssuer () == account)
     {
         saFunds = saDefault;
 
@@ -1684,7 +1685,7 @@ TER LedgerEntrySet::accountSend (
     if (!saAmount || (uSenderID == uReceiverID))
         return tesSUCCESS;
 
-    if (!saAmount.isNative ())
+    if (!saAmount.native ())
     {
         STAmount saActual;
 
@@ -1972,7 +1973,7 @@ TER LedgerEntrySet::transfer_xrp (
     assert (from != beast::zero);
     assert (to != beast::zero);
     assert (from != to);
-    assert (amount.isNative ());
+    assert (amount.native ());
 
     SLE::pointer sender = entryCache (ltACCOUNT_ROOT,
         getAccountRootIndex (from));

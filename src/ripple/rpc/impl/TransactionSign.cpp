@@ -400,7 +400,7 @@ static Json::Value checkPayment(
             saSendMax.setIssuer (raSrcAddressID.getAccountID ());
         }
 
-        if (saSendMax.isNative () && amount.isNative ())
+        if (saSendMax.native () && amount.native ())
             return RPC::make_error (rpcINVALID_PARAMS,
                 "Cannot build XRP to XRP paths.");
 
@@ -486,7 +486,7 @@ checkTxJsonFields (
 
     // Check for current ledger.
     if (verify && !getConfig ().RUN_STANDALONE &&
-        (apiFacade.getValidatedLedgerAge() > 
+        (apiFacade.getValidatedLedgerAge() >
           Tuning::maxValidatedLedgerAge))
     {
         ret.first = rpcError (rpcNO_CURRENT);

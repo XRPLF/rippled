@@ -2888,9 +2888,8 @@ void NetworkOPsImp::getBookPage (
                     uOfferRate          = uTransferRate;
                     saOwnerFundsLimit   = divide (
                         saOwnerFunds,
-                        STAmount (noIssue(), uOfferRate, -9),
+                        amountFromRate (uOfferRate),
                         saOwnerFunds.issue ());
-                    // TODO(tom): why -9?
                 }
                 else
                 {
@@ -2922,7 +2921,7 @@ void NetworkOPsImp::getBookPage (
                         saOwnerFunds,
                         multiply (
                             saTakerGetsFunded,
-                            STAmount (noIssue(), uOfferRate, -9),
+                            amountFromRate (uOfferRate),
                             saTakerGetsFunded.issue ()));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
@@ -3053,9 +3052,8 @@ void NetworkOPsImp::getBookPage (
             {
                 // Need to charge a transfer fee to offer owner.
                 uOfferRate = uTransferRate;
-                // TODO(tom): where does -9 come from?!
-                STAmount amount (noIssue(), uOfferRate, -9);
-                saOwnerFundsLimit = divide (saOwnerFunds, amount);
+                saOwnerFundsLimit = divide (saOwnerFunds,
+                    amountFromRate (uOfferRate));
             }
             else
             {
@@ -3083,12 +3081,10 @@ void NetworkOPsImp::getBookPage (
             }
 
             STAmount saOwnerPays = (uOfferRate == QUALITY_ONE)
-                    ? saTakerGetsFunded
-                    : std::min (saOwnerFunds,
-                                multiply (
-                                    saTakerGetsFunded, STAmount (
-                                        noIssue(), uOfferRate,
-                                        -9)));
+                ? saTakerGetsFunded
+                : std::min (
+                    saOwnerFunds,
+                    multiply (saTakerGetsFunded, amountFromRate (uOfferRate)));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

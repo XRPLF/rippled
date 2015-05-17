@@ -297,7 +297,7 @@ bool Pathfinder::findPaths (int searchLevel)
             return false;
         }
 
-        auto reserve = mLedger->getReserve (0);
+        auto const reserve = STAmount (mLedger->getReserve (0));
         if (mDstAmount < reserve)
         {
             WriteLog (lsDEBUG, Pathfinder)
@@ -908,7 +908,7 @@ void Pathfinder::addLink (
         // add accounts
         if (bOnXRP)
         {
-            if (mDstAmount.isNative () && !currentPath.empty ())
+            if (mDstAmount.native () && !currentPath.empty ())
             { // non-default path to XRP destination
                 WriteLog (lsTRACE, Pathfinder)
                     << "complete path found ax: " << currentPath.getJson(0);

@@ -45,7 +45,7 @@ void addLine (Json::Value& jsonLines, RippleState const& line)
     // Amount reported is negative if other account holds current
     // account's IOUs.
     jPeer[jss::balance] = saBalance.getText ();
-    jPeer[jss::currency] = saBalance.getHumanCurrency ();
+    jPeer[jss::currency] = to_string (saBalance.issue ().currency);
     jPeer[jss::limit] = saLimit.getText ();
     jPeer[jss::limit_peer] = saLimitPeer.getText ();
     jPeer[jss::quality_in]

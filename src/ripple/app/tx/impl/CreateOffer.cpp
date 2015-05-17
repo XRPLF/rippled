@@ -430,7 +430,7 @@ private:
     {
         std::string txt = amount.getText ();
         txt += "/";
-        txt += amount.getHumanCurrency ();
+        txt += to_string (amount.issue().currency);
         return txt;
     }
 
@@ -451,11 +451,11 @@ public:
     }
 
     /** Returns the reserve the account would have if an offer was added. */
-    std::uint32_t
+    STAmount
     getAccountReserve (SLE::pointer account)
     {
-        return mEngine->getLedger ()->getReserve (
-            account->getFieldU32 (sfOwnerCount) + 1);
+        return STAmount (mEngine->getLedger ()->getReserve (
+            account->getFieldU32 (sfOwnerCount) + 1));
     }
 
     TER
@@ -504,7 +504,7 @@ public:
         if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
             return temBAD_AMOUNT;
 
-        if (saTakerPays.isNative () && saTakerGets.isNative ())
+        if (saTakerPays.native () && saTakerGets.native ())
         {
             if (m_journal.debug) m_journal.warning <<
                 "Malformed offer: XRP for XRP";
@@ -537,8 +537,8 @@ public:
             return temBAD_CURRENCY;
         }
 
-        if (saTakerPays.isNative () != !uPaysIssuerID ||
-            saTakerGets.isNative () != !uGetsIssuerID)
+        if (saTakerPays.native () != !uPaysIssuerID ||
+            saTakerGets.native () != !uGetsIssuerID)
         {
             if (m_journal.warning) m_journal.warning <<
                 "Malformed offer: bad issuer";
@@ -660,7 +660,7 @@ public:
         }
 
         // Make sure that we are authorized to hold what the taker will pay us.
-        if (result == tesSUCCESS && !saTakerPays.isNative ())
+        if (result == tesSUCCESS && !saTakerPays.native ())
             result = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
 
         bool const bOpenLedger (mParams & tapOPEN_LEDGER);
@@ -858,8 +858,8 @@ transact_CreateOffer (
 {
     CrossType cross_type = CrossType::IouToIou;
 
-    bool const pays_xrp = txn.getFieldAmount (sfTakerPays).isNative ();
-    bool const gets_xrp = txn.getFieldAmount (sfTakerGets).isNative ();
+    bool const pays_xrp = txn.getFieldAmount (sfTakerPays).native ();
+    bool const gets_xrp = txn.getFieldAmount (sfTakerGets).native ();
 
     if (pays_xrp && !gets_xrp)
         cross_type = CrossType::IouToXrp;

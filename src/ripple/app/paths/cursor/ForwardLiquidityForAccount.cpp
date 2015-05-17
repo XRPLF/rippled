@@ -156,7 +156,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                     ? previousNode().saFwdIssue  // No fee.
                     : mulRound (
                           previousNode().saFwdIssue,
-                          STAmount (noIssue(), uQualityIn, -9),
+                          amountFromRate (uQualityIn),
                           previousNode().saFwdIssue.issue (),
                           true); // Amount to credit.
 
