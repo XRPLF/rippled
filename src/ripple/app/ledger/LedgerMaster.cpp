@@ -1545,7 +1545,7 @@ public:
     {
         std::lock_guard <std::mutex> lock (mBatchMutex);
 
-        if (mApplying || !mTransactions.size())
+        if (mApplying || mTransactions.empty())
             return false;
 
         mApplying = true;
@@ -1582,8 +1582,7 @@ bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
             bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
             tapOPEN_LEDGER | tapNO_CHECK_SIGN));
 
-        if (didApply && !applied)
-            applied = true;
+        applied |= didApply;
     }
 
     return applied;

@@ -204,7 +204,6 @@ public:
     //
 
     // must complete immediately
-    typedef std::function<void (Transaction::pointer, TER)> stCallback;
     void submitTransaction (Job&, STTx::pointer);
 
     Transaction::pointer submitTransactionSync (
