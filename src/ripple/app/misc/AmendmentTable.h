@@ -20,8 +20,9 @@
 #ifndef RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 #define RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 
-#include <ripple/app/book/Types.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/protocol/Protocol.h>
 
 namespace ripple {
 
@@ -101,9 +102,9 @@ public:
     bool mSupported{false};
     bool mDefault{false};  // Include in genesis ledger
 
-    core::Clock::time_point
+    Clock::time_point
         m_firstMajority{0};  // First time we saw a majority (close time)
-    core::Clock::time_point
+    Clock::time_point
         m_lastMajority{0};  // Most recent time we saw a majority (close time)
 
     std::string mFriendlyName;

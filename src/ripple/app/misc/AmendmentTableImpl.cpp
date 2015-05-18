@@ -49,8 +49,8 @@ protected:
     amendmentMap_t m_amendmentMap;
     std::chrono::seconds m_majorityTime; // Seconds an amendment must hold a majority
     int mMajorityFraction;  // 256 = 100%
-    core::Clock::time_point m_firstReport; // close time of first majority report
-    core::Clock::time_point m_lastReport;  // close time of most recent majority report
+    Clock::time_point m_firstReport; // close time of first majority report
+    Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
     AppApiFacade m_appApiFacade;
 
@@ -101,7 +101,7 @@ public:
 
     amendmentList_t getVetoed();
     amendmentList_t getEnabled();
-    amendmentList_t getToEnable(core::Clock::time_point closeTime);   // gets amendments we would vote to enable
+    amendmentList_t getToEnable(Clock::time_point closeTime);   // gets amendments we would vote to enable
     amendmentList_t getDesired();    // amendments we support, do not veto, are not enabled
 };
 
@@ -368,7 +368,7 @@ AmendmentTableImpl<AppApiFacade>::shouldEnable (std::uint32_t closeTime,
 
 template<class AppApiFacade>
 typename AmendmentTableImpl<AppApiFacade>::amendmentList_t
-AmendmentTableImpl<AppApiFacade>::getToEnable (core::Clock::time_point closeTime)
+AmendmentTableImpl<AppApiFacade>::getToEnable (Clock::time_point closeTime)
 {
     amendmentList_t ret;
     ScopedLockType sl (mLock);

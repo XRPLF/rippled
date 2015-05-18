@@ -18,3 +18,27 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/tx/impl/OfferStream.h>
+#include <beast/unit_test/suite.h>
+
+namespace ripple {
+
+class OfferStream_test : public beast::unit_test::suite
+{
+public:
+    void
+    test()
+    {
+        pass();
+    }
+
+    void
+    run()
+    {
+        test();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(OfferStream,tx,ripple);
+
+}

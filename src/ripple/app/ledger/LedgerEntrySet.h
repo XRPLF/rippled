@@ -91,6 +91,7 @@ public:
     transaction finishes, the LES is committed into the ledger to make
     the modifications. The transaction metadata is built from the LES too.
 */
+/** @{ */
 class LedgerEntrySet
     : public CountedObject <LedgerEntrySet>
 {
@@ -345,6 +346,11 @@ private:
                       Account const& receiver,
                       STAmount const& amount);
 };
+
+using LedgerView = LedgerEntrySet;
+/** @} */
+
+//------------------------------------------------------------------------------
 
 class ScopedDeferCredits
 {
