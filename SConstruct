@@ -688,7 +688,6 @@ def get_unity_sources():
         'src/ripple/unity/json.cpp',
         'src/ripple/unity/protocol.cpp',
         'src/ripple/unity/shamap.cpp',
-        'src/ripple/unity/legacy.cpp',
     )
 
     result += get_soci_sources('unity')

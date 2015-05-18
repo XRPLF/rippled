@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/book/Types.h>
+#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Indexes.h>
 

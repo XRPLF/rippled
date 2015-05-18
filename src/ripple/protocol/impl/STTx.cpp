@@ -28,7 +28,6 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
-#include <ripple/legacy/0.27/Emulate027.h>
 #include <beast/unit_test/suite.h>
 #include <boost/format.hpp>
 #include <array>

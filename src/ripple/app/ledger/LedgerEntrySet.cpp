@@ -18,13 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/book/Quality.h>
+#include <ripple/protocol/Quality.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/app/ledger/DeferredCredits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
-#include <ripple/legacy/0.27/Emulate027.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -1490,9 +1489,6 @@ TER LedgerEntrySet::rippleCredit (
 
         bool noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
 
-        if (ripple::legacy::emulate027 (mLedger))
-            noRipple = false;
-
         terResult = trustCreate (
             bSenderHigh,
             uSenderID,
@@ -1848,9 +1844,6 @@ TER LedgerEntrySet::issue_iou (
             getAccountRootIndex (account));
 
         bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
-
-        if (ripple::legacy::emulate027 (mLedger))
-            noRipple = false;
 
         return trustCreate (bSenderHigh, issue.account, account, index,
             receiverAccount, false, noRipple, false, final_balance, limit);

@@ -19,14 +19,30 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/book/tests/OfferStream.test.cpp>
-#include <ripple/app/book/tests/Quality.test.cpp>
-#include <ripple/app/book/tests/Taker.test.cpp>
 #include <ripple/app/ledger/InboundLedger.cpp>
 #include <ripple/app/paths/RippleState.cpp>
 #include <ripple/app/peers/UniqueNodeList.cpp>
-#include <ripple/app/transactors/Transactor.h>
-#include <ripple/app/tx/TransactionMaster.cpp>
-#include <ripple/app/tx/Transaction.cpp>
-#include <ripple/app/tx/TransactionEngine.cpp>
-#include <ripple/app/tx/TransactionMeta.cpp>
+
+#include <ripple/app/tx/impl/InboundTransactions.cpp>
+#include <ripple/app/tx/impl/LocalTxs.cpp>
+#include <ripple/app/tx/impl/TransactionMaster.cpp>
+#include <ripple/app/tx/impl/Transaction.cpp>
+#include <ripple/app/tx/impl/TransactionEngine.cpp>
+#include <ripple/app/tx/impl/TransactionMeta.cpp>
+#include <ripple/app/tx/impl/TransactionAcquire.cpp>
+#include <ripple/app/tx/impl/Transactor.cpp>
+#include <ripple/app/tx/impl/BookTip.cpp>
+#include <ripple/app/tx/impl/OfferStream.cpp>
+#include <ripple/app/tx/impl/Taker.cpp>
+
+#include <ripple/app/tx/impl/Change.cpp>
+#include <ripple/app/tx/impl/CancelOffer.cpp>
+#include <ripple/app/tx/impl/Payment.cpp>
+#include <ripple/app/tx/impl/SetRegularKey.cpp>
+#include <ripple/app/tx/impl/SetAccount.cpp>
+#include <ripple/app/tx/impl/SetTrust.cpp>
+#include <ripple/app/tx/impl/CreateOffer.cpp>
+#include <ripple/app/tx/impl/CreateTicket.cpp>
+#include <ripple/app/tx/impl/CancelTicket.cpp>
+#include <ripple/app/tx/tests/OfferStream.test.cpp>
+#include <ripple/app/tx/tests/Taker.test.cpp>

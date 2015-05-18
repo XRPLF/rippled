@@ -18,10 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/book/Quality.h>
+#include <ripple/protocol/Quality.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
-#include <ripple/legacy/0.27/Emulate027.h>
 
 namespace ripple {
 namespace path {
@@ -475,14 +474,7 @@ TER PathCursor::forwardLiquidityForAccount () const
 
         node().saFwdDeliver.clear (node().saRevDeliver);
 
-        bool do_liquidity;
-
-        if (ripple::legacy::emulate027 (rippleCalc_.mActiveLedger.getLedger ()))
-            do_liquidity = previousNode().saFwdDeliver && node().saRevIssue;
-        else
-            do_liquidity = previousNode().saFwdDeliver && node().saRevDeliver;
-
-        if (do_liquidity)
+        if (previousNode().saFwdDeliver && node().saRevDeliver)
         {
             // Rate : 1.0 : transfer_rate
             rippleLiquidity (

@@ -1352,64 +1352,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\Amount.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\Amounts.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\BookTip.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\book\impl\BookTip.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\book\impl\OfferStream.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\book\impl\Quality.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\book\impl\Taker.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\book\Offer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\OfferStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\Quality.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\book\Taker.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\book\tests\OfferStream.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\book\tests\Quality.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\book\tests\Taker.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\book\Types.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\consensus\DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1956,85 +1898,147 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CancelOffer.cpp">
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CancelTicket.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\Change.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateOffer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateTicket.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\Payment.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\SetAccount.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\SetRegularKey.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\SetTrust.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\Transactor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\transactors\Transactor.h">
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\BookTip.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\InboundTransactions.cpp">
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelOffer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelTicket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\Change.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateOffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateTicket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\InboundTransactions.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\LocalTxs.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\Offer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\OfferStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\OfferStream.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\Payment.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\SetAccount.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\SetRegularKey.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\SetTrust.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\Taker.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\Taker.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\Transaction.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionAcquire.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionEngine.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMaster.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMeta.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\Transactor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\Transactor.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\InboundTransactions.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\LocalTxs.cpp">
+    <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\Transaction.cpp">
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2042,36 +2046,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\Transaction.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TransactionAcquire.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionAcquire.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TransactionEngine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionEngine.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TransactionMaster.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMaster.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TransactionMeta.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMeta.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
@@ -2435,50 +2415,6 @@
     <ClInclude Include="..\..\src\ripple\json\to_string.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\Writer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amount.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Amounts.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\BookTip.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\BookTip27.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\OfferStream27.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Quality27.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\book\impl\Taker27.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Offer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\OfferStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Quality.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Taker.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\book\Types.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\CreateOffer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\CreateOffer27.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\legacy\0.27\Emulate027.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\legacy\0.27\Emulate027.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
     </ClInclude>
@@ -2862,6 +2798,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Quality.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2964,6 +2904,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Protocol.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Quality.h">
+    </ClInclude>
     <None Include="..\..\src\ripple\protocol\README.md">
     </None>
     <ClInclude Include="..\..\src\ripple\protocol\RippleAddress.h">
@@ -3019,6 +2961,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\Issue.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\Quality.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3584,10 +3530,6 @@
     <ClInclude Include="..\..\src\ripple\unity\git_id.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\json.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\legacy.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
