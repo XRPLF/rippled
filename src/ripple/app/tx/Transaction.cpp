@@ -28,7 +28,11 @@
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref sit, Validate validate, std::string& reason)
+Transaction::Transaction (
+    STTx::ref sit,
+    Validate validate,
+    std::string& reason,
+    bool sync)
     noexcept
     : mInLedger (0),
       mStatus (INVALID),
@@ -56,6 +60,15 @@ Transaction::Transaction (STTx::ref sit, Validate validate, std::string& reason)
         (passesLocalChecks (*mTransaction, reason) && checkSign (reason)))
     {
         mStatus = NEW;
+    }
+
+    if (sync)
+    {
+        mCond = std::make_unique<std::condition_variable>();
+        mMutex = std::make_unique<std::mutex>();
+
+        std::lock_guard<std::mutex> lock (*mMutex);
+        mApplying = true;
     }
 }
 

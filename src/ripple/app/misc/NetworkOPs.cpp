@@ -906,7 +906,8 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransaction,
                    this,
-                   std::make_shared<Transaction> (trans, Validate::NO, reason),
+                   std::make_shared<Transaction> (trans, Validate::NO, reason,
+                   false),
                    false,
                    false,
                    false,
@@ -983,10 +984,8 @@ void NetworkOPsImp::processTransaction (
         getApp().getHashRouter ().setFlag (trans->getID (), SF_SIGGOOD);
     }
 
-    if (sync)
-        trans->syncPrep();
-
-    m_ledgerMaster.doTransactions (trans, bAdmin, bLocal, bFailHard);
+    m_ledgerMaster.enqueueTransaction (trans, bAdmin, bLocal, bFailHard,
+        m_job_queue);
 }
 
 Transaction::pointer NetworkOPsImp::findTransactionByID (

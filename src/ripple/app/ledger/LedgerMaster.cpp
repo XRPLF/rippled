@@ -1560,14 +1560,21 @@ public:
         mLedgerHistory.clearLedgerCachePrior (seq);
     }
 
-    bool batchApplyTransactions (Ledger::pointer& ledger,
+    void enqueueTransaction (
+        Transaction::ref transaction,
+        bool const admin,
+        bool const local,
+        bool const failHard,
+        JobQueue& jobQueue) override;
+
+    bool batchApplyTransactions (
+        Ledger::pointer& ledger,
         TransactionEngine& engine,
         std::vector<TransactionStatus>& transactions);
 
     void applyTransactions (std::vector<TransactionStatus>& transactions);
 
-    void doTransactions (Transaction::ref trans, bool const admin,
-        bool const local, bool const failHard) override;
+    void doTransactions();
 
     bool checkApplying (std::vector <TransactionStatus>& batch)
     {
@@ -1589,8 +1596,44 @@ private:
 
 //------------------------------------------------------------------------------
 
-bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
-    TransactionEngine& engine, std::vector<TransactionStatus>& transactions)
+void LedgerMasterImp::enqueueTransaction (
+    Transaction::ref transaction,
+    bool const admin,
+    bool const local,
+    bool const failHard,
+    JobQueue& jobQueue)
+{
+    bool const sync = transaction->sync();
+
+    {
+        std::unique_lock <std::mutex> lock (mBatchMutex);
+        mTransactions.push_back (TransactionStatus (transaction, admin, local,
+            failHard));
+
+        // If this is synchronous, dispatch to job queue so it gets
+        // applied in a batch by another worker.
+        if (!mApplying && sync)
+        {
+            lock.unlock();
+            jobQueue.addJob (jtBATCH, "batch",
+                std::bind (&LedgerMasterImp::doTransactions, this));
+        }
+    }
+
+    // Don't tie this thread up on synchronous transactions.
+    // Instead, wait until this transaction has been processed.
+    // Wait returns immediately if the transaction has already been applied.
+    // Apply the batch only while handling asynchronous transactions.
+    if (sync)
+        transaction->wait();
+    else
+        doTransactions();
+}
+
+bool LedgerMasterImp::batchApplyTransactions (
+    Ledger::pointer& ledger,
+    TransactionEngine& engine,
+    std::vector<TransactionStatus>& transactions)
 {
     bool applied = false;
     ScopedLockType sl (m_mutex);
@@ -1711,15 +1754,8 @@ void LedgerMasterImp::applyTransactions (
     }
 }
 
-void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
-    bool const local, bool const failHard)
+void LedgerMasterImp::doTransactions()
 {
-    {
-        std::lock_guard <std::mutex> lock (mBatchMutex);
-        mTransactions.push_back (TransactionStatus (trans, admin, local,
-                failHard));
-    }
-
     while (true)
     {
         std::vector <TransactionStatus> transactions;
@@ -1735,8 +1771,6 @@ void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
         std::lock_guard<std::mutex> lock (mBatchMutex);
         mApplying = false;
     }
-
-    trans->wait();
 }
 
 //------------------------------------------------------------------------------

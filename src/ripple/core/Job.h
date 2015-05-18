@@ -48,6 +48,7 @@ enum JobType
     jtRPC,           // A websocket command from the client
     jtUPDATE_PF,     // Update pathfinding requests
     jtTRANSACTION,   // A transaction received from the network
+    jtBATCH,         // Check for and apply batched transactions
     jtUNL,           // A Score or Fetch of the UNL (DEPRECATED)
     jtADVANCE,       // Advance validated/acquired ledgers
     jtPUBLEDGER,     // Publish a fully-accepted ledger

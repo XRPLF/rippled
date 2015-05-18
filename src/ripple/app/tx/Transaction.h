@@ -63,7 +63,7 @@ public:
     typedef const pointer& ref;
 
 public:
-    Transaction (STTx::ref, Validate, std::string&) noexcept;
+    Transaction (STTx::ref, Validate, std::string&, bool sync=true) noexcept;
 
     static
     Transaction::pointer
@@ -126,16 +126,12 @@ public:
     }
 
     /**
-     * Prepare the transaction to be applied synchronously so that caller
-     * can process return value.
+     * Check if transaction is applied synchronously.
+     * @return true if transaction is to be applied synchronously
      */
-    void syncPrep()
+    bool sync()
     {
-        mCond = std::make_unique<std::condition_variable>();
-        mMutex = std::make_unique<std::mutex>();
-
-        std::lock_guard<std::mutex> lock (*mMutex);
-        mApplying = true;
+        return mCond.get() != nullptr;
     }
 
     /**
