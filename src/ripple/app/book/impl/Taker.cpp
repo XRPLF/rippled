@@ -490,6 +490,10 @@ TER Taker::transfer_xrp (
     if (from == to)
         return tesSUCCESS;
 
+    // Transferring zero is equivalent to not doing a transfer
+    if (amount == zero)
+        return tesSUCCESS;
+
     return m_view.transfer_xrp (from, to, amount);
 }
 
@@ -504,6 +508,12 @@ TER Taker::redeem_iou (
     if (account == issue.account)
         return tesSUCCESS;
 
+    // Transferring zero is equivalent to not doing a transfer
+    if (amount == zero)
+        return tesSUCCESS;
+
+    // If we are trying to redeem some amount, then the account
+    // must have a credit balance.
     if (get_funds (account, amount) <= zero)
         throw std::logic_error ("redeem_iou has no funds to redeem");
 
@@ -524,6 +534,10 @@ TER Taker::issue_iou (
         throw std::logic_error ("Using issue_iou with XRP");
 
     if (account == issue.account)
+        return tesSUCCESS;
+
+    // Transferring zero is equivalent to not doing a transfer
+    if (amount == zero)
         return tesSUCCESS;
 
     return m_view.issue_iou (account, amount, issue);
