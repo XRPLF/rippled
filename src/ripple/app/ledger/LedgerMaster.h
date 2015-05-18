@@ -51,10 +51,6 @@ public:
     typedef RippleRecursiveMutex LockType;
     typedef std::unique_lock <LockType> ScopedLockType;
     typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
-    // TransactionStatus fields:
-    // transaction, applied, result, bAdmin, bLocal, bFailHard
-    using TransactionStatus = std::tuple <Transaction::pointer, bool, TER,
-        bool, bool, bool>;
 
     virtual ~LedgerMaster () = 0;
 

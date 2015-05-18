@@ -49,9 +49,37 @@ namespace ripple {
 #define MAX_LEDGER_GAP          100     // Don't catch up more than 100 ledgers  (cannot exceed 256)
 #define MAX_LEDGER_AGE_ACQUIRE  60      // Don't acquire history if ledger is too old
 
+// TransactionStatus fields:
+// transaction, applied, result, bAdmin, bLocal, bFailHard
+//using TransactionStatus = std::tuple <Transaction::pointer, bool, TER,
+//    bool, bool, bool>;
+
 class LedgerMasterImp
     : public LedgerMaster
 {
+private:
+    class TransactionStatus
+    {
+    public:
+        TransactionStatus (
+            Transaction::ref trans,
+            bool adminArg,
+            bool localArg,
+            bool failHardArg)
+            : transaction (trans)
+            , admin (adminArg)
+            , local (localArg)
+            , failHard (failHardArg)
+        {}
+
+        Transaction::pointer transaction;
+        bool applied;
+        TER result;
+        bool admin;
+        bool local;
+        bool failHard;
+    };
+
 public:
     typedef std::function <void (Ledger::ref)> callback;
 
@@ -1570,18 +1598,13 @@ bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
     ledger = mCurrentLedger.getMutable();
     engine.setLedger (ledger);
 
-    for (auto& e : transactions)
+    for (TransactionStatus& e : transactions)
     {
-        auto& transaction = std::get<0> (e);
-        bool& didApply = std::get<1> (e);
-        TER& result = std::get<2> (e);
-        bool const& bAdmin = std::get<3> (e);
-
-        std::tie (result, didApply) = engine.applyTransaction (
-            *transaction->getSTransaction(),
-            bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
+        std::tie (e.result, e.applied) = engine.applyTransaction (
+            *e.transaction->getSTransaction(),
+            e.admin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
             tapOPEN_LEDGER | tapNO_CHECK_SIGN));
-        applied |= didApply;
+        applied |= e.applied;
     }
 
     return applied;
@@ -1600,52 +1623,46 @@ void LedgerMasterImp::applyTransactions (
         mCurrentLedger.set (ledger);
     }
 
-    for (auto& e : transactions)
+    for (TransactionStatus& e : transactions)
     {
-        auto& transaction = std::get<0> (e);
-        auto& applied = std::get<1> (e);
-        auto& result = std::get<2> (e);
-        bool const& bLocal = std::get<4> (e);
-        bool const& bFailHard = std::get<5>(e);
-
-        if (applied)
+        if (e.applied)
             getApp().getOPs().pubProposedTransaction (ledger,
-                transaction->getSTransaction(), result);
+                e.transaction->getSTransaction(), e.result);
 
-        transaction->setResult (result);
+        e.transaction->setResult (e.result);
 
-        if (isTemMalformed (result))
-            getApp().getHashRouter().setFlag(transaction->getID(), SF_BAD);
+        if (isTemMalformed (e.result))
+            getApp().getHashRouter().setFlag(e.transaction->getID(), SF_BAD);
 
 #ifdef BEAST_DEBUG
-        if (result != tesSUCCESS && m_journal.info)
+        if (e.result != tesSUCCESS && m_journal.info)
         {
             std::string token, human;
-            if (transResultInfo (result, token, human))
+            if (transResultInfo (e.result, token, human))
                 m_journal.info << "TransactionResult: "
                                << token << ": " << human;
         }
 #endif
 
-        bool addLocal = bLocal;
+        bool addLocal = e.local;
 
-        if (result == tesSUCCESS)
+        if (e.result == tesSUCCESS)
         {
             if (m_journal.info) m_journal.info <<
                 "Transaction is now included in open ledger";
-            transaction->setStatus (INCLUDED);
-            getApp().getMasterTransaction ().canonicalize (&transaction);
+            e.transaction->setStatus (INCLUDED);
+            getApp().getMasterTransaction ().canonicalize (&e.transaction);
         }
-        else if (result == tefPAST_SEQ)
+        else if (e.result == tefPAST_SEQ)
         {
             // duplicate or conflict
             if (m_journal.info) m_journal.info <<
                 "Transaction is obsolete";
-            transaction->setStatus (OBSOLETE);
+            e.transaction->setStatus (OBSOLETE);
         }
-        else if (isTerRetry (result))
+        else if (isTerRetry (e.result))
         {
-            if (bFailHard)
+            if (e.failHard)
             {
                 addLocal = false;
             }
@@ -1653,35 +1670,35 @@ void LedgerMasterImp::applyTransactions (
             {
                 // transaction should be held
                 if (m_journal.debug) m_journal.debug <<
-                    "Transaction should be held: " << result;
-                transaction->setStatus (HELD);
-                getApp().getMasterTransaction().canonicalize (&transaction);
-                addHeldTransaction (transaction);
+                    "Transaction should be held: " << e.result;
+                e.transaction->setStatus (HELD);
+                getApp().getMasterTransaction().canonicalize (&e.transaction);
+                addHeldTransaction (e.transaction);
             }
         }
         else
         {
             if (m_journal.debug) m_journal.debug <<
-                "Status other than success " << result;
-            transaction->setStatus (INVALID);
+                "Status other than success " << e.result;
+            e.transaction->setStatus (INVALID);
         }
 
         if (addLocal)
         {
             getApp().getOPs().addLocalTx (getCurrentLedger(),
-                transaction->getSTransaction());
+                e.transaction->getSTransaction());
         }
 
-        if (applied || (!getApp().getOPs().isFull() && !bFailHard && bLocal))
+        if (e.applied || (!getApp().getOPs().isFull() && !e.failHard && e.local))
         {
             std::set<Peer::id_t> peers;
 
             if (getApp().getHashRouter().swapSet (
-                    transaction->getID(), peers, SF_RELAYED))
+                    e.transaction->getID(), peers, SF_RELAYED))
             {
                 protocol::TMTransaction tx;
                 Serializer s;
-                transaction->getSTransaction()->add (s);
+                e.transaction->getSTransaction()->add (s);
                 tx.set_rawtransaction (&s.getData().front(), s.getLength());
                 tx.set_status (protocol::tsCURRENT);
                 tx.set_receivetimestamp (getApp().getOPs().getNetworkTimeNC ());
@@ -1699,25 +1716,21 @@ void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
 {
     {
         std::lock_guard <std::mutex> lock (mBatchMutex);
-        mTransactions.push_back (std::make_tuple (trans, bool(), TER(), admin,
-                local, failHard));
+        mTransactions.push_back (TransactionStatus (trans, admin, local,
+                failHard));
     }
 
     while (true)
     {
-        std::vector <TransactionStatus> batch;
+        std::vector <TransactionStatus> transactions;
 
-        if (!checkApplying (batch))
+        if (!checkApplying (transactions))
             break;
 
-        applyTransactions (batch);
+        applyTransactions (transactions);
 
-        for (auto e : batch)
-        {
-            auto& transaction = std::get<0> (e);
-
-            transaction->notify();
-        }
+        for (TransactionStatus& e : transactions)
+            e.transaction->notify();
 
         std::lock_guard<std::mutex> lock (mBatchMutex);
         mApplying = false;
