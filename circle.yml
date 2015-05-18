@@ -33,20 +33,10 @@ test:
     # Run integration tests
     - npm test
   post:
-    - mkdir -p build/docker/
-    - cp doc/rippled-example.cfg build/clang.debug/rippled build/docker/
-    - cp Builds/Docker/Dockerfile-testnet build/docker/Dockerfile
-    - mv build/docker/rippled-example.cfg build/docker/rippled.cfg
-    - strip build/docker/rippled
-    - docker build -t ripple/rippled:$CIRCLE_SHA1 build/docker/
-    - docker tag ripple/rippled:$CIRCLE_SHA1 ripple/rippled:latest
-    - docker tag ripple/rippled:$CIRCLE_SHA1 ripple/rippled:$CIRCLE_BRANCH
+    - ./Builds/Docker/build-ci.sh
     - docker images
 deployment:
   docker:
     branch: /.*/
     commands:
-      - docker login -e $DOCKER_EMAIL -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      - docker push ripple/rippled:$CIRCLE_SHA1
-      - docker push ripple/rippled:$CIRCLE_BRANCH
-      - docker push ripple/rippled:latest
+      - ./Builds/Docker/push-to-hub.sh
