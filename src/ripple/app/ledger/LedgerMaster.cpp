@@ -1572,7 +1572,7 @@ bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
 
     for (auto& e : transactions)
     {
-        auto transaction = std::get<0> (e);
+        auto& transaction = std::get<0> (e);
         bool& didApply = std::get<1> (e);
         TER& result = std::get<2> (e);
         bool const& bAdmin = std::get<3> (e);
@@ -1602,9 +1602,9 @@ void LedgerMasterImp::applyTransactions (
 
     for (auto& e : transactions)
     {
-        auto transaction = std::get<0> (e);
-        auto applied = std::get<1> (e);
-        auto result = std::get<2> (e);
+        auto& transaction = std::get<0> (e);
+        auto& applied = std::get<1> (e);
+        auto& result = std::get<2> (e);
         bool const& bLocal = std::get<4> (e);
         bool const& bFailHard = std::get<5>(e);
 
@@ -1714,7 +1714,7 @@ void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
 
         for (auto e : batch)
         {
-            auto transaction = std::get<0> (e);
+            auto& transaction = std::get<0> (e);
 
             transaction->notify();
         }
