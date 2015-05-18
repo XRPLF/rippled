@@ -1581,7 +1581,6 @@ bool LedgerMasterImp::batchApplyTransactions (Ledger::pointer& ledger,
             *transaction->getSTransaction(),
             bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
             tapOPEN_LEDGER | tapNO_CHECK_SIGN));
-
         applied |= didApply;
     }
 
@@ -1713,9 +1712,18 @@ void LedgerMasterImp::doTransactions (Transaction::ref trans, bool const admin,
 
         applyTransactions (batch);
 
+        for (auto e : batch)
+        {
+            auto transaction = std::get<0> (e);
+
+            transaction->notify();
+        }
+
         std::lock_guard<std::mutex> lock (mBatchMutex);
         mApplying = false;
     }
+
+    trans->wait();
 }
 
 //------------------------------------------------------------------------------

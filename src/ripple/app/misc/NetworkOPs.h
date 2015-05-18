@@ -150,7 +150,7 @@ public:
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
     virtual void processTransaction (Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard, bool sync=true) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
         RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,

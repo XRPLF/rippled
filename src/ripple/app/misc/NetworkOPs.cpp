@@ -211,7 +211,8 @@ public:
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit);
 
     void processTransaction (
-        Transaction::pointer p, bool bAdmin, bool bLocal, bool bFailHard);
+        Transaction::pointer p, bool bAdmin, bool bLocal, bool bFailHard,
+        bool sync=true);
 
     Transaction::pointer findTransactionByID (uint256 const& transactionID);
 
@@ -908,6 +909,7 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
                    std::make_shared<Transaction> (trans, Validate::NO, reason),
                    false,
                    false,
+                   false,
                    false));
 }
 
@@ -951,13 +953,18 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (
 
 void NetworkOPsImp::processTransaction (
     Transaction::pointer trans,
-    bool bAdmin, bool bLocal, bool bFailHard)
+    bool bAdmin, bool bLocal, bool bFailHard, bool sync)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
     int newFlags = getApp().getHashRouter ().getFlags (trans->getID ());
 
     if ((newFlags & SF_BAD) != 0)
-        return; // cached bad
+    {
+        // cached bad
+        trans->setStatus (INVALID);
+        trans->setResult (temBAD_SIGNATURE);
+        return;
+    }
 
     if ((newFlags & SF_SIGGOOD) == 0)
     {
@@ -967,12 +974,17 @@ void NetworkOPsImp::processTransaction (
         if (! trans->checkSign (reason))
         {
             m_journal.info << "Transaction has bad signature: " << reason;
+            trans->setStatus (INVALID);
+            trans->setResult (temBAD_SIGNATURE);
             getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
             return;
         }
 
         getApp().getHashRouter ().setFlag (trans->getID (), SF_SIGGOOD);
     }
+
+    if (sync)
+        trans->syncPrep();
 
     m_ledgerMaster.doTransactions (trans, bAdmin, bLocal, bFailHard);
 }

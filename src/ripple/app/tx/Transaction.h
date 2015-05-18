@@ -24,6 +24,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <boost/optional.hpp>
+#include <condition_variable>
 
 namespace ripple {
 
@@ -79,7 +80,7 @@ public:
     static
     TransStatus
     sqlTransactionStatus(boost::optional<std::string> const& status);
-    
+
     bool checkSign (std::string&) const;
 
     STTx::ref getSTransaction ()
@@ -124,6 +125,50 @@ public:
         mInLedger = ledger;
     }
 
+    /**
+     * Prepare the transaction to be applied synchronously so that caller
+     * can process return value.
+     */
+    void syncPrep()
+    {
+        mCond = std::make_unique<std::condition_variable>();
+        mMutex = std::make_unique<std::mutex>();
+
+        std::lock_guard<std::mutex> lock (*mMutex);
+        mApplying = true;
+    }
+
+    /**
+     * Notify condition variable if applying synchronously.
+     */
+    void notify()
+    {
+        if (mMutex)
+        {
+            {
+                std::lock_guard<std::mutex> lock (*mMutex);
+                mApplying = false;
+            }
+            mCond->notify_one();
+        }
+    }
+
+    /**
+     * Wait for condition if applying synchronously.
+     */
+    void wait()
+    {
+        if (mMutex)
+        {
+            std::unique_lock<std::mutex> lock (*mMutex);
+
+            if (mApplying == false)
+                return;
+
+            mCond->wait (lock);
+        }
+    }
+
     Json::Value getJson (int options, bool binary = false) const;
 
     static Transaction::pointer load (uint256 const& id);
@@ -139,6 +184,10 @@ private:
     TER             mResult;
 
     STTx::pointer mTransaction;
+
+    std::unique_ptr<std::condition_variable> mCond;
+    std::unique_ptr<std::mutex> mMutex;
+    bool mApplying;
 };
 
 } // ripple
