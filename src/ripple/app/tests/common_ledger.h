@@ -24,7 +24,7 @@
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <ripple/app/transactors/Transactor.h>
+#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_value.h>

@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/book/Types.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>

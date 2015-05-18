@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/book/Quality.h>
+#include <ripple/protocol/Quality.h>
 #include <ripple/app/consensus/LedgerConsensus.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
