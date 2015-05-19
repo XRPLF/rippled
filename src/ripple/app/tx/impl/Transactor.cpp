@@ -249,7 +249,13 @@ TER Transactor::preCheckSigningKey ()
 
 TER Transactor::apply ()
 {
-    TER terResult (preCheck ());
+    // No point in going any further if the transaction fee is malformed.
+    STAmount const saTxnFee = mTxn.getTransactionFee ();
+
+    if (!saTxnFee.native () || saTxnFee.negative () || !isLegalNet (saTxnFee))
+        return temBAD_FEE;
+
+    TER terResult = preCheck ();
 
     if (terResult != tesSUCCESS)
         return terResult;
