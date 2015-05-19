@@ -379,7 +379,7 @@ PeerImp::supportsVersion (int version)
 bool
 PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
 {
-    return (uMin >= minLedger_) && (uMax <= maxLedger_);
+    return (sanity_ != Sanity::insane) && (uMin >= minLedger_) && (uMax <= maxLedger_);
 }
 
 //------------------------------------------------------------------------------
