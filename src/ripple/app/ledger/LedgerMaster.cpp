@@ -597,15 +597,19 @@ public:
         }
 
         Peer::ptr target;
-        int count = 0;
+        int targetScore = 0;
 
         Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
         for (auto const& peer : peerList)
         {
             if (peer->hasRange (missingIndex, missingIndex + 1))
             {
-                if ((count++ == 0) || ((rand() % count) == 0))
+                int score = peer->getScore (true);
+                if (! target || (score > targetScore))
+                {
                     target = peer;
+                    targetScore = score;
+                }
             }
         }
 

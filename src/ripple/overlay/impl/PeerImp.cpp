@@ -2171,7 +2171,7 @@ PeerImp::peerTXData (Job&, uint256 const& hash,
 }
 
 int
-PeerImp::getScore (bool haveItem)
+PeerImp::getScore (bool haveItem) const
 {
    // Random component of score, used to break ties and avoid
    // overloading the "best" peer

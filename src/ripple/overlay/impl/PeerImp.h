@@ -305,7 +305,7 @@ public:
 
     // Called to determine our priority for querying
     int
-    getScore (bool haveItem);
+    getScore (bool haveItem) const;
 
     bool
     isHighLatency() const override;
