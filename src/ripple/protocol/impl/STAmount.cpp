@@ -37,8 +37,8 @@ static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
 static const std::uint64_t tenTo17 = tenTo14 * 1000;
 
-STAmount const saZero (noIssue(), 0u);
-STAmount const saOne (noIssue(), 1u);
+STAmount const saZero (noIssue(), 0);
+STAmount const saOne (noIssue(), 1);
 
 //------------------------------------------------------------------------------
 static
@@ -58,16 +58,12 @@ getSNValue (STAmount const& amount)
     return ret;
 }
 
-std::uint64_t
-getNValue (STAmount const& amount)
+static
+bool
+areComparable (STAmount const& v1, STAmount const& v2)
 {
-    if (!amount.native ())
-        throw std::runtime_error ("amount is not native!");
-
-    if (amount.negative ())
-        throw std::runtime_error ("amount is negative!");
-
-    return amount.mantissa ();
+    return v1.native() == v2.native() &&
+        v1.issue().currency == v2.issue().currency;
 }
 
 STAmount::STAmount(SerialIter& sit, SField const& name)
@@ -148,6 +144,30 @@ STAmount::STAmount(SerialIter& sit, SField const& name)
 
 STAmount::STAmount (SField const& name, Issue const& issue,
         mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative, unchecked)
+    : STBase (name)
+    , mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNative (native)
+    , mIsNegative (negative)
+{
+}
+
+STAmount::STAmount (Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative, unchecked)
+    : mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNative (native)
+    , mIsNegative (negative)
+{
+}
+
+
+STAmount::STAmount (SField const& name, Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
             bool native, bool negative)
     : STBase (name)
     , mIssue (issue)
@@ -157,18 +177,6 @@ STAmount::STAmount (SField const& name, Issue const& issue,
     , mIsNegative (negative)
 {
     canonicalize();
-}
-
-STAmount::STAmount (SField const& name, Issue const& issue,
-        mantissa_type mantissa, exponent_type exponent,
-            bool native, bool negative, unchecked)
-    : STBase (name)
-    , mIssue (issue)
-    , mValue (mantissa)
-    , mOffset (exponent)
-    , mIsNative (native)
-    , mIsNegative (negative)
-{
 }
 
 STAmount::STAmount (SField const& name, std::int64_t mantissa)
@@ -247,36 +255,11 @@ STAmount::construct (SerialIter& sit, SField const& name)
     return std::make_unique<STAmount>(sit, name);
 }
 
-STAmount
-STAmount::createFromInt64 (SField const& name, std::int64_t value)
-{
-    return value >= 0
-           ? STAmount (name, static_cast<std::uint64_t>(value), false)
-           : STAmount (name, static_cast<std::uint64_t>(-value), true);
-}
-
 //------------------------------------------------------------------------------
 //
 // Operators
 //
 //------------------------------------------------------------------------------
-
-bool STAmount::isComparable (STAmount const& t) const
-{
-    // are these two STAmount instances in the same currency
-    if (mIsNative) return t.mIsNative;
-
-    if (t.mIsNative) return false;
-
-    return mIssue.currency == t.mIssue.currency;
-}
-
-void STAmount::throwComparable (STAmount const& t) const
-{
-    // throw an exception if these two STAmount instances are incomparable
-    if (!isComparable (t))
-        throw std::runtime_error ("amounts are not comparable");
-}
 
 STAmount& STAmount::operator+= (STAmount const& a)
 {
@@ -292,7 +275,8 @@ STAmount& STAmount::operator-= (STAmount const& a)
 
 STAmount operator+ (STAmount const& v1, STAmount const& v2)
 {
-    v1.throwComparable (v2);
+    if (!areComparable (v1, v2))
+        throw std::runtime_error ("Can't add amounts that are't comparable!");
 
     if (v2 == zero)
         return v1;
@@ -300,21 +284,21 @@ STAmount operator+ (STAmount const& v1, STAmount const& v2)
     if (v1 == zero)
     {
         // Result must be in terms of v1 currency and issuer.
-        return STAmount (v1.getFName (), v1.mIssue,
-                         v2.mValue, v2.mOffset, v2.mIsNegative);
+        return { v1.getFName (), v1.issue (),
+            v2.mantissa (), v2.exponent (), v2.negative () };
     }
 
-    if (v1.mIsNative)
-        return STAmount (v1.getFName (), getSNValue (v1) + getSNValue (v2));
+    if (v1.native ())
+        return { v1.getFName (), getSNValue (v1) + getSNValue (v2) };
 
-    int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    std::int64_t vv1 = static_cast<std::int64_t>(v1.mValue);
-    std::int64_t vv2 = static_cast<std::int64_t>(v2.mValue);
+    int ov1 = v1.exponent (), ov2 = v2.exponent ();
+    std::int64_t vv1 = static_cast<std::int64_t>(v1.mantissa ());
+    std::int64_t vv2 = static_cast<std::int64_t>(v2.mantissa ());
 
-    if (v1.mIsNegative)
+    if (v1.negative ())
         vv1 = -vv1;
 
-    if (v2.mIsNegative)
+    if (v2.negative ())
         vv2 = -vv2;
 
     while (ov1 < ov2)
@@ -335,172 +319,30 @@ STAmount operator+ (STAmount const& v1, STAmount const& v2)
     std::int64_t fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
-        return STAmount (v1.getFName (), v1.mIssue);
+        return { v1.getFName (), v1.issue () };
+
     if (fv >= 0)
-        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
-    return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+        return STAmount { v1.getFName (), v1.issue (),
+            static_cast<std::uint64_t>(fv), ov1, false };
+
+    return STAmount { v1.getFName (), v1.issue (),
+        static_cast<std::uint64_t>(-fv), ov1, true };
 }
 
 STAmount operator- (STAmount const& v1, STAmount const& v2)
 {
-    v1.throwComparable (v2);
-
-    if (v2 == zero)
-        return v1;
-
-    if (v2.mIsNative)
-    {
-        // XXX This could be better, check for overflow and that maximum range
-        // is covered.
-        return STAmount::createFromInt64 (
-                v1.getFName (), getSNValue (v1) - getSNValue (v2));
-    }
-
-    int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    auto vv1 = static_cast<std::int64_t>(v1.mValue);
-    auto vv2 = static_cast<std::int64_t>(v2.mValue);
-
-    if (v1.mIsNegative)
-        vv1 = -vv1;
-
-    if (v2.mIsNegative)
-        vv2 = -vv2;
-
-    while (ov1 < ov2)
-    {
-        vv1 /= 10;
-        ++ov1;
-    }
-
-    while (ov2 < ov1)
-    {
-        vv2 /= 10;
-        ++ov2;
-    }
-
-    // this subtraction cannot overflow an std::int64_t, it can overflow an STAmount and the constructor will throw
-
-    std::int64_t fv = vv1 - vv2;
-
-    if ((fv >= -10) && (fv <= 10))
-        return STAmount (v1.getFName (), v1.mIssue);
-    if (fv >= 0)
-        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
-    return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+    return v1 + (-v2);
 }
 
 //------------------------------------------------------------------------------
 
 std::uint64_t const STAmount::uRateOne = getRate (STAmount (1), STAmount (1));
 
-// Note: mIsNative and mIssue.currency must be set already!
-bool
-STAmount::setValue (std::string const& amount)
-{
-    static boost::regex const reNumber (
-        "^"                       // the beginning of the string
-        "([-+]?)"                 // (optional) + or - character
-        "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
-        "(\\.([0-9]+))?"          // (optional) period followed by any number
-        "([eE]([+-]?)([0-9]+))?"  // (optional) E, optional + or -, any number
-        "$",
-        boost::regex_constants::optimize);
-
-    boost::smatch match;
-
-    if (!boost::regex_match (amount, match, reNumber))
-    {
-        WriteLog (lsWARNING, STAmount) <<
-            "Number not valid: \"" << amount << "\"";
-        return false;
-    }
-
-    // Match fields:
-    //   0 = whole input
-    //   1 = sign
-    //   2 = integer portion
-    //   3 = whole fraction (with '.')
-    //   4 = fraction (without '.')
-    //   5 = whole exponent (with 'e')
-    //   6 = exponent sign
-    //   7 = exponent number
-
-    try
-    {
-        // CHECKME: Why 32? Shouldn't this be 16?
-        if ((match[2].length () + match[4].length ()) > 32)
-        {
-            WriteLog (lsWARNING, STAmount) << "Overlong number: " << amount;
-            return false;
-        }
-
-        mIsNegative = (match[1].matched && (match[1] == "-"));
-
-        // Can't specify XRP using fractional representation
-        if (mIsNative && match[3].matched)
-            return false;
-
-        if (!match[4].matched) // integer only
-        {
-            mValue = beast::lexicalCastThrow <std::uint64_t> (std::string (match[2]));
-            mOffset = 0;
-        }
-        else
-        {
-            // integer and fraction
-            mValue = beast::lexicalCastThrow <std::uint64_t> (match[2] + match[4]);
-            mOffset = -(match[4].length ());
-        }
-
-        if (match[5].matched)
-        {
-            // we have an exponent
-            if (match[6].matched && (match[6] == "-"))
-                mOffset -= beast::lexicalCastThrow <int> (std::string (match[7]));
-            else
-                mOffset += beast::lexicalCastThrow <int> (std::string (match[7]));
-        }
-
-        canonicalize ();
-
-        WriteLog (lsTRACE, STAmount) <<
-            "Canonicalized \"" << amount << "\" to " << mValue << " : " << mOffset;
-    }
-    catch (...)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 void
 STAmount::setIssue (Issue const& issue)
 {
     mIssue = std::move(issue);
     mIsNative = isXRP (*this);
-}
-
-std::string STAmount::getHumanCurrency () const
-{
-    return to_string (mIssue.currency);
-}
-
-void
-STAmount::setSNValue (std::int64_t v)
-{
-    if (!mIsNative) throw std::runtime_error ("not native");
-
-    if (v > 0)
-    {
-        mIsNegative = false;
-        mValue = static_cast<std::uint64_t>(v);
-    }
-    else
-    {
-        mIsNegative = true;
-        mValue = static_cast<std::uint64_t>(-v);
-    }
 }
 
 // Convert an offer into an index amount so they sort by rate.
@@ -543,34 +385,12 @@ void STAmount::setJson (Json::Value& elem) const
         // It is an error for currency or issuer not to be specified for valid
         // json.
         elem[jss::value]      = getText ();
-        elem[jss::currency]   = getHumanCurrency ();
+        elem[jss::currency]   = to_string (mIssue.currency);
         elem[jss::issuer]     = to_string (mIssue.account);
     }
     else
     {
         elem = getText ();
-    }
-}
-
-// VFALCO What does this perplexing function do?
-void STAmount::roundSelf ()
-{
-    if (mIsNative)
-        return;
-
-    std::uint64_t valueDigits = mValue % 1000000000ull;
-
-    if (valueDigits == 1)
-    {
-        mValue -= 1;
-        if (mValue < cMinValue)
-            canonicalize ();
-    }
-    else if (valueDigits == 999999999ull)
-    {
-        mValue += 1;
-        if (mValue > cMaxValue)
-            canonicalize ();
     }
 }
 
@@ -586,7 +406,7 @@ STAmount::getFullText () const
     std::string ret;
 
     ret.reserve(64);
-    ret = getText () + "/" + getHumanCurrency ();
+    ret = getText () + "/" + to_string (mIssue.currency);
 
     if (!mIsNative)
     {
@@ -831,7 +651,7 @@ void STAmount::set (std::int64_t v)
 STAmount
 amountFromRate (std::uint64_t uRate)
 {
-    return STAmount (noIssue(), uRate, -9, false);
+    return { noIssue(), uRate, -9, false };
 }
 
 STAmount
@@ -844,6 +664,70 @@ amountFromQuality (std::uint64_t rate)
     int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
     return STAmount (noIssue(), mantissa, exponent);
+}
+
+STAmount
+amountFromString (Issue const& issue, std::string const& amount)
+{
+    static boost::regex const reNumber (
+        "^"                       // the beginning of the string
+        "([-+]?)"                 // (optional) + or - character
+        "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
+        "(\\.([0-9]+))?"          // (optional) period followed by any number
+        "([eE]([+-]?)([0-9]+))?"  // (optional) E, optional + or -, any number
+        "$",
+        boost::regex_constants::optimize);
+
+    boost::smatch match;
+
+    if (!boost::regex_match (amount, match, reNumber))
+        throw std::runtime_error ("Number '" + amount + "' is not valid");
+
+    // Match fields:
+    //   0 = whole input
+    //   1 = sign
+    //   2 = integer portion
+    //   3 = whole fraction (with '.')
+    //   4 = fraction (without '.')
+    //   5 = whole exponent (with 'e')
+    //   6 = exponent sign
+    //   7 = exponent number
+
+    // CHECKME: Why 32? Shouldn't this be 16?
+    if ((match[2].length () + match[4].length ()) > 32)
+        throw std::runtime_error ("Number '" + amount + "' is overlong");
+
+    bool negative = (match[1].matched && (match[1] == "-"));
+
+    // Can't specify XRP using fractional representation
+    if (isXRP(issue) && match[3].matched)
+        throw std::runtime_error ("XRP must be specified in integral drops.");
+
+    std::uint64_t mantissa;
+    int exponent;
+
+    if (!match[4].matched) // integer only
+    {
+        mantissa = beast::lexicalCastThrow <std::uint64_t> (std::string (match[2]));
+        exponent = 0;
+    }
+    else
+    {
+        // integer and fraction
+        mantissa = beast::lexicalCastThrow <std::uint64_t> (match[2] + match[4]);
+        exponent = -(match[4].length ());
+    }
+
+    if (match[5].matched)
+    {
+        // we have an exponent
+        if (match[6].matched && (match[6] == "-"))
+            exponent -= beast::lexicalCastThrow <int> (std::string (match[7]));
+        else
+            exponent += beast::lexicalCastThrow <int> (std::string (match[7]));
+    }
+
+    return { issue, mantissa, exponent, negative };
 }
 
 STAmount
@@ -906,6 +790,7 @@ amountFromJson (SField const& name, Json::Value const& v)
     {
         if (v.isObject ())
             throw std::runtime_error ("XRP may not be specified as an object");
+        issue = xrpIssue ();
     }
     else
     {
@@ -939,35 +824,18 @@ amountFromJson (SField const& name, Json::Value const& v)
     }
     else if (value.isString ())
     {
-        if (native)
-        {
-            std::int64_t val = beast::lexicalCastThrow <std::int64_t> (
-                value.asString ());
+        auto const ret = amountFromString (issue, value.asString ());
 
-            if (val >= 0)
-            {
-                mantissa = val;
-            }
-            else
-            {
-                mantissa = -val;
-                negative = true;
-            }
-        }
-        else
-        {
-            STAmount amount (name, issue, mantissa, exponent,
-                native, negative, STAmount::unchecked{});
-            amount.setValue (value.asString ());
-            return amount;
-        }
+        mantissa = ret.mantissa ();
+        exponent = ret.exponent ();
+        negative = ret.negative ();
     }
     else
     {
         throw std::runtime_error ("invalid amount type");
     }
 
-    return STAmount (name, issue, mantissa, exponent, native, negative);
+    return { name, issue, mantissa, exponent, native, negative };
 }
 
 bool
@@ -992,114 +860,42 @@ amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource)
 //
 //------------------------------------------------------------------------------
 
-static
-int
-compare (STAmount const& lhs, STAmount const& rhs)
-{
-    // Compares the value of a to the value of this STAmount, amounts must be comparable
-    if (lhs.negative() != rhs.negative())
-        return lhs.negative() ? -1 : 1;
-    if (lhs.mantissa() == 0)
-    {
-        if (rhs.negative())
-            return 1;
-        return (rhs.mantissa() != 0) ? -1 : 0;
-    }
-    if (rhs.mantissa() == 0) return 1;
-    if (lhs.exponent() > rhs.exponent()) return lhs.negative() ? -1 : 1;
-    if (lhs.exponent() < rhs.exponent()) return lhs.negative() ? 1 : -1;
-    if (lhs.mantissa() > rhs.mantissa()) return lhs.negative() ? -1 : 1;
-    if (lhs.mantissa() < rhs.mantissa()) return lhs.negative() ? 1 : -1;
-    return 0;
-}
-
 bool
 operator== (STAmount const& lhs, STAmount const& rhs)
 {
-    return lhs.isComparable (rhs) && lhs.negative() == rhs.negative() &&
-        lhs.exponent() == rhs.exponent() && lhs.mantissa() == rhs.mantissa();
-}
-
-bool
-operator!= (STAmount const& lhs, STAmount const& rhs)
-{
-    return lhs.exponent() != rhs.exponent() ||
-        lhs.mantissa() != rhs.mantissa() ||
-        lhs.negative() != rhs.negative() || ! lhs.isComparable (rhs);
+    return areComparable (lhs, rhs) &&
+        lhs.negative() == rhs.negative() &&
+        lhs.exponent() == rhs.exponent() &&
+        lhs.mantissa() == rhs.mantissa();
 }
 
 bool
 operator< (STAmount const& lhs, STAmount const& rhs)
 {
-    lhs.throwComparable (rhs);
-    return compare (lhs, rhs) < 0;
-}
+    if (!areComparable (lhs, rhs))
+        throw std::runtime_error ("Can't compare amounts that are't comparable!");
 
-bool
-operator> (STAmount const& lhs, STAmount const& rhs)
-{
-    lhs.throwComparable (rhs);
-    return compare (lhs, rhs) > 0;
-}
+    if (lhs.negative() != rhs.negative())
+        return lhs.negative();
 
-bool
-operator<= (STAmount const& lhs, STAmount const& rhs)
-{
-    lhs.throwComparable (rhs);
-    return compare (lhs, rhs) <= 0;
-}
+    if (lhs.mantissa() == 0)
+    {
+        if (rhs.negative())
+            return false;
+        return rhs.mantissa() != 0;
+    }
 
-bool
-operator>= (STAmount const& lhs, STAmount const& rhs)
-{
-    lhs.throwComparable (rhs);
-    return compare (lhs, rhs) >= 0;
-}
+    // We know that lhs is non-zero and both sides have the same sign. Since
+    // rhs is zero (and thus not negative), lhs must, therefore, be strictly
+    // greater than zero. So if rhs is zero, the comparison must be false.
+    if (rhs.mantissa() == 0) return false;
 
-// native currency only
+    if (lhs.exponent() > rhs.exponent()) return lhs.negative();
+    if (lhs.exponent() < rhs.exponent()) return ! lhs.negative();
+    if (lhs.mantissa() > rhs.mantissa()) return lhs.negative();
+    if (lhs.mantissa() < rhs.mantissa()) return ! lhs.negative();
 
-bool
-operator< (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO Why the cast?
-    return getSNValue (lhs) < static_cast<std::int64_t>(rhs);
-}
-
-bool
-operator> (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO Why the cast?
-    return getSNValue (lhs) > static_cast<std::int64_t>(rhs);
-}
-
-bool
-operator<= (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO TODO The cast looks dangerous, is it needed?
-    return getSNValue (lhs) <= static_cast<std::int64_t>(rhs);
-}
-
-bool
-operator>= (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO TODO The cast looks dangerous, is it needed?
-    return getSNValue (lhs) >= static_cast<std::int64_t>(rhs);
-}
-
-STAmount
-operator+ (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO TODO The cast looks dangerous, is it needed?
-    return STAmount (lhs.getFName (),
-        getSNValue (lhs) + static_cast<std::int64_t>(rhs));
-}
-
-STAmount
-operator- (STAmount const& lhs, std::uint64_t rhs)
-{
-    // VFALCO TODO The cast looks dangerous, is it needed?
-    return STAmount (lhs.getFName (),
-        getSNValue (lhs) - static_cast<std::int64_t>(rhs));
+    return false;
 }
 
 STAmount

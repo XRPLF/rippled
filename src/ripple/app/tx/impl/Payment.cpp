@@ -73,7 +73,7 @@ public:
 
         if (bMax)
             maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
-        else if (saDstAmount.isNative ())
+        else if (saDstAmount.native ())
             maxSourceAmount = saDstAmount;
         else
             maxSourceAmount = STAmount (
@@ -178,7 +178,7 @@ public:
         STAmount maxSourceAmount;
         if (bMax)
             maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
-        else if (saDstAmount.isNative ())
+        else if (saDstAmount.native ())
             maxSourceAmount = saDstAmount;
         else
           maxSourceAmount = STAmount (
@@ -197,7 +197,7 @@ public:
         if (!sleDst)
         {
             // Destination account does not exist.
-            if (!saDstAmount.isNative ())
+            if (!saDstAmount.native ())
             {
                 m_journal.trace <<
                     "Delay transaction: Destination account does not exist.";
@@ -218,7 +218,7 @@ public:
                 // transaction would succeed.
                 return telNO_DST_PARTIAL;
             }
-            else if (saDstAmount < mEngine->getLedger ()->getReserve (0))
+            else if (saDstAmount < STAmount (mEngine->getLedger ()->getReserve (0)))
             {
                 // getReserve() is the minimum amount that an account can have.
                 // Reserve is not scaled by load.
@@ -260,7 +260,7 @@ public:
 
         TER terResult;
 
-        bool const bRipple = bPaths || bMax || !saDstAmount.isNative ();
+        bool const bRipple = bPaths || bMax || !saDstAmount.native ();
         // XXX Should bMax be sufficient to imply ripple?
 
         if (bRipple)
@@ -331,37 +331,39 @@ public:
         {
             // Direct XRP payment.
 
-            // uOwnerCount is the number of entries in this legder for this account
-            // that require a reserve.
-
-            std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+            // uOwnerCount is the number of entries in this legder for this
+            // account that require a reserve.
+            auto const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
 
             // This is the total reserve in drops.
-            // TODO(tom): there should be a class for this.
-            std::uint64_t const uReserve (mEngine->getLedger ()->getReserve (uOwnerCount));
+            std::uint64_t const uReserve =
+                mEngine->getLedger ()->getReserve (uOwnerCount);
 
-            // mPriorBalance is the balance on the sending account BEFORE the fees were charged.
-            //
-            // Make sure have enough reserve to send. Allow final spend to use
-            // reserve for fee.
-            auto const mmm = std::max(uReserve, getNValue (mTxn.getTransactionFee ()));
+            // mPriorBalance is the balance on the sending account BEFORE the
+            // fees were charged. We want to make sure we have enough reserve
+            // to send. Allow final spend to use reserve for fee.
+            auto const mmm = std::max(mTxn.getTransactionFee (),
+                STAmount (uReserve));
+
             if (mPriorBalance < saDstAmount + mmm)
             {
-                // Vote no.
-                // However, transaction might succeed, if applied in a different order.
+                // Vote no. However the transaction might succeed, if applied in
+                // a different order.
                 m_journal.trace << "Delay transaction: Insufficient funds: " <<
                     " " << mPriorBalance.getText () <<
-                    " / " << (saDstAmount + uReserve).getText () <<
+                    " / " << (saDstAmount + mmm).getText () <<
                     " (" << uReserve << ")";
 
                 terResult = tecUNFUNDED_PAYMENT;
             }
             else
             {
-                // The source account does have enough money, so do the arithmetic
-                // for the transfer and make the ledger change.
-                mTxnAccount->setFieldAmount (sfBalance, mSourceBalance - saDstAmount);
-                sleDst->setFieldAmount (sfBalance, sleDst->getFieldAmount (sfBalance) + saDstAmount);
+                // The source account does have enough money, so do the
+                // arithmetic for the transfer and make the ledger change.
+                mTxnAccount->setFieldAmount (sfBalance,
+                    mSourceBalance - saDstAmount);
+                sleDst->setFieldAmount (sfBalance,
+                    sleDst->getFieldAmount (sfBalance) + saDstAmount);
 
                 // Re-arm the password change fee if we can and need to.
                 if ((sleDst->getFlags () & lsfPasswordSpent))

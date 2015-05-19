@@ -57,17 +57,22 @@ public:
         return Transactor::preCheck ();
     }
 
+    /** Returns the reserve the account would have if an offer was added. */
+    STAmount
+    getAccountReserve (SLE::pointer account)
+    {
+        return STAmount (mEngine->getLedger ()->getReserve (
+            account->getFieldU32 (sfOwnerCount) + 1));
+    }
+
     TER doApply () override
     {
         assert (mTxnAccount);
 
-        // A ticket counts against the reserve of the issuing account, but we check
-        // the starting balance because we want to allow dipping into the reserve to
-        // pay fees.
-        auto const accountReserve (mEngine->getLedger ()->getReserve (
-            mTxnAccount->getFieldU32 (sfOwnerCount) + 1));
-
-        if (mPriorBalance < accountReserve)
+        // A ticket counts against the reserve of the issuing account, but we
+        // check the starting balance because we want to allow dipping into the
+        // reserve to pay fees.
+        if (mPriorBalance < getAccountReserve (mTxnAccount))
             return tecINSUFFICIENT_RESERVE;
 
         std::uint32_t expiration (0);

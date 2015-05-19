@@ -360,10 +360,10 @@ BasicTaker::do_cross (
 {
     assert (!done ());
 
-    assert (!offer1.in.isNative ());
-    assert (offer1.out.isNative ());
-    assert (offer2.in.isNative ());
-    assert (!offer2.out.isNative ());
+    assert (!offer1.in.native ());
+    assert (offer1.out.native ());
+    assert (offer2.in.native ());
+    assert (!offer2.out.native ());
 
     // If the taker owns the first leg of the offer, then the taker's available
     // funds aren't the limiting factor for the input - the offer itself is.

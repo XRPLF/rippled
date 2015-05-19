@@ -126,7 +126,7 @@ TER Transactor::payFee ()
         return telINSUF_FEE_P;
     }
 
-    if (saPaid < zero || !saPaid.isNative ())
+    if (saPaid < zero || !saPaid.native ())
         return temBAD_FEE;
 
     if (!saPaid)
@@ -307,13 +307,11 @@ TER Transactor::checkSign ()
 {
 #if RIPPLE_ENABLE_MULTI_SIGN
     // If the mSigningPubKey is empty, then we must be multi-signing.
-    TER const signingTER = mSigningPubKey.getAccountPublic ().empty () ?
-        checkMultiSign () : checkSingleSign ();
-#else
-    TER const signingTER = checkSingleSign ();
-#endif // RIPPLE_ENABLE_MULTI_SIGN
+    if (mSigningPubKey.getAccountPublic ().empty ())
+        return checkMultiSign ();
+#endif
 
-    return signingTER;
+    return checkSingleSign ();
 }
 
 TER Transactor::checkSingleSign ()

@@ -171,7 +171,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                 // no destination account
                 jvDestCur.append (Json::Value ("XRP"));
 
-                if (!saDstAmount.isNative ())
+                if (!saDstAmount.native ())
                 {
                     // only XRP can be send to a non-existent account
                     bValid = false;

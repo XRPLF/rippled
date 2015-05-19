@@ -138,12 +138,6 @@ static Json::Value singleton_expected (std::string const& object,
             "]' must be an object with a single key/object value.");
 }
 
-static Json::Value serialization_error (SField const& sField)
-{
-    return RPC::make_error (rpcINVALID_PARAMS,
-        "Object '" + sField.getName () + "' failed to serialize.");
-}
-
 static Json::Value template_mismatch (SField const& sField)
 {
     return RPC::make_error (rpcINVALID_PARAMS,

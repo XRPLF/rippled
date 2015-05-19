@@ -362,7 +362,7 @@ void payInDrops (TestLedger& ledger,
 
 std::uint64_t getNativeBalance(TestLedger& ledger, UserAccount& acct)
 {
-    return getNValue(ledger.getAccountState(acct)->getBalance());
+    return ledger.getAccountState(acct)->getBalance().mantissa ();
 }
 
 std::uint32_t getOwnerCount(TestLedger& ledger, UserAccount& acct)

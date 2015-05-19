@@ -128,9 +128,7 @@ private:
 
     STAmount parse_amount (std::string const& amount, Issue const& issue)
     {
-        STAmount result (issue);
-        expect (result.setValue (amount), amount);
-        return result;
+        return amountFromString (issue, amount);
     }
 
     Amounts parse_amounts (
@@ -162,7 +160,7 @@ private:
     {
         std::string txt = amount.getText ();
         txt += "/";
-        txt += amount.getHumanCurrency ();
+        txt += to_string (amount.issue().currency);
         return txt;
     }
 
@@ -212,7 +210,7 @@ private:
         Amounts const expected (parse_amounts (
             flow.in, issue_in,
             flow.out, issue_out));
-        
+
         expect (expected == result, name + (sell ? " (s)" : " (b)"));
 
         if (expected != result)
@@ -233,7 +231,7 @@ private:
 
 public:
     // Notation for clamp scenario descriptions:
-    // 
+    //
     // IN:OUT (with the last in the list being limiting factor)
     //  N  = Nothing
     //  T  = Taker Offer Balance

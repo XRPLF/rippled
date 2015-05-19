@@ -58,7 +58,7 @@ public:
         if (!isLegalNet (saLimitAmount))
             return temBAD_AMOUNT;
 
-        if (saLimitAmount.isNative ())
+        if (saLimitAmount.native ())
         {
             if (m_journal.trace) m_journal.trace <<
                 "Malformed transaction: specifies native limit " <<
@@ -121,9 +121,9 @@ public:
         // to fund accounts in a way where there's no incentive to trick them
         // into creating an account you have no intention of using.
 
-        std::uint64_t const uReserveCreate = (uOwnerCount < 2)
+        STAmount const reserveCreate ((uOwnerCount < 2)
             ? 0
-            : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
+            : mEngine->getLedger ()->getReserve (uOwnerCount + 1));
 
         std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
         std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
@@ -380,7 +380,7 @@ public:
                 terResult = mEngine->view ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
             }
             // Reserve is not scaled by load.
-            else if (bReserveIncrease && mPriorBalance < uReserveCreate)
+            else if (bReserveIncrease && mPriorBalance < reserveCreate)
             {
                 m_journal.trace <<
                     "Delay transaction: Insufficent reserve to add trust line.";
@@ -405,7 +405,7 @@ public:
                 "Redundant: Setting non-existent ripple line to defaults.";
             return tecNO_LINE_REDUNDANT;
         }
-        else if (mPriorBalance < uReserveCreate) // Reserve is not scaled by load.
+        else if (mPriorBalance < reserveCreate) // Reserve is not scaled by load.
         {
             m_journal.trace <<
                 "Delay transaction: Line does not exist. Insufficent reserve to create line.";
