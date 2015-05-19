@@ -56,6 +56,7 @@ class NetworkOPs;
 class OrderBookDB;
 class Overlay;
 class PathRequests;
+class PendingSaves;
 class STLedgerEntry;
 class TransactionMaster;
 class Validations;
@@ -114,7 +115,7 @@ public:
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;
     virtual SHAMapStore&            getSHAMapStore () = 0;
-
+    virtual PendingSaves&           pendingSaves() = 0;
     virtual DatabaseCon& getTxnDB () = 0;
     virtual DatabaseCon& getLedgerDB () = 0;
 

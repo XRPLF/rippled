@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerFees.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/core/Config.h>
@@ -100,8 +102,8 @@ Transactor::Transactor (
 
 void Transactor::calculateFee ()
 {
-    mFeeDue = STAmount (mEngine->getLedger ()->scaleFeeLoad (
-        calculateBaseFee (), mParams & tapADMIN));
+    mFeeDue = STAmount (scaleFeeLoad (getApp().getFeeTrack(),
+        *mEngine->getLedger(), calculateBaseFee (), mParams & tapADMIN));
 }
 
 std::uint64_t Transactor::calculateBaseFee ()

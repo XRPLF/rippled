@@ -17,12 +17,24 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_APP_FEES_H_INCLUDED
+#define RIPPLE_APP_FEES_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/impl/LedgerFees.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/core/LoadFeeTrack.h>
 
-#include <ripple/app/tests/common_ledger.cpp>
-#include <ripple/app/ledger/tests/Ledger_test.cpp>
-#include <ripple/app/tests/Path_test.cpp>
+namespace ripple {
+
+// VFALCO Replace std::uint64_t with a real type, maybe Amount?
+// Converts a fee in fee units to a fee in drops
+std::uint64_t
+scaleFeeBase (LoadFeeTrack& track,
+    Ledger const& ledger, std::uint64_t fee);
+
+std::uint64_t
+scaleFeeLoad (LoadFeeTrack& track,
+    Ledger const& ledger, std::uint64_t fee, bool admin);
+
+}
+
+#endif

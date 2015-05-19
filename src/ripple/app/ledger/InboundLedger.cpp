@@ -161,14 +161,15 @@ bool InboundLedger::tryLocal ()
 
             if (m_journal.trace) m_journal.trace <<
                 "Ledger header found in fetch pack";
-            mLedger = std::make_shared<Ledger> (data, true);
+            mLedger = std::make_shared<Ledger> (
+                data.data(), data.size(), true);
             getApp().getNodeStore ().store (
                 hotLEDGER, std::move (data), mHash);
         }
         else
         {
-            mLedger = std::make_shared<Ledger> (
-                strCopy (node->getData ()), true);
+            mLedger = std::make_shared<Ledger>(
+                node->getData().data(), node->getData().size(), true);
         }
 
         if (mLedger->getHash () != mHash)
@@ -761,7 +762,8 @@ bool InboundLedger::takeHeader (std::string const& data)
     if (mComplete || mFailed || mHaveHeader)
         return true;
 
-    mLedger = std::make_shared<Ledger> (data, false);
+    mLedger = std::make_shared<Ledger>(
+        data.data(), data.size(), false);
 
     if (mLedger->getHash () != mHash)
     {

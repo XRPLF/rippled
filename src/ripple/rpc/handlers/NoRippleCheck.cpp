@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -32,7 +33,8 @@ static void fillTransaction (
 {
     txArray["Sequence"] = Json::UInt (sequence++);
     txArray["Account"] = account.humanAccountID ();
-    txArray["Fee"] = Json::UInt (ledger->scaleFeeLoad (10, false));
+    txArray["Fee"] = Json::UInt (scaleFeeLoad (
+        getApp().getFeeTrack(), *ledger, 10, false));
 }
 
 // {

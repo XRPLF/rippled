@@ -25,6 +25,7 @@
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/data/SociDB.h>
 #include <ripple/app/main/Application.h>
@@ -55,10 +56,6 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mParentCloseTime (0)
     , mCloseResolution (ledgerDefaultTimeResolution)
     , mCloseFlags (0)
-    , mClosed (false)
-    , mValidated (false)
-    , mValidHash (false)
-    , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
@@ -77,8 +74,6 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     writeBack (lepCREATE, startAccount->getSLE ());
 
     mAccountStateMap->flushDirty (hotACCOUNT_NODE, mLedgerSeq);
-
-    initializeFees ();
 }
 
 Ledger::Ledger (uint256 const& parentHash,
@@ -100,10 +95,6 @@ Ledger::Ledger (uint256 const& parentHash,
     , mParentCloseTime (parentCloseTime)
     , mCloseResolution (closeResolution)
     , mCloseFlags (closeFlags)
-    , mClosed (false)
-    , mValidated (false)
-    , mValidHash (false)
-    , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, transHash, getApp().family(),
@@ -130,8 +121,6 @@ Ledger::Ledger (uint256 const& parentHash,
 
     mTransactionMap->setImmutable ();
     mAccountStateMap->setImmutable ();
-
-    initializeFees ();
 }
 
 // Create a new ledger that's a snapshot of this one
@@ -146,14 +135,12 @@ Ledger::Ledger (Ledger& ledger,
     , mCloseFlags (ledger.mCloseFlags)
     , mClosed (ledger.mClosed)
     , mValidated (ledger.mValidated)
-    , mValidHash (false)
     , mAccepted (ledger.mAccepted)
     , mImmutable (!isMutable)
     , mTransactionMap (ledger.mTransactionMap->snapShot (isMutable))
     , mAccountStateMap (ledger.mAccountStateMap->snapShot (isMutable))
 {
     updateHash ();
-    initializeFees ();
 }
 
 // Create a new ledger that follows this one
@@ -164,10 +151,6 @@ Ledger::Ledger (bool /* dummy */,
     , mParentCloseTime (prevLedger.mCloseTime)
     , mCloseResolution (prevLedger.mCloseResolution)
     , mCloseFlags (0)
-    , mClosed (false)
-    , mValidated (false)
-    , mValidHash (false)
-    , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
@@ -191,60 +174,34 @@ Ledger::Ledger (bool /* dummy */,
     {
         mCloseTime = prevLedger.mCloseTime + mCloseResolution;
     }
-
-    initializeFees ();
 }
 
-Ledger::Ledger (Blob const& rawLedger,
-                bool hasPrefix)
-    : mClosed (false)
-    , mValidated (false)
-    , mValidHash (false)
-    , mAccepted (false)
-    , mImmutable (true)
+Ledger::Ledger (void const* data,
+        std::size_t size, bool hasPrefix)
+    : mImmutable (true)
 {
-    Serializer s (rawLedger);
-
-    setRaw (s, hasPrefix);
-
-    initializeFees ();
+    SerialIter sit (data, size);
+    setRaw (sit, hasPrefix);
 }
 
-Ledger::Ledger (std::string const& rawLedger, bool hasPrefix)
-    : mClosed (false)
-    , mValidated (false)
-    , mValidHash (false)
-    , mAccepted (false)
-    , mImmutable (true)
-{
-    Serializer s (rawLedger);
-    setRaw (s, hasPrefix);
-    initializeFees ();
-}
-
-/** Used for ledgers loaded from JSON files */
 Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
-    : mTotCoins (0),
-      mLedgerSeq (ledgerSeq),
-      mCloseTime (closeTime),
-      mParentCloseTime (0),
-      mCloseResolution (ledgerDefaultTimeResolution),
-      mCloseFlags (0),
-      mClosed (false),
-      mValidated (false),
-      mValidHash (false),
-      mAccepted (false),
-      mImmutable (false),
-      mTransactionMap (std::make_shared <SHAMap> (
+    : mTotCoins (0)
+    , mLedgerSeq (ledgerSeq)
+    , mCloseTime (closeTime)
+    , mParentCloseTime (0)
+    , mCloseResolution (ledgerDefaultTimeResolution)
+    , mCloseFlags (0)
+    , mImmutable (false)
+    , mTransactionMap (std::make_shared <SHAMap> (
           SHAMapType::TRANSACTION, getApp().family(),
-            deprecatedLogs().journal("SHAMap"))),
-      mAccountStateMap (std::make_shared <SHAMap> (
+            deprecatedLogs().journal("SHAMap")))
+    , mAccountStateMap (std::make_shared <SHAMap> (
           SHAMapType::STATE, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
 {
-    initializeFees ();
 }
 
+//------------------------------------------------------------------------------
 
 Ledger::~Ledger ()
 {
@@ -296,10 +253,8 @@ void Ledger::updateHash ()
     mValidHash = true;
 }
 
-void Ledger::setRaw (Serializer& s, bool hasPrefix)
+void Ledger::setRaw (SerialIter& sit, bool hasPrefix)
 {
-    SerialIter sit (s);
-
     if (hasPrefix)
         sit.get32 ();
 
@@ -660,12 +615,9 @@ bool Ledger::saveValidatedLedger (bool current)
     {
         WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
         getApp().getLedgerMaster().failedSave(mLedgerSeq, mHash);
-        {
-            // Clients can now trust the database for information about this
-            // ledger sequence.
-            StaticScopedLockType sl (sPendingSaveLock);
-            sPendingSaves.erase(getLedgerSeq());
-        }
+        // Clients can now trust the database for information about this
+        // ledger sequence.
+        getApp().pendingSaves().erase(getLedgerSeq());
         return false;
     }
 
@@ -760,12 +712,9 @@ bool Ledger::saveValidatedLedger (bool current)
                            to_string (mAccountHash) % to_string (mTransHash));
     }
 
-    {
-        // Clients can now trust the database for information about this ledger
-        // sequence.
-        StaticScopedLockType sl (sPendingSaveLock);
-        sPendingSaves.erase(getLedgerSeq());
-    }
+    // Clients can now trust the database for
+    // information about this ledger sequence.
+    getApp().pendingSaves().erase(getLedgerSeq());
     return true;
 }
 
@@ -1666,14 +1615,11 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 
     assert (isImmutable ());
 
+    if (!getApp().pendingSaves().insert(getLedgerSeq()))
     {
-        StaticScopedLockType sl (sPendingSaveLock);
-        if (!sPendingSaves.insert(getLedgerSeq()).second)
-        {
-            WriteLog (lsDEBUG, Ledger)
-                << "Pend save with seq in pending saves " << getLedgerSeq();
-            return true;
-        }
+        WriteLog (lsDEBUG, Ledger)
+            << "Pend save with seq in pending saves " << getLedgerSeq();
+        return true;
     }
 
     if (isSynchronous)
@@ -1694,12 +1640,6 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     }
 
     return true;
-}
-
-std::set<std::uint32_t> Ledger::getPendingSaves()
-{
-   StaticScopedLockType sl (sPendingSaveLock);
-   return sPendingSaves;
 }
 
 void Ledger::ownerDirDescriber (SLE::ref sle, bool, Account const& owner)
@@ -1726,15 +1666,7 @@ void Ledger::qualityDirDescriber (
     }
 }
 
-void Ledger::initializeFees ()
-{
-    mBaseFee = 0;
-    mReferenceFeeUnits = 0;
-    mReserveBase = 0;
-    mReserveIncrement = 0;
-}
-
-void Ledger::updateFees ()
+void Ledger::deprecatedUpdateCachedFees() const
 {
     if (mBaseFee)
         return;
@@ -1762,7 +1694,9 @@ void Ledger::updateFees ()
     }
 
     {
-        StaticScopedLockType sl (sPendingSaveLock);
+        // VFALCO Why not do this before calling getASNode?
+        std::lock_guard<
+            std::mutex> lock(mutex_);
         if (mBaseFee == 0)
         {
             mBaseFee = baseFee;
@@ -1771,21 +1705,6 @@ void Ledger::updateFees ()
             mReserveIncrement = reserveIncrement;
         }
     }
-}
-
-std::uint64_t Ledger::scaleFeeBase (std::uint64_t fee)
-{
-    // Converts a fee in fee units to a fee in drops
-    updateFees ();
-    return getApp().getFeeTrack ().scaleFeeBase (
-        fee, mBaseFee, mReferenceFeeUnits);
-}
-
-std::uint64_t Ledger::scaleFeeLoad (std::uint64_t fee, bool bAdmin)
-{
-    updateFees ();
-    return getApp().getFeeTrack ().scaleFeeLoad (
-        fee, mBaseFee, mReferenceFeeUnits, bAdmin);
 }
 
 std::vector<uint256> Ledger::getNeededTransactionHashes (
@@ -1819,8 +1738,5 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 
     return ret;
 }
-
-Ledger::StaticLockType Ledger::sPendingSaveLock;
-std::set<std::uint32_t> Ledger::sPendingSaves;
 
 } // ripple

@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -480,20 +481,21 @@ public:
         // Remove from the validated range any ledger sequences that may not be
         // fully updated in the database yet
 
-        std::set<std::uint32_t> sPendingSaves = Ledger::getPendingSaves();
+        auto const pendingSaves =
+            getApp().pendingSaves().getSnapshot();
 
-        if (!sPendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
+        if (!pendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
         {
             // Ensure we shrink the tips as much as possible
             // If we have 7-9 and 8,9 are invalid, we don't want to see the 8 and shrink to just 9
             // because then we'll have nothing when we could have 7.
-            while (sPendingSaves.count(maxVal) > 0)
+            while (pendingSaves.count(maxVal) > 0)
                 --maxVal;
-            while (sPendingSaves.count(minVal) > 0)
+            while (pendingSaves.count(minVal) > 0)
                 ++minVal;
 
             // Best effort for remaining exclusions
-            for(auto v : sPendingSaves)
+            for(auto v : pendingSaves)
             {
                 if ((v >= minVal) && (v <= maxVal))
                 {

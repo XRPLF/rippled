@@ -262,6 +262,9 @@
     <Filter Include="ripple\app\ledger">
       <UniqueIdentifier>{CE126498-A44D-30A2-345B-0F672BCDF947}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\ledger\impl">
+      <UniqueIdentifier>{0EF1A571-94CC-4D70-E004-48579DF8AF2B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\ledger\tests">
       <UniqueIdentifier>{55A76B5B-A18E-E655-1A07-9492C6F8F356}</UniqueIdentifier>
     </Filter>
@@ -2169,6 +2172,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\InboundLedger.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2197,6 +2203,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerEntrySet.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerFees.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerHistory.cpp">
@@ -2239,6 +2248,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\tests\DeferredCredits.test.cpp">

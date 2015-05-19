@@ -27,6 +27,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
@@ -257,6 +258,7 @@ public:
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <SHAMapStore> m_shaMapStore;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
+    PendingSaves pendingSaves_;
 
     // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
@@ -589,6 +591,11 @@ public:
     SHAMapStore& getSHAMapStore () override
     {
         return *m_shaMapStore;
+    }
+
+    PendingSaves& pendingSaves() override
+    {
+        return pendingSaves_;
     }
 
     Overlay& overlay ()

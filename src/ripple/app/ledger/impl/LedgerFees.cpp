@@ -18,11 +18,25 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerFees.h>
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/impl/LedgerFees.cpp>
-#include <ripple/app/misc/AccountState.cpp>
+namespace ripple {
 
-#include <ripple/app/tests/common_ledger.cpp>
-#include <ripple/app/ledger/tests/Ledger_test.cpp>
-#include <ripple/app/tests/Path_test.cpp>
+std::uint64_t
+scaleFeeBase (LoadFeeTrack& track,
+    Ledger const& ledger, std::uint64_t fee)
+{
+    return track.scaleFeeBase (fee,
+        ledger.getBaseFee(), ledger.getReferenceFeeUnits());
+}
+
+std::uint64_t
+scaleFeeLoad (LoadFeeTrack& track,
+    Ledger const& ledger, std::uint64_t fee, bool admin)
+{
+    return track.scaleFeeLoad (fee,
+        ledger.getBaseFee(), ledger.getReferenceFeeUnits(),
+            admin);
+}
+
+} // ripple

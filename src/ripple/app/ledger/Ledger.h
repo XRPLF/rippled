@@ -28,7 +28,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/Book.h>
-#include <set>
+#include <mutex>
 
 namespace ripple {
 
@@ -119,6 +119,7 @@ public:
     // used for the starting bootstrap ledger
     Ledger (const RippleAddress & masterID, std::uint64_t startAmount);
 
+    // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
             uint256 const& accountHash,
             std::uint64_t totCoins, std::uint32_t closeTime,
@@ -127,8 +128,8 @@ public:
     // used for database ledgers
 
     Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
-    Ledger (Blob const & rawLedger, bool hasPrefix);
-    Ledger (std::string const& rawLedger, bool hasPrefix);
+    Ledger (void const* data,
+        std::size_t size, bool hasPrefix);
     Ledger (bool dummy, Ledger & previous); // ledger after this one
     Ledger (Ledger & target, bool isMutable); // snapshot
 
@@ -182,8 +183,8 @@ public:
     }
 
     // ledger signature operations
-    void addRaw (Serializer & s) const;
-    void setRaw (Serializer & s, bool hasPrefix);
+    void addRaw (Serializer& s) const;
+    void setRaw (SerialIter& sit, bool hasPrefix);
 
     uint256 const& getHash ();
     uint256 const& getParentHash () const
@@ -380,38 +381,33 @@ public:
     getRippleState (
         Account const& a, Account const& b, Currency const& currency) const;
 
-    std::uint32_t getReferenceFeeUnits ()
+    std::uint32_t getReferenceFeeUnits() const
     {
         // Returns the cost of the reference transaction in fee units
-        updateFees ();
+        deprecatedUpdateCachedFees ();
         return mReferenceFeeUnits;
     }
 
-    std::uint64_t getBaseFee ()
+    std::uint64_t getBaseFee() const
     {
         // Returns the cost of the reference transaction in drops
-        updateFees ();
+        deprecatedUpdateCachedFees ();
         return mBaseFee;
     }
 
-    std::uint64_t getReserve (int increments)
+    std::uint64_t getReserve (int increments) const
     {
         // Returns the required reserve in drops
-        updateFees ();
+        deprecatedUpdateCachedFees ();
         return static_cast<std::uint64_t> (increments) * mReserveIncrement
             + mReserveBase;
     }
 
-    std::uint64_t getReserveInc ()
+    std::uint64_t getReserveInc () const
     {
-        updateFees ();
+        deprecatedUpdateCachedFees ();
         return mReserveIncrement;
     }
-
-    std::uint64_t scaleFeeBase (std::uint64_t fee);
-    std::uint64_t scaleFeeLoad (std::uint64_t fee, bool bAdmin);
-
-    static std::set<std::uint32_t> getPendingSaves();
 
     /** Const version of getHash() which gets the current value without calling
         updateHash(). */
@@ -437,11 +433,15 @@ protected:
     bool saveValidatedLedger (bool current);
 
 private:
-    void initializeFees ();
-    void updateFees ();
+    // Updates the fees cached in the ledger.
+    // Safe to call concurrently. We shouldn't be storing
+    // fees in the Ledger object, they should be a local side-structure
+    // associated with a particular module (rpc, tx processing, consensus)
+    //
+    void deprecatedUpdateCachedFees() const;
 
     // The basic Ledger structure, can be opened, closed, or synching
-    uint256       mHash;
+    uint256       mHash; // VFALCO This could be boost::optional<uint256>
     uint256       mParentHash;
     uint256       mTransHash;
     uint256       mAccountHash;
@@ -459,28 +459,28 @@ private:
 
     // flags indicating how this ledger close took place
     std::uint32_t mCloseFlags;
-    bool          mClosed, mValidated, mValidHash, mAccepted, mImmutable;
-
-    // Fee units for the reference transaction
-    std::uint32_t mReferenceFeeUnits;
-
-    // Reserve basse and increment in fee units
-    std::uint32_t mReserveBase, mReserveIncrement;
-
-    // Ripple cost of the reference transaction
-    std::uint64_t mBaseFee;
+    bool mClosed = false;
+    bool mValidated = false;
+    bool mValidHash = false;
+    bool mAccepted = false;
+    bool mImmutable;
 
     std::shared_ptr<SHAMap> mTransactionMap;
     std::shared_ptr<SHAMap> mAccountStateMap;
 
-    typedef RippleMutex StaticLockType;
-    typedef std::lock_guard <StaticLockType> StaticScopedLockType;
+    // Protects fee variables
+    std::mutex mutable mutex_;
 
-    // Ledgers not fully saved, validated ledger present but DB may not be
-    // correct yet.
-    static StaticLockType sPendingSaveLock;
+    // Ripple cost of the reference transaction
+    std::uint64_t mutable mBaseFee = 0;
 
-    static std::set<std::uint32_t>  sPendingSaves;
+    // Fee units for the reference transaction
+    std::uint32_t mutable mReferenceFeeUnits = 0;
+
+    // Reserve base in fee units
+    std::uint32_t mutable mReserveBase = 0;
+    // Reserve increment in fee units
+    std::uint32_t mutable mReserveIncrement = 0;
 };
 
 inline LedgerStateParms operator| (
