@@ -1,4 +1,4 @@
-# Maintainer: Roberto Catini <roberto.catini@gmail.com> 
+# Maintainer: Roberto Catini <roberto.catini@gmail.com>
 
 pkgname=rippled
 pkgrel=1
@@ -21,7 +21,7 @@ pkgver() {
 
 build() {
 	cd "$srcdir/$pkgname"
-	scons build/rippled
+	scons
 }
 
 check() {
