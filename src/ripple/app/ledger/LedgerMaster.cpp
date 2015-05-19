@@ -596,16 +596,23 @@ public:
             return;
         }
 
+        // Select target Peer based on highest score.
+        // The score is randomized but biased in favor of Peers with low latency.
         Peer::ptr target;
-        int count = 0;
-
-        Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
-        for (auto const& peer : peerList)
         {
-            if (peer->hasRange (missingIndex, missingIndex + 1))
+            int maxScore = 0;
+            Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
+            for (auto const& peer : peerList)
             {
-                if ((count++ == 0) || ((rand() % count) == 0))
-                    target = peer;
+                if (peer->hasRange (missingIndex, missingIndex + 1))
+                {
+                    int score = peer->getScore (true);
+                    if (! target || (score > maxScore))
+                    {
+                        target = peer;
+                        maxScore = score;
+                    }
+                }
             }
         }
 
