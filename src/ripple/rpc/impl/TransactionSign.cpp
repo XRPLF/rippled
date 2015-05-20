@@ -375,7 +375,8 @@ transactionSign (
 
     // Check for current ledger.
     if (verify && !getConfig ().RUN_STANDALONE &&
-        (ledgerFacade.getValidatedLedgerAge () > 120))
+        (ledgerFacade.getValidatedLedgerAge () >
+            Tuning::maxValidatedLedgerAge))
         return rpcError (rpcNO_CURRENT);
 
     // Check for load.
