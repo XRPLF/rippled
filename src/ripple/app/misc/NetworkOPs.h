@@ -146,15 +146,11 @@ public:
 
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
-    typedef std::function<void (Transaction::pointer, TER)> stCallback;
-    virtual void submitTransaction (Job&, STTx::pointer,
-        stCallback callback = stCallback ()) = 0;
+    virtual void submitTransaction (Job&, STTx::pointer) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
-    virtual Transaction::pointer processTransactionCb (Transaction::pointer,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback) = 0;
-    virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard) = 0;
+    virtual void processTransaction (Transaction::pointer transaction,
+        bool bAdmin, bool bLocal, bool bFailHard, bool sync=true) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
         RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,

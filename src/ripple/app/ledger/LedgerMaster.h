@@ -24,6 +24,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/JobQueue.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
@@ -75,9 +76,23 @@ public:
     virtual int getValidatedLedgerAge () = 0;
     virtual bool isCaughtUp(std::string& reason) = 0;
 
-    virtual TER doTransaction (
-        STTx::ref txn,
-            TransactionEngineParams params, bool& didApply) = 0;
+    /**
+     * Add transaction to batch. For synchronous transactions, poke job queue
+     * to have another worker process batch, which has indeterminate
+     * duration, and then wait until it's applied. Otherwise, apply the batch.
+     *
+     * @param transaction
+     * @param admin
+     * @param local
+     * @param failHard
+     * @param jobQueue
+     */
+    virtual void enqueueTransaction (
+        Transaction::ref transaction,
+        bool const admin,
+        bool const local,
+        bool const failHard,
+        JobQueue& jobQueue) = 0;
 
     virtual int getMinValidations () = 0;
 
@@ -148,7 +163,7 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t currentLedgerID, 
+    static bool shouldAcquire (std::uint32_t currentLedgerID,
         std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
         std::uint32_t targetLedger);
 
