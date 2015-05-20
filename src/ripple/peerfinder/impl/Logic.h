@@ -211,6 +211,12 @@ public:
 
         for (auto const& remote_address : addresses)
         {
+            if (remote_address.port () == 0)
+            {
+                throw std::runtime_error ("Port not specified for address:" +
+                    remote_address.to_string ());
+            }
+
             auto result (state->fixed.emplace (std::piecewise_construct,
                 std::forward_as_tuple (remote_address),
                     std::make_tuple (std::ref (m_clock))));
