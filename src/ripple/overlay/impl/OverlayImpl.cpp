@@ -245,7 +245,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     std::string name;
     bool const cluster = getApp().getUNL().nodeInCluster(
         publicKey, name);
-    
+
     auto const result = m_peerFinder->activate (slot,
         publicKey.toPublicKey(), cluster);
     if (result != PeerFinder::Result::success)
@@ -338,7 +338,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
             "Over resource limit: " << remote_endpoint;
         return;
     }
-    
+
     auto const slot = peerFinder().new_outbound_slot(remote_endpoint);
     if (slot == nullptr)
     {
@@ -460,21 +460,27 @@ OverlayImpl::onPrepare()
     if (bootstrapIps.empty ())
         bootstrapIps.push_back ("r.ripple.com 51235");
 
-    if (!bootstrapIps.empty ())
-    {
-        m_resolver.resolve (bootstrapIps,
-            [this](std::string const& name,
-                std::vector <beast::IP::Endpoint> const& addresses)
+    m_resolver.resolve (bootstrapIps,
+        [this](std::string const& name,
+            std::vector <beast::IP::Endpoint> const& addresses)
+        {
+            std::vector <std::string> ips;
+            ips.reserve(addresses.size());
+            for (auto const& addr : addresses)
             {
-                std::vector <std::string> ips;
-                ips.reserve(addresses.size());
-                for (auto const& addr : addresses)
-                    ips.push_back (to_string (addr));
-                std::string const base ("config: ");
-                if (!ips.empty ())
-                    m_peerFinder->addFallbackStrings (base + name, ips);
-            });
-    }
+                if (addr.port () == 0)
+                {
+                    throw std::runtime_error ("Port not specified for "
+                        "address:" + addr.to_string ());
+                }
+
+                ips.push_back (to_string (addr));
+            }
+
+            std::string const base ("config: ");
+            if (!ips.empty ())
+                m_peerFinder->addFallbackStrings (base + name, ips);
+        });
 
     // Add the ips_fixed from the rippled.cfg file
     if (! getConfig ().RUN_STANDALONE && !getConfig ().IPS_FIXED.empty ())
