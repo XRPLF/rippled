@@ -84,6 +84,9 @@ public:
     /** inner transaction to sign */
     static HashPrefix const txSign;
 
+    /** inner transaction to multi-sign */
+    static HashPrefix const txMultiSign;
+
     /** validation for signing */
     static HashPrefix const validation;
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Sign.h>
+#include <BeastConfig.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
 
-void
-sign (STObject& st, HashPrefix const& prefix,
-    AnySecretKey const& sk)
+// {
+//   tx_json: <object>,
+//   account: <signing account>
+//   secret: <secret of signing account>
+// }
+Json::Value doSignFor (RPC::Context& context)
 {
-    Serializer ss;
-    ss.add32(prefix);
-    st.addWithoutSigningFields(ss);
-    set(st, sfSignature,
-        sk.sign(ss.data(), ss.size()));
-}
+    context.loadType = Resource::feeHighBurdenRPC;
+    NetworkOPs::FailHard const failType =
+        NetworkOPs::doFailHard (
+            context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ());
 
-bool
-verify (STObject const& st,
-    HashPrefix const& prefix,
-        AnyPublicKeySlice const& pk)
-{
-    auto const sig = get(st, sfSignature);
-    if (! sig)
-        return false;
-    Serializer ss;
-    ss.add32(prefix);
-    st.addWithoutSigningFields(ss);
-    return pk.verify(
-        ss.data(), ss.size(),
-            sig->data(), sig->size());
+    return RPC::transactionSignFor (
+        context.params, failType, context.netOps, context.role);
 }
 
 } // ripple

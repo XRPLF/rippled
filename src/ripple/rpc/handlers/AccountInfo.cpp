@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
@@ -60,12 +61,32 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (!jvAccepted.empty ())
         return jvAccepted;
 
-    auto asAccepted = context.netOps.getAccountState (ledger, naAccount);
+    AccountState::pointer asAccepted =
+        context.netOps.getAccountState (ledger, naAccount);
 
     if (asAccepted)
     {
         asAccepted->addJson (jvAccepted);
-        result[jss::account_data]    = jvAccepted;
+
+        // See if there's a SignerEntries for this account.
+        Account const account = naAccount.getAccountID ();
+        uint256 const signerListIndex = getSignerListIndex (account);
+        SLE::pointer signerList = ledger->getSLEi (signerListIndex);
+
+        if (signerList)
+        {
+            // Return multi-signing information if there are multi-signers.
+            static const Json::StaticString multiSignersName("multisigners");
+            jvAccepted[multiSignersName] = signerList->getJson (0);
+            Json::Value& multiSignerJson = jvAccepted[multiSignersName];
+
+            // Remove unwanted fields.
+            multiSignerJson.removeMember (sfFlags.getName ());
+            multiSignerJson.removeMember (sfLedgerEntryType.getName ());
+            multiSignerJson.removeMember (sfOwnerNode.getName ());
+            multiSignerJson.removeMember ("index");
+        }
+        result[jss::account_data] = jvAccepted;
     }
     else
     {

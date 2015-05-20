@@ -1,12 +1,10 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
+    Copyright (c) 2012-2014 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,35 +15,25 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Sign.h>
+#include <BeastConfig.h>
+#include <ripple/basics/StringUtilities.h>
 
 namespace ripple {
 
-void
-sign (STObject& st, HashPrefix const& prefix,
-    AnySecretKey const& sk)
+// {
+//   SigningAccounts <array>,
+//   tx_json: <object>,
+// }
+Json::Value doSubmitMultiSigned (RPC::Context& context)
 {
-    Serializer ss;
-    ss.add32(prefix);
-    st.addWithoutSigningFields(ss);
-    set(st, sfSignature,
-        sk.sign(ss.data(), ss.size()));
-}
+    context.loadType = Resource::feeHighBurdenRPC;
 
-bool
-verify (STObject const& st,
-    HashPrefix const& prefix,
-        AnyPublicKeySlice const& pk)
-{
-    auto const sig = get(st, sfSignature);
-    if (! sig)
-        return false;
-    Serializer ss;
-    ss.add32(prefix);
-    st.addWithoutSigningFields(ss);
-    return pk.verify(
-        ss.data(), ss.size(),
-            sig->data(), sig->size());
+    NetworkOPs::FailHard const failType = NetworkOPs::doFailHard (
+            context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ());
+
+    return RPC::transactionSubmitMultiSigned (
+        context.params, failType, context.netOps, context.role);
 }
 
 } // ripple

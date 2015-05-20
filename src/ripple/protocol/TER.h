@@ -56,7 +56,6 @@ enum TER    // aka TransactionEngineResult
     temMALFORMED    = -299,
 
     temBAD_AMOUNT,
-    temBAD_AUTH_MASTER,
     temBAD_CURRENCY,
     temBAD_EXPIRATION,
     temBAD_FEE,
@@ -81,6 +80,8 @@ enum TER    // aka TransactionEngineResult
     temREDUNDANT,
     temRIPPLE_EMPTY,
     temDISABLED,
+    temBAD_SIGNER,
+    temBAD_QUORUM,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,
@@ -111,6 +112,10 @@ enum TER    // aka TransactionEngineResult
     tefWRONG_PRIOR,
     tefMASTER_DISABLED,
     tefMAX_LEDGER,
+    tefBAD_SIGNATURE,
+    tefBAD_QUORUM,
+    tefNOT_MULTI_SIGNING,
+    tefBAD_AUTH_MASTER,
 
     // -99 .. -1: R Retry
     //   sequence too high, no funds for txn fee, originating -account

@@ -87,6 +87,13 @@ TxFormats::TxFormats ()
     add ("TicketCancel", ttTICKET_CANCEL)
         << SOElement (sfTicketID,            SOE_REQUIRED)
         ;
+
+    // The SignerEntries are optional because a SignerList is deleted by
+    // setting the SignerQuorum to zero and omitting SignerEntries.
+    add ("SignerListSet", ttSIGNER_LIST_SET)
+        << SOElement (sfSignerQuorum,        SOE_REQUIRED)
+        << SOElement (sfSignerEntries,       SOE_OPTIONAL)
+        ;
 }
 
 void TxFormats::addCommonFields (Item& item)
@@ -105,6 +112,7 @@ void TxFormats::addCommonFields (Item& item)
         << SOElement(sfMemos,               SOE_OPTIONAL)
         << SOElement(sfSigningPubKey,       SOE_REQUIRED)
         << SOElement(sfTxnSignature,        SOE_OPTIONAL)
+        << SOElement(sfMultiSigners,        SOE_OPTIONAL) // submit_multisigned
         ;
 }
 

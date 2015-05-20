@@ -44,6 +44,8 @@ public:
     typedef std::shared_ptr<STTx>        pointer;
     typedef const std::shared_ptr<STTx>& ref;
 
+    static std::size_t const maxMultiSigners = 8;
+
 public:
     STTx () = delete;
     STTx& operator= (STTx const& other) = delete;
@@ -67,14 +69,14 @@ public:
         return emplace(n, buf, std::move(*this));
     }
 
-    // STObject functions
+    // STObject functions.
     SerializedTypeID getSType () const override
     {
         return STI_TRANSACTION;
     }
     std::string getFullText () const override;
 
-    // outer transaction functions / signature functions
+    // Outer transaction functions / signature functions.
     Blob getSignature () const;
 
     uint256 getSigningHash () const;
@@ -116,8 +118,8 @@ public:
 
     uint256 getTransactionID () const;
 
-    virtual Json::Value getJson (int options) const override;
-    virtual Json::Value getJson (int options, bool binary) const;
+    Json::Value getJson (int options) const override;
+    Json::Value getJson (int options, bool binary) const;
 
     void sign (RippleAddress const& private_key);
 
@@ -140,7 +142,7 @@ public:
         sig_state_ = false;
     }
 
-    // SQL Functions with metadata
+    // SQL Functions with metadata.
     static
     std::string const&
     getMetaSQLInsertReplaceHeader ();
@@ -155,6 +157,9 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
+    bool checkSingleSign () const;
+    bool checkMultiSign () const;
+
     TxType tx_type_;
 
     mutable boost::tribool sig_state_;

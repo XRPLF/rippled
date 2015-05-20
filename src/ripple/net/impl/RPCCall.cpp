@@ -420,6 +420,30 @@ private:
         return jvRequest;
     }
 
+    // sign_for
+    Json::Value parseSignFor (Json::Value const& jvParams)
+    {
+        Json::Value     txJSON;
+        Json::Reader    reader;
+
+        if ((4 == jvParams.size ())
+            && reader.parse (jvParams[3u].asString (), txJSON))
+        {
+            if (txJSON.type () == Json::objectValue)
+            {
+                // Return SigningFor object for the submitted transaction.
+                Json::Value jvRequest;
+                jvRequest["signing_for"] = jvParams[0u].asString ();
+                jvRequest["account"] = jvParams[1u].asString ();
+                jvRequest["secret"]  = jvParams[2u].asString ();
+                jvRequest["tx_json"] = txJSON;
+
+                return jvRequest;
+            }
+        }
+        return rpcError (rpcINVALID_PARAMS);
+    }
+
     // json <command> <json>
     Json::Value parseJson (Json::Value const& jvParams)
     {
@@ -605,7 +629,7 @@ private:
     {
         Json::Value     txJSON;
         Json::Reader    reader;
-        bool            bOffline    = 3 == jvParams.size () && jvParams[2u].asString () == "offline";
+        bool const      bOffline    = 3 == jvParams.size () && jvParams[2u].asString () == "offline";
 
         if (1 == jvParams.size ())
         {
@@ -628,6 +652,28 @@ private:
 
             if (bOffline)
                 jvRequest[jss::offline]    = true;
+
+            return jvRequest;
+        }
+
+        return rpcError (rpcINVALID_PARAMS);
+    }
+
+    // submit any multisigned transaction to the network
+    //
+    // submit_multisigned <json>
+    Json::Value parseSubmitMultiSigned (Json::Value const& jvParams)
+    {
+        Json::Value     jvRequest;
+        Json::Reader    reader;
+        bool const      bOffline    = 2 == jvParams.size () && jvParams[1u].asString () == "offline";
+
+        if ((1 == jvParams.size () || bOffline)
+            && reader.parse (jvParams[0u].asString (), jvRequest))
+        {
+            // Multisigned.
+            if (bOffline)
+                jvRequest["offline"]    = true;
 
             return jvRequest;
         }
@@ -831,7 +877,13 @@ public:
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
+#if RIPPLE_ENABLE_MULTI_SIGN
+            {   "sign_for",             &RPCParser::parseSignFor,               4,  4   },
+#endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
+#if RIPPLE_ENABLE_MULTI_SIGN
+            {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
+#endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },

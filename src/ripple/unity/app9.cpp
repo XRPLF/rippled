@@ -33,3 +33,7 @@
 #include <ripple/app/transactors/CreateOffer.cpp>
 #include <ripple/app/transactors/CreateTicket.cpp>
 #include <ripple/app/transactors/CancelTicket.cpp>
+#include <ripple/app/transactors/SetSignerList.cpp>
+#include <ripple/app/transactors/impl/SignerEntries.cpp>
+#include <ripple/app/transactors/test/MultiSign.test.cpp>
+#include <ripple/app/transactors/test/common_transactor.cpp>

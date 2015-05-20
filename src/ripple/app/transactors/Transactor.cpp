@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/core/Config.h>
 #include <ripple/app/transactors/Transactor.h>
+#include <ripple/app/transactors/impl/SignerEntries.h>
 #include <ripple/legacy/0.27/Emulate027.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/core/Config.h>
 
 namespace ripple {
 
@@ -34,6 +35,7 @@ TER transact_CancelOffer (STTx const& txn, TransactionEngineParams params, Trans
 TER transact_Change (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CreateTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CancelTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetSignerList (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
@@ -70,6 +72,13 @@ Transactor::transact (
 
     case ttTICKET_CANCEL:
         return transact_CancelTicket (txn, params, engine);
+
+#if RIPPLE_ENABLE_MULTI_SIGN
+
+    case ttSIGNER_LIST_SET:
+        return transact_SetSignerList (txn, params, engine);
+
+#endif // RIPPLE_ENABLE_MULTI_SIGN
 
     default:
         return temUNKNOWN;
@@ -150,35 +159,6 @@ TER Transactor::payFee ()
     return tesSUCCESS;
 }
 
-TER Transactor::checkSig ()
-{
-    // Consistency: Check signature and verify the transaction's signing public
-    // key is the key authorized for signing.
-
-    auto const signing_account = mSigningPubKey.getAccountID ();
-
-    if (signing_account == mTxnAccountID)
-    {
-        if (mTxnAccount->isFlag(lsfDisableMaster))
-            return tefMASTER_DISABLED;
-
-        mSigMaster = true;
-        return tesSUCCESS;
-    }
-
-    if (!mHasAuthKey)
-    {
-        m_journal.trace << "Invalid: Not authorized to use account.";
-        return temBAD_AUTH_MASTER;
-    }
-
-    if (signing_account == mTxnAccount->getFieldAccount160 (sfRegularKey))
-        return tesSUCCESS;
-
-    m_journal.trace << "Delay: Not authorized to use account.";
-    return tefBAD_AUTH;
-}
-
 TER Transactor::checkSeq ()
 {
     std::uint32_t const t_seq = mTxn.getSequence ();
@@ -188,7 +168,8 @@ TER Transactor::checkSeq ()
     {
         if (a_seq < t_seq)
         {
-            m_journal.trace << "Transaction has future sequence number " <<
+            m_journal.trace <<
+                "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;
             return terPRE_SEQ;
         }
@@ -196,7 +177,7 @@ TER Transactor::checkSeq ()
         if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
             return tefALREADY;
 
-        m_journal.trace << "Transaction has past sequence number " <<
+        m_journal.trace << "applyTransaction: has past sequence number " <<
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
@@ -225,21 +206,35 @@ TER Transactor::checkSeq ()
 // check stuff before you bother to lock the ledger
 TER Transactor::preCheck ()
 {
+    TER result = preCheckAccount ();
+    if (result != tesSUCCESS)
+        return result;
+
+    return preCheckSigningKey ();
+}
+
+TER Transactor::preCheckAccount ()
+{
     mTxnAccountID = mTxn.getSourceAccount ().getAccountID ();
 
     if (!mTxnAccountID)
     {
-        m_journal.warning << "apply: bad transaction source id";
+        m_journal.warning << "applyTransaction: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
     }
+    return tesSUCCESS;
+}
 
+TER Transactor::preCheckSigningKey ()
+{
     // Extract signing key
     // Transactions contain a signing key.  This allows us to trivially verify a
     // transaction has at least been properly signed without going to disk.
     // Each transaction also notes a source account id. This is used to verify
     // that the signing key is associated with the account.
     // XXX This could be a lot cleaner to prevent unnecessary copying.
-    mSigningPubKey = RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
+    mSigningPubKey =
+        RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
 
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())
@@ -278,7 +273,7 @@ TER Transactor::apply ()
         if (mustHaveValidAccount ())
         {
             m_journal.trace <<
-                "apply: delay transaction: source account does not exist " <<
+                "applyTransaction: delay: source account does not exist " <<
                 mTxn.getSourceAccount ().humanAccountID ();
             return terNO_ACCOUNT;
         }
@@ -298,7 +293,7 @@ TER Transactor::apply ()
 
     if (terResult != tesSUCCESS) return (terResult);
 
-    terResult = checkSig ();
+    terResult = checkSign ();
 
     if (terResult != tesSUCCESS) return (terResult);
 
@@ -306,6 +301,366 @@ TER Transactor::apply ()
         mEngine->view().entryModify (mTxnAccount);
 
     return doApply ();
+}
+
+TER Transactor::checkSign ()
+{
+#if RIPPLE_ENABLE_MULTI_SIGN
+    // If the mSigningPubKey is empty, then we must be multi-signing.
+    TER const signingTER = mSigningPubKey.getAccountPublic ().empty () ?
+        checkMultiSign () : checkSingleSign ();
+#else
+    TER const signingTER = checkSingleSign ();
+#endif // RIPPLE_ENABLE_MULTI_SIGN
+
+    return signingTER;
+}
+
+TER Transactor::checkSingleSign ()
+{
+    // Consistency: Check signature
+    // Verify the transaction's signing public key is authorized for signing.
+    if (mSigningPubKey.getAccountID () == mTxnAccountID)
+    {
+        // Authorized to continue.
+        mSigMaster = true;
+        if (mTxnAccount->isFlag(lsfDisableMaster))
+            return tefMASTER_DISABLED;
+    }
+    else if (mHasAuthKey &&
+        (mSigningPubKey.getAccountID () ==
+            mTxnAccount->getFieldAccount160 (sfRegularKey)))
+    {
+        // Authorized to continue.
+    }
+    else if (mHasAuthKey)
+    {
+        m_journal.trace <<
+            "applyTransaction: Delay: Not authorized to use account.";
+        return tefBAD_AUTH;
+    }
+    else
+    {
+        m_journal.trace <<
+            "applyTransaction: Invalid: Not authorized to use account.";
+        return tefBAD_AUTH_MASTER;
+    }
+
+    return tesSUCCESS;
+}
+
+namespace TransactorDetail
+{
+
+struct GetSignerListResult
+{
+    TER ter = tefFAILURE;
+    std::uint32_t quorum = std::numeric_limits <std::uint32_t>::max ();
+    std::vector<SignerEntries::SignerEntry> signerEntries;
+};
+
+// We need the SignerList for every SigningFor while multi-signing.
+GetSignerListResult
+getSignerList (
+    Account signingForAcctID, TransactionEngine* engine, beast::Journal journal)
+{
+    GetSignerListResult ret;
+
+    uint256 const index = getSignerListIndex (signingForAcctID);
+    SLE::pointer accountSignersList =
+        engine->view ().entryCache (ltSIGNER_LIST, index);
+
+    // If the signer list doesn't exist the account is not multi-signing.
+    if (!accountSignersList)
+    {
+        journal.trace <<
+            "applyTransaction: Invalid: Not a multi-signing account.";
+        ret.ter = tefNOT_MULTI_SIGNING;
+        return ret;
+    }
+    ret.quorum = accountSignersList->getFieldU32 (sfSignerQuorum);
+
+    SignerEntries::Decoded signersOnAccountDecode =
+        SignerEntries::deserialize (*accountSignersList, journal, "ledger");
+    ret.ter = signersOnAccountDecode.ter;
+
+    if (signersOnAccountDecode.ter == tesSUCCESS)
+    {
+        ret.signerEntries = std::move (signersOnAccountDecode.vec);
+    }
+    return ret;
+}
+
+struct CheckSigningAccountsResult
+{
+    TER ter = tefFAILURE;
+    std::uint32_t weightSum = 0;
+};
+
+// Verify that every SigningAccount is a valid SignerEntry.  Sum signer weights.
+CheckSigningAccountsResult
+checkSigningAccounts (
+    std::vector<SignerEntries::SignerEntry> signerEntries,
+    STArray const& signingAccounts,
+    TransactionEngine* engine,
+    beast::Journal journal)
+{
+    CheckSigningAccountsResult ret;
+
+    // Both the signerEntries and signingAccounts are sorted by account.  So
+    // matching signerEntries to signingAccounts should be a simple
+    // linear walk.  *All* signers must be valid or the transaction fails.
+    std::uint32_t weightSum = 0;
+    auto signerEntriesItr = signerEntries.begin ();
+    for (auto const& signingAccount : signingAccounts)
+    {
+        Account const signingAcctID =
+            signingAccount.getFieldAccount (sfAccount).getAccountID ();
+
+        // Attempt to match the SignerEntry with a SigningAccount;
+        while (signerEntriesItr->account < signingAcctID)
+        {
+            if (++signerEntriesItr == signerEntries.end ())
+            {
+                journal.trace <<
+                    "applyTransaction: Invalid SigningAccount.Account.";
+                ret.ter = tefBAD_SIGNATURE;
+                return ret;
+            }
+        }
+        if (signerEntriesItr->account != signingAcctID)
+        {
+            // The SigningAccount is not in the SignerEntries.
+            journal.trace <<
+                "applyTransaction: Invalid SigningAccount.Account.";
+            ret.ter = tefBAD_SIGNATURE;
+            return ret;
+        }
+        if (signerEntriesItr->weight <= 0)
+        {
+            // The SigningAccount has a weight of zero and may not sign.
+            journal.trace <<
+                "applyTransaction: SigningAccount.Account needs weight > 0.";
+            ret.ter = tefBAD_SIGNATURE;
+            return ret;
+        }
+
+        // We found the SigningAccount in the list of valid signers.  Now we
+        // need to compute the accountID that is associated with the signer's
+        // public key.
+        Account const signingAcctIDFromPubKey =
+            RippleAddress::createAccountPublic (
+                signingAccount.getFieldVL (sfSigningPubKey)).getAccountID ();
+
+        // Verify that the signingAcctID and the signingAcctIDFromPubKey
+        // belong together.  Here is are the rules:
+        //
+        //   1. "Phantom account": an account that is not in the ledger
+        //      A. If signingAcctID == signingAcctIDFromPubKey and the
+        //         signingAcctID is not in the ledger then we have a phantom
+        //         account.
+        //      B. Phantom accounts are always allowed as multi-signers.
+        //
+        //   2. "Master Key"
+        //      A. signingAcctID == signingAcctIDFromPubKey, and signingAcctID
+        //         is in the ledger.
+        //      B. If the signingAcctID in the ledger does not have the
+        //         asfDisableMaster flag set, then the signature is allowed.
+        //
+        //   3. "Regular Key"
+        //      A. signingAcctID != signingAcctIDFromPubKey, and signingAcctID
+        //         is in the ledger.
+        //      B. If signingAcctIDFromPubKey == signingAcctID.RegularKey (from
+        //         ledger) then the signature is allowed.
+        //
+        // No other signatures are allowed.  (January 2015)
+
+        // In any of these cases we need to know whether the account is in
+        // the ledger.  Determine that now.
+        uint256 const signerAccountIndex = getAccountRootIndex (signingAcctID);
+
+        SLE::pointer signersAccountRoot =
+            engine->view ().entryCache (ltACCOUNT_ROOT, signerAccountIndex);
+
+        if (signingAcctIDFromPubKey == signingAcctID)
+        {
+            // Either Phantom or Master.  Phantom's automatically pass.
+            if (signersAccountRoot)
+            {
+                // Master Key.  Account may not have asfDisableMaster set.
+                std::uint32_t const signerAccountFlags =
+                    signersAccountRoot->getFieldU32 (sfFlags);
+
+                if (signerAccountFlags & lsfDisableMaster)
+                {
+                    journal.trace <<
+                        "applyTransaction: MultiSignature lsfDisableMaster.";
+                    ret.ter = tefMASTER_DISABLED;
+                    return ret;
+                }
+            }
+        }
+        else
+        {
+            // May be a Regular Key.  Let's find out.
+            // Public key must hash to the account's regular key.
+            if (!signersAccountRoot)
+            {
+                journal.trace <<
+                    "applyTransaction: Non-phantom signer lacks account root.";
+                ret.ter = tefBAD_SIGNATURE;
+                return ret;
+            }
+
+            if (!signersAccountRoot->isFieldPresent (sfRegularKey))
+            {
+                journal.trace <<
+                    "applyTransaction: Account lacks RegularKey.";
+                ret.ter = tefBAD_SIGNATURE;
+                return ret;
+            }
+            if (signingAcctIDFromPubKey !=
+                signersAccountRoot->getFieldAccount160 (sfRegularKey))
+            {
+                journal.trace <<
+                    "applyTransaction: Account doesn't match RegularKey.";
+                ret.ter = tefBAD_SIGNATURE;
+                return ret;
+            }
+        }
+        // The signer is legitimate.  Add their weight toward the quorum.
+        weightSum += signerEntriesItr->weight;
+    }
+    ret.weightSum = weightSum;
+    ret.ter = tesSUCCESS;
+    return ret;
+}
+
+} // namespace TransactorDetail
+
+TER Transactor::checkMultiSign ()
+{
+    // Get mTxnAccountID's SignerList and Quorum.
+    using namespace TransactorDetail;
+    GetSignerListResult const outer =
+        getSignerList (mTxnAccountID, mEngine, m_journal);
+
+    if (outer.ter != tesSUCCESS)
+        return outer.ter;
+
+    // Get the actual array of transaction signers.
+    STArray const& multiSigners (mTxn.getFieldArray (sfMultiSigners));
+
+    // Walk the accountSigners performing a variety of checks and see if
+    // the quorum is met.
+
+    // Both the multiSigners and accountSigners are sorted by account.  So
+    // matching multi-signers to account signers should be a simple
+    // linear walk.  *All* signers must be valid or the transaction fails.
+    std::uint32_t weightSum = 0;
+    auto signerEntriesItr = outer.signerEntries.begin ();
+    for (auto const& signingFor : multiSigners)
+    {
+        Account const signingForID =
+            signingFor.getFieldAccount (sfAccount).getAccountID ();
+
+        STArray const& signingAccounts =
+            signingFor.getFieldArray (sfSigningAccounts);
+
+        // There are two possibilities:
+        //  o The signers are direct multi-signers for this account.
+        //  o The signers are signing for a multi-signer on this account.
+        // Handle those two cases separately.
+        if (signingForID == mTxnAccountID)
+        {
+            // The signers are direct multi-signers for this account.  Results
+            // from these signers directly effect the quorum.
+            CheckSigningAccountsResult const outerSigningAccountsResult =
+                checkSigningAccounts (
+                    outer.signerEntries, signingAccounts, mEngine, m_journal);
+
+            if (outerSigningAccountsResult.ter != tesSUCCESS)
+                return outerSigningAccountsResult.ter;
+
+            weightSum += outerSigningAccountsResult.weightSum;
+        }
+        else
+        {
+            // The signers are signing for a multi-signer on this account.
+            // Attempt to match the signingForID with a SignerEntry
+            while (signerEntriesItr->account < signingForID)
+            {
+                if (++signerEntriesItr == outer.signerEntries.end ())
+                {
+                    m_journal.trace <<
+                        "applyTransaction: Invalid SigningFor.Account.";
+                    return tefBAD_SIGNATURE;
+                }
+            }
+            if (signerEntriesItr->account != signingForID)
+            {
+                // The signingForID is not in the SignerEntries.
+                m_journal.trace <<
+                    "applyTransaction: Invalid SigningFor.Account.";
+                return tefBAD_SIGNATURE;
+            }
+            if (signerEntriesItr->weight <= 0)
+            {
+                // The SigningFor entry needs a weight greater than zero.
+                m_journal.trace <<
+                    "applyTransaction: SigningFor.Account needs weight > 0.";
+                return tefBAD_SIGNATURE;
+            }
+
+            // See if the signingForID has a SignerList.
+            GetSignerListResult const inner =
+                getSignerList (signingForID, mEngine, m_journal);
+
+            if (inner.ter != tesSUCCESS)
+                return inner.ter;
+
+            // Results from these signers indirectly effect the quorum.
+            CheckSigningAccountsResult const innerSigningAccountsResult =
+                checkSigningAccounts (
+                    inner.signerEntries, signingAccounts, mEngine, m_journal);
+
+            if (innerSigningAccountsResult.ter != tesSUCCESS)
+                return innerSigningAccountsResult.ter;
+
+            // There's a policy question here.  If the SigningAccounts are
+            // all valid but fail to reach this signingFor's Quorum do we:
+            //
+            //  1. Say the signature is valid but contributes 0 toward the
+            //     quorum?
+            //
+            //  2. Say that any SigningFor that doesn't meet quorum is an
+            //     invalid signature and fails?
+            //
+            // The choice is not obvious to me.  I'm picking 2 for now, since
+            // it's more restrictive.  We can switch to policy 1 later without
+            // causing transactions that would have worked before to fail.
+            // -- January 2015
+            if (innerSigningAccountsResult.weightSum < inner.quorum)
+            {
+                m_journal.trace <<
+                    "applyTransaction: Level-2 SigningFor did not make quorum.";
+                return tefBAD_QUORUM;
+            }
+            // This SigningFor met quorum.  Add its weight.
+            weightSum += signerEntriesItr->weight;
+        }
+    }
+
+    // Cannot perform transaction if quorum is not met.
+    if (weightSum < outer.quorum)
+    {
+        m_journal.trace <<
+            "applyTransaction: MultiSignature failed to meet quorum.";
+        return tefBAD_QUORUM;
+    }
+
+    // Met the quorum.  Continue.
+    return tesSUCCESS;
 }
 
 }

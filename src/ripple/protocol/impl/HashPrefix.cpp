@@ -31,6 +31,7 @@ HashPrefix const HashPrefix::leafNode                    ('M', 'L', 'N');
 HashPrefix const HashPrefix::innerNode                   ('M', 'I', 'N');
 HashPrefix const HashPrefix::ledgerMaster                ('L', 'W', 'R');
 HashPrefix const HashPrefix::txSign                      ('S', 'T', 'X');
+HashPrefix const HashPrefix::txMultiSign                 ('S', 'M', 'T');
 HashPrefix const HashPrefix::validation                  ('V', 'A', 'L');
 HashPrefix const HashPrefix::proposal                    ('P', 'R', 'P');
 

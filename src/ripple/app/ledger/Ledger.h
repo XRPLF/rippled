@@ -52,8 +52,8 @@ enum LedgerStateParms
 class SqliteStatement;
 
 // VFALCO TODO figure out exactly how this thing works.
-//         It seems like some ledger database is stored as a global, static in the
-//         class. But then what is the meaning of a Ledger object? Is this
+//         It seems like some ledger database is stored as a global, static in
+//         the class. But then what is the meaning of a Ledger object? Is this
 //         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
 //
 /** Holds some or all of a ledger.
