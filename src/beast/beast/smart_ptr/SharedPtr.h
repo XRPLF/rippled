@@ -48,12 +48,12 @@ namespace beast {
     reference-countable class by implementing a pair of methods called
     incReferenceCount() and decReferenceCount().
 
-    When using this class, you'll probably want to create a typedef to
+    When using this class, you'll probably want to create a using MyClassPtr = to
     abbreviate the full templated name - e.g.
 
     @code
     
-    typedef SharedPtr <MyClass> MyClassPtr;
+    using MyClassPtr = SharedPtr <MyClass>;
     
     @endcode
 
@@ -63,10 +63,10 @@ template <class T>
 class SharedPtr
 {
 public:
-    typedef T value_type;
+    using value_type = T;
 
     /** The class being referenced by this container. */
-    typedef T ReferencedType;
+    using ReferencedType = T;
 
     /** Construct a container pointing to nothing. */
     SharedPtr () noexcept

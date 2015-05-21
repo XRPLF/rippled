@@ -44,13 +44,13 @@ namespace beast {
     toUTF32() methods let you access the string's content in any of the other formats.
 */
 #if (BEAST_STRING_UTF_TYPE == 32)
-typedef CharPointer_UTF32 StringCharPointerType;
+using StringCharPointerType = CharPointer_UTF32;
 
 #elif (BEAST_STRING_UTF_TYPE == 16)
-typedef CharPointer_UTF16 StringCharPointerType;
+using StringCharPointerType = CharPointer_UTF16;
 
 #elif (BEAST_STRING_UTF_TYPE == 8)
-typedef CharPointer_UTF8  StringCharPointerType;
+using StringCharPointerType = CharPointer_UTF8;
 
 #else
 #error "You must set the value of BEAST_STRING_UTF_TYPE to be either 8, 16, or 32!"

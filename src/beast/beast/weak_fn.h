@@ -90,7 +90,7 @@ class weak_binder
     : private beast::empty_base_optimization<Policy>
 {
 private:
-    typedef R (T::*member_type)(Args...);
+    using member_type = R (T::*)(Args...);
     using pointer_type = std::weak_ptr<T>;
     using shared_type = std::shared_ptr<T>;
     member_type member_;

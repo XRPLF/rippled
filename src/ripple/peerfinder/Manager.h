@@ -30,10 +30,10 @@
 namespace ripple {
 namespace PeerFinder {
 
-typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
+using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
 /** Represents a set of addresses. */
-typedef std::vector <beast::IP::Endpoint> IPAddresses;
+using IPAddresses = std::vector <beast::IP::Endpoint>;
 
 //------------------------------------------------------------------------------
 
@@ -104,7 +104,7 @@ struct Endpoint
 bool operator< (Endpoint const& lhs, Endpoint const& rhs);
 
 /** A set of Endpoint used for connecting. */
-typedef std::vector <Endpoint> Endpoints;
+using Endpoints = std::vector <Endpoint>;
 
 //------------------------------------------------------------------------------
 

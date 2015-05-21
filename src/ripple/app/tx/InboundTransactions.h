@@ -34,7 +34,7 @@ namespace ripple {
 class InboundTransactions
 {
 public:
-    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
+    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
     InboundTransactions() = default;
     InboundTransactions(InboundTransactions const&) = delete;

@@ -34,7 +34,7 @@ namespace ripple {
 class AccountState
 {
 public:
-    typedef std::shared_ptr<AccountState> pointer;
+    using pointer = std::shared_ptr<AccountState>;
 
 public:
     // For new accounts

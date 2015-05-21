@@ -42,9 +42,9 @@ class STAmount
     : public STBase
 {
 public:
-    typedef std::uint64_t mantissa_type;
-    typedef int exponent_type;
-    typedef std::pair <mantissa_type, exponent_type> rep;
+    using mantissa_type = std::uint64_t;
+    using exponent_type = int;
+    using rep = std::pair <mantissa_type, exponent_type>;
 
 private:
     Issue mIssue;

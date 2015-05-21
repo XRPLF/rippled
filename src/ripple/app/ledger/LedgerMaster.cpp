@@ -54,11 +54,11 @@ class LedgerMasterImp
     : public LedgerMaster
 {
 public:
-    typedef std::function <void (Ledger::ref)> callback;
+    using callback = std::function <void (Ledger::ref)>;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
+    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
 
     beast::Journal m_journal;
 

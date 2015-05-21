@@ -75,7 +75,7 @@ using custom_delete_unique_ptr = std::unique_ptr <T, custom_delete <T>>;
 
 // RSA
 
-typedef custom_delete_unique_ptr <RSA> rsa_ptr;
+using rsa_ptr = custom_delete_unique_ptr <RSA>;
 
 static rsa_ptr rsa_generate_key (int n_bits)
 {
@@ -91,7 +91,7 @@ static rsa_ptr rsa_generate_key (int n_bits)
 
 // EVP_PKEY
 
-typedef custom_delete_unique_ptr <EVP_PKEY> evp_pkey_ptr;
+using evp_pkey_ptr = custom_delete_unique_ptr <EVP_PKEY>;
 
 static evp_pkey_ptr evp_pkey_new()
 {
@@ -117,7 +117,7 @@ static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr&& rsa)
 
 // X509
 
-typedef custom_delete_unique_ptr <X509> x509_ptr;
+using x509_ptr = custom_delete_unique_ptr <X509>;
 
 static x509_ptr x509_new()
 {

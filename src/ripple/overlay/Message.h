@@ -32,7 +32,7 @@
 namespace ripple {
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
-//             instead of using the in-class typedef, we can remove the entire
+//             instead of using the in-class type alias, we can remove the entire
 //             ripple.pb.h from the main headers.
 //
 
@@ -47,7 +47,7 @@ namespace ripple {
 class Message : public std::enable_shared_from_this <Message>
 {
 public:
-    typedef std::shared_ptr<Message> pointer;
+    using pointer = std::shared_ptr<Message>;
 
 public:
     /** Number of bytes in a message header.

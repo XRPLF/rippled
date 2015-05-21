@@ -36,8 +36,8 @@ namespace Json
 class Reader
 {
 public:
-    typedef char Char;
-    typedef const Char* Location;
+    using Char = char;
+    using Location = const Char*;
 
     /** \brief Constructs a Reader allowing all features
      * for parsing.
@@ -107,7 +107,7 @@ private:
         Location extra_;
     };
 
-    typedef std::deque<ErrorInfo> Errors;
+    using Errors = std::deque<ErrorInfo>;
 
     bool expectToken ( TokenType type, Token& token, const char* message );
     bool readToken ( Token& token );
@@ -150,7 +150,7 @@ private:
     std::string getLocationLineAndColumn ( Location location ) const;
     void skipCommentTokens ( Token& token );
 
-    typedef std::stack<Value*> Nodes;
+    using Nodes = std::stack<Value*>;
     Nodes nodes_;
     Errors errors_;
     std::string document_;

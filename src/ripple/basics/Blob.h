@@ -27,7 +27,7 @@ namespace ripple {
 /** Storage for linear binary data.
     Blocks of binary data appear often in various idioms and structures.
 */
-typedef std::vector <unsigned char> Blob;
+using Blob = std::vector <unsigned char>;
 
 }
 

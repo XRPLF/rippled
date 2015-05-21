@@ -148,7 +148,7 @@ inline void add_to (bignum const& a,
 class ec_point
 {
 public:
-    typedef EC_POINT* pointer_t;
+    using pointer_t = EC_POINT*;
 
 private:
     pointer_t ptr;

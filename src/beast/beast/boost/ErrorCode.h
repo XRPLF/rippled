@@ -28,7 +28,7 @@ namespace beast {
 // use boost, and then switch to std::error_code when
 // it is available on all our supported platforms.
 //
-typedef boost::system::error_code ErrorCode;
+using ErrorCode = boost::system::error_code;
 
 }
 

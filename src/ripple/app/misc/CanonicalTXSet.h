@@ -71,8 +71,8 @@ public:
         std::uint32_t mSeq;
     };
 
-    typedef std::map <Key, STTx::pointer>::iterator iterator;
-    typedef std::map <Key, STTx::pointer>::const_iterator const_iterator;
+    using iterator = std::map <Key, STTx::pointer>::iterator;
+    using const_iterator = std::map <Key, STTx::pointer>::const_iterator;
 
 public:
     explicit CanonicalTXSet (LedgerHash const& lastClosedLedgerHash)

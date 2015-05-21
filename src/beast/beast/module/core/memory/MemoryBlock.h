@@ -74,8 +74,8 @@ public:
    #endif
 
     // Standard container interface
-    typedef char* iterator;
-    typedef char const* const_iterator;
+    using iterator = char*;
+    using const_iterator = char const*;
     inline iterator begin () noexcept { return static_cast <iterator> (getData ()); }
     inline iterator end () noexcept { return addBytesToPointer (begin (), size); }
     inline const_iterator cbegin () const noexcept { return static_cast <const_iterator> (getConstData ()); }

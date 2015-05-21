@@ -32,9 +32,9 @@ namespace ripple {
 class RippleLineCache
 {
 public:
-    typedef std::vector <RippleState::pointer> RippleStateVector;
-    typedef std::shared_ptr <RippleLineCache> pointer;
-    typedef pointer const& ref;
+    using RippleStateVector = std::vector <RippleState::pointer>;
+    using pointer = std::shared_ptr <RippleLineCache>;
+    using ref = pointer const&;
 
     explicit RippleLineCache (Ledger::ref l);
 
@@ -47,8 +47,8 @@ public:
     getRippleLines (Account const& accountID);
 
 private:
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     ripple::hardened_hash<> hasher_;

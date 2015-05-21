@@ -79,10 +79,10 @@ private:
         int m_valence;
     };
 
-    typedef boost::bimaps::unordered_set_of <beast::IP::Endpoint> left_t;
-    typedef boost::bimaps::multiset_of <Entry> right_t;
-    typedef boost::bimap <left_t, right_t> map_type;
-    typedef map_type::value_type value_type;
+    using left_t = boost::bimaps::unordered_set_of <beast::IP::Endpoint>;
+    using right_t = boost::bimaps::multiset_of <Entry>;
+    using map_type = boost::bimap <left_t, right_t>;
+    using value_type = map_type::value_type;
 
     struct Transform : std::unary_function <
         map_type::right_map::const_iterator::value_type const&,
@@ -110,10 +110,10 @@ private:
     bool m_needsUpdate;
 
 public:
-    typedef boost::transform_iterator <Transform,
-        map_type::right_map::const_iterator> iterator;
+    using iterator = boost::transform_iterator <Transform,
+        map_type::right_map::const_iterator>;
 
-    typedef iterator const_iterator;
+    using const_iterator = iterator;
 
     Bootcache (
         Store& store,

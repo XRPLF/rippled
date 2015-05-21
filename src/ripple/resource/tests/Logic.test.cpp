@@ -37,8 +37,8 @@ public:
 
     {
     private:
-        typedef boost::base_from_member <
-            beast::manual_clock <std::chrono::steady_clock>> clock_type;
+        using clock_type = boost::base_from_member <
+            beast::manual_clock <std::chrono::steady_clock>>;
 
     public:
         explicit TestLogic (beast::Journal journal)

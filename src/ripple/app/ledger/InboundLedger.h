@@ -37,8 +37,8 @@ class InboundLedger
 public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
-    typedef std::shared_ptr <InboundLedger> pointer;
-    typedef std::pair < std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
+    using pointer = std::shared_ptr <InboundLedger>;
+    using PeerDataPairType = std::pair < std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> >;
 
     // These are the reasons we might acquire a ledger
     enum fcReason
@@ -98,7 +98,7 @@ public:
 
     bool gotData (std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>);
 
-    typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
+    using neededHash_t = std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     std::vector<neededHash_t> getNeededHashes ();
 

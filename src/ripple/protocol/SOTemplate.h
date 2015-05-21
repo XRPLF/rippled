@@ -60,8 +60,8 @@ public:
 class SOTemplate
 {
 public:
-    typedef std::unique_ptr <SOElement const> value_type;
-    typedef std::vector <value_type> list_type;
+    using value_type = std::unique_ptr <SOElement const>;
+    using list_type = std::vector <value_type>;
 
     /** Create an empty template.
         After creating the template, call @ref push_back with the

@@ -37,13 +37,13 @@ namespace detail {
 template <typename T, typename U>
 struct CopyConst
 {
-    typedef typename std::remove_const <U>::type type;
+    using type = typename std::remove_const <U>::type;
 };
 
 template <typename T, typename U>
 struct CopyConst <T const, U>
 {
-    typedef typename std::remove_const <U>::type const type;
+    using type = typename std::remove_const <U>::type const;
 };
 /** @} */
 
@@ -55,7 +55,7 @@ template <typename T, typename Tag>
 class ListNode
 {
 private:
-    typedef T value_type;
+    using value_type = T;
 
     friend class List<T, Tag>;
 
@@ -73,11 +73,11 @@ class ListIterator : public std::iterator <
     std::bidirectional_iterator_tag, std::size_t>
 {
 public:
-    typedef typename detail::CopyConst <
-        N, typename N::value_type>::type value_type;
-    typedef value_type* pointer;
-    typedef value_type& reference;
-    typedef std::size_t size_type;
+    using value_type = typename detail::CopyConst <
+        N, typename N::value_type>::type;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using size_type = std::size_t;
 
     ListIterator (N* node = nullptr) noexcept
         : m_node (node)
@@ -242,8 +242,8 @@ private:
     struct ProcessTag { };
     struct UpdateTag { };
   
-    typedef List <Actor, ProcessTag> ProcessList;
-    typedef List <Actor, UpdateTag> UpdateList;
+    using ProcessList = List <Actor, ProcessTag>;
+    using UpdateList = List <Actor, UpdateTag>;
   
     // Derive from both node types so we can be in each list at once.
     //
@@ -267,18 +267,18 @@ template <typename T, typename Tag = void>
 class List
 {
 public:
-    typedef typename detail::ListNode <T, Tag> Node;
+    using Node = typename detail::ListNode <T, Tag>;
 
-    typedef T                    value_type;
-    typedef value_type*          pointer;
-    typedef value_type&          reference;
-    typedef value_type const*    const_pointer;
-    typedef value_type const&    const_reference;
-    typedef std::size_t          size_type;
-    typedef std::ptrdiff_t       difference_type;
+    using value_type      = T;
+    using pointer         = value_type*;
+    using reference       = value_type&;
+    using const_pointer   = value_type const*;
+    using const_reference = value_type const&;
+    using size_type       = std::size_t;
+    using difference_type = std::ptrdiff_t;
 
-    typedef detail::ListIterator <Node>       iterator;
-    typedef detail::ListIterator <Node const> const_iterator;
+    using iterator       = detail::ListIterator <Node>;
+    using const_iterator = detail::ListIterator <Node const>;
 
     /** Create an empty list. */
     List ()

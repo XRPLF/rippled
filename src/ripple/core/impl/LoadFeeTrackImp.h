@@ -223,8 +223,8 @@ private:
     static const int lftFeeMax = lftNormalFee * 1000000;
 
     beast::Journal m_journal;
-    typedef std::mutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     std::uint32_t mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee

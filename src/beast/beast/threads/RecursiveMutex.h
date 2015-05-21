@@ -39,9 +39,9 @@ namespace beast {
 class RecursiveMutex
 {
 public:
-    typedef std::lock_guard <RecursiveMutex>      ScopedLockType;
-    typedef UnlockGuard <RecursiveMutex>    ScopedUnlockType;
-    typedef TryLockGuard <RecursiveMutex>   ScopedTryLockType;
+    using ScopedLockType = std::lock_guard <RecursiveMutex>;
+    using ScopedUnlockType = UnlockGuard <RecursiveMutex>;
+    using ScopedTryLockType = TryLockGuard <RecursiveMutex>;
 
     /** Create the mutex.
         The mutux is initially unowned.

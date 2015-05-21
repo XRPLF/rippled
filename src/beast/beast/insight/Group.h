@@ -32,7 +32,7 @@ namespace insight {
 class Group : public Collector
 {
 public:
-    typedef std::shared_ptr <Group> ptr;
+    using ptr = std::shared_ptr <Group>;
 
     /** Returns the name of this group, for diagnostics. */
     virtual std::string const& name () const = 0;

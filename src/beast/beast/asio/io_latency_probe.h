@@ -36,8 +36,8 @@ template <class Clock>
 class io_latency_probe
 {
 private:
-    typedef typename Clock::duration duration;
-    typedef typename Clock::time_point time_point;
+    using duration = typename Clock::duration;
+    using time_point = typename Clock::time_point;
 
     std::recursive_mutex m_mutex;
     std::condition_variable_any m_cond;

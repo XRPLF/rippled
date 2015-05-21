@@ -42,7 +42,7 @@ namespace detail {
 class ErrorCategory
 {
 public:
-    using Map = std::unordered_map <error_code_i, ErrorInfo> ;
+    using Map = std::unordered_map <error_code_i, ErrorInfo>;
 
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")

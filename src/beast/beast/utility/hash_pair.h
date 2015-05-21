@@ -35,8 +35,8 @@ struct hash <std::pair <First, Second>>
     , private boost::base_from_member <std::hash <Second>, 1>
 {
 private:
-    typedef boost::base_from_member <std::hash <First>, 0> first_hash;
-    typedef boost::base_from_member <std::hash <Second>, 1> second_hash;
+    using first_hash = boost::base_from_member <std::hash <First>, 0>;
+    using second_hash = boost::base_from_member <std::hash <Second>, 1>;
 
 public:
     hash ()

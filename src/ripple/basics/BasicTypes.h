@@ -25,8 +25,8 @@
 namespace ripple {
 
 // VFALCO DEPRECATED
-typedef std::mutex RippleMutex;
-typedef std::recursive_mutex RippleRecursiveMutex;
+using RippleMutex = std::mutex;
+using RippleRecursiveMutex = std::recursive_mutex;
 
 } // ripple
 

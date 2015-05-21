@@ -36,7 +36,7 @@ class ResolverAsioImpl
     , public beast::asio::AsyncObject <ResolverAsioImpl>
 {
 public:
-    typedef std::pair <std::string, std::string> HostAndPort;
+    using HostAndPort = std::pair <std::string, std::string>;
 
     beast::Journal m_journal;
 

@@ -38,8 +38,8 @@ public:
 
     static const std::uint32_t seqLeave = 0xffffffff; // leaving the consensus process
 
-    typedef std::shared_ptr<LedgerProposal> pointer;
-    typedef const pointer& ref;
+    using pointer = std::shared_ptr<LedgerProposal>;
+    using ref = const pointer&;
 
     // proposal from peer
     LedgerProposal (uint256 const& prevLgr, std::uint32_t proposeSeq, uint256 const& propose,

@@ -2165,12 +2165,12 @@ private:
         }
     }
 private:
-    typedef RippleMutex FetchLockType;
-    typedef std::lock_guard <FetchLockType> ScopedFetchLockType;
+    using FetchLockType = RippleMutex;
+    using ScopedFetchLockType = std::lock_guard <FetchLockType>;
     FetchLockType mFetchLock;
 
-    typedef RippleRecursiveMutex UNLLockType;
-    typedef std::lock_guard <UNLLockType> ScopedUNLLockType;
+    using UNLLockType = RippleRecursiveMutex;
+    using ScopedUNLLockType = std::lock_guard <UNLLockType>;
     UNLLockType mUNLLock;
 
     // VFALCO TODO Replace ptime with beast::Time

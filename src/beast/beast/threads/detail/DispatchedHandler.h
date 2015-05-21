@@ -34,7 +34,7 @@ private:
     Handler m_handler;
 
 public:
-    typedef void result_type;
+    using result_type = void;
 
     DispatchedHandler (Dispatcher dispatcher, Handler& handler)
         : m_dispatcher (dispatcher)

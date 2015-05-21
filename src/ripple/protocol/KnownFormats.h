@@ -78,8 +78,8 @@ public:
     };
 
 private:
-    typedef std::map <std::string, Item*> NameMap;
-    typedef std::map <KeyType, Item*> TypeMap;
+    using NameMap = std::map <std::string, Item*>;
+    using TypeMap = std::map <KeyType, Item*>;
 
 public:
     /** Create the known formats object.

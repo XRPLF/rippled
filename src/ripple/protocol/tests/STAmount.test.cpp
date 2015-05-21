@@ -131,7 +131,7 @@ public:
             STAmount const amount = amountFromString (issue, value);
             expect (amount.getText () == value, "format " + value);
         }
-        catch (std::exception const& e)
+        catch (std::exception const&)
         {
             expect (!success, "parse " + value + " should fail");
         }

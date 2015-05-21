@@ -490,7 +490,7 @@ public:
     }
 
 private:
-    typedef std::shared_ptr<HTTPClient> pointer;
+    using pointer = std::shared_ptr<HTTPClient>;
 
     bool                                                        mSSL;
     AutoSocket                                                  mSocket;

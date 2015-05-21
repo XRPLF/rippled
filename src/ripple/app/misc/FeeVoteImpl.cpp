@@ -32,7 +32,7 @@ template <typename Integer>
 class VotableInteger
 {
 private:
-    typedef std::map <Integer, int> map_type;
+    using map_type = std::map <Integer, int>;
     Integer mCurrent;   // The current setting
     Integer mTarget;    // The setting we want
     map_type mVoteMap;

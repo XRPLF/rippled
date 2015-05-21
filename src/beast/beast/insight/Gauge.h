@@ -40,8 +40,8 @@ namespace insight {
 class Gauge : public Base
 {
 public:
-    typedef GaugeImpl::value_type value_type;
-    typedef GaugeImpl::difference_type difference_type;
+    using value_type = GaugeImpl::value_type;
+    using difference_type = GaugeImpl::difference_type;
 
     /** Create a null metric.
         A null metric reports no information.

@@ -39,8 +39,8 @@ class ValidationsImp : public Validations
 {
 private:
     using LockType = std::mutex;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
+    using ScopedLockType = std::lock_guard <LockType>;
+    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
     std::mutex mutable mLock;
 
     TaggedCache<uint256, ValidationSet> mValidations;

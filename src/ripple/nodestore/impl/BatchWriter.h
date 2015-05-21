@@ -71,8 +71,8 @@ private:
     void waitForWriting ();
 
 private:
-    typedef std::recursive_mutex LockType;
-    typedef std::condition_variable_any CondvarType;
+    using LockType = std::recursive_mutex;
+    using CondvarType = std::condition_variable_any;
 
     Callback& m_callback;
     Scheduler& m_scheduler;

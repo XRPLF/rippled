@@ -42,7 +42,7 @@ namespace beast {
 class CharPointer_UTF8
 {
 public:
-    typedef char CharType;
+    using CharType = char;
 
     inline explicit CharPointer_UTF8 (const CharType* const rawPointer) noexcept
         : data (const_cast <CharType*> (rawPointer))

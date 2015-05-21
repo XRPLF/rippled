@@ -32,8 +32,8 @@ class GaugeImpl
     , public BaseImpl
 {
 public:
-    typedef std::uint64_t value_type;
-    typedef std::int64_t difference_type;
+    using value_type = std::uint64_t;
+    using difference_type = std::int64_t;
 
     virtual ~GaugeImpl () = 0;
     virtual void set (value_type value) = 0;

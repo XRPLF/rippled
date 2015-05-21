@@ -118,7 +118,7 @@ private:
     std::array <UInt, size> m_vec;
 
 public:
-    typedef UInt value_type;
+    using value_type = UInt;
 
     static std::size_t const bits = Bits;
     static std::size_t const bytes = bits / 8;
@@ -169,7 +169,7 @@ public:
     }
 };
 
-typedef unsigned_integer <256, std::size_t> sha256_t;
+using sha256_t = unsigned_integer <256, std::size_t>;
 
 static_assert (sha256_t::bits == 256,
     "sha256_t must have 256 bits");

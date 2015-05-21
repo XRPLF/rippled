@@ -47,7 +47,7 @@ namespace ripple {
 class PeerSet
 {
 public:
-    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
+    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
     /** Returns the hash of the data we want. */
     uint256 const& getHash () const
@@ -109,8 +109,8 @@ private:
 
 protected:
     // VFALCO TODO try to make some of these private
-    typedef RippleRecursiveMutex LockType;
-    typedef std::unique_lock <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::unique_lock <LockType>;
 
     PeerSet (uint256 const& hash, int interval, bool txnData,
         clock_type& clock, beast::Journal journal);
@@ -167,9 +167,9 @@ protected:
     boost::asio::deadline_timer mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
-    typedef Peer::id_t PeerIdentifier;
-    typedef int ReceivedChunkCount;
-    typedef hash_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
+    using PeerIdentifier = Peer::id_t;
+    using ReceivedChunkCount = int;
+    using PeerSetMap = hash_map <PeerIdentifier, ReceivedChunkCount>;
 
     PeerSetMap mPeers;
 };

@@ -51,9 +51,9 @@ protected:
         Endpoint endpoint;
     };
 
-    typedef boost::intrusive::make_list <Element,
+    using list_type = boost::intrusive::make_list <Element,
         boost::intrusive::constant_time_size <false>
-            >::type list_type;
+            >::type;
 
 public:
     /** A list of Endpoint at the same hops
@@ -75,15 +75,15 @@ public:
         };
 
     public:
-        typedef boost::transform_iterator <Transform,
-            typename list_type::const_iterator> iterator;
+        using iterator = boost::transform_iterator <Transform,
+            typename list_type::const_iterator>;
 
-        typedef iterator const_iterator;
+        using const_iterator = iterator;
 
-        typedef boost::transform_iterator <Transform,
-            typename list_type::const_reverse_iterator> reverse_iterator;
+        using reverse_iterator = boost::transform_iterator <Transform,
+            typename list_type::const_reverse_iterator>;
 
-        typedef reverse_iterator const_reverse_iterator;
+        using const_reverse_iterator = reverse_iterator;
 
         iterator begin () const
         {
@@ -184,15 +184,15 @@ template <class Allocator = std::allocator <char>>
 class Livecache : protected detail::LivecacheBase
 {
 private:
-    typedef beast::aged_map <beast::IP::Endpoint, Element,
+    using cache_type = beast::aged_map <beast::IP::Endpoint, Element,
         std::chrono::steady_clock, std::less <beast::IP::Endpoint>,
-            Allocator> cache_type;
+            Allocator>;
 
     beast::Journal m_journal;
     cache_type m_cache;
 
 public:
-    typedef Allocator allocator_type;
+    using allocator_type = Allocator;
 
     /** Create the cache. */
     Livecache (
@@ -215,8 +215,8 @@ public:
         // but not given out (since they would exceed maxHops). They
         // are used for automatic connection attempts.
         //
-        typedef std::array <int, 1 + Tuning::maxHops + 1> Histogram;
-        typedef std::array <list_type, 1 + Tuning::maxHops + 1> lists_type;
+        using Histogram = std::array <int, 1 + Tuning::maxHops + 1>;
+        using lists_type = std::array <list_type, 1 + Tuning::maxHops + 1>;
 
         template <bool IsConst>
         struct Transform
@@ -231,17 +231,17 @@ public:
         };
 
     public:
-        typedef boost::transform_iterator <Transform <false>,
-            typename lists_type::iterator> iterator;
+        using iterator = boost::transform_iterator <Transform <false>,
+            typename lists_type::iterator>;
 
-        typedef boost::transform_iterator <Transform <true>,
-            typename lists_type::const_iterator> const_iterator;
+        using const_iterator = boost::transform_iterator <Transform <true>,
+            typename lists_type::const_iterator>;
 
-        typedef boost::transform_iterator <Transform <false>,
-            typename lists_type::reverse_iterator> reverse_iterator;
+        using reverse_iterator = boost::transform_iterator <Transform <false>,
+            typename lists_type::reverse_iterator>;
 
-        typedef boost::transform_iterator <Transform <true>,
-            typename lists_type::const_reverse_iterator> const_reverse_iterator;
+        using const_reverse_iterator = boost::transform_iterator <Transform <true>,
+            typename lists_type::const_reverse_iterator>;
 
         iterator begin ()
         {

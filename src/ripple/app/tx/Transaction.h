@@ -58,8 +58,8 @@ class Transaction
 public:
     static char const* getCountedObjectName () { return "Transaction"; }
 
-    typedef std::shared_ptr<Transaction> pointer;
-    typedef const pointer& ref;
+    using pointer = std::shared_ptr<Transaction>;
+    using ref = const pointer&;
 
 public:
     Transaction (STTx::ref, Validate, std::string&) noexcept;

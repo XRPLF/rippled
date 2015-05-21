@@ -29,7 +29,7 @@ class STBitString final
     : public STBase
 {
 public:
-    typedef base_uint<Bits> BitString;
+    using BitString = base_uint<Bits>;
 
     STBitString () = default;
 

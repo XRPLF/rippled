@@ -69,7 +69,6 @@ using LedgerSeq = std::uint32_t;
 */
 using TxID = uint256;
 
-/** A transaction index. */
 using TxSeq = std::uint32_t;
 
 } // ripple

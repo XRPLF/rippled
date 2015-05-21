@@ -36,14 +36,14 @@
 class AutoSocket
 {
 public:
-    typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket>   ssl_socket;
-    typedef boost::asio::ip::tcp::socket::endpoint_type endpoint_type;
-    typedef std::shared_ptr<ssl_socket>           socket_ptr;
-    typedef ssl_socket::next_layer_type             plain_socket;
-    typedef ssl_socket::lowest_layer_type           lowest_layer_type;
-    typedef ssl_socket::handshake_type              handshake_type;
-    typedef boost::system::error_code               error_code;
-    typedef std::function <void (error_code)>       callback;
+    using ssl_socket        = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    using endpoint_type     = boost::asio::ip::tcp::socket::endpoint_type;
+    using socket_ptr        = std::shared_ptr<ssl_socket>;
+    using plain_socket      = ssl_socket::next_layer_type;
+    using lowest_layer_type = ssl_socket::lowest_layer_type;
+    using handshake_type    = ssl_socket::handshake_type;
+    using error_code        = boost::system::error_code;
+    using callback          = std::function <void (error_code)>;
 
 public:
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)

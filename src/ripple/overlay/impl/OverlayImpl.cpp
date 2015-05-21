@@ -39,7 +39,7 @@ namespace ripple {
 /** A functor to visit all active peers and retrieve their JSON data */
 struct get_peer_json
 {
-    typedef Json::Value return_type;
+    using return_type = Json::Value;
 
     Json::Value json;
 

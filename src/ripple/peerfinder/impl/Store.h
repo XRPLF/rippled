@@ -30,7 +30,7 @@ public:
     virtual ~Store () { }
 
     // load the bootstrap cache
-    typedef std::function <void (beast::IP::Endpoint, int)> load_callback;
+    using load_callback = std::function <void (beast::IP::Endpoint, int)>;
     virtual std::size_t load (load_callback const& cb) = 0;
 
     // save the bootstrap cache

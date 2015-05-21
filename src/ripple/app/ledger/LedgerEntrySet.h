@@ -246,8 +246,8 @@ public:
     void calcRawMeta (Serializer&, TER result, std::uint32_t index);
 
     // iterator functions
-    typedef std::map<uint256, LedgerEntrySetEntry>::iterator iterator;
-    typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator const_iterator;
+    using iterator = std::map<uint256, LedgerEntrySetEntry>::iterator;
+    using const_iterator = std::map<uint256, LedgerEntrySetEntry>::const_iterator;
 
     bool empty () const
     {
@@ -297,7 +297,7 @@ private:
     // Defers credits made to accounts until later
     boost::optional<DeferredCredits> mDeferredCredits;
 
-    typedef hash_map<uint256, SLE::pointer> NodeToLedgerEntry;
+    using NodeToLedgerEntry = hash_map<uint256, SLE::pointer>;
 
     TransactionMetaSet mSet;
     TransactionEngineParams mParams;
