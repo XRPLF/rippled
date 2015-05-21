@@ -29,7 +29,7 @@ namespace path {
 
 struct Node
 {
-    typedef std::vector<Node> List;
+    using List = std::vector<Node>;
 
     inline bool isAccount() const
     {

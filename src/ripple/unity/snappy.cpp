@@ -23,7 +23,7 @@
 #ifdef _MSC_VER
 #include <cstddef>
 namespace snappy {
-typedef std::ptrdiff_t ssize_t;
+using ssize_t = std::ptrdiff_t;
 }
 #endif
 

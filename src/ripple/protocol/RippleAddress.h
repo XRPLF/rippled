@@ -40,7 +40,7 @@ namespace ripple {
 class RippleAddress : private CBase58Data
 {
 private:
-    typedef enum
+    using VersionEncoding = enum
     {
         VER_NONE                = 1,
         VER_NODE_PUBLIC         = 28,
@@ -50,7 +50,7 @@ private:
         VER_ACCOUNT_PRIVATE     = 34,
         VER_FAMILY_GENERATOR    = 41,
         VER_FAMILY_SEED         = 33,
-    } VersionEncoding;
+    };
 
     bool    mIsValid;
 

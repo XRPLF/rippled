@@ -28,7 +28,7 @@ namespace RPC {
 class ManagerImp : public Manager
 {
 public:
-    typedef hash_map <std::string, handler_type> Map;
+    using Map = hash_map <std::string, handler_type>;
 
     beast::Journal m_journal;
     Map m_map;

@@ -43,14 +43,14 @@ class InfoSub
 public:
     static char const* getCountedObjectName () { return "InfoSub"; }
 
-    typedef std::shared_ptr<InfoSub>          pointer;
+    using pointer = std::shared_ptr<InfoSub>         ;
 
-    // VFALCO TODO Standardize on the names of weak / strong pointer typedefs.
-    typedef std::weak_ptr<InfoSub>            wptr;
+    // VFALCO TODO Standardize on the names of weak / strong pointer type aliases.
+    using wptr = std::weak_ptr<InfoSub>           ;
 
-    typedef const std::shared_ptr<InfoSub>&   ref;
+    using ref = const std::shared_ptr<InfoSub>&  ;
 
-    typedef Resource::Consumer Consumer;
+    using Consumer = Resource::Consumer;
 
 public:
     /** Abstracts the source of subscription data.
@@ -138,8 +138,8 @@ public:
     std::shared_ptr <PathRequest> const& getPathRequest ();
 
 protected:
-    typedef std::mutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
 private:

@@ -37,9 +37,9 @@ class JobQueueImp
     , private beast::Workers::Callback
 {
 public:
-    typedef std::set <Job> JobSet;
-    typedef std::map <JobType, JobTypeData> JobDataMap;
-    typedef std::lock_guard <std::mutex> ScopedLock;
+    using JobSet = std::set <Job>;
+    using JobDataMap = std::map <JobType, JobTypeData>;
+    using ScopedLock = std::lock_guard <std::mutex>;
 
     beast::Journal m_journal;
     std::mutex m_mutex;
@@ -615,7 +615,7 @@ private:
             ScopedLock lock (m_mutex);
 
             // Remove all jobs whose type is skipOnStop
-            typedef hash_map <JobType, std::size_t> JobDataMap;
+            using JobDataMap = hash_map <JobType, std::size_t>;
             JobDataMap counts;
             bool const report (m_journal.debug.active());
 

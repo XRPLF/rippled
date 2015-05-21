@@ -39,7 +39,7 @@ private:
     DecayWindow<30, clock_type> fetchRate_;
 
 public:
-    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+    using u256_acq_pair = std::pair<uint256, InboundLedger::pointer>;
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
@@ -381,10 +381,10 @@ public:
 private:
     clock_type& m_clock;
 
-    typedef hash_map <uint256, InboundLedger::pointer> MapType;
+    using MapType = hash_map <uint256, InboundLedger::pointer>;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef std::unique_lock <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::unique_lock <LockType>;
     LockType mLock;
 
     MapType mLedgers;

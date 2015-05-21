@@ -26,14 +26,14 @@
 
 namespace ripple {
 
-// VFALCO TODO rename and move these typedefs into the Validations interface
+// VFALCO TODO rename and move these type aliases into the Validations interface
 
 // nodes validating and highest node ID validating
-typedef hash_map<NodeID, STValidation::pointer> ValidationSet;
+using ValidationSet = hash_map<NodeID, STValidation::pointer>;
 
-typedef std::pair<int, NodeID> ValidationCounter;
-typedef hash_map<uint256, ValidationCounter> LedgerToValidationCounter;
-typedef std::vector<STValidation::pointer> ValidationVector;
+using ValidationCounter = std::pair<int, NodeID>;
+using LedgerToValidationCounter = hash_map<uint256, ValidationCounter>;
+using ValidationVector = std::vector<STValidation::pointer>;
 
 class Validations
 {
@@ -61,7 +61,7 @@ public:
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;
 
-    // VFALCO TODO make a typedef for this ugly return value!
+    // VFALCO TODO make a type alias for this ugly return value!
     virtual LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 previousLedger) = 0;
 

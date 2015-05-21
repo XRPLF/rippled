@@ -61,9 +61,9 @@ private:
       void *data;
     };
 
-    typedef int (*data_cb_t) (
+    using data_cb_t = int (*) (
         state_t*, const char *at, size_t length);
-    typedef int (*cb_t) (state_t*);
+    using cb_t = int (*) (state_t*);
 
     struct hooks_t
     {
@@ -87,7 +87,7 @@ private:
     std::string value_;
 
 public:
-    typedef boost::system::error_code error_code;
+    using error_code = boost::system::error_code;
 
     virtual
     ~basic_parser() = default;

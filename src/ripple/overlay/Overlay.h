@@ -70,7 +70,7 @@ public:
         bool expire = false;
     };
 
-    typedef std::vector <Peer::ptr> PeerSequence;
+    using PeerSequence = std::vector <Peer::ptr>;
 
     virtual ~Overlay() = default;
 
@@ -160,8 +160,8 @@ public:
         The functor must:
         - Be callable as:
             void operator()(Peer::ptr const& peer);
-         - Must have the following typedef:
-            typedef void return_type;
+         - Must have the following type alias:
+            using return_type = void;
          - Be callable as:
             Function::return_type operator()() const;
 
@@ -187,8 +187,8 @@ public:
         The visitor functor must:
          - Be callable as:
             void operator()(Peer::ptr const& peer);
-         - Must have the following typedef:
-            typedef void return_type;
+         - Must have the following type alias:
+            using return_type = void;
 
         @param f the functor to call with every peer
     */

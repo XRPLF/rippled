@@ -87,7 +87,7 @@ public:
         ,sane
     };
 
-    typedef std::shared_ptr <PeerImp> ptr;
+    using ptr = std::shared_ptr <PeerImp>;
 
 private:
     using clock_type = std::chrono::steady_clock;

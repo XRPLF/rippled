@@ -44,9 +44,9 @@ public:
         beast::manual_clock <std::chrono::steady_clock> clock;
         clock.set (0);
 
-        typedef int Key;
-        typedef std::string Value;
-        typedef TaggedCache <Key, Value> Cache;
+        using Key = int;
+        using Value = std::string;
+        using Cache = TaggedCache <Key, Value>;
 
         Cache c ("test", 1, 1, clock, j);
 

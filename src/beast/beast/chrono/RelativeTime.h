@@ -51,7 +51,7 @@ public:
         you can use this to declare a type that is guaranteed to
         work cleanly.
     */
-    typedef double value_type;
+    using value_type = double;
 
     //==============================================================================
     /** Creates a RelativeTime.

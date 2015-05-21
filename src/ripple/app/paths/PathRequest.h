@@ -44,10 +44,10 @@ class PathRequest :
 public:
     static char const* getCountedObjectName () { return "PathRequest"; }
 
-    typedef std::weak_ptr<PathRequest>    wptr;
-    typedef std::shared_ptr<PathRequest>  pointer;
-    typedef const pointer&                  ref;
-    typedef const wptr&                     wref;
+    using wptr = std::weak_ptr<PathRequest>   ;
+    using pointer = std::shared_ptr<PathRequest> ;
+    using ref = const pointer&                 ;
+    using wref = const wptr&                    ;
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
@@ -85,8 +85,8 @@ private:
 
     beast::Journal m_journal;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     PathRequests& mOwner;

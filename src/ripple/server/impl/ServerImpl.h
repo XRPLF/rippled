@@ -68,14 +68,14 @@ private:
     using list_type = boost::intrusive::make_list <Child,
         boost::intrusive::constant_time_size <false>>::type;
 
-    typedef std::chrono::system_clock clock_type;
+    using clock_type = std::chrono::system_clock;
 
     enum
     {
         historySize = 100
     };
 
-    typedef std::vector <std::shared_ptr<Door>> Doors;
+    using Doors = std::vector <std::shared_ptr<Door>>;
 
     Handler& handler_;
     beast::Journal journal_;

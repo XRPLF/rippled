@@ -109,7 +109,7 @@ private:
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 
-    typedef TaggedCache <LedgerHash, Ledger> LedgersByHash;
+    using LedgersByHash = TaggedCache <LedgerHash, Ledger>;
 
     LedgersByHash m_ledgers_by_hash;
 
@@ -117,8 +117,8 @@ private:
     // For debug and logging purposes
     // 1) The hash of a ledger with that index we build
     // 2) The hash of a ledger with that index we validated
-    typedef TaggedCache <LedgerIndex,
-        std::pair< LedgerHash, LedgerHash >> ConsensusValidated;
+    using ConsensusValidated = TaggedCache <LedgerIndex,
+        std::pair< LedgerHash, LedgerHash >>;
     ConsensusValidated m_consensus_validated;
 
 

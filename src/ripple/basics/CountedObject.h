@@ -35,8 +35,8 @@ class CountedObjects
 public:
     static CountedObjects& getInstance ();
 
-    typedef std::pair <std::string, int> Entry;
-    typedef std::vector <Entry> List;
+    using Entry = std::pair <std::string, int>;
+    using List = std::vector <Entry>;
 
     List getCounts (int minimumThreshold) const;
 

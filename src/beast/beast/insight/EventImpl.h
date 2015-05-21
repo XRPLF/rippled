@@ -32,7 +32,7 @@ class EventImpl
     , public BaseImpl
 {
 public:
-    typedef std::chrono::milliseconds value_type;
+    using value_type = std::chrono::milliseconds;
 
     virtual ~EventImpl () = 0;
     virtual void notify (value_type const& value) = 0;

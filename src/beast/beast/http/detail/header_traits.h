@@ -37,9 +37,9 @@ template <class Allocator = std::allocator <char>>
 using basic_field_string =
     std::basic_string <char, ci_char_traits, Allocator>;
 
-typedef basic_field_string <> field_string;
+using field_string = basic_field_string <>;
 
-typedef boost::basic_string_ref <char, ci_char_traits> field_string_ref;
+using field_string_ref = boost::basic_string_ref <char, ci_char_traits>;
 
 /** Returns `true` if two header fields are the same.
     The comparison is case-insensitive.

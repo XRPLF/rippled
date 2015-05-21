@@ -73,8 +73,8 @@ private:
 
     std::atomic<int>                 mLastIdentifier;
 
-    typedef RippleRecursiveMutex     LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex    ;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType                         mLock;
 
 };

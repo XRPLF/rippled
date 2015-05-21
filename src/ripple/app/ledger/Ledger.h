@@ -79,8 +79,8 @@ class Ledger
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
 
-    typedef std::shared_ptr<Ledger>           pointer;
-    typedef const std::shared_ptr<Ledger>&    ref;
+    using pointer = std::shared_ptr<Ledger>          ;
+    using ref = const std::shared_ptr<Ledger>&   ;
 
     enum TransResult
     {
@@ -332,7 +332,7 @@ public:
 
     // Ledger hash table function
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
-    typedef std::vector<std::pair<std::uint32_t, uint256>> LedgerHashes;
+    using LedgerHashes = std::vector<std::pair<std::uint32_t, uint256>>;
     LedgerHashes getLedgerHashes () const;
 
     std::vector<uint256> getLedgerAmendments () const;
@@ -473,8 +473,8 @@ private:
     std::shared_ptr<SHAMap> mTransactionMap;
     std::shared_ptr<SHAMap> mAccountStateMap;
 
-    typedef RippleMutex StaticLockType;
-    typedef std::lock_guard <StaticLockType> StaticScopedLockType;
+    using StaticLockType = RippleMutex;
+    using StaticScopedLockType = std::lock_guard <StaticLockType>;
 
     // Ledgers not fully saved, validated ledger present but DB may not be
     // correct yet.

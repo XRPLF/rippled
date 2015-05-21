@@ -30,9 +30,9 @@ namespace ripple {
 class PathState : public CountedObject <PathState>
 {
   public:
-    typedef std::vector<uint256> OfferIndexList;
-    typedef std::shared_ptr<PathState> Ptr;
-    typedef std::vector<Ptr> List;
+    using OfferIndexList = std::vector<uint256>;
+    using Ptr = std::shared_ptr<PathState>;
+    using List = std::vector<Ptr>;
 
     PathState (STAmount const& saSend, STAmount const& saSendMax)
         : mIndex (0)

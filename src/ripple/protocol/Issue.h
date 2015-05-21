@@ -39,13 +39,13 @@ template <bool ByValue>
 class IssueType
 {
 public:
-    typedef typename
+    using IssueCurrency = typename
     std::conditional <ByValue, Currency, Currency const&>::type
-    IssueCurrency;
+   ;
 
-    typedef typename
+    using IssueAccount = typename
     std::conditional <ByValue, Account, Account const&>::type
-    IssueAccount;
+   ;
 
     IssueCurrency currency;
     IssueAccount account;
@@ -173,8 +173,8 @@ bool operator<= (IssueType <LhsByValue> const& lhs,
 
 //------------------------------------------------------------------------------
 
-typedef IssueType <true> Issue;
-typedef IssueType <false> IssueRef;
+using Issue = IssueType <true>;
+using IssueRef = IssueType <false>;
 
 //------------------------------------------------------------------------------
 

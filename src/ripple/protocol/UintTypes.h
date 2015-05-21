@@ -35,19 +35,19 @@ class NodeIDTag {};
 
 /** Directory is an index into the directory of offer books.
     The last 64 bits of this are the quality. */
-typedef base_uint<256, detail::DirectoryTag> Directory;
+using Directory = base_uint<256, detail::DirectoryTag>;
 
 /** Account is a hash representing a specific account. */
-typedef base_uint<160, detail::AccountTag> Account;
+using Account = base_uint<160, detail::AccountTag>;
 
 /** Currency is a hash representing a specific currency. */
-typedef base_uint<160, detail::CurrencyTag> Currency;
+using Currency = base_uint<160, detail::CurrencyTag>;
 
 /** NodeID is a 160-bit hash representing one node. */
-typedef base_uint<160, detail::NodeIDTag> NodeID;
+using NodeID = base_uint<160, detail::NodeIDTag>;
 
-typedef hash_set<Currency> CurrencySet;
-typedef hash_set<NodeID> NodeIDSet;
+using CurrencySet = hash_set<Currency>;
+using NodeIDSet = hash_set<NodeID>;
 
 /** A special account that's used as the "issuer" for XRP. */
 Account const& xrpAccount();

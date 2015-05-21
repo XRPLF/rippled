@@ -37,7 +37,7 @@ namespace beast {
 class SemanticVersion
 {
 public:
-    typedef std::vector<std::string> identifier_list;
+    using identifier_list = std::vector<std::string>;
 
     int majorVersion;
     int minorVersion;

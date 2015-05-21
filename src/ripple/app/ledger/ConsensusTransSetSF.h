@@ -33,7 +33,7 @@ namespace ripple {
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    typedef TaggedCache <uint256, Blob> NodeCache;
+    using NodeCache = TaggedCache <uint256, Blob>;
 
     // VFALCO TODO Use a dependency injection to get the temp node cache
     ConsensusTransSetSF (NodeCache& nodeCache);

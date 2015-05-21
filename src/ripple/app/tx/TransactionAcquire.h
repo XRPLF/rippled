@@ -35,7 +35,7 @@ class TransactionAcquire
 public:
     static char const* getCountedObjectName () { return "TransactionAcquire"; }
 
-    typedef std::shared_ptr<TransactionAcquire> pointer;
+    using pointer = std::shared_ptr<TransactionAcquire>;
 
 public:
     TransactionAcquire (uint256 const& hash, clock_type& clock);

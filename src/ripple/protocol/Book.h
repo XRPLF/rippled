@@ -33,7 +33,7 @@ template <bool ByValue>
 class BookType
 {
 public:
-    typedef IssueType <ByValue> Issue;
+    using Issue = IssueType <ByValue>;
 
     Issue in;
     Issue out;
@@ -166,8 +166,8 @@ bool operator<= (BookType <LhsByValue> const& lhs,
 
 //------------------------------------------------------------------------------
 
-typedef BookType <true> Book;
-typedef BookType <false> BookRef;
+using Book = BookType <true>;
+using BookRef = BookType <false>;
 
 }
 
@@ -181,14 +181,14 @@ struct hash <ripple::IssueType <ByValue>>
     , private boost::base_from_member <std::hash <ripple::Account>, 1>
 {
 private:
-    typedef boost::base_from_member <
-        std::hash <ripple::Currency>, 0> currency_hash_type;
-    typedef boost::base_from_member <
-        std::hash <ripple::Account>, 1> issuer_hash_type;
+    using currency_hash_type = boost::base_from_member <
+        std::hash <ripple::Currency>, 0>;
+    using issuer_hash_type = boost::base_from_member <
+        std::hash <ripple::Account>, 1>;
 
 public:
-    typedef std::size_t value_type;
-    typedef ripple::IssueType <ByValue> argument_type;
+    using value_type = std::size_t;
+    using argument_type = ripple::IssueType <ByValue>;
 
     value_type operator() (argument_type const& value) const
     {
@@ -206,13 +206,13 @@ template <bool ByValue>
 struct hash <ripple::BookType <ByValue>>
 {
 private:
-    typedef std::hash <ripple::IssueType <ByValue>> hasher;
+    using hasher = std::hash <ripple::IssueType <ByValue>>;
 
     hasher m_hasher;
 
 public:
-    typedef std::size_t value_type;
-    typedef ripple::BookType <ByValue> argument_type;
+    using value_type = std::size_t;
+    using argument_type = ripple::BookType <ByValue>;
 
     value_type operator() (argument_type const& value) const
     {
@@ -232,7 +232,7 @@ template <bool ByValue>
 struct hash <ripple::IssueType <ByValue>>
     : std::hash <ripple::IssueType <ByValue>>
 {
-    typedef std::hash <ripple::IssueType <ByValue>> Base;
+    using Base = std::hash <ripple::IssueType <ByValue>>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors
 };
@@ -241,7 +241,7 @@ template <bool ByValue>
 struct hash <ripple::BookType <ByValue>>
     : std::hash <ripple::BookType <ByValue>>
 {
-    typedef std::hash <ripple::BookType <ByValue>> Base;
+    using Base = std::hash <ripple::BookType <ByValue>>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors
 };

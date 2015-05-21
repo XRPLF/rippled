@@ -63,11 +63,11 @@ public:
     };
 
     // Please use this one. For a reference use Ptr const&
-    typedef std::shared_ptr <NodeObject> Ptr;
+    using Ptr = std::shared_ptr <NodeObject>;
 
     // These are DEPRECATED, type names are capitalized.
-    typedef std::shared_ptr <NodeObject> pointer;
-    typedef pointer const& ref;
+    using pointer = std::shared_ptr <NodeObject>;
+    using ref = pointer const&;
 
 private:
     // This hack is used to make the constructor effectively private

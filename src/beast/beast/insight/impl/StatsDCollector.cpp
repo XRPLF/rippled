@@ -197,7 +197,7 @@ private:
         List <StatsDMetricBase> metrics;
     };
 
-    typedef SharedData <StateType> State;
+    using State = SharedData <StateType>;
 
     Journal m_journal;
     IP::Endpoint m_address;

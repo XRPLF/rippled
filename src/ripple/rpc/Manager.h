@@ -30,7 +30,7 @@ namespace RPC {
 class Manager
 {
 public:
-    typedef std::function <void (Request&)> handler_type;
+    using handler_type = std::function <void (Request&)>;
 
     virtual ~Manager () = 0;
 

@@ -32,8 +32,8 @@ class STLedgerEntry final
 public:
     static char const* getCountedObjectName () { return "STLedgerEntry"; }
 
-    typedef std::shared_ptr<STLedgerEntry>        pointer;
-    typedef const std::shared_ptr<STLedgerEntry>& ref;
+    using pointer = std::shared_ptr<STLedgerEntry>       ;
+    using ref = const std::shared_ptr<STLedgerEntry>&;
 
 public:
     STLedgerEntry (const Serializer & s, uint256 const& index);

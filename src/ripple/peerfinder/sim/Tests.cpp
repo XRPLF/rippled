@@ -31,16 +31,16 @@ class Network;
 class Node;
 
 // Maybe this should be std::set
-typedef std::list <Link> Links;
+using Links = std::list <Link>;
 
 //------------------------------------------------------------------------------
 
 class Network
 {
 public:
-    typedef std::list <Node> Peers;
+    using Peers = std::list <Node>;
 
-    typedef hash_map <IP::Endpoint, boost::reference_wrapper <Node>> Table;
+    using Table = hash_map <IP::Endpoint, boost::reference_wrapper <Node>>;
 
     explicit Network (Params const& params,
         Journal journal = Journal());
@@ -81,7 +81,7 @@ class Node;
 class Link
 {
 public:
-    typedef std::vector <Message> Messages;
+    using Messages = std::vector <Message>;
 
     Link (
         Node& local_node,
@@ -157,7 +157,7 @@ class Node
     , public Checker
 {
 private:
-    typedef std::vector <SavedBootstrapAddress> SavedBootstrapAddresses;
+    using SavedBootstrapAddresses = std::vector <SavedBootstrapAddress>;
 
 public:
     struct Config
@@ -694,8 +694,8 @@ void Network::step ()
 template <>
 struct VertexTraits <Node>
 {
-    typedef Links Edges;
-    typedef Link  Edge;
+    using Edges = Links;
+    using Edge = Link ;
     static Edges& edges (Node& node)
         { return node.links(); }
     static Node* vertex (Link& l)
@@ -945,7 +945,7 @@ void report_node_timeline (Node const& node, Stream const& stream)
     }
 
     // Entries
-    typedef std::vector <Livecache::Histogram> History;
+    using History = std::vector <Livecache::Histogram>;
     History const& h (node.m_livecache_history);
     std::size_t step (0);
     for (typename History::const_iterator iter (h.begin());

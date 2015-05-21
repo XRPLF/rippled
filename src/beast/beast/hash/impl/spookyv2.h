@@ -33,17 +33,17 @@
 
 #ifdef _MSC_VER
 # define INLINE __forceinline
-  typedef  unsigned __int64 uint64;
-  typedef  unsigned __int32 uint32;
-  typedef  unsigned __int16 uint16;
-  typedef  unsigned __int8  uint8;
+  using uint64 = unsigned __int64;
+  using uint32 = unsigned __int32;
+  using uint16 = unsigned __int16;
+  using uint8 = unsigned __int8 ;
 #else
 #include <stdint.h>
 # define INLINE inline
-  typedef  uint64_t  uint64;
-  typedef  uint32_t  uint32;
-  typedef  uint16_t  uint16;
-  typedef  uint8_t   uint8;
+  using uint64 = uint64_t ;
+  using uint32 = uint32_t ;
+  using uint16 = uint16_t ;
+  using uint8 = uint8_t  ;
 #endif
 
 

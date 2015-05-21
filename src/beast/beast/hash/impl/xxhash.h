@@ -71,7 +71,7 @@ namespace detail {
 /*****************************
    Type
 *****************************/
-typedef enum { XXH_OK=0, XXH_ERROR } XXH_errorcode;
+enum XXH_errorcode { XXH_OK=0, XXH_ERROR };
 
 
 
@@ -98,8 +98,8 @@ XXH64() :
 /*****************************
    Advanced Hash Functions
 *****************************/
-typedef struct { long long ll[ 6]; } XXH32_state_t;
-typedef struct { long long ll[11]; } XXH64_state_t;
+struct XXH32_state_t { long long ll[ 6]; };
+struct XXH64_state_t { long long ll[11]; };
 
 /*
 These structures allow static allocation of XXH states.

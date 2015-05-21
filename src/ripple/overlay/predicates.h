@@ -30,7 +30,7 @@ namespace ripple {
 /** Sends a message to all peers */
 struct send_always
 {
-    typedef void return_type;
+    using return_type = void;
 
     Message::pointer const& msg;
 
@@ -50,7 +50,7 @@ struct send_always
 template <typename Predicate>
 struct send_if_pred
 {
-    typedef void return_type;
+    using return_type = void;
 
     Message::pointer const& msg;
     Predicate const& predicate;
@@ -81,7 +81,7 @@ send_if_pred<Predicate> send_if (
 template <typename Predicate>
 struct send_if_not_pred
 {
-    typedef void return_type;
+    using return_type = void;
 
     Message::pointer const& msg;
     Predicate const& predicate;

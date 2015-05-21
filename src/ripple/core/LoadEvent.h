@@ -41,8 +41,8 @@ public:
     //
     //             Why both kinds of containers?
     //
-    typedef std::shared_ptr <LoadEvent> pointer;
-    typedef std::unique_ptr <LoadEvent>            autoptr;
+    using pointer = std::shared_ptr <LoadEvent>;
+    using autoptr = std::unique_ptr <LoadEvent>           ;
 
 public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?

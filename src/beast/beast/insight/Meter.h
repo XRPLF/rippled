@@ -38,7 +38,7 @@ namespace insight {
 class Meter : public Base
 {
 public:
-    typedef MeterImpl::value_type value_type;
+    using value_type = MeterImpl::value_type;
 
     /** Create a null metric.
         A null metric reports no information.

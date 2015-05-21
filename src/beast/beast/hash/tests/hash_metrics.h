@@ -51,7 +51,7 @@ template <class FwdIter>
 float
 distribution_factor (FwdIter first, FwdIter last)
 {
-    typedef typename FwdIter::value_type value_type;
+    using value_type = typename FwdIter::value_type;
     static_assert (std::is_unsigned <value_type>::value, "");
 
     const unsigned nbits = CHAR_BIT * sizeof(std::size_t);

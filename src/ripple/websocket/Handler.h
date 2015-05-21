@@ -83,7 +83,7 @@ protected:
     std::mutex mLock;
 
     // For each connection maintain an associated object to track subscriptions.
-    typedef hash_map <connection_ptr, wsc_ptr> MapType;
+    using MapType = hash_map <connection_ptr, wsc_ptr>;
     MapType mMap;
 
 public:

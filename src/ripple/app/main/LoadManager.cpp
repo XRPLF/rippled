@@ -41,7 +41,7 @@ public:
 
     beast::Journal m_journal;
     using LockType = std::mutex;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     bool mArmed;

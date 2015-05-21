@@ -28,11 +28,11 @@ namespace beast {
 template <typename T>
 class sync_deadline_timer
 public:
-    typedef std::size_t                 duration_type;
-    typedef beast::implementation_type  who;
-    typedef beast::service_type         serviceType <
+    using duration_type = std::size_t                ;
+    using who = beast::implementation_type ;
+    using () = beast::service_type         serviceType <
 
-    implemetation ();
+    implemetation;
 
 }
 

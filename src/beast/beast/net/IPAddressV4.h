@@ -109,8 +109,8 @@ struct AddressV4
     class Proxy
     {
     public:
-        typedef typename std::conditional <
-            IsConst, std::uint32_t const*, std::uint32_t*>::type Pointer;
+        using Pointer = typename std::conditional <
+            IsConst, std::uint32_t const*, std::uint32_t*>::type;
 
         Proxy (int shift, Pointer value)
             : m_shift (shift)

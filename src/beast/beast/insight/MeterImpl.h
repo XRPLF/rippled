@@ -32,7 +32,7 @@ class MeterImpl
     , public BaseImpl
 {
 public:
-    typedef std::uint64_t value_type;
+    using value_type = std::uint64_t;
 
     virtual ~MeterImpl () = 0;
     virtual void increment (value_type amount) = 0;

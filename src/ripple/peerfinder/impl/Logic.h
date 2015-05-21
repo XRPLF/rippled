@@ -52,17 +52,17 @@ public:
     // Maps remote endpoints to slots. Since a slot has a
     // remote endpoint upon construction, this holds all counts.
     //
-    typedef std::map <beast::IP::Endpoint,
-        std::shared_ptr <SlotImp>> Slots;
+    using Slots = std::map <beast::IP::Endpoint,
+        std::shared_ptr <SlotImp>>;
 
-    typedef std::map <beast::IP::Endpoint, Fixed> FixedSlots;
+    using FixedSlots = std::map <beast::IP::Endpoint, Fixed>;
 
     // A set of unique Ripple public keys
-    typedef std::set <RipplePublicKey> Keys;
+    using Keys = std::set <RipplePublicKey>;
 
     // A set of non-unique IPAddresses without ports, used
     // to filter duplicates when making outgoing connections.
-    typedef std::multiset <beast::IP::Endpoint> ConnectedAddresses;
+    using ConnectedAddresses = std::multiset <beast::IP::Endpoint>;
 
     struct State
     {
@@ -113,7 +113,7 @@ public:
         Keys keys;
     };
 
-    typedef beast::SharedData <State> SharedState;
+    using SharedState = beast::SharedData <State>;
 
     beast::Journal m_journal;
     SharedState m_state;

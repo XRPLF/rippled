@@ -44,7 +44,7 @@ namespace insight {
 class Collector
 {
 public:
-    typedef std::shared_ptr <Collector> ptr;
+    using ptr = std::shared_ptr <Collector>;
 
     virtual ~Collector() = 0;
 

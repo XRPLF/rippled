@@ -29,8 +29,8 @@ namespace ripple {
 class LedgerHolder
 {
 public:
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
 
     // Update the held ledger
     void set (Ledger::pointer ledger)

@@ -43,11 +43,11 @@ namespace ripple {
 class AcceptedLedger
 {
 public:
-    typedef std::shared_ptr<AcceptedLedger>       pointer;
-    typedef const pointer&                          ret;
-    typedef std::map<int, AcceptedLedgerTx::pointer>    map_t;              // Must be an ordered map!
-    typedef map_t::value_type                       value_type;
-    typedef map_t::const_iterator                   const_iterator;
+    using pointer = std::shared_ptr<AcceptedLedger>      ;
+    using ret = const pointer&                         ;
+    using map_t = std::map<int, AcceptedLedgerTx::pointer>   ;              // Must be an ordered map!
+    using value_type = map_t::value_type                      ;
+    using const_iterator = map_t::const_iterator                  ;
 
 public:
     static pointer makeAcceptedLedger (Ledger::ref ledger);

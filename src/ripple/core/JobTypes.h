@@ -30,8 +30,8 @@ namespace ripple
 class JobTypes
 {
 public:
-    typedef std::map <JobType, JobTypeInfo> Map;
-    typedef Map::const_iterator const_iterator;
+    using Map = std::map <JobType, JobTypeInfo>;
+    using const_iterator = Map::const_iterator;
 
     JobTypes ()
         : m_unknown (jtINVALID, "invalid", 0, true, true, 0, 0)

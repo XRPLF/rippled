@@ -206,7 +206,7 @@ public:
     //
 
     // Must complete immediately.
-    typedef std::function<void (Transaction::pointer, TER)> stCallback;
+    using stCallback = std::function<void (Transaction::pointer, TER)>;
     void submitTransaction (
         Job&, STTx::pointer,
         stCallback callback = stCallback ()) override;
@@ -537,12 +537,12 @@ private:
 private:
     clock_type& m_clock;
 
-    typedef hash_map <Account, SubMapType> SubInfoMapType;
-    typedef hash_map<std::string, InfoSub::pointer> subRpcMapType;
+    using SubInfoMapType = hash_map <Account, SubMapType>;
+    using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
     // XXX Split into more locks.
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
 
     beast::Journal m_journal;
 
@@ -1316,7 +1316,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         auto current = getApp().getValidations ().getCurrentValidations (
             closedLedger, prevClosedLedger);
 
-        typedef std::map<uint256, ValidationCounter>::value_type u256_cvc_pair;
+        using u256_cvc_pair = std::map<uint256, ValidationCounter>::value_type;
         for (auto & it: current)
         {
             ValidationCount& vc = ledgers[it.first];
