@@ -322,7 +322,7 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
 
 class SemanticVersion_test: public unit_test::suite
 {
-    typedef SemanticVersion::identifier_list identifier_list;
+    using identifier_list = SemanticVersion::identifier_list;
 
 public:
     void checkPass (std::string const& input, bool shouldPass = true)

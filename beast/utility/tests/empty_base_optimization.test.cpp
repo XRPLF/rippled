@@ -35,7 +35,7 @@ public:
     class test1
         : private empty_base_optimization<T>
     {
-        typedef empty_base_optimization<T> Base;
+        using Base = empty_base_optimization<T>;
         void* m_p;
     public:
         explicit test1 (T const& t)

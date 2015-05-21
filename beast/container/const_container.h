@@ -30,7 +30,7 @@ template <class Container>
 class const_container
 {
 private:
-    typedef Container cont_type;
+    using cont_type = Container;
 
     cont_type m_cont;
 
@@ -46,11 +46,11 @@ protected:
     }
 
 public:
-    typedef typename cont_type::value_type value_type;
-    typedef typename cont_type::size_type size_type;
-    typedef typename cont_type::difference_type difference_type;
-    typedef typename cont_type::const_iterator iterator;
-    typedef typename cont_type::const_iterator const_iterator;
+    using value_type = typename cont_type::value_type;
+    using size_type = typename cont_type::size_type;
+    using difference_type = typename cont_type::difference_type;
+    using iterator = typename cont_type::const_iterator;
+    using const_iterator = typename cont_type::const_iterator;
 
     /** Returns `true` if the container is empty. */
     bool

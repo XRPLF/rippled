@@ -249,7 +249,7 @@ private:
     };
 
     using list_type = typename boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <false>>::type ;
+        boost::intrusive::constant_time_size <false>>::type;
 
     using cont_type = typename std::conditional <
         IsMulti,

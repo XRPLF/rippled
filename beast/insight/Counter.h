@@ -39,7 +39,7 @@ namespace insight {
 class Counter : public Base
 {
 public:
-    typedef CounterImpl::value_type value_type;
+    using value_type = CounterImpl::value_type;
 
     /** Create a null metric.
         A null metric reports no information.

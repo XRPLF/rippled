@@ -42,7 +42,7 @@ template <typename T>
 std::string
 type_name()
 {
-    typedef typename std::remove_reference<T>::type TR;
+    using TR = typename std::remove_reference<T>::type;
     std::unique_ptr<char, void(*)(void*)> own (
     #ifndef _MSC_VER
         abi::__cxa_demangle (typeid(TR).name(), nullptr,

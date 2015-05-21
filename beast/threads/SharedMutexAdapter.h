@@ -35,9 +35,9 @@ template <class Mutex>
 class SharedMutexAdapter
 {
 public:
-    typedef Mutex MutexType;
-    typedef std::lock_guard <SharedMutexAdapter> LockGuardType;
-    typedef SharedLockGuard <SharedMutexAdapter> SharedLockGuardType;
+    using MutexType = Mutex;
+    using LockGuardType = std::lock_guard <SharedMutexAdapter>;
+    using SharedLockGuardType = SharedLockGuard <SharedMutexAdapter>;
     
     void lock() const
     {

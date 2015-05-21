@@ -253,7 +253,7 @@ private:
     friend class RootStoppable;
 
     struct Child;
-    typedef LockFreeStack <Child> Children;
+    using Children = LockFreeStack <Child>;
 
     struct Child : Children::Node
     {

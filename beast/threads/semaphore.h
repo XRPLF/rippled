@@ -29,14 +29,14 @@ template <class Mutex, class CondVar>
 class basic_semaphore
 {
 private:
-    typedef std::unique_lock <Mutex> scoped_lock;
+    using scoped_lock = std::unique_lock <Mutex>;
 
     Mutex m_mutex;
     CondVar m_cond;
     std::size_t m_count;
 
 public:
-    typedef std::size_t size_type;
+    using size_type = std::size_t;
 
     /** Create the semaphore, with an optional initial count.
         If unspecified, the initial count is zero.
@@ -79,7 +79,7 @@ public:
     }
 };
 
-typedef basic_semaphore <std::mutex, std::condition_variable> semaphore;
+using semaphore = basic_semaphore <std::mutex, std::condition_variable>;
 }
 
 #endif

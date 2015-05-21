@@ -53,7 +53,7 @@ public:
     }
 };
 
-typedef basic_std_ostream <char> std_ostream;
+using std_ostream = basic_std_ostream <char>;
 
 //------------------------------------------------------------------------------
 

@@ -53,8 +53,8 @@ private:
     Int m_value;
 
 public:
-    typedef Int value_type;
-    typedef Tag tag_type;
+    using value_type = Int;
+    using tag_type = Tag;
 
     tagged_integer() = default;
 

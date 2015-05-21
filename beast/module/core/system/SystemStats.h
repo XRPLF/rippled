@@ -52,7 +52,7 @@ namespace SystemStats
     getStackBacktrace();
 
     /** A void() function type, used by setApplicationCrashHandler(). */
-    typedef void (*CrashHandlerFunction)();
+    using CrashHandlerFunction = void (*)();
 
     /** Sets up a global callback function that will be called if the application
         executes some kind of illegal instruction.

@@ -26,7 +26,7 @@ template <typename Mutex>
 class UnlockGuard
 {
 public:
-    typedef Mutex MutexType;
+    using MutexType = Mutex;
 
     explicit UnlockGuard (Mutex const& mutex)
         : m_mutex (mutex)

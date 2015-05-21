@@ -42,18 +42,18 @@ class LockFreeStackIterator
             typename Container::reference>::type>
 {
 protected:
-    typedef typename Container::Node Node;
-    typedef typename std::conditional <
-        IsConst, Node const*, Node*>::type NodePtr;
+    using Node = typename Container::Node;
+    using NodePtr = typename std::conditional <
+        IsConst, Node const*, Node*>::type;
 
 public:
-    typedef typename Container::value_type value_type;
-    typedef typename std::conditional <IsConst,
+    using value_type = typename Container::value_type;
+    using pointer = typename std::conditional <IsConst,
         typename Container::const_pointer,
-        typename Container::pointer>::type pointer;
-    typedef typename std::conditional <IsConst,
+        typename Container::pointer>::type;
+    using reference = typename std::conditional <IsConst,
         typename Container::const_reference,
-        typename Container::reference>::type reference;
+        typename Container::reference>::type;
 
     LockFreeStackIterator ()
         : m_node ()
@@ -167,17 +167,17 @@ public:
     };
 
 public:
-    typedef Element                             value_type;
-    typedef Element*                            pointer;
-    typedef Element&                            reference;
-    typedef Element const*                      const_pointer;
-    typedef Element const&                      const_reference;
-    typedef std::size_t                         size_type;
-    typedef std::ptrdiff_t                      difference_type;
-    typedef LockFreeStackIterator <
-        LockFreeStack <Element, Tag>, false>    iterator;
-    typedef LockFreeStackIterator <
-        LockFreeStack <Element, Tag>, true>     const_iterator;
+    using value_type      = Element;
+    using pointer         = Element*;
+    using reference       = Element&;
+    using const_pointer   = Element const*;
+    using const_reference = Element const&;
+    using size_type       = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using iterator        = LockFreeStackIterator <
+        LockFreeStack <Element, Tag>, false>;
+    using const_iterator  = LockFreeStackIterator <
+        LockFreeStack <Element, Tag>, true>;
 
     LockFreeStack ()
         : m_end (nullptr)

@@ -26,8 +26,8 @@ class DeadlineTimer::Manager
     : protected Thread
 {
 private:
-    typedef CriticalSection LockType;
-    typedef List <DeadlineTimer> Items;
+    using LockType = CriticalSection;
+    using Items = List <DeadlineTimer>;
 
 public:
     Manager () : Thread ("DeadlineTimer::Manager")
