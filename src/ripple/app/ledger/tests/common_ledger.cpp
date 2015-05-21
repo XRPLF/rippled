@@ -71,7 +71,6 @@ Issuer::getAccount() const
     return issuer_;
 }
 
-
 Amount::Amount(double value, std::string currency, TestAccount issuer)
     : value_(value)
     , currency_(Currency(currency))
@@ -105,11 +104,10 @@ Amount::getCurrency() const
     return currency_;
 }
 
-
 // Helper function to parse a transaction in Json, sign it with account,
 // and return it as a STTx
 STTx
-parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign)
+parseTransaction(TestAccount const& account, Json::Value const& tx_json, bool sign)
 {
     STParsedJSONObject parsed("tx_json", tx_json);
     if (!parsed.object)
@@ -161,11 +159,12 @@ createAccount(std::string const& passphrase, KeyType keyType)
 
     auto keyPair = generateKeysFromSeed(keyType, seed);
 
-    return {
-        std::move(keyPair.publicKey),
-        std::move(keyPair.secretKey),
-        std::uint64_t(0)
-    };
+    TestAccount t;
+    t.pk = std::move(keyPair.publicKey);
+    t.sk = std::move(keyPair.secretKey),
+    t.sequence = 0;
+    t.pk_human = t.pk.humanAccountID();
+    return t;
 }
 
 TestAccount
@@ -315,34 +314,64 @@ pay(TestAccount& from, TestAccount const& to,
     return tx;
 }
 
-STTx
-getPaymentTxWithPath(TestAccount& from, TestAccount const& to,
-std::string const& currency, std::string const& amount,
-Ledger::pointer const& ledger, bool sign)
+Json::Value
+getPaymentJsonWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger)
 {
-    auto amountJson = Amount(std::stod(amount), currency, to).getJson();
-    Json::Value tx_json = getPaymentJson(from, to, amountJson);
+    auto amountJson = Amount (std::stod (amount), currency, to).getJson ();
+    Json::Value tx_json = getPaymentJson (from, to, amountJson);
 
     // Find path. Note that the sign command can do this transparently
     // with the "build_path" field, but we don't have that here.
-    auto cache = std::make_shared<RippleLineCache>(ledger);
+    auto stDstAmount = amountFromJson (sfGeneric, amountJson);
+    Issue srcIssue = Issue (stDstAmount.getCurrency (), from.pk.getAccountID ());
+
     STPathSet pathSet;
     STPath fullLiquidityPath;
-    auto stDstAmount = amountFromJson(sfGeneric, amountJson);
-    Issue srcIssue = Issue(stDstAmount.getCurrency(), from.pk.getAccountID());
+    auto cache = std::make_shared<RippleLineCache> (ledger);
+    auto found = findPathsForOneIssuer (cache, from.pk.getAccountID (),
+        to.pk.getAccountID (), srcIssue, stDstAmount, 7, 4, pathSet,
+        fullLiquidityPath);
+    if (! found)
+        throw std::runtime_error ("!found");
 
-    auto found = findPathsForOneIssuer(cache, from.pk.getAccountID(), to.pk.getAccountID(),
-        srcIssue, stDstAmount, 7, 4, pathSet, fullLiquidityPath);
-    if (!found)
-        throw std::runtime_error(
-        "!found");
-    if (pathSet.isDefault())
-        throw std::runtime_error(
-        "pathSet.isDefault()");
+    if (pathSet.isDefault ())
+        throw std::runtime_error ("pathSet.isDefault()");
 
-    tx_json[jss::Paths] = pathSet.getJson(0);
+    tx_json[jss::Paths] = pathSet.getJson (0);
+    return tx_json;
+}
 
-    return parseTransaction(from, tx_json, sign);
+Json::Value
+getPaymentJsonWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& srcCurrency, std::string const& dstCurrency,
+    std::string const& amount, Ledger::pointer const& ledger)
+{
+    auto amountJson = Amount (std::stod (amount), dstCurrency, to).getJson ();
+    Json::Value tx_json = getPaymentJson (from, to, amountJson);
+
+    Issue srcIssue;
+    if (srcCurrency == "XRP")
+        srcIssue = xrpIssue ();
+    else
+        srcIssue = Issue (to_currency (srcCurrency), from.pk.getAccountID ());
+
+    STPathSet pathSet;
+    STPath fullLiquidityPath;
+    auto stDstAmount = amountFromJson (sfGeneric, amountJson);
+    auto cache = std::make_shared<RippleLineCache> (ledger);
+    auto found = findPathsForOneIssuer (cache, from.pk.getAccountID (),
+        to.pk.getAccountID (), xrpIssue (), stDstAmount, 7, 4, pathSet,
+        fullLiquidityPath);
+    if (! found)
+        throw std::runtime_error ("!found");
+
+    if (pathSet.isDefault ())
+        throw std::runtime_error ("pathSet.isDefault()");
+
+        tx_json[jss::Paths] = pathSet.getJson (0);
+    return tx_json;
 }
 
 STTx
@@ -350,8 +379,42 @@ payWithPath(TestAccount& from, TestAccount const& to,
     std::string const& currency, std::string const& amount,
     Ledger::pointer const& ledger, bool sign)
 {
-    auto tx = getPaymentTxWithPath(from, to, currency, amount, ledger, sign);
-    applyTransaction(ledger, tx, sign);
+    Json::Value tx_json = getPaymentJsonWithPath (from, to, currency, amount,
+        ledger);
+    auto tx = parseTransaction (from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
+    return tx;
+}
+
+STTx
+payWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Amount const& send_max, Ledger::pointer const& ledger, bool sign)
+{
+    Json::Value tx_json = getPaymentJsonWithPath (from, to, currency, amount,
+        ledger);
+
+    if (send_max.getCurrency ().getCurrency ().empty ())
+        tx_json[jss::SendMax] = send_max.getValue ();
+    else
+        tx_json[jss::SendMax] = send_max.getJson ();
+
+    auto tx = parseTransaction (from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
+    return tx;
+}
+
+STTx
+payWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& srcCurrency, std::string const& dstCurrency,
+    std::string const& amount, std::uint32_t send_max_drops,
+    Ledger::pointer const& ledger, bool sign)
+{
+    Json::Value tx_json = getPaymentJsonWithPath(from, to, srcCurrency,
+        dstCurrency, amount, ledger);
+    tx_json[jss::SendMax] = send_max_drops;
+    auto tx = parseTransaction(from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
     return tx;
 }
 
@@ -372,7 +435,6 @@ payWithPath(TestAccount& from, TestAccount const& to,
     return tx;
 }
 
-
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
     Ledger::pointer ledger, bool sign)
@@ -380,9 +442,31 @@ createOffer(TestAccount& from, Amount const& in, Amount const& out,
     Json::Value tx_json = getCommonTransactionJson(from);
     tx_json[jss::TransactionType] = "OfferCreate";
     tx_json[jss::TakerPays] = in.getJson();
-    tx_json[jss::TakerGets] = out.getJson();
-    STTx tx = parseTransaction(from, tx_json, sign);
-    applyTransaction(ledger, tx, sign);
+
+    if (out.getCurrency ().getCurrency ().empty ())
+    {
+        tx_json[jss::TakerGets] =
+            std::to_string (static_cast<std::uint64_t> (out.getValue ()));
+    }
+    else
+    {
+        tx_json[jss::TakerGets] = out.getJson ();
+    }
+
+    STTx tx = parseTransaction (from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
+}
+
+void
+createOffer (TestAccount& from, std::uint64_t in_drops, Amount const& out,
+    Ledger::pointer ledger, bool sign)
+{
+    Json::Value tx_json = getCommonTransactionJson (from);
+    tx_json[jss::TransactionType] = "OfferCreate";
+    tx_json[jss::TakerPays] = std::to_string (in_drops);
+    tx_json[jss::TakerGets] = out.getJson ();
+    STTx tx = parseTransaction (from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
 }
 
 void
@@ -427,6 +511,24 @@ trust(TestAccount& from, TestAccount const& issuer,
     tx_json[jss::Flags] = 0;    // tfClearNoRipple;
     STTx tx = parseTransaction(from, tx_json, sign);
     applyTransaction(ledger, tx, sign);
+}
+
+void
+trust (TestAccount& from, TestAccount const& issuer,
+    std::string const& currency, double amount, std::uint32_t quality_in,
+    std::uint32_t quality_out, Ledger::pointer const& ledger, bool sign)
+{
+    Json::Value tx_json = getCommonTransactionJson (from);
+    Json::Value& limitAmount = tx_json[jss::LimitAmount];
+    limitAmount[jss::currency] = currency;
+    limitAmount[jss::issuer] = issuer.pk.humanAccountID ();
+    limitAmount[jss::value] = std::to_string (amount);
+    tx_json["QualityIn"] = quality_in;
+    tx_json["QualityOut"] = quality_out;
+    tx_json[jss::TransactionType] = "TrustSet";
+    tx_json[jss::Flags] = 0; // tfClearNoRipple;
+    STTx tx = parseTransaction (from, tx_json, sign);
+    applyTransaction (ledger, tx, sign);
 }
 
 void
@@ -527,6 +629,32 @@ verifyBalance(Ledger::pointer ledger, TestAccount const& account,
         "balance != amountReq");
 }
 
+void
+verifyLimit (Ledger::pointer ledger, TestAccount const& account,
+    Amount const& amount, std::uint32_t quality_in, std::uint32_t quality_out)
+{
+    auto sle = getLedgerEntryRippleState (ledger, account, amount.getIssuer (),
+        amount.getCurrency ());
+    if (sle == nullptr)
+        throw std::runtime_error ("!sle");
+
+    STAmount limit;
+    amountFromJsonNoThrow (limit, amount.getJson ());
+    if (limit != sle->getFieldAmount (sfHighLimit))
+        throw std::runtime_error("quality_in != HighQualityIn");
+
+    if (quality_in > 0 && quality_out > 0)
+    {
+        auto const in = sle->getFieldU32 (sfHighQualityIn);
+        if (quality_in != in)
+            throw std::runtime_error ("quality_in != HighQualityIn");
+
+        auto const out = sle->getFieldU32 (sfHighQualityOut);
+        if (quality_out != out)
+            throw std::runtime_error ("quality_out != HighQualityOut");
+    }
+}
+
 Json::Value pathNode (TestAccount const& acc)
 {
     Json::Value result;
@@ -547,6 +675,17 @@ Json::Value pathNode (OfferPathNode const& offer)
     return result;
 }
 
+void
+setTransferRate (TestAccount& account, Ledger::pointer const& ledger,
+    std::uint32_t const rate)
+{
+    auto tx_json = getCommonTransactionJson (account);
+    tx_json[jss::TransactionType] = "AccountSet";
+    tx_json["TransferRate"] = std::to_string(rate);
+
+    auto tx = parseTransaction (account, tx_json, true);
+    applyTransaction (ledger, tx, true);
+}
 
 }
 }

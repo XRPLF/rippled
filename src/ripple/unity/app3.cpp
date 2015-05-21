@@ -20,4 +20,4 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/ledger/tests/common_ledger.cpp>
-#include <ripple/app/paths/tests/Path_test.cpp>
+#include <ripple/app/paths/tests/Path.test.cpp>

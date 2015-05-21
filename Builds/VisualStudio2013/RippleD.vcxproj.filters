@@ -2451,7 +2451,7 @@
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
+    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path.test.cpp">
       <Filter>ripple\app\paths\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\Tuning.h">
