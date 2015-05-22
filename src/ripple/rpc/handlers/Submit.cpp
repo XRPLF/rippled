@@ -53,8 +53,7 @@ Json::Value doSubmit (RPC::Context& context)
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
 
-    Serializer sTrans (ret.first);
-    SerialIter sitTrans (sTrans);
+    SerialIter sitTrans (make_Slice(ret.first));
 
     STTx::pointer stpTrans;
 

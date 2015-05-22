@@ -46,7 +46,7 @@ public:
 
         Serializer rawTxn;
         j.add (rawTxn);
-        SerialIter sit (rawTxn);
+        SerialIter sit (rawTxn.slice());
         STTx copy (sit);
 
         if (copy != j)
@@ -150,7 +150,7 @@ public:
 
             Serializer rawTxn;
             tempTxn.add (rawTxn);
-            SerialIter sit (rawTxn);
+            SerialIter sit (rawTxn.slice());
             bool serialized = false;
             try
             {

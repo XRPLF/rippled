@@ -47,23 +47,15 @@ public:
     {
         mData.reserve (n);
     }
-    Serializer (Blob const& data) : mData (data)
+
+    Serializer (void const* data,
+        std::size_t size)
     {
-        ;
-    }
-    Serializer (std::string const& data) : mData (data.data (), (data.data ()) + data.size ())
-    {
-        ;
-    }
-    Serializer (Blob ::iterator begin, Blob ::iterator end) :
-        mData (begin, end)
-    {
-        ;
-    }
-    Serializer (Blob ::const_iterator begin, Blob ::const_iterator end) :
-        mData (begin, end)
-    {
-        ;
+        mData.resize(size);
+        std::memcpy(mData.data(),
+            reinterpret_cast<
+                unsigned char const*>(
+                    data), size);
     }
 
     Slice slice() const noexcept
@@ -118,11 +110,6 @@ public:
 
     // disassemble functions
     bool get8 (int&, int offset) const;
-    bool get8 (unsigned char&, int offset) const;
-    bool get16 (std::uint16_t&, int offset) const;
-    bool get32 (std::uint32_t&, int offset) const;
-    bool get64 (std::uint64_t&, int offset) const;
-    bool get128 (uint128&, int offset) const;
     bool get256 (uint256&, int offset) const;
 
     template <typename Integer>
@@ -149,8 +136,6 @@ public:
             memcpy (data.begin (), & (mData.front ()) + offset, (Bits / 8));
         return success;
     }
-
-    uint256 get256 (int offset) const;
 
     // TODO(tom): merge with get128 and get256.
     template <class Tag>
@@ -188,10 +173,7 @@ public:
     {
         return mData;
     }
-    int getCapacity () const
-    {
-        return mData.capacity ();
-    }
+
     int getDataLength () const
     {
         return mData.size ();
@@ -315,28 +297,6 @@ public:
 
     SerialIter (Slice const& slice)
         : SerialIter(slice.data(), slice.size())
-    {
-    }
-
-    // VFALCO TODO Remove this overload use Slice instead
-    explicit
-    SerialIter (std::string const& s) noexcept
-        : SerialIter(s.data(), s.size())
-    {
-    }
-
-    template <class T,
-        std::enable_if_t<std::is_integral<T>::value &&
-            sizeof(T) == 1>* = nullptr>
-    explicit
-    SerialIter (std::vector<T> const& v) noexcept
-        : SerialIter (v.data(), v.size())
-    {
-    }
-
-    // DEPRECATED
-    SerialIter (Serializer const& s) noexcept
-        : SerialIter(s.peekData())
     {
     }
 

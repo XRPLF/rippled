@@ -40,12 +40,15 @@ class DisputedTx
 public:
     using pointer = std::shared_ptr <DisputedTx>;
 
+    // VFALCO `Blob` is a poor choice of parameter
     DisputedTx (uint256 const& txID,
-                Blob const& tx,
-                bool ourVote) :
-        mTransactionID (txID), mYays (0), mNays (0), mOurVote (ourVote), transaction (tx)
+            Blob const& tx, bool ourVote)
+        : mTransactionID (txID)
+        , mYays (0)
+        , mNays (0)
+        , mOurVote (ourVote)
+        , transaction (tx.data(), tx.size())
     {
-        ;
     }
 
     uint256 const& getTransactionID () const
@@ -59,6 +62,7 @@ public:
     }
 
     // VFALCO TODO make this const
+    // VFALCO TODO Don't return a Serializer (doh)
     Serializer& peekTransaction ()
     {
         return transaction;
@@ -82,6 +86,7 @@ private:
     int mYays;
     int mNays;
     bool mOurVote;
+    // VFALCO Why is this being stored as a Serializer?
     Serializer transaction;
 
     hash_map <NodeID, bool> mVotes;

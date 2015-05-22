@@ -42,6 +42,8 @@ private:
 public:
     using result_type = std::size_t;
 
+    static beast::endian const endian = beast::endian::native;
+
     siphash() = default;
 
     explicit

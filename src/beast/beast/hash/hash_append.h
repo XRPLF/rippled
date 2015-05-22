@@ -62,7 +62,7 @@ template <class T>
 /*constexpr*/
 inline
 void
-maybe_reverse_bytes(T& t, std::true_type)
+maybe_reverse_bytes(T& t, std::false_type)
 {
 }
 
@@ -70,7 +70,7 @@ template <class T>
 /*constexpr*/
 inline
 void
-maybe_reverse_bytes(T& t, std::false_type)
+maybe_reverse_bytes(T& t, std::true_type)
 {
     reverse_bytes(t);
 }
@@ -82,7 +82,7 @@ void
 maybe_reverse_bytes(T& t, Hasher&)
 {
     maybe_reverse_bytes(t, std::integral_constant<bool,
-        Hasher::endian == endian::native>{});
+        Hasher::endian != endian::native>{});
 }
 
 } // detail
@@ -140,7 +140,7 @@ struct is_uniquely_represented<std::tuple<T...>>
 
 template <class T, std::size_t N>
 struct is_uniquely_represented<T[N]>
-    : public std::integral_constant<bool, is_uniquely_represented<T>::value>
+    : public is_uniquely_represented<T>
 {
 };
 
@@ -176,7 +176,7 @@ struct is_contiguously_hashable
 
 template <class T, std::size_t N, class HashAlgorithm>
 struct is_contiguously_hashable<T[N], HashAlgorithm>
-    : public std::integral_constant<bool, is_uniquely_represented<T>::value &&
+    : public std::integral_constant<bool, is_uniquely_represented<T[N]>::value &&
                                       (sizeof(T) == 1 ||
                                        HashAlgorithm::endian == endian::native)>
 {};

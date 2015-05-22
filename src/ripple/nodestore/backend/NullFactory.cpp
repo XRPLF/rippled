@@ -48,7 +48,7 @@ public:
     }
 
     Status
-    fetch (void const*, NodeObject::Ptr*)
+    fetch (void const*, std::shared_ptr<NodeObject>*)
     {
         return notFound;
     }
@@ -67,7 +67,7 @@ public:
     }
 
     void
-    store (NodeObject::ref object)
+    store (std::shared_ptr<NodeObject> const& object)
     {
     }
 
@@ -77,7 +77,7 @@ public:
     }
 
     void
-    for_each (std::function <void(NodeObject::Ptr)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
     {
     }
 

@@ -93,7 +93,7 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
             throw std::runtime_error ("invalid node AW type");
         }
 
-        Serializer s (rawNode.begin (), rawNode.end () - 1);
+        Serializer s (rawNode.data(), rawNode.size() - 1);
         int type = rawNode.back ();
         int len = s.getLength ();
 
@@ -112,7 +112,7 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
             // transaction
             mItem = std::make_shared<SHAMapItem>(
                 sha512Half(HashPrefix::transactionID,
-                    Slice(s.data(), s.size() - 1)),
+                    Slice(s.data(), s.size())),
                         s.peekData());
             mType = tnTRANSACTION_NM;
         }
@@ -198,7 +198,7 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
         prefix |= rawNode[2];
         prefix <<= 8;
         prefix |= rawNode[3];
-        Serializer s (rawNode.begin () + 4, rawNode.end ());
+        Serializer s (rawNode.data() + 4, rawNode.size() - 4);
 
         if (prefix == HashPrefix::transactionID)
         {
@@ -307,10 +307,6 @@ bool SHAMapTreeNode::updateHash ()
     }
     else if (mType == tnACCOUNT_STATE)
     {
-        Serializer s (mItem->size() + (256 + 32) / 8);
-        s.add32 (HashPrefix::leafNode);
-        s.addRaw (mItem->peekData ());
-        s.add256 (mItem->getTag ());
         nh = sha512Half(HashPrefix::leafNode,
             make_Slice(mItem->peekData()),
                 mItem->getTag());

@@ -82,8 +82,8 @@ public:
             Batch copy;
             fetchCopyOfBatch (*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
-            std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
+            std::sort (batch.begin (), batch.end (), LessThan{});
+            std::sort (copy.begin (), copy.end (), LessThan{});
             expect (areBatchesEqual (batch, copy), "Should be equal");
         }
     }

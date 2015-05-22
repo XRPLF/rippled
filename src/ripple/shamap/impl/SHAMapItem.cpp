@@ -26,13 +26,13 @@ class SHAMap;
 
 SHAMapItem::SHAMapItem (uint256 const& tag, Blob const& data)
     : mTag (tag)
-    , mData (data)
+    , mData (data.data(), data.size())
 {
 }
 
 SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
     : mTag (tag)
-    , mData (data.peekData ())
+    , mData (data.data(), data.size())
 {
 }
 

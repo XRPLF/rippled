@@ -32,7 +32,7 @@ struct MemoryDB
 {
     std::mutex mutex;
     bool open = false;
-    std::map <uint256 const, NodeObject::Ptr> table;
+    std::map <uint256 const, std::shared_ptr<NodeObject>> table;
 };
 
 class MemoryFactory : public Factory
@@ -75,7 +75,7 @@ static MemoryFactory memoryFactory;
 class MemoryBackend : public Backend
 {
 private:
-    using Map = std::map <uint256 const, NodeObject::Ptr>;
+    using Map = std::map <uint256 const, std::shared_ptr<NodeObject>>;
 
     std::string name_;
     beast::Journal journal_;
@@ -112,7 +112,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch (void const* key, NodeObject::Ptr* pObject)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pObject)
     {
         uint256 const hash (uint256::fromVoid (key));
 
@@ -142,7 +142,7 @@ public:
     }
 
     void
-    store (NodeObject::ref object)
+    store (std::shared_ptr<NodeObject> const& object)
     {
         std::lock_guard<std::mutex> _(db_->mutex);
         db_->table.emplace (object->getHash(), object);
@@ -156,7 +156,7 @@ public:
     }
 
     void
-    for_each (std::function <void(NodeObject::Ptr)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
     {
         for (auto const& e : db_->table)
             f (e.second);

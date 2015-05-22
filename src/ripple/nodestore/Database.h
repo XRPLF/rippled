@@ -69,7 +69,7 @@ public:
         @param hash The key of the object to retrieve.
         @return The object, or nullptr if it couldn't be retrieved.
     */
-    virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
+    virtual std::shared_ptr<NodeObject> fetch (uint256 const& hash) = 0;
 
     /** Fetch an object without waiting.
         If I/O is required to determine whether or not the object is present,
@@ -82,7 +82,7 @@ public:
         @param object The object retrieved
         @return Whether the operation completed
     */
-    virtual bool asyncFetch (uint256 const& hash, NodeObject::pointer& object) = 0;
+    virtual bool asyncFetch (uint256 const& hash, std::shared_ptr<NodeObject>& object) = 0;
 
     /** Wait for all currently pending async reads to complete.
     */
@@ -116,7 +116,7 @@ public:
                 or other methods.
         @see import
     */
-    virtual void for_each(std::function <void(NodeObject::Ptr)> f) = 0;
+    virtual void for_each(std::function <void(std::shared_ptr<NodeObject>)> f) = 0;
 
     /** Import objects from another database. */
     virtual void import (Database& source) = 0;

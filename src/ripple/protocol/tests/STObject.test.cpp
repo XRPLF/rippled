@@ -183,7 +183,7 @@ public:
 
             Serializer s;
             object1.add (s);
-            SerialIter it (s);
+            SerialIter it (s.slice());
 
             STObject object3 (elements, it, sfTestObject);
 
