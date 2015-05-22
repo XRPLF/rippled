@@ -32,9 +32,7 @@ class Resolver
 {
 public:
     using HandlerType = std::function <
-        void (std::string,
-            std::vector <beast::IP::Endpoint>) >
-       ;
+        void (std::string, std::vector <beast::IP::Endpoint>) >;
 
     virtual ~Resolver () = 0;
 

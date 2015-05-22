@@ -107,7 +107,7 @@ namespace
     using beast_statStruct = struct stat64;
     #define BEAST_STAT     stat64
    #else
-    using beast_statStruct = struct stat  ;
+    using beast_statStruct = struct stat;
     #define BEAST_STAT     stat
    #endif
 

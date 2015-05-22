@@ -43,12 +43,12 @@ class InfoSub
 public:
     static char const* getCountedObjectName () { return "InfoSub"; }
 
-    using pointer = std::shared_ptr<InfoSub>         ;
+    using pointer = std::shared_ptr<InfoSub>;
 
     // VFALCO TODO Standardize on the names of weak / strong pointer type aliases.
-    using wptr = std::weak_ptr<InfoSub>           ;
+    using wptr = std::weak_ptr<InfoSub>;
 
-    using ref = const std::shared_ptr<InfoSub>&  ;
+    using ref = const std::shared_ptr<InfoSub>&;
 
     using Consumer = Resource::Consumer;
 

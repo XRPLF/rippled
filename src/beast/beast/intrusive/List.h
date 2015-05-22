@@ -269,15 +269,15 @@ class List
 public:
     using Node = typename detail::ListNode <T, Tag>;
 
-    using value_type = T                   ;
-    using pointer = value_type*         ;
-    using reference = value_type&         ;
-    using const_pointer = value_type const*   ;
-    using const_reference = value_type const&   ;
-    using size_type = std::size_t         ;
-    using difference_type = std::ptrdiff_t      ;
+    using value_type      = T;
+    using pointer         = value_type*;
+    using reference       = value_type&;
+    using const_pointer   = value_type const*;
+    using const_reference = value_type const&;
+    using size_type       = std::size_t;
+    using difference_type = std::ptrdiff_t;
 
-    using iterator = detail::ListIterator <Node>      ;
+    using iterator       = detail::ListIterator <Node>;
     using const_iterator = detail::ListIterator <Node const>;
 
     /** Create an empty list. */

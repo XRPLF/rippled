@@ -41,8 +41,8 @@ class STTx final
 public:
     static char const* getCountedObjectName () { return "STTx"; }
 
-    using pointer = std::shared_ptr<STTx>       ;
-    using ref = const std::shared_ptr<STTx>&;
+    using pointer = std::shared_ptr<STTx>;
+    using ref     = const std::shared_ptr<STTx>&;
 
     static std::size_t const maxMultiSigners = 8;
 

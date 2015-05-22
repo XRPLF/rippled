@@ -100,17 +100,17 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 //**************************************
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   // C99
 # include <stdint.h>
-using BYTE = uint8_t ;
-using U16 = uint16_t;
-using U32 = uint32_t;
-using S32 = int32_t;
-using U64 = uint64_t;
+using BYTE = uint8_t;
+using U16  = uint16_t;
+using U32  = uint32_t;
+using S32  = int32_t;
+using U64  = uint64_t;
 #else
-using BYTE = unsigned char     ;
-using U16 = unsigned short    ;
-using U32 = unsigned int      ;
-using S32 = signed int      ;
-using U64 = unsigned long long;
+using BYTE = unsigned char;
+using U16  = unsigned short;
+using U32  = unsigned int;
+using S32  = signed int;
+using U64  = unsigned long long;
 #endif
 
 #if defined(__GNUC__)  && !defined(XXH_USE_UNALIGNED_ACCESS)

@@ -55,12 +55,11 @@ struct Config04 : ConfigBase04 {
 
     struct transport_config : public base::transport_config {
         using concurrency_type = type::concurrency_type;
-        using alog_type = type::alog_type;
-        using elog_type = type::elog_type;
-        using request_type = type::request_type;
-        using response_type = type::response_type;
-        using socket_type = websocketpp::transport::asio::basic_socket::endpoint
-       ;
+        using alog_type        = type::alog_type;
+        using elog_type        = type::elog_type;
+        using request_type     = type::request_type;
+        using response_type    = type::response_type;
+        using socket_type      = websocketpp::transport::asio::basic_socket::endpoint;
     };
 
     using transport_type = websocketpp::transport::asio::endpoint<transport_config>

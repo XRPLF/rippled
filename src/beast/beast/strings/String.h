@@ -49,11 +49,11 @@
 namespace beast {
 
 #if BEAST_NATIVE_WCHAR_IS_UTF8
- using CharPointer_wchar_t = CharPointer_UTF8         ;
+ using CharPointer_wchar_t = CharPointer_UTF8;
 #elif BEAST_NATIVE_WCHAR_IS_UTF16
- using CharPointer_wchar_t = CharPointer_UTF16        ;
+ using CharPointer_wchar_t = CharPointer_UTF16;
 #else
- using CharPointer_wchar_t = CharPointer_UTF32        ;
+ using CharPointer_wchar_t = CharPointer_UTF32;
 #endif
 
 //==============================================================================

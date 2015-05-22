@@ -74,8 +74,7 @@ private:
     using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
-    using BookToListenersMap = hash_map <Book, BookListeners::pointer>
-   ;
+    using BookToListenersMap = hash_map <Book, BookListeners::pointer>;
 
     BookToListenersMap mListeners;
 

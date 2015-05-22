@@ -73,10 +73,10 @@ private:
 private:
     using Map = std::map <std::uint32_t, std::uint32_t>;
 
-    using const_iterator = Map::const_iterator           ;
-    using const_reverse_iterator = Map::const_reverse_iterator   ;
-    using value_type = Map::value_type               ;
-    using iterator = Map::iterator                 ;
+    using const_iterator         = Map::const_iterator;
+    using const_reverse_iterator = Map::const_reverse_iterator;
+    using value_type             = Map::value_type;
+    using iterator               = Map::iterator;
 
     static bool contains (value_type const& it, std::uint32_t v)
     {

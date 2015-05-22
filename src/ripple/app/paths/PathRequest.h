@@ -44,10 +44,10 @@ class PathRequest :
 public:
     static char const* getCountedObjectName () { return "PathRequest"; }
 
-    using wptr = std::weak_ptr<PathRequest>   ;
-    using pointer = std::shared_ptr<PathRequest> ;
-    using ref = const pointer&                 ;
-    using wref = const wptr&                    ;
+    using wptr    = std::weak_ptr<PathRequest>;
+    using pointer = std::shared_ptr<PathRequest>;
+    using ref     = const pointer&;
+    using wref    = const wptr&;
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub

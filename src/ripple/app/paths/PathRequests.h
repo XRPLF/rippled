@@ -73,7 +73,7 @@ private:
 
     std::atomic<int>                 mLastIdentifier;
 
-    using LockType = RippleRecursiveMutex    ;
+    using LockType       = RippleRecursiveMutex;
     using ScopedLockType = std::lock_guard <LockType>;
     LockType                         mLock;
 

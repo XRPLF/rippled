@@ -36,7 +36,7 @@ public:
         defaultBlocksize = 32 * 1024
     };
 
-    using size_type = std::size_t            ;
+    using size_type = std::size_t;
 
     /** Create the dynamic buffer with the specified block size. */
     explicit DynamicBuffer (size_type blocksize = defaultBlocksize);

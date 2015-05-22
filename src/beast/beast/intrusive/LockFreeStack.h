@@ -167,17 +167,17 @@ public:
     };
 
 public:
-    using value_type = Element                            ;
-    using pointer = Element*                           ;
-    using reference = Element&                           ;
-    using const_pointer = Element const*                     ;
-    using const_reference = Element const&                     ;
-    using size_type = std::size_t                        ;
-    using difference_type = std::ptrdiff_t                     ;
-    using iterator = LockFreeStackIterator <
-        LockFreeStack <Element, Tag>, false>   ;
-    using const_iterator = LockFreeStackIterator <
-        LockFreeStack <Element, Tag>, true>    ;
+    using value_type      = Element;
+    using pointer         = Element*;
+    using reference       = Element&;
+    using const_pointer   = Element const*;
+    using const_reference = Element const&;
+    using size_type       = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using iterator        = LockFreeStackIterator <
+        LockFreeStack <Element, Tag>, false>;
+    using const_iterator  = LockFreeStackIterator <
+        LockFreeStack <Element, Tag>, true>;
 
     LockFreeStack ()
         : m_end (nullptr)

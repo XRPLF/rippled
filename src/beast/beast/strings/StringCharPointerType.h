@@ -50,7 +50,7 @@ using StringCharPointerType = CharPointer_UTF32;
 using StringCharPointerType = CharPointer_UTF16;
 
 #elif (BEAST_STRING_UTF_TYPE == 8)
-using StringCharPointerType = CharPointer_UTF8 ;
+using StringCharPointerType = CharPointer_UTF8;
 
 #else
 #error "You must set the value of BEAST_STRING_UTF_TYPE to be either 8, 16, or 32!"

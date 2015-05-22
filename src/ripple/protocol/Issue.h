@@ -40,12 +40,10 @@ class IssueType
 {
 public:
     using IssueCurrency = typename
-    std::conditional <ByValue, Currency, Currency const&>::type
-   ;
+        std::conditional <ByValue, Currency, Currency const&>::type;
 
     using IssueAccount = typename
-    std::conditional <ByValue, Account, Account const&>::type
-   ;
+        std::conditional <ByValue, Account, Account const&>::type;
 
     IssueCurrency currency;
     IssueAccount account;

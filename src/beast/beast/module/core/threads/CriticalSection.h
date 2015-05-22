@@ -92,13 +92,13 @@ public:
 
     //==============================================================================
     /** Provides the type of scoped lock to use with a CriticalSection. */
-    using ScopedLockType = GenericScopedLock <CriticalSection>      ;
+    using ScopedLockType = GenericScopedLock <CriticalSection>;
 
     /** Provides the type of scoped unlocker to use with a CriticalSection. */
-    using ScopedUnlockType = GenericScopedUnlock <CriticalSection>    ;
+    using ScopedUnlockType = GenericScopedUnlock <CriticalSection>;
 
     /** Provides the type of scoped try-locker to use with a CriticalSection. */
-    using ScopedTryLockType = GenericScopedTryLock <CriticalSection>   ;
+    using ScopedTryLockType = GenericScopedTryLock <CriticalSection>;
 
     //--------------------------------------------------------------------------
     //
@@ -187,7 +187,7 @@ public:
 
     @see CriticalSection, ScopedUnlock
 */
-using ScopedLock = CriticalSection::ScopedLockType ;
+using ScopedLock = CriticalSection::ScopedLockType;
 
 //==============================================================================
 /**
@@ -227,7 +227,7 @@ using ScopedLock = CriticalSection::ScopedLockType ;
 
     @see CriticalSection, ScopedLock
 */
-using ScopedUnlock = CriticalSection::ScopedUnlockType ;
+using ScopedUnlock = CriticalSection::ScopedUnlockType;
 
 //==============================================================================
 /**
@@ -260,7 +260,7 @@ using ScopedUnlock = CriticalSection::ScopedUnlockType ;
 
     @see CriticalSection::tryEnter, ScopedLock, ScopedUnlock, ScopedReadLock
 */
-using ScopedTryLock = CriticalSection::ScopedTryLockType ;
+using ScopedTryLock = CriticalSection::ScopedTryLockType;
 
 } // beast
 

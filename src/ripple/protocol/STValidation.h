@@ -37,8 +37,8 @@ class STValidation final
 public:
     static char const* getCountedObjectName () { return "STValidation"; }
 
-    using pointer = std::shared_ptr<STValidation>        ;
-    using ref = const std::shared_ptr<STValidation>& ;
+    using pointer = std::shared_ptr<STValidation>;
+    using ref     = const std::shared_ptr<STValidation>&;
 
     enum
     {

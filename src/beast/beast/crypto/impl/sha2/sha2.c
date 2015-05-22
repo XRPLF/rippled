@@ -103,7 +103,7 @@
  * types and pointing out recent ANSI C support for uintXX_t in inttypes.h.
  */
 
-using sha2_byte = std::uint8_t ;	/* Exactly 1 byte */
+using sha2_byte   = std::uint8_t;	/* Exactly 1 byte */
 using sha2_word32 = std::uint32_t;	/* Exactly 4 bytes */
 using sha2_word64 = std::uint64_t;	/* Exactly 8 bytes */
 

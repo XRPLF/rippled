@@ -63,7 +63,7 @@ class HandlerImpl
 public:
     using connection_ptr = typename WebSocket::ConnectionPtr;
     using message_ptr = typename WebSocket::MessagePtr;
-    using wsc_ptr = std::shared_ptr <ConnectionImpl <WebSocket> > ;
+    using wsc_ptr = std::shared_ptr <ConnectionImpl <WebSocket> >;
 
     // Private reasons to close.
     enum

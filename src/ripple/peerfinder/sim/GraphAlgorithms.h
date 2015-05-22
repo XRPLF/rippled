@@ -35,9 +35,9 @@ struct VertexTraits;
 template <typename Vertex, typename Function>
 void breadth_first_traverse (Vertex& start, Function f)
 {
-    using Traits = VertexTraits <Vertex> ;
-    using Edges = typename Traits::Edges;
-    using Edge = typename Traits::Edge ;
+    using Traits = VertexTraits <Vertex>;
+    using Edges  = typename Traits::Edges;
+    using Edge   = typename Traits::Edge;
 
     using Probe = std::pair <Vertex*, int>;
     using Work = std::deque <Probe>;

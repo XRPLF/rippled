@@ -695,7 +695,7 @@ template <>
 struct VertexTraits <Node>
 {
     using Edges = Links;
-    using Edge = Link ;
+    using Edge  = Link;
     static Edges& edges (Node& node)
         { return node.links(); }
     static Node* vertex (Link& l)

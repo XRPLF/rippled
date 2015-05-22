@@ -68,21 +68,18 @@ public:
 
     static std::size_t const        bytes = Bits / 8;
 
-    using size_type = std::size_t            ;
-    using difference_type = std::ptrdiff_t         ;
-    using value_type = unsigned char          ;
-    using pointer = value_type*            ;
-    using reference = value_type&            ;
-    using const_pointer = value_type const*      ;
-    using const_reference = value_type const&      ;
-    using iterator = pointer                ;
-    using const_iterator = const_pointer          ;
-    using reverse_iterator = std::reverse_iterator
-        <iterator>                 ;
-    using const_reverse_iterator = std::reverse_iterator
-        <const_iterator>           ;
-
-    using tag_type = Tag                    ;
+    using size_type              = std::size_t;
+    using difference_type        = std::ptrdiff_t;
+    using value_type             = unsigned char;
+    using pointer                = value_type*;
+    using reference              = value_type&;
+    using const_pointer          = value_type const*;
+    using const_reference        = value_type const&;
+    using iterator               = pointer;
+    using const_iterator         = const_pointer;
+    using reverse_iterator       = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+    using tag_type               = Tag;
 
     pointer data() { return reinterpret_cast<pointer>(pn); }
     const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
@@ -405,8 +402,8 @@ public:
 };
 
 using uint128 = base_uint<128>;
-using uint160 = base_uint<160> ;
-using uint256 = base_uint<256> ;
+using uint160 = base_uint<160>;
+using uint256 = base_uint<256>;
 
 template <std::size_t Bits, class Tag>
 inline int compare (

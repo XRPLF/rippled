@@ -79,8 +79,8 @@ class Ledger
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
 
-    using pointer = std::shared_ptr<Ledger>          ;
-    using ref = const std::shared_ptr<Ledger>&   ;
+    using pointer = std::shared_ptr<Ledger>;
+    using ref     = const std::shared_ptr<Ledger>&;
 
     enum TransResult
     {

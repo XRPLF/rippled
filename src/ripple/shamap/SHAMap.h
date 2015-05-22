@@ -192,7 +192,7 @@ private:
     using SharedPtrNodeStack =
         std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>>;
     using DeltaRef = std::pair<std::shared_ptr<SHAMapItem> const&,
-                               std::shared_ptr<SHAMapItem> const&> ;
+                               std::shared_ptr<SHAMapItem> const&>;
 
     int unshare ();
 

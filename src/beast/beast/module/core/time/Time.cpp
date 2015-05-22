@@ -92,7 +92,7 @@ namespace TimeHelpers
     static inline String formatString (const String& format, const struct tm* const tm)
     {
        #if BEAST_ANDROID
-        using StringType = CharPointer_UTF8 ;
+        using StringType = CharPointer_UTF8;
        #elif BEAST_WINDOWS
         using StringType = CharPointer_UTF16;
        #else

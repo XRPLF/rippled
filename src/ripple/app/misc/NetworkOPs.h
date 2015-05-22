@@ -287,9 +287,7 @@ public:
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
-    using AccountTx = std::pair<Transaction::pointer, TransactionMetaSet::pointer>
-   ;
-
+    using AccountTx  = std::pair<Transaction::pointer, TransactionMetaSet::pointer>;
     using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs getAccountTxs (
@@ -302,10 +300,8 @@ public:
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
-    using txnMetaLedgerType = std::tuple<std::string, std::string, std::uint32_t>
-   ;
-
-    using MetaTxsList = std::vector<txnMetaLedgerType>;
+    using txnMetaLedgerType = std::tuple<std::string, std::string, std::uint32_t>;
+    using MetaTxsList       = std::vector<txnMetaLedgerType>;
 
     virtual MetaTxsList getAccountTxsB (RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,

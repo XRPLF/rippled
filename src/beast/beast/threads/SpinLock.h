@@ -53,7 +53,7 @@ public:
     using ScopedLockType = std::lock_guard <SpinLock>;
 
     /** Provides the type of scoped unlocker to use with a SpinLock. */
-    using ScopedUnlockType = UnlockGuard <SpinLock>    ;
+    using ScopedUnlockType = UnlockGuard <SpinLock>;
 
     SpinLock()
         : m_lock (0)

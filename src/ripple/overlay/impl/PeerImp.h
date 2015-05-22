@@ -90,11 +90,11 @@ public:
     using ptr = std::shared_ptr <PeerImp>;
 
 private:
-    using clock_type = std::chrono::steady_clock;
-    using error_code= boost::system::error_code ;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::asio::ssl::stream <socket_type&>;
-    using address_type = boost::asio::ip::address;
+    using clock_type    = std::chrono::steady_clock;
+    using error_code    = boost::system::error_code;
+    using socket_type   = boost::asio::ip::tcp::socket;
+    using stream_type   = boost::asio::ssl::stream <socket_type&>;
+    using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     // The length of the smallest valid finished message
