@@ -19,8 +19,3 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/ledger/InboundLedgers.cpp>
-#include <ripple/app/ledger/LedgerHistory.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
-#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>

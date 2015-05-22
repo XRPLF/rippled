@@ -19,13 +19,17 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/core/impl/Config.cpp>
-#include <ripple/core/impl/DatabaseCon.cpp>
-#include <ripple/core/impl/LoadFeeTrackImp.cpp>
-#include <ripple/core/impl/LoadEvent.cpp>
-#include <ripple/core/impl/LoadMonitor.cpp>
-#include <ripple/core/impl/Job.cpp>
-#include <ripple/core/impl/JobQueue.cpp>
+#include <ripple/app/misc/AccountState.cpp>
+#include <ripple/app/misc/AmendmentTableImpl.cpp>
+#include <ripple/app/misc/CanonicalTXSet.cpp>
+#include <ripple/app/misc/FeeVoteImpl.cpp>
+#include <ripple/app/misc/HashRouter.cpp>
+#include <ripple/app/misc/NetworkOPs.cpp>
+#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <ripple/app/misc/UniqueNodeList.cpp>
+#include <ripple/app/misc/Validations.cpp>
 
-#include <ripple/core/tests/LoadFeeTrack.test.cpp>
-#include <ripple/core/tests/Config.test.cpp>
+#include <ripple/app/misc/impl/AccountTxPaging.cpp>
+
+#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>
+#include <ripple/app/misc/tests/AmendmentTable.test.cpp>

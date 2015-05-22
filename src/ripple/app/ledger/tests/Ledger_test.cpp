@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/tests/common_ledger.h>
+#include <ripple/app/ledger/tests/common_ledger.h>
 
 namespace ripple {
 namespace test {

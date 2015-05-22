@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#include <ripple/app/tests/common_ledger.h>
+#include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/protocol/RippleAddress.h>
 
 #include <ripple/protocol/Indexes.h>

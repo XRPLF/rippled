@@ -23,7 +23,7 @@
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/SociDB.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
 #include <beast/cxx14/memory.h> // <memory>

@@ -23,7 +23,7 @@
 #include <ripple/validators/impl/Store.h>
 #include <beast/module/core/files/File.h>
 #include <beast/utility/Journal.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/SociDB.h>
 
 namespace ripple {
 namespace Validators {

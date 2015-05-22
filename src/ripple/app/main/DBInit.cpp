@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/data/DBInit.h>
+#include <ripple/app/main/DBInit.h>
 #include <type_traits>
 
 namespace ripple {

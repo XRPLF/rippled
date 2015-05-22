@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,41 +17,27 @@
 */
 //==============================================================================
 
-/*  Stub functions for soci dynamic backends.
-
-    Ripple does not use dynamic backends, and inclduing soci's
-    dynamic backends compilcates the build (it requires a generated
-    header file and some macros to be defined.)
-*/
-
 #include <BeastConfig.h>
+#include <ripple/app/main/BasicApp.h>
+#include <beast/threads/Thread.h>
 
-#include <ripple/app/data/SociDB.h>
-
-// dummy soci-backend
-namespace soci {
-namespace dynamic_backends {
-// used internally by session
-backend_factory const& get (std::string const& name)
+BasicApp::BasicApp(std::size_t numberOfThreads)
 {
-    throw std::runtime_error ("Not Supported");
-};
+    work_ = boost::in_place(std::ref(io_service_));
+    threads_.reserve(numberOfThreads);
+    while(numberOfThreads--)
+        threads_.emplace_back(
+            [this, numberOfThreads](){
+                beast::Thread::setCurrentThreadName(
+                    std::string("io_service #") +
+                        std::to_string(numberOfThreads));
+                this->io_service_.run();
+            });
+}
 
-// provided for advanced user-level management
-std::vector<std::string>& search_paths ()
+BasicApp::~BasicApp()
 {
-    static std::vector<std::string> empty;
-    return empty;
-};
-void register_backend (std::string const&, std::string const&){};
-void register_backend (std::string const&, backend_factory const&){};
-std::vector<std::string> list_all ()
-{
-    return {};
-};
-void unload (std::string const&){};
-void unload_all (){};
-
-}  // namespace dynamic_backends
-}  // namespace soci
-
+    work_ = boost::none;
+    for (auto& _ : threads_)
+        _.join();
+}

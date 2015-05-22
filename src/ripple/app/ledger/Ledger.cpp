@@ -26,8 +26,8 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
-#include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>

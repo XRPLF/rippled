@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/basics/Log.h>
 #include <beast/cxx14/memory.h>  // <memory>
 

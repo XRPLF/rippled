@@ -25,8 +25,8 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/peers/ClusterNodeStatus.h>
-#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/overlay/ClusterNodeStatus.h>
+#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>

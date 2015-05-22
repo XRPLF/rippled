@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/ledger/LedgerTiming.cpp>
-#include <ripple/app/ledger/AcceptedLedgerTx.cpp>
 #include <ripple/app/main/LocalCredentials.cpp>
 #include <ripple/app/misc/Validations.cpp>
 #include <ripple/app/misc/FeeVoteImpl.cpp>

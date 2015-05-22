@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/data/SociDB.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/basics/BasicConfig.h>
 #include <boost/filesystem.hpp>
@@ -374,6 +374,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (SociDB, app, ripple);
+BEAST_DEFINE_TESTSUITE(SociDB,core,ripple);
 
 }  // ripple

@@ -21,7 +21,7 @@
 #define RIPPLE_APP_TESTS_COMMON_LEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/tx/impl/Transactor.h>

@@ -19,10 +19,5 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/ledger/Ledger.cpp>
-#include <ripple/app/ledger/impl/LedgerFees.cpp>
-#include <ripple/app/misc/AccountState.cpp>
-
-#include <ripple/app/tests/common_ledger.cpp>
-#include <ripple/app/ledger/tests/Ledger_test.cpp>
-#include <ripple/app/tests/Path_test.cpp>
+#include <ripple/app/ledger/tests/common_ledger.cpp>
+#include <ripple/app/paths/tests/Path_test.cpp>

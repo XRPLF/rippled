@@ -247,18 +247,6 @@
     <Filter Include="ripple\app">
       <UniqueIdentifier>{83B96C00-A786-6597-826D-E12FA6187AA8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\consensus">
-      <UniqueIdentifier>{0E8BC18A-9853-B13E-1A9D-C55FA29DA60F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\data">
-      <UniqueIdentifier>{44B63F90-BC60-A7C7-24A1-632A358E285B}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\data\tests">
-      <UniqueIdentifier>{29C76FB9-636F-FBFC-3CFA-2979281BC279}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\impl">
-      <UniqueIdentifier>{17F94278-7CDE-3EBE-7CD3-372F08902314}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\ledger">
       <UniqueIdentifier>{CE126498-A44D-30A2-345B-0F672BCDF947}</UniqueIdentifier>
     </Filter>
@@ -286,11 +274,8 @@
     <Filter Include="ripple\app\paths\cursor">
       <UniqueIdentifier>{9AD8D049-10A8-704C-D51A-FAD55B1F235F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\peers">
-      <UniqueIdentifier>{07831F2A-6752-E81C-87AF-4D47D425BE8E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\tests">
-      <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
+    <Filter Include="ripple\app\paths\tests">
+      <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\app\tx">
       <UniqueIdentifier>{50FDCDC1-EC9C-9F3B-34C9-EF4137E132B4}</UniqueIdentifier>
@@ -2088,48 +2073,6 @@
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
       <Filter>protobuf\vsprojects</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\consensus\DisputedTx.cpp">
-      <Filter>ripple\app\consensus</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\consensus\DisputedTx.h">
-      <Filter>ripple\app\consensus</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\consensus\LedgerConsensus.cpp">
-      <Filter>ripple\app\consensus</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\consensus\LedgerConsensus.h">
-      <Filter>ripple\app\consensus</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\DatabaseCon.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\data\DatabaseCon.h">
-      <Filter>ripple\app\data</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\DBInit.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\data\DBInit.h">
-      <Filter>ripple\app\data</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\DummySociDynamicBackend.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\data\SociDB.cpp">
-      <Filter>ripple\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\data\SociDB.h">
-      <Filter>ripple\app\data</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\data\tests\SociDB.test.cpp">
-      <Filter>ripple\app\data\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\impl\BasicApp.cpp">
-      <Filter>ripple\app\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\impl\BasicApp.h">
-      <Filter>ripple\app\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2172,6 +2115,12 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\DisputedTx.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\DisputedTx.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -2197,6 +2146,12 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerConsensus.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerEntrySet.cpp">
@@ -2253,6 +2208,12 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\tests\common_ledger.cpp">
+      <Filter>ripple\app\ledger\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\tests\common_ledger.h">
+      <Filter>ripple\app\ledger\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\tests\DeferredCredits.test.cpp">
       <Filter>ripple\app\ledger\tests</Filter>
     </ClCompile>
@@ -2271,10 +2232,22 @@
     <ClInclude Include="..\..\src\ripple\app\main\Application.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\main\BasicApp.cpp">
+      <Filter>ripple\app\main</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\main\BasicApp.h">
+      <Filter>ripple\app\main</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\CollectorManager.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\CollectorManager.h">
+      <Filter>ripple\app\main</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\main\DBInit.cpp">
+      <Filter>ripple\app\main</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\main\DBInit.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\LoadManager.cpp">
@@ -2361,6 +2334,12 @@
     <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
       <Filter>ripple\app\misc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
+      <Filter>ripple\app\misc</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\UniqueNodeList.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2472,30 +2451,15 @@
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
+      <Filter>ripple\app\paths\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\Tuning.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\peers\ClusterNodeStatus.h">
-      <Filter>ripple\app\peers</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\peers\UniqueNodeList.cpp">
-      <Filter>ripple\app\peers</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\peers\UniqueNodeList.h">
-      <Filter>ripple\app\peers</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\common_ledger.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tests\common_ledger.h">
-      <Filter>ripple\app\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\Path_test.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2775,7 +2739,16 @@
     <ClInclude Include="..\..\src\ripple\core\ConfigSections.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\Config.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\DatabaseCon.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\DummySociDynamicBackend.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\Job.cpp">
@@ -2794,6 +2767,9 @@
       <Filter>ripple\core\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\SociDB.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
@@ -2820,10 +2796,16 @@
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\SociDB.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
+      <Filter>ripple\core\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\tests\SociDB.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\crypto\Base58.h">
@@ -3146,6 +3128,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\ClusterNodeStatus.h">
+      <Filter>ripple\overlay</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\ConnectAttempt.cpp">
       <Filter>ripple\overlay\impl</Filter>
@@ -4086,31 +4071,19 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\app.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app1.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_main.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app2.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_misc.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app3.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_paths.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app4.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app5.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app6.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app7.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app8.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_tx.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\basics.cpp">

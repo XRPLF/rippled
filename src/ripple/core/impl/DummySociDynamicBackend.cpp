@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,15 +17,41 @@
 */
 //==============================================================================
 
+/*  Stub functions for soci dynamic backends.
+
+    Ripple does not use dynamic backends, and inclduing soci's
+    dynamic backends compilcates the build (it requires a generated
+    header file and some macros to be defined.)
+*/
+
 #include <BeastConfig.h>
 
-#include <ripple/core/impl/Config.cpp>
-#include <ripple/core/impl/DatabaseCon.cpp>
-#include <ripple/core/impl/LoadFeeTrackImp.cpp>
-#include <ripple/core/impl/LoadEvent.cpp>
-#include <ripple/core/impl/LoadMonitor.cpp>
-#include <ripple/core/impl/Job.cpp>
-#include <ripple/core/impl/JobQueue.cpp>
+#include <ripple/core/SociDB.h>
 
-#include <ripple/core/tests/LoadFeeTrack.test.cpp>
-#include <ripple/core/tests/Config.test.cpp>
+// dummy soci-backend
+namespace soci {
+namespace dynamic_backends {
+// used internally by session
+backend_factory const& get (std::string const& name)
+{
+    throw std::runtime_error ("Not Supported");
+};
+
+// provided for advanced user-level management
+std::vector<std::string>& search_paths ()
+{
+    static std::vector<std::string> empty;
+    return empty;
+};
+void register_backend (std::string const&, std::string const&){};
+void register_backend (std::string const&, backend_factory const&){};
+std::vector<std::string> list_all ()
+{
+    return {};
+};
+void unload (std::string const&){};
+void unload_all (){};
+
+}  // namespace dynamic_backends
+}  // namespace soci
+

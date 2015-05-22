@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <beast/cxx14/memory.h>  // <memory>
 #include <beast/unit_test/suite.h>

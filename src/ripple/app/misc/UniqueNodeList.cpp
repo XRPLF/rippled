@@ -20,10 +20,10 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
-#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/peers/ClusterNodeStatus.h>
-#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/overlay/ClusterNodeStatus.h>
+#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Time.h>

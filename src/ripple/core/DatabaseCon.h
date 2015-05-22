@@ -21,7 +21,7 @@
 #define RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 
 #include <ripple/core/Config.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/SociDB.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <string>

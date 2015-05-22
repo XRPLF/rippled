@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#include <ripple/app/tests/common_ledger.h>
+#include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/basics/TestSuite.h>

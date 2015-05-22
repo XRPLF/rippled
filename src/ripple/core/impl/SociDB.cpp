@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 
 #include <ripple/core/ConfigSections.h>
-#include <ripple/app/data/SociDB.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/core/Config.h>
 #include <beast/cxx14/memory.h>  // <memory>
 #include <backends/sqlite3/soci-sqlite3.h>

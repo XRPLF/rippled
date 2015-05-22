@@ -637,13 +637,13 @@ def get_classic_sources():
     result = []
     append_sources(
         result,
-        *list_sources('src/ripple/app', '.cpp'),
+        *list_sources('src/ripple/core', '.cpp'),
         CPPPATH=[
             'src/soci/src/core',
             'src/sqlite']
     )
+    append_sources(result, *list_sources('src/ripple/app', '.cpp'))
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
-    append_sources(result, *list_sources('src/ripple/core', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
     append_sources(result, *list_sources('src/ripple/json', '.cpp'))
     append_sources(result, *list_sources('src/ripple/legacy', '.cpp'))
@@ -669,15 +669,11 @@ def get_unity_sources():
     result = []
     append_sources(
         result,
-        'src/ripple/unity/app.cpp',
-        'src/ripple/unity/app1.cpp',
-        'src/ripple/unity/app2.cpp',
-        'src/ripple/unity/app3.cpp',
-        'src/ripple/unity/app4.cpp',
-        'src/ripple/unity/app5.cpp',
-        'src/ripple/unity/app6.cpp',
-        'src/ripple/unity/app7.cpp',
-        'src/ripple/unity/app8.cpp',
+        'src/ripple/unity/app_ledger.cpp',
+        'src/ripple/unity/app_main.cpp',
+        'src/ripple/unity/app_misc.cpp',
+        'src/ripple/unity/app_paths.cpp',
+        'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
         'src/ripple/unity/crypto.cpp',

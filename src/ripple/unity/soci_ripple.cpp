@@ -19,6 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/data/DummySociDynamicBackend.cpp>
-#include <ripple/app/data/SociDB.cpp>
-#include <ripple/app/data/tests/SociDB.test.cpp>
+#include <ripple/core/impl/DummySociDynamicBackend.cpp>
+#include <ripple/core/impl/SociDB.cpp>
+#include <ripple/core/tests/SociDB.test.cpp>

@@ -19,9 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/data/DatabaseCon.h>
-#include <ripple/app/data/DBInit.h>
-#include <ripple/app/impl/BasicApp.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/app/main/DBInit.h>
+#include <ripple/app/main/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -39,7 +39,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/peers/UniqueNodeList.h>
+#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>

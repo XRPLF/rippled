@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/consensus/DisputedTx.h>
-#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/ledger/DisputedTx.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>

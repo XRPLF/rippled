@@ -18,15 +18,3 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-
-#include <ripple/app/data/DatabaseCon.cpp>
-#include <ripple/app/data/DBInit.cpp>
-#include <ripple/app/ledger/AccountStateSF.cpp>
-#include <ripple/app/ledger/BookListeners.cpp>
-#include <ripple/app/ledger/ConsensusTransSetSF.cpp>
-#include <ripple/app/ledger/LedgerProposal.cpp>
-#include <ripple/app/ledger/OrderBookDB.cpp>
-#include <ripple/app/ledger/TransactionStateSF.cpp>
-#include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>

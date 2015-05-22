@@ -16,9 +16,9 @@
 //==============================================================================
 
 #include <ripple/app/tx/tests/common_transactor.h>
-#include <ripple/app/consensus/LedgerConsensus.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
-#include <ripple/app/tests/common_ledger.h>
+#include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/TxFlags.h>

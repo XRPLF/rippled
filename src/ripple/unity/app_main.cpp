@@ -18,26 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/impl/BasicApp.h>
-#include <beast/threads/Thread.h>
 
-BasicApp::BasicApp(std::size_t numberOfThreads)
-{
-    work_ = boost::in_place(std::ref(io_service_));
-    threads_.reserve(numberOfThreads);
-    while(numberOfThreads--)
-        threads_.emplace_back(
-            [this, numberOfThreads](){
-                beast::Thread::setCurrentThreadName(
-                    std::string("io_service #") +
-                        std::to_string(numberOfThreads));
-                this->io_service_.run();
-            });
-}
-
-BasicApp::~BasicApp()
-{
-    work_ = boost::none;
-    for (auto& _ : threads_)
-        _.join();
-}
+#include <ripple/app/main/BasicApp.cpp>
+#include <ripple/app/main/Application.cpp>
+#include <ripple/app/main/CollectorManager.cpp>
+#include <ripple/app/main/Main.cpp>
+#include <ripple/app/main/NodeStoreScheduler.cpp>
+#include <ripple/app/main/DBInit.cpp>
+#include <ripple/app/main/LoadManager.cpp>
+#include <ripple/app/main/LocalCredentials.cpp>
