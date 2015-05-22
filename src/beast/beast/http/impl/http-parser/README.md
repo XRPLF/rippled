@@ -128,9 +128,9 @@ save certain data for later usage, you can do that from the callbacks.
 
 There are two types of callbacks:
 
-* notification `using (http_parser*) = int (*http_cb);`
+* notification `using http_cb = int (*) (http_parser*);`
     Callbacks: on_message_begin, on_headers_complete, on_message_complete.
-* data `using length) = int (*http_data_cb) (http_parser*, const char *at, size_t;`
+* data `using http_data_cb = int (*) (http_parser*, const char *at, size_t length);`
     Callbacks: (requests only) on_uri,
                (common) on_header_field, on_header_value, on_body;
 

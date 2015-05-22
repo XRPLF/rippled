@@ -40,7 +40,7 @@ namespace ripple {
 class RippleAddress : private CBase58Data
 {
 private:
-    using VersionEncoding = enum
+    enum VersionEncoding
     {
         VER_NONE                = 1,
         VER_NODE_PUBLIC         = 28,

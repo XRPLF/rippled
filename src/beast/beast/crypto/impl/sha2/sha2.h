@@ -57,13 +57,13 @@
 #define SHA512_DIGEST_STRING_LENGTH	(SHA512_DIGEST_LENGTH * 2 + 1)
 
 /*** SHA-256/384/512 Context Structures *******************************/
-struct SHA512_CTX {
+typedef struct _SHA512_CTX {
 	std::uint64_t	state[8];
 	std::uint64_t	bitcount[2];
 	std::uint8_t	buffer[SHA512_BLOCK_LENGTH];
-};
+} SHA512_CTX;
 
-using SHA384_CTX = SHA512_CTX;
+typedef SHA512_CTX SHA384_CTX;
 
 
 /*** SHA-256/384/512 Function Prototypes ******************************/

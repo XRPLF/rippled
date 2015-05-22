@@ -100,17 +100,17 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 //**************************************
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   // C99
 # include <stdint.h>
-using BYTE = uint8_t;
-using U16  = uint16_t;
-using U32  = uint32_t;
-using S32  = int32_t;
-using U64  = uint64_t;
+typedef uint8_t  BYTE;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef  int32_t S32;
+typedef uint64_t U64;
 #else
-using BYTE = unsigned char;
-using U16  = unsigned short;
-using U32  = unsigned int;
-using S32  = signed int;
-using U64  = unsigned long long;
+typedef unsigned char      BYTE;
+typedef unsigned short     U16;
+typedef unsigned int       U32;
+typedef   signed int       S32;
+typedef unsigned long long U64;
 #endif
 
 #if defined(__GNUC__)  && !defined(XXH_USE_UNALIGNED_ACCESS)
@@ -130,14 +130,14 @@ using U64  = unsigned long long;
 namespace beast {
 namespace detail {
 
-struct _PACKED U32_S
+typedef struct _U32_S
 {
     U32 v;
-};
-struct _PACKED U64_S
+} _PACKED U32_S;
+typedef struct _U64_S
 {
     U64 v;
-};
+} _PACKED U64_S;
 
 #if !defined(XXH_USE_UNALIGNED_ACCESS) && !defined(__GNUC__)
 #  pragma pack(pop)
@@ -207,7 +207,7 @@ static inline U64 XXH_swap64 (U64 x)
 //**************************************
 // Architecture Macros
 //**************************************
-enum XXH_endianess { XXH_bigEndian=0, XXH_littleEndian=1 };
+typedef enum { XXH_bigEndian=0, XXH_littleEndian=1 } XXH_endianess;
 #ifndef XXH_CPU_LITTLE_ENDIAN   // It is possible to define XXH_CPU_LITTLE_ENDIAN externally, for example using a compiler switch
 static const int one = 1;
 #   define XXH_CPU_LITTLE_ENDIAN   (*(char*)(&one))
@@ -223,7 +223,7 @@ static const int one = 1;
 //****************************
 // Memory reads
 //****************************
-enum XXH_alignment { XXH_aligned, XXH_unaligned };
+typedef enum { XXH_aligned, XXH_unaligned } XXH_alignment;
 
 FORCE_INLINE U32 XXH_readLE32_align(const void* ptr, XXH_endianess endian, XXH_alignment align)
 {
@@ -505,7 +505,7 @@ unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed
 ****************************************************/
 
 /*** Allocation ***/
-struct XXH_istate32_t
+typedef struct
 {
     U64 total_len;
     U32 seed;
@@ -515,9 +515,9 @@ struct XXH_istate32_t
     U32 v4;
     U32 mem32[4];   /* defined as U32 for alignment */
     U32 memsize;
-};
+} XXH_istate32_t;
 
-struct XXH_istate64_t
+typedef struct
 {
     U64 total_len;
     U64 seed;
@@ -527,7 +527,7 @@ struct XXH_istate64_t
     U64 v4;
     U64 mem64[4];   /* defined as U64 for alignment */
     U32 memsize;
-};
+} XXH_istate64_t;
 
 
 XXH32_state_t* XXH32_createState(void)

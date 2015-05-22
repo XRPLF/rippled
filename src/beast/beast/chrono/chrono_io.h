@@ -68,7 +68,7 @@ class timepunct
     : public locale::facet
 {
 public:
-    using string_type = basic_string<charT>;
+    typedef basic_string<charT> string_type;
 
     static locale::id id;
 
@@ -169,7 +169,7 @@ round(const duration<Rep, Period>& d)
     To t0 = duration_cast<To>(d);
     To t1 = t0;
     ++t1;
-    using _D = typename common_type<To, duration<Rep, Period> >::type;
+    typedef typename common_type<To, duration<Rep, Period> >::type _D;
     _D diff0 = d - t0;
     _D diff1 = t1 - d;
     if (diff0 == diff1)
@@ -298,8 +298,8 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const duration<_Rep, _Period>& 
     typename basic_ostream<_CharT, _Traits>::sentry ok(__os);
     if (ok)
     {
-        using _F = durationpunct;
-        using string_type = basic_string<_CharT>;
+        typedef durationpunct _F;
+        typedef basic_string<_CharT> string_type;
         bool failed = false;
         try
         {
@@ -326,13 +326,13 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const duration<_Rep, _Period>& 
 template <class _Rep, bool = is_scalar<_Rep>::value>
 struct __duration_io_intermediate
 {
-    using type = _Rep;
+    typedef _Rep type;
 };
 
 template <class _Rep>
 struct __duration_io_intermediate<_Rep, true>
 {
-    using type = typename conditional
+    typedef typename conditional
     <
         is_floating_point<_Rep>::value,
             long double,
@@ -342,7 +342,7 @@ struct __duration_io_intermediate<_Rep, true>
                     long long,
                     unsigned long long
             >::type
-    >::type;
+    >::type type;
 };
 
 template <class T>
@@ -371,17 +371,17 @@ basic_istream<_CharT, _Traits>&
 operator>>(basic_istream<_CharT, _Traits>& __is, duration<_Rep, _Period>& __d)
 {
     // These are unused and generate warnings
-    //using string_type = basic_string<_CharT>;
-    //using _F = durationpunct;
+    //typedef basic_string<_CharT> string_type;
+    //typedef durationpunct _F;
 
-    using _IR = typename __duration_io_intermediate<_Rep>::type;
+    typedef typename __duration_io_intermediate<_Rep>::type _IR;
     _IR __r;
     // read value into __r
     __is >> __r;
     if (__is.good())
     {
         // now determine unit
-        using _I = istreambuf_iterator<_CharT, _Traits>;
+        typedef istreambuf_iterator<_CharT, _Traits> _I;
         _I __i(__is);
         _I __e;
         if (__i != __e && *__i == ' ')  // mandatory ' ' after value
@@ -638,7 +638,7 @@ operator>>(basic_istream<_CharT, _Traits>& __is, duration<_Rep, _Period>& __d)
                 num *= __d2;
                 den *= __n2;
                 // num / den is now factor to multiply by __r
-                using _CT = typename common_type<_IR, unsigned long long>::type;
+                typedef typename common_type<_IR, unsigned long long>::type _CT;
                 if (is_integral<_IR>::value)
                 {
                     // Reduce __r * num / den
@@ -691,7 +691,7 @@ class timepunct
     : public locale::facet
 {
 public:
-    using string_type = basic_string<charT>;
+    typedef basic_string<charT> string_type;
 
 private:
     string_type           fmt_;

@@ -34,14 +34,14 @@ extern "C" {
 #if defined(_WIN32) && !defined(__MINGW32__) && (!defined(_MSC_VER) || _MSC_VER<1600)
 #include <BaseTsd.h>
 #include <stddef.h>
-using int8_t = __int8;
-using uint8_t = unsigned __int8;
-using int16_t = __int16;
-using uint16_t = unsigned __int16;
-using int32_t = __int32;
-using uint32_t = unsigned __int32;
-using int64_t = __int64;
-using uint64_t = unsigned __int64;
+typedef __int8 int8_t;
+typedef unsigned __int8 uint8_t;
+typedef __int16 int16_t;
+typedef unsigned __int16 uint16_t;
+typedef __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
 #else
 #include <stdint.h>
 #endif
@@ -57,8 +57,8 @@ using uint64_t = unsigned __int64;
 #define HTTP_MAX_HEADER_SIZE (80*1024)
 
 
-using http_parser = struct http_parser;
-using http_parser_settings = struct http_parser_settings;
+typedef struct http_parser http_parser;
+typedef struct http_parser_settings http_parser_settings;
 
 
 /* Callbacks should return non-zero to indicate an error. The parser will
@@ -74,8 +74,8 @@ using http_parser_settings = struct http_parser_settings;
  * many times for each string. E.G. you might get 10 callbacks for "on_url"
  * each providing just a few characters more data.
  */
-using http_data_cb = int (*) (http_parser*, const char *at, size_t length);
-using http_cb = int (*) (http_parser*);
+typedef int (*http_data_cb) (http_parser*, const char *at, size_t length);
+typedef int (*http_cb) (http_parser*);
 
 
 /* Request Methods */

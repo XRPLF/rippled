@@ -96,16 +96,16 @@
  * during compile or in the sha.h header file.
  *
  * Machines that support neither u_intXX_t nor inttypes.h's uintXX_t
- * will need to define these three type aliases below (and the appropriate
+ * will need to define these three typedefs below (and the appropriate
  * ones in sha.h too) by hand according to their system architecture.
  *
  * Thank you, Jun-ichiro itojun Hagino, for suggesting using u_intXX_t
  * types and pointing out recent ANSI C support for uintXX_t in inttypes.h.
  */
 
-using sha2_byte   = std::uint8_t;	/* Exactly 1 byte */
-using sha2_word32 = std::uint32_t;	/* Exactly 4 bytes */
-using sha2_word64 = std::uint64_t;	/* Exactly 8 bytes */
+typedef std::uint8_t  sha2_byte;	/* Exactly 1 byte */
+typedef std::uint32_t sha2_word32;	/* Exactly 4 bytes */
+typedef std::uint64_t sha2_word64;	/* Exactly 8 bytes */
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/
 /* NOTE: Most of these are in sha2.h */
