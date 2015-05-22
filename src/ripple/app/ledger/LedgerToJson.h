@@ -136,14 +136,14 @@ void fillJson (Object& json, LedgerFill const& fill)
             {
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
                 {
-                     if (bBinary)
+                    if (bBinary)
                     {
                         auto&& obj = appendObject (txns);
                         obj[jss::tx_blob] = strHex (item->peekData ());
                     }
                     else
                     {
-                        SerialIter sit (item->peekSerializer ());
+                        SerialIter sit (item->slice ());
                         STTx txn (sit);
                         txns.append (txn.getJson (0));
                     }
@@ -152,7 +152,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                 {
                     if (bBinary)
                     {
-                        SerialIter sit (item->peekSerializer ());
+                        SerialIter sit (item->slice ());
 
                         auto&& obj = appendObject (txns);
                         obj[jss::tx_blob] = strHex (sit.getVL ());
@@ -160,10 +160,10 @@ void fillJson (Object& json, LedgerFill const& fill)
                     }
                     else
                     {
-                        SerialIter sit (item->peekSerializer ());
-                        Serializer sTxn (sit.getVL ());
-
-                        SerialIter tsit (sTxn);
+                        // VFALCO This is making a needless copy
+                        SerialIter sit (item->slice ());
+                        auto const vl = sit.getVL();
+                        SerialIter tsit (make_Slice(vl));
                         STTx txn (tsit);
 
                         TransactionMetaSet meta (

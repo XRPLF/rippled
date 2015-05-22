@@ -35,8 +35,7 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
     , mLedger (ledger)
     , mNodes (sfAffectedNodes, 32)
 {
-    Serializer s (data);
-    SerialIter sit (s);
+    SerialIter sit (make_Slice(data));
 
     STObject obj(sit, sfMetadata);
     mResult = obj.getFieldU8 (sfTransactionResult);

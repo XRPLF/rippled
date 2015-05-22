@@ -33,7 +33,7 @@ public:
         Serializer ser;
         s.add (ser);
 
-        SerialIter sit (ser);
+        SerialIter sit (ser.slice());
         return STAmount(sit, sfGeneric);
     }
 

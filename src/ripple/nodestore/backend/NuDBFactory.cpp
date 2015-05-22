@@ -126,7 +126,7 @@ public:
     }
 
     Status
-    fetch (void const* key, NodeObject::Ptr* pno)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pno)
     {
         Status status;
         pno->reset();
@@ -201,7 +201,7 @@ public:
     }
 
     void
-    for_each (std::function <void(NodeObject::Ptr)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
     {
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();

@@ -174,7 +174,7 @@ SHAMap::fetchNodeFromDB (uint256 const& hash) const
 
     if (backed_)
     {
-        NodeObject::pointer obj = f_.db().fetch (hash);
+        std::shared_ptr<NodeObject> obj = f_.db().fetch (hash);
         if (obj)
         {
             try
@@ -377,7 +377,7 @@ SHAMapTreeNode* SHAMap::descendAsync (SHAMapTreeNode* parent, int branch,
 
         if (!ptr && backed_)
         {
-            NodeObject::pointer obj;
+            std::shared_ptr<NodeObject> obj;
             if (! f_.db().asyncFetch (hash, obj))
             {
                 pending = true;

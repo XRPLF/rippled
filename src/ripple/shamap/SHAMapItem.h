@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Slice.h>
 #include <beast/utility/Journal.h>
 
 #include <cstddef>
@@ -40,6 +41,8 @@ public:
     SHAMapItem (uint256 const& tag, Blob const & data);
     SHAMapItem (uint256 const& tag, Serializer const& s);
 
+    Slice slice() const;
+
     uint256 const& getTag() const;
     Blob const& peekData() const;
     Serializer& peekSerializer();
@@ -51,14 +54,22 @@ private:
     explicit SHAMapItem (Blob const& data);
 
     void const* data() const;
-    void addRaw (Blob& s) const;
     void dump (beast::Journal journal);
 };
+
+//------------------------------------------------------------------------------
 
 inline
 SHAMapItem::SHAMapItem (uint256 const& tag)
     : mTag (tag)
 {
+}
+
+inline
+Slice
+SHAMapItem::slice() const
+{
+    return mData.slice();
 }
 
 inline
@@ -94,13 +105,6 @@ Serializer&
 SHAMapItem::peekSerializer()
 {
     return mData;
-}
-
-inline
-void
-SHAMapItem::addRaw (Blob& s) const
-{
-    s.insert (s.end (), mData.begin (), mData.end ());
 }
 
 } // ripple

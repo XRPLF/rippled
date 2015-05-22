@@ -979,7 +979,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    SerialIter sit (m->rawtransaction ());
+    SerialIter sit (make_Slice(m->rawtransaction()));
 
     try
     {
@@ -1485,7 +1485,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
                 // VFALCO TODO Move this someplace more sensible so we dont
                 //             need to inject the NodeStore interfaces.
-                NodeObject::pointer hObj =
+                std::shared_ptr<NodeObject> hObj =
                     getApp().getNodeStore ().fetch (hash);
 
                 if (hObj)

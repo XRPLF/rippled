@@ -50,8 +50,9 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
 
         try
         {
-            Serializer s (nodeData.begin () + 4, nodeData.end ()); // skip prefix
-            SerialIter sit (s);
+            // skip prefix
+            Serializer s (nodeData.data() + 4, nodeData.size() - 4);
+            SerialIter sit (s.slice());
             STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
             getApp().getJobQueue ().addJob (

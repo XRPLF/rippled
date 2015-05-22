@@ -106,79 +106,12 @@ int Serializer::addRaw (const void* ptr, int len)
     return ret;
 }
 
-bool Serializer::get16 (std::uint16_t& o, int offset) const
-{
-    if ((offset + 2) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get32 (std::uint32_t& o, int offset) const
-{
-    if ((offset + 4) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get64 (std::uint64_t& o, int offset) const
-{
-    if ((offset + 8) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get128 (uint128& o, int offset) const
-{
-    if ((offset + (128 / 8)) > mData.size ()) return false;
-
-    memcpy (o.begin (), & (mData.front ()) + offset, (128 / 8));
-    return true;
-}
-
 bool Serializer::get256 (uint256& o, int offset) const
 {
     if ((offset + (256 / 8)) > mData.size ()) return false;
 
     memcpy (o.begin (), & (mData.front ()) + offset, (256 / 8));
     return true;
-}
-
-uint256 Serializer::get256 (int offset) const
-{
-    uint256 ret;
-
-    if ((offset + (256 / 8)) > mData.size ()) return ret;
-
-    memcpy (ret.begin (), & (mData.front ()) + offset, (256 / 8));
-    return ret;
 }
 
 int Serializer::addFieldID (int type, int name)

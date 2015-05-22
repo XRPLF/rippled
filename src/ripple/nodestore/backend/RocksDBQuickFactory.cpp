@@ -201,7 +201,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch (void const* key, NodeObject::Ptr* pObject)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pObject)
     {
         pObject->reset ();
 
@@ -257,7 +257,7 @@ public:
     }
 
     void
-    store (NodeObject::ref object)
+    store (std::shared_ptr<NodeObject> const& object)
     {
         storeBatch(Batch{object});
     }
@@ -299,7 +299,7 @@ public:
     }
 
     void
-    for_each (std::function <void(NodeObject::Ptr)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
     {
         rocksdb::ReadOptions const options;
 

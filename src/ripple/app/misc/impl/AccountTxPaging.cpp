@@ -36,7 +36,7 @@ convertBlobsToTxResult (
     Blob const& rawTxn,
     Blob const& rawMeta)
 {
-    SerialIter it (rawTxn);
+    SerialIter it (make_Slice(rawTxn));
     STTx::pointer txn = std::make_shared<STTx> (it);
     std::string reason;
 

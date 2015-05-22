@@ -32,7 +32,7 @@ enum NodeObjectType
 {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
-    hotTRANSACTION = 2,
+    //hotTRANSACTION = 2        // Not used
     hotACCOUNT_NODE = 3,
     hotTRANSACTION_NODE = 4
 };
@@ -62,13 +62,6 @@ public:
         keyBytes = 32,
     };
 
-    // Please use this one. For a reference use Ptr const&
-    using Ptr = std::shared_ptr <NodeObject>;
-
-    // These are DEPRECATED, type names are capitalized.
-    using pointer = std::shared_ptr <NodeObject>;
-    using ref = pointer const&;
-
 private:
     // This hack is used to make the constructor effectively private
     // except for when we use it in the call to make_shared.
@@ -92,40 +85,19 @@ public:
                     is overwritten.
         @param hash The 256-bit hash of the payload data.
     */
-    static Ptr createObject (NodeObjectType type,
-                             Blob&& data,
-                             uint256 const& hash);
+    static
+    std::shared_ptr<NodeObject>
+    createObject (NodeObjectType type,
+        Blob&& data, uint256 const& hash);
 
-    /** Retrieve the type of this object.
-    */
+    /** Returns the type of this object. */
     NodeObjectType getType () const;
 
-    /** Retrieve the hash metadata.
-    */
+    /** Returns the hash of the data. */
     uint256 const& getHash () const;
 
-    /** Retrieve the binary data.
-    */
+    /** Returns the underlying data. */
     Blob const& getData () const;
-
-    /** See if this object has the same data as another object.
-    */
-    bool isCloneOf (NodeObject::Ptr const& other) const;
-
-    /** Binary function that satisfies the strict-weak-ordering requirement.
-
-        This compares the hashes of both objects and returns true if
-        the first hash is considered to go before the second.
-
-        @see std::sort
-    */
-    struct LessThan
-    {
-        inline bool operator() (NodeObject::Ptr const& lhs, NodeObject::Ptr const& rhs) const noexcept
-        {
-            return lhs->getHash () < rhs->getHash ();
-        }
-    };
 
 private:
     NodeObjectType mType;
