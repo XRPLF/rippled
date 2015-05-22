@@ -43,9 +43,9 @@ private:
     detail::XXH64_state_t state_;
 
 public:
-    static beast::endian const endian = beast::endian::native;
-
     using result_type = std::size_t;
+
+    static beast::endian const endian = beast::endian::native;
 
     xxhasher() noexcept
     {
