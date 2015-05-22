@@ -31,7 +31,7 @@ namespace std {
 template <class T, T... Ints>
 struct integer_sequence
 {
-    typedef T value_type;
+    using value_type = T;
     static_assert (is_integral<T>::value,
         "std::integer_sequence can only be instantiated with an integral type" );
 
@@ -70,15 +70,15 @@ template <class T, unsigned long long N, unsigned long long ...Indices>
 struct make_integer_sequence_unchecked <
     T, N, integer_sequence <T, Indices...>>
 {
-    typedef typename make_integer_sequence_unchecked<
-        T, N-1, integer_sequence<T, N-1, Indices...>>::type type;
+    using type = typename make_integer_sequence_unchecked<
+        T, N-1, integer_sequence<T, N-1, Indices...>>::type;
 };
 
 template <class T, unsigned long long ...Indices>
 struct make_integer_sequence_unchecked <
     T, 0, integer_sequence<T, Indices...>>
 {
-    typedef integer_sequence <T, Indices...> type;
+    using type = integer_sequence <T, Indices...>;
 };
 
 template <class T, T N>
@@ -90,8 +90,8 @@ struct make_integer_sequence_checked
     static_assert (N >= 0,
         "N must be non-negative");
 
-    typedef typename make_integer_sequence_unchecked <
-        T, N, integer_sequence<T>>::type type;
+    using type = typename make_integer_sequence_unchecked <
+        T, N, integer_sequence<T>>::type;
 };
 
 } // detail
@@ -116,20 +116,20 @@ namespace detail {
 template <size_t... Ints>
 struct index_tuple
 {
-    typedef index_tuple <Ints..., sizeof... (Ints)> next;
+    using next = index_tuple <Ints..., sizeof... (Ints)>;
 
 };
 
 template <size_t N>
 struct build_index_tuple
 {
-    typedef typename build_index_tuple <N-1>::type::next type;
+    using type = typename build_index_tuple <N-1>::type::next;
 };
 
 template <>
 struct build_index_tuple <0>
 {
-    typedef index_tuple<> type;
+    using type = index_tuple<>;
 };
 
 template <class T, T N,
@@ -146,7 +146,7 @@ struct make_integer_sequence <T, N, index_tuple <Ints...>>
     static_assert (N >= 0,
         "N must be non-negative");
 
-    typedef integer_sequence <T, static_cast <T> (Ints)...> type;
+    using type = integer_sequence <T, static_cast <T> (Ints)...>;
 };
 
 } // detail

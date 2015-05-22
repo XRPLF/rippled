@@ -40,7 +40,7 @@ template < typename AllocatedType
 class BatchAllocator
 {
 public:
-    typedef AllocatedType Type;
+    using Type = AllocatedType;
 
     BatchAllocator ( unsigned int objectsPerPage = 255 )
         : freeHead_ ( 0 )

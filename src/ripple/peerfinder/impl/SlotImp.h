@@ -34,10 +34,10 @@ namespace PeerFinder {
 class SlotImp : public Slot
 {
 private:
-    typedef beast::aged_unordered_map <beast::IP::Endpoint, int> recent_type;
+    using recent_type = beast::aged_unordered_map <beast::IP::Endpoint, int>;
 
 public:
-    typedef std::shared_ptr <SlotImp> ptr;
+    using ptr = std::shared_ptr <SlotImp>;
 
     // inbound
     SlotImp (beast::IP::Endpoint const& local_endpoint,

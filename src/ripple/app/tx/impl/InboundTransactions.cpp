@@ -63,7 +63,7 @@ class InboundTransactionsImp
 {
 public:
 
-    typedef std::pair<uint256, TransactionAcquire::pointer> u256_acq_pair;
+    using u256_acq_pair = std::pair<uint256, TransactionAcquire::pointer>;
 
     InboundTransactionsImp (
             clock_type& clock,
@@ -272,10 +272,10 @@ public:
 private:
     clock_type& m_clock;
 
-    typedef hash_map <uint256, InboundTransactionSet> MapType;
+    using MapType = hash_map <uint256, InboundTransactionSet>;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef std::unique_lock <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::unique_lock <LockType>;
     LockType mLock;
 
     MapType m_map;

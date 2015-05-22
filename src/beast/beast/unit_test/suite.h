@@ -141,7 +141,7 @@ public:
             Multiline output sent to the stream will be atomically
             written to the underlying abstract_Ostream
     */
-    typedef abstract_ostream::scoped_stream_type scoped_stream;
+    using scoped_stream = abstract_ostream::scoped_stream_type;
 
     /** Memberspace for logging. */
     log_t log;

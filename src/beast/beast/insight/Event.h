@@ -43,7 +43,7 @@ namespace insight {
 class Event : public Base
 {
 public:
-    typedef EventImpl::value_type value_type;
+    using value_type = EventImpl::value_type;
 
     /** Create a null metric.
         A null metric reports no information.

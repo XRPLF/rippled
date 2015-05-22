@@ -72,7 +72,7 @@ namespace beast {
         String value2;
     };
 
-    typedef SharedData <State> SharedState;
+    using SharedState = SharedData <State>;
 
     SharedState m_state;
 
@@ -113,11 +113,11 @@ template <typename Value, class SharedMutexType =
 class SharedData
 {
 private:
-    typedef typename SharedMutexType::LockGuardType LockGuardType;
-    typedef typename SharedMutexType::SharedLockGuardType SharedLockGuardType;
+    using LockGuardType = typename SharedMutexType::LockGuardType;
+    using SharedLockGuardType = typename SharedMutexType::SharedLockGuardType;
 
 public:
-    typedef Value ValueType;
+    using ValueType = Value;
 
     class Access;
     class ConstAccess;

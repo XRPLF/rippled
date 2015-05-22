@@ -86,8 +86,8 @@ private:
         }
     };
 
-    typedef CriticalSection MutexType;
-    typedef MutexType::ScopedLockType ScopedLockType;
+    using MutexType = CriticalSection;
+    using ScopedLockType = MutexType::ScopedLockType;
 
     static StaticDestructor s_staticDestructor;
 

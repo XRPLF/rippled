@@ -30,7 +30,7 @@ class HookImpl
     , public BaseImpl
 {
 public:
-    typedef std::function <void (void)> HandlerType;
+    using HandlerType = std::function <void (void)>;
 
     virtual ~HookImpl () = 0;
 };

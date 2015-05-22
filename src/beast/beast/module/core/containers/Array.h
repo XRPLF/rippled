@@ -57,7 +57,7 @@ template <typename ElementType,
 class Array
 {
 private:
-    typedef ElementType ParameterType;
+    using ParameterType = ElementType;
 
 public:
     //==============================================================================
@@ -1021,7 +1021,7 @@ public:
     inline const TypeOfCriticalSectionToUse& getLock() const noexcept      { return data; }
 
     /** Returns the type of scoped lock to use for locking this array */
-    typedef typename TypeOfCriticalSectionToUse::ScopedLockType ScopedLockType;
+    using ScopedLockType = typename TypeOfCriticalSectionToUse::ScopedLockType;
 
 
 private:

@@ -48,7 +48,7 @@ public:
 
     using key_type   = Key;
     using size_type  = typename CacheType::size_type;
-    using clock_type = typename CacheType::clock_type ;
+    using clock_type = typename CacheType::clock_type;
 
     /** Construct the cache.
 

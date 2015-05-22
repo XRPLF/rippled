@@ -54,11 +54,11 @@ template <
 class basic_scoped_ostream
 {
 private:
-    typedef std::function <void (
-        std::basic_string <CharT, Traits, Allocator> const&)> handler_t;
+    using handler_t = std::function <void (
+        std::basic_string <CharT, Traits, Allocator> const&)>;
 
-    typedef std::basic_ostringstream <
-        CharT, Traits, Allocator> stream_type;
+    using stream_type = std::basic_ostringstream <
+        CharT, Traits, Allocator>;
 
     handler_t m_handler;
 
@@ -81,7 +81,7 @@ private:
 #endif
 
 public:
-    typedef std::basic_string <CharT, Traits> string_type;
+    using string_type = std::basic_string <CharT, Traits>;
 
     // Disallow copy since that would duplicate the output
     basic_scoped_ostream (basic_scoped_ostream const&) = delete;

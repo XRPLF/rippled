@@ -36,7 +36,7 @@ template <>
 struct equal_to <void>
 {
     // VFALCO NOTE Its not clear how to support is_transparent pre c++14
-    typedef std::true_type is_transparent;
+    using is_transparent = std::true_type;
 
     template <class T, class U>
     auto operator() (T&& lhs, U&& rhs) const ->

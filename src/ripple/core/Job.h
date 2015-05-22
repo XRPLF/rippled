@@ -81,7 +81,7 @@ enum JobType
 class Job
 {
 public:
-    typedef std::chrono::steady_clock clock_type;
+    using clock_type = std::chrono::steady_clock;
 
     /** Default constructor.
 
@@ -101,7 +101,7 @@ public:
     Job (JobType type, std::uint64_t index);
 
     /** A callback used to check for canceling a job. */
-    typedef std::function <bool(void)> CancelCallback;
+    using CancelCallback = std::function <bool(void)>;
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job (JobType type,

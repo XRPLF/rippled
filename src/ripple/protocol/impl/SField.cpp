@@ -39,7 +39,7 @@ SField::IsSigning const SField::notSigning;
 
 int SField::num = 0;
 
-typedef std::lock_guard <std::mutex> StaticScopedLockType;
+using StaticScopedLockType = std::lock_guard <std::mutex>;
 
 // Give this translation unit only, permission to construct SFields
 struct SField::make

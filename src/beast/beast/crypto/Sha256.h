@@ -37,7 +37,7 @@ enum
 };
 
 /** A container suitable for holding the resulting hash. */
-typedef std::array <std::uint8_t, digestLength> digest_type;
+using digest_type = std::array <std::uint8_t, digestLength>;
 
 namespace detail {
 struct Context

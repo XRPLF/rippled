@@ -129,7 +129,7 @@ private:
     }
 
 private:
-    typedef Json::Value (RPCParser::*parseFuncPtr) (Json::Value const& jvParams);
+    using parseFuncPtr = Json::Value (RPCParser::*) (Json::Value const& jvParams);
 
     Json::Value parseAsIs (Json::Value const& jvParams)
     {

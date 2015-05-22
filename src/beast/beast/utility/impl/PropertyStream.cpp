@@ -604,7 +604,7 @@ void PropertyStream::add (long double value)
 class PropertyStream_test : public unit_test::suite
 {
 public:
-    typedef PropertyStream::Source Source;
+    using Source = PropertyStream::Source;
 
     void test_peel_name (std::string s, std::string const& expected,
         std::string const& expected_remainder)

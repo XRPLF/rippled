@@ -67,8 +67,8 @@ private:
 
     void update ();
 
-    typedef std::mutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     std::uint64_t mCounts;

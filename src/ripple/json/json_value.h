@@ -141,12 +141,12 @@ class Value
     friend class ValueIteratorBase;
 
 public:
-    typedef std::vector<std::string> Members;
-    typedef ValueIterator iterator;
-    typedef ValueConstIterator const_iterator;
-    typedef Json::UInt UInt;
-    typedef Json::Int Int;
-    typedef UInt ArrayIndex;
+    using Members = std::vector<std::string>;
+    using iterator = ValueIterator;
+    using const_iterator = ValueConstIterator;
+    using UInt = Json::UInt;
+    using Int = Json::Int;
+    using ArrayIndex = UInt;
 
     static const Value null;
     static const Int minInt;
@@ -180,7 +180,7 @@ private:
     };
 
 public:
-    typedef std::map<CZString, Value> ObjectValues;
+    using ObjectValues = std::map<CZString, Value>;
 
 public:
     /** \brief Create a default Value of the given type.
@@ -414,9 +414,9 @@ public:
 class ValueIteratorBase
 {
 public:
-    typedef unsigned int size_t;
-    typedef int difference_type;
-    typedef ValueIteratorBase SelfType;
+    using size_t = unsigned int;
+    using difference_type = int;
+    using SelfType = ValueIteratorBase;
 
     ValueIteratorBase ();
 
@@ -472,11 +472,11 @@ class ValueConstIterator : public ValueIteratorBase
 {
     friend class Value;
 public:
-    typedef unsigned int size_t;
-    typedef int difference_type;
-    typedef const Value& reference;
-    typedef const Value* pointer;
-    typedef ValueConstIterator SelfType;
+    using size_t = unsigned int;
+    using difference_type = int;
+    using reference = const Value&;
+    using pointer = const Value*;
+    using SelfType = ValueConstIterator;
 
     ValueConstIterator ();
 private:
@@ -525,11 +525,11 @@ class ValueIterator : public ValueIteratorBase
 {
     friend class Value;
 public:
-    typedef unsigned int size_t;
-    typedef int difference_type;
-    typedef Value& reference;
-    typedef Value* pointer;
-    typedef ValueIterator SelfType;
+    using size_t = unsigned int;
+    using difference_type = int;
+    using reference = Value&;
+    using pointer = Value*;
+    using SelfType = ValueIterator;
 
     ValueIterator ();
     ValueIterator ( const ValueConstIterator& other );

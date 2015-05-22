@@ -96,7 +96,7 @@ public:
     static std::string encode (InputIt first, InputIt last,
         Alphabet const& alphabet, bool withCheck)
     {
-        typedef typename std::iterator_traits<InputIt>::value_type value_type;
+        using value_type = typename std::iterator_traits<InputIt>::value_type;
         std::vector <typename std::remove_const <value_type>::type> v;
         std::size_t const size (std::distance (first, last));
         if (withCheck)

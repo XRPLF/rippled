@@ -41,9 +41,9 @@ public:
         tableItemsExtra = 20
     };
 
-    using Map = hash_map <uint256, Blob> ;
+    using Map   = hash_map <uint256, Blob>;
     using Table = SHAMap;
-    using Item = SHAMapItem;
+    using Item  = SHAMapItem;
 
     struct Handler
     {

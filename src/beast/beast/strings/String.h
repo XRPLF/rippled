@@ -49,11 +49,11 @@
 namespace beast {
 
 #if BEAST_NATIVE_WCHAR_IS_UTF8
- typedef CharPointer_UTF8          CharPointer_wchar_t;
+ using CharPointer_wchar_t = CharPointer_UTF8;
 #elif BEAST_NATIVE_WCHAR_IS_UTF16
- typedef CharPointer_UTF16         CharPointer_wchar_t;
+ using CharPointer_wchar_t = CharPointer_UTF16;
 #else
- typedef CharPointer_UTF32         CharPointer_wchar_t;
+ using CharPointer_wchar_t = CharPointer_UTF32;
 #endif
 
 //==============================================================================
@@ -186,7 +186,7 @@ public:
     static const String empty;
 
     /** This is the character encoding type used internally to store the string. */
-    typedef StringCharPointerType CharPointerType;
+    using CharPointerType = StringCharPointerType;
 
     //==============================================================================
     /** Generates a probably-unique 32-bit hashcode from this string. */

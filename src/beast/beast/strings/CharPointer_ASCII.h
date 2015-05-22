@@ -45,7 +45,7 @@ namespace beast {
 class CharPointer_ASCII
 {
 public:
-    typedef char CharType;
+    using CharType = char;
 
     inline explicit CharPointer_ASCII (const CharType* const rawPointer) noexcept
         : data (const_cast <CharType*> (rawPointer))

@@ -112,7 +112,7 @@ bool compareAccountCandidate (
     return (first.priority ^ seq) < (second.priority ^ seq);
 }
 
-typedef std::vector<AccountCandidate> AccountCandidates;
+using AccountCandidates = std::vector<AccountCandidate>;
 
 struct CostedPath
 {
@@ -120,15 +120,15 @@ struct CostedPath
     Pathfinder::PathType type;
 };
 
-typedef std::vector<CostedPath> CostedPathList;
+using CostedPathList = std::vector<CostedPath>;
 
-typedef std::map<Pathfinder::PaymentType, CostedPathList> PathTable;
+using PathTable = std::map<Pathfinder::PaymentType, CostedPathList>;
 
 struct PathCost {
     int cost;
     char const* path;
 };
-typedef std::vector<PathCost> PathCostList;
+using PathCostList = std::vector<PathCost>;
 
 static PathTable mPathTable;
 

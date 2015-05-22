@@ -20,7 +20,7 @@
 - Comment appropriately
 
 - Determine the semantics of the uint256, replace it with an appropriate
-  typedef like RipplePublicKey or whatever is appropriate.
+  type alias like RipplePublicKey or whatever is appropriate.
 
 - Provide good symbolic names for the config tunables.
 

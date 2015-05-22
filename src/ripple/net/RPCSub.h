@@ -31,8 +31,8 @@ namespace ripple {
 class RPCSub : public InfoSub
 {
 public:
-    typedef std::shared_ptr <RPCSub> pointer;
-    typedef pointer const& ref;
+    using pointer = std::shared_ptr <RPCSub>;
+    using ref = pointer const&;
 
     // VFALCO Why is the io_service needed?
     static pointer New (InfoSub::Source& source,

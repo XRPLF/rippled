@@ -104,10 +104,10 @@ namespace
 {
    #if BEAST_LINUX || \
        (BEAST_IOS && ! __DARWIN_ONLY_64_BIT_INO_T) // (this iOS stuff is to avoid a simulator bug)
-    typedef struct stat64 beast_statStruct;
+    using beast_statStruct = struct stat64;
     #define BEAST_STAT     stat64
    #else
-    typedef struct stat   beast_statStruct;
+    using beast_statStruct = struct stat;
     #define BEAST_STAT     stat
    #endif
 

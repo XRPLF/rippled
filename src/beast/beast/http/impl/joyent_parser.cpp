@@ -111,8 +111,8 @@ convert_http_errno (joyent::http_errno err)
         : public boost::system::error_category
     {
     private:
-        typedef boost::system::error_code error_code;
-        typedef boost::system::error_condition error_condition;
+        using error_code = boost::system::error_code;
+        using error_condition = boost::system::error_condition;
 
     public:
         char const*

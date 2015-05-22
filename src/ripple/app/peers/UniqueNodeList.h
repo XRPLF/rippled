@@ -45,7 +45,7 @@ public:
     };
 
     // VFALCO TODO rename this to use the right coding style
-    typedef long score;
+    using score = long;
 
 public:
     virtual ~UniqueNodeList () { }

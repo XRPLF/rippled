@@ -38,7 +38,7 @@ namespace ripple {
 class DisputedTx
 {
 public:
-    typedef std::shared_ptr <DisputedTx> pointer;
+    using pointer = std::shared_ptr <DisputedTx>;
 
     DisputedTx (uint256 const& txID,
                 Blob const& tx,

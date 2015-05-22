@@ -235,7 +235,7 @@ private:
     std::size_t m_seed;
     PRNG m_prng;
 
-    typedef block_stream <std::size_t, prng_hasher <PRNG>> base;
+    using base = block_stream <std::size_t, prng_hasher <PRNG>>;
     friend base;
 
     // compress
@@ -351,8 +351,8 @@ struct is_contiguously_hashable <hash_append_tests::FastKey>
 class hash_append_test : public unit_test::suite
 {
 public:
-    typedef hash_append_tests::SlowKey SlowKey;
-    typedef hash_append_tests::FastKey FastKey;
+    using SlowKey = hash_append_tests::SlowKey;
+    using FastKey = hash_append_tests::FastKey;
 
     struct results_t
     {

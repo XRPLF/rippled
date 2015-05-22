@@ -32,8 +32,8 @@ public:
         beast::manual_clock <std::chrono::steady_clock> clock;
         clock.set (0);
 
-        typedef std::string Key;
-        typedef KeyCache <Key> Cache;
+        using Key = std::string;
+        using Cache = KeyCache <Key>;
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {

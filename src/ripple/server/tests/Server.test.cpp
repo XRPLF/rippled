@@ -215,7 +215,7 @@ public:
     test_request()
     {
         boost::asio::io_service ios;
-        typedef boost::asio::ip::tcp::socket socket;
+        using socket = boost::asio::ip::tcp::socket;
         socket s (ios);
 
         if (! connect (s, "127.0.0.1", testPort))
@@ -247,7 +247,7 @@ public:
     test_keepalive()
     {
         boost::asio::io_service ios;
-        typedef boost::asio::ip::tcp::socket socket;
+        using socket = boost::asio::ip::tcp::socket;
         socket s (ios);
 
         if (! connect (s, "127.0.0.1", testPort))

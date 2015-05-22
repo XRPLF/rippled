@@ -72,7 +72,7 @@ protected:
     explicit NetworkOPs (Stoppable& parent);
 
 public:
-    typedef beast::abstract_clock <std::chrono::steady_clock> clock_type;
+    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
     enum Fault
     {
@@ -103,7 +103,7 @@ public:
 
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
-    typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
+    using SubMapType = hash_map <std::uint64_t, InfoSub::wptr>;
 
 public:
     virtual ~NetworkOPs () = 0;
@@ -156,7 +156,7 @@ public:
 
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
-    typedef std::function<void (Transaction::pointer, TER)> stCallback;
+    using stCallback = std::function<void (Transaction::pointer, TER)>;
     virtual void submitTransaction (Job&, STTx::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer processTransactionCb (Transaction::pointer,
@@ -266,7 +266,7 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef hash_map <NodeID, std::deque<LedgerProposal::pointer>> Proposals;
+    using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,
@@ -287,10 +287,8 @@ public:
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
-    typedef std::pair<Transaction::pointer, TransactionMetaSet::pointer>
-    AccountTx;
-
-    typedef std::vector<AccountTx> AccountTxs;
+    using AccountTx  = std::pair<Transaction::pointer, TransactionMetaSet::pointer>;
+    using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs getAccountTxs (
         RippleAddress const& account,
@@ -302,10 +300,8 @@ public:
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
-    typedef std::tuple<std::string, std::string, std::uint32_t>
-    txnMetaLedgerType;
-
-    typedef std::vector<txnMetaLedgerType> MetaTxsList;
+    using txnMetaLedgerType = std::tuple<std::string, std::string, std::uint32_t>;
+    using MetaTxsList       = std::vector<txnMetaLedgerType>;
 
     virtual MetaTxsList getAccountTxsB (RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,

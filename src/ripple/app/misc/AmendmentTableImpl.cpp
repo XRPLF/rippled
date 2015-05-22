@@ -39,11 +39,11 @@ template<class AppApiFacade>
 class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
-    typedef hash_map<uint256, AmendmentState> amendmentMap_t;
-    typedef hash_set<uint256> amendmentList_t;
+    using amendmentMap_t = hash_map<uint256, AmendmentState>;
+    using amendmentList_t = hash_set<uint256>;
 
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     amendmentMap_t m_amendmentMap;
@@ -410,7 +410,7 @@ AmendmentTableImpl<AppApiFacade>::reportValidations (const AmendmentSet& set)
 
     int threshold = (set.mTrustedValidations * mMajorityFraction) / 256;
 
-    typedef std::map<uint256, int>::value_type u256_int_pair;
+    using u256_int_pair = std::map<uint256, int>::value_type;
 
     ScopedLockType sl (mLock);
 

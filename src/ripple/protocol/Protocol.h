@@ -59,18 +59,18 @@ public:
 
 /** A ledger index. */
 // VFALCO TODO pick one. I like Index since its not an abbreviation
-typedef std::uint32_t LedgerIndex;
+using LedgerIndex = std::uint32_t;
 // VFALCO NOTE "LedgerSeq" appears in some SQL statement text
-typedef std::uint32_t LedgerSeq;
+using LedgerSeq = std::uint32_t;
 
 /** A transaction identifier.
 */
 // VFALCO TODO maybe rename to TxHash
-typedef uint256 TxID;
+using TxID = uint256;
 
 /** A transaction index.
 */
-typedef std::uint32_t TxSeq; // VFALCO NOTE Should read TxIndex or TxNum
+using TxSeq = std::uint32_t; // VFALCO NOTE Should read TxIndex or TxNum
 
 } // ripple
 

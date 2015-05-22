@@ -43,7 +43,7 @@ namespace http {
 class raw_parser
 {
 private:
-    typedef boost::system::error_code error_code;
+    using error_code = boost::system::error_code;
 
 public:
     enum message_type
@@ -174,9 +174,9 @@ private:
       void *data;
     };
 
-    typedef int (*data_cb_t) (
+    using data_cb_t = int (*) (
         state_t*, const char *at, size_t length);
-    typedef int (*cb_t) (state_t*);
+    using cb_t = int (*) (state_t*);
 
     struct hooks_t
     {

@@ -286,7 +286,7 @@ private:
         List <Item> children;
     };
 
-    typedef SharedData <State> SharedState;
+    using SharedState = SharedData <State>;
 
     std::string const m_name;
     SharedState m_state;

@@ -32,7 +32,7 @@ namespace insight {
 class BaseImpl
 {
 public:
-    typedef std::shared_ptr <BaseImpl> ptr;
+    using ptr = std::shared_ptr <BaseImpl>;
 
     virtual ~BaseImpl () = 0;
 };

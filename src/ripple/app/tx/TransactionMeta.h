@@ -30,8 +30,8 @@ namespace ripple {
 class TransactionMetaSet
 {
 public:
-    typedef std::shared_ptr<TransactionMetaSet> pointer;
-    typedef const pointer& ref;
+    using pointer = std::shared_ptr<TransactionMetaSet>;
+    using ref = const pointer&;
 
 private:
     struct CtorHelper{};

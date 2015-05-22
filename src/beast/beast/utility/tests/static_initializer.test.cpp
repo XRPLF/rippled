@@ -38,7 +38,7 @@ public:
     struct Case
     {
         enum { count = N };
-        typedef Tag type;
+        using type = Tag;
     };
 
     struct Counts

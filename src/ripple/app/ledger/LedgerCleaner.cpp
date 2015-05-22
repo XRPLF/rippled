@@ -70,7 +70,7 @@ public:
         int          failures;    // Number of errors encountered since last success
     };
 
-    typedef beast::SharedData <State> SharedState;
+    using SharedState = beast::SharedData <State>;
 
     SharedState m_state;
     beast::Journal m_journal;

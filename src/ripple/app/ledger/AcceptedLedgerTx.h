@@ -46,8 +46,8 @@ namespace ripple {
 class AcceptedLedgerTx
 {
 public:
-    typedef std::shared_ptr <AcceptedLedgerTx> pointer;
-    typedef const pointer& ref;
+    using pointer = std::shared_ptr <AcceptedLedgerTx>;
+    using ref = const pointer&;
 
 public:
     AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit);

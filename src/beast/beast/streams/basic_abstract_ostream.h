@@ -36,8 +36,8 @@ template <
 class basic_abstract_ostream
 {
 public:
-    typedef std::basic_string <CharT, Traits> string_type;
-    typedef basic_scoped_ostream <CharT, Traits> scoped_stream_type;
+    using string_type = std::basic_string <CharT, Traits>;
+    using scoped_stream_type = basic_scoped_ostream <CharT, Traits>;
 
     basic_abstract_ostream() = default;
 

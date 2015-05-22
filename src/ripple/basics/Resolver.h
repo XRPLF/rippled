@@ -31,10 +31,8 @@ namespace ripple {
 class Resolver
 {
 public:
-    typedef std::function <
-        void (std::string,
-            std::vector <beast::IP::Endpoint>) >
-        HandlerType;
+    using HandlerType = std::function <
+        void (std::string, std::vector <beast::IP::Endpoint>) >;
 
     virtual ~Resolver () = 0;
 

@@ -24,8 +24,8 @@ namespace Json
 {
 
 // value.h
-typedef int Int;
-typedef unsigned int UInt;
+using Int = int;
+using UInt = unsigned int;
 class StaticString;
 class Value;
 class ValueIteratorBase;

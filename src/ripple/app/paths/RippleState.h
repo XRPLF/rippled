@@ -35,7 +35,7 @@ namespace ripple {
 class RippleState
 {
 public:
-    typedef std::shared_ptr <RippleState> pointer;
+    using pointer = std::shared_ptr <RippleState>;
 
 public:
     RippleState () = delete;

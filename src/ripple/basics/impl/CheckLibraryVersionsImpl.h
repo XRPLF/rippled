@@ -28,7 +28,7 @@ namespace ripple {
 namespace version {
 
 /** Both Boost and OpenSSL have integral version numbers. */
-typedef unsigned long long VersionNumber;
+using VersionNumber = unsigned long long;
 
 /** Minimal required boost version. */
 extern const char boostMinimal[];

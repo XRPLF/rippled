@@ -31,7 +31,7 @@ class GroupImp
     , public Group
 {
 public:
-    typedef std::vector <std::shared_ptr <BaseImpl>> Items;
+    using Items = std::vector <std::shared_ptr <BaseImpl>>;
 
     std::string const m_name;
     Collector::ptr m_collector;
@@ -91,7 +91,7 @@ private:
 class GroupsImp : public Groups
 {
 public:
-    typedef std::unordered_map <std::string, std::shared_ptr <Group>, uhash <>> Items;
+    using Items = std::unordered_map <std::string, std::shared_ptr <Group>, uhash <>>;
 
     Collector::ptr m_collector;
     Items m_items;

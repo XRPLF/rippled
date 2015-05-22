@@ -28,7 +28,7 @@ template <typename Mutex>
 class SharedLockGuard
 {
 public:
-    typedef Mutex MutexType;
+    using MutexType = Mutex;
 
     explicit SharedLockGuard (Mutex const& mutex)
         : m_mutex (mutex)

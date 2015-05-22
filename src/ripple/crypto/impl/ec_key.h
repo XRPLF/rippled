@@ -29,7 +29,7 @@ namespace openssl {
 class ec_key
 {
 public:
-    typedef struct opaque_EC_KEY* pointer_t;
+    using pointer_t = struct opaque_EC_KEY*;
 
 private:
     pointer_t ptr;

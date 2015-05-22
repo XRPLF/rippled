@@ -355,8 +355,8 @@ Account RippleAddress::getAccountID () const
     }
 }
 
-typedef std::mutex StaticLockType;
-typedef std::lock_guard <StaticLockType> StaticScopedLockType;
+using StaticLockType = std::mutex;
+using StaticScopedLockType = std::lock_guard <StaticLockType>;
 
 static StaticLockType s_lock;
 static hash_map <Blob, std::string> rncMapOld, rncMapNew;

@@ -29,7 +29,7 @@ namespace ripple {
 class BookListeners
 {
 public:
-    typedef std::shared_ptr<BookListeners> pointer;
+    using pointer = std::shared_ptr<BookListeners>;
 
     BookListeners () {}
 
@@ -38,8 +38,8 @@ public:
     void publish (Json::Value const& jvObj);
 
 private:
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
+    using LockType = RippleRecursiveMutex;
+    using ScopedLockType = std::lock_guard <LockType>;
     LockType mLock;
 
     hash_map<std::uint64_t, InfoSub::wptr> mListeners;
