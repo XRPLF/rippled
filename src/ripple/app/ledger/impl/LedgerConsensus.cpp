@@ -18,12 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/DisputedTx.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
@@ -31,7 +31,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/TransactionAcquire.h>
-#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -66,6 +65,22 @@ class LedgerConsensusImp
     , public std::enable_shared_from_this <LedgerConsensusImp>
     , public CountedObject <LedgerConsensusImp>
 {
+private:
+    enum class State
+    {
+        // We haven't closed our ledger yet, but others might have
+        open,
+
+        // Establishing consensus
+        establish,
+
+        // We have closed on a transaction set
+        finished,
+
+        // We have accepted / validated a new last closed ledger
+        accepted,
+    };
+
 public:
     /**
      * The result of applying a transaction to a ledger.
@@ -78,21 +93,30 @@ public:
     LedgerConsensusImp& operator=(LedgerConsensusImp const&) = delete;
 
     /**
-      The result of applying a transaction to a ledger.
-
-      @param localtx        A set of local transactions to apply.
-      @param prevLCLHash    The hash of the Last Closed Ledger (LCL).
-      @param previousLedger Best guess of what the Last Closed Ledger (LCL)
-                            was.
-      @param closeTime      Closing time point of the LCL.
-      @param feeVote        Our desired fee levels and voting logic.
+        @param previousProposers the number of participants in the last round
+        @param previousConvergeTime how long the last round took (ms)
+        @param inboundTransactions
+        @param localtx transactions issued by local clients
+        @param inboundTransactions the set of
+        @param localtx A set of local transactions to apply
+        @param prevLCLHash The hash of the Last Closed Ledger (LCL).
+        @param previousLedger Best guess of what the LCL was.
+        @param closeTime Closing time point of the LCL.
+        @param feeVote Our desired fee levels and voting logic.
     */
-    LedgerConsensusImp (LocalTxs& localtx,
-        LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-            std::uint32_t closeTime, FeeVote& feeVote)
-        : m_localTX (localtx)
+    LedgerConsensusImp (
+            int previousProposers,
+            int previousConvergeTime,
+            InboundTransactions& inboundTransactions,
+            LocalTxs& localtx,
+            LedgerHash const & prevLCLHash,
+            Ledger::ref previousLedger,
+            std::uint32_t closeTime,
+            FeeVote& feeVote)
+        : inboundTransactions_ (inboundTransactions)
+        , m_localTX (localtx)
         , m_feeVote (feeVote)
-        , mState (lcsPRE_CLOSE)
+        , state_ (State::open)
         , mCloseTime (closeTime)
         , mPrevLedgerHash (prevLCLHash)
         , mPreviousLedger (previousLedger)
@@ -102,23 +126,23 @@ public:
         , mCurrentMSeconds (0)
         , mClosePercent (0)
         , mHaveCloseTimeConsensus (false)
-        , mConsensusStartTime
-            (std::chrono::steady_clock::now ())
+        , mConsensusStartTime (std::chrono::steady_clock::now ())
+        , mPreviousProposers (previousProposers)
+        , mPreviousMSeconds (previousConvergeTime)
     {
         WriteLog (lsDEBUG, LedgerConsensus) << "Creating consensus object";
         WriteLog (lsTRACE, LedgerConsensus)
             << "LCL:" << previousLedger->getHash () << ", ct=" << closeTime;
-        mPreviousProposers = getApp().getOPs ().getPreviousProposers ();
-        mPreviousMSeconds = getApp().getOPs ().getPreviousConvergeTime ();
+
         assert (mPreviousMSeconds);
 
-        getApp().getInboundTransactions().newRound (mPreviousLedger->getLedgerSeq());
+        inboundTransactions_.newRound (mPreviousLedger->getLedgerSeq());
 
         // Adapt close time resolution to recent network conditions
         mCloseResolution = getNextLedgerTimeResolution (
             mPreviousLedger->getCloseResolution (),
             mPreviousLedger->getCloseAgree (),
-            previousLedger->getLedgerSeq () + 1);
+            mPreviousLedger->getLedgerSeq () + 1);
 
         if (mValPublic.isSet () && mValPrivate.isSet ()
             && !getApp().getOPs ().isNeedNetworkLedger ())
@@ -164,16 +188,6 @@ public:
     }
 
     /**
-      This function is called, but its return value is always ignored.
-
-      @return 1.
-    */
-    int startup ()
-    {
-        return 1;
-    }
-
-    /**
       Get the Json state of the consensus process.
       Called by the consensus_info RPC.
 
@@ -196,21 +210,21 @@ public:
         else
             ret["synched"] = false;
 
-        switch (mState)
+        switch (state_)
         {
-        case lcsPRE_CLOSE:
+        case State::open:
             ret[jss::state] = "open";
             break;
 
-        case lcsESTABLISH:
+        case State::establish:
             ret[jss::state] = "consensus";
             break;
 
-        case lcsFINISHED:
+        case State::finished:
             ret[jss::state] = "finished";
             break;
 
-        case lcsACCEPTED:
+        case State::accepted:
             ret[jss::state] = "accepted";
             break;
         }
@@ -356,7 +370,7 @@ public:
         if (!acquired)
         {
             // Put the map where others can get it
-            getApp().getInboundTransactions().giveSet (hash, map, false);
+            inboundTransactions_.giveSet (hash, map, false);
         }
 
         // Inform directly-connected peers that we have this transaction set
@@ -445,22 +459,22 @@ public:
             // LCL change
             const char* status;
 
-            switch (mState)
+            switch (state_)
             {
-            case lcsPRE_CLOSE:
-                status = "PreClose";
+            case State::open:
+                status = "open";
                 break;
 
-            case lcsESTABLISH:
-                status = "Establish";
+            case State::establish:
+                status = "establish";
                 break;
 
-            case lcsFINISHED:
-                status = "Finished";
+            case State::finished:
+                status = "finished";
                 break;
 
-            case lcsACCEPTED:
-                status = "Accepted";
+            case State::accepted:
+                status = "accepted";
                 break;
 
             default:
@@ -531,13 +545,14 @@ public:
             return;
 
         // we need to switch the ledger we're working from
-        Ledger::pointer newLCL = getApp().getLedgerMaster ().getLedgerByHash (mPrevLedgerHash);
+        auto newLCL = getApp().getLedgerMaster ().getLedgerByHash (mPrevLedgerHash);
         if (!newLCL)
         {
             if (mAcquiringLedger != lclHash)
             {
                 // need to start acquiring the correct consensus LCL
-                WriteLog (lsWARNING, LedgerConsensus) << "Need consensus ledger " << mPrevLedgerHash;
+                WriteLog (lsWARNING, LedgerConsensus) <<
+                    "Need consensus ledger " << mPrevLedgerHash;
 
                 // Tell the ledger acquire system that we need the consensus ledger
                 mAcquiringLedger = mPrevLedgerHash;
@@ -556,7 +571,8 @@ public:
         mPreviousLedger = newLCL;
         mPrevLedgerHash = lclHash;
 
-        WriteLog (lsINFO, LedgerConsensus) << "Have the consensus ledger " << mPrevLedgerHash;
+        WriteLog (lsINFO, LedgerConsensus) <<
+            "Have the consensus ledger " << mPrevLedgerHash;
         mHaveCorrectLCL = true;
 
         mCloseResolution = getNextLedgerTimeResolution (
@@ -587,34 +603,34 @@ public:
 
     void doTimer ()
     {
-        if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
+        if ((state_ != State::finished) && (state_ != State::accepted))
             checkLCL ();
 
         mCurrentMSeconds = std::chrono::duration_cast <std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - mConsensusStartTime).count ();
         mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
-        switch (mState)
+        switch (state_)
         {
-        case lcsPRE_CLOSE:
+        case State::open:
             statePreClose ();
             return;
 
-        case lcsESTABLISH:
+        case State::establish:
             stateEstablish ();
 
-            if (mState != lcsFINISHED) return;
+            if (state_ != State::finished) return;
 
             // Fall through
 
-        case lcsFINISHED:
+        case State::finished:
             stateFinished ();
 
-            if (mState != lcsACCEPTED) return;
+            if (state_ != State::accepted) return;
 
             // Fall through
 
-        case lcsACCEPTED:
+        case State::accepted:
             stateAccepted ();
             return;
         }
@@ -696,7 +712,7 @@ public:
 
         WriteLog (lsINFO, LedgerConsensus) <<
             "Converge cutoff (" << mPeerPositions.size () << " participants)";
-        mState = lcsFINISHED;
+        state_ = State::finished;
         beginAccept (false);
     }
 
@@ -781,7 +797,7 @@ public:
         if (it != mAcquired.end() && it->second)
             return it->second;
 
-        auto set = getApp().getInboundTransactions().getSet (hash, true);
+        auto set = inboundTransactions_.getSet (hash, true);
 
         if (set)
             mAcquired[hash] = set;
@@ -798,7 +814,7 @@ public:
     */
     bool peerPosition (LedgerProposal::ref newPosition)
     {
-        auto peerID = newPosition->getPeerID ();
+        auto const peerID = newPosition->getPeerID ();
 
         if (mDeadNodes.find (peerID) != mDeadNodes.end ())
         {
@@ -820,17 +836,8 @@ public:
             }
         }
 
-        if (newPosition->getProposeSeq () == 0)
+        if (newPosition->isBowOut ())
         {
-            // new initial close time estimate
-            WriteLog (lsTRACE, LedgerConsensus)
-                << "Peer reports close time as "
-                << newPosition->getCloseTime ();
-            ++mCloseTimes[newPosition->getCloseTime ()];
-        }
-        else if (newPosition->getProposeSeq () == LedgerProposal::seqLeave)
-        {
-            // peer bows out
             WriteLog (lsINFO, LedgerConsensus)
                 << "Peer bows out: " << to_string (peerID);
             for (auto& it : mDisputes)
@@ -840,6 +847,14 @@ public:
             return true;
         }
 
+        if (newPosition->isInitial ())
+        {
+            // Record the close time estimate
+            WriteLog (lsTRACE, LedgerConsensus)
+                << "Peer reports close time as "
+                << newPosition->getCloseTime ();
+            ++mCloseTimes[newPosition->getCloseTime ()];
+        }
 
         WriteLog (lsTRACE, LedgerConsensus) << "Processing peer proposal "
             << newPosition->getProposeSeq () << "/"
@@ -863,8 +878,6 @@ public:
         return true;
     }
 
-    /** Simulate a consensus round without any network traffic
-    */
     void simulate ()
     {
         WriteLog (lsINFO, LedgerConsensus) << "Simulating consensus";
@@ -874,6 +887,7 @@ public:
         endConsensus ();
         WriteLog (lsINFO, LedgerConsensus) << "Simulation complete";
     }
+
 private:
     /** We have a new last closed ledger, process it. Final accept logic
 
@@ -881,9 +895,8 @@ private:
     */
     void accept (std::shared_ptr<SHAMap> set)
     {
-
         {
-            std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
+            auto lock = beast::make_lock(getApp().getMasterMutex());
 
             // put our set where others can get it later
             if (set->getHash ().isNonZero ())
@@ -895,7 +908,8 @@ private:
             getApp().getOPs ().peekStoredProposals ().clear ();
         }
 
-        std::uint32_t closeTime = roundCloseTime (mOurPosition->getCloseTime ());
+        std::uint32_t closeTime = roundCloseTime (
+            mOurPosition->getCloseTime (), mCloseResolution);
         bool closeTimeCorrect = true;
 
         if (closeTime == 0)
@@ -921,9 +935,7 @@ private:
         CanonicalTXSet retriableTransactions (set->getHash ());
 
         // Build the new last closed ledger
-        Ledger::pointer newLCL
-            = std::make_shared<Ledger> (false
-            , *mPreviousLedger);
+        auto newLCL = std::make_shared<Ledger> (false, *mPreviousLedger);
 
         // Set up to write SHAMap changes to our database,
         //   perform updates, extract changes
@@ -981,7 +993,7 @@ private:
                 getApp().getAmendmentTable ().doValidation (newLCL, *v);
             }
 
-            v->sign (signingHash, mValPrivate);
+            signingHash = v->sign (mValPrivate);
             v->setTrusted ();
             // suppress it if we receive it - FIXME: wrong suppression
             getApp().getHashRouter ().addSuppression (signingHash);
@@ -1003,8 +1015,7 @@ private:
         getApp().getLedgerMaster().consensusBuilt (newLCL);
 
         // Build new open ledger
-        Ledger::pointer newOL = std::make_shared<Ledger>
-            (true, *newLCL);
+        auto newOL = std::make_shared<Ledger> (true, *newLCL);
 
         // Apply disputed transactions that didn't get in
         TransactionEngine engine (newOL);
@@ -1065,15 +1076,14 @@ private:
         }
 
         mNewLedgerHash = newLCL->getHash ();
-        mState = lcsACCEPTED;
+        state_ = State::accepted;
 
         if (mValidating)
         {
             // see how close our close time is to other node's
             //  close time reports, and update our clock.
             WriteLog (lsINFO, LedgerConsensus)
-                << "We closed at "
-                << beast::lexicalCastThrow <std::string> (mCloseTime);
+                << "We closed at " << mCloseTime;
             std::uint64_t closeTotal = mCloseTime;
             int closeCount = 1;
 
@@ -1253,10 +1263,12 @@ private:
         prop.set_proposeseq (mOurPosition->getProposeSeq ());
         prop.set_closetime (mOurPosition->getCloseTime ());
 
-        Blob pubKey = mOurPosition->getPubKey ();
-        Blob sig = mOurPosition->sign ();
+        Blob const pubKey = mValPublic.getNodePublic ();
         prop.set_nodepubkey (&pubKey[0], pubKey.size ());
+
+        Blob const sig = mOurPosition->sign (mValPrivate);
         prop.set_signature (&sig[0], sig.size ());
+
         getApp().overlay().send(prop);
     }
 
@@ -1275,17 +1287,6 @@ private:
         getApp ().overlay ().foreach (send_always (
             std::make_shared <Message> (
                 msg, protocol::mtHAVE_SET)));
-    }
-
-    /**
-      Round the close time to the close time resolution.
-
-      @param closeTime The time to be rouned.
-      @return          The rounded close time.
-    */
-    std::uint32_t roundCloseTime (std::uint32_t closeTime)
-    {
-        return Ledger::roundCloseTime (closeTime, mCloseResolution);
     }
 
     /** Send a node status change message to our directly connected peers
@@ -1360,19 +1361,8 @@ private:
         WriteLog (lsINFO, LedgerConsensus) << "initial position " << txSet;
         mapCompleteInternal (txSet, initialSet, false);
 
-        if (mValidating)
-        {
-            mOurPosition = std::make_shared<LedgerProposal>
-                           (mValPublic, mValPrivate
-                            , initialLedger.getParentHash ()
-                            , txSet, mCloseTime);
-        }
-        else
-        {
-            mOurPosition
-                = std::make_shared<LedgerProposal>
-                (initialLedger.getParentHash (), txSet, mCloseTime);
-        }
+        mOurPosition = std::make_shared<LedgerProposal>
+            (mValPublic, initialLedger.getParentHash (), txSet, mCloseTime);
 
         for (auto& it : mDisputes)
         {
@@ -1402,17 +1392,22 @@ private:
             propose ();
     }
 
-    /**
-      For a given number of participants and required percent
-      for consensus, how many participants must agree?
+    /** How many of the participants must agree to reach a given threshold?
 
-      @param size    number of validators
-      @param percent desired percent for consensus
-      @return number of participates which must agree
+        Note that the number may not precisely yield the requested percentage.
+        For example, with with size = 5 and percent = 70, we return 3, but
+        3 out of 5 works out to 60%. There are no security implications to
+        this.
+
+        @param participants the number of participants (i.e. validators)
+        @param the percent that we want to reach
+
+        @return the number of participants which must agree
     */
-    static int computePercent (int size, int percent)
+    static int participantsNeeded (int participants, int percent)
     {
-        int result = ((size * percent) + (percent / 2)) / 100;
+        int result = ((participants * percent) + (percent / 2)) / 100;
+
         return (result == 0) ? 1 : result;
     }
 
@@ -1452,7 +1447,7 @@ private:
             else
             {
                 // proposal is still fresh
-                ++closeTimes[roundCloseTime (it->second->getCloseTime ())];
+                ++closeTimes[roundCloseTime (it->second->getCloseTime (), mCloseResolution)];
                 ++it;
             }
         }
@@ -1504,22 +1499,24 @@ private:
         {
             // no other times
             mHaveCloseTimeConsensus = true;
-            closeTime = roundCloseTime (mOurPosition->getCloseTime ());
+            closeTime = roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution);
         }
         else
         {
             int participants = mPeerPositions.size ();
             if (mProposing)
             {
-                ++closeTimes[roundCloseTime (mOurPosition->getCloseTime ())];
+                ++closeTimes[roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution)];
                 ++participants;
             }
 
             // Threshold for non-zero vote
-            int threshVote = computePercent (participants, neededWeight);
+            int threshVote = participantsNeeded (participants,
+                neededWeight);
 
             // Threshold to declare consensus
-            int threshConsensus = computePercent (participants, AV_CT_CONSENSUS_PCT);
+            int const threshConsensus = participantsNeeded (
+                participants, AV_CT_CONSENSUS_PCT);
 
             WriteLog (lsINFO, LedgerConsensus) << "Proposers:"
                 << mPeerPositions.size () << " nw:" << neededWeight
@@ -1559,7 +1556,7 @@ private:
         }
 
         if (!changes &&
-                ((closeTime != roundCloseTime (mOurPosition->getCloseTime ()))
+                ((closeTime != roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution))
                 || mOurPosition->isStale (ourCutoff)))
         {
             // close time changed or our position is stale
@@ -1596,20 +1593,7 @@ private:
             bool relay = false;
             for (auto const& proposal : it.second)
             {
-                if (proposal->hasSignature ())
-                {
-                    // we have the signature but don't know the
-                    //  ledger so couldn't verify
-                    proposal->setPrevLedger (mPrevLedgerHash);
-
-                    if (proposal->checkSign ())
-                    {
-                        WriteLog (lsINFO, LedgerConsensus)
-                            << "Applying stored proposal";
-                        relay = peerPosition (proposal);
-                    }
-                }
-                else if (proposal->isPrevLedger (mPrevLedgerHash))
+                if (proposal->isPrevLedger (mPrevLedgerHash))
                     relay = peerPosition (proposal);
 
                 if (relay)
@@ -1628,7 +1612,7 @@ private:
     void closeLedger ()
     {
         checkOurValidation ();
-        mState = lcsESTABLISH;
+        state_ = State::establish;
         mConsensusStartTime
             = std::chrono::steady_clock::now ();
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
@@ -1644,7 +1628,8 @@ private:
     */
     void checkOurValidation ()
     {
-        // This only covers some cases - Fix for the case where we can't ever acquire the consensus ledger
+        // This only covers some cases - Fix for the case where we can't ever
+        // acquire the consensus ledger
         if (!mHaveCorrectLCL || !mValPublic.isSet ()
             || !mValPrivate.isSet ()
             || getApp().getOPs ().isNeedNetworkLedger ())
@@ -1673,7 +1658,7 @@ private:
             , getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
         addLoad(v);
         v->setTrusted ();
-        v->sign (signingHash, mValPrivate);
+        signingHash = v->sign (mValPrivate);
             // FIXME: wrong supression
         getApp().getHashRouter ().addSuppression (signingHash);
         getApp().getValidations ().addValidation (v, "localMissing");
@@ -1716,8 +1701,7 @@ private:
         getApp().getOPs ().endConsensus (mHaveCorrectLCL);
     }
 
-    /** Add our load fee to our validation
-    */
+    /** Add our load fee to our validation */
     void addLoad(STValidation::ref val)
     {
         std::uint32_t fee = std::max(
@@ -1727,22 +1711,13 @@ private:
         if (fee > ref)
             val->setFieldU32(sfLoadFee, fee);
     }
+
 private:
+    InboundTransactions& inboundTransactions_;
     LocalTxs& m_localTX;
     FeeVote& m_feeVote;
 
-    // VFALCO TODO Rename these to look pretty
-    enum LCState
-    {
-        lcsPRE_CLOSE,       // We haven't closed our ledger yet,
-                            //  but others might have
-        lcsESTABLISH,       // Establishing consensus
-        lcsFINISHED,        // We have closed on a transaction set
-        lcsACCEPTED,        // We have accepted/validated
-                            //  a new last closed ledger
-    };
-
-    LCState mState;
+    State state_;
     std::uint32_t mCloseTime;      // The wall time this ledger closed
     uint256 mPrevLedgerHash, mNewLedgerHash, mAcquiringLedger;
     Ledger::pointer mPreviousLedger;
@@ -1750,12 +1725,21 @@ private:
     RippleAddress mValPublic, mValPrivate;
     bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
 
-    int mCurrentMSeconds, mClosePercent, mCloseResolution;
+    int mCurrentMSeconds;
+
+    // How long the close has taken, expressed as a percentage of the time that
+    // we expected it to take.
+    int mClosePercent;
+
+    int mCloseResolution;
+
     bool mHaveCloseTimeConsensus;
 
     std::chrono::steady_clock::time_point   mConsensusStartTime;
     int                             mPreviousProposers;
-    int                             mPreviousMSeconds;
+
+    // The time it took for the last consensus process to converge
+    int mPreviousMSeconds;
 
     // Convergence tracking, trusted peers indexed by hash of public key
     hash_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
@@ -1771,7 +1755,7 @@ private:
     std::map<std::uint32_t, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
-    NodeIDSet mDeadNodes;
+    hash_set<NodeID> mDeadNodes;
 };
 
 //------------------------------------------------------------------------------
@@ -1781,12 +1765,14 @@ LedgerConsensus::~LedgerConsensus ()
 }
 
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (LocalTxs& localtx,
+make_LedgerConsensus (int previousProposers, int previousConvergeTime,
+    InboundTransactions& inboundTransactions, LocalTxs& localtx,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
-        std::uint32_t closeTime, FeeVote& feeVote)
+    std::uint32_t closeTime, FeeVote& feeVote)
 {
-    return std::make_shared <LedgerConsensusImp> (localtx,
-        prevLCLHash, previousLedger, closeTime, feeVote);
+    return std::make_shared <LedgerConsensusImp> (previousProposers,
+        previousConvergeTime, inboundTransactions, localtx, prevLCLHash,
+        previousLedger, closeTime, feeVote);
 }
 
 /** Apply a transaction to a ledger
@@ -1858,7 +1844,8 @@ int applyTransaction (TransactionEngine& engine
   @param applyLedger           The ledger to which the transactions should
                                be applied.
   @param checkLedger           A reference ledger for determining error
-                               messages (typically new last closed ledger).
+                               messages (typically new last closed
+                                ledger).
   @param retriableTransactions collect failed transactions in this set
   @param openLgr               true if applyLedger is open, else false.
 */

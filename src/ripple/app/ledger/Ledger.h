@@ -139,8 +139,6 @@ public:
     ~Ledger ();
 
     static Ledger::pointer getLastFullLedger ();
-    static std::uint32_t roundCloseTime (
-        std::uint32_t closeTime, std::uint32_t closeResolution);
 
     void updateHash ();
     void setClosed ()

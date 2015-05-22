@@ -1592,16 +1592,6 @@ void Ledger::updateSkipList ()
     }
 }
 
-std::uint32_t Ledger::roundCloseTime (
-    std::uint32_t closeTime, std::uint32_t closeResolution)
-{
-    if (closeTime == 0)
-        return 0;
-
-    closeTime += (closeResolution / 2);
-    return closeTime - (closeTime % closeResolution);
-}
-
 /** Save, or arrange to save, a fully-validated ledger
     Returns false on error
 */

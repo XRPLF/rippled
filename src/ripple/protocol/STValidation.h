@@ -87,8 +87,9 @@ public:
     }
     Blob    getSigned ()                 const;
     Blob    getSignature ()              const;
-    void sign (uint256 & signingHash, const RippleAddress & raPrivate);
-    void sign (const RippleAddress & raPrivate);
+
+    // Signs the validation and returns the signing hash
+    uint256 sign (const RippleAddress & raPrivate);
 
     // The validation this replaced
     uint256 const& getPreviousHash ()

@@ -1394,26 +1394,44 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\DisputedTx.cpp">
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\DisputedTx.h">
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedgers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensus.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\InboundLedger.cpp">
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedger.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\InboundLedgers.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedgers.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\Ledger.cpp">
@@ -1422,16 +1440,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerCleaner.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerConsensus.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerEntrySet.cpp">
@@ -1450,10 +1458,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerMaster.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerProposal.cpp">
@@ -1462,10 +1466,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerTiming.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
