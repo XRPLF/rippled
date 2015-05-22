@@ -179,4 +179,14 @@ int getNextLedgerTimeResolution (
     return previousResolution;
 }
 
+std::uint32_t roundCloseTime (
+    std::uint32_t closeTime,
+    std::uint32_t closeResolution)
+{
+    if (closeTime == 0)
+        return 0;
+
+    closeTime += (closeResolution / 2);
+    return closeTime - (closeTime % closeResolution);
+}
 } // ripple

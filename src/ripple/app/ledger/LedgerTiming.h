@@ -88,6 +88,15 @@ int getNextLedgerTimeResolution (
     bool previousAgree,
     std::uint32_t ledgerSeq);
 
+/** Calculates the close time for a ledger, given a close time resolution.
+
+    @param closeTime The time to be rouned.
+    @param closeResolution The resolution
+*/
+std::uint32_t roundCloseTime (
+    std::uint32_t closeTime,
+    std::uint32_t closeResolution);
+
 //------------------------------------------------------------------------------
 
 // These are protocol parameters used to control the behavior of the system and

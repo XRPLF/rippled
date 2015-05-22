@@ -24,7 +24,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/RippleAddress.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
 #include <cstdint>
 #include <string>
 
@@ -33,35 +33,38 @@ namespace ripple {
 class LedgerProposal
     : public CountedObject <LedgerProposal>
 {
+private:
+    // A peer initial joins the consensus process
+    static std::uint32_t const seqJoin = 0;
+
+    // A peer wants to bow out and leave the consensus process
+    static std::uint32_t const seqLeave = 0xffffffff;
+
 public:
     static char const* getCountedObjectName () { return "LedgerProposal"; }
-
-    static const std::uint32_t seqLeave = 0xffffffff; // leaving the consensus process
 
     using pointer = std::shared_ptr<LedgerProposal>;
     using ref = const pointer&;
 
     // proposal from peer
-    LedgerProposal (uint256 const& prevLgr, std::uint32_t proposeSeq, uint256 const& propose,
-                    std::uint32_t closeTime, const RippleAddress & naPeerPublic, uint256 const& suppress);
+    LedgerProposal (
+        uint256 const& prevLgr,
+        std::uint32_t proposeSeq,
+        uint256 const& propose,
+        std::uint32_t closeTime,
+        RippleAddress const& publicKey,
+        uint256 const& suppress);
 
-    // our first proposal
-    LedgerProposal (const RippleAddress & pubKey, const RippleAddress & privKey,
-                    uint256 const& prevLedger, uint256 const& position, std::uint32_t closeTime);
-
-    // an unsigned "dummy" proposal for nodes not validating
-    LedgerProposal (uint256 const& prevLedger, uint256 const& position, std::uint32_t closeTime);
+    // Our own proposal: the publicKey, if set, indicates we are a validating
+    // node but does not indicate if we're validating in this consensus round.
+    LedgerProposal (
+        RippleAddress const& publicKey,
+        uint256 const& prevLedger,
+        uint256 const& position,
+        std::uint32_t closeTime);
 
     uint256 getSigningHash () const;
-    bool checkSign (std::string const& signature, uint256 const& signingHash);
-    bool checkSign (std::string const& signature)
-    {
-        return checkSign (signature, getSigningHash ());
-    }
-    bool checkSign ()
-    {
-        return checkSign (mSignature, getSigningHash ());
-    }
+    bool checkSign (std::string const& signature) const;
 
     NodeID const& getPeerID () const
     {
@@ -87,42 +90,23 @@ public:
     {
         return mCloseTime;
     }
-    RippleAddress const& peekPublic () const
-    {
-        return mPublicKey;
-    }
-    Blob getPubKey () const
-    {
-        return mPublicKey.getNodePublic ();
-    }
-    Blob sign ();
 
-    void setPrevLedger (uint256 const& prevLedger)
-    {
-        mPreviousLedger = prevLedger;
-    }
-    void setSignature (std::string const& signature)
-    {
-        mSignature = signature;
-    }
-    bool hasSignature ()
-    {
-        return !mSignature.empty ();
-    }
-    bool isPrevLedger (uint256 const& pl)
+    Blob sign (RippleAddress const& privateKey);
+
+    bool isPrevLedger (uint256 const& pl) const
     {
         return mPreviousLedger == pl;
     }
-    bool isBowOut ()
+    bool isInitial () const
+    {
+        return mProposeSeq == seqJoin;
+    }
+    bool isBowOut () const
     {
         return mProposeSeq == seqLeave;
     }
 
-    std::chrono::steady_clock::time_point getCreateTime ()
-    {
-        return mTime;
-    }
-    bool isStale (std::chrono::steady_clock::time_point cutoff)
+    bool isStale (std::chrono::steady_clock::time_point cutoff) const
     {
         return mTime <= cutoff;
     }
@@ -131,25 +115,32 @@ public:
     void bowOut ();
     Json::Value getJson () const;
 
-    static uint256 computeSuppressionID (
-        uint256 const& proposeHash,
-        uint256 const& previousLedger,
-        std::uint32_t proposeSeq,
-        std::uint32_t closeTime,
-        Blob const& pubKey,
-        Blob const& signature);
-
 private:
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
     std::uint32_t mCloseTime, mProposeSeq;
 
     NodeID          mPeerID;
     RippleAddress   mPublicKey;
-    RippleAddress   mPrivateKey;    // If ours
 
-    std::string     mSignature; // set only if needed
     std::chrono::steady_clock::time_point mTime;
 };
+
+/** Calculate a unique identifier for a signed proposal.
+
+    The identifier is based on all the fields that contribute to the signature,
+    as well as the signature itself. The "last closed ledger" field may be
+    omitted, but the signer will compute the signature as if this
+    field was present. Recipients of the proposal will inject the last closed
+    ledger in order to validate the signature. If the last closed ledger is left
+    out, then it is considered as all zeroes for the purposes of signing.
+*/
+uint256 proposalUniqueId (
+        uint256 const& proposeHash,
+        uint256 const& previousLedger,
+        std::uint32_t proposeSeq,
+        std::uint32_t closeTime,
+        Blob const& pubKey,
+        Blob const& signature);
 
 } // ripple
 

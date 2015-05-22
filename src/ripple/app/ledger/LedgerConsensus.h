@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
@@ -42,8 +43,6 @@ class LedgerConsensus
 public:
     virtual ~LedgerConsensus() = 0;
 
-    virtual int startup () = 0;
-
     virtual Json::Value getJson (bool full) = 0;
 
     virtual uint256 getLCL () = 0;
@@ -55,12 +54,22 @@ public:
 
     virtual bool peerPosition (LedgerProposal::ref) = 0;
 
-    // test/debug
+    /** Simulate the consensus process without any network traffic.
+
+        The end result, is that consensus begins and completes as if everyone
+        had agreed with whatever we propose.
+
+        This function is only called from the rpc "ledger_accept" path with the
+        server in standalone mode and SHOULD NOT be used during the normal
+        consensus process.
+    */
     virtual void simulate () = 0;
 };
 
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (LocalTxs& localtx,
+make_LedgerConsensus (
+    int previousProposers, int previousConvergeTime,
+    InboundTransactions& inboundTransactions, LocalTxs& localtx,
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);
 

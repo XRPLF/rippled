@@ -47,7 +47,6 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
 using CurrencySet = hash_set<Currency>;
-using NodeIDSet = hash_set<NodeID>;
 
 /** A special account that's used as the "issuer" for XRP. */
 Account const& xrpAccount();
