@@ -30,66 +30,13 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
-std::uint32_t beast_millisecondsSinceStartup() noexcept
+bool beast_isRunningUnderDebugger()
 {
-    return (std::uint32_t) timeGetTime();
+    return IsDebuggerPresent() != FALSE;
 }
 
 //==============================================================================
-class HiResCounterHandler
-{
-public:
-    HiResCounterHandler()
-        : hiResTicksOffset (0)
-    {
-        const MMRESULT res = timeBeginPeriod (1);
-        (void) res;
-        bassert (res == TIMERR_NOERROR);
-
-        LARGE_INTEGER f;
-        QueryPerformanceFrequency (&f);
-        hiResTicksPerSecond = f.QuadPart;
-        hiResTicksScaleFactor = 1000.0 / hiResTicksPerSecond;
-    }
-
-    inline std::int64_t getHighResolutionTicks() noexcept
-    {
-        LARGE_INTEGER ticks;
-        QueryPerformanceCounter (&ticks);
-
-        const std::int64_t mainCounterAsHiResTicks = (beast_millisecondsSinceStartup() * hiResTicksPerSecond) / 1000;
-        const std::int64_t newOffset = mainCounterAsHiResTicks - ticks.QuadPart;
-
-        std::int64_t offsetDrift = newOffset - hiResTicksOffset;
-
-        // fix for a very obscure PCI hardware bug that can make the counter
-        // sometimes jump forwards by a few seconds..
-        if (offsetDrift < 0)
-            offsetDrift = -offsetDrift;
-
-        if (offsetDrift > (hiResTicksPerSecond >> 1))
-            hiResTicksOffset = newOffset;
-
-        return ticks.QuadPart + hiResTicksOffset;
-    }
-
-    inline double getMillisecondCounterHiRes() noexcept
-    {
-        return getHighResolutionTicks() * hiResTicksScaleFactor;
-    }
-
-    std::int64_t hiResTicksPerSecond, hiResTicksOffset;
-    double hiResTicksScaleFactor;
-};
-
-static HiResCounterHandler hiResCounterHandler;
-
-std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept  { return hiResCounterHandler.hiResTicksPerSecond; }
-std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCounterHandler.getHighResolutionTicks(); }
-double Time::getMillisecondCounterHiRes() noexcept       { return hiResCounterHandler.getMillisecondCounterHiRes(); }
-
-//==============================================================================
-std::string SystemStats::getComputerName()
+std::string getComputerName()
 {
     char text [MAX_COMPUTERNAME_LENGTH + 2] = { 0 };
     DWORD len = MAX_COMPUTERNAME_LENGTH + 1;

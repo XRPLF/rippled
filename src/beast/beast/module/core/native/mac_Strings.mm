@@ -24,25 +24,6 @@
 namespace beast
 {
 
-String String::fromCFString (CFStringRef cfString)
-{
-    if (cfString == 0)
-        return String::empty;
-
-    CFRange range = { 0, CFStringGetLength (cfString) };
-    HeapBlock <UniChar> u ((size_t) range.length + 1);
-    CFStringGetCharacters (cfString, range, u);
-    u[range.length] = 0;
-
-    return String (CharPointer_UTF16 ((const CharPointer_UTF16::CharType*) u.getData()));
-}
-
-CFStringRef String::toCFString() const
-{
-    CharPointer_UTF16 utf16 (toUTF16());
-    return CFStringCreateWithCharacters (kCFAllocatorDefault, (const UniChar*) utf16.getAddress(), (CFIndex) utf16.length());
-}
-
 String String::convertToPrecomposedUnicode() const
 {
    #if BEAST_IOS

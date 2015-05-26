@@ -54,7 +54,7 @@ FatalError (char const* message, char const* file, int line)
         if (file != nullptr && file [0] != 0)
             std::cerr << "   File: " << file << ":" << line << '\n';
 
-        auto const backtrace = SystemStats::getStackBacktrace ();
+        auto const backtrace = getStackBacktrace ();
 
         if (!backtrace.empty ())
         {

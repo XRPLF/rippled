@@ -660,7 +660,7 @@ std::string
 NetworkOPsImp::getHostId (bool forAdmin)
 {
     if (forAdmin)
-        return beast::SystemStats::getComputerName ();
+        return beast::getComputerName ();
 
     // For non-admin uses we hash the node ID into a single RFC1751 word:
     // (this could be cached instead of recalculated every time)

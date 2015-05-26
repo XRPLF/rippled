@@ -30,26 +30,6 @@ namespace beast
 */
 
 //==============================================================================
-bool File::copyInternal (const File& dest) const
-{
-    BEAST_AUTORELEASEPOOL
-    {
-        NSFileManager* fm = [NSFileManager defaultManager];
-
-        return [fm fileExistsAtPath: beastStringToNS (fullPath)]
-               #if defined (MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
-                && [fm copyItemAtPath: beastStringToNS (fullPath)
-                               toPath: beastStringToNS (dest.getFullPathName())
-                                error: nil];
-               #else
-                && [fm copyPath: beastStringToNS (fullPath)
-                         toPath: beastStringToNS (dest.getFullPathName())
-                        handler: nil];
-               #endif
-    }
-}
-
-//==============================================================================
 namespace FileHelpers
 {
     static bool isFileOnDriveType (const File& f, const char* const* types)
@@ -123,9 +103,6 @@ namespace FileHelpers
 }
 
 //==============================================================================
-const char* const* beast_argv = nullptr;
-int beast_argc = 0;
-
 File File::getSpecialLocation (const SpecialLocationType type)
 {
     BEAST_AUTORELEASEPOOL

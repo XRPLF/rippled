@@ -76,28 +76,4 @@ void CriticalSection::enter() const noexcept { EnterCriticalSection ((CRITICAL_S
 bool CriticalSection::tryEnter() const noexcept { return TryEnterCriticalSection ((CRITICAL_SECTION*) section) != FALSE; }
 void CriticalSection::exit() const noexcept { LeaveCriticalSection ((CRITICAL_SECTION*) section); }
 
-//==============================================================================
-bool beast_isRunningUnderDebugger()
-{
-    return IsDebuggerPresent() != FALSE;
-}
-
-bool Process::isRunningUnderDebugger()
-{
-    return beast_isRunningUnderDebugger();
-}
-
-//------------------------------------------------------------------------------
-void Process::terminate()
-{
-   #if BEAST_MSVC && BEAST_CHECK_MEMORY_LEAKS
-    _CrtDumpMemoryLeaks();
-   #endif
-
-    // bullet in the head in case there's a problem shutting down..
-    ExitProcess (0);
-}
-
-//==============================================================================
-
 } // beast

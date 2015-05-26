@@ -20,21 +20,26 @@
 #ifndef BEAST_VERSION_H_INCLUDED
 #define BEAST_VERSION_H_INCLUDED
 
-/** Current BEAST version number.
-    See also SystemStats::getBeastVersion() for a string version.
-*/
-// VFALCO TODO Replace this with SemanticVerson
-#define BEAST_MAJOR_VERSION      1
-#define BEAST_MINOR_VERSION      0
-#define BEAST_BUILDNUMBER        0
+#include <string>
 
-/** Current Beast version number.
-    Bits 16 to 32 = major version.
-    Bits 8 to 16 = minor version.
-    Bits 0 to 8 = point release.
-    See also SystemStats::getBeastVersion() for a string version.
-*/
-#define BEAST_VERSION ((BEAST_MAJOR_VERSION << 16) + (BEAST_MINOR_VERSION << 8) + BEAST_BUILDNUMBER)
+/** Current BEAST version number. */
+unsigned int const BEAST_VERSION_MAJOR = 1;
+unsigned int const BEAST_VERSION_MINOR = 0;
+unsigned int const BEAST_VERSION_BUILD = 0;
+
+unsigned int const BEAST_VERSION =
+    (BEAST_VERSION_MAJOR << 16) +
+    (BEAST_VERSION_MINOR << 8) +
+    BEAST_VERSION_BUILD;
+
+inline
+std::string
+getBeastVersion()
+{
+    return "Beast v" + std::to_string (BEAST_VERSION_MAJOR) +
+                 "." + std::to_string (BEAST_VERSION_MINOR) +
+                 "." + std::to_string (BEAST_VERSION_BUILD);
+}
 
 #endif
 

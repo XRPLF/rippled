@@ -69,17 +69,6 @@ namespace WindowsFileHelpers
         return path;
     }
 
-    std::int64_t getDiskSpaceInfo (const String& path, const bool total)
-    {
-        ULARGE_INTEGER spc, tot, totFree;
-
-        if (GetDiskFreeSpaceEx (getDriveFromPath (path).toWideCharPointer(), &spc, &tot, &totFree))
-            return total ? (std::int64_t) tot.QuadPart
-                         : (std::int64_t) spc.QuadPart;
-
-        return 0;
-    }
-
     unsigned int getWindowsDriveType (const String& path)
     {
         return GetDriveType (getDriveFromPath (path).toWideCharPointer());
@@ -139,29 +128,6 @@ bool File::isDirectory() const
     return ((attr & FILE_ATTRIBUTE_DIRECTORY) != 0) && (attr != INVALID_FILE_ATTRIBUTES);
 }
 
-bool File::hasWriteAccess() const
-{
-    if (exists())
-        return (WindowsFileHelpers::getAtts (fullPath) & FILE_ATTRIBUTE_READONLY) == 0;
-
-    // on windows, it seems that even read-only directories can still be written into,
-    // so checking the parent directory's permissions would return the wrong result..
-    return true;
-}
-
-bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
-{
-    const DWORD oldAtts = WindowsFileHelpers::getAtts (fullPath);
-
-    if (oldAtts == INVALID_FILE_ATTRIBUTES)
-        return false;
-
-    const DWORD newAtts = shouldBeReadOnly ? (oldAtts |  FILE_ATTRIBUTE_READONLY)
-                                           : (oldAtts & ~FILE_ATTRIBUTE_READONLY);
-    return newAtts == oldAtts
-            || SetFileAttributes (fullPath.toWideCharPointer(), newAtts) != FALSE;
-}
-
 //==============================================================================
 bool File::deleteFile() const
 {
@@ -170,16 +136,6 @@ bool File::deleteFile() const
 
     return isDirectory() ? RemoveDirectory (fullPath.toWideCharPointer()) != 0
                          : DeleteFile (fullPath.toWideCharPointer()) != 0;
-}
-
-bool File::copyInternal (const File& dest) const
-{
-    return CopyFile (fullPath.toWideCharPointer(), dest.getFullPathName().toWideCharPointer(), false) != 0;
-}
-
-bool File::moveInternal (const File& dest) const
-{
-    return MoveFile (fullPath.toWideCharPointer(), dest.getFullPathName().toWideCharPointer()) != 0;
 }
 
 Result File::createDirectoryInternal (const String& fileName) const
@@ -298,57 +254,6 @@ std::int64_t File::getSize() const
     return 0;
 }
 
-void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
-{
-    using namespace WindowsFileHelpers;
-    WIN32_FILE_ATTRIBUTE_DATA attributes;
-
-    if (GetFileAttributesEx (fullPath.toWideCharPointer(), GetFileExInfoStandard, &attributes))
-    {
-        modificationTime = fileTimeToTime (&attributes.ftLastWriteTime);
-        creationTime     = fileTimeToTime (&attributes.ftCreationTime);
-        accessTime       = fileTimeToTime (&attributes.ftLastAccessTime);
-    }
-    else
-    {
-        creationTime = accessTime = modificationTime = 0;
-    }
-}
-
-bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t creationTime) const
-{
-    using namespace WindowsFileHelpers;
-
-    bool ok = false;
-    HANDLE h = CreateFile (fullPath.toWideCharPointer(), GENERIC_WRITE, FILE_SHARE_READ, 0,
-                           OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-
-    if (h != INVALID_HANDLE_VALUE)
-    {
-        FILETIME m, a, c;
-
-        ok = SetFileTime (h,
-                          timeToFileTime (creationTime, &c),
-                          timeToFileTime (accessTime, &a),
-                          timeToFileTime (modificationTime, &m)) != 0;
-
-        CloseHandle (h);
-    }
-
-    return ok;
-}
-
-//==============================================================================
-std::int64_t File::getBytesFreeOnVolume() const
-{
-    return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), false);
-}
-
-std::int64_t File::getVolumeTotalSize() const
-{
-    return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), true);
-}
-
 //==============================================================================
 File File::getSpecialLocation (const SpecialLocationType type)
 {
@@ -390,11 +295,6 @@ File File::getCurrentWorkingDirectory()
     dest[0] = 0;
     GetCurrentDirectory ((DWORD) numElementsInArray (dest), dest);
     return File (String (dest));
-}
-
-bool File::setAsCurrentWorkingDirectory() const
-{
-    return SetCurrentDirectory (getFullPathName().toWideCharPointer()) != FALSE;
 }
 
 //==============================================================================

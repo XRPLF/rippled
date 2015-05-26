@@ -1201,15 +1201,6 @@ public:
 
     //==============================================================================
    #if BEAST_MAC || BEAST_IOS || DOXYGEN
-    /** MAC ONLY - Creates a String from an OSX CFString. */
-    static String fromCFString (CFStringRef cfString);
-
-    /** MAC ONLY - Converts this string to a CFString.
-        Remember that you must use CFRelease() to free the returned string when you're
-        finished with it.
-    */
-    CFStringRef toCFString() const;
-
     /** MAC ONLY - Returns a copy of this string in which any decomposed unicode characters have
         been converted to their precomposed equivalents. */
     String convertToPrecomposedUnicode() const;

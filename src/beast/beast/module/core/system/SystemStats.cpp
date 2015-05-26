@@ -42,18 +42,9 @@ static_assert (sizeof (std::uint64_t) == 8, "std::uint64_t must be exactly 8 byt
 
 namespace beast
 {
-
-std::string
-SystemStats::getBeastVersion()
-{
-    return "Beast v" + std::to_string (BEAST_MAJOR_VERSION) +
-                 "." + std::to_string (BEAST_MINOR_VERSION) +
-                 "." + std::to_string (BEAST_BUILDNUMBER);
-}
-
 //==============================================================================
 std::vector <std::string>
-SystemStats::getStackBacktrace()
+getStackBacktrace()
 {
     std::vector <std::string> result;
 
@@ -119,43 +110,6 @@ SystemStats::getStackBacktrace()
 #endif
 
     return result;
-}
-
-//==============================================================================
-static SystemStats::CrashHandlerFunction globalCrashHandler = nullptr;
-
-#if BEAST_WINDOWS
-static LONG WINAPI handleCrash (LPEXCEPTION_POINTERS)
-{
-    globalCrashHandler();
-    return EXCEPTION_EXECUTE_HANDLER;
-}
-#else
-static void handleCrash (int)
-{
-    globalCrashHandler();
-    kill (getpid(), SIGKILL);
-}
-
-int beast_siginterrupt (int sig, int flag);
-#endif
-
-void SystemStats::setApplicationCrashHandler (CrashHandlerFunction handler)
-{
-    bassert (handler != nullptr); // This must be a valid function.
-    globalCrashHandler = handler;
-
-   #if BEAST_WINDOWS
-    SetUnhandledExceptionFilter (handleCrash);
-   #else
-    const int signals[] = { SIGFPE, SIGILL, SIGSEGV, SIGBUS, SIGABRT, SIGSYS };
-
-    for (int i = 0; i < numElementsInArray (signals); ++i)
-    {
-        ::signal (signals[i], handleCrash);
-        beast_siginterrupt (signals[i], 1);
-    }
-   #endif
 }
 
 } // beast

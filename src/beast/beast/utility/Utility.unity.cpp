@@ -21,8 +21,6 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/utility/impl/Error.cpp>
-
 #include <beast/utility/impl/Debug.cpp>
 #include <beast/utility/impl/Journal.cpp>
 #include <beast/utility/impl/PropertyStream.cpp>

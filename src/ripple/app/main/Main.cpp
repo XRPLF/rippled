@@ -35,6 +35,7 @@
 #include <ripple/server/Role.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/chrono/basic_seconds_clock.h>
+#include <beast/module/core/time/Time.h>
 #include <beast/unit_test.h>
 #include <beast/utility/Debug.h>
 #include <beast/streams/debug_ostream.h>
