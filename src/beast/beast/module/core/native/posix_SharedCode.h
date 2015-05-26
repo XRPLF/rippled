@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+#ifndef BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
+#define BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
+
 namespace beast
 {
 
@@ -45,9 +48,6 @@ void CriticalSection::exit() const noexcept     { pthread_mutex_unlock (&mutex);
 
 void Process::terminate()
 {
-#ifndef BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
-#define BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
-
 #if BEAST_ANDROID || BEAST_BSD
    // http://www.unix.com/man-page/FreeBSD/2/_exit/
     ::_exit (EXIT_FAILURE);
