@@ -42,18 +42,9 @@ static_assert (sizeof (std::uint64_t) == 8, "std::uint64_t must be exactly 8 byt
 
 namespace beast
 {
-
-std::string
-SystemStats::getBeastVersion()
-{
-    return "Beast v" + std::to_string (BEAST_MAJOR_VERSION) +
-                 "." + std::to_string (BEAST_MINOR_VERSION) +
-                 "." + std::to_string (BEAST_BUILDNUMBER);
-}
-
 //==============================================================================
 std::vector <std::string>
-SystemStats::getStackBacktrace()
+getStackBacktrace()
 {
     std::vector <std::string> result;
 

@@ -28,29 +28,23 @@ namespace beast
 {
 
 //==============================================================================
+/** Returns the host-name of the computer. */
+std::string getComputerName();
+
+//==============================================================================
+/** Returns a backtrace of the current call-stack.
+    The usefulness of the result will depend on the level of debug symbols
+    that are available in the executable.
+*/
+std::vector <std::string>
+getStackBacktrace();
+
+//==============================================================================
 /**
     Contains methods for finding out about the current hardware and OS configuration.
 */
 namespace SystemStats
 {
-    //==============================================================================
-    /** Returns the current version of BEAST,
-        See also the BEAST_VERSION, BEAST_MAJOR_VERSION and BEAST_MINOR_VERSION macros.
-    */
-    std::string getBeastVersion();
-
-    //==============================================================================
-    /** Returns the host-name of the computer. */
-    std::string getComputerName();
-
-    //==============================================================================
-    /** Returns a backtrace of the current call-stack.
-        The usefulness of the result will depend on the level of debug symbols
-        that are available in the executable.
-    */
-    std::vector <std::string>
-    getStackBacktrace();
-
     /** A void() function type, used by setApplicationCrashHandler(). */
     using CrashHandlerFunction = void (*)();
 

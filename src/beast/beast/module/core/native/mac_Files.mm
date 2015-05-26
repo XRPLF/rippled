@@ -123,9 +123,6 @@ namespace FileHelpers
 }
 
 //==============================================================================
-const char* const* beast_argv = nullptr;
-int beast_argc = 0;
-
 File File::getSpecialLocation (const SpecialLocationType type)
 {
     BEAST_AUTORELEASEPOOL

@@ -23,15 +23,6 @@
 
 namespace beast
 {
-
-enum
-{
-    U_ISOFS_SUPER_MAGIC = 5,
-    U_MSDOS_SUPER_MAGIC = 2,
-    U_NFS_SUPER_MAGIC = 1,
-    U_SMB_SUPER_MAGIC = 8
-};
-
 //==============================================================================
 bool File::copyInternal (const File& dest) const
 {
@@ -87,9 +78,6 @@ static File resolveXDGFolder (const char* const type, const char* const fallback
 
     return File (fallbackFolder);
 }
-
-const char* const* beast_argv = nullptr;
-int beast_argc = 0;
 
 File File::getSpecialLocation (const SpecialLocationType type)
 {

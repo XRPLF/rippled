@@ -89,7 +89,7 @@ std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCo
 double Time::getMillisecondCounterHiRes() noexcept       { return hiResCounterHandler.getMillisecondCounterHiRes(); }
 
 //==============================================================================
-std::string SystemStats::getComputerName()
+std::string getComputerName()
 {
     char text [MAX_COMPUTERNAME_LENGTH + 2] = { 0 };
     DWORD len = MAX_COMPUTERNAME_LENGTH + 1;

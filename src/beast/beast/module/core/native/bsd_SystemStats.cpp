@@ -28,7 +28,7 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
-std::string SystemStats::getComputerName()
+std::string getComputerName()
 {
     char name [256] = { 0 };
     if (gethostname (name, sizeof (name) - 1) == 0)
