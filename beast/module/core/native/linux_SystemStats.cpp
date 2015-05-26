@@ -30,40 +30,32 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
-std::string SystemStats::getComputerName()
+bool beast_isRunningUnderDebugger()
+{
+    static char testResult = 0;
+
+    if (testResult == 0)
+    {
+        testResult = (char) ptrace (PT_TRACE_ME, 0, 0, 0);
+
+        if (testResult >= 0)
+        {
+            ptrace (PT_DETACH, 0, (caddr_t) 1, 0);
+            testResult = 1;
+        }
+    }
+
+    return testResult < 0;
+}
+
+//==============================================================================
+std::string getComputerName()
 {
     char name [256] = { 0 };
     if (gethostname (name, sizeof (name) - 1) == 0)
         return name;
 
     return std::string{};
-}
-
-//==============================================================================
-std::uint32_t beast_millisecondsSinceStartup() noexcept
-{
-    timespec t;
-    clock_gettime (CLOCK_MONOTONIC, &t);
-
-    return t.tv_sec * 1000 + t.tv_nsec / 1000000;
-}
-
-std::int64_t Time::getHighResolutionTicks() noexcept
-{
-    timespec t;
-    clock_gettime (CLOCK_MONOTONIC, &t);
-
-    return (t.tv_sec * (std::int64_t) 1000000) + (t.tv_nsec / 1000);
-}
-
-std::int64_t Time::getHighResolutionTicksPerSecond() noexcept
-{
-    return 1000000;  // (microseconds)
-}
-
-double Time::getMillisecondCounterHiRes() noexcept
-{
-    return getHighResolutionTicks() * 0.001;
 }
 
 } // beast

@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+#ifndef BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
+#define BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
+
 namespace beast
 {
 
@@ -40,21 +43,6 @@ CriticalSection::~CriticalSection() noexcept    { pthread_mutex_destroy (&mutex)
 void CriticalSection::enter() const noexcept    { pthread_mutex_lock (&mutex); }
 bool CriticalSection::tryEnter() const noexcept { return pthread_mutex_trylock (&mutex) == 0; }
 void CriticalSection::exit() const noexcept     { pthread_mutex_unlock (&mutex); }
-
-//==============================================================================
-
-void Process::terminate()
-{
-#ifndef BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
-#define BEAST_MODULE_CORE_NATIVE_POSIX_SHAREDCODE_H_INCLUDED
-
-#if BEAST_ANDROID || BEAST_BSD
-   // http://www.unix.com/man-page/FreeBSD/2/_exit/
-    ::_exit (EXIT_FAILURE);
-#else
-    std::_Exit (EXIT_FAILURE);
-#endif
-}
 
 //==============================================================================
 const beast_wchar File::separator = '/';
@@ -77,26 +65,6 @@ File File::getCurrentWorkingDirectory()
     }
 
     return File (CharPointer_UTF8 (cwd));
-}
-
-bool File::setAsCurrentWorkingDirectory() const
-{
-    return chdir (getFullPathName().toUTF8()) == 0;
-}
-
-//==============================================================================
-// The unix siginterrupt function is deprecated - this does the same job.
-int beast_siginterrupt (int sig, int flag)
-{
-    struct ::sigaction act;
-    (void) ::sigaction (sig, nullptr, &act);
-
-    if (flag != 0)
-        act.sa_flags &= ~SA_RESTART;
-    else
-        act.sa_flags |= SA_RESTART;
-
-    return ::sigaction (sig, &act, nullptr);
 }
 
 //==============================================================================
@@ -189,65 +157,6 @@ std::int64_t File::getSize() const
 }
 
 //==============================================================================
-bool File::hasWriteAccess() const
-{
-    if (exists())
-        return access (fullPath.toUTF8(), W_OK) == 0;
-
-    if ((! isDirectory()) && fullPath.containsChar (separator))
-        return getParentDirectory().hasWriteAccess();
-
-    return false;
-}
-
-bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
-{
-    beast_statStruct info;
-    if (! beast_stat (fullPath, info))
-        return false;
-
-    info.st_mode &= 0777;   // Just permissions
-
-    if (shouldBeReadOnly)
-        info.st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
-    else
-        // Give everybody write permission?
-        info.st_mode |= S_IWUSR | S_IWGRP | S_IWOTH;
-
-    return chmod (fullPath.toUTF8(), info.st_mode) == 0;
-}
-
-void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
-{
-    modificationTime = 0;
-    accessTime = 0;
-    creationTime = 0;
-
-    beast_statStruct info;
-    if (beast_stat (fullPath, info))
-    {
-        modificationTime = (std::int64_t) info.st_mtime * 1000;
-        accessTime = (std::int64_t) info.st_atime * 1000;
-        creationTime = (std::int64_t) info.st_ctime * 1000;
-    }
-}
-
-bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t /*creationTime*/) const
-{
-    beast_statStruct info;
-
-    if ((modificationTime != 0 || accessTime != 0) && beast_stat (fullPath, info))
-    {
-        struct utimbuf times;
-        times.actime  = accessTime != 0       ? (time_t) (accessTime / 1000)       : info.st_atime;
-        times.modtime = modificationTime != 0 ? (time_t) (modificationTime / 1000) : info.st_mtime;
-
-        return utime (fullPath.toUTF8(), &times) == 0;
-    }
-
-    return false;
-}
-
 bool File::deleteFile() const
 {
     if (! exists())
@@ -257,22 +166,6 @@ bool File::deleteFile() const
         return rmdir (fullPath.toUTF8()) == 0;
 
     return remove (fullPath.toUTF8()) == 0;
-}
-
-bool File::moveInternal (const File& dest) const
-{
-    if (rename (fullPath.toUTF8(), dest.getFullPathName().toUTF8()) == 0)
-        return true;
-
-    if (hasWriteAccess() && copyInternal (dest))
-    {
-        if (deleteFile())
-            return true;
-
-        dest.deleteFile();
-    }
-
-    return false;
 }
 
 Result File::createDirectoryInternal (const String& fileName) const
@@ -440,25 +333,6 @@ File beast_getExecutableFile()
     static String filename (DLAddrReader::getFilename());
     return File::getCurrentWorkingDirectory().getChildFile (filename);
    #endif
-}
-
-//==============================================================================
-std::int64_t File::getBytesFreeOnVolume() const
-{
-    struct statfs buf;
-    if (beast_doStatFS (*this, buf))
-        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_bavail; // Note: this returns space available to non-super user
-
-    return 0;
-}
-
-std::int64_t File::getVolumeTotalSize() const
-{
-    struct statfs buf;
-    if (beast_doStatFS (*this, buf))
-        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_blocks;
-
-    return 0;
 }
 
 } // beast

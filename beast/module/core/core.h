@@ -50,7 +50,6 @@
 #include <beast/Threads.h>
 
 #include <beast/utility/Debug.h>
-#include <beast/utility/Error.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 
@@ -69,7 +68,6 @@ class FileOutputStream;
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include <beast/module/core/time/AtExitHook.h>
 #include <beast/module/core/time/Time.h>
 #include <beast/module/core/threads/ScopedLock.h>
 #include <beast/module/core/threads/CriticalSection.h>
@@ -139,14 +137,12 @@ class FileOutputStream;
 #include <beast/module/core/streams/InputStream.h>
 #include <beast/module/core/files/FileInputStream.h>
 #include <beast/module/core/streams/InputSource.h>
-#include <beast/module/core/streams/FileInputSource.h>
 #include <beast/module/core/streams/OutputStream.h>
 #include <beast/module/core/files/FileOutputStream.h>
 #include <beast/module/core/streams/MemoryOutputStream.h>
 
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
-#include <beast/module/core/threads/Process.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
