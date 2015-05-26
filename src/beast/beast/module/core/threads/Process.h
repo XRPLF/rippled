@@ -36,16 +36,6 @@ namespace beast {
 */
 namespace Process
 {
-    /** Kills the current process immediately.
-
-        This is an emergency process terminator that kills the application
-        immediately - it's intended only for use only when something goes
-        horribly wrong.
-
-        @see BEASTApplication::quit
-    */
-    void terminate();
-
     //==============================================================================
     /** Returns true if this process is being hosted by a debugger. */
     bool isRunningUnderDebugger();

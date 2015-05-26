@@ -45,18 +45,6 @@ bool CriticalSection::tryEnter() const noexcept { return pthread_mutex_trylock (
 void CriticalSection::exit() const noexcept     { pthread_mutex_unlock (&mutex); }
 
 //==============================================================================
-
-void Process::terminate()
-{
-#if BEAST_ANDROID || BEAST_BSD
-   // http://www.unix.com/man-page/FreeBSD/2/_exit/
-    ::_exit (EXIT_FAILURE);
-#else
-    std::_Exit (EXIT_FAILURE);
-#endif
-}
-
-//==============================================================================
 const beast_wchar File::separator = '/';
 const String File::separatorString ("/");
 
