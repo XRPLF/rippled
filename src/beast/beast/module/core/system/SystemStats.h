@@ -39,24 +39,6 @@ std::string getComputerName();
 std::vector <std::string>
 getStackBacktrace();
 
-//==============================================================================
-/**
-    Contains methods for finding out about the current hardware and OS configuration.
-*/
-namespace SystemStats
-{
-    /** A void() function type, used by setApplicationCrashHandler(). */
-    using CrashHandlerFunction = void (*)();
-
-    /** Sets up a global callback function that will be called if the application
-        executes some kind of illegal instruction.
-
-        You may want to call getStackBacktrace() in your handler function, to find out
-        where the problem happened and log it, etc.
-    */
-    void setApplicationCrashHandler (CrashHandlerFunction);
-};
-
 } // beast
 
 #endif   // BEAST_SYSTEMSTATS_H_INCLUDED

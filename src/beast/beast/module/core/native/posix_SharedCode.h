@@ -85,21 +85,6 @@ bool File::setAsCurrentWorkingDirectory() const
 }
 
 //==============================================================================
-// The unix siginterrupt function is deprecated - this does the same job.
-int beast_siginterrupt (int sig, int flag)
-{
-    struct ::sigaction act;
-    (void) ::sigaction (sig, nullptr, &act);
-
-    if (flag != 0)
-        act.sa_flags &= ~SA_RESTART;
-    else
-        act.sa_flags |= SA_RESTART;
-
-    return ::sigaction (sig, &act, nullptr);
-}
-
-//==============================================================================
 namespace
 {
    #if BEAST_LINUX || \
