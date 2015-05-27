@@ -89,7 +89,7 @@ public:
         for (int d = 0; d < 3; ++d)
             s.add32 (r.nextInt ());
         return std::make_shared <Item> (
-            to256(s.getRIPEMD160()), s.peekData ());
+            s.getSHA512Half(), s.peekData ());
     }
 
     void

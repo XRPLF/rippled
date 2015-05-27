@@ -166,10 +166,8 @@ public:
         return addFieldID (static_cast<int> (type), name);
     }
 
-    // normal hash functions
-    uint160 getRIPEMD160 (int size = -1) const;
-    uint256 getSHA256 (int size = -1) const;
-    uint256 getSHA512Half (int size = -1) const;
+    // DEPRECATED
+    uint256 getSHA512Half() const;
 
     // prefix hash functions
     static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);

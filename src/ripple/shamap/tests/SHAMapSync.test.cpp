@@ -43,7 +43,8 @@ public:
 
         for (int d = 0; d < 3; ++d) s.add32 (rand ());
 
-        return std::make_shared<SHAMapItem> (to256 (s.getRIPEMD160 ()), s.peekData ());
+        return std::make_shared<SHAMapItem>(
+            s.getSHA512Half(), s.peekData ());
     }
 
     bool confuseMap (SHAMap& map, int count)
