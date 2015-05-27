@@ -400,6 +400,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\hash_append.h">

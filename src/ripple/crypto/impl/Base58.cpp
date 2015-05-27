@@ -22,6 +22,7 @@
 #include <ripple/crypto/CAutoBN_CTX.h>
 #include <ripple/crypto/CBigNum.h>
 #include <openssl/sha.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -99,7 +100,7 @@ std::string Base58::raw_encode (unsigned char const* begin,
         str += alphabet [0];
 
     // Convert little endian std::string to big endian
-    reverse (str.begin (), str.end ());
+    std::reverse (str.begin (), str.end ());
     return str;
 }
 

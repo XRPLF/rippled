@@ -178,8 +178,8 @@ std::istream& operator>> (std::istream& is, AddressV4& addr);
 
 }
 
-template <>
-struct is_contiguously_hashable<IP::AddressV4>
+template <class HashAlgorithm>
+struct is_contiguously_hashable<IP::AddressV4, HashAlgorithm>
     : public std::integral_constant<bool, sizeof(IP::AddressV4) == sizeof(std::uint32_t)>
 {
 };

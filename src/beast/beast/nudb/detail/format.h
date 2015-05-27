@@ -152,7 +152,7 @@ hash (void const* key,
     std::size_t key_size, std::size_t salt)
 {
     Hasher h (salt);
-    h.append (key, key_size);
+    h (key, key_size);
     return make_hash<hash_t>(static_cast<
         typename Hasher::result_type>(h));
 }
@@ -164,7 +164,7 @@ std::size_t
 pepper (std::size_t salt)
 {
     Hasher h (salt);
-    h.append (&salt, sizeof(salt));
+    h (&salt, sizeof(salt));
     return static_cast<std::size_t>(h);
 }
 

@@ -45,8 +45,6 @@ template <class Int, class Tag>
 class tagged_integer
 {
 private:
-    friend struct is_contiguously_hashable<tagged_integer <Int, Tag>>;
-
     static_assert (std::is_unsigned <Int>::value,
         "The specified Int type must be unsigned");
 
@@ -235,9 +233,9 @@ public:
     }
 };
 
-template <class Int, class Tag>
-struct is_contiguously_hashable<tagged_integer<Int, Tag>>
-    : public is_contiguously_hashable<Int>
+template <class Int, class Tag, class HashAlgorithm>
+struct is_contiguously_hashable<tagged_integer<Int, Tag>, HashAlgorithm>
+    : public is_contiguously_hashable<Int, HashAlgorithm>
 {
 };
 
