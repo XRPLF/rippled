@@ -66,10 +66,4 @@
 #define BEAST_STRING_UTF_TYPE 8
 #endif
 
-//------------------------------------------------------------------------------
-
-#ifndef BEAST_USE_BOOST_FEATURES
-#define BEAST_USE_BOOST_FEATURES 0
-#endif
-
 #endif
