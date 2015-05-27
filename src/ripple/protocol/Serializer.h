@@ -23,6 +23,7 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/Slice.h>
 #include <beast/utility/noexcept.h>
 #include <cassert>
 #include <cstdint>
@@ -63,6 +64,11 @@ public:
         mData (begin, end)
     {
         ;
+    }
+
+    Slice slice() const noexcept
+    {
+        return Slice(mData.data(), mData.size());
     }
 
     std::size_t
@@ -168,21 +174,6 @@ public:
 
     // DEPRECATED
     uint256 getSHA512Half() const;
-
-    // prefix hash functions
-    static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);
-    uint256 getPrefixHash (std::uint32_t prefix) const
-    {
-        return getPrefixHash (prefix, & (mData.front ()), mData.size ());
-    }
-    static uint256 getPrefixHash (std::uint32_t prefix, Blob const& data)
-    {
-        return getPrefixHash (prefix, & (data.front ()), data.size ());
-    }
-    static uint256 getPrefixHash (std::uint32_t prefix, std::string const& strData)
-    {
-        return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
-    }
 
     // totality functions
     Blob const& peekData () const
@@ -317,10 +308,17 @@ private:
     std::uint8_t const* p_;
     std::size_t remain_;
     std::size_t used_ = 0;
+
 public:
     SerialIter (void const* data,
             std::size_t size) noexcept;
 
+    SerialIter (Slice const& slice)
+        : SerialIter(slice.data(), slice.size())
+    {
+    }
+
+    // VFALCO TODO Remove this overload use Slice instead
     explicit
     SerialIter (std::string const& s) noexcept
         : SerialIter(s.data(), s.size())
@@ -427,30 +425,6 @@ SerialIter::getBitString()
     used_ += n;
     remain_ -= n;
     return u;
-}
-
-//------------------------------------------------------------------------------
-
-uint256
-getSHA512Half (void const* data, int len);
-
-// DEPRECATED
-inline
-uint256
-getSHA512Half (std::string const& s)
-{
-    return getSHA512Half(s.data(), s.size());
-}
-
-// DEPRECATED
-template <class T,
-    std::enable_if_t<std::is_integral<T>::value &&
-        sizeof(T) == 1>* = nullptr>
-inline
-uint256
-getSHA512Half (std::vector<T> const& v)
-{
-    return getSHA512Half(v.data(), v.size());
 }
 
 } // ripple

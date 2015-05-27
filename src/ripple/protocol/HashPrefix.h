@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
 #define RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
 
+#include <beast/hash/hash_append.h>
+#include <beast/utility/noexcept.h>
 #include <cstdint>
 
 namespace ripple {
@@ -96,6 +98,15 @@ public:
     /** Manifest */
     static HashPrefix const manifest;
 };
+
+template <class Hasher>
+void
+hash_append (Hasher& h, HashPrefix const& hp) noexcept
+{
+    using beast::hash_append;
+    hash_append(h,
+        static_cast<std::uint32_t>(hp));
+}
 
 } // ripple
 

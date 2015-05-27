@@ -30,10 +30,9 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/hardened_hash.h>
 #include <beast/utility/Zero.h>
-
 #include <boost/functional/hash.hpp>
-
 #include <functional>
+#include <type_traits>
 
 using beast::zero;
 using beast::Zero;
@@ -297,11 +296,13 @@ public:
         return *this;
     }
 
-    template <class Hasher>
-    friend void hash_append(Hasher& h, base_uint const& a) noexcept
+    template <class Hasher,
+              class = std::enable_if_t<Hasher::endian != beast::endian::native>>
+    friend void hash_append(
+        Hasher& h, base_uint const& a) noexcept
     {
-        using beast::hash_append;
-        hash_append (h, a.pn);
+        // Do not allow any endian transformations on this memory
+        h(a.pn, sizeof(a.pn));
     }
 
     bool SetHexExact (const char* psz)
@@ -520,23 +521,20 @@ inline std::ostream& operator<< (
     return out << to_string (u);
 }
 
+static_assert(sizeof(uint128) == 128/8, "There should be no padding bytes");
+static_assert(sizeof(uint160) == 160/8, "There should be no padding bytes");
+static_assert(sizeof(uint256) == 256/8, "There should be no padding bytes");
+
 } // rippled
 
-namespace boost
+namespace beast
 {
 
 template <std::size_t Bits, class Tag>
-struct hash<ripple::base_uint<Bits, Tag>>
-{
-    using argument_type = ripple::base_uint<Bits, Tag>;
+struct is_uniquely_represented<ripple::base_uint<Bits, Tag>>
+    : public std::true_type
+    {};
 
-    std::size_t
-    operator()(argument_type const& u) const
-    {
-        return ripple::hardened_hash<>{}(u);
-    }
-};
-
-}  // boost
+}  // beast
 
 #endif

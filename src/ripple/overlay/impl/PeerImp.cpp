@@ -28,6 +28,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -1390,10 +1391,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 
     try
     {
-        Serializer s (m->validation ());
-        SerialIter sit (s);
-        STValidation::pointer val = std::make_shared <
-            STValidation> (std::ref (sit), false);
+        STValidation::pointer val;
+        {
+            SerialIter sit (make_Slice(m->validation()));
+            val = std::make_shared <
+                STValidation> (std::ref (sit), false);
+        }
 
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
@@ -1402,8 +1405,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             return;
         }
 
-        if (! getApp().getHashRouter ().addSuppressionPeer (
-            s.getSHA512Half(), id_))
+        if (! getApp().getHashRouter ().addSuppressionPeer(
+            sha512Half(make_Slice(m->validation())), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return;

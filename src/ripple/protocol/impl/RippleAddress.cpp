@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/crypto/ECDSA.h>
 #include <ripple/crypto/ECIES.h>
@@ -63,16 +64,8 @@ bool isCanonicalEd25519Signature (std::uint8_t const* signature)
 static
 uint128 PassPhraseToKey (std::string const& passPhrase)
 {
-    Serializer s;
-
-    s.addRaw (passPhrase);
-    // NIKB TODO this calling sequence is a bit ugly; this should be improved.
-    uint256 hash256 = s.getSHA512Half ();
-    uint128 ret (uint128::fromVoid (hash256.data()));
-
-    s.secureErase ();
-
-    return ret;
+    return uint128::fromVoid(sha512Half_s(
+        make_Slice(passPhrase)).data());
 }
 
 static
@@ -543,8 +536,9 @@ bool RippleAddress::accountPublicVerify (
                 && isCanonicalEd25519Signature (signature);
     }
 
-    uint256 const uHash = getSHA512Half (message);
-    return verifySignature (getAccountPublic(), uHash, vucSig, fullyCanonical);
+    return verifySignature (getAccountPublic(),
+        sha512Half(make_Slice(message)), vucSig,
+            fullyCanonical);
 }
 
 RippleAddress RippleAddress::createAccountID (Account const& account)
@@ -632,9 +626,8 @@ Blob RippleAddress::accountPrivateSign (Blob const& message) const
         return signature;
     }
 
-    uint256 const uHash = getSHA512Half (message);
-
-    Blob result = ECDSASign (uHash, getAccountPrivate());
+    Blob result = ECDSASign(
+        sha512Half(make_Slice(message)), getAccountPrivate());
     bool const ok = !result.empty();
 
     CondLog (!ok, lsWARNING, RippleAddress)
@@ -893,14 +886,8 @@ RippleAddress RippleAddress::createSeedGeneric (std::string const& strText)
 
 uint256 keyFromSeed (uint128 const& seed)
 {
-    Serializer s;
-
-    s.add128 (seed);
-    uint256 result = s.getSHA512Half();
-
-    s.secureErase ();
-
-    return result;
+    return sha512Half_s(Slice(
+        seed.data(), seed.size()));
 }
 
 RippleAddress getSeedFromRPC (Json::Value const& params)
