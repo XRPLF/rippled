@@ -91,19 +91,13 @@ ManagerImp::make_Database (
     Scheduler& scheduler,
     beast::Journal journal,
     int readThreads,
-    Section const& backendParameters,
-    Section fastBackendParameters)
+    Section const& backendParameters)
 {
     std::unique_ptr <Backend> backend (make_Backend (
         backendParameters, scheduler, journal));
 
-    std::unique_ptr <Backend> fastBackend (
-        (fastBackendParameters.size () > 0)
-            ? make_Backend (fastBackendParameters, scheduler, journal)
-            : nullptr);
-
     return std::make_unique <DatabaseImp> (name, scheduler, readThreads,
-        std::move (backend), std::move (fastBackend), journal);
+        std::move (backend), journal);
 }
 
 std::unique_ptr <DatabaseRotating>
@@ -113,12 +107,10 @@ ManagerImp::make_DatabaseRotating (
         std::int32_t readThreads,
         std::shared_ptr <Backend> writableBackend,
         std::shared_ptr <Backend> archiveBackend,
-        std::unique_ptr <Backend> fastBackend,
         beast::Journal journal)
 {
     return std::make_unique <DatabaseRotatingImp> (name, scheduler,
-            readThreads, writableBackend, archiveBackend,
-            std::move (fastBackend), journal);
+            readThreads, writableBackend, archiveBackend, journal);
 }
 
 Factory*

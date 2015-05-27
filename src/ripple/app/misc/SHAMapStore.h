@@ -44,7 +44,6 @@ public:
         bool advisoryDelete = false;
         std::uint32_t ledgerHistory = 0;
         Section nodeDatabase;
-        Section ephemeralNodeDatabase;
         std::string databasePath;
         std::uint32_t deleteBatch = 100;
         std::uint32_t backOff = 100;
