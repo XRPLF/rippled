@@ -21,55 +21,137 @@
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
+#include <beast/config/CompilerConfig.h> // for constexpr
+#include <beast/hash/endian.h>
 #include <beast/utility/meta.h>
 #include <beast/utility/noexcept.h>
-#if BEAST_USE_BOOST_FEATURES
-#include <boost/shared_ptr.hpp>
-#endif
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <functional>
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
+#include <system_error>
 #include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <beast/cxx14/utility.h> // <utility>
 #include <vector>
 
-// Set to 1 to disable variadic hash_append for tuple. When set, overloads
-// will be manually provided for tuples up to 10-arity. This also causes
-// is_contiguously_hashable<> to always return false for tuples.
-//
-#ifndef BEAST_NO_TUPLE_VARIADICS
-# ifdef _MSC_VER
-#  define BEAST_NO_TUPLE_VARIADICS 1
-#  ifndef BEAST_VARIADIC_MAX
-#   ifdef _VARIADIC_MAX
-#    define BEAST_VARIADIC_MAX _VARIADIC_MAX
-#   else
-#    define BEAST_VARIADIC_MAX 10
-#   endif
-#  endif
-# else
-#  define BEAST_NO_TUPLE_VARIADICS 0
-# endif
-#endif
-
-// Set to 1 if std::pair fails the trait test on a platform.
-#ifndef BEAST_NO_IS_CONTIGUOUS_HASHABLE_PAIR
-#define BEAST_NO_IS_CONTIGUOUS_HASHABLE_PAIR 0
-#endif
-
-// Set to 1 if std::tuple fails the trait test on a platform.
-#ifndef BEAST_NO_IS_CONTIGUOUS_HASHABLE_TUPLE
-# ifdef _MSC_VER
-#  define BEAST_NO_IS_CONTIGUOUS_HASHABLE_TUPLE 1
-# else
-#  define BEAST_NO_IS_CONTIGUOUS_HASHABLE_TUPLE 0
-# endif
-#endif
-
 namespace beast {
+
+namespace detail {
+
+template <class T>
+/*constexpr*/
+inline
+void
+reverse_bytes(T& t)
+{
+    unsigned char* bytes = static_cast<unsigned char*>(std::memmove(std::addressof(t),
+                                                                    std::addressof(t),
+                                                                    sizeof(T)));
+    for (unsigned i = 0; i < sizeof(T)/2; ++i)
+        std::swap(bytes[i], bytes[sizeof(T)-1-i]);
+}
+
+template <class T>
+/*constexpr*/
+inline
+void
+maybe_reverse_bytes(T& t, std::true_type)
+{
+}
+
+template <class T>
+/*constexpr*/
+inline
+void
+maybe_reverse_bytes(T& t, std::false_type)
+{
+    reverse_bytes(t);
+}
+
+template <class T, class Hasher>
+/*constexpr*/
+inline
+void
+maybe_reverse_bytes(T& t, Hasher&)
+{
+    maybe_reverse_bytes(t, std::integral_constant<bool,
+        Hasher::endian == endian::native>{});
+}
+
+} // detail
+
+// is_uniquely_represented<T>
+
+// A type T is contiguously hashable if for all combinations of two values of
+// 	a type, say x and y, if x == y, then it must also be true that
+// 	memcmp(addressof(x), addressof(y), sizeof(T)) == 0. I.e. if x == y,
+// 	then x and y have the same bit pattern representation.
+
+template <class T>
+struct is_uniquely_represented
+    : public std::integral_constant<bool, std::is_integral<T>::value ||
+                                          std::is_enum<T>::value     ||
+                                          std::is_pointer<T>::value>
+{};
+
+template <class T>
+struct is_uniquely_represented<T const>
+    : public is_uniquely_represented<T>
+{};
+
+template <class T>
+struct is_uniquely_represented<T volatile>
+    : public is_uniquely_represented<T>
+{};
+
+template <class T>
+struct is_uniquely_represented<T const volatile>
+    : public is_uniquely_represented<T>
+{};
+
+// is_uniquely_represented<std::pair<T, U>>
+
+template <class T, class U>
+struct is_uniquely_represented<std::pair<T, U>>
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value && 
+                                          is_uniquely_represented<U>::value &&
+                                          sizeof(T) + sizeof(U) == sizeof(std::pair<T, U>)>
+{
+};
+
+// is_uniquely_represented<std::tuple<T...>>
+
+template <class ...T>
+struct is_uniquely_represented<std::tuple<T...>>
+    : public std::integral_constant<bool,
+            static_and<is_uniquely_represented<T>::value...>::value && 
+            static_sum<sizeof(T)...>::value == sizeof(std::tuple<T...>)>
+{
+};
+
+// is_uniquely_represented<T[N]>
+
+template <class T, std::size_t N>
+struct is_uniquely_represented<T[N]>
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value>
+{
+};
+
+// is_uniquely_represented<std::array<T, N>>
+
+template <class T, std::size_t N>
+struct is_uniquely_represented<std::array<T, N>>
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value && 
+                                          sizeof(T)*N == sizeof(std::array<T, N>)>
+{
+};
 
 /** Metafunction returning `true` if the type can be hashed in one call.
 
@@ -85,61 +167,19 @@ namespace beast {
     though they compare equal.
 */
 /** @{ */
-// scalars
-template <class T>
+template <class T, class HashAlgorithm>
 struct is_contiguously_hashable
-    : public std::integral_constant <bool,
-        std::is_integral<T>::value || 
-        std::is_enum<T>::value     ||
-        std::is_pointer<T>::value>
-{
-};
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value &&
+                                      (sizeof(T) == 1 ||
+                                       HashAlgorithm::endian == endian::native)>
+{};
 
-// If this fails, something is wrong with the trait
-static_assert (is_contiguously_hashable<int>::value, "");
-
-// pair
-template <class T, class U>
-struct is_contiguously_hashable <std::pair<T, U>>
-    : public std::integral_constant <bool,
-        is_contiguously_hashable<T>::value && 
-        is_contiguously_hashable<U>::value &&
-        sizeof(T) + sizeof(U) == sizeof(std::pair<T, U>)>
-{
-};
-
-#if ! BEAST_NO_IS_CONTIGUOUS_HASHABLE_PAIR
-static_assert (is_contiguously_hashable <std::pair <
-    unsigned long long, long long>>::value, "");
-#endif
-
-#if ! BEAST_NO_TUPLE_VARIADICS
-// std::tuple
-template <class ...T>
-struct is_contiguously_hashable <std::tuple<T...>>
-    : public std::integral_constant <bool,
-        static_and <is_contiguously_hashable <T>::value...>::value && 
-        static_sum <sizeof(T)...>::value == sizeof(std::tuple<T...>)>
-{
-};
-#endif
-
-// std::array
-template <class T, std::size_t N>
-struct is_contiguously_hashable <std::array<T, N>>
-    : public std::integral_constant <bool,
-        is_contiguously_hashable<T>::value && 
-        sizeof(T)*N == sizeof(std::array<T, N>)>
-{
-};
-
-static_assert (is_contiguously_hashable <std::array<char, 3>>::value, "");
-
-#if ! BEAST_NO_IS_CONTIGUOUS_HASHABLE_TUPLE
-static_assert (is_contiguously_hashable <
-    std::tuple <char, char, short>>::value, "");
-#endif
-
+template <class T, std::size_t N, class HashAlgorithm>
+struct is_contiguously_hashable<T[N], HashAlgorithm>
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value &&
+                                      (sizeof(T) == 1 ||
+                                       HashAlgorithm::endian == endian::native)>
+{};
 /** @} */
 
 //------------------------------------------------------------------------------
@@ -173,452 +213,254 @@ static_assert (is_contiguously_hashable <
 
 template <class Hasher, class T>
 inline
-typename std::enable_if
+std::enable_if_t
 <
-    is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, T const& t) noexcept
+    is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, T const& t) noexcept
 {
-    h.append (&t, sizeof(t));
+    h(std::addressof(t), sizeof(t));
 }
 
 template <class Hasher, class T>
 inline
-typename std::enable_if
+std::enable_if_t
+<
+    !is_contiguously_hashable<T, Hasher>::value &&
+    (std::is_integral<T>::value || std::is_pointer<T>::value || std::is_enum<T>::value)
+>
+hash_append(Hasher& h, T t) noexcept
+{
+    detail::reverse_bytes(t);
+    h(std::addressof(t), sizeof(t));
+}
+
+template <class Hasher, class T>
+inline
+std::enable_if_t
 <
     std::is_floating_point<T>::value
->::type
-hash_append (Hasher& h, T t) noexcept
+>
+hash_append(Hasher& h, T t) noexcept
 {
-    // hash both signed zeroes identically
     if (t == 0)
         t = 0;
-    h.append (&t, sizeof(t));
+    detail::maybe_reverse_bytes(t, h);
+    h(&t, sizeof(t));
 }
-
-// arrays
-
-template <class Hasher, class T, std::size_t N>
-inline
-typename std::enable_if
-<
-    !is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, T (&a)[N]) noexcept
-{
-    for (auto const& t : a)
-        hash_append (h, t);
-}
-
-template <class Hasher, class T, std::size_t N>
-inline
-typename std::enable_if
-<
-    is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, T (&a)[N]) noexcept
-{
-    h.append (a, N*sizeof(T));
-}
-
-// nullptr_t
 
 template <class Hasher>
 inline
 void
-hash_append (Hasher& h, std::nullptr_t p) noexcept
+hash_append(Hasher& h, std::nullptr_t) noexcept
 {
-    h.append (&p, sizeof(p));
+    void const* p = nullptr;
+    detail::maybe_reverse_bytes(p, h);
+    h(&p, sizeof(p));
 }
 
-// strings
+// Forward declarations for ADL purposes
+
+template <class Hasher, class T, std::size_t N>
+std::enable_if_t
+<
+    !is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, T (&a)[N]) noexcept;
 
 template <class Hasher, class CharT, class Traits, class Alloc>
-inline
-void
-hash_append (Hasher& h,
-    std::basic_string <CharT, Traits, Alloc> const& s) noexcept
-{
-    h.append (s.data (), (s.size()+1)*sizeof(CharT));
-}
+std::enable_if_t
+<
+    !is_contiguously_hashable<CharT, Hasher>::value 
+>
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
-//------------------------------------------------------------------------------
-
-// Forward declare hash_append for all containers. This is required so that
-// argument dependent lookup works recursively (i.e. containers of containers).
+template <class Hasher, class CharT, class Traits, class Alloc>
+std::enable_if_t
+<
+    is_contiguously_hashable<CharT, Hasher>::value 
+>
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
 template <class Hasher, class T, class U>
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<std::pair<T, U>>::value 
->::type
+    !is_contiguously_hashable<std::pair<T, U>, Hasher>::value 
+>
 hash_append (Hasher& h, std::pair<T, U> const& p) noexcept;
 
 template <class Hasher, class T, class Alloc>
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept;
+    !is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, std::vector<T, Alloc> const& v) noexcept;
 
 template <class Hasher, class T, class Alloc>
-typename std::enable_if
+std::enable_if_t
 <
-    is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept;
+    is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, std::vector<T, Alloc> const& v) noexcept;
 
 template <class Hasher, class T, std::size_t N>
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<std::array<T, N>>::value
->::type
-hash_append (Hasher& h, std::array<T, N> const& a) noexcept;
-
-// std::tuple
-
-template <class Hasher>
-inline
-void
-hash_append (Hasher& h, std::tuple<> const& t) noexcept;
-
-#if BEAST_NO_TUPLE_VARIADICS
-
-#if BEAST_VARIADIC_MAX >= 1
-template <class Hasher, class T1>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 2
-template <class Hasher, class T1, class T2>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 3
-template <class Hasher, class T1, class T2, class T3>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2, T3> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 4
-template <class Hasher, class T1, class T2, class T3, class T4>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2, T3, T4> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 5
-template <class Hasher, class T1, class T2, class T3, class T4, class T5>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2, T3, T4, T5> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 6
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 7
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 8
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 9
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 10
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9, class T10>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> const& t) noexcept;
-#endif
-
-#endif // BEAST_NO_TUPLE_VARIADICS
-
-//------------------------------------------------------------------------------
-
-namespace detail {
-
-template <class Hasher, class T>
-inline
-int
-hash_one (Hasher& h, T const& t) noexcept
-{
-    hash_append (h, t);
-    return 0;
-}
-
-} // detail
-
-//------------------------------------------------------------------------------
-
-// std::tuple
-
-template <class Hasher>
-inline
-void
-hash_append (Hasher& h, std::tuple<> const& t) noexcept
-{
-    hash_append (h, nullptr);
-}
-
-#if BEAST_NO_TUPLE_VARIADICS
-
-#if BEAST_VARIADIC_MAX >= 1
-template <class Hasher, class T1>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 2
-template <class Hasher, class T1, class T2>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 3
-template <class Hasher, class T1, class T2, class T3>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2, T3> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 4
-template <class Hasher, class T1, class T2, class T3, class T4>
-inline
-void
-hash_append (Hasher& h, std::tuple <T1, T2, T3, T4> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 5
-template <class Hasher, class T1, class T2, class T3, class T4, class T5>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 6
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-    hash_append (h, std::get<5>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 7
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-    hash_append (h, std::get<5>(t));
-    hash_append (h, std::get<6>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 8
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-    hash_append (h, std::get<5>(t));
-    hash_append (h, std::get<6>(t));
-    hash_append (h, std::get<7>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 9
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-    hash_append (h, std::get<5>(t));
-    hash_append (h, std::get<6>(t));
-    hash_append (h, std::get<7>(t));
-    hash_append (h, std::get<8>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 10
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9, class T10>
-inline
-void
-hash_append (Hasher& h, std::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> const& t) noexcept
-{
-    hash_append (h, std::get<0>(t));
-    hash_append (h, std::get<1>(t));
-    hash_append (h, std::get<2>(t));
-    hash_append (h, std::get<3>(t));
-    hash_append (h, std::get<4>(t));
-    hash_append (h, std::get<5>(t));
-    hash_append (h, std::get<6>(t));
-    hash_append (h, std::get<7>(t));
-    hash_append (h, std::get<8>(t));
-    hash_append (h, std::get<9>(t));
-}
-#endif
-
-#else // BEAST_NO_TUPLE_VARIADICS
-
-namespace detail {
-
-template <class Hasher, class ...T, std::size_t ...I>
-inline
-void
-tuple_hash (Hasher& h, std::tuple<T...> const& t,
-    std::index_sequence<I...>) noexcept
-{
-    struct for_each_item {
-        for_each_item (...) { }
-    };
-    for_each_item (hash_one(h, std::get<I>(t))...);
-}
-
-} // detail
+    !is_contiguously_hashable<std::array<T, N>, Hasher>::value
+>
+hash_append(Hasher& h, std::array<T, N> const& a) noexcept;
 
 template <class Hasher, class ...T>
-inline
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<std::tuple<T...>>::value
->::type
-hash_append (Hasher& h, std::tuple<T...> const& t) noexcept
+    !is_contiguously_hashable<std::tuple<T...>, Hasher>::value
+>
+hash_append(Hasher& h, std::tuple<T...> const& t) noexcept;
+
+template <class Hasher, class Key, class T, class Hash, class Pred, class Alloc>
+void
+hash_append(Hasher& h, std::unordered_map<Key, T, Hash, Pred, Alloc> const& m);
+
+template <class Hasher, class Key, class Hash, class Pred, class Alloc>
+void
+hash_append(Hasher& h, std::unordered_set<Key, Hash, Pred, Alloc> const& s);
+
+template <class Hasher, class T0, class T1, class ...T>
+void
+hash_append (Hasher& h, T0 const& t0, T1 const& t1, T const& ...t) noexcept;
+
+// c-array
+
+template <class Hasher, class T, std::size_t N>
+std::enable_if_t
+<
+    !is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, T (&a)[N]) noexcept
 {
-    detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
+    for (auto const& t : a)
+        hash_append(h, t);
 }
 
-#endif // BEAST_NO_TUPLE_VARIADICS
+// basic_string
+
+template <class Hasher, class CharT, class Traits, class Alloc>
+inline
+std::enable_if_t
+<
+    !is_contiguously_hashable<CharT, Hasher>::value 
+>
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
+{
+    for (auto c : s)
+        hash_append(h, c);
+    hash_append(h, s.size());
+}
+
+template <class Hasher, class CharT, class Traits, class Alloc>
+inline
+std::enable_if_t
+<
+    is_contiguously_hashable<CharT, Hasher>::value 
+>
+hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
+{
+    h(s.data(), s.size()*sizeof(CharT));
+    hash_append(h, s.size());
+}
 
 // pair
 
 template <class Hasher, class T, class U>
 inline
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<std::pair<T, U>>::value
->::type
+    !is_contiguously_hashable<std::pair<T, U>, Hasher>::value
+>
 hash_append (Hasher& h, std::pair<T, U> const& p) noexcept
 {
-    hash_append (h, p.first);
-    hash_append (h, p.second);
+    hash_append (h, p.first, p.second);
 }
 
 // vector
 
 template <class Hasher, class T, class Alloc>
 inline
-typename std::enable_if
+std::enable_if_t
 <
-    !is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept
+    !is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, std::vector<T, Alloc> const& v) noexcept
 {
     for (auto const& t : v)
-        hash_append (h, t);
+        hash_append(h, t);
+    hash_append(h, v.size());
 }
 
 template <class Hasher, class T, class Alloc>
 inline
-typename std::enable_if
+std::enable_if_t
 <
-    is_contiguously_hashable<T>::value
->::type
-hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept
+    is_contiguously_hashable<T, Hasher>::value
+>
+hash_append(Hasher& h, std::vector<T, Alloc> const& v) noexcept
 {
-    h.append (v.data(), v.size()*sizeof(T));
+    h(v.data(), v.size()*sizeof(T));
+    hash_append(h, v.size());
+}
+
+// array
+
+template <class Hasher, class T, std::size_t N>
+std::enable_if_t
+<
+    !is_contiguously_hashable<std::array<T, N>, Hasher>::value
+>
+hash_append(Hasher& h, std::array<T, N> const& a) noexcept
+{
+    for (auto const& t : a)
+        hash_append(h, t);
+}
+
+// tuple
+
+namespace detail
+{
+
+inline
+void
+for_each_item(...) noexcept
+{
+}
+
+template <class Hasher, class T>
+inline
+int
+hash_one(Hasher& h, T const& t) noexcept
+{
+    hash_append(h, t);
+    return 0;
+}
+
+template <class Hasher, class ...T, std::size_t ...I>
+inline
+void
+tuple_hash(Hasher& h, std::tuple<T...> const& t, std::index_sequence<I...>) noexcept
+{
+    for_each_item(hash_one(h, std::get<I>(t))...);
+}
+
+}  // detail
+
+template <class Hasher, class ...T>
+inline
+std::enable_if_t
+<
+    !is_contiguously_hashable<std::tuple<T...>, Hasher>::value
+>
+hash_append(Hasher& h, std::tuple<T...> const& t) noexcept
+{
+    detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
 }
 
 // shared_ptr
@@ -631,25 +473,25 @@ hash_append (Hasher& h, std::shared_ptr<T> const& p) noexcept
     hash_append(h, p.get());
 }
 
-#if BEAST_USE_BOOST_FEATURES
-template <class Hasher, class T>
-inline
-void
-hash_append (Hasher& h, boost::shared_ptr<T> const& p) noexcept
-{
-    hash_append(h, p.get());
-}
-#endif
-
-// variadic hash_append
+// variadic
 
 template <class Hasher, class T0, class T1, class ...T>
 inline
 void
 hash_append (Hasher& h, T0 const& t0, T1 const& t1, T const& ...t) noexcept
 {
-    hash_append (h, t0);
-    hash_append (h, t1, t...);
+    hash_append(h, t0);
+    hash_append(h, t1, t...);
+}
+
+// error_code
+
+template <class HashAlgorithm>
+inline
+void
+hash_append(HashAlgorithm& h, std::error_code const& ec)
+{
+    hash_append(h, ec.value(), &ec.category());
 }
 
 } // beast

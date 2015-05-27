@@ -18,43 +18,34 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HASH_SPOOKY_H_INCLUDED
-#define BEAST_HASH_SPOOKY_H_INCLUDED
-
-#include <beast/hash/endian.h>
-#include <beast/hash/impl/spookyv2.h>
+#ifndef BEAST_HASH_ENDIAN_H_INCLUDED
+#define BEAST_HASH_ENDIAN_H_INCLUDED
 
 namespace beast {
 
-// See http://burtleburtle.net/bob/hash/spooky.html
-class spooky
+// endian provides answers to the following questions:
+// 1.  Is this system big or little endian?
+// 2.  Is the "desired endian" of some class or function the same as the
+//     native endian?
+enum class endian
 {
-private:
-    SpookyHash state_;
-
-public:
-    using result_type = std::size_t;
-    static beast::endian const endian = beast::endian::native;
-
-    spooky (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
-    {
-        state_.Init (seed1, seed2);
-    }
-
-    void
-    operator() (void const* key, std::size_t len) noexcept
-    {
-        state_.Update (key, len);
-    }
-
-    explicit
-    operator std::size_t() noexcept
-    {
-        std::uint64_t h1, h2;
-        state_.Final (&h1, &h2);
-        return static_cast <std::size_t> (h1);
-    }
+#ifdef _MSC_VER
+    big    = 1,
+    little = 0,
+    native = little
+#else
+    native = __BYTE_ORDER__,
+    little = __ORDER_LITTLE_ENDIAN__,
+    big    = __ORDER_BIG_ENDIAN__
+#endif
 };
+
+static_assert(endian::native == endian::little ||
+              endian::native == endian::big,
+              "endian::native shall be one of endian::little or endian::big");
+
+static_assert(endian::big != endian::little,
+              "endian::big and endian::little shall have different values");
 
 } // beast
 

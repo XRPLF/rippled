@@ -852,6 +852,9 @@
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
+      <Filter>beast\hash</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
       <Filter>beast\hash</Filter>
     </ClInclude>

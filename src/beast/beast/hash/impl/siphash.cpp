@@ -90,7 +90,7 @@ siphash::siphash(std::uint64_t k0, std::uint64_t k1) noexcept
 }
 
 void
-siphash::append (void const* key, std::size_t inlen) noexcept
+siphash::operator() (void const* key, std::size_t inlen) noexcept
 {
     using namespace detail;
     u8 const* in = static_cast<const u8*>(key);
