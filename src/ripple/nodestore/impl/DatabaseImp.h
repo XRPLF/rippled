@@ -23,10 +23,12 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/impl/Tuning.h>
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/SHA512Half.h>
+#include <ripple/basics/Slice.h>
+#include <ripple/basics/TaggedCache.h>
 #include <beast/threads/Thread.h>
 #include <ripple/nodestore/ScopedMetrics.h>
 #include <chrono>
@@ -289,7 +291,7 @@ public:
             type, std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert (hash == getSHA512Half (data));
+        assert (hash == sha512Hash(make_Slice(data)));
         #endif
 
         m_cache.canonicalize (hash, object, true);

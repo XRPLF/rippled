@@ -19,9 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/protocol/Serializer.h>
-#include <openssl/ripemd.h>
-#include <openssl/pem.h>
 
 namespace ripple {
 
@@ -298,25 +297,7 @@ Blob Serializer::getRaw (int offset, int length) const
 
 uint256 Serializer::getSHA512Half () const
 {
-    return ripple::getSHA512Half (mData);
-}
-
-uint256 Serializer::getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len)
-{
-    char be_prefix[4];
-    be_prefix[0] = static_cast<unsigned char> (prefix >> 24);
-    be_prefix[1] = static_cast<unsigned char> ((prefix >> 16) & 0xff);
-    be_prefix[2] = static_cast<unsigned char> ((prefix >> 8) & 0xff);
-    be_prefix[3] = static_cast<unsigned char> (prefix & 0xff);
-
-    uint256 j[2];
-    SHA512_CTX ctx;
-    SHA512_Init (&ctx);
-    SHA512_Update (&ctx, &be_prefix[0], 4);
-    SHA512_Update (&ctx, data, len);
-    SHA512_Final (reinterpret_cast<unsigned char*> (&j[0]), &ctx);
-
-    return j[0];
+    return sha512Half(make_Slice(mData));
 }
 
 int Serializer::addVL (Blob const& vector)
@@ -672,19 +653,6 @@ Buffer
 SerialIter::getVLBuffer()
 {
     return getRawHelper<Buffer> (getVLDataLength ());
-}
-
-
-//------------------------------------------------------------------------------
-
-uint256
-getSHA512Half (void const* data, int len)
-{
-    uint256 j[2];
-    SHA512 (
-        reinterpret_cast<unsigned char const*>(
-            data), len, (unsigned char*) j);
-    return j[0];
 }
 
 } // ripple

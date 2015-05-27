@@ -26,15 +26,16 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
@@ -245,11 +246,18 @@ void Ledger::updateHash ()
             mAccountHash.zero ();
     }
 
-    // VFALCO TODO Fix this hard coded magic number 122
-    Serializer s (122);
-    s.add32 (HashPrefix::ledgerMaster);
-    addRaw (s);
-    mHash = s.getSHA512Half ();
+    // VFALCO This has to match addRaw
+    mHash = sha512Half(
+        HashPrefix::ledgerMaster,
+        std::uint32_t(mLedgerSeq),
+        std::uint64_t(mTotCoins),
+        mParentHash,
+        mTransHash,
+        mAccountHash,
+        std::uint32_t(mParentCloseTime),
+        std::uint32_t(mCloseTime),
+        std::uint8_t(mCloseResolution),
+        std::uint8_t(mCloseFlags));
     mValidHash = true;
 }
 

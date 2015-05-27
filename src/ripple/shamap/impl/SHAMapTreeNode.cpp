@@ -20,10 +20,14 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <mutex>
+
+#include <openssl/sha.h>
 
 namespace ripple {
 
@@ -106,7 +110,10 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
         if (type == 0)
         {
             // transaction
-            mItem = std::make_shared<SHAMapItem> (s.getPrefixHash (HashPrefix::transactionID), s.peekData ());
+            mItem = std::make_shared<SHAMapItem>(
+                sha512Half(HashPrefix::transactionID,
+                    Slice(s.data(), s.size() - 1)),
+                        s.peekData());
             mType = tnTRANSACTION_NM;
         }
         else if (type == 1)
@@ -195,7 +202,9 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
 
         if (prefix == HashPrefix::transactionID)
         {
-            mItem = std::make_shared<SHAMapItem> (getSHA512Half (rawNode), s.peekData ());
+            mItem = std::make_shared<SHAMapItem>(
+                sha512Half(make_Slice(rawNode)),
+                    s.peekData ());
             mType = tnTRANSACTION_NM;
         }
         else if (prefix == HashPrefix::leafNode)
@@ -276,15 +285,16 @@ bool SHAMapTreeNode::updateHash ()
     {
         if (mIsBranch != 0)
         {
-            nh = Serializer::getPrefixHash (HashPrefix::innerNode, reinterpret_cast<unsigned char*> (mHashes), sizeof (mHashes));
+            // VFALCO This code assumes the layout of a base_uint
+            nh = sha512Half(HashPrefix::innerNode,
+                Slice(reinterpret_cast<unsigned char const*>(mHashes),
+                    sizeof (mHashes)));
 #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-            Serializer s;
-            s.add32 (HashPrefix::innerNode);
-
-            for (int i = 0; i < 16; ++i)
-                s.add256 (mHashes[i]);
-
-            assert (nh == s.getSHA512Half ());
+            SHA512HalfHasher h;
+            using beast::hash_append;
+            hash_append(h, HashPrefix::innerNode, mHashes);
+            assert (nh == sha512Half(
+                static_cast<uint256>(h)));
 #endif
         }
         else
@@ -292,7 +302,8 @@ bool SHAMapTreeNode::updateHash ()
     }
     else if (mType == tnTRANSACTION_NM)
     {
-        nh = Serializer::getPrefixHash (HashPrefix::transactionID, mItem->peekData ());
+        nh = sha512Half(HashPrefix::transactionID,
+            make_Slice(mItem->peekData()));
     }
     else if (mType == tnACCOUNT_STATE)
     {
@@ -300,15 +311,15 @@ bool SHAMapTreeNode::updateHash ()
         s.add32 (HashPrefix::leafNode);
         s.addRaw (mItem->peekData ());
         s.add256 (mItem->getTag ());
-        nh = s.getSHA512Half ();
+        nh = sha512Half(HashPrefix::leafNode,
+            make_Slice(mItem->peekData()),
+                mItem->getTag());
     }
     else if (mType == tnTRANSACTION_MD)
     {
-        Serializer s (mItem->size() + (256 + 32) / 8);
-        s.add32 (HashPrefix::txNode);
-        s.addRaw (mItem->peekData ());
-        s.add256 (mItem->getTag ());
-        nh = s.getSHA512Half ();
+        nh = sha512Half(HashPrefix::txNode,
+            make_Slice(mItem->peekData()),
+                mItem->getTag());
     }
     else
         assert (false);

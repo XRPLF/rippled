@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/CheckLibraryVersions.h>
 #include <ripple/basics/StringUtilities.h>
@@ -510,6 +511,10 @@ int main (int argc, char** argv)
     // Workaround for Boost.Context / Boost.Coroutine
     // https://svn.boost.org/trac/boost/ticket/10657
     (void)beast::Time::currentTimeMillis();
+
+#ifdef _MSC_VER
+    ripple::sha512_deprecatedMSVCWorkaround();
+#endif
 
 #if defined(__GNUC__) && !defined(__clang__)
     auto constexpr gccver = (__GNUC__ * 100 * 100) +

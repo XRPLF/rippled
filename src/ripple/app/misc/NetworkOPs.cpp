@@ -41,6 +41,8 @@
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
+#include <ripple/basics/SHA512Half.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/protocol/JsonFields.h>
@@ -3244,7 +3246,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
 
     mFetchPack.del (hash, false);
 
-    if (hash != getSHA512Half (data))
+    if (hash != sha512Half(make_Slice(data)))
     {
         m_journal.warning << "Bad entry in fetch pack";
         return false;
