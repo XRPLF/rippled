@@ -296,36 +296,9 @@ Blob Serializer::getRaw (int offset, int length) const
     return o;
 }
 
-uint160 Serializer::getRIPEMD160 (int size) const
+uint256 Serializer::getSHA512Half () const
 {
-    uint160 ret;
-
-    if ((size < 0) || (size > mData.size ())) size = mData.size ();
-
-    RIPEMD160 (& (mData.front ()), size, (unsigned char*) &ret);
-    return ret;
-}
-
-uint256 Serializer::getSHA256 (int size) const
-{
-    uint256 ret;
-
-    if ((size < 0) || (size > mData.size ())) size = mData.size ();
-
-    SHA256 (& (mData.front ()), size, (unsigned char*) &ret);
-    return ret;
-}
-
-uint256 Serializer::getSHA512Half (int size) const
-{
-    assert (size != 0);
-    if (size == 0)
-        return uint256();
-    if (size < 0 || size > mData.size())
-        return ripple::getSHA512Half (mData);
-
-    return ripple::getSHA512Half (
-        mData.data(), size);
+    return ripple::getSHA512Half (mData);
 }
 
 uint256 Serializer::getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len)
