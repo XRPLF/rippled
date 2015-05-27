@@ -298,31 +298,45 @@ public:
         h(a.pn, sizeof(a.pn));
     }
 
+    /** Parse a hex string into a base_uint
+        The string must contain exactly bytes * 2 hex characters and must not
+        have any leading or trailing whitespace.
+    */
     bool SetHexExact (const char* psz)
     {
-        // must be precisely the correct number of hex digits
         unsigned char* pOut  = begin ();
 
         for (int i = 0; i < sizeof (pn); ++i)
         {
-            auto cHigh = charUnHex(*psz++);
-            auto cLow  = charUnHex(*psz++);
-
-            if (cHigh == -1 || cLow == -1)
+            auto hi = charUnHex(*psz++);
+            if (hi == -1)
                 return false;
 
-            *pOut++ = (cHigh << 4) | cLow;
+            auto lo = charUnHex (*psz++);
+            if (lo == -1)
+                return false;
+
+            *pOut++ = (hi << 4) | lo;
         }
 
-        assert (*psz == 0);
-        assert (pOut == end ());
-
-        return true;
+        // We've consumed exactly as many bytes as we needed at this point
+        // so we should be at the end of the string.
+        return (*psz == 0);
     }
 
-    // Allow leading whitespace.
-    // Allow leading "0x".
-    // To be valid must be '\0' terminated.
+    /** Parse a hex string into a base_uint
+        The input can be:
+            - shorter than the full hex representation by not including leading
+              zeroes.
+            - longer than the full hex representation in which case leading
+              bytes are discarded.
+
+        When finished parsing, the string must be fully consumed with only a
+        null terminator remaining.
+
+        When bStrict is false, the parsing is done in non-strict mode, and, if
+        present, leading whitespace and the 0x prefix will be skipped.
+    */
     bool SetHex (const char* psz, bool bStrict = false)
     {
         // skip leading spaces
@@ -373,9 +387,9 @@ public:
         return SetHex (str.c_str (), bStrict);
     }
 
-    void SetHexExact (std::string const& str)
+    bool SetHexExact (std::string const& str)
     {
-        SetHexExact (str.c_str ());
+        return SetHexExact (str.c_str ());
     }
 
     unsigned int size () const
