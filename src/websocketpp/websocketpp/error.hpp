@@ -222,25 +222,21 @@ public:
     {}
 
     explicit exception(lib::error_code ec)
-      : m_code(ec)
+            : m_msg(ec.message()), m_code(ec)
     {}
 
     ~exception() throw() {}
 
     virtual char const * what() const throw() {
-        if (m_msg.empty()) {
-            return m_code.message().c_str();
-        } else {
-            return m_msg.c_str();
-        }
+        return m_msg.c_str();
     }
 
     lib::error_code code() const throw() {
         return m_code;
     }
 
-    std::string m_msg;
-    lib::error_code m_code;
+    const std::string m_msg;
+    const lib::error_code m_code;
 };
 
 } // namespace websocketpp
