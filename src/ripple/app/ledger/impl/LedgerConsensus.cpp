@@ -950,8 +950,8 @@ private:
             hotACCOUNT_NODE, newLCL->getLedgerSeq());
         int tmf = newLCL->peekTransactionMap ()->flushDirty (
             hotTRANSACTION_NODE, newLCL->getLedgerSeq());
-        WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " account and " <<
-            tmf << "transaction nodes";
+        WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " accounts and " <<
+            tmf << " transaction nodes";
 
         // Accept ledger
         newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
