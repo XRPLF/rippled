@@ -30,41 +30,120 @@ class Coroutine_test : public TestOutputSuite
 public:
     using Strings = std::vector <std::string>;
 
-    void test (std::string const& name, int chunkSize, Strings const& expected)
+    void test (int chunkSize, Strings const& expected)
     {
+        auto name = std::to_string (chunkSize);
         setup (name);
 
         std::string buffer;
         Json::Output output = Json::stringOutput (buffer);
 
-        auto coroutine = Coroutine ([=] (Yield yield)
-        {
-            auto out = chunkedYieldingOutput (output, yield, chunkSize);
-            out ("hello ");
-            out ("there ");
-            out ("world.");
-        });
+        auto makeContinuation = [&] (std::string const& data) {
+            return Continuation ([=] (Callback const& cb) {
+                output (data + " ");
+                cb();
+            });
+        };
 
         Strings result;
-        while (coroutine)
+        SuspendCallback suspendCallback ([&] (Suspend const& suspend)
         {
-            coroutine();
+            Callback yield = suspendForContinuation (
+                suspend, makeContinuation ("*"));
+            auto out = chunkedYieldingOutput (output, yield, chunkSize);
+            out ("hello ");
             result.push_back (buffer);
-        }
 
+            suspend (makeContinuation("HELLO"));
+            result.push_back (buffer);
+
+            out ("there ");
+            result.push_back (buffer);
+
+            suspend (makeContinuation("THERE"));
+            result.push_back (buffer);
+
+            out ("world ");
+            result.push_back (buffer);
+
+            suspend (makeContinuation("WORLD"));
+            result.push_back (buffer);
+        });
+
+        Coroutine (suspendCallback).run();
         expectCollectionEquals (result, expected);
+
+        static
+        auto const printResults = false;
+        if (! printResults)
+            return;
+
+        std::string indent1 = "        ";
+        std::string indent2 = indent1 + "           ";
+
+        std::cerr << indent1 << "test (" + name + ", {";
+        for (auto i = 0; i < result.size(); ++i) {
+            if (i)
+                std::cerr << ",";
+            std::cerr << "\n" << indent2;
+            std::cerr << '"' << result[i] << '"';
+        }
+        std::cerr << "\n" << indent2 << "});\n";
+        expect(true);
     }
 
     void run() override
     {
-        test ("zero", 0, {"hello ", "hello there ", "hello there world."});
-        test ("three", 3, {"hello ", "hello there ", "hello there world."});
-        test ("five", 5, {"hello ", "hello there ", "hello there world."});
-        test ("seven", 7, {"hello there ", "hello there world."});
-        test ("ten", 10, {"hello there ", "hello there world."});
-        test ("thirteen", 13, {"hello there world."});
-        test ("fifteen", 15, {"hello there world."});
-    }
+        test (0, {"hello ",
+                  "hello HELLO ",
+                  "hello HELLO * there ",
+                  "hello HELLO * there THERE ",
+                  "hello HELLO * there THERE * world ",
+                  "hello HELLO * there THERE * world WORLD "
+                  });
+        test (3, {"hello ",
+                  "hello HELLO ",
+                  "hello HELLO * there ",
+                  "hello HELLO * there THERE ",
+                  "hello HELLO * there THERE * world ",
+                  "hello HELLO * there THERE * world WORLD "
+                  });
+        test (5, {"hello ",
+                  "hello HELLO ",
+                  "hello HELLO * there ",
+                  "hello HELLO * there THERE ",
+                  "hello HELLO * there THERE * world ",
+                  "hello HELLO * there THERE * world WORLD "
+                  });
+        test (7, {"hello ",
+                  "hello HELLO ",
+                  "hello HELLO there ",
+                  "hello HELLO there THERE ",
+                  "hello HELLO there THERE * world ",
+                  "hello HELLO there THERE * world WORLD "
+                  });
+        test (10, {"hello ",
+                   "hello HELLO ",
+                   "hello HELLO there ",
+                   "hello HELLO there THERE ",
+                   "hello HELLO there THERE * world ",
+                   "hello HELLO there THERE * world WORLD "
+                  });
+        test (13, {"hello ",
+                   "hello HELLO ",
+                   "hello HELLO there ",
+                   "hello HELLO there THERE ",
+                   "hello HELLO there THERE world ",
+                   "hello HELLO there THERE world WORLD "
+                  });
+        test (15, {"hello ",
+                   "hello HELLO ",
+                   "hello HELLO there ",
+                   "hello HELLO there THERE ",
+                   "hello HELLO there THERE world ",
+                   "hello HELLO there THERE world WORLD "
+                  });
+  }
 };
 
 BEAST_DEFINE_TESTSUITE(Coroutine, RPC, ripple);

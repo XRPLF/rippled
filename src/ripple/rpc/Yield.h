@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RPC_YIELD_H_INCLUDED
 #define RIPPLE_RPC_YIELD_H_INCLUDED
 
+#include <ripple/core/JobQueue.h>
 #include <ripple/json/Output.h>
 #include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
@@ -27,19 +28,26 @@
 
 namespace ripple {
 
+class JobQueue;
 class Section;
 
 namespace RPC {
 
-/** Yield is a generic placeholder for a function that yields control of
-    execution - perhaps to another coroutine.
+/** See the README.md in this directory for more information about how
+    the RPC yield mechanism works.
+ */
 
-    When code calls Yield, it might block for an indeterminate period of time.
+/** Callback: do something and eventually return. */
+using Callback = std::function <void ()>;
 
-    By convention you must not be holding any locks or any resource that would
-    prevent any other task from making forward progress when you call Yield.
-*/
-using Yield = std::function <void ()>;
+static
+Callback const emptyCallback ([] () {});
+
+/** Continuation: do something, guarantee to eventually call Callback. */
+using Continuation = std::function <void (Callback const&)>;
+
+/** Suspend: suspend execution, pending completion of a Continuation. */
+using Suspend = std::function <void (Continuation const&)>;
 
 /** Wrap an Output so it yields after approximately `chunkSize` bytes.
 
@@ -51,19 +59,19 @@ using Yield = std::function <void ()>;
     then never send more data.
  */
 Json::Output chunkedYieldingOutput (
-    Json::Output const&, Yield const&, std::size_t chunkSize);
+    Json::Output const&, Callback const&, std::size_t chunkSize);
 
 /** Yield every yieldCount calls.  If yieldCount is 0, never yield. */
 class CountedYield
 {
 public:
-    CountedYield (std::size_t yieldCount, Yield const& yield);
+    CountedYield (std::size_t yieldCount, Callback const& yield);
     void yield();
 
 private:
     std::size_t count_ = 0;
     std::size_t const yieldCount_;
-    Yield const yield_;
+    Callback const yield_;
 };
 
 /** When do we yield when performing a ledger computation? */
@@ -94,6 +102,21 @@ struct YieldStrategy
 
 /** Create a yield strategy from a configuration Section. */
 YieldStrategy makeYieldStrategy (Section const&);
+
+/** Return a continuation that runs a Callback on a Job Queue with a given
+    name and JobType. */
+Continuation callbackOnJobQueue (
+    JobQueue&, std::string const& jobName, JobType);
+
+/** Return a Callback that will suspend and then run a continuation. */
+inline
+Callback suspendForContinuation (
+    Suspend const& suspend, Continuation const& continuation)
+{
+    return suspend
+            ? Callback ([=] () { suspend (continuation); })
+            : emptyCallback;
+}
 
 } // RPC
 } // ripple
