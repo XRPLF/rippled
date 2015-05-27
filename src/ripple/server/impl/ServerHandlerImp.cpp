@@ -64,6 +64,8 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))
+    , m_continuation (RPC::callbackOnJobQueue (
+        jobQueue, "RPC-Coroutine", jtCLIENT))
 {
     auto const& group (cm.group ("rpc"));
     rpc_requests_ = group->make_counter ("requests");
@@ -156,27 +158,6 @@ Json::Output makeOutput (HTTP::Session& session)
     };
 }
 
-namespace {
-
-void runCoroutine (RPC::Coroutine coroutine, JobQueue& jobQueue)
-{
-    if (!coroutine)
-        return;
-    coroutine();
-    if (!coroutine)
-        return;
-
-    // Reschedule the job on the job queue.
-    jobQueue.addJob (
-        jtCLIENT, "RPC-Coroutine",
-        [coroutine, &jobQueue] (Job&)
-        {
-            runCoroutine (coroutine, jobQueue);
-        });
-}
-
-} // namespace
-
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
@@ -190,8 +171,8 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     }
 
     // Check user/password authorization
-    if (! authorized (session.port(),
-        build_map(session.request().headers)))
+    if (! authorized (
+            session.port(), build_map(session.request().headers)))
     {
         HTTPReply (403, "Forbidden", makeOutput (session));
         session.close (true);
@@ -203,15 +184,20 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     if (setup_.yieldStrategy.useCoroutines ==
         RPC::YieldStrategy::UseCoroutines::yes)
     {
-        RPC::Coroutine::YieldFunction yieldFunction =
-                [this, detach] (Yield const& y) { processSession (detach, y); };
-        runCoroutine (RPC::Coroutine (yieldFunction), m_jobQueue);
+        RPC::SuspendCallback suspend (
+            [this, detach] (RPC::Suspend const& suspend) {
+                processSession (detach, suspend);
+            });
+        RPC::Coroutine coroutine (suspend);
+        coroutine.run();
     }
     else
     {
         m_jobQueue.addJob (
             jtCLIENT, "RPC-Client",
-            [=] (Job&) { processSession (detach, RPC::Yield{}); });
+            [=] (Job&) {
+                processSession (detach, RPC::Suspend());
+            });
     }
 }
 
@@ -229,21 +215,17 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 //------------------------------------------------------------------------------
 
-// Dispatched on the job queue
+// Run as a couroutine.
 void
 ServerHandlerImp::processSession (
-    std::shared_ptr<HTTP::Session> const& session, Yield const& yield)
+    std::shared_ptr<HTTP::Session> const& session, Suspend const& suspend)
 {
-    auto output = makeOutput (*session);
-    if (auto byteYieldCount = setup_.yieldStrategy.byteYieldCount)
-        output = RPC::chunkedYieldingOutput (output, yield, byteYieldCount);
-
     processRequest (
         session->port(),
         to_string (session->body()),
         session->remoteAddress().at_port (0),
-        output,
-        yield);
+        makeOutput (*session),
+        suspend);
 
     if (session->request().keep_alive())
         session->complete();
@@ -256,9 +238,18 @@ ServerHandlerImp::processRequest (
     HTTP::Port const& port,
     std::string const& request,
     beast::IP::Endpoint const& remoteIPAddress,
-    Output output,
-    Yield yield)
+    Output&& output,
+    Suspend const& suspend)
 {
+    auto yield = RPC::suspendForContinuation (suspend, m_continuation);
+
+    // Move off the webserver thread onto the JobQueue.
+    yield();
+    assert (getApp().getJobQueue().getJobForThread());
+
+    if (auto count = setup_.yieldStrategy.byteYieldCount)
+        output = RPC::chunkedYieldingOutput (std::move (output), yield, count);
+
     Json::Value jsonRPC;
     {
         Json::Reader reader;
@@ -374,7 +365,9 @@ ServerHandlerImp::processRequest (
         << "doRpcCommand:" << strMethod << ":" << params;
 
     auto const start (std::chrono::high_resolution_clock::now ());
-    RPC::Context context {params, loadType, m_networkOPs, role, nullptr, yield};
+    RPC::Context context {
+        params, loadType, m_networkOPs, role, nullptr,
+                std::move (suspend), std::move (yield)};
     std::string response;
 
     if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)
@@ -641,7 +634,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         throw std::exception();
     }
     p.port = *parsed.port;
-    
     if (parsed.admin_ip)
         p.admin_ip = *parsed.admin_ip;
 

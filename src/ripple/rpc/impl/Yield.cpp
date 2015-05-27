@@ -25,8 +25,11 @@ namespace ripple {
 namespace RPC {
 
 Json::Output chunkedYieldingOutput (
-    Json::Output const& output, Yield const& yield, std::size_t chunkSize)
+    Json::Output const& output, Callback const& yield, std::size_t chunkSize)
 {
+    if (!yield)
+        return output;
+
     auto count = std::make_shared <std::size_t> (0);
     return [chunkSize, count, output, yield] (boost::string_ref const& bytes)
     {
@@ -41,14 +44,18 @@ Json::Output chunkedYieldingOutput (
 }
 
 
-CountedYield::CountedYield (std::size_t yieldCount, Yield const& yield)
+CountedYield::CountedYield (std::size_t yieldCount, Callback const& yield)
         : yieldCount_ (yieldCount), yield_ (yield)
 {
 }
 
 void CountedYield::yield()
 {
-    if (yieldCount_) {
+    if (!yield_)
+        return;
+
+    if (yieldCount_)
+    {
         if (++count_ >= yieldCount_)
         {
             yield_();
@@ -71,6 +78,14 @@ YieldStrategy makeYieldStrategy (Section const& s)
     ys.transactionYieldCount = get<std::size_t> (s, "transaction_yield_count");
 
     return ys;
+}
+
+Continuation callbackOnJobQueue (
+    JobQueue& jobQueue, std::string const& name, JobType jobType)
+{
+    return Continuation ([name, jobType, &jobQueue] (Callback const& cb) {
+        jobQueue.addJob (jobType, name, [cb] (Job&) { cb(); });
+    });
 }
 
 } // RPC

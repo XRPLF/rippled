@@ -40,7 +40,8 @@ struct Context
     NetworkOPs& netOps;
     Role role;
     InfoSub::pointer infoSub;
-    RPC::Yield yield;
+    Suspend suspend;
+    Callback yield;
     NodeStore::ScopedMetrics metrics;
 };
 

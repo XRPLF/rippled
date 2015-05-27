@@ -40,6 +40,7 @@ private:
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
+    RPC::Continuation m_continuation;
     Setup setup_;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_io_;
@@ -55,7 +56,7 @@ public:
 
 private:
     using Output = Json::Output;
-    using Yield = RPC::Yield;
+    using Suspend = RPC::Suspend;
 
     void
     setup (Setup const& setup, beast::Journal journal) override;
@@ -107,11 +108,11 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    processSession (std::shared_ptr<HTTP::Session> const&, Yield const&);
+    processSession (std::shared_ptr<HTTP::Session> const&, Suspend const&);
 
     void
     processRequest (HTTP::Port const& port, std::string const& request,
-        beast::IP::Endpoint const& remoteIPAddress, Output, Yield);
+        beast::IP::Endpoint const& remoteIPAddress, Output&&, Suspend const&);
 
     //
     // PropertyStream

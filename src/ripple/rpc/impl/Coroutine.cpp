@@ -20,25 +20,51 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
+#include <iostream>
 
 namespace ripple {
 namespace RPC {
 
-using CoroutinePull = boost::coroutines::coroutine <void>::pull_type;
+using CoroutineType = Continuation;
+using CoroutinePull = boost::coroutines::coroutine <CoroutineType>::pull_type;
+using CoroutinePush = boost::coroutines::coroutine <CoroutineType>::push_type;
 
-struct Coroutine::Impl : CoroutinePull
+struct Coroutine::Impl : public std::enable_shared_from_this <Coroutine::Impl>
 {
-    Impl (CoroutinePull&& p) : CoroutinePull (std::move(p)) {}
+    Impl (CoroutinePull&& pull_) : pull (std::move (pull_))
+    {
+    }
+
+    CoroutinePull pull;
+
+    void run()
+    {
+        while (pull)
+        {
+            pull();
+
+            if (! pull)
+                return;
+
+            if (auto continuation = pull.get())
+            {
+                auto that = shared_from_this();
+                continuation ([that] () { that->run(); });
+                return;
+            }
+        }
+    }
 };
 
-Coroutine::Coroutine (YieldFunction const& yieldFunction)
+Coroutine::Coroutine (SuspendCallback const& suspendCallback)
 {
-    CoroutinePull pull ([yieldFunction] (
-        boost::coroutines::coroutine <void>::push_type& push)
+    CoroutinePull pull ([suspendCallback] (CoroutinePush& push)
     {
-        Yield yield = [&push] () { push(); };
-        yield ();
-        yieldFunction (yield);
+        Suspend suspend = [&push] (CoroutineType const& cbc) {
+            push (cbc);
+        };
+        suspend ({});
+        suspendCallback (suspend);
     });
 
     impl_ = std::make_shared<Impl> (std::move (pull));
@@ -46,14 +72,12 @@ Coroutine::Coroutine (YieldFunction const& yieldFunction)
 
 Coroutine::~Coroutine() = default;
 
-Coroutine::operator bool() const
+void Coroutine::run()
 {
-    return bool (*impl_);
-}
-
-void Coroutine::operator()() const
-{
-    (*impl_)();
+    assert (impl_);
+    if (impl_)
+        impl_->run();
+    impl_.reset();
 }
 
 } // RPC

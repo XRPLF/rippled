@@ -35,7 +35,7 @@ struct LedgerFill
 {
     LedgerFill (Ledger& l,
                 int o = 0,
-                RPC::Yield const& y = {},
+                RPC::Callback const& y = {},
                 RPC::YieldStrategy const& ys = {})
             : ledger (l),
               options (o),
@@ -49,7 +49,7 @@ struct LedgerFill
 
     Ledger& ledger;
     int options;
-    RPC::Yield yield;
+    RPC::Callback yield;
     RPC::YieldStrategy yieldStrategy;
 };
 
