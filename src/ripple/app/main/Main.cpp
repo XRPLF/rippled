@@ -168,7 +168,6 @@ setupConfigForUnitTests (Config& config)
     config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
     config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
 
-    config.deprecatedClearSection (ConfigSection::tempNodeDatabase ());
     config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
     config.legacy("database_path", "DummyForUnitTests");
 }

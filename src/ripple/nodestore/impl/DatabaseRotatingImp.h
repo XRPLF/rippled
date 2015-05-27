@@ -52,11 +52,9 @@ public:
                  int readThreads,
                  std::shared_ptr <Backend> writableBackend,
                  std::shared_ptr <Backend> archiveBackend,
-                 std::unique_ptr <Backend> fastBackend,
                  beast::Journal journal)
             : DatabaseImp (name, scheduler, readThreads,
-                    std::unique_ptr <Backend>(), std::move (fastBackend),
-                    journal)
+                    std::unique_ptr <Backend>(), journal)
             , writableBackend_ (writableBackend)
             , archiveBackend_ (archiveBackend)
     {}

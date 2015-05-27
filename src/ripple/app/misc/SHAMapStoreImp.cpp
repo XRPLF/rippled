@@ -227,8 +227,7 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
     else
     {
         db = NodeStore::Manager::instance().make_Database (name, scheduler_, nodeStoreJournal_,
-                readThreads, setup_.nodeDatabase,
-                setup_.ephemeralNodeDatabase);
+                readThreads, setup_.nodeDatabase);
     }
 
     return db;
@@ -492,14 +491,8 @@ SHAMapStoreImp::makeDatabaseRotating (std::string const& name,
         std::shared_ptr <NodeStore::Backend> writableBackend,
         std::shared_ptr <NodeStore::Backend> archiveBackend) const
 {
-    std::unique_ptr <NodeStore::Backend> fastBackend (
-        (setup_.ephemeralNodeDatabase.size() > 0)
-            ? NodeStore::Manager::instance().make_Backend (setup_.ephemeralNodeDatabase,
-            scheduler_, journal_) : nullptr);
-
     return NodeStore::Manager::instance().make_DatabaseRotating ("NodeStore.main", scheduler_,
-            readThreads, writableBackend, archiveBackend,
-            std::move (fastBackend), nodeStoreJournal_);
+            readThreads, writableBackend, archiveBackend, nodeStoreJournal_);
 }
 
 void
@@ -680,7 +673,6 @@ setup_SHAMapStore (Config const& c)
 
     setup.ledgerHistory = c.LEDGER_HISTORY;
     setup.nodeDatabase = c[ConfigSection::nodeDatabase ()];
-    setup.ephemeralNodeDatabase = c[ConfigSection::tempNodeDatabase ()];
     setup.databasePath = c.legacy("database_path");
 
     get_if_exists (sec, "delete_batch", setup.deleteBatch);
