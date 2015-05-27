@@ -540,20 +540,16 @@ static boost::optional<detail::STVar> parseLeaf (
                             return ret;
                         }
 
-                        std::string const strValue (account.asString ());
-
-                        if (value.size () == 40) // 160-bit hex account value
-                            uAccount.SetHex (strValue);
-
+                        // If we have what looks like a 160-bit hex value, we
+                        // set it, otherwise, we assume it's an AccountID
+                        if (!uAccount.SetHexExact (account.asString ()))
                         {
                             RippleAddress a;
-
-                            if (! a.setAccountID (strValue))
+                            if (!a.setAccountID (account.asString ()))
                             {
                                 error = invalid_data (element_name, "account");
                                 return ret;
                             }
-
                             uAccount = a.getAccountID ();
                         }
                     }
@@ -569,14 +565,13 @@ static boost::optional<detail::STVar> parseLeaf (
 
                         hasCurrency = true;
 
-                        if (currency.asString ().size () == 40)
+                        if (!uCurrency.SetHexExact (currency.asString ()))
                         {
-                            uCurrency.SetHex (currency.asString ());
-                        }
-                        else if (!to_currency (uCurrency, currency.asString ()))
-                        {
-                            error = invalid_data (element_name, "currency");
-                            return ret;
+                            if (!to_currency (uCurrency, currency.asString ()))
+                            {
+                                error = invalid_data (element_name, "currency");
+                                return ret;
+                            }
                         }
                     }
 
@@ -589,20 +584,14 @@ static boost::optional<detail::STVar> parseLeaf (
                             return ret;
                         }
 
-                        if (issuer.asString ().size () == 40)
-                        {
-                            uIssuer.SetHex (issuer.asString ());
-                        }
-                        else
+                        if (!uIssuer.SetHexExact (issuer.asString ()))
                         {
                             RippleAddress a;
-
                             if (!a.setAccountID (issuer.asString ()))
                             {
                                 error = invalid_data (element_name, "issuer");
                                 return ret;
                             }
-
                             uIssuer = a.getAccountID ();
                         }
                     }
@@ -634,26 +623,18 @@ static boost::optional<detail::STVar> parseLeaf (
 
             try
             {
-                if (value.size () == 40) // 160-bit hex account value
+                Account account;
+                if (!account.SetHexExact (strValue))
                 {
-                    Account account;
-                    account.SetHex (strValue);
-                    ret = detail::make_stvar <STAccount> (field, account);
-                }
-                else
-                {
-                    // ripple address
                     RippleAddress a;
-
                     if (!a.setAccountID (strValue))
                     {
                         error = invalid_data (json_name, fieldName);
                         return ret;
                     }
-
-                    ret =
-                        detail::make_stvar <STAccount> (field, a.getAccountID ());
+                    account.copyFrom (a.getAccountID ());
                 }
+                ret = detail::make_stvar <STAccount> (field, account);
             }
             catch (...)
             {
