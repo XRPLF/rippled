@@ -48,7 +48,7 @@ public:
     siphash (std::uint64_t k0, std::uint64_t k1 = 0) noexcept;
 
     void
-    append (void const* key, std::size_t len) noexcept;
+    operator() (void const* key, std::size_t len) noexcept;
 
     explicit
     operator std::size_t() noexcept;
