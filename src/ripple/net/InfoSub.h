@@ -145,9 +145,8 @@ protected:
 private:
     Consumer                      m_consumer;
     Source&                       m_source;
-    hash_set <RippleAddress>      mSubAccountInfo_t; // real time subscriptions
-    hash_set <RippleAddress>      mSubAccountInfo_f; // normal subscriptions
-    hash_set <RippleAddress>      mSubAccountTransaction;
+    hash_set <RippleAddress>      realTimeSubscriptions_;
+    hash_set <RippleAddress>      normalSubscriptions_;
     std::shared_ptr <PathRequest> mPathRequest;
     std::uint64_t                 mSeq;
 };

@@ -60,13 +60,13 @@ InfoSub::~InfoSub ()
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
-    if (! mSubAccountInfo_t.empty ())
+    if (! realTimeSubscriptions_.empty ())
         m_source.unsubAccountInternal
-            (mSeq, mSubAccountInfo_t, true);
+            (mSeq, realTimeSubscriptions_, true);
 
-    if (! mSubAccountInfo_t.empty ())
+    if (! normalSubscriptions_.empty ())
         m_source.unsubAccountInternal
-            (mSeq, mSubAccountInfo_f, false);
+            (mSeq, normalSubscriptions_, false);
 }
 
 Resource::Consumer& InfoSub::getConsumer()
@@ -93,14 +93,20 @@ void InfoSub::insertSubAccountInfo (RippleAddress addr, bool rt)
 {
     ScopedLockType sl (mLock);
 
-    (rt ? mSubAccountInfo_t : mSubAccountInfo_f).insert (addr);
+    if (rt)
+        realTimeSubscriptions_.insert (addr);
+    else
+        normalSubscriptions_.insert (addr);
 }
 
 void InfoSub::deleteSubAccountInfo (RippleAddress addr, bool rt)
 {
     ScopedLockType sl (mLock);
 
-    (rt ? mSubAccountInfo_t : mSubAccountInfo_f).erase (addr);
+    if (rt)
+        realTimeSubscriptions_.erase (addr);
+    else
+        normalSubscriptions_.erase (addr);
 }
 
 void InfoSub::clearPathRequest ()
