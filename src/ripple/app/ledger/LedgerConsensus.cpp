@@ -927,22 +927,24 @@ private:
             = std::make_shared<Ledger> (false
             , *mPreviousLedger);
 
-        // Set up to write SHAMap changes to our database,
-        //   perform updates, extract changes
         WriteLog (lsDEBUG, LedgerConsensus)
             << "Applying consensus set transactions to the"
             << " last closed ledger";
         auto const txSet(buildTxSet(set));
         applyTransactions(txSet, newLCL, newLCL, retriableTransactions, false);
         newLCL->updateSkipList ();
-        newLCL->setClosed ();
+        newLCL->setClosed();
 
-        int asf = newLCL->peekAccountStateMap ()->flushDirty (
-            hotACCOUNT_NODE, newLCL->getLedgerSeq());
-        int tmf = newLCL->peekTransactionMap ()->flushDirty (
-            hotTRANSACTION_NODE, newLCL->getLedgerSeq());
-        WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " account and " <<
-            tmf << "transaction nodes";
+        {
+            // Set up to write SHAMap changes to our database,
+            //   perform updates, extract changes
+            auto const asf = newLCL->peekAccountStateMap()->flushDirty(
+                hotACCOUNT_NODE, newLCL->getLedgerSeq());
+            auto const tmf = newLCL->peekTransactionMap()->flushDirty(
+                hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+            WriteLog(lsDEBUG, LedgerConsensus) << "Flushed " << asf << " account and " <<
+                tmf << "transaction nodes";
+        }
 
         // Accept ledger
         newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
@@ -1023,8 +1025,7 @@ private:
                         << "Test applying disputed transaction that did"
                         << " not get in";
                     SerialIter sit (it.second->peekTransaction ());
-                    STTx::pointer txn
-                        = std::make_shared<STTx>(sit);
+                    STTx::pointer txn = std::make_shared<STTx>(sit);
 
                     retriableTransactions.push_back (txn);
                     anyDisputes = true;
@@ -1051,13 +1052,12 @@ private:
                 (getApp().getLedgerMaster ().peekMutex (), std::defer_lock);
             std::lock(lock, sl);
 
-            // Apply transactions from the old open ledger
             auto& ledgerMaster = getApp().getLedgerMaster();
             Ledger::pointer oldOL = ledgerMaster.getCurrentLedger();
             if (oldOL->peekTransactionMap()->getHash().isNonZero())
             {
-                WriteLog (lsDEBUG, LedgerConsensus)
-                    << "Applying transactions from current open ledger";
+                WriteLog (lsDEBUG, LedgerConsensus) <<
+                    "Applying transactions from current open ledger";
                 applyTransactions(buildTxSet(oldOL->peekTransactionMap()),
                     newOL, newLCL, retriableTransactions, true);
             }
