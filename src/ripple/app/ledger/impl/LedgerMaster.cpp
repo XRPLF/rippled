@@ -891,7 +891,7 @@ public:
 
             valSeq () : valCount_ (0), ledgerSeq_ (0) { ; }
 
-            void mergeValidation (LedgerSeq seq)
+            void mergeValidation (LedgerIndex seq)
             {
                 valCount_++;
 
@@ -901,7 +901,7 @@ public:
             }
 
             int valCount_;
-            LedgerSeq ledgerSeq_;
+            LedgerIndex ledgerSeq_;
         };
 
         // Count the number of current, trusted validations
@@ -912,9 +912,9 @@ public:
             vs.mergeValidation (v->getFieldU32 (sfLedgerSequence));
         }
 
-        int neededValidations = getNeededValidations ();
-        LedgerSeq maxSeq = mValidLedgerSeq;
-        uint256 maxLedger = ledger->getHash();
+        auto neededValidations = getNeededValidations ();
+        auto maxSeq = mValidLedgerSeq.load();
+        auto maxLedger = ledger->getHash();
 
         // Of the ledgers with sufficient validations,
         // find the one with the highest sequence
