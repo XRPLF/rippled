@@ -131,7 +131,7 @@ protected:
         }
 
         void
-            write(beast::Journal::Severity level,
+        write(beast::Journal::Severity level,
             std::string const& text) override
         {
             suite_.log << text;
