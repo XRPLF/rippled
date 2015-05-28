@@ -58,10 +58,7 @@ public:
 };
 
 /** A ledger index. */
-// VFALCO TODO pick one. I like Index since its not an abbreviation
 using LedgerIndex = std::uint32_t;
-// VFALCO NOTE "LedgerSeq" appears in some SQL statement text
-using LedgerSeq = std::uint32_t;
 
 /** A transaction identifier.
     The value is computed as the hash of the
