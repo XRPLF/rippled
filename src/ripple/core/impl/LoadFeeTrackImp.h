@@ -154,7 +154,8 @@ public:
         if (mLocalLoadLevel < mRemoteLoadLevel)
             mLocalLoadLevel = mRemoteLoadLevel;
 
-        mLocalLoadLevel += (mLocalLoadLevel / lftLevelIncFraction); // increment by 1/16th
+        // increase slowly.
+        mLocalLoadLevel += (mLocalLoadLevel / lftLevelIncFraction);
 
         if (mLocalLoadLevel > lftLevelMax)
             mLocalLoadLevel = lftLevelMax;
@@ -173,7 +174,8 @@ public:
         std::uint32_t origLevel = mLocalLoadLevel;
         raiseCount = 0;
 
-        mLocalLoadLevel -= (mLocalLoadLevel / lftLevelDecFraction ); // reduce by 1/4
+        // reduce slowly.
+        mLocalLoadLevel -= (mLocalLoadLevel / lftLevelDecFraction );
 
         if (mLocalLoadLevel < lftReference)
             mLocalLoadLevel = lftReference;

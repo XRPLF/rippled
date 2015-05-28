@@ -1045,7 +1045,6 @@ private:
                 newOL, newLCL, retriableTransactions, true);
         }
 
-        std::uint64_t refTxnCost;
         {
             auto lock = beast::make_lock(getApp().getMasterMutex(), std::defer_lock);
             LedgerMaster::ScopedLockType sl
@@ -1055,8 +1054,6 @@ private:
             // Apply transactions from the old open ledger
             auto& ledgerMaster = getApp().getLedgerMaster();
             Ledger::pointer oldOL = ledgerMaster.getCurrentLedger();
-            auto& txQ = ledgerMaster.getTransactionQueue();
-            refTxnCost = oldOL->getBaseFee();
             if (oldOL->peekTransactionMap()->getHash().isNonZero())
             {
                 WriteLog (lsDEBUG, LedgerConsensus)
@@ -1067,13 +1064,15 @@ private:
 
             // TODO: Can this be done outside of the lock?
             // It does need to be done before fillOpenLedger
-            updateFeeTracking(newOL, txSet, getApp().getFeeTrack(), refTxnCost,
+            updateFeeTracking(newOL, txSet, getApp().getFeeTrack(), 
+                oldOL->getBaseFee(),
                 [&] ()
-            {
-                return mCurrentMSeconds;
-            });
+                {
+                    return mCurrentMSeconds;
+                });
             
             TransactionEngine engine(newOL);
+            auto& txQ = ledgerMaster.getTransactionQueue();
 
             // Stuff the ledger with transactions from the queue.
             txQ.fillOpenLedger(engine);
