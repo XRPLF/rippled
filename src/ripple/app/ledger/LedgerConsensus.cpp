@@ -1008,42 +1008,42 @@ private:
         getApp().getLedgerMaster().consensusBuilt (newLCL);
 
         // Build new open ledger
-        Ledger::pointer newOL = std::make_shared<Ledger>
-            (true, *newLCL);
+        auto newOL = std::make_shared<Ledger>(true, *newLCL);
 
-        // Apply disputed transactions that didn't get in
-        TransactionEngine engine (newOL);
-        bool anyDisputes = false;
-        for (auto& it : mDisputes)
         {
-            if (!it.second->getOurVote ())
+            // Apply disputed transactions that didn't get in
+            bool anyDisputes = false;
+            for (auto& it : mDisputes)
             {
-                // we voted NO
-                try
+                if (!it.second->getOurVote())
                 {
-                    WriteLog (lsDEBUG, LedgerConsensus)
-                        << "Test applying disputed transaction that did"
-                        << " not get in";
-                    SerialIter sit (it.second->peekTransaction ());
-                    STTx::pointer txn = std::make_shared<STTx>(sit);
+                    // we voted NO
+                    try
+                    {
+                        WriteLog(lsDEBUG, LedgerConsensus)
+                            << "Test applying disputed transaction that did"
+                            << " not get in";
+                        SerialIter sit(it.second->peekTransaction());
+                        STTx::pointer txn = std::make_shared<STTx>(sit);
 
-                    retriableTransactions.push_back (txn);
-                    anyDisputes = true;
-                }
-                catch (...)
-                {
-                    WriteLog (lsDEBUG, LedgerConsensus)
-                        << "Failed to apply transaction we voted NO on";
+                        retriableTransactions.push_back(txn);
+                        anyDisputes = true;
+                    }
+                    catch (...)
+                    {
+                        WriteLog(lsDEBUG, LedgerConsensus)
+                            << "Failed to apply transaction we voted NO on";
+                    }
                 }
             }
-        }
 
-        if (anyDisputes)
-        {
-            // Attempt re-applying any disputed transactions
-            // where we voted NO
-            applyTransactions(TxSet(),
-                newOL, newLCL, retriableTransactions, true);
+            if (anyDisputes)
+            {
+                // Attempt re-applying any disputed transactions
+                // where we voted NO
+                applyTransactions(TxSet(),
+                    newOL, newLCL, retriableTransactions, true);
+            }
         }
 
         {
@@ -1883,8 +1883,8 @@ std::size_t countLedgerNodes(ripple::Ledger::pointer ledger)
     return nodes;
 }
 
-// Build a transaction set from a transaction map
-// This allows us to serialize the transactions only once,
+// Build a transaction set from a transaction map.
+// This allows us to deserialize the transactions only once.
 TxSet buildTxSet(std::shared_ptr<SHAMap> const& map)
 {
     TxSet txSet;
@@ -1901,7 +1901,7 @@ TxSet buildTxSet(std::shared_ptr<SHAMap> const& map)
         catch (...)
         {
             WriteLog (lsWARNING, LedgerConsensus) << "Transaction " <<
-            item->getTag() << " throws";
+                item->getTag() << " throws";
         }
     });
 
@@ -1927,7 +1927,7 @@ void applyTransactions (
 {
     TransactionEngine engine (applyLedger);
 
-    for (auto& tx : set)
+    for (auto const& tx : set)
     {
         // If the checkLedger doesn't have the transaction
         if (!checkLedger->hasTransaction (tx.first))
