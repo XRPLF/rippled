@@ -17,15 +17,17 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/impl/LoadFeeTrackImp.h>
 #include <ripple/core/Config.h>
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 
-LoadFeeTrack* LoadFeeTrack::New (beast::Journal journal)
+LoadFeeTrack* LoadFeeTrack::New (bool standAlone, beast::Journal journal)
 {
-    return new LoadFeeTrackImp (journal);
+    return new LoadFeeTrackImp (standAlone, journal);
 }
+
+//------------------------------------------------------------------------------
 
 } // ripple

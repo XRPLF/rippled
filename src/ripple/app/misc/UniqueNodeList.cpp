@@ -265,7 +265,7 @@ public:
 
     // This is called when the application is started.
     // Get update times and start fetching and scoring as needed.
-    void start ()
+    void start () override
     {
         miscLoad ();
 
@@ -279,7 +279,8 @@ public:
     //--------------------------------------------------------------------------
 
     // Add a trusted node.  Called by RPC or other source.
-    void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment)
+    void nodeAddPublic (RippleAddress const& naNodePublic,
+        ValidatorSource vsWhy, std::string const& strComment) override
     {
         seedNode    snCurrent;
 
@@ -316,7 +317,8 @@ public:
     // Queue a domain for a single attempt fetch a ripple.txt.
     // --> strComment: only used on vsManual
     // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, std::string const& strComment)
+    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy,
+        std::string const& strComment) override
     {
         boost::trim (strDomain);
         boost::to_lower (strDomain);
@@ -359,7 +361,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeRemovePublic (RippleAddress const& naNodePublic)
+    void nodeRemovePublic (RippleAddress const& naNodePublic) override
     {
         {
             auto db = getApp().getWalletDB ().checkoutDb ();
@@ -381,7 +383,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeRemoveDomain (std::string strDomain)
+    void nodeRemoveDomain (std::string strDomain) override
     {
         boost::trim (strDomain);
         boost::to_lower (strDomain);
@@ -398,7 +400,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeReset ()
+    void nodeReset () override
     {
         {
             auto db = getApp().getWalletDB ().checkoutDb ();
@@ -413,14 +415,14 @@ public:
     //--------------------------------------------------------------------------
 
     // For debugging, schedule forced scoring.
-    void nodeScore ()
+    void nodeScore () override
     {
         scoreNext (true);
     }
 
     //--------------------------------------------------------------------------
 
-    bool nodeInUNL (RippleAddress const& naNodePublic)
+    bool nodeInUNL (RippleAddress const& naNodePublic) override
     {
         ScopedUNLLockType sl (mUNLLock);
 
@@ -429,7 +431,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (RippleAddress const& naNodePublic)
+    bool nodeInCluster (RippleAddress const& naNodePublic) override
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
@@ -437,7 +439,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name)
+    bool nodeInCluster (RippleAddress const& naNodePublic,
+        std::string& name) override
     {
         ScopedUNLLockType sl (mUNLLock);
         std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
@@ -451,7 +454,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus)
+    bool nodeUpdate (RippleAddress const& naNodePublic,
+        ClusterNodeStatus const& cnsStatus) override
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes[naNodePublic].update(cnsStatus);
@@ -459,7 +463,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    std::map<RippleAddress, ClusterNodeStatus> getClusterStatus ()
+    std::map<RippleAddress, ClusterNodeStatus> getClusterStatus () override
     {
         std::map<RippleAddress, ClusterNodeStatus> ret;
         {
@@ -471,11 +475,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    std::uint32_t getClusterFee ()
+    std::uint32_t getClusterLevel () override
     {
         int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
 
-        std::vector<std::uint32_t> fees;
+        std::vector<std::uint32_t> levels;
         {
             ScopedUNLLockType sl (mUNLLock);
             {
@@ -483,20 +487,20 @@ public:
                     end = m_clusterNodes.end(); it != end; ++it)
                 {
                     if (it->second.getReportTime() >= thresh)
-                        fees.push_back(it->second.getLoadFee());
+                        levels.push_back(it->second.getLoadLevel());
                 }
             }
         }
 
-        if (fees.empty())
+        if (levels.empty())
             return 0;
-        std::sort (fees.begin(), fees.end());
-        return fees[fees.size() / 2];
+        std::sort (levels.begin(), levels.end());
+        return levels[levels.size() / 2];
     }
 
     //--------------------------------------------------------------------------
 
-    void addClusterStatus (Json::Value& obj)
+    void addClusterStatus (Json::Value& obj) override
     {
         ScopedUNLLockType sl (mUNLLock);
         if (m_clusterNodes.size() > 1) // nodes other than us
@@ -515,8 +519,8 @@ public:
                     if (!it->second.getName().empty())
                         node["tag"] = it->second.getName();
 
-                    if ((it->second.getLoadFee() != ref) && (it->second.getLoadFee() != 0))
-                        node["fee"] = static_cast<double>(it->second.getLoadFee()) / ref;
+                    if ((it->second.getLoadLevel() != ref) && (it->second.getLoadLevel() != 0))
+                        node["level"] = static_cast<double>(it->second.getLoadLevel()) / ref;
 
                     if (it->second.getReportTime() != 0)
                         node["age"] = (it->second.getReportTime() >= now) ? 0 : (now - it->second.getReportTime());
@@ -527,7 +531,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeBootstrap ()
+    void nodeBootstrap () override
     {
         int         iDomains    = 0;
         int         iNodes      = 0;
@@ -591,7 +595,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeLoad (boost::filesystem::path pConfig)
+    bool nodeLoad (boost::filesystem::path pConfig) override
     {
         if (pConfig.empty ())
         {
@@ -649,7 +653,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeNetwork ()
+    void nodeNetwork () override
     {
         if (!getConfig ().VALIDATORS_SITE.empty ())
         {
@@ -670,7 +674,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Json::Value getUnlJson ()
+    Json::Value getUnlJson () override
     {
 
         Json::Value ret (Json::arrayValue);
@@ -698,7 +702,7 @@ public:
     //--------------------------------------------------------------------------
 
     // For each kind of source, have a starting number of points to be distributed.
-    int iSourceScore (ValidatorSource vsWhy)
+    int iSourceScore (ValidatorSource vsWhy) override
     {
         int     iScore  = 0;
 

@@ -112,6 +112,7 @@ HandlerTable HANDLERS({
     {   "get_counts",           byRef (&doGetCounts),           Role::ADMIN,   NO_CONDITION     },
     {   "internal",             byRef (&doInternal),            Role::ADMIN,   NO_CONDITION     },
     {   "feature",              byRef (&doFeature),             Role::ADMIN,   NO_CONDITION     },
+    {   "fee",                  byRef (&doFee),                 Role::ADMIN,   NO_CONDITION     },
     {   "fetch_info",           byRef (&doFetchInfo),           Role::ADMIN,   NO_CONDITION     },
     {   "ledger_accept",        byRef (&doLedgerAccept),        Role::ADMIN,   NEEDS_CURRENT_LEDGER  },
     {   "ledger_cleaner",       byRef (&doLedgerCleaner),       Role::ADMIN,   NEEDS_NETWORK_CONNECTION  },
@@ -157,7 +158,6 @@ HandlerTable HANDLERS({
     {   "validation_seed",      byRef (&doValidationSeed),      Role::ADMIN,   NO_CONDITION     },
     {   "wallet_propose",       byRef (&doWalletPropose),       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_seed",          byRef (&doWalletSeed),          Role::ADMIN,   NO_CONDITION     },
-
     // Evented methods
     {   "subscribe",            byRef (&doSubscribe),           Role::USER,  NO_CONDITION     },
     {   "unsubscribe",          byRef (&doUnsubscribe),         Role::USER,  NO_CONDITION     },

@@ -495,6 +495,36 @@ STTx::checkMultiSign () const
 
 //------------------------------------------------------------------------------
 
+std::uint64_t STTx::getRequiredFeeUnits () const
+{
+    if ((tx_type_ == ttAMENDMENT) || (tx_type_ == ttFEE))
+        return 0;
+
+    // For now, all valid non-pseudo transactions cost 10 fee units
+    // This code can be changed to support variable transaction fees
+    return 10;
+}
+
+std::uint64_t STTx::getRequiredFeeDrops (std::uint64_t refTxnCost) const
+{
+    return getRequiredFeeUnits() * refTxnCost / 10;
+}
+
+std::uint64_t STTx::getFeeLevelPaid (
+    std::uint64_t baseRef,
+    std::uint64_t refTxnCost) const
+{
+    // Compute the minimum XRP fee the transaction could pay
+    std::uint64_t required_fee = getRequiredFeeDrops (refTxnCost);
+
+    if (required_fee == 0)
+        return 0;
+
+    return getTransactionFee().mantissa() * baseRef / required_fee;
+}
+
+//------------------------------------------------------------------------------
+
 static
 bool
 isMemoOkay (STObject const& st, std::string& reason)

@@ -120,7 +120,8 @@ TER Transactor::payFee ()
         return temBAD_AMOUNT;
 
     // Only check fee is sufficient when the ledger is open.
-    if ((mParams & tapOPEN_LEDGER) && saPaid < mFeeDue)
+    if ((mParams & tapOPEN_LEDGER) && !(mParams & tapIGNORE_FEE)
+        && saPaid < mFeeDue)
     {
         m_journal.trace << "Insufficient fee paid: " <<
             saPaid.getText () << "/" << mFeeDue.getText ();

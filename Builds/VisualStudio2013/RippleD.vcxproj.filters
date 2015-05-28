@@ -2220,10 +2220,19 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\tests\Ledger_test.cpp">
       <Filter>ripple\app\ledger\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\tests\TxQ_test.cpp">
+      <Filter>ripple\app\ledger\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\TxHold.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\TxHold.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
@@ -3661,6 +3670,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Feature.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\Fee.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\FetchInfo.cpp">

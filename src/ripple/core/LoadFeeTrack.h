@@ -41,33 +41,49 @@ class LoadFeeTrack
 public:
     /** Create a new tracker.
     */
-    static LoadFeeTrack* New (beast::Journal journal);
+    static LoadFeeTrack* New (bool standAlone, beast::Journal journal);
 
     virtual ~LoadFeeTrack () { }
 
-    // Scale from fee units to millionths of a ripple
+    // Scale from fee units to drops
     virtual std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
-                                        std::uint32_t referenceFeeUnits) = 0;
+                                        std::uint32_t referenceFeeUnits) const = 0;
 
     // Scale using load as well as base rate
     virtual std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
                                         std::uint32_t referenceFeeUnits,
                                         bool bAdmin) = 0;
 
-    virtual void setRemoteFee (std::uint32_t) = 0;
+    // Get transaction scaling factor
+    virtual std::uint64_t scaleTxnFee (std::uint64_t fee) = 0;
 
-    virtual std::uint32_t getRemoteFee () = 0;
-    virtual std::uint32_t getLocalFee () = 0;
-    virtual std::uint32_t getClusterFee () = 0;
+    // Get load factor to report to clients
+    virtual std::uint64_t getTxnFeeReport () = 0;
+
+    // Set minimum transactions per ledger before fee escalation
+    virtual int setMinimumTx (int minimumTx) = 0;
+
+    // A new open ledger has been built
+    virtual void onLedger (
+        std::size_t openCount,
+        std::vector<int> const& feesPaid,
+        bool healthy) = 0;
+
+    // A transaction has been accepted into the open ledger
+    virtual void onTx (std::uint64_t feeRatio) = 0;
+
+    virtual std::uint32_t getLocalLevel () = 0;
+    virtual std::uint32_t getClusterLevel () = 0;
 
     virtual std::uint32_t getLoadBase () = 0;
     virtual std::uint32_t getLoadFactor () = 0;
 
-    virtual Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) = 0;
+    virtual int getMedianFee() = 0;
+    virtual int getExpectedLedgerSize() = 0;
 
-    virtual void setClusterFee (std::uint32_t) = 0;
-    virtual bool raiseLocalFee () = 0;
-    virtual bool lowerLocalFee () = 0;
+    virtual void setClusterLevel (std::uint32_t) = 0;
+    virtual bool raiseLocalLevel () = 0;
+    virtual bool lowerLocalLevel () = 0;
     virtual bool isLoadedLocal () = 0;
     virtual bool isLoadedCluster () = 0;
 };

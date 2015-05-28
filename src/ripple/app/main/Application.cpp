@@ -275,6 +275,7 @@ public:
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
+    std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <LedgerMaster> m_ledgerMaster;
     std::unique_ptr <InboundLedgers> m_inboundLedgers;
     std::unique_ptr <InboundTransactions> m_inboundTransactions;
@@ -284,7 +285,6 @@ public:
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <Validators::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
-    std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
@@ -365,7 +365,11 @@ public:
         , m_pathRequests (new PathRequests (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
-        , m_ledgerMaster (make_LedgerMaster (getConfig (), *m_jobQueue,
+        // EHENNIS NOTE LoadFeeTrack must come before LedgerMaster due to 
+        //              injection dependencies.
+        , mFeeTrack (LoadFeeTrack::New (getConfig ().RUN_STANDALONE, m_logs.journal("LoadManager")))
+
+        , m_ledgerMaster (make_LedgerMaster (getConfig (), *m_jobQueue, *mFeeTrack,
             m_collectorManager->collector (), m_logs.journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
@@ -403,8 +407,6 @@ public:
         , m_amendmentTable (make_AmendmentTable
                             (weeks(2), MAJORITY_FRACTION,
                              m_logs.journal("AmendmentTable")))
-
-        , mFeeTrack (LoadFeeTrack::New (m_logs.journal("LoadManager")))
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 

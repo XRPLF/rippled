@@ -46,6 +46,10 @@ enum TransactionEngineParams
     // Transaction can be retried, soft failures allowed
     tapRETRY            = 0x20,
 
+    // Transaction is being tested for non-fee
+    // sanity. Don't fail if the fee is too low.
+    tapIGNORE_FEE       = 0x40,
+
     // Transaction came from a privileged source
     tapADMIN            = 0x400,
 };

@@ -40,9 +40,11 @@
 #include <ripple/app/ledger/OrderBookDB.cpp>
 #include <ripple/app/ledger/OrderBookIterator.cpp>
 #include <ripple/app/ledger/TransactionStateSF.cpp>
+#include <ripple/app/ledger/TxHold.cpp>
 
 #include <ripple/app/ledger/impl/LedgerFees.cpp>
 
 #include <ripple/app/ledger/tests/common_ledger.cpp>
 #include <ripple/app/ledger/tests/DeferredCredits.test.cpp>
 #include <ripple/app/ledger/tests/Ledger_test.cpp>
+#include <ripple/app/ledger/tests/TxQ_test.cpp>

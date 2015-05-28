@@ -409,6 +409,20 @@ private:
         return jvRequest;
     }
 
+    // fee [true|false] [<multiplier>]
+    Json::Value parseFee (Json::Value const& jvParams)
+    {
+        Json::Value     jvRequest (Json::objectValue);
+
+        if (jvParams.size () > 0)
+            jvRequest["enforcing"] = beast::lexicalCastThrow <bool> (jvParams[0u].asString ());
+
+        if (jvParams.size () > 1)
+            jvRequest["target_multiplier"] = jvParams[1u].asUInt ();
+
+        return jvRequest;
+    }
+
     // get_counts [<min_count>]
     Json::Value parseGetCounts (Json::Value const& jvParams)
     {
@@ -857,6 +871,7 @@ public:
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
+            {   "fee",                  &RPCParser::parseFee,                   0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
             {   "json",                 &RPCParser::parseJson,                  2,  2   },

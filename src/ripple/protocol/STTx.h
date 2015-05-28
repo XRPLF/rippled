@@ -142,7 +142,17 @@ public:
         sig_state_ = false;
     }
 
-    // SQL Functions with metadata.
+    // Returns the cost in fee units
+    std::uint64_t getRequiredFeeUnits () const;
+
+    // Returns the XRP cost of the transactions in drops
+    std::uint64_t getRequiredFeeDrops (std::uint64_t refTxnCost) const;
+
+    // Returns the fee level the transaction paid
+    // relative to the specified base
+    std::uint64_t getFeeLevelPaid (std::uint64_t baseReference, std::uint64_t refTxnCost) const;
+
+    // SQL Functions with metadata
     static
     std::string const&
     getMetaSQLInsertReplaceHeader ();

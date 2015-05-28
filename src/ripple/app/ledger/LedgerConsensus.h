@@ -32,6 +32,8 @@
 
 namespace ripple {
 
+class LoadFeeTrack;
+
 /** Manager for achieving consensus on the next ledger.
 
     This object is created when the consensus process starts, and
@@ -59,15 +61,25 @@ public:
     virtual void simulate () = 0;
 };
 
+using TxSet = std::vector <std::pair <uint256, STTx::pointer>>;
+
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (LocalTxs& localtx,
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);
 
+std::size_t countLedgerNodes(ripple::Ledger::pointer ledger);
+
+TxSet buildTxSet(std::shared_ptr<SHAMap> const& set);
+
 void
-applyTransactions(std::shared_ptr<SHAMap> const& set, Ledger::ref applyLedger,
+applyTransactions(TxSet const& set, Ledger::ref applyLedger,
                   Ledger::ref checkLedger,
                   CanonicalTXSet& retriableTransactions, bool openLgr);
+
+// Used by tests only
+void updateFeeTracking(ripple::Ledger::pointer openLedger, TxSet const& txSet,
+    LoadFeeTrack& feeTrack, std::uint64_t refTxnCost, std::function<int()> const& msFunction);
 
 } // ripple
 
