@@ -26,39 +26,21 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
 # You can contact the author at :
-#  - LZ4 source repository : http://code.google.com/p/lz4/
+#  - LZ4 source repository : https://github.com/Cyan4973/lz4
 #  - LZ4 forum froup : https://groups.google.com/forum/#!forum/lz4c
 # ################################################################
 
 # Version number
-export VERSION=126
+export VERSION=130
 export RELEASE=r$(VERSION)
 
 DESTDIR?=
-PREFIX ?= /usr
+PREFIX ?= /usr/local
 
 LIBDIR ?= $(PREFIX)/lib
 INCLUDEDIR=$(PREFIX)/include
 PRGDIR  = programs
 LZ4DIR  = lib
-DISTRIBNAME=lz4-$(RELEASE).tar.gz
-
-TEXT =  $(LZ4DIR)/lz4.c $(LZ4DIR)/lz4.h $(LZ4DIR)/lz4hc.c $(LZ4DIR)/lz4hc.h \
-	$(LZ4DIR)/lz4frame.c $(LZ4DIR)/lz4frame.h $(LZ4DIR)/lz4frame_static.h \
-	$(LZ4DIR)/xxhash.c $(LZ4DIR)/xxhash.h \
-	$(LZ4DIR)/liblz4.pc.in $(LZ4DIR)/Makefile $(LZ4DIR)/LICENSE \
-	Makefile lz4_block_format.txt LZ4_Frame_Format.html NEWS README.md \
-	cmake_unofficial/CMakeLists.txt \
-	$(PRGDIR)/fullbench.c $(PRGDIR)/lz4cli.c \
-	$(PRGDIR)/datagen.c $(PRGDIR)/fuzzer.c \
-	$(PRGDIR)/lz4io.c $(PRGDIR)/lz4io.h \
-	$(PRGDIR)/bench.c $(PRGDIR)/bench.h \
-	$(PRGDIR)/lz4.1 $(PRGDIR)/lz4c.1 $(PRGDIR)/lz4cat.1 \
-	$(PRGDIR)/Makefile $(PRGDIR)/COPYING	
-NONTEXT = images/image00.png images/image01.png images/image02.png \
-	images/image03.png images/image04.png images/image05.png \
-	images/image06.png
-SOURCES = $(TEXT) $(NONTEXT)
 
 
 # Select test target for Travis CI's Build Matrix
@@ -66,6 +48,13 @@ ifneq (,$(filter test-%,$(LZ4_TRAVIS_CI_ENV)))
 TRAVIS_TARGET=prg-travis
 else
 TRAVIS_TARGET=$(LZ4_TRAVIS_CI_ENV)
+endif
+
+# Define nul output
+ifneq (,$(filter Windows%,$(OS)))
+VOID = nul
+else
+VOID = /dev/null
 endif
 
 
@@ -79,10 +68,10 @@ lz4programs:
 	@cd $(PRGDIR); $(MAKE) -e
 
 clean:
-	@rm -f $(DISTRIBNAME) *.sha1
-	@cd $(PRGDIR); $(MAKE) clean
-	@cd $(LZ4DIR); $(MAKE) clean
-	@cd examples; $(MAKE) clean
+	@cd $(PRGDIR); $(MAKE) clean > $(VOID)
+	@cd $(LZ4DIR); $(MAKE) clean > $(VOID)
+	@cd examples;  $(MAKE) clean > $(VOID)
+	@cd test;      $(MAKE) clean > $(VOID)
 	@echo Cleaning completed
 
 
@@ -101,24 +90,6 @@ uninstall:
 travis-install:
 	sudo $(MAKE) install
 
-dist: clean
-	@install -dD -m 700 lz4-$(RELEASE)/lib/
-	@install -dD -m 700 lz4-$(RELEASE)/programs/
-	@install -dD -m 700 lz4-$(RELEASE)/cmake_unofficial/
-	@install -dD -m 700 lz4-$(RELEASE)/images/
-	@for f in $(TEXT); do \
-		tr -d '\r' < $$f > .tmp; \
-		install -m 600 .tmp lz4-$(RELEASE)/$$f; \
-	done
-	@rm .tmp
-	@for f in $(NONTEXT); do \
-		install -m 600 $$f lz4-$(RELEASE)/$$f; \
-	done
-	@tar -czf $(DISTRIBNAME) lz4-$(RELEASE)/
-	@rm -rf lz4-$(RELEASE)
-	@sha1sum $(DISTRIBNAME) > $(DISTRIBNAME).sha1
-	@echo Distribution $(DISTRIBNAME) built
-
 test:
 	@cd $(PRGDIR); $(MAKE) -e test
 
@@ -126,6 +97,25 @@ test-travis: $(TRAVIS_TARGET)
 
 cmake:
 	@cd cmake_unofficial; cmake CMakeLists.txt; $(MAKE)
+
+gpptest: clean
+	$(MAKE) all CC=g++ CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+
+clangtest: clean
+	$(MAKE) all CC=clang CPPFLAGS="-Werror -Wconversion -Wno-sign-conversion"
+
+sanitize: clean
+	$(MAKE) test CC=clang CPPFLAGS="-g -fsanitize=undefined" FUZZER_TIME="-T1mn" NB_LOOPS=-i1
+
+staticAnalyze: clean
+	scan-build --status-bugs -v $(MAKE) all CFLAGS=-g
+
+armtest: clean
+	cd lib; $(MAKE) -e all CC=arm-linux-gnueabi-gcc CPPFLAGS="-Werror"
+	cd programs; $(MAKE) -e bins CC=arm-linux-gnueabi-gcc CPPFLAGS="-Werror"
+
+versionstest: clean
+	@cd test; $(MAKE)
 
 streaming-examples:
 	cd examples; $(MAKE) -e test
