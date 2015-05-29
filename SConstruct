@@ -60,6 +60,11 @@ The following environment variables modify the build environment:
     OPENSSL_ROOT
       Path to the openssl directory.
 
+The following extra options may be used:
+    --ninja         Generate a `build.ninja` build file for the specified target
+                    (see: https://martine.github.io/ninja/). Only gcc and clang targets
+                     are supported.
+
 '''
 #
 '''
@@ -83,10 +88,15 @@ import time
 import SCons.Action
 
 sys.path.append(os.path.join('src', 'beast', 'site_scons'))
+sys.path.append(os.path.join('src', 'ripple', 'site_scons'))
 
 import Beast
+import scons_to_ninja
 
 #------------------------------------------------------------------------------
+
+AddOption('--ninja', dest='ninja', action='store_true',
+          help='generate ninja build file build.ninja')
 
 def parse_time(t):
     return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
@@ -591,6 +601,7 @@ class ObjectBuilder(object):
         self.env = env
         self.variant_dirs = variant_dirs
         self.objects = []
+        self.child_envs = []
 
     def add_source_files(self, *filenames, **kwds):
         for filename in filenames:
@@ -598,6 +609,7 @@ class ObjectBuilder(object):
             if kwds:
                 env = env.Clone()
                 env.Prepend(**kwds)
+                self.child_envs.append(env)
             o = env.Object(Beast.variantFile(filename, self.variant_dirs))
             self.objects.append(o)
 
@@ -733,6 +745,31 @@ def should_prepare_targets(style, toolchain, variant):
         if should_prepare_target(t, style, toolchain, variant):
             return True
 
+def should_build_ninja(style, toolchain, variant):
+    """
+    Return True if a ninja build file should be generated.
+
+    Typically, scons will be called as follows to generate a ninja build file:
+    `scons ninja=1 gcc.debug` where `gcc.debug` may be replaced with any of our
+    non-visual studio targets. Raise an exception if we cannot generate the
+    requested ninja build file (for example, if multiple targets are requested).
+    """
+    if not GetOption('ninja'):
+        return False
+    if len(COMMAND_LINE_TARGETS) != 1:
+        raise Exception('Can only generate a ninja file for a single target')
+    cl_target = COMMAND_LINE_TARGETS[0]
+    if 'vcxproj' in cl_target:
+        raise Exception('Cannot generate a ninja file for a vcxproj')
+    s = cl_target.split('.')
+    if ( style == 'unity' and 'nounity' in s or
+         style == 'classic' and 'nounity' not in s or
+         len(s) == 1 ):
+        return False
+    if len(s) == 2 or len(s) == 3:
+        return s[0] == toolchain and s[1] == variant
+    return False
+
 for tu_style in ['classic', 'unity']:
     if tu_style == 'classic':
         sources = get_classic_sources()
@@ -860,6 +897,13 @@ for tu_style in ['classic', 'unity']:
             if toolchain in toolchains:
                 aliases[variant].extend(target)
                 env.Alias(variant_name, target)
+
+            # ninja support
+            if should_build_ninja(tu_style, toolchain, variant):
+                print('Generating ninja: {}:{}:{}'.format(tu_style, toolchain, variant))
+                scons_to_ninja.GenerateNinjaFile(
+                    [object_builder.env] + object_builder.child_envs,
+                    dest_file='build.ninja')
 
 for key, value in aliases.iteritems():
     env.Alias(key, value)
