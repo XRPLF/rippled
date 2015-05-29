@@ -17,53 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
-#define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
+#include <BeastConfig.h>
 
-#include <cstdint>
-#include <string>
+#include <ripple/app/tests/Common.cpp>
+#include <ripple/app/tests/Env.cpp>
+#include <ripple/app/tests/JTx.cpp>
 
-namespace ripple {
-
-// Various protocol and system specific constant globals.
-
-/* The name of the system. */
-static inline
-std::string const&
-systemName ()
-{
-    static std::string const name = "ripple";
-    return name;
-}
-
-/** Configure the native currency. */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_GIFT = 1000;
-
-static
-std::uint64_t const
-SYSTEM_CURRENCY_USERS = 100000000;
-
-/** Number of drops per 1 XRP */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_PARTS = 1000000;
-
-/** Number of drops in the genesis account. */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_START = SYSTEM_CURRENCY_GIFT * SYSTEM_CURRENCY_USERS * SYSTEM_CURRENCY_PARTS;
-
-/* The currency code for the native currency. */
-static inline
-std::string const&
-systemCurrencyCode ()
-{
-    static std::string const code = "XRP";
-    return code;
-}
-
-} // ripple
-
-#endif
+#include <ripple/app/tests/Env_test.cpp>

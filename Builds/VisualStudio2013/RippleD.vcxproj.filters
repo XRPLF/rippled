@@ -274,6 +274,9 @@
     <Filter Include="ripple\app\paths\tests">
       <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\tests">
+      <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\tx">
       <UniqueIdentifier>{50FDCDC1-EC9C-9F3B-34C9-EF4137E132B4}</UniqueIdentifier>
     </Filter>
@@ -2454,6 +2457,27 @@
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tests\Common.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tests\Common.h">
+      <Filter>ripple\app\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tests\Env.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tests\Env.h">
+      <Filter>ripple\app\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tests\Env_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\JTx.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tests\JTx.h">
+      <Filter>ripple\app\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -4084,6 +4108,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_paths.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\app_tests.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_tx.cpp">
