@@ -70,9 +70,9 @@ Json::Value doCanDelete (RPC::Context& context)
                     canDeleteStr.find_first_not_of("0123456789abcdef") ==
                     std::string::npos)
             {
-                uint256 ledgerHash (canDeleteStr);
-                Ledger::pointer ledger =
-                        context.netOps.getLedgerByHash (ledgerHash);
+                Ledger::pointer ledger = context.netOps.getLedgerByHash (
+                    from_hex_text<uint256>(canDeleteStr));
+
                 if (!ledger)
                     return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
 

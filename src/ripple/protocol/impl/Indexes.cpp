@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/Indexes.h>
+#include <beast/utility/static_initializer.h>
 
 namespace ripple {
 
@@ -168,8 +169,10 @@ getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir)
 uint256
 getQualityNext (uint256 const& uBase)
 {
-    static uint256 uNext ("10000000000000000");
-    return uBase + uNext;
+    static beast::static_initializer<uint256> const uNext (
+        from_hex_text<uint256>("10000000000000000"));
+
+    return uBase + *uNext;
 }
 
 std::uint64_t
