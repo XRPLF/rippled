@@ -43,13 +43,16 @@ JSS ( Invalid );                    // out: app/misc/AccountState
 JSS ( LimitAmount );                // field.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign
+JSS ( TransferRate );               // in: TransferRate
 JSS ( historical_perminute );       // historical_perminute
 JSS ( SLE_hit_rate );               // out: GetCounts
 JSS ( SendMax );                    // in: TransactionSign
 JSS ( Sequence );                   // in/out: TransactionSign; field.
 JSS ( SetFlag );                    // field.
+JSS ( SigningPubKey );              // field
 JSS ( TakerGets );                  // field.
 JSS ( TakerPays );                  // field.
+JSS ( TxnSignature );               // field
 JSS ( TransactionType );            // in: TransactionSign
 JSS ( aborted );                    // out: InboundLedger
 JSS ( accepted );                   // out: LedgerToJson, OwnerInfo
