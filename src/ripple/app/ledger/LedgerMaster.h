@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/core/Config.h>
@@ -62,6 +63,9 @@ public:
     // The current ledger is the ledger we believe new transactions should go in
     virtual Ledger::pointer getCurrentLedger () = 0;
 
+    // The holder for the current ledger
+    virtual LedgerHolder& getCurrentLedgerHolder() = 0;
+
     // The finalized ledger is the last closed/accepted ledger
     virtual Ledger::pointer getClosedLedger () = 0;
 
@@ -74,10 +78,6 @@ public:
     virtual int getPublishedLedgerAge () = 0;
     virtual int getValidatedLedgerAge () = 0;
     virtual bool isCaughtUp(std::string& reason) = 0;
-
-    virtual TER doTransaction (
-        STTx::ref txn,
-            TransactionEngineParams params, bool& didApply) = 0;
 
     virtual int getMinValidations () = 0;
 
@@ -148,7 +148,7 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t currentLedgerID, 
+    static bool shouldAcquire (std::uint32_t currentLedgerID,
         std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
         std::uint32_t targetLedger);
 

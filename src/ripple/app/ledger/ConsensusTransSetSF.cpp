@@ -58,8 +58,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
             getApp().getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
                 std::bind (&NetworkOPs::submitTransaction, &getApp().getOPs (),
-                           std::placeholders::_1, stx,
-                           NetworkOPs::stCallback ()));
+                           std::placeholders::_1, stx));
         }
         catch (...)
         {

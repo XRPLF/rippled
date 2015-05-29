@@ -82,6 +82,10 @@ public:
         add (jtTRANSACTION,   "transaction",
             maxLimit, true,   false, 250,   1000);
 
+        // Apply batched transactions
+        add (jtBATCH,          "batch",
+            maxLimit, true,   false, 250,   1000);
+
         // A Score or Fetch of the UNL (DEPRECATED)
         add (jtUNL,           "unl",
             1,        true,   false, 0,     0);
