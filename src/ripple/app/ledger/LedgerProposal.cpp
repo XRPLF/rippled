@@ -26,35 +26,39 @@
 
 namespace ripple {
 
-LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
-                                uint256 const& tx, std::uint32_t closeTime,
-                                RippleAddress const& naPeerPublic, uint256 const& suppression) :
-    mPreviousLedger (pLgr), mCurrentHash (tx), mSuppression (suppression), mCloseTime (closeTime),
-    mProposeSeq (seq), mPublicKey (naPeerPublic)
+LedgerProposal::LedgerProposal (
+        uint256 const& pLgr,
+        std::uint32_t seq,
+        uint256 const& tx,
+        std::uint32_t closeTime,
+        RippleAddress const& publicKey,
+        uint256 const& suppression)
+    : mPreviousLedger (pLgr)
+    , mCurrentHash (tx)
+    , mSuppression (suppression)
+    , mCloseTime (closeTime)
+    , mProposeSeq (seq)
+    , mPublicKey (publicKey)
 {
-    // XXX Validate key.
-    // if (!mKey->SetPubKey(pubKey))
-    // throw std::runtime_error("Invalid public key in proposal");
-
-    mPeerID         = mPublicKey.getNodeID ();
-    mTime           = std::chrono::steady_clock::now ();
+    mPeerID = mPublicKey.getNodeID ();
+    mTime = std::chrono::steady_clock::now ();
 }
 
-LedgerProposal::LedgerProposal (RippleAddress const& naPub, RippleAddress const& naPriv,
-                                uint256 const& prevLgr, uint256 const& position,
-                                std::uint32_t closeTime) :
-    mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0),
-    mPublicKey (naPub), mPrivateKey (naPriv)
+LedgerProposal::LedgerProposal (
+        RippleAddress const& publicKey,
+        uint256 const& prevLgr,
+        uint256 const& position,
+        std::uint32_t closeTime)
+    : mPreviousLedger (prevLgr)
+    , mCurrentHash (position)
+    , mCloseTime (closeTime)
+    , mProposeSeq (seqJoin)
+    , mPublicKey (publicKey)
 {
-    mPeerID      = mPublicKey.getNodeID ();
-    mTime        = std::chrono::steady_clock::now ();
-}
+    if (mPublicKey.isValid ())
+        mPeerID = mPublicKey.getNodeID ();
 
-LedgerProposal::LedgerProposal (uint256 const& prevLgr, uint256 const& position,
-                                std::uint32_t closeTime) :
-    mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0)
-{
-    mTime       = std::chrono::steady_clock::now ();
+    mTime = std::chrono::steady_clock::now ();
 }
 
 uint256 LedgerProposal::getSigningHash () const
@@ -70,42 +74,17 @@ uint256 LedgerProposal::getSigningHash () const
     return s.getSHA512Half ();
 }
 
-/*
-The "id" is a unique value computed on all fields that contribute to
-the signature, and including the signature. There is one caveat, the
-"last closed ledger" field may be omitted. However, the signer still
-computes the signature as if this field was present. Recipients of
-the proposal need to inject the last closed ledger in order to
-validate the signature. If the last closed ledger is left out, then
-it is considered as all zeroes for the purposes of signing.
-*/
-// Compute a unique identifier for this signed proposal
-uint256 LedgerProposal::computeSuppressionID (
-    uint256 const& proposeHash,
-    uint256 const& previousLedger,
-    std::uint32_t proposeSeq,
-    std::uint32_t closeTime,
-    Blob const& pubKey,
-    Blob const& signature)
+bool LedgerProposal::checkSign (std::string const& signature) const
 {
-
-    Serializer s (512);
-    s.add256 (proposeHash);
-    s.add256 (previousLedger);
-    s.add32 (proposeSeq);
-    s.add32 (closeTime);
-    s.addVL (pubKey);
-    s.addVL (signature);
-
-    return s.getSHA512Half ();
+    return mPublicKey.verifyNodePublic (
+        getSigningHash (),
+        signature,
+        ECDSA::not_strict);
 }
 
-bool LedgerProposal::checkSign (std::string const& signature, uint256 const& signingHash)
-{
-    return mPublicKey.verifyNodePublic (signingHash, signature, ECDSA::not_strict);
-}
-
-bool LedgerProposal::changePosition (uint256 const& newPosition, std::uint32_t closeTime)
+bool LedgerProposal::changePosition (
+    uint256 const& newPosition,
+    std::uint32_t closeTime)
 {
     if (mProposeSeq == seqLeave)
         return false;
@@ -123,18 +102,12 @@ void LedgerProposal::bowOut ()
     mProposeSeq     = seqLeave;
 }
 
-Blob LedgerProposal::sign (void)
+Blob LedgerProposal::sign (RippleAddress const& privateKey)
 {
     Blob ret;
-
-    mPrivateKey.signNodePrivate (getSigningHash (), ret);
-    // XXX If this can fail, find out sooner.
-    // if (!mPrivateKey.signNodePrivate(getSigningHash(), ret))
-    //  throw std::runtime_error("unable to sign proposal");
-
-    mSuppression = computeSuppressionID (mCurrentHash, mPreviousLedger, mProposeSeq,
+    privateKey.signNodePrivate (getSigningHash (), ret);
+    mSuppression = proposalUniqueId (mCurrentHash, mPreviousLedger, mProposeSeq,
         mCloseTime, mPublicKey.getNodePublic (), ret);
-
     return ret;
 }
 
@@ -155,6 +128,26 @@ Json::Value LedgerProposal::getJson () const
         ret[jss::peer_id] = mPublicKey.humanNodePublic ();
 
     return ret;
+}
+
+uint256 proposalUniqueId (
+    uint256 const& proposeHash,
+    uint256 const& previousLedger,
+    std::uint32_t proposeSeq,
+    std::uint32_t closeTime,
+    Blob const& pubKey,
+    Blob const& signature)
+{
+
+    Serializer s (512);
+    s.add256 (proposeHash);
+    s.add256 (previousLedger);
+    s.add32 (proposeSeq);
+    s.add32 (closeTime);
+    s.addVL (pubKey);
+    s.addVL (signature);
+
+    return s.getSHA512Half ();
 }
 
 } // ripple

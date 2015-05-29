@@ -1103,7 +1103,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
-    if (set.has_previousledger () && (set.previousledger ().size () != 32))
+    if (set.previousledger ().size () != 32)
     {
         p_journal_.warning << "Proposal: malformed";
         fee_ = Resource::feeInvalidRequest;
@@ -1112,17 +1112,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     uint256 proposeHash, prevLedger;
     memcpy (proposeHash.begin (), set.currenttxhash ().data (), 32);
+    memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
 
-    if (set.has_previousledger ())
-        memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
-
-    uint256 suppression = LedgerProposal::computeSuppressionID (
+    uint256 suppression = proposalUniqueId (
         proposeHash, prevLedger, set.proposeseq(), set.closetime (),
-            Blob(set.nodepubkey ().begin (), set.nodepubkey ().end ()),
-                Blob(set.signature ().begin (), set.signature ().end ()));
+        Blob(set.nodepubkey ().begin (), set.nodepubkey ().end ()),
+        Blob(set.signature ().begin (), set.signature ().end ()));
 
-    if (! getApp().getHashRouter ().addSuppressionPeer (
-        suppression, id_))
+    if (! getApp().getHashRouter ().addSuppressionPeer (suppression, id_))
     {
         p_journal_.trace << "Proposal: duplicate";
         return;
@@ -1139,25 +1136,27 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     bool isTrusted = getApp().getUNL ().nodeInUNL (signerPublic);
 
-    if (!isTrusted && (sanity_.load() == Sanity::insane))
+    if (!isTrusted)
     {
-        p_journal_.debug << "Proposal: Dropping UNTRUSTED (insane)";
-        return;
-    }
+        if (sanity_.load() == Sanity::insane)
+        {
+            p_journal_.debug << "Proposal: Dropping UNTRUSTED (insane)";
+            return;
+        }
 
-    if (!isTrusted && getApp().getFeeTrack ().isLoadedLocal ())
-    {
-        p_journal_.debug << "Proposal: Dropping UNTRUSTED (load)";
-        return;
+        if (getApp().getFeeTrack ().isLoadedLocal ())
+        {
+            p_journal_.debug << "Proposal: Dropping UNTRUSTED (load)";
+            return;
+        }
     }
 
     p_journal_.trace <<
         "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
 
-    LedgerProposal::pointer proposal = std::make_shared<LedgerProposal> (
-        prevLedger.isNonZero () ? prevLedger : uint256(),
-            set.proposeseq (), proposeHash, set.closetime (),
-                signerPublic, suppression);
+    auto proposal = std::make_shared<LedgerProposal> (
+        prevLedger, set.proposeseq (), proposeHash, set.closetime (),
+            signerPublic, suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose", std::bind(beast::weak_fn(
@@ -1668,7 +1667,6 @@ PeerImp::checkPropose (Job& job,
     std::shared_ptr <protocol::TMProposeSet> const& packet,
         LedgerProposal::pointer proposal)
 {
-    bool sigGood = false;
     bool isTrusted = (job.getType () == jtPROPOSAL_t);
 
     p_journal_.trace <<
@@ -1677,66 +1675,39 @@ PeerImp::checkPropose (Job& job,
     assert (packet);
     protocol::TMProposeSet& set = *packet;
 
-
-    uint256 consensusLCL;
-    if (! set.has_previousledger() || ! isTrusted)
+    if (! cluster() && ! proposal->checkSign (set.signature ()))
     {
-        std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
-        consensusLCL = getApp().getOPs ().getConsensusLCL ();
-    }
-
-    uint256 prevLedger;
-    if (set.has_previousledger ())
-    {
-        // proposal includes a previous ledger
-        p_journal_.trace <<
-            "proposal with previous ledger";
-        memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
-        proposal->setPrevLedger (prevLedger);
-
-        if (! cluster() && !proposal->checkSign (set.signature ()))
-        {
-            p_journal_.warning <<
-                "Proposal with previous ledger fails sig check";
-            charge (Resource::feeInvalidSignature);
-            return;
-        }
-        else
-            sigGood = true;
-    }
-    else
-    {
-        proposal->setPrevLedger (consensusLCL);
-        if (consensusLCL.isNonZero () && proposal->checkSign (set.signature ()))
-        {
-            prevLedger = consensusLCL;
-            sigGood = true;
-        }
-        else
-        {
-            // Could be mismatched prev ledger
-            p_journal_.warning <<
-                "Ledger proposal fails signature check";
-            proposal->setSignature (set.signature ());
-        }
+        p_journal_.warning <<
+            "Proposal fails sig check";
+        charge (Resource::feeInvalidSignature);
+        return;
     }
 
     if (isTrusted)
     {
         getApp().getOPs ().processTrustedProposal (
-            proposal, packet, publicKey_, prevLedger, sigGood);
-    }
-    else if (sigGood && (prevLedger == consensusLCL))
-    {
-        // relay untrusted proposal
-        p_journal_.trace <<
-            "relaying UNTRUSTED proposal";
-        overlay_.relay(set, proposal->getSuppressionID());
+            proposal, packet, publicKey_);
     }
     else
     {
-        p_journal_.debug <<
-            "Not relaying UNTRUSTED proposal";
+        uint256 consensusLCL;
+        {
+            std::lock_guard<Application::MutexType> lock (getApp().getMasterMutex());
+            consensusLCL = getApp().getOPs ().getConsensusLCL ();
+        }
+
+        if (consensusLCL == proposal->getPrevLedger())
+        {
+            // relay untrusted proposal
+            p_journal_.trace <<
+                "relaying UNTRUSTED proposal";
+            overlay_.relay(set, proposal->getSuppressionID());
+        }
+        else
+        {
+            p_journal_.debug <<
+                "Not relaying UNTRUSTED proposal";
+        }
     }
 }
 

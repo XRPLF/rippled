@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/DisputedTx.h>
+#include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>

@@ -101,8 +101,8 @@ public:
         , m_clusterTimer (this)
         , m_ledgerMaster (ledgerMaster)
         , mCloseTimeOffset (0)
-        , mLastCloseProposers (0)
-        , mLastCloseConvergeTime (1000 * LEDGER_IDLE_INTERVAL)
+        , lastCloseProposers_ (0)
+        , lastCloseConvergeTook_ (1000 * LEDGER_IDLE_INTERVAL)
         , mLastCloseTime (0)
         , mLastValidationTime (0)
         , mFetchPack ("FetchPack", 65536, 45, clock,
@@ -278,7 +278,7 @@ public:
     void processTrustedProposal (
         LedgerProposal::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
-        RippleAddress nodePublic, uint256 checkLedger, bool sigGood) override;
+        RippleAddress const &nodePublic) override;
 
     bool recvValidation (
         STValidation::ref val, std::string const& source) override;
@@ -314,7 +314,7 @@ private:
         Ledger::pointer newLedger, bool duringConsensus);
     bool checkLastClosedLedger (
         const Overlay::PeerSequence&, uint256& networkClosed);
-    int beginConsensus (
+    bool beginConsensus (
         uint256 const& networkClosed, Ledger::pointer closingLedger);
     void tryStartConsensus ();
 
@@ -367,14 +367,6 @@ public:
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
-    int getPreviousProposers () override
-    {
-        return mLastCloseProposers;
-    }
-    int getPreviousConvergeTime () override
-    {
-        return mLastCloseConvergeTime;
-    }
     std::uint32_t getLastCloseTime () override
     {
         return mLastCloseTime;
@@ -558,8 +550,6 @@ private:
     bool mValidating;
     bool m_amendmentBlocked;
 
-    boost::posix_time::ptime mConnectTime;
-
     beast::DeadlineTimer m_heartbeatTimer;
     beast::DeadlineTimer m_clusterTimer;
 
@@ -571,10 +561,14 @@ private:
 
     int mCloseTimeOffset;
 
-    // last ledger close
-    int mLastCloseProposers;
-    int mLastCloseConvergeTime;
-    uint256 mLastCloseHash;
+    // The number of proposers who participated in the last ledger close
+    int lastCloseProposers_;
+
+    // How long the last ledger close took, in milliseconds
+    int lastCloseConvergeTook_;
+
+    // The hash of the last closed ledger
+    uint256 lastCloseHash_;
 
     std::uint32_t mLastCloseTime;
     std::uint32_t mLastValidationTime;
@@ -1316,10 +1310,9 @@ bool NetworkOPsImp::checkLastClosedLedger (
         auto current = getApp().getValidations ().getCurrentValidations (
             closedLedger, prevClosedLedger);
 
-        using u256_cvc_pair = std::map<uint256, ValidationCounter>::value_type;
-        for (auto & it: current)
+        for (auto& it: current)
         {
-            ValidationCount& vc = ledgers[it.first];
+            auto& vc = ledgers[it.first];
             vc.trustedValidations += it.second.first;
 
             if (it.second.second > vc.highValidation)
@@ -1327,7 +1320,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         }
     }
 
-    ValidationCount& ourVC = ledgers[closedLedger];
+    auto& ourVC = ledgers[closedLedger];
 
     if (mMode >= omTRACKING)
     {
@@ -1347,7 +1340,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         {
             try
             {
-                ValidationCount& vc = ledgers[peerLedger];
+                auto& vc = ledgers[peerLedger];
 
                 if (vc.nodesUsing == 0 ||
                     peer->getNodePublic ().getNodeID () > vc.highNodeUsing)
@@ -1364,7 +1357,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         }
     }
 
-    ValidationCount bestVC = ledgers[closedLedger];
+    auto bestVC = ledgers[closedLedger];
 
     // 3) Is there a network ledger we'd like to switch to? If so, do we have
     // it?
@@ -1458,16 +1451,15 @@ void NetworkOPsImp::switchLastClosedLedger (
         std::make_shared<Message> (s, protocol::mtSTATUS_CHANGE)));
 }
 
-int NetworkOPsImp::beginConsensus (
+bool NetworkOPsImp::beginConsensus (
     uint256 const& networkClosed, Ledger::pointer closingLedger)
 {
-    m_journal.info
-        << "Consensus time for ledger " << closingLedger->getLedgerSeq ();
-    m_journal.info
-        << " LCL is " << closingLedger->getParentHash ();
+    if (m_journal.info) m_journal.info <<
+        "Consensus time for #" << closingLedger->getLedgerSeq () <<
+        " with LCL " << closingLedger->getParentHash ();
 
-    auto prevLedger
-            = m_ledgerMaster.getLedgerByHash (closingLedger->getParentHash ());
+    auto prevLedger = m_ledgerMaster.getLedgerByHash (
+        closingLedger->getParentHash ());
 
     if (!prevLedger)
     {
@@ -1478,7 +1470,7 @@ int NetworkOPsImp::beginConsensus (
             setMode (omTRACKING);
         }
 
-        return 3;
+        return false;
     }
 
     assert (prevLedger->getHash () == closingLedger->getParentHash ());
@@ -1489,12 +1481,18 @@ int NetworkOPsImp::beginConsensus (
     assert (!mConsensus);
     prevLedger->setImmutable ();
 
-    mConsensus = make_LedgerConsensus (*m_localTX, networkClosed,
-        prevLedger, m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC (),
-            *m_feeVote);
+    mConsensus = make_LedgerConsensus (
+        lastCloseProposers_,
+        lastCloseConvergeTook_,
+        getApp().getInboundTransactions(),
+        *m_localTX,
+        networkClosed,
+        prevLedger,
+        m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC (),
+        *m_feeVote);
 
     m_journal.debug << "Initiating consensus engine";
-    return mConsensus->startup ();
+    return true;
 }
 
 bool NetworkOPsImp::haveConsensusObject ()
@@ -1517,7 +1515,7 @@ bool NetworkOPsImp::haveConsensusObject ()
         {
             m_journal.info << "Beginning consensus due to peer action";
             if ( ((mMode == omTRACKING) || (mMode == omSYNCING)) &&
-                 (getPreviousProposers() >= m_ledgerMaster.getMinValidations()) )
+                 (lastCloseProposers_ >= m_ledgerMaster.getMinValidations()) )
                 setMode (omFULL);
             beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
         }
@@ -1536,8 +1534,7 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 
 void NetworkOPsImp::processTrustedProposal (
     LedgerProposal::pointer proposal,
-    std::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic,
-    uint256 checkLedger, bool sigGood)
+    std::shared_ptr<protocol::TMProposeSet> set, const RippleAddress& nodePublic)
 {
     {
         auto lock = beast::make_lock(getApp().getMasterMutex());
@@ -1555,21 +1552,7 @@ void NetworkOPsImp::processTrustedProposal (
         {
             storeProposal (proposal, nodePublic);
 
-            uint256 consensusLCL = mConsensus->getLCL ();
-
-            if (!set->has_previousledger () && (checkLedger != consensusLCL))
-            {
-                m_journal.warning
-                    << "Have to re-check proposal signature due to "
-                    << "consensus view change";
-                assert (proposal->hasSignature ());
-                proposal->setPrevLedger (consensusLCL);
-
-                if (proposal->checkSign ())
-                    sigGood = true;
-            }
-
-            if (sigGood && (consensusLCL == proposal->getPrevLedger ()))
+            if (mConsensus->getLCL () == proposal->getPrevLedger ())
             {
                 relay = mConsensus->peerPosition (proposal);
                 m_journal.trace
@@ -1685,7 +1668,6 @@ void NetworkOPsImp::pubServer ()
 
 void NetworkOPsImp::setMode (OperatingMode om)
 {
-
     if (om == omCONNECTED)
     {
         if (getApp().getLedgerMaster ().getValidatedLedgerAge () < 60)
@@ -1703,14 +1685,9 @@ void NetworkOPsImp::setMode (OperatingMode om)
     if (mMode == om)
         return;
 
-    if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
-        mConnectTime = boost::posix_time::second_clock::universal_time ();
-
     mMode = om;
 
-    m_journal.stream((om < mMode)
-                     ? beast::Journal::kWarning : beast::Journal::kInfo)
-        << "STATE->" << strOperatingMode ();
+    m_journal.info << "STATE->" << strOperatingMode ();
     pubServer ();
 }
 
@@ -2060,17 +2037,17 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info[jss::peers] = Json::UInt (getApp ().overlay ().size ());
 
     Json::Value lastClose = Json::objectValue;
-    lastClose[jss::proposers] = getApp().getOPs ().getPreviousProposers ();
+    lastClose[jss::proposers] = lastCloseProposers_;
 
     if (human)
     {
         lastClose[jss::converge_time_s] = static_cast<double> (
-            getApp().getOPs ().getPreviousConvergeTime ()) / 1000.0;
+            lastCloseConvergeTook_) / 1000.0;
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (getApp().getOPs ().getPreviousConvergeTime ());
+                Json::Int (lastCloseConvergeTook_);
     }
 
     info[jss::last_close] = lastClose;
@@ -2592,14 +2569,22 @@ void NetworkOPsImp::newLCL (
     int proposers, int convergeTime, uint256 const& ledgerHash)
 {
     assert (convergeTime);
-    mLastCloseProposers = proposers;
-    mLastCloseConvergeTime = convergeTime;
-    mLastCloseHash = ledgerHash;
+    lastCloseProposers_ = proposers;
+    lastCloseConvergeTook_ = convergeTime;
+    lastCloseHash_ = ledgerHash;
 }
 
 std::uint32_t NetworkOPsImp::acceptLedger ()
 {
-    // accept the current transaction tree, return the new ledger's sequence
+    // This code-path is exclusively used when the server is in standalone
+    // mode via `ledger_accept`
+    assert (m_standalone);
+
+    if (!m_standalone)
+        throw std::runtime_error ("Operation only possible in STANDALONE mode.");
+
+    // FIXME Could we improve on this and remove the need for a specialized
+    // API in LedgerConsensus?
     beginConsensus (
         m_ledgerMaster.getClosedLedger ()->getHash (),
         m_ledgerMaster.getCurrentLedger ());
@@ -2612,7 +2597,7 @@ void NetworkOPsImp::storeProposal (
 {
     auto& props = mStoredProposals[peerPublic.getNodeID ()];
 
-    if (props.size () >= (unsigned) (mLastCloseProposers + 10))
+    if (props.size () >= (unsigned) (lastCloseProposers_ + 10))
         props.pop_front ();
 
     props.push_back (proposal);

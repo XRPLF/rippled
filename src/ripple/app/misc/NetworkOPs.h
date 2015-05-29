@@ -212,8 +212,8 @@ public:
 
     // ledger proposal/close functions
     virtual void processTrustedProposal (LedgerProposal::pointer proposal,
-        std::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic,
-            uint256 checkLedger, bool sigGood) = 0;
+        std::shared_ptr<protocol::TMProposeSet> set,
+            RippleAddress const& nodePublic) = 0;
 
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
@@ -255,8 +255,6 @@ public:
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
-    virtual int getPreviousProposers () = 0;
-    virtual int getPreviousConvergeTime () = 0;
     virtual std::uint32_t getLastCloseTime () = 0;
     virtual void setLastCloseTime (std::uint32_t t) = 0;
 
@@ -264,6 +262,13 @@ public:
     virtual Json::Value getServerInfo (bool human, bool admin) = 0;
     virtual void clearLedgerFetch () = 0;
     virtual Json::Value getLedgerFetchInfo () = 0;
+
+    /** Accepts the current transaction tree, return the new ledger's sequence
+
+        This API is only used via RPC with the server in STANDALONE mode and
+        performs a virtual consensus round, with all the transactions we are
+        proposing being accepted.
+    */
     virtual std::uint32_t acceptLedger () = 0;
 
     using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;

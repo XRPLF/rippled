@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/impl/LedgerCleaner.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/JsonFields.h>

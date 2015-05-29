@@ -20,11 +20,11 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
+#include <ripple/app/ledger/impl/LedgerCleaner.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>

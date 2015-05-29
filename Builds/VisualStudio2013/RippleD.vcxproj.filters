@@ -2115,24 +2115,39 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\DirectoryEntryIterator.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\DisputedTx.cpp">
-      <Filter>ripple\app\ledger</Filter>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\DisputedTx.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\DisputedTx.h">
-      <Filter>ripple\app\ledger</Filter>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
+      <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedgers.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.h">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensus.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\InboundLedger.cpp">
-      <Filter>ripple\app\ledger</Filter>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\InboundLedgers.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedgers.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2142,15 +2157,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerCleaner.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerConsensus.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2172,9 +2178,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerMaster.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2184,9 +2187,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerTiming.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>

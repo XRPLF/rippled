@@ -169,7 +169,7 @@ message TMProposeSet
     required bytes nodePubKey           = 3;
     required uint32 closeTime           = 4;
     required bytes signature            = 5;    // signature of above fields
-    optional bytes previousledger       = 6;
+    required bytes previousledger       = 6;
     optional bool checkedSignature      = 7;    // node vouches signature is correct
     repeated bytes addedTransactions    = 10;   // not required if number is large
     repeated bytes removedTransactions  = 11;   // not required if number is large
