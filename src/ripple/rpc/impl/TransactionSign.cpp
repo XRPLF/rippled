@@ -132,16 +132,16 @@ std::uint32_t TxnSignApiFacade::getSeq () const
     return accountState_->sle().getFieldU32(sfSequence);
 }
 
-Transaction::pointer TxnSignApiFacade::processTransaction (
+void TxnSignApiFacade::processTransaction (
     Transaction::ref tpTrans,
     bool bAdmin,
     bool bLocal,
     NetworkOPs::FailHard failType)
 {
     if (!netOPs_) // Unit testing.
-        return tpTrans;
+        return;
 
-    return netOPs_->processTransaction (tpTrans, bAdmin, bLocal, failType);
+    netOPs_->processTransaction (tpTrans, bAdmin, bLocal, failType);
 }
 
 bool TxnSignApiFacade::findPathsForOneIssuer (
