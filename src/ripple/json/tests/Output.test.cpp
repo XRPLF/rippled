@@ -36,10 +36,6 @@ struct Output_test : ripple::RPC::TestOutputSuite
 
         // Compare with the original version.
         auto expected = Json::FastWriter().write (value);
-        expected.resize (expected.size() - 1);
-        // For some reason, the FastWriter puts a carriage return on the end of
-        // every piece of Json it outputs.
-
         expectResult (expected);
         expectResult (valueDesc);
         expectResult (jsonAsString (value));

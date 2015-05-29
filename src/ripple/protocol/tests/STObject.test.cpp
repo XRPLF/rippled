@@ -91,7 +91,7 @@ public:
     {
         testcase ("parse json array");
         std::string const json (
-            "{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}\n");
+            "{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}");
 
         Json::Value jsonObject;
         bool parsedOK (parseJSONString(json, jsonObject));
