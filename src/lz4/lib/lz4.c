@@ -268,7 +268,8 @@ static void LZ4_copy4(void* dstPtr, const void* srcPtr)
 
 static void LZ4_copy8(void* dstPtr, const void* srcPtr)
 {
-#if GCC_VERSION!=409  /* disabled on GCC 4.9, as it generates invalid opcode (crash) */
+/* disabled on GCC 4.9, 5.0+ as it generates invalid opcode (crash) */
+#if (GCC_VERSION != 409) && (GCC_VERSION < 500)
     if (LZ4_UNALIGNED_ACCESS)
     {
         if (LZ4_64bits())
