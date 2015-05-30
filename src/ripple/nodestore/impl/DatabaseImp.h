@@ -45,8 +45,6 @@ private:
     Scheduler& m_scheduler;
     // Persistent key/value storage.
     std::unique_ptr <Backend> m_backend;
-    // Larger key/value storage, but not necessarily persistent.
-    std::unique_ptr <Backend> m_fastBackend;
 protected:
     // Positive cache
     TaggedCache <uint256, NodeObject> m_cache;
@@ -67,12 +65,10 @@ public:
                  Scheduler& scheduler,
                  int readThreads,
                  std::unique_ptr <Backend> backend,
-                 std::unique_ptr <Backend> fastBackend,
                  beast::Journal journal)
         : m_journal (journal)
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
-        , m_fastBackend (std::move (fastBackend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
             get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
         , m_negCache ("NodeStore", get_seconds_clock (),
@@ -116,11 +112,6 @@ public:
         {
             m_backend->close();
             m_backend = nullptr;
-        }
-        if (m_fastBackend)
-        {
-            m_fastBackend->close();
-            m_fastBackend = nullptr;
         }
     }
 
@@ -204,19 +195,7 @@ public:
 
         // Check the database(s).
 
-        bool foundInFastBackend = false;
         report.wentToDisk = true;
-
-        // Check the fast backend database if we have one
-        //
-        if (m_fastBackend != nullptr)
-        {
-            obj = fetchInternal (*m_fastBackend, hash);
-
-            // If we found the object, avoid storing it again later.
-            if (obj != nullptr)
-                foundInFastBackend = true;
-        }
 
         // Are we still without an object?
         //
@@ -246,23 +225,10 @@ public:
             //
             m_cache.canonicalize (hash, obj);
 
-            if (! foundInFastBackend)
-            {
-                // If we have a fast back end, store it there for later.
-                //
-                if (m_fastBackend != nullptr)
-                {
-                    m_fastBackend->store (obj);
-                    ++m_storeCount;
-                    if (obj)
-                        m_storeSize += obj->getData().size();
-                }
-
-                // Since this was a 'hard' fetch, we will log it.
-                //
-                if (m_journal.trace) m_journal.trace <<
-                    "HOS: " << hash << " fetch: in db";
-            }
+            // Since this was a 'hard' fetch, we will log it.
+            //
+            if (m_journal.trace) m_journal.trace <<
+                "HOS: " << hash << " fetch: in db";
         }
 
         return obj;
@@ -334,14 +300,6 @@ public:
             m_storeSize += object->getData().size();
 
         m_negCache.erase (hash);
-
-        if (m_fastBackend)
-        {
-            m_fastBackend->store (object);
-            ++m_storeCount;
-            if (object)
-                m_storeSize += object->getData().size();
-        }
     }
 
     //------------------------------------------------------------------------------
