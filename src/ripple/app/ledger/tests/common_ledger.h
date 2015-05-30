@@ -47,6 +47,7 @@ struct TestAccount
     RippleAddress pk;
     RippleAddress sk;
     unsigned sequence;
+    std::string pk_human;
 };
 
 struct TestJson
@@ -117,7 +118,8 @@ private:
 // Helper function to parse a transaction in Json, sign it with account,
 // and return it as a STTx
 STTx
-parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign = true);
+parseTransaction (TestAccount const& account, Json::Value const& tx_json,
+    bool sign = true);
 
 // Helper function to apply a transaction to a ledger
 void
@@ -134,7 +136,7 @@ TestAccount
 createAccount(std::string const& passphrase, KeyType keyType);
 
 TestAccount
-createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+createAndFundAccount(TestAccount& from, std::string const& passphrase,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer const& ledger, bool sign = true);
 
@@ -200,14 +202,30 @@ pay(TestAccount& from, TestAccount const& to,
             std::string const& currency, std::string const& amount,
             Ledger::pointer const& ledger, bool sign = true);
 
+Json::Value
+getPaymentJsonWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& currency, std::string const& amount,
+    Ledger::pointer const& ledger);
+
+Json::Value
+getPaymentJsonWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& srcCurrency, std::string const& dstCurrency,
+    std::string const& amount, Ledger::pointer const& ledger);
+
 STTx
-getPaymentTxWithPath(TestAccount& from, TestAccount const& to,
+payWithPath(TestAccount& from, TestAccount const& to,
     std::string const& currency, std::string const& amount,
     Ledger::pointer const& ledger, bool sign = true);
 
 STTx
 payWithPath(TestAccount& from, TestAccount const& to,
     std::string const& currency, std::string const& amount,
+    Amount const& send_max, Ledger::pointer const& ledger, bool sign = true);
+
+STTx
+payWithPath (TestAccount& from, TestAccount const& to,
+    std::string const& srcCurrency, std::string const& dstCurrency,
+    std::string const& amount, std::uint32_t send_max_drops,
     Ledger::pointer const& ledger, bool sign = true);
 
 STTx
@@ -220,6 +238,9 @@ payWithPath(TestAccount& from, TestAccount const& to,
 void
 createOffer(TestAccount& from, Amount const& in, Amount const& out,
             Ledger::pointer ledger, bool sign = true);
+void
+createOffer (TestAccount& from,std::uint64_t in_drops, Amount const& out,
+    Ledger::pointer ledger, bool sign = true);
 
 void
 createOfferWithFlags(TestAccount& from, Amount const& in, Amount const& out,
@@ -237,10 +258,15 @@ trust(TestAccount& from, TestAccount const& issuer,
                 Ledger::pointer const& ledger, bool sign = true);
 
 void
+trust (TestAccount& from, TestAccount const& issuer,
+    std::string const& currency, double amount, std::uint32_t quality_in,
+    std::uint32_t quality_out, Ledger::pointer const& ledger, bool sign = true);
+
+void
 close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL);
 
-Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
-    TestAccount const& dest, std::vector<Currency> srcCurrencies, 
+Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
+    TestAccount const& dest, std::vector<Currency> srcCurrencies,
     Amount const& dstAmount, beast::abstract_ostream& log,
     boost::optional<Json::Value> contextPaths = boost::none);
 
@@ -255,6 +281,10 @@ struct OfferPathNode
 Json::Value pathNode (TestAccount const& acc);
 
 Json::Value pathNode (OfferPathNode const& offer);
+
+void
+setTransferRate (TestAccount& account, Ledger::pointer const& ledger,
+    std::uint32_t const rate);
 
 inline void createPathHelper (Json::Value& result)
 {
@@ -279,7 +309,6 @@ Json::Value createPath (First&& first,
     return result;
 }
 
-
 SLE::pointer
 get_ledger_entry_ripple_state(Ledger::pointer ledger,
     RippleAddress account1, RippleAddress account2,
@@ -287,6 +316,11 @@ get_ledger_entry_ripple_state(Ledger::pointer ledger,
 
 void
 verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount);
+
+void
+verifyLimit (Ledger::pointer ledger, TestAccount const& account,
+    Amount const& amount, std::uint32_t quality_in = 0,
+        std::uint32_t quality_out = 0);
 
 } // test
 } // ripple

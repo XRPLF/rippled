@@ -1736,7 +1736,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
+    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
