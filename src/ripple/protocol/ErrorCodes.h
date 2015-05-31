@@ -260,7 +260,10 @@ inline Json::Value expected_field_error (
 /** Returns `true` if the json contains an rpc error specification. */
 bool contains_error (Json::Value const& json);
 
-}
+} // RPC
+
+/** Returns a single string with the contents of an RPC error. */
+std::string rpcErrorString(Json::Value const& jv);
 
 }
 
