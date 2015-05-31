@@ -19,10 +19,11 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/ledger/Consensus.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -95,17 +96,12 @@ public:
             deprecatedLogs().journal("FeeVote")))
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
-        , mProposing (false)
-        , mValidating (false)
         , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
+        , mConsensus (make_Consensus (*this))
         , m_ledgerMaster (ledgerMaster)
         , mCloseTimeOffset (0)
-        , lastCloseProposers_ (0)
-        , lastCloseConvergeTook_ (1000 * LEDGER_IDLE_INTERVAL)
-        , mLastCloseTime (0)
-        , mLastValidationTime (0)
         , mFetchPack ("FetchPack", 65536, 45, clock,
             deprecatedLogs().journal("TaggedCache"))
         , mFetchSeq (0)
@@ -129,8 +125,6 @@ private:
     std::uint32_t getCloseTimeNC (int& offset) const;
 
 public:
-    // Use *only* to timestamp our own validation.
-    std::uint32_t getValidationTimeNC () override;
     void closeTimeOffset (int) override;
 
     /** On return the offset param holds the System time offset in seconds.
@@ -191,15 +185,6 @@ public:
         std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         return m_ledgerMaster.getFullValidatedRange (minVal, maxVal);
-    }
-
-    STValidation::ref getLastValidation () override
-    {
-        return mLastValidation;
-    }
-    void setLastValidation (STValidation::ref v) override
-    {
-        mLastValidation = v;
     }
 
     //
@@ -331,8 +316,6 @@ public:
     */
     void setStateTimer () override;
 
-    void newLCL (
-        int proposers, int convergeTime, uint256 const& ledgerHash) override;
     void needNetworkLedger () override
     {
         mNeedNetworkLedger = true;
@@ -349,32 +332,15 @@ public:
     {
         return !mNeedNetworkLedger && (mMode == omFULL);
     }
-    void setProposing (bool p, bool v) override
-    {
-        mProposing = p;
-        mValidating = v;
-    }
-    bool isProposing () override
-    {
-        return mProposing;
-    }
-    bool isValidating () override
-    {
-        return mValidating;
-    }
     bool isAmendmentBlocked () override
     {
         return m_amendmentBlocked;
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
-    std::uint32_t getLastCloseTime () override
-    {
-        return mLastCloseTime;
-    }
     void setLastCloseTime (std::uint32_t t) override
     {
-        mLastCloseTime = t;
+        mConsensus->setLastCloseTime (t);
     }
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
@@ -547,33 +513,19 @@ private:
     std::atomic<OperatingMode> mMode;
 
     std::atomic <bool> mNeedNetworkLedger;
-    bool mProposing;
-    bool mValidating;
     bool m_amendmentBlocked;
 
     beast::DeadlineTimer m_heartbeatTimer;
     beast::DeadlineTimer m_clusterTimer;
 
-    std::shared_ptr<LedgerConsensus> mConsensus;
+    std::unique_ptr<Consensus> mConsensus;
+    std::shared_ptr<LedgerConsensus> mLedgerConsensus;
     NetworkOPs::Proposals mStoredProposals;
 
     LedgerMaster& m_ledgerMaster;
     InboundLedger::pointer mAcquiringLedger;
 
     int mCloseTimeOffset;
-
-    // The number of proposers who participated in the last ledger close
-    int lastCloseProposers_;
-
-    // How long the last ledger close took, in milliseconds
-    int lastCloseConvergeTook_;
-
-    // The hash of the last closed ledger
-    uint256 lastCloseHash_;
-
-    std::uint32_t mLastCloseTime;
-    std::uint32_t mLastValidationTime;
-    STValidation::pointer       mLastValidation;
 
     // Recent positions taken
     std::map<uint256, std::pair<int, std::shared_ptr<SHAMap>>> mRecentPositions;
@@ -689,11 +641,11 @@ void NetworkOPsImp::processHeartbeatTimer ()
         else if (mMode == omCONNECTED)
             setMode (omCONNECTED);
 
-        if (!mConsensus)
+        if (!mLedgerConsensus)
             tryStartConsensus ();
 
-        if (mConsensus)
-            mConsensus->timerEntry ();
+        if (mLedgerConsensus)
+            mLedgerConsensus->timerEntry ();
     }
 
     setHeartbeatTimer ();
@@ -753,10 +705,10 @@ std::string NetworkOPsImp::strOperatingMode () const
 
     if (mMode == omFULL)
     {
-        if (mProposing)
+        if (mConsensus->isProposing ())
             return "proposing";
 
-        if (mValidating)
+        if (mConsensus->isValidating ())
             return "validating";
     }
 
@@ -793,17 +745,6 @@ std::uint32_t NetworkOPsImp::getCloseTimeNC (int& offset) const
 {
     return iToSeconds (getNetworkTimePT (offset) +
                        boost::posix_time::seconds (mCloseTimeOffset));
-}
-
-std::uint32_t NetworkOPsImp::getValidationTimeNC ()
-{
-    std::uint32_t vt = getNetworkTimeNC ();
-
-    if (vt <= mLastValidationTime)
-        vt = mLastValidationTime + 1;
-
-    mLastValidationTime = vt;
-    return vt;
 }
 
 void NetworkOPsImp::closeTimeOffset (int offset)
@@ -1282,7 +1223,7 @@ void NetworkOPsImp::tryStartConsensus ()
         }
     }
 
-    if ((!mConsensus) && (mMode != omDISCONNECTED))
+    if ((!mLedgerConsensus) && (mMode != omDISCONNECTED))
         beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
 }
 
@@ -1479,12 +1420,10 @@ bool NetworkOPsImp::beginConsensus (
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
     // Create a consensus object to get consensus on this ledger
-    assert (!mConsensus);
+    assert (!mLedgerConsensus);
     prevLedger->setImmutable ();
 
-    mConsensus = make_LedgerConsensus (
-        lastCloseProposers_,
-        lastCloseConvergeTook_,
+    mLedgerConsensus = mConsensus->startRound (
         getApp().getInboundTransactions(),
         *m_localTX,
         networkClosed,
@@ -1498,7 +1437,7 @@ bool NetworkOPsImp::beginConsensus (
 
 bool NetworkOPsImp::haveConsensusObject ()
 {
-    if (mConsensus != nullptr)
+    if (mLedgerConsensus != nullptr)
         return true;
 
     if ((mMode == omFULL) || (mMode == omTRACKING))
@@ -1516,13 +1455,13 @@ bool NetworkOPsImp::haveConsensusObject ()
         {
             m_journal.info << "Beginning consensus due to peer action";
             if ( ((mMode == omTRACKING) || (mMode == omSYNCING)) &&
-                 (lastCloseProposers_ >= m_ledgerMaster.getMinValidations()) )
+                 (mConsensus->getLastCloseProposers() >= m_ledgerMaster.getMinValidations()) )
                 setMode (omFULL);
             beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
         }
     }
 
-    return mConsensus != nullptr;
+    return mLedgerConsensus != nullptr;
 }
 
 uint256 NetworkOPsImp::getConsensusLCL ()
@@ -1530,7 +1469,7 @@ uint256 NetworkOPsImp::getConsensusLCL ()
     if (!haveConsensusObject ())
         return uint256 ();
 
-    return mConsensus->getLCL ();
+    return mLedgerConsensus->getLCL ();
 }
 
 void NetworkOPsImp::processTrustedProposal (
@@ -1553,9 +1492,9 @@ void NetworkOPsImp::processTrustedProposal (
         {
             storeProposal (proposal, nodePublic);
 
-            if (mConsensus->getLCL () == proposal->getPrevLedger ())
+            if (mLedgerConsensus->getLCL () == proposal->getPrevLedger ())
             {
-                relay = mConsensus->peerPosition (proposal);
+                relay = mLedgerConsensus->peerPosition (proposal);
                 m_journal.trace
                     << "Proposal processing finished, relay=" << relay;
             }
@@ -1597,7 +1536,7 @@ NetworkOPsImp::mapComplete (uint256 const& hash,
     std::lock_guard<Application::MutexType> lock(getApp().getMasterMutex());
 
     if (haveConsensusObject ())
-        mConsensus->mapComplete (hash, map, true);
+        mLedgerConsensus->mapComplete (hash, map, true);
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
@@ -1616,7 +1555,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
         }
     }
 
-    mConsensus = std::shared_ptr<LedgerConsensus> ();
+    mLedgerConsensus = std::shared_ptr<LedgerConsensus> ();
 }
 
 void NetworkOPsImp::consensusViewChange ()
@@ -1978,8 +1917,8 @@ bool NetworkOPsImp::recvValidation (
 
 Json::Value NetworkOPsImp::getConsensusInfo ()
 {
-    if (mConsensus)
-        return mConsensus->getJson (true);
+    if (mLedgerConsensus)
+        return mLedgerConsensus->getJson (true);
 
     Json::Value info = Json::objectValue;
     info[jss::consensus] = "none";
@@ -2038,23 +1977,23 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info[jss::peers] = Json::UInt (getApp ().overlay ().size ());
 
     Json::Value lastClose = Json::objectValue;
-    lastClose[jss::proposers] = lastCloseProposers_;
+    lastClose[jss::proposers] = mConsensus->getLastCloseProposers();
 
     if (human)
     {
         lastClose[jss::converge_time_s] = static_cast<double> (
-            lastCloseConvergeTook_) / 1000.0;
+            mConsensus->getLastCloseDuration()) / 1000.0;
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (lastCloseConvergeTook_);
+                Json::Int (mConsensus->getLastCloseDuration());
     }
 
     info[jss::last_close] = lastClose;
 
-    //  if (mConsensus)
-    //      info[jss::consensus] = mConsensus->getJson();
+    //  if (mLedgerConsensus)
+    //      info[jss::consensus] = mLedgerConsensus->getJson();
 
     if (admin)
         info[jss::load] = m_job_queue.getJson ();
@@ -2566,15 +2505,6 @@ bool NetworkOPsImp::unsubBook (std::uint64_t uSeq, Book const& book)
     return true;
 }
 
-void NetworkOPsImp::newLCL (
-    int proposers, int convergeTime, uint256 const& ledgerHash)
-{
-    assert (convergeTime);
-    lastCloseProposers_ = proposers;
-    lastCloseConvergeTook_ = convergeTime;
-    lastCloseHash_ = ledgerHash;
-}
-
 std::uint32_t NetworkOPsImp::acceptLedger ()
 {
     // This code-path is exclusively used when the server is in standalone
@@ -2589,7 +2519,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
     beginConsensus (
         m_ledgerMaster.getClosedLedger ()->getHash (),
         m_ledgerMaster.getCurrentLedger ());
-    mConsensus->simulate ();
+    mLedgerConsensus->simulate ();
     return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
 }
 
@@ -2598,7 +2528,7 @@ void NetworkOPsImp::storeProposal (
 {
     auto& props = mStoredProposals[peerPublic.getNodeID ()];
 
-    if (props.size () >= (unsigned) (lastCloseProposers_ + 10))
+    if (props.size () >= (unsigned) (mConsensus->getLastCloseProposers () + 10))
         props.pop_front ();
 
     props.push_back (proposal);

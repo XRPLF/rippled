@@ -34,6 +34,7 @@
 #include <ripple/app/ledger/OrderBookIterator.cpp>
 #include <ripple/app/ledger/TransactionStateSF.cpp>
 
+#include <ripple/app/ledger/impl/Consensus.cpp>
 #include <ripple/app/ledger/impl/DisputedTx.cpp>
 #include <ripple/app/ledger/impl/InboundLedger.cpp>
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>

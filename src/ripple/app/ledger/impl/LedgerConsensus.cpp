@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -105,6 +106,7 @@ public:
         @param feeVote Our desired fee levels and voting logic.
     */
     LedgerConsensusImp (
+            Consensus& consensus,
             int previousProposers,
             int previousConvergeTime,
             InboundTransactions& inboundTransactions,
@@ -113,7 +115,8 @@ public:
             Ledger::ref previousLedger,
             std::uint32_t closeTime,
             FeeVote& feeVote)
-        : inboundTransactions_ (inboundTransactions)
+        : consensus_ (consensus)
+        , inboundTransactions_ (inboundTransactions)
         , m_localTX (localtx)
         , m_feeVote (feeVote)
         , state_ (State::open)
@@ -170,7 +173,7 @@ public:
         {
             // If we were not handed the correct LCL, then set our state
             // to not proposing.
-            getApp().getOPs ().setProposing (false, false);
+            consensus_.setProposing (false, false);
             handleLCL (mPrevLedgerHash);
 
             if (!mHaveCorrectLCL)
@@ -184,7 +187,7 @@ public:
             }
         }
         else  // update the network status table as to whether we're proposing/validating
-            getApp().getOPs ().setProposing (mProposing, mValidating);
+            consensus_.setProposing (mProposing, mValidating);
     }
 
     /**
@@ -670,7 +673,7 @@ public:
         {
             // Use the time we saw the last ledger close
             sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
-                - getApp().getOPs ().getLastCloseTime ());
+                - consensus_.getLastCloseTime ());
             idleInterval = LEDGER_IDLE_INTERVAL;
         }
 
@@ -977,11 +980,8 @@ private:
         if (mValidating && !mConsensusFail)
         {
             // Build validation
-            uint256 signingHash;
-            STValidation::pointer v =
-                std::make_shared<STValidation>
-                (newLCLHash, getApp().getOPs ().getValidationTimeNC ()
-                , mValPublic, mProposing);
+            auto v = std::make_shared<STValidation> (newLCLHash,
+                consensus_.validationTimestamp (), mValPublic, mProposing);
             v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
             addLoad(v);  // Our network load
 
@@ -993,12 +993,12 @@ private:
                 getApp().getAmendmentTable ().doValidation (newLCL, *v);
             }
 
-            signingHash = v->sign (mValPrivate);
+            uint256 signingHash = v->sign (mValPrivate);
             v->setTrusted ();
             // suppress it if we receive it - FIXME: wrong suppression
             getApp().getHashRouter ().addSuppression (signingHash);
             getApp().getValidations ().addValidation (v, "local");
-            getApp().getOPs ().setLastValidation (v);
+            consensus_.setLastValidation (v);
             Blob validation = v->getSigned ();
             protocol::TMValidation val;
             val.set_validation (&validation[0], validation.size ());
@@ -1616,7 +1616,7 @@ private:
         mConsensusStartTime
             = std::chrono::steady_clock::now ();
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
-        getApp().getOPs ().setLastCloseTime (mCloseTime);
+        consensus_.setLastCloseTime (mCloseTime);
         statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
         getApp().getLedgerMaster().applyHeldTransactions ();
         takeInitialPosition (*getApp().getLedgerMaster ().getCurrentLedger ());
@@ -1637,25 +1637,22 @@ private:
             return;
         }
 
-        STValidation::pointer lastVal
-            = getApp().getOPs ().getLastValidation ();
+        auto lastValidation = consensus_.getLastValidation ();
 
-        if (lastVal)
+        if (lastValidation)
         {
-            if (lastVal->getFieldU32 (sfLedgerSequence)
+            if (lastValidation->getFieldU32 (sfLedgerSequence)
                 == mPreviousLedger->getLedgerSeq ())
             {
                 return;
             }
-            if (lastVal->getLedgerHash () == mPrevLedgerHash)
+            if (lastValidation->getLedgerHash () == mPrevLedgerHash)
                 return;
         }
 
         uint256 signingHash;
-        STValidation::pointer v
-            = std::make_shared<STValidation>
-            (mPreviousLedger->getHash ()
-            , getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
+        auto v = std::make_shared<STValidation> (mPreviousLedger->getHash (),
+            consensus_.validationTimestamp (), mValPublic, false);
         addLoad(v);
         v->setTrusted ();
         signingHash = v->sign (mValPrivate);
@@ -1665,12 +1662,11 @@ private:
         Blob validation = v->getSigned ();
         protocol::TMValidation val;
         val.set_validation (&validation[0], validation.size ());
-        getApp().getOPs ().setLastValidation (v);
+        consensus_.setLastValidation (v);
         WriteLog (lsWARNING, LedgerConsensus) << "Sending partial validation";
     }
 
-    /** We have a new LCL and must accept it
-    */
+    /** We have a new LCL and must accept it */
     void beginAccept (bool synchronous)
     {
         std::shared_ptr<SHAMap> consensusSet
@@ -1684,8 +1680,7 @@ private:
             return;
         }
 
-        getApp().getOPs ().newLCL
-            (mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
+        consensus_.newLCL (mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
 
         if (synchronous)
             accept (consensusSet);
@@ -1713,6 +1708,7 @@ private:
     }
 
 private:
+    Consensus& consensus_;
     InboundTransactions& inboundTransactions_;
     LocalTxs& m_localTX;
     FeeVote& m_feeVote;
@@ -1765,12 +1761,12 @@ LedgerConsensus::~LedgerConsensus ()
 }
 
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (int previousProposers, int previousConvergeTime,
-    InboundTransactions& inboundTransactions, LocalTxs& localtx,
-    LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
+make_LedgerConsensus (Consensus& consensus, int previousProposers,
+    int previousConvergeTime, InboundTransactions& inboundTransactions,
+    LocalTxs& localtx, LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
     std::uint32_t closeTime, FeeVote& feeVote)
 {
-    return std::make_shared <LedgerConsensusImp> (previousProposers,
+    return std::make_shared <LedgerConsensusImp> (consensus, previousProposers,
         previousConvergeTime, inboundTransactions, localtx, prevLCLHash,
         previousLedger, closeTime, feeVote);
 }
