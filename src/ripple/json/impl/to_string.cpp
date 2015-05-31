@@ -29,4 +29,9 @@ std::string to_string (Value const& value)
     return FastWriter ().write (value);
 }
 
+std::string pretty (Value const& value)
+{
+    return StyledWriter().write (value);
+}
+
 } // namespace Json

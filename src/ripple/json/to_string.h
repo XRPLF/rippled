@@ -30,6 +30,9 @@ class Value;
 /** Writes a Json::Value to an std::string. */
 std::string to_string (Value const&);
 
+/** Writes a Json::Value to an std::string. */
+std::string pretty (Value const&);
+
 /** Output using the StyledStreamWriter. @see Json::operator>>(). */
 std::ostream& operator<< (std::ostream&, const Value& root);
 
