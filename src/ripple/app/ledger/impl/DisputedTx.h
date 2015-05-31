@@ -38,8 +38,6 @@ namespace ripple {
 class DisputedTx
 {
 public:
-    using pointer = std::shared_ptr <DisputedTx>;
-
     // VFALCO `Blob` is a poor choice of parameter
     DisputedTx (uint256 const& txID,
             Blob const& tx, bool ourVote)
