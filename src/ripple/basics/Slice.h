@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <beast/cxx14/type_traits.h> // <type_traits>
@@ -141,6 +142,9 @@ make_Slice (std::basic_string<char, Traits, Alloc> const& s)
 {
     return Slice(s.data(), s.size());
 }
+
+std::string
+strHex (Slice const& slice);
 
 } // ripple
 

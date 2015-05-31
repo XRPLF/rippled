@@ -64,22 +64,18 @@ charUnHex (char c)
 
 // NIKB TODO cleanup this function and reduce the need for the many overloads
 //           it has in various places.
-template<class Iterator>
-std::string strHex (Iterator first, int iSize)
+template<class FwdIt>
+std::string strHex (FwdIt first, int size)
 {
-    std::string strDst;
-
-    strDst.resize (iSize * 2);
-
-    for (int i = 0; i < iSize; i++)
+    std::string s;
+    s.resize (size * 2);
+    for (int i = 0; i < size; i++)
     {
         unsigned char c = *first++;
-
-        strDst[i * 2]     = charHex (c >> 4);
-        strDst[i * 2 + 1] = charHex (c & 15);
+        s[i * 2]     = charHex (c >> 4);
+        s[i * 2 + 1] = charHex (c & 15);
     }
-
-    return strDst;
+    return s;
 }
 
 }
