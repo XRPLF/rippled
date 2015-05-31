@@ -20,8 +20,9 @@
 #ifndef RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
 #define RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
 
-#include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -32,22 +33,22 @@ namespace ripple {
 class LocalTxs
 {
 public:
-
     virtual ~LocalTxs () = default;
-
-    static std::unique_ptr<LocalTxs> New ();
 
     // Add a new local transaction
     virtual void push_back (LedgerIndex index, STTx::ref txn) = 0;
 
-    // Apply local transactions to a new open ledger
-    virtual void apply (TransactionEngine&) = 0;
+    // Return the set of local transactions to a new open ledger
+    virtual CanonicalTXSet getTxSet () = 0;
 
     // Remove obsolete transactions based on a new fully-valid ledger
     virtual void sweep (Ledger::ref validLedger) = 0;
 
     virtual std::size_t size () = 0;
 };
+
+std::unique_ptr<LocalTxs>
+make_LocalTxs ();
 
 } // ripple
 

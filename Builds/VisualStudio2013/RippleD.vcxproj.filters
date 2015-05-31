@@ -2097,11 +2097,20 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\BookListeners.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\Consensus.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
+      <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\DisputedTx.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
@@ -2121,9 +2130,12 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.h">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensus.cpp">
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.h">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
