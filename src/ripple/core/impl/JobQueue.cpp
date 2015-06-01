@@ -40,13 +40,16 @@ public:
     using JobSet = std::set <Job>;
     using JobDataMap = std::map <JobType, JobTypeData>;
     using ScopedLock = std::lock_guard <std::mutex>;
+    using ThreadIdMap = std::map <std::thread::id, Job*>;
 
     beast::Journal m_journal;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::uint64_t m_lastJob;
     JobSet m_jobSet;
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
+
+    ThreadIdMap m_threadIds;
 
     // The number of jobs currently in processTask()
     int m_processCount;
@@ -100,7 +103,7 @@ public:
         }
     }
 
-    ~JobQueueImp ()
+    ~JobQueueImp () override
     {
         // Must unhook before destroying
         hook = beast::insight::Hook ();
@@ -113,7 +116,7 @@ public:
     }
 
     void addJob (JobType type, std::string const& name,
-        boost::function <void (Job&)> const& jobFunc)
+        boost::function <void (Job&)> const& jobFunc) override
     {
         assert (type != jtINVALID);
 
@@ -168,7 +171,7 @@ public:
         }
     }
 
-    int getJobCount (JobType t)
+    int getJobCount (JobType t) const override
     {
         ScopedLock lock (m_mutex);
 
@@ -179,7 +182,7 @@ public:
             : c->second.waiting;
     }
 
-    int getJobCountTotal (JobType t)
+    int getJobCountTotal (JobType t) const override
     {
         ScopedLock lock (m_mutex);
 
@@ -190,7 +193,7 @@ public:
             : (c->second.waiting + c->second.running);
     }
 
-    int getJobCountGE (JobType t)
+    int getJobCountGE (JobType t) const override
     {
         // return the number of jobs at this priority level or greater
         int ret = 0;
@@ -208,7 +211,7 @@ public:
 
     // shut down the job queue without completing pending jobs
     //
-    void shutdown ()
+    void shutdown () override
     {
         m_journal.info <<  "Job queue shutting down";
 
@@ -216,7 +219,7 @@ public:
     }
 
     // set the number of thread serving the job queue to precisely this number
-    void setThreadCount (int c, bool const standaloneMode)
+    void setThreadCount (int c, bool const standaloneMode) override
     {
         if (standaloneMode)
         {
@@ -234,8 +237,8 @@ public:
         m_workers.setNumberOfThreads (c);
     }
 
-
-    LoadEvent::pointer getLoadEvent (JobType t, std::string const& name)
+    LoadEvent::pointer getLoadEvent (
+        JobType t, std::string const& name) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
@@ -247,7 +250,8 @@ public:
             std::ref (iter-> second.load ()), name, true);
     }
 
-    LoadEvent::autoptr getLoadEventAP (JobType t, std::string const& name)
+    LoadEvent::autoptr getLoadEventAP (
+        JobType t, std::string const& name) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
@@ -260,14 +264,15 @@ public:
     }
 
     void addLoadEvents (JobType t,
-        int count, std::chrono::milliseconds elapsed)
+        int count, std::chrono::milliseconds elapsed) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
         iter->second.load().addSamples (count, elapsed);
     }
 
-    bool isOverloaded ()
+    // Cannot be const because LoadMonitor has no const methods.
+    bool isOverloaded () override
     {
         int count = 0;
 
@@ -280,7 +285,8 @@ public:
         return count > 0;
     }
 
-    Json::Value getJson (int)
+    // Cannot be const because LoadMonitor has no const methods.
+    Json::Value getJson (int) override
     {
         Json::Value ret (Json::objectValue);
 
@@ -334,6 +340,14 @@ public:
         ret["job_types"] = priorities;
 
         return ret;
+    }
+
+    Job* getJobForThread (std::thread::id const& id) const override
+    {
+        auto tid = (id == std::thread::id()) ? std::this_thread::get_id() : id;
+
+        auto i = m_threadIds.find (tid);
+        return (i == m_threadIds.end()) ? nullptr : i->second;
     }
 
 private:
@@ -430,7 +444,7 @@ private:
     // Invariants:
     //  The calling thread owns the JobLock
     //
-    void getNextJob (Job& job, ScopedLock const& lock)
+    void getNextJob (Job& job)
     {
         assert (! m_jobSet.empty ());
 
@@ -459,6 +473,8 @@ private:
         job = *iter;
         m_jobSet.erase (iter);
 
+        m_threadIds[std::this_thread::get_id()] = &job;
+
         --data.waiting;
         ++data.running;
     }
@@ -478,7 +494,7 @@ private:
     // Invariants:
     //  <none>
     //
-    void finishJob (Job const& job, ScopedLock const& lock)
+    void finishJob (Job const& job)
     {
         JobType const type = job.getType ();
 
@@ -496,6 +512,10 @@ private:
             m_workers.addTask ();
         }
 
+        if (! m_threadIds.erase (std::this_thread::get_id()))
+        {
+            assert (false);
+        }
         --data.running;
     }
 
@@ -539,7 +559,7 @@ private:
 
         {
             ScopedLock lock (m_mutex);
-            getNextJob (job, lock);
+            getNextJob (job);
             ++m_processCount;
         }
 
@@ -567,7 +587,7 @@ private:
 
         {
             ScopedLock lock (m_mutex);
-            finishJob (job, lock);
+            finishJob (job);
             --m_processCount;
             checkStopped (lock);
         }

@@ -25,6 +25,8 @@
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <thread>
 
 namespace ripple {
 
@@ -45,13 +47,13 @@ public:
         std::string const& name, boost::function <void (Job&)> const& job) = 0;
 
     // Jobs waiting at this priority
-    virtual int getJobCount (JobType t) = 0;
+    virtual int getJobCount (JobType t) const = 0;
 
     // Jobs waiting plus running at this priority
-    virtual int getJobCountTotal (JobType t) = 0;
+    virtual int getJobCountTotal (JobType t) const = 0;
 
     // All waiting jobs at or greater than this priority
-    virtual int getJobCountGE (JobType t) = 0;
+    virtual int getJobCountGE (JobType t) const = 0;
 
     virtual void shutdown () = 0;
 
@@ -60,18 +62,24 @@ public:
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
     //             since they create the object.
     //
-    virtual LoadEvent::pointer getLoadEvent (JobType t, std::string const& name) = 0;
+    virtual LoadEvent::pointer getLoadEvent (
+        JobType t, std::string const& name) = 0;
 
     // VFALCO TODO Why do we need two versions, one which returns a shared
     //             pointer and the other which returns an autoptr?
     //
-    virtual LoadEvent::autoptr getLoadEventAP (JobType t, std::string const& name) = 0;
+    virtual LoadEvent::autoptr getLoadEventAP (
+        JobType t, std::string const& name) = 0;
 
     // Add multiple load events
-    virtual void addLoadEvents (JobType t,
-        int count, std::chrono::milliseconds elapsed) = 0;
+    virtual void addLoadEvents (
+        JobType t, int count, std::chrono::milliseconds elapsed) = 0;
 
     virtual bool isOverloaded () = 0;
+
+    /** Get the Job corresponding to a thread.  If no thread, use the current
+        thread. */
+    virtual Job* getJobForThread (std::thread::id const& id = {}) const = 0;
 
     virtual Json::Value getJson (int c = 0) = 0;
 };
