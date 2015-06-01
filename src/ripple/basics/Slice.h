@@ -113,13 +113,6 @@ operator< (Slice const& lhs, Slice const& rhs) noexcept
             rhs.data(), rhs.data() + rhs.size());
 }
 
-template <class Stream>
-Stream& operator<<(Stream& s, Slice const& v)
-{
-    s << strHex(v.data(), v.size());
-    return s;
-}
-
 } // ripple
 
 #endif

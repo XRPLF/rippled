@@ -150,7 +150,7 @@ ManifestCache::configValidatorKey(
     std::string comment = std::move(words[1]);
 
     if (journal.debug) journal.debug
-        << masterKey << " " << comment;
+        << strHex (masterKey.data(), masterKey.size()) << " " << comment;
 
     addTrustedKey (masterKey, std::move(comment));
 }
