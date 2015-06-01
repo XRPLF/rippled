@@ -284,7 +284,7 @@ error_message (std::string const& what,
 
 static
 void
-initCommon (boost::asio::ssl::context& context)
+initCommon (boost::asio::ssl::context& context, bool anonymous)
 {
     context.set_options (
         boost::asio::ssl::context::default_workarounds |
@@ -292,9 +292,14 @@ initCommon (boost::asio::ssl::context& context)
         boost::asio::ssl::context::no_sslv3 |
         boost::asio::ssl::context::single_dh_use);
 
-    SSL_CTX_set_tmp_dh_callback (
-        context.native_handle (),
-        tmp_dh_handler);
+    if (anonymous)
+    {
+        // EDH breaks compatibility with some versions of IE
+        // So we do not enable EDH except for the anonymous context
+        SSL_CTX_set_tmp_dh_callback (
+            context.native_handle (),
+           tmp_dh_handler);
+    }
 
     SSL_CTX_set_info_callback (
         context.native_handle (),
@@ -306,7 +311,7 @@ void
 initAnonymous (
     boost::asio::ssl::context& context, std::string const& cipherList)
 {
-    initCommon(context);
+    initCommon(context, true);
     int const result = SSL_CTX_set_cipher_list (
         context.native_handle (),
         cipherList.c_str ());
@@ -332,7 +337,7 @@ void
 initAuthenticated (boost::asio::ssl::context& context,
     std::string key_file, std::string cert_file, std::string chain_file)
 {
-    initCommon (context);
+    initCommon (context, false);
 
     SSL_CTX* const ssl = context.native_handle ();
 
