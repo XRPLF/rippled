@@ -190,22 +190,25 @@ void STTx::sign (RippleAddress const& private_key)
     setFieldVL (sfTxnSignature, signature);
 }
 
-bool STTx::checkSign () const
+bool STTx::checkSign(bool allowMultiSign) const
 {
     if (boost::indeterminate (sig_state_))
     {
         try
         {
-#if RIPPLE_ENABLE_MULTI_SIGN
-            // Determine whether we're single- or multi-signing by looking
-            // at the SigningPubKey.  It it's empty we must be multi-signing.
-            // Otherwise we're single-signing.
-            Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-            sig_state_ = signingPubKey.empty () ?
-                checkMultiSign () : checkSingleSign ();
-#else
-            sig_state_ = checkSingleSign ();
-#endif // RIPPLE_ENABLE_MULTI_SIGN
+            if (allowMultiSign)
+            {
+                // Determine whether we're single- or multi-signing by looking
+                // at the SigningPubKey.  It it's empty we must be multi-signing.
+                // Otherwise we're single-signing.
+                Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
+                sig_state_ = signingPubKey.empty () ?
+                    checkMultiSign () : checkSingleSign ();
+            }
+            else
+            {
+                sig_state_ = checkSingleSign ();
+            }
         }
         catch (...)
         {

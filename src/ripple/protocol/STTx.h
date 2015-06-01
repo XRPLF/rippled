@@ -123,7 +123,13 @@ public:
 
     void sign (RippleAddress const& private_key);
 
-    bool checkSign () const;
+    bool checkSign(bool allowMultiSign =
+#if RIPPLE_ENABLE_MULTI_SIGN
+        true
+#else
+        false
+#endif
+            ) const;
 
     bool isKnownGood () const
     {
