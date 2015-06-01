@@ -357,6 +357,8 @@ transact_SetSignerList (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
+    if (! engine->enableMultiSign())
+        return temDISABLED;
     return SetSignerList (txn, params, engine).apply ();
 }
 

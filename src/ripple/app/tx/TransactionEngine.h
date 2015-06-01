@@ -29,6 +29,9 @@ namespace ripple {
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
+struct multisign_t { multisign_t() { } };
+static multisign_t const multisign;
+
 // One instance per ledger.
 // Only one transaction applied at a time.
 class TransactionEngine
@@ -38,6 +41,13 @@ public:
     static char const* getCountedObjectName () { return "TransactionEngine"; }
 
 private:
+    bool enableMultiSign_ =
+#if RIPPLE_ENABLE_MULTI_SIGN
+        true;
+#else
+        false;
+#endif
+
     LedgerEntrySet mNodes;
 
     void txnWrite ();
@@ -53,6 +63,19 @@ public:
         : mLedger (ledger)
     {
         assert (mLedger);
+    }
+
+    TransactionEngine (Ledger::ref ledger, multisign_t)
+        : enableMultiSign_(true)
+        , mLedger (ledger)
+    {
+        assert (mLedger);
+    }
+
+    bool
+    enableMultiSign() const
+    {
+        return enableMultiSign_;
     }
 
     LedgerEntrySet&
