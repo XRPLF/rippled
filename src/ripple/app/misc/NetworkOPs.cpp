@@ -36,11 +36,11 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/protocol/JsonFields.h>
@@ -49,6 +49,7 @@
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
+#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
@@ -884,7 +885,7 @@ void NetworkOPsImp::submitTransaction (
     Serializer s;
     iTrans->add (s);
 
-    SerialIter sit (s);
+    SerialIter sit (s.slice());
     auto trans = std::make_shared<STTx> (std::ref (sit));
 
     uint256 suppress = trans->getTransactionID ();
@@ -3244,7 +3245,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
 
     mFetchPack.del (hash, false);
 
-    if (hash != getSHA512Half (data))
+    if (hash != sha512Half(make_Slice(data)))
     {
         m_journal.warning << "Bad entry in fetch pack";
         return false;

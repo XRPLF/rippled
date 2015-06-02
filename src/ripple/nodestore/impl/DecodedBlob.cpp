@@ -63,7 +63,6 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
         case hotUNKNOWN:
         case hotLEDGER:
-        case hotTRANSACTION:
         case hotACCOUNT_NODE:
         case hotTRANSACTION_NODE:
             m_success = true;
@@ -72,11 +71,11 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
     }
 }
 
-NodeObject::Ptr DecodedBlob::createObject ()
+std::shared_ptr<NodeObject> DecodedBlob::createObject ()
 {
     bassert (m_success);
 
-    NodeObject::Ptr object;
+    std::shared_ptr<NodeObject> object;
 
     if (m_success)
     {

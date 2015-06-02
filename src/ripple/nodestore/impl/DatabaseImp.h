@@ -23,10 +23,12 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/impl/Tuning.h>
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/SHA512Half.h>
+#include <ripple/basics/Slice.h>
+#include <ripple/basics/TaggedCache.h>
 #include <beast/threads/Thread.h>
 #include <ripple/nodestore/ScopedMetrics.h>
 #include <chrono>
@@ -126,7 +128,7 @@ public:
 
     //------------------------------------------------------------------------------
 
-    bool asyncFetch (uint256 const& hash, NodeObject::pointer& object)
+    bool asyncFetch (uint256 const& hash, std::shared_ptr<NodeObject>& object)
     {
         // See if the object is in cache
         object = m_cache.fetch (hash);
@@ -165,7 +167,7 @@ public:
         return m_cache.getTargetSize() / asyncDivider;
     }
 
-    NodeObject::Ptr fetch (uint256 const& hash) override
+    std::shared_ptr<NodeObject> fetch (uint256 const& hash) override
     {
         ScopedMetrics::incrementThreadFetches ();
 
@@ -173,14 +175,14 @@ public:
     }
 
     /** Perform a fetch and report the time it took */
-    NodeObject::Ptr doTimedFetch (uint256 const& hash, bool isAsync)
+    std::shared_ptr<NodeObject> doTimedFetch (uint256 const& hash, bool isAsync)
     {
         FetchReport report;
         report.isAsync = isAsync;
         report.wentToDisk = false;
 
         auto const before = std::chrono::steady_clock::now();
-        NodeObject::Ptr ret = doFetch (hash, report);
+        std::shared_ptr<NodeObject> ret = doFetch (hash, report);
         report.elapsed = std::chrono::duration_cast <std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - before);
 
@@ -190,11 +192,11 @@ public:
         return ret;
     }
 
-    NodeObject::Ptr doFetch (uint256 const& hash, FetchReport &report)
+    std::shared_ptr<NodeObject> doFetch (uint256 const& hash, FetchReport &report)
     {
         // See if the object already exists in the cache
         //
-        NodeObject::Ptr obj = m_cache.fetch (hash);
+        std::shared_ptr<NodeObject> obj = m_cache.fetch (hash);
 
         if (obj != nullptr)
             return obj;
@@ -268,15 +270,15 @@ public:
         return obj;
     }
 
-    virtual NodeObject::Ptr fetchFrom (uint256 const& hash)
+    virtual std::shared_ptr<NodeObject> fetchFrom (uint256 const& hash)
     {
         return fetchInternal (*m_backend, hash);
     }
 
-    NodeObject::Ptr fetchInternal (Backend& backend,
+    std::shared_ptr<NodeObject> fetchInternal (Backend& backend,
         uint256 const& hash)
     {
-        NodeObject::Ptr object;
+        std::shared_ptr<NodeObject> object;
 
         Status const status = backend.fetch (hash.begin (), &object);
 
@@ -319,11 +321,11 @@ public:
                         uint256 const& hash,
                         Backend& backend)
     {
-        NodeObject::Ptr object = NodeObject::createObject(
+        std::shared_ptr<NodeObject> object = NodeObject::createObject(
             type, std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert (hash == getSHA512Half (data));
+        assert (hash == sha512Hash(make_Slice(data)));
         #endif
 
         m_cache.canonicalize (hash, object, true);
@@ -416,7 +418,7 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void for_each (std::function <void(NodeObject::Ptr)> f) override
+    void for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
         m_backend->for_each (f);
     }
@@ -431,7 +433,7 @@ public:
         Batch b;
         b.reserve (batchWritePreallocationSize);
 
-        source.for_each ([&](NodeObject::Ptr object)
+        source.for_each ([&](std::shared_ptr<NodeObject> object)
         {
             if (b.size() >= batchWritePreallocationSize)
             {

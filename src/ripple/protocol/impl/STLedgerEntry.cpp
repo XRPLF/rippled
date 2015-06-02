@@ -40,8 +40,7 @@ STLedgerEntry::STLedgerEntry (
     const Serializer& s, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
-    // we know 's' isn't going away
-    SerialIter sit (const_cast<Serializer&> (s));
+    SerialIter sit (s.slice());
     set (sit);
     setSLEType ();
 }
@@ -182,40 +181,6 @@ RippleAddress STLedgerEntry::getFirstOwner ()
 RippleAddress STLedgerEntry::getSecondOwner ()
 {
     return RippleAddress::createAccountID (getFieldAmount (sfHighLimit).getIssuer ());
-}
-
-std::vector<uint256> STLedgerEntry::getOwners ()
-{
-    std::vector<uint256> owners;
-    Account account;
-
-    for (int i = 0, fields = getCount (); i < fields; ++i)
-    {
-        auto const& fc = getFieldSType (i);
-
-        if ((fc == sfAccount) || (fc == sfOwner))
-        {
-            auto entry = dynamic_cast<const STAccount*> (peekAtPIndex (i));
-
-            if ((entry != nullptr) && entry->getValueH160 (account))
-                owners.push_back (getAccountRootIndex (account));
-        }
-
-        if ((fc == sfLowLimit) || (fc == sfHighLimit))
-        {
-            auto entry = dynamic_cast<const STAmount*> (peekAtPIndex (i));
-
-            if ((entry != nullptr))
-            {
-                auto issuer = entry->getIssuer ();
-
-                if (issuer.isNonZero ())
-                    owners.push_back (getAccountRootIndex (issuer));
-            }
-        }
-    }
-
-    return owners;
 }
 
 } // ripple

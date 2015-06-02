@@ -107,7 +107,7 @@ public:
     }
 
     // Returns the n-th complete NodeObject
-    NodeObject::Ptr
+    std::shared_ptr<NodeObject>
     obj (std::size_t n)
     {
         gen_.seed(n+1);
@@ -356,11 +356,11 @@ public:
             {
                 try
                 {
-                    NodeObject::Ptr obj;
-                    NodeObject::Ptr result;
+                    std::shared_ptr<NodeObject> obj;
+                    std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
                     backend_.fetch(obj->getHash().data(), &result);
-                    suite_.expect (result && result->isCloneOf(obj));
+                    suite_.expect (result && isSame(result, obj));
                 }
                 catch(std::exception const& e)
                 {
@@ -420,7 +420,7 @@ public:
                 try
                 {
                     auto const key = seq2_.key(i);
-                    NodeObject::Ptr result;
+                    std::shared_ptr<NodeObject> result;
                     backend_.fetch(key.data(), &result);
                     suite_.expect (! result);
                 }
@@ -489,17 +489,17 @@ public:
                     if (rand_(gen_) < missingNodePercent)
                     {
                         auto const key = seq2_.key(dist_(gen_));
-                        NodeObject::Ptr result;
+                        std::shared_ptr<NodeObject> result;
                         backend_.fetch(key.data(), &result);
                         suite_.expect (! result);
                     }
                     else
                     {
-                        NodeObject::Ptr obj;
-                        NodeObject::Ptr result;
+                        std::shared_ptr<NodeObject> obj;
+                        std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
                         backend_.fetch(obj->getHash().data(), &result);
-                        suite_.expect (result && result->isCloneOf(obj));
+                        suite_.expect (result && isSame(result, obj));
                     }
                 }
                 catch(std::exception const& e)
@@ -572,15 +572,15 @@ public:
                     if (rand_(gen_) < 200)
                     {
                         // historical lookup
-                        NodeObject::Ptr obj;
-                        NodeObject::Ptr result;
+                        std::shared_ptr<NodeObject> obj;
+                        std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        NodeObject::Ptr result1;
+                        std::shared_ptr<NodeObject> result1;
                         backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect (result != nullptr,
                             "object " + std::to_string(j) + " missing");
-                        suite_.expect (result->isCloneOf(obj),
+                        suite_.expect (isSame(result, obj),
                             "object " + std::to_string(j) + " not a clone");
                     }
 
@@ -594,12 +594,13 @@ public:
                         case 0:
                         {
                             // fetch recent
-                            NodeObject::Ptr obj;
-                            NodeObject::Ptr result;
+                            std::shared_ptr<NodeObject> obj;
+                            std::shared_ptr<NodeObject> result;
                             auto const j = recent_(gen_);
                             obj = seq1_.obj(j);
                             backend_.fetch(obj->getHash().data(), &result);
-                            suite_.expect(! result || result->isCloneOf(obj));
+                            suite_.expect(! result ||
+                                isSame(result, obj));
                             break;
                         }
 

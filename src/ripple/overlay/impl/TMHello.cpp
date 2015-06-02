@@ -22,6 +22,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/overlay/impl/TMHello.h>
 #include <beast/crypto/base64.h>
@@ -98,7 +99,7 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
 
     // Finally, derive the actual cookie for the values that
     // we have calculated.
-    result.first = getSHA512Half (sha1, sizeof(sha1));
+    result.first = sha512Half(Slice(sha1, sizeof(sha1)));
     result.second = true;
     return result;
 }

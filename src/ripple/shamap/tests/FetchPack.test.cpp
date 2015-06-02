@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/tests/common.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/UInt160.h>
@@ -89,7 +90,7 @@ public:
         for (int d = 0; d < 3; ++d)
             s.add32 (r.nextInt ());
         return std::make_shared <Item> (
-            to256(s.getRIPEMD160()), s.peekData ());
+            s.getSHA512Half(), s.peekData ());
     }
 
     void
@@ -107,8 +108,8 @@ public:
 
     void on_fetch (Map& map, uint256 const& hash, Blob const& blob)
     {
-        Serializer s (blob);
-        expect (s.getSHA512Half() == hash, "Hash mismatch");
+        expect (sha512Half(make_Slice(blob)) == hash,
+            "Hash mismatch");
         map.emplace (hash, blob);
     }
 

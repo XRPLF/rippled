@@ -150,7 +150,7 @@ bool InboundLedger::tryLocal ()
     if (!mHaveHeader)
     {
         // Nothing we can do without the ledger header
-        NodeObject::pointer node = getApp().getNodeStore ().fetch (mHash);
+        std::shared_ptr<NodeObject> node = getApp().getNodeStore ().fetch (mHash);
 
         if (!node)
         {
@@ -779,7 +779,7 @@ bool InboundLedger::takeHeader (std::string const& data)
 
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
-    s.addRaw (data);
+    s.addRaw (data.data(), data.size());
     getApp().getNodeStore ().store (
         hotLEDGER, std::move (s.modData ()), mHash);
 

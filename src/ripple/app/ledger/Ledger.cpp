@@ -26,15 +26,16 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
@@ -245,11 +246,18 @@ void Ledger::updateHash ()
             mAccountHash.zero ();
     }
 
-    // VFALCO TODO Fix this hard coded magic number 122
-    Serializer s (122);
-    s.add32 (HashPrefix::ledgerMaster);
-    addRaw (s);
-    mHash = s.getSHA512Half ();
+    // VFALCO This has to match addRaw
+    mHash = sha512Half(
+        HashPrefix::ledgerMaster,
+        std::uint32_t(mLedgerSeq),
+        std::uint64_t(mTotCoins),
+        mParentHash,
+        mTransHash,
+        mAccountHash,
+        std::uint32_t(mParentCloseTime),
+        std::uint32_t(mCloseTime),
+        std::uint8_t(mCloseResolution),
+        std::uint8_t(mCloseFlags));
     mValidHash = true;
 }
 
@@ -402,7 +410,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
         Blob txnData;
         int txnLength;
 
-        if (!item->peekSerializer ().getVL (txnData, 0, txnLength))
+        if (!item->peekSerializer().getVL (txnData, 0, txnLength))
             return Transaction::pointer ();
 
         txn = Transaction::sharedTransaction (txnData, Validate::NO);
@@ -423,15 +431,16 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 STTx::pointer Ledger::getSTransaction (
     std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type)
 {
-    SerialIter sit (item->peekSerializer ());
+    SerialIter sit (item->slice());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         return std::make_shared<STTx> (sit);
 
     if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
-        Serializer sTxn (sit.getVL ());
-        SerialIter tSit (sTxn);
+        // VFALCO This is making a needless copy
+        auto const vl = sit.getVL();
+        SerialIter tSit (make_Slice(vl));
         return std::make_shared<STTx> (tSit);
     }
 
@@ -442,7 +451,7 @@ STTx::pointer Ledger::getSMTransaction (
     std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type,
     TransactionMetaSet::pointer& txMeta) const
 {
-    SerialIter sit (item->peekSerializer ());
+    SerialIter sit (item->slice());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
@@ -451,8 +460,9 @@ STTx::pointer Ledger::getSMTransaction (
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
-        Serializer sTxn (sit.getVL ());
-        SerialIter tSit (sTxn);
+        // VFALCO This is making a needless copy
+        auto const vl = sit.getVL();
+        SerialIter tSit (make_Slice(vl));
 
         txMeta = std::make_shared<TransactionMetaSet> (
             item->getTag (), mLedgerSeq, sit.getVL ());
@@ -488,7 +498,7 @@ bool Ledger::getTransaction (
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         // in tree with metadata
-        SerialIter it (item->peekSerializer ());
+        SerialIter it (item->slice());
         txn = getApp().getMasterTransaction ().fetch (txID, false);
 
         if (!txn)
@@ -521,7 +531,7 @@ bool Ledger::getTransactionMeta (
     if (type != SHAMapTreeNode::tnTRANSACTION_MD)
         return false;
 
-    SerialIter it (item->peekSerializer ());
+    SerialIter it (item->slice());
     it.getVL (); // skip transaction
     meta = std::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
 
@@ -539,7 +549,7 @@ bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
     if (type != SHAMapTreeNode::tnTRANSACTION_MD)
         return false;
 
-    SerialIter it (item->peekSerializer ());
+    SerialIter it (item->slice());
     it.getVL (); // skip transaction
     hex = strHex (it.getVL ());
     return true;
@@ -1033,7 +1043,7 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     }
 
     auto item = std::make_shared<SHAMapItem> (entry->getIndex ());
-    entry->add (item->peekSerializer ());
+    entry->add (item->peekSerializer());
 
     if (create)
     {
@@ -1203,7 +1213,7 @@ bool Ledger::visitAccountItems (
 static void visitHelper (
     std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
 {
-    function (std::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
+    function (std::make_shared<SLE> (item->peekSerializer(), item->getTag ()));
 }
 
 void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const

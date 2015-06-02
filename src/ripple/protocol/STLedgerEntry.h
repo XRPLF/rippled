@@ -104,7 +104,6 @@ public:
     std::uint32_t getThreadedLedger ();
     bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
-    std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
 private:
     /** Make STObject comply with the template for this SLE type

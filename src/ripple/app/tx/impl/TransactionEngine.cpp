@@ -105,7 +105,7 @@ TransactionEngine::applyTransaction (
     {
         Serializer ser;
         txn.add (ser);
-        SerialIter sit (ser);
+        SerialIter sit(ser.slice());
         STTx s2 (sit);
 
         if (!s2.isEquivalent (txn))

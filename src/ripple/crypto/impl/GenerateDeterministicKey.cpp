@@ -21,6 +21,7 @@
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/openssl.h>
+#include <ripple/basics/SHA512Half.h>
 #include <array>
 #include <string>
 #include <openssl/pem.h>
@@ -46,15 +47,6 @@ static Blob serialize_ec_point (ec_point const& point)
     serialize_ec_point (point, &result[0]);
 
     return result;
-}
-
-uint256
-getSHA512Half (void const* data, std::size_t bytes)
-{
-    uint256 j[2];
-    SHA512 (reinterpret_cast<unsigned char const*>(data), bytes,
-        reinterpret_cast<unsigned char*> (j));
-    return j[0];
 }
 
 template <class FwdIt>
@@ -86,10 +78,9 @@ static bignum generateRootDeterministicKey (uint128 const& seed)
         std::array<std::uint8_t, 20> buf;
         std::copy(seed.begin(), seed.end(), buf.begin());
         copy_uint32 (buf.begin() + 16, seq++);
-        uint256 root = getSHA512Half (buf.data(), buf.size());
+        auto root = sha512Half(buf);
         std::fill (buf.begin(), buf.end(), 0); // security erase
         privKey.assign ((unsigned char const*) &root, sizeof (root));
-
         root.zero(); // security erase
     }
     while (privKey.is_zero()  ||  privKey >= secp256k1_order);
@@ -146,10 +137,9 @@ static bignum makeHash (Blob const& pubGen, int seq, bignum const& order)
         std::copy (pubGen.begin(), pubGen.end(), buf.begin());
         copy_uint32 (buf.begin() + 33, seq);
         copy_uint32 (buf.begin() + 37, subSeq++);
-        uint256 root = getSHA512Half (buf.data(), buf.size());
+        auto root = sha512Half_s(buf);
         std::fill(buf.begin(), buf.end(), 0); // security erase
         result.assign ((unsigned char const*) &root, sizeof (root));
-        root.zero(); // security erase
     }
     while (result.is_zero()  ||  result >= order);
 

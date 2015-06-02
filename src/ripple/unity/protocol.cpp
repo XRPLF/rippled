@@ -59,7 +59,6 @@
 #include <ripple/protocol/tests/Issue.test.cpp>
 #include <ripple/protocol/tests/Quality.test.cpp>
 #include <ripple/protocol/tests/RippleAddress.test.cpp>
-#include <ripple/protocol/tests/Serializer.test.cpp>
 #include <ripple/protocol/tests/STAmount.test.cpp>
 #include <ripple/protocol/tests/STObject.test.cpp>
 #include <ripple/protocol/tests/STTx.test.cpp>

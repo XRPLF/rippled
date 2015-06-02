@@ -34,10 +34,10 @@ std::shared_ptr <Backend> DatabaseRotatingImp::rotateBackends (
     return oldBackend;
 }
 
-NodeObject::Ptr DatabaseRotatingImp::fetchFrom (uint256 const& hash)
+std::shared_ptr<NodeObject> DatabaseRotatingImp::fetchFrom (uint256 const& hash)
 {
     Backends b = getBackends();
-    NodeObject::Ptr object = fetchInternal (*b.writableBackend, hash);
+    std::shared_ptr<NodeObject> object = fetchInternal (*b.writableBackend, hash);
     if (!object)
     {
         object = fetchInternal (*b.archiveBackend, hash);

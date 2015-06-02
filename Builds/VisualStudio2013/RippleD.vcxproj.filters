@@ -46,9 +46,6 @@
     <Filter Include="beast\crypto\impl">
       <UniqueIdentifier>{398085D5-BDC7-D75C-2A1D-73395AC7A158}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\crypto\impl\sha2">
-      <UniqueIdentifier>{22C180F0-B7EC-7BB6-477E-BE58C4F1C38C}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\crypto\tests">
       <UniqueIdentifier>{FF9CBE50-56A0-7B59-C99F-C873605C844B}</UniqueIdentifier>
     </Filter>
@@ -810,16 +807,10 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <Filter>beast\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+    <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha512_context.h">
       <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
-      <Filter>beast\crypto\impl\sha2</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
-      <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
+    <ClInclude Include="..\..\src\beast\beast\crypto\sha512.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
@@ -851,6 +842,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
+      <Filter>beast\hash</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
       <Filter>beast\hash</Filter>
@@ -2682,6 +2676,9 @@
     <ClInclude Include="..\..\src\ripple\basics\seconds_clock.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\SHA512Half.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Slice.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -3541,9 +3538,6 @@
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\RippleAddress.test.cpp">
-      <Filter>ripple\protocol\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\tests\Serializer.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\STAmount.test.cpp">

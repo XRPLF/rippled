@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -26,9 +27,7 @@ namespace ripple {
 uint256
 getLedgerHashIndex ()
 {
-    Serializer s (2);
-    s.add16 (spaceSkipList);
-    return s.getSHA512Half ();
+    return sha512Half(std::uint16_t(spaceSkipList));
 }
 
 // Get the index of the node that holds the set of 256 ledgers that includes
@@ -37,39 +36,31 @@ getLedgerHashIndex ()
 uint256
 getLedgerHashIndex (std::uint32_t desiredLedgerIndex)
 {
-    Serializer s (6);
-    s.add16 (spaceSkipList);
-    s.add32 (desiredLedgerIndex >> 16);
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceSkipList),
+        std::uint32_t(desiredLedgerIndex >> 16));
 }
 
 // get the index of the node that holds the enabled amendments
 uint256
 getLedgerAmendmentIndex ()
 {
-    Serializer s (2);
-    s.add16 (spaceAmendment);
-    return s.getSHA512Half ();
+    return sha512Half(std::uint16_t(spaceAmendment));
 }
 
 // get the index of the node that holds the fee schedule
 uint256
 getLedgerFeeIndex ()
 {
-    Serializer s (2);
-    s.add16 (spaceFee);
-    return s.getSHA512Half ();
+    return sha512Half(std::uint16_t(spaceFee));
 }
 
 uint256
 getAccountRootIndex (Account const& account)
 {
-    Serializer  s (22);
-
-    s.add16 (spaceAccount);
-    s.add160 (account);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceAccount),
+        account);
 }
 
 uint256
@@ -81,72 +72,52 @@ getAccountRootIndex (const RippleAddress & account)
 uint256
 getGeneratorIndex (Account const& uGeneratorID)
 {
-    Serializer  s (22);
-
-    s.add16 (spaceGenerator);
-    s.add160 (uGeneratorID);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceGenerator),
+        uGeneratorID);
 }
 
 uint256
 getBookBase (Book const& book)
 {
-    Serializer  s (82);
-
     assert (isConsistent (book));
-
-    s.add16 (spaceBookDir);
-    s.add160 (book.in.currency);
-    s.add160 (book.out.currency);
-    s.add160 (book.in.account);
-    s.add160 (book.out.account);
-
     // Return with quality 0.
-    return getQualityIndex (s.getSHA512Half ());
+    return getQualityIndex(sha512Half(
+        std::uint16_t(spaceBookDir),
+        book.in.currency,
+        book.out.currency,
+        book.in.account,
+        book.out.account));
 }
 
 uint256
 getOfferIndex (Account const& account, std::uint32_t uSequence)
 {
-    Serializer  s (26);
-
-    s.add16 (spaceOffer);
-    s.add160 (account);
-    s.add32 (uSequence);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceOffer),
+        account,
+        std::uint32_t(uSequence));
 }
 
 uint256
 getOwnerDirIndex (Account const& account)
 {
-    Serializer  s (22);
-
-    s.add16 (spaceOwnerDir);
-    s.add160 (account);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceOwnerDir),
+        account);
 }
 
 
 uint256
 getDirNodeIndex (uint256 const& uDirRoot, const std::uint64_t uNodeIndex)
 {
-    if (uNodeIndex)
-    {
-        Serializer  s (42);
-
-        s.add16 (spaceDirNode);
-        s.add256 (uDirRoot);
-        s.add64 (uNodeIndex);
-
-        return s.getSHA512Half ();
-    }
-    else
-    {
+    if (uNodeIndex == 0)
         return uDirRoot;
-    }
+
+    return sha512Half(
+        std::uint16_t(spaceDirNode),
+        uDirRoot,
+        std::uint64_t(uNodeIndex));
 }
 
 uint256
@@ -160,6 +131,7 @@ getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir)
     uint256 uNode (uBase);
 
     // TODO(tom): there must be a better way.
+    // VFALCO [base_uint] This assumes a certain storage format
     ((std::uint64_t*) uNode.end ())[-1] = htobe64 (uNodeDir);
 
     return uNode;
@@ -168,49 +140,41 @@ getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir)
 uint256
 getQualityNext (uint256 const& uBase)
 {
-    static uint256 uNext ("10000000000000000");
+    // VFALCO TODO remove this unnecessary constructor
+    static uint256 const uNext ("10000000000000000");
     return uBase + uNext;
 }
 
 std::uint64_t
 getQuality (uint256 const& uBase)
 {
+    // VFALCO [base_uint] This assumes a certain storage format
     return be64toh (((std::uint64_t*) uBase.end ())[-1]);
 }
 
 uint256
 getTicketIndex (Account const& account, std::uint32_t uSequence)
 {
-    Serializer  s (26);
-
-    s.add16 (spaceTicket);
-    s.add160 (account);
-    s.add32 (uSequence);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceTicket),
+        account,
+        std::uint32_t(uSequence));
 }
 
 uint256
 getRippleStateIndex (Account const& a, Account const& b, Currency const& currency)
 {
-    Serializer  s (62);
-
-    s.add16 (spaceRipple);
-
     if (a < b)
-    {
-        s.add160 (a);
-        s.add160 (b);
-    }
-    else
-    {
-        s.add160 (b);
-        s.add160 (a);
-    }
-
-    s.add160 (currency);
-
-    return s.getSHA512Half ();
+        return sha512Half(
+            std::uint16_t(spaceRipple),
+            a,
+            b,
+            currency);
+    return sha512Half(
+        std::uint16_t(spaceRipple),
+        b,
+        a,
+        currency);
 }
 
 uint256
@@ -222,12 +186,9 @@ getRippleStateIndex (Account const& a, Issue const& issue)
 uint256
 getSignerListIndex (Account const& account)
 {
-    Serializer  s (22);
-
-    s.add16 (spaceSignerList);  //  2
-    s.add160 (account);         // 20
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        std::uint16_t(spaceSignerList),
+        account);
 }
 
-} // namespace ripple
+} // ripple

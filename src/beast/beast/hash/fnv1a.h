@@ -50,7 +50,7 @@ public:
     }
 
     void
-    append (void const* key, std::size_t len) noexcept
+    operator() (void const* key, std::size_t len) noexcept
     {
         unsigned char const* p =
             static_cast<unsigned char const*>(key);

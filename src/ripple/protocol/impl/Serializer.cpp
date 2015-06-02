@@ -19,9 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/protocol/Serializer.h>
-#include <openssl/ripemd.h>
-#include <openssl/pem.h>
 
 namespace ripple {
 
@@ -107,79 +106,12 @@ int Serializer::addRaw (const void* ptr, int len)
     return ret;
 }
 
-bool Serializer::get16 (std::uint16_t& o, int offset) const
-{
-    if ((offset + 2) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get32 (std::uint32_t& o, int offset) const
-{
-    if ((offset + 4) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get64 (std::uint64_t& o, int offset) const
-{
-    if ((offset + 8) > mData.size ()) return false;
-
-    const unsigned char* ptr = &mData[offset];
-    o = *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr++;
-    o <<= 8;
-    o |= *ptr;
-    return true;
-}
-
-bool Serializer::get128 (uint128& o, int offset) const
-{
-    if ((offset + (128 / 8)) > mData.size ()) return false;
-
-    memcpy (o.begin (), & (mData.front ()) + offset, (128 / 8));
-    return true;
-}
-
 bool Serializer::get256 (uint256& o, int offset) const
 {
     if ((offset + (256 / 8)) > mData.size ()) return false;
 
     memcpy (o.begin (), & (mData.front ()) + offset, (256 / 8));
     return true;
-}
-
-uint256 Serializer::get256 (int offset) const
-{
-    uint256 ret;
-
-    if ((offset + (256 / 8)) > mData.size ()) return ret;
-
-    memcpy (ret.begin (), & (mData.front ()) + offset, (256 / 8));
-    return ret;
 }
 
 int Serializer::addFieldID (int type, int name)
@@ -296,54 +228,9 @@ Blob Serializer::getRaw (int offset, int length) const
     return o;
 }
 
-uint160 Serializer::getRIPEMD160 (int size) const
+uint256 Serializer::getSHA512Half () const
 {
-    uint160 ret;
-
-    if ((size < 0) || (size > mData.size ())) size = mData.size ();
-
-    RIPEMD160 (& (mData.front ()), size, (unsigned char*) &ret);
-    return ret;
-}
-
-uint256 Serializer::getSHA256 (int size) const
-{
-    uint256 ret;
-
-    if ((size < 0) || (size > mData.size ())) size = mData.size ();
-
-    SHA256 (& (mData.front ()), size, (unsigned char*) &ret);
-    return ret;
-}
-
-uint256 Serializer::getSHA512Half (int size) const
-{
-    assert (size != 0);
-    if (size == 0)
-        return uint256();
-    if (size < 0 || size > mData.size())
-        return ripple::getSHA512Half (mData);
-
-    return ripple::getSHA512Half (
-        mData.data(), size);
-}
-
-uint256 Serializer::getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len)
-{
-    char be_prefix[4];
-    be_prefix[0] = static_cast<unsigned char> (prefix >> 24);
-    be_prefix[1] = static_cast<unsigned char> ((prefix >> 16) & 0xff);
-    be_prefix[2] = static_cast<unsigned char> ((prefix >> 8) & 0xff);
-    be_prefix[3] = static_cast<unsigned char> (prefix & 0xff);
-
-    uint256 j[2];
-    SHA512_CTX ctx;
-    SHA512_Init (&ctx);
-    SHA512_Update (&ctx, &be_prefix[0], 4);
-    SHA512_Update (&ctx, data, len);
-    SHA512_Final (reinterpret_cast<unsigned char*> (&j[0]), &ctx);
-
-    return j[0];
+    return sha512Half(make_Slice(mData));
 }
 
 int Serializer::addVL (Blob const& vector)
@@ -699,19 +586,6 @@ Buffer
 SerialIter::getVLBuffer()
 {
     return getRawHelper<Buffer> (getVLDataLength ());
-}
-
-
-//------------------------------------------------------------------------------
-
-uint256
-getSHA512Half (void const* data, int len)
-{
-    uint256 j[2];
-    SHA512 (
-        reinterpret_cast<unsigned char const*>(
-            data), len, (unsigned char*) j);
-    return j[0];
 }
 
 } // ripple

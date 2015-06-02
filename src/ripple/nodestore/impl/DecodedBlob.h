@@ -45,7 +45,7 @@ public:
     bool wasOk () const noexcept { return m_success; }
 
     /** Create a NodeObject from this data. */
-    NodeObject::Ptr createObject ();
+    std::shared_ptr<NodeObject> createObject ();
 
 private:
     bool m_success;

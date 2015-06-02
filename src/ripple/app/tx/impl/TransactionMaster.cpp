@@ -71,15 +71,15 @@ STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
 
         if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         {
-            SerialIter sit (item->peekSerializer ());
+            SerialIter sit (item->slice());
             txn = std::make_shared<STTx> (std::ref (sit));
         }
         else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
         {
             Serializer s;
             int length;
-            item->peekSerializer ().getVL (s.modData (), 0, length);
-            SerialIter sit (s);
+            item->peekSerializer().getVL (s.modData (), 0, length);
+            SerialIter sit (s.slice());
 
             txn = std::make_shared<STTx> (std::ref (sit));
         }

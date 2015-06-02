@@ -23,6 +23,7 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/Slice.h>
 #include <beast/utility/noexcept.h>
 #include <cassert>
 #include <cstdint>
@@ -46,23 +47,20 @@ public:
     {
         mData.reserve (n);
     }
-    Serializer (Blob const& data) : mData (data)
+
+    Serializer (void const* data,
+        std::size_t size)
     {
-        ;
+        mData.resize(size);
+        std::memcpy(mData.data(),
+            reinterpret_cast<
+                unsigned char const*>(
+                    data), size);
     }
-    Serializer (std::string const& data) : mData (data.data (), (data.data ()) + data.size ())
+
+    Slice slice() const noexcept
     {
-        ;
-    }
-    Serializer (Blob ::iterator begin, Blob ::iterator end) :
-        mData (begin, end)
-    {
-        ;
-    }
-    Serializer (Blob ::const_iterator begin, Blob ::const_iterator end) :
-        mData (begin, end)
-    {
-        ;
+        return Slice(mData.data(), mData.size());
     }
 
     std::size_t
@@ -112,11 +110,6 @@ public:
 
     // disassemble functions
     bool get8 (int&, int offset) const;
-    bool get8 (unsigned char&, int offset) const;
-    bool get16 (std::uint16_t&, int offset) const;
-    bool get32 (std::uint32_t&, int offset) const;
-    bool get64 (std::uint64_t&, int offset) const;
-    bool get128 (uint128&, int offset) const;
     bool get256 (uint256&, int offset) const;
 
     template <typename Integer>
@@ -144,8 +137,6 @@ public:
         return success;
     }
 
-    uint256 get256 (int offset) const;
-
     // TODO(tom): merge with get128 and get256.
     template <class Tag>
     bool get160 (base_uint<160, Tag>& o, int offset) const
@@ -166,25 +157,8 @@ public:
         return addFieldID (static_cast<int> (type), name);
     }
 
-    // normal hash functions
-    uint160 getRIPEMD160 (int size = -1) const;
-    uint256 getSHA256 (int size = -1) const;
-    uint256 getSHA512Half (int size = -1) const;
-
-    // prefix hash functions
-    static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);
-    uint256 getPrefixHash (std::uint32_t prefix) const
-    {
-        return getPrefixHash (prefix, & (mData.front ()), mData.size ());
-    }
-    static uint256 getPrefixHash (std::uint32_t prefix, Blob const& data)
-    {
-        return getPrefixHash (prefix, & (data.front ()), data.size ());
-    }
-    static uint256 getPrefixHash (std::uint32_t prefix, std::string const& strData)
-    {
-        return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
-    }
+    // DEPRECATED
+    uint256 getSHA512Half() const;
 
     // totality functions
     Blob const& peekData () const
@@ -199,10 +173,7 @@ public:
     {
         return mData;
     }
-    int getCapacity () const
-    {
-        return mData.capacity ();
-    }
+
     int getDataLength () const
     {
         return mData.size ();
@@ -319,28 +290,13 @@ private:
     std::uint8_t const* p_;
     std::size_t remain_;
     std::size_t used_ = 0;
+
 public:
     SerialIter (void const* data,
             std::size_t size) noexcept;
 
-    explicit
-    SerialIter (std::string const& s) noexcept
-        : SerialIter(s.data(), s.size())
-    {
-    }
-
-    template <class T,
-        std::enable_if_t<std::is_integral<T>::value &&
-            sizeof(T) == 1>* = nullptr>
-    explicit
-    SerialIter (std::vector<T> const& v) noexcept
-        : SerialIter (v.data(), v.size())
-    {
-    }
-
-    // DEPRECATED
-    SerialIter (Serializer const& s) noexcept
-        : SerialIter(s.peekData())
+    SerialIter (Slice const& slice)
+        : SerialIter(slice.data(), slice.size())
     {
     }
 
@@ -429,30 +385,6 @@ SerialIter::getBitString()
     used_ += n;
     remain_ -= n;
     return u;
-}
-
-//------------------------------------------------------------------------------
-
-uint256
-getSHA512Half (void const* data, int len);
-
-// DEPRECATED
-inline
-uint256
-getSHA512Half (std::string const& s)
-{
-    return getSHA512Half(s.data(), s.size());
-}
-
-// DEPRECATED
-template <class T,
-    std::enable_if_t<std::is_integral<T>::value &&
-        sizeof(T) == 1>* = nullptr>
-inline
-uint256
-getSHA512Half (std::vector<T> const& v)
-{
-    return getSHA512Half(v.data(), v.size());
 }
 
 } // ripple

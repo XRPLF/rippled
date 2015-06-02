@@ -63,7 +63,7 @@ public:
         @param pObject [out] The created object if successful.
         @return The result of the operation.
     */
-    virtual Status fetch (void const* key, NodeObject::Ptr* pObject) = 0;
+    virtual Status fetch (void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
 
     /** Return `true` if batch fetches are optimized. */
     virtual
@@ -81,7 +81,7 @@ public:
         @note This will be called concurrently.
         @param object The object to store.
     */
-    virtual void store (NodeObject::Ptr const& object) = 0;
+    virtual void store (std::shared_ptr<NodeObject> const& object) = 0;
 
     /** Store a group of objects.
         @note This function will not be called concurrently with
@@ -95,7 +95,7 @@ public:
               or other methods.
         @see import
     */
-    virtual void for_each (std::function <void (NodeObject::Ptr)> f) = 0;
+    virtual void for_each (std::function <void (std::shared_ptr<NodeObject>)> f) = 0;
 
     /** Estimate the number of write operations pending. */
     virtual int getWriteLoad () = 0;

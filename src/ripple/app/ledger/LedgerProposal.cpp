@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -63,15 +64,12 @@ LedgerProposal::LedgerProposal (
 
 uint256 LedgerProposal::getSigningHash () const
 {
-    Serializer s ((32 + 32 + 32 + 256 + 256) / 8);
-
-    s.add32 (HashPrefix::proposal);
-    s.add32 (mProposeSeq);
-    s.add32 (mCloseTime);
-    s.add256 (mPreviousLedger);
-    s.add256 (mCurrentHash);
-
-    return s.getSHA512Half ();
+    return sha512Half(
+        HashPrefix::proposal,
+        std::uint32_t(mProposeSeq),
+        std::uint32_t(mCloseTime),
+        mPreviousLedger,
+        mCurrentHash);
 }
 
 bool LedgerProposal::checkSign (std::string const& signature) const

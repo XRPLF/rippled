@@ -23,6 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -49,8 +50,9 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
 
         try
         {
-            Serializer s (nodeData.begin () + 4, nodeData.end ()); // skip prefix
-            SerialIter sit (s);
+            // skip prefix
+            Serializer s (nodeData.data() + 4, nodeData.size() - 4);
+            SerialIter sit (s.slice());
             STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
             getApp().getJobQueue ().addJob (
@@ -82,7 +84,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeH
         Serializer s;
         s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s);
-        assert (s.getSHA512Half () == nodeHash);
+        assert(sha512Half(s.slice()) == nodeHash);
         nodeData = s.peekData ();
         return true;
     }

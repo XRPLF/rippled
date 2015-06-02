@@ -28,7 +28,7 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/websocket/Connection.h>
 #include <ripple/websocket/WebSocket.h>
-
+#include <boost/unordered_map.hpp>
 #include <memory>
 
 namespace ripple {
@@ -83,7 +83,7 @@ protected:
     std::mutex mLock;
 
     // For each connection maintain an associated object to track subscriptions.
-    using MapType = hash_map <connection_ptr, wsc_ptr>;
+    using MapType = boost::unordered_map<connection_ptr, wsc_ptr>;
     MapType mMap;
 
 public:

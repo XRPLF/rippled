@@ -106,21 +106,6 @@
 
 //------------------------------------------------------------------------------
 //
-// Boost
-//
-//------------------------------------------------------------------------------
-
-/** Config: BEAST_USE_BOOST_FEATURES
-    This activates boost specific features and improvements. If this is
-    turned on, the include paths for your build environment must be set
-    correctly to find the boost headers.
-*/
-#ifndef BEAST_USE_BOOST_FEATURES
-#define BEAST_USE_BOOST_FEATURES 1
-#endif
-
-//------------------------------------------------------------------------------
-//
 // Ripple
 //
 //------------------------------------------------------------------------------
@@ -162,15 +147,6 @@
 //
 #ifndef RIPPLE_USE_VALIDATORS
 #define RIPPLE_USE_VALIDATORS 0
-#endif
-
-/** Config: BEAST_USE_BOOST_FEATURES
-    This activates boost specific features and improvements. If this is
-    turned on, the include paths for your build environment must be set
-    correctly to find the boost headers.
-*/
-#ifndef   BEAST_USE_BOOST_FEATURES
-//#define BEAST_USE_BOOST_FEATURES 1
 #endif
 
 /** Config: RIPPLE_PROPOSE_FEATURES

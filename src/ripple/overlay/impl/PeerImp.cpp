@@ -28,6 +28,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
+#include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -978,7 +979,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    SerialIter sit (m->rawtransaction ());
+    SerialIter sit (make_Slice(m->rawtransaction()));
 
     try
     {
@@ -1390,10 +1391,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 
     try
     {
-        Serializer s (m->validation ());
-        SerialIter sit (s);
-        STValidation::pointer val = std::make_shared <
-            STValidation> (std::ref (sit), false);
+        STValidation::pointer val;
+        {
+            SerialIter sit (make_Slice(m->validation()));
+            val = std::make_shared <
+                STValidation> (std::ref (sit), false);
+        }
 
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
@@ -1402,8 +1405,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             return;
         }
 
-        if (! getApp().getHashRouter ().addSuppressionPeer (
-            s.getSHA512Half(), id_))
+        if (! getApp().getHashRouter ().addSuppressionPeer(
+            sha512Half(make_Slice(m->validation())), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return;
@@ -1482,7 +1485,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
                 // VFALCO TODO Move this someplace more sensible so we dont
                 //             need to inject the NodeStore interfaces.
-                NodeObject::pointer hObj =
+                std::shared_ptr<NodeObject> hObj =
                     getApp().getNodeStore ().fetch (hash);
 
                 if (hObj)

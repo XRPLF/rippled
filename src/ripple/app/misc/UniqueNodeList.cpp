@@ -25,6 +25,8 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/SHA512Half.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Time.h>
 #include <ripple/core/Config.h>
@@ -1596,8 +1598,10 @@ bool UniqueNodeListImp::responseFetch (std::string const& strDomain, const boost
             assert (bFound);
             (void) bFound;
 
-            uint256     iSha256     = getSHA512Half (strSiteFile);
-            bool        bChangedB   = sdCurrent.iSha256 != iSha256;
+            uint256 iSha256 =
+                sha512Half(make_Slice(strSiteFile));
+            bool bChangedB =
+                sdCurrent.iSha256 != iSha256;
 
             sdCurrent.strDomain     = strDomain;
             // XXX If the node public key is changing, delete old public key information?
