@@ -334,7 +334,8 @@ public:
                 {
                     // Uh oh, corrupted data!
                     if (m_journal.fatal) m_journal.fatal <<
-                        "Corrupt NodeObject #" << uint256 (it->key ().data ());
+                        "Corrupt NodeObject #" <<
+                        from_hex_text<uint256>(it->key ().data ());
                 }
             }
             else

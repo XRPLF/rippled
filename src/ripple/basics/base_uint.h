@@ -141,13 +141,6 @@ public:
         *this = b;
     }
 
-    // NIKB TODO remove the need for this constructor - have a free function
-    //           to handle the hex string parsing.
-    explicit base_uint (std::string const& str)
-    {
-        SetHex (str);
-    }
-
     base_uint (base_uint<Bits, Tag> const& other) = default;
 
     template <class OtherTag>
@@ -511,6 +504,27 @@ template <std::size_t Bits, class Tag>
 inline std::string to_string (base_uint<Bits, Tag> const& a)
 {
     return strHex (a.begin (), a.size ());
+}
+
+// Function templates that return a base_uint given text in hexadecimal.
+// Invoke like:
+//   auto i = from_hex_text<uint256>("AAAAA");
+template <typename T>
+auto from_hex_text (char const* text) -> std::enable_if_t<
+    std::is_same<T, base_uint<T::bytes*8, typename T::tag_type>>::value, T>
+{
+    T ret;
+    ret.SetHex (text);
+    return ret;
+}
+
+template <typename T>
+auto from_hex_text (std::string const& text) -> std::enable_if_t<
+    std::is_same<T, base_uint<T::bytes*8, typename T::tag_type>>::value, T>
+{
+    T ret;
+    ret.SetHex (text);
+    return ret;
 }
 
 template <std::size_t Bits, class Tag>
