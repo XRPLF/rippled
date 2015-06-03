@@ -1026,7 +1026,8 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
     mCloseTime = iToSeconds (ptm);
 }
 
-LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
+void
+Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
 {
     bool create = false;
 
@@ -1034,11 +1035,9 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     {
         if ((parms & lepCREATE) == 0)
         {
-            WriteLog (lsERROR, Ledger)
-                << "WriteBack non-existent node without create";
-            return lepMISSING;
+            assert(false);
+            return;
         }
-
         create = true;
     }
 
@@ -1048,23 +1047,16 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     if (create)
     {
         assert (!mAccountStateMap->hasItem (entry->getIndex ()));
-
         if (!mAccountStateMap->addGiveItem (item, false, false))
         {
             assert (false);
-            return lepERROR;
+            return;
         }
-
-        return lepCREATED;
+        return;
     }
 
     if (!mAccountStateMap->updateGiveItem (item, false, false))
-    {
         assert (false);
-        return lepERROR;
-    }
-
-    return lepOKAY;
 }
 
 SLE::pointer Ledger::getSLE (uint256 const& uHash) const
@@ -1527,10 +1519,7 @@ void Ledger::updateSkipList ()
         skipList->setFieldV256 (sfHashes, STVector256 (hashes));
         skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
 
-        if (writeBack (lepCREATE, skipList) == lepERROR)
-        {
-            assert (false);
-        }
+        writeBack (lepCREATE, skipList);
     }
 
     // update record of past 256 ledger
@@ -1554,10 +1543,7 @@ void Ledger::updateSkipList ()
     skipList->setFieldV256 (sfHashes, STVector256 (hashes));
     skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
 
-    if (writeBack (lepCREATE, skipList) == lepERROR)
-    {
-        assert (false);
-    }
+    writeBack (lepCREATE, skipList);
 }
 
 /** Save, or arrange to save, a fully-validated ledger
