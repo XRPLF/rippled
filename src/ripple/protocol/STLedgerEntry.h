@@ -61,6 +61,10 @@ public:
     std::string getText () const override;
     Json::Value getJson (int options) const override;
 
+    /** Returns the 'key' (or 'index') of this item.
+        The key identifies this entry's position in
+        the SHAMap associative container.
+    */
     uint256 const& getIndex () const
     {
         return mIndex;
@@ -118,6 +122,9 @@ private:
     bool                        mMutable;
 };
 
+using STLxe = STLedgerEntry;
+
+// DEPRECATED
 using SLE = STLedgerEntry;
 
 } // ripple
