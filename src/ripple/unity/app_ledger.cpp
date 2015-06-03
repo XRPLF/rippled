@@ -34,12 +34,12 @@
 #include <ripple/app/ledger/OrderBookIterator.cpp>
 #include <ripple/app/ledger/TransactionStateSF.cpp>
 
-#include <ripple/app/ledger/impl/Consensus.cpp>
+#include <ripple/app/ledger/impl/ConsensusImp.cpp>
 #include <ripple/app/ledger/impl/DisputedTx.cpp>
 #include <ripple/app/ledger/impl/InboundLedger.cpp>
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>
 #include <ripple/app/ledger/impl/LedgerCleaner.cpp>
-#include <ripple/app/ledger/impl/LedgerConsensus.cpp>
+#include <ripple/app/ledger/impl/LedgerConsensusImp.cpp>
 #include <ripple/app/ledger/impl/LedgerFees.cpp>
 #include <ripple/app/ledger/impl/LedgerMaster.cpp>
 #include <ripple/app/ledger/impl/LedgerTiming.cpp>

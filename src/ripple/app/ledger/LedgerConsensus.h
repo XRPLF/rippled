@@ -43,7 +43,7 @@ class Consensus;
 class LedgerConsensus
 {
 public:
-    virtual ~LedgerConsensus() = 0;
+    virtual ~LedgerConsensus() = default;
 
     virtual Json::Value getJson (bool full) = 0;
 
@@ -67,13 +67,6 @@ public:
     */
     virtual void simulate () = 0;
 };
-
-std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (
-    Consensus& consensus, int previousProposers, int previousConvergeTime,
-    InboundTransactions& inboundTransactions, LocalTxs& localtx,
-    LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-        std::uint32_t closeTime, FeeVote& feeVote);
 
 void
 applyTransactions(std::shared_ptr<SHAMap> const& set, Ledger::ref applyLedger,

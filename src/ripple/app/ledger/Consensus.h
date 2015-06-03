@@ -37,49 +37,25 @@ public:
     virtual
     ~Consensus () = default;
 
-    /** */
-    virtual
-    void
-    setProposing (bool p, bool v) = 0;
-
-    /** */
+    /** Returns whether we are issuing proposals currently. */
     virtual
     bool
     isProposing () const = 0;
 
-    /** */
+    /** Returns whether we are issuing validations currently. */
     virtual
     bool
     isValidating () const = 0;
 
-    virtual
-    STValidation::ref
-    getLastValidation () const = 0;
-
-    virtual
-    void
-    setLastValidation (STValidation::ref v) = 0;
-
+    /** Returns the number of unique proposers we observed for the LCL. */
     virtual
     int
     getLastCloseProposers () const = 0;
 
+    /** Returns the time (in milliseconds) that the last close took. */
     virtual
     int
     getLastCloseDuration () const = 0;
-
-    /** Called when a new ledger is closed by a round
-
-        @param proposers the number of participants in the consensus round
-        @param convergeTime the time the consensus round took
-        @param ledgerHash the hash of the ledger that just closed
-    */
-    virtual
-    void
-    newLCL (
-        int proposers,
-        int convergeTime,
-        uint256 const& ledgerHash) = 0;
 
     /** Called when a new round of consensus is about to begin */
     virtual
@@ -92,15 +68,7 @@ public:
         std::uint32_t closeTime,
         FeeVote& feeVote) = 0;
 
-    /** Use *only* to timestamp our own validation */
-    virtual
-    std::uint32_t
-    validationTimestamp () = 0;
-
-    virtual
-    std::uint32_t
-    getLastCloseTime () const = 0;
-
+    /** Specified the network time when the last ledger closed */
     virtual
     void
     setLastCloseTime (std::uint32_t t) = 0;
