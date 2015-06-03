@@ -22,6 +22,16 @@
 
 namespace ripple {
 
+static
+std::string
+format_amount (STAmount const& amount)
+{
+    std::string txt = amount.getText ();
+    txt += "/";
+    txt += to_string (amount.issue().currency);
+    return txt;
+}
+
 STAmount
 BasicTaker::Rate::divide (STAmount const& amount) const
 {
@@ -43,7 +53,7 @@ BasicTaker::Rate::multiply (STAmount const& amount) const
 BasicTaker::BasicTaker (
         CrossType cross_type, Account const& account, Amounts const& amount,
         Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
-        std::uint32_t rate_out)
+        std::uint32_t rate_out, beast::Journal journal)
     : account_ (account)
     , quality_ (quality)
     , threshold_ (quality_)
@@ -55,6 +65,7 @@ BasicTaker::BasicTaker (
     , m_rate_in (rate_in)
     , m_rate_out (rate_out)
     , cross_type_ (cross_type)
+    , journal_ (journal)
 {
     assert (remaining_.in > zero);
     assert (remaining_.out > zero);
@@ -104,16 +115,25 @@ BasicTaker::done () const
 {
     // We are done if we have consumed all the input currency
     if (remaining_.in <= zero)
+    {
+        journal_.debug << "Done: all the input currency has been consumed.";
         return true;
+    }
 
     // We are done if using buy semantics and we received the
     // desired amount of output currency
     if (!sell_ && (remaining_.out <= zero))
+    {
+        journal_.debug << "Done: the desired amount has been received.";
         return true;
+    }
 
     // We are done if the taker is out of funds
     if (get_funds (account(), remaining_.in) <= zero)
+    {
+        journal_.debug << "Done: taker out of funds.";
         return true;
+    }
 
     return false;
 }
@@ -169,6 +189,27 @@ qual_mul (STAmount const& amount, Quality const& quality, STAmount const& output
     return std::min (result, output);
 }
 
+void
+BasicTaker::log_flow (char const* description, Flow const& flow)
+{
+    if (!journal_.debug)
+        return;
+
+    journal_.debug << description;
+
+    if (isXRP (issue_in ()))
+        journal_.debug << "   order in: " << format_amount (flow.order.in);
+    else
+        journal_.debug << "   order in: " << format_amount (flow.order.in) <<
+            " (issuer: " << format_amount (flow.issuers.in) << ")";
+
+    if (isXRP (issue_out ()))
+        journal_.debug << "  order out: " << format_amount (flow.order.out);
+    else
+        journal_.debug << "  order out: " << format_amount (flow.order.out) <<
+            " (issuer: " << format_amount (flow.issuers.out) << ")";
+}
+
 BasicTaker::Flow
 BasicTaker::flow_xrp_to_iou (
     Amounts const& order, Quality quality,
@@ -179,12 +220,15 @@ BasicTaker::flow_xrp_to_iou (
     f.order = order;
     f.issuers.out = rate_out.multiply (f.order.out);
 
+    log_flow ("flow_xrp_to_iou", f);
+
     // Clamp on owner balance
     if (owner_funds < f.issuers.out)
     {
         f.issuers.out = owner_funds;
         f.order.out = rate_out.divide (f.issuers.out);
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
+        log_flow ("(clamped on owner balance)", f);
     }
 
     // Clamp if taker wants to limit the output
@@ -193,6 +237,7 @@ BasicTaker::flow_xrp_to_iou (
         f.order.out = remaining_.out;
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
         f.issuers.out = rate_out.multiply (f.order.out);
+        log_flow ("(clamped on taker output)", f);
     }
 
     // Clamp on the taker's funds
@@ -201,6 +246,7 @@ BasicTaker::flow_xrp_to_iou (
         f.order.in = taker_funds;
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         f.issuers.out = rate_out.multiply (f.order.out);
+        log_flow ("(clamped on taker funds)", f);
     }
 
     // Clamp on remaining offer if we are not handling the second leg
@@ -210,6 +256,7 @@ BasicTaker::flow_xrp_to_iou (
         f.order.in = remaining_.in;
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         f.issuers.out = rate_out.multiply (f.order.out);
+        log_flow ("(clamped on taker input)", f);
     }
 
     return f;
@@ -225,12 +272,15 @@ BasicTaker::flow_iou_to_xrp (
     f.order = order;
     f.issuers.in = rate_in.multiply (f.order.in);
 
+    log_flow ("flow_iou_to_xrp", f);
+
     // Clamp on owner's funds
     if (owner_funds < f.order.out)
     {
         f.order.out = owner_funds;
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
         f.issuers.in = rate_in.multiply (f.order.in);
+        log_flow ("(clamped on owner funds)", f);
     }
 
     // Clamp if taker wants to limit the output and we are not the
@@ -242,6 +292,7 @@ BasicTaker::flow_iou_to_xrp (
             f.order.out = remaining_.out;
             f.order.in = qual_mul (f.order.out, quality, f.order.in);
             f.issuers.in = rate_in.multiply (f.order.in);
+            log_flow ("(clamped on taker output)", f);
         }
     }
 
@@ -251,6 +302,7 @@ BasicTaker::flow_iou_to_xrp (
         f.order.in = remaining_.in;
         f.issuers.in = rate_in.multiply (f.order.in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
+        log_flow ("(clamped on taker input)", f);
     }
 
     // Clamp on the taker's input balance
@@ -259,6 +311,7 @@ BasicTaker::flow_iou_to_xrp (
         f.issuers.in = taker_funds;
         f.order.in = rate_in.divide (f.issuers.in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
+        log_flow ("(clamped on taker funds)", f);
     }
 
     return f;
@@ -275,6 +328,8 @@ BasicTaker::flow_iou_to_iou (
     f.issuers.in = rate_in.multiply (f.order.in);
     f.issuers.out = rate_out.multiply (f.order.out);
 
+    log_flow ("flow_iou_to_iou", f);
+
     // Clamp on owner balance
     if (owner_funds < f.issuers.out)
     {
@@ -282,6 +337,7 @@ BasicTaker::flow_iou_to_iou (
         f.order.out = rate_out.divide (f.issuers.out);
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
         f.issuers.in = rate_in.multiply (f.order.in);
+        log_flow ("(clamped on owner funds)", f);
     }
 
     // Clamp on taker's offer
@@ -291,6 +347,7 @@ BasicTaker::flow_iou_to_iou (
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
         f.issuers.out = rate_out.multiply (f.order.out);
         f.issuers.in = rate_in.multiply (f.order.in);
+        log_flow ("(clamped on taker output)", f);
     }
 
     // Clamp on the taker's input offer
@@ -300,6 +357,7 @@ BasicTaker::flow_iou_to_iou (
         f.issuers.in = rate_in.multiply (f.order.in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         f.issuers.out = rate_out.multiply (f.order.out);
+        log_flow ("(clamped on taker input)", f);
     }
 
     // Clamp on the taker's input balance
@@ -309,6 +367,7 @@ BasicTaker::flow_iou_to_iou (
         f.order.in = rate_in.divide (f.issuers.in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         f.issuers.out = rate_out.multiply (f.order.out);
+        log_flow ("(clamped on taker funds)", f);
     }
 
     return f;
@@ -370,14 +429,20 @@ BasicTaker::do_cross (
     auto leg1_in_funds = get_funds (account (), offer1.in);
 
     if (account () == owner1)
+    {
+        journal_.trace << "The taker owns the first leg of a bridge.";
         leg1_in_funds = std::max (leg1_in_funds, offer1.in);
+    }
 
     // If the taker owns the second leg of the offer, then the taker's available
     // funds are not the limiting factor for the output - the offer itself is.
     auto leg2_out_funds = get_funds (owner2, offer2.out);
 
     if (account () == owner2)
+    {
+        journal_.trace << "The taker owns the second leg of a bridge.";
         leg2_out_funds = std::max (leg2_out_funds, offer2.out);
+    }
 
     // The amount available to flow via XRP is the amount that the owner of the
     // first leg of the bridge has, up to the first leg's output.
@@ -390,7 +455,18 @@ BasicTaker::do_cross (
     auto xrp_funds = get_funds (owner1, offer1.out);
 
     if (owner1 == owner2)
+    {
+        journal_.trace << "The bridge endpoints are owneb by the same account.";
         xrp_funds = std::max (offer1.out, offer2.in);
+    }
+
+    if (journal_.debug)
+    {
+        journal_.debug << "Available bridge funds:";
+        journal_.debug << "  leg1 in: " << format_amount (leg1_in_funds);
+        journal_.debug << " leg2 out: " << format_amount (leg2_out_funds);
+        journal_.debug << "      xrp: " << format_amount (xrp_funds);
+    }
 
     auto const leg1_rate = in_rate (owner1, account ());
     auto const leg2_rate = out_rate (owner2, account ());
@@ -417,6 +493,7 @@ BasicTaker::do_cross (
         flow2.order.in = flow1.order.out;
         flow2.order.out = qual_div (flow2.order.in, quality2, flow2.order.out);
         flow2.issuers.out = leg2_rate.multiply (flow2.order.out);
+        log_flow ("Balancing: adjusted second leg down", flow2);
     }
     else if (flow1.order.out > flow2.order.in)
     {
@@ -424,6 +501,7 @@ BasicTaker::do_cross (
         flow1.order.out = flow2.order.in;
         flow1.order.in = qual_mul (flow1.order.out, quality1, flow1.order.in);
         flow1.issuers.in = leg1_rate.multiply (flow1.order.in);
+        log_flow ("Balancing: adjusted first leg down", flow2);
     }
 
     if (flow1.order.out != flow2.order.in)
@@ -447,17 +525,37 @@ Taker::calculateRate (
 }
 
 Taker::Taker (CrossType cross_type, LedgerView& view, Account const& account,
-        Amounts const& offer, std::uint32_t flags)
+        Amounts const& offer, std::uint32_t flags, beast::Journal journal)
     : BasicTaker (cross_type, account, offer, Quality(offer), flags,
         calculateRate(view, offer.in.getIssuer(), account),
-        calculateRate(view, offer.out.getIssuer(), account))
-    , m_view (view)
+        calculateRate(view, offer.out.getIssuer(), account), journal)
+    , view_ (view)
     , xrp_flow_ (0)
     , direct_crossings_ (0)
     , bridge_crossings_ (0)
 {
     assert (issue_in () == offer.in.issue ());
     assert (issue_out () == offer.out.issue ());
+
+    if (journal_.debug)
+    {
+        journal_.debug << "Crossing as: " << to_string (account);
+
+        if (isXRP (issue_in ()))
+            journal_.debug << "   Offer in: " << format_amount (offer.in);
+        else
+            journal_.debug << "   Offer in: " << format_amount (offer.in) <<
+                " (issuer: " << issue_in ().account << ")";
+
+        if (isXRP (issue_out ()))
+            journal_.debug << "  Offer out: " << format_amount (offer.out);
+        else
+            journal_.debug << "  Offer out: " << format_amount (offer.out) <<
+                " (issuer: " << issue_out ().account << ")";
+
+        journal_.debug <<
+            "    Balance: " << format_amount (get_funds (account, offer.in));
+    }
 }
 
 void
@@ -469,13 +567,23 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
     if (order.out < zero)
         throw std::logic_error ("flow with negative output.");
 
-    return offer.consume (m_view, order);
+    if (journal_.debug) journal_.debug << "Consuming from offer " << offer;
+
+    if (journal_.trace)
+    {
+        auto const& available = offer.amount ();
+
+        journal_.trace << "   in:" << format_amount (available.in);
+        journal_.trace << "  out:" << format_amount(available.out);
+    }
+
+    offer.consume (view_, order);
 }
 
 STAmount
 Taker::get_funds (Account const& account, STAmount const& funds) const
 {
-    return m_view.accountFunds (account, funds, fhZERO_IF_FROZEN);
+    return view_.accountFunds (account, funds, fhZERO_IF_FROZEN);
 }
 
 TER Taker::transfer_xrp (
@@ -493,7 +601,7 @@ TER Taker::transfer_xrp (
     if (amount == zero)
         return tesSUCCESS;
 
-    return m_view.transfer_xrp (from, to, amount);
+    return view_.transfer_xrp (from, to, amount);
 }
 
 TER Taker::redeem_iou (
@@ -516,7 +624,7 @@ TER Taker::redeem_iou (
     if (get_funds (account, amount) <= zero)
         throw std::logic_error ("redeem_iou has no funds to redeem");
 
-    auto ret = m_view.redeem_iou (account, amount, issue);
+    auto ret = view_.redeem_iou (account, amount, issue);
 
     if (get_funds (account, amount) < zero)
         throw std::logic_error ("redeem_iou redeemed more funds than available");
@@ -539,7 +647,7 @@ TER Taker::issue_iou (
     if (amount == zero)
         return tesSUCCESS;
 
-    return m_view.issue_iou (account, amount, issue);
+    return view_.issue_iou (account, amount, issue);
 }
 
 // Performs funds transfers to fill the given offer and adjusts offer.
