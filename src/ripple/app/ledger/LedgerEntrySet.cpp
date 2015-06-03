@@ -128,6 +128,12 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
     return sleEntry;
 }
 
+std::shared_ptr<STLxe const>
+LedgerEntrySet::entryCacheI (LedgerEntryType letType, uint256 const& index)
+{
+    return entryCache(letType, index);
+}
+
 void LedgerEntrySet::entryCache (SLE::ref sle)
 {
     assert (mLedger);
@@ -929,6 +935,22 @@ bool LedgerEntrySet::dirFirst (
     return LedgerEntrySet::dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
+// Return the first entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirFirst (
+    uint256 const& uRootIndex,  // --> Root of directory.
+    std::shared_ptr<STLxe const>& sleNode,      // <-- current node
+    unsigned int& uDirEntry,    // <-- next entry
+    uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
+{
+    sleNode     = entryCacheI (ltDIR_NODE, uRootIndex);
+    uDirEntry   = 0;
+
+    assert (sleNode);           // Never probe for directories.
+
+    return LedgerEntrySet::dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
+}
+
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirNext (
@@ -954,6 +976,57 @@ bool LedgerEntrySet::dirNext (
         else
         {
             SLE::pointer sleNext = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
+            uDirEntry   = 0;
+
+            if (!sleNext)
+            { // This should never happen
+                WriteLog (lsFATAL, LedgerEntrySet)
+                        << "Corrupt directory: index:"
+                        << uRootIndex << " next:" << uNodeNext;
+                return false;
+            }
+
+            sleNode = sleNext;
+            // TODO(tom): make this iterative.
+            return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
+        }
+    }
+
+    uEntryIndex = svIndexes[uDirEntry++];
+
+    WriteLog (lsTRACE, LedgerEntrySet) << "dirNext:" <<
+        " uDirEntry=" << uDirEntry <<
+        " uEntryIndex=" << uEntryIndex;
+
+    return true;
+}
+
+// Return the current entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirNext (
+    uint256 const& uRootIndex,  // --> Root of directory
+    std::shared_ptr<STLxe const>& sleNode,      // <-> current node
+    unsigned int& uDirEntry,    // <-> next entry
+    uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
+{
+    STVector256 const svIndexes = sleNode->getFieldV256 (sfIndexes);
+
+    assert (uDirEntry <= svIndexes.size ());
+
+    if (uDirEntry >= svIndexes.size ())
+    {
+        std::uint64_t const uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
+
+        if (!uNodeNext)
+        {
+            uEntryIndex.zero ();
+
+            return false;
+        }
+        else
+        {
+            auto const sleNext = entryCacheI(
+                ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
             uDirEntry   = 0;
 
             if (!sleNext)
