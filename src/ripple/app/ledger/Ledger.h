@@ -254,7 +254,28 @@ public:
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
     AccountState::pointer getAccountState (const RippleAddress & acctID) const;
-    void writeBack (LedgerStateParms parms, SLE::ref);
+
+    /** Add a new STLxe.
+        Effects:
+            assert if the key already exists.
+            The key in the AccountState map is associated
+                with a serialized copy of the STLxe.
+        @note The key is taken from the STLxe.
+    */
+    void
+    insert (STLxe const& lxe);
+
+    /** Update an existing STLxe.
+        Effects:
+            assert if key does not already exist.
+            The previous STLxe associated with the key is released.
+            The key in the AccountState map is associated
+                with a serialized copy of the STLxe.
+        @note The key is taken from the STLxe
+    */
+    void
+    update (STLxe const& lxe);
+
     SLE::pointer getAccountRoot (Account const& accountID) const;
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
     void updateSkipList ();
