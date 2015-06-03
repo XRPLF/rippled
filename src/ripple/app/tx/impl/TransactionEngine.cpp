@@ -36,6 +36,9 @@ void TransactionEngine::txnWrite ()
     // Write back the account states
     for (auto& it : mNodes)
     {
+        // VFALCO TODO rvalue move the mEntry, make
+        //             sure the mNodes is not used after
+        //             this function is called.
         SLE::ref sleEntry = it.second.mEntry;
 
         switch (it.second.mAction)
@@ -49,9 +52,10 @@ void TransactionEngine::txnWrite ()
 
         case taaCREATE:
         {
+            // VFALCO Is this logging necessary anymore?
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaCREATE: " << sleEntry->getText ();
-            mLedger->writeBack (lepCREATE, sleEntry);
+            mLedger->insert(*sleEntry);
         }
         break;
 
@@ -59,7 +63,7 @@ void TransactionEngine::txnWrite ()
         {
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaMODIFY: " << sleEntry->getText ();
-            mLedger->writeBack (lepNONE, sleEntry);
+            mLedger->update(*sleEntry);
         }
         break;
 

@@ -47,6 +47,7 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 #include <boost/optional.hpp>
+#include <cassert>
 
 namespace ripple {
 
@@ -72,7 +73,7 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     WriteLog (lsTRACE, Ledger)
             << "root account: " << startAccount->peekSLE ().getJson (0);
 
-    writeBack (lepCREATE, startAccount->getSLE ());
+    insert(*startAccount->getSLE());
 
     mAccountStateMap->flushDirty (hotACCOUNT_NODE, mLedgerSeq);
 }
@@ -1027,36 +1028,31 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 }
 
 void
-Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
+Ledger::insert (STLxe const& lxe)
 {
-    bool create = false;
+    assert(! mAccountStateMap->hasItem(lxe.getIndex()));
+    auto item = std::make_shared<SHAMapItem>(
+        lxe.getIndex());
+    lxe.add(item->peekSerializer());
+    auto const success =
+        mAccountStateMap->addGiveItem(
+            item, false, false);
+    (void)success;
+    assert(success);
+}
 
-    if (!mAccountStateMap->hasItem (entry->getIndex ()))
-    {
-        if ((parms & lepCREATE) == 0)
-        {
-            assert(false);
-            return;
-        }
-        create = true;
-    }
-
-    auto item = std::make_shared<SHAMapItem> (entry->getIndex ());
-    entry->add (item->peekSerializer());
-
-    if (create)
-    {
-        assert (!mAccountStateMap->hasItem (entry->getIndex ()));
-        if (!mAccountStateMap->addGiveItem (item, false, false))
-        {
-            assert (false);
-            return;
-        }
-        return;
-    }
-
-    if (!mAccountStateMap->updateGiveItem (item, false, false))
-        assert (false);
+void
+Ledger::update (STLxe const& lxe)
+{
+    assert(mAccountStateMap->hasItem(lxe.getIndex()));
+    auto item = std::make_shared<SHAMapItem>(
+        lxe.getIndex());
+    lxe.add(item->peekSerializer());
+    auto const success =
+        mAccountStateMap->updateGiveItem(
+            item, false, false);
+    (void)success;
+    assert(success);
 }
 
 SLE::pointer Ledger::getSLE (uint256 const& uHash) const
@@ -1509,17 +1505,27 @@ void Ledger::updateSkipList ()
         std::vector<uint256> hashes;
 
         // VFALCO TODO Document this skip list concept
+        bool created;
         if (!skipList)
+        {
             skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
+            created = true;
+        }
         else
+        {
             hashes = static_cast<decltype(hashes)> (skipList->getFieldV256 (sfHashes));
+            created = false;
+        }
 
         assert (hashes.size () <= 256);
         hashes.push_back (mParentHash);
         skipList->setFieldV256 (sfHashes, STVector256 (hashes));
         skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
 
-        writeBack (lepCREATE, skipList);
+        if (created)
+            insert(*skipList);
+        else
+            update(*skipList);
     }
 
     // update record of past 256 ledger
@@ -1529,10 +1535,17 @@ void Ledger::updateSkipList ()
 
     std::vector <uint256> hashes;
 
+    bool created;
     if (!skipList)
+    {
         skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
+        created = true;
+    }
     else
+    {
         hashes = static_cast<decltype(hashes)>(skipList->getFieldV256 (sfHashes));
+        created = false;
+    }
 
     assert (hashes.size () <= 256);
 
@@ -1543,7 +1556,10 @@ void Ledger::updateSkipList ()
     skipList->setFieldV256 (sfHashes, STVector256 (hashes));
     skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
 
-    writeBack (lepCREATE, skipList);
+    if (created)
+        insert(*skipList);
+    else
+        update(*skipList);
 }
 
 /** Save, or arrange to save, a fully-validated ledger
