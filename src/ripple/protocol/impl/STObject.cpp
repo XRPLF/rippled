@@ -68,7 +68,7 @@ STObject::STObject (SOTemplate const& type,
         SerialIter & sit, SField const& name)
     : STBase (name)
 {
-    v_.reserve(type.peek().size());
+    v_.reserve(type.size());
     set (sit);
     setType (type);
 }
@@ -92,10 +92,10 @@ STObject::operator= (STObject&& other)
 void STObject::set (const SOTemplate& type)
 {
     v_.clear();
-    v_.reserve(type.peek().size());
+    v_.reserve(type.size());
     mType = &type;
 
-    for (auto const& elem : type.peek())
+    for (auto const& elem : type.all())
     {
         if (elem->flags != SOE_REQUIRED)
             v_.emplace_back(detail::nonPresentObject, elem->e_field);
@@ -109,8 +109,8 @@ bool STObject::setType (const SOTemplate& type)
     bool valid = true;
     mType = &type;
     decltype(v_) v;
-    v.reserve(type.peek().size());
-    for (auto const& e : type.peek())
+    v.reserve(type.size());
+    for (auto const& e : type.all())
     {
         auto const iter = std::find_if(
             v_.begin(), v_.end(), [&](detail::STVar const& b)
@@ -173,7 +173,7 @@ STObject::setTypeFromSField (SField const& sField)
 bool STObject::isValidForType ()
 {
     auto it = v_.begin();
-    for (SOTemplate::value_type const& elem : mType->peek())
+    for (auto const& elem : mType->all())
     {
         if (it == v_.end())
             return false;

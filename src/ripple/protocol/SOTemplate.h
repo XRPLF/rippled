@@ -21,7 +21,8 @@
 #define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 
 #include <ripple/protocol/SField.h>
-#include <memory>
+#include <boost/range.hpp>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -60,22 +61,26 @@ public:
 class SOTemplate
 {
 public:
-    using value_type = std::unique_ptr <SOElement const>;
-    using list_type = std::vector <value_type>;
+    using list_type = std::vector <std::unique_ptr <SOElement const>>;
+    using iterator_range = boost::iterator_range<list_type::const_iterator>;
 
     /** Create an empty template.
         After creating the template, call @ref push_back with the
         desired fields.
         @see push_back
     */
-    SOTemplate ();
+    SOTemplate () = default;
 
-    // VFALCO NOTE Why do we even bother with the 'private' keyword if
-    //             this function is present?
-    //
-    list_type const& peek () const
+    /* Provide for the enumeration of fields */
+    iterator_range all () const
     {
-        return mTypes;
+        return boost::make_iterator_range(mTypes);
+    }
+
+    /** The number of entries in this template */
+    std::size_t size () const
+    {
+        return mTypes.size ();
     }
 
     /** Add an element to the template. */
