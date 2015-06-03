@@ -24,6 +24,7 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/TxFlags.h>
 
+#include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <functional>
 
@@ -88,6 +89,8 @@ private:
     CrossType cross_type_;
 
 protected:
+    beast::Journal journal_;
+
     struct Flow
     {
         Amounts order;
@@ -106,6 +109,9 @@ protected:
     };
 
 private:
+    void
+    log_flow (char const* description, Flow const& flow);
+
     Flow
     flow_xrp_to_iou (Amounts const& offer, Quality quality,
         STAmount const& owner_funds, STAmount const& taker_funds,
@@ -149,7 +155,7 @@ public:
     BasicTaker (
         CrossType cross_type, Account const& account, Amounts const& amount,
         Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
-        std::uint32_t rate_out);
+        std::uint32_t rate_out, beast::Journal journal = beast::Journal ());
 
     virtual ~BasicTaker () = default;
 
@@ -236,7 +242,7 @@ private:
     calculateRate (LedgerView& view, Account const& issuer, Account const& account);
 
     // The underlying ledger entry we are dealing with
-    LedgerView& m_view;
+    LedgerView& view_;
 
     // The amount of XRP that flowed if we were autobridging
     STAmount xrp_flow_;
@@ -269,7 +275,7 @@ public:
     Taker (Taker const&) = delete;
 
     Taker (CrossType cross_type, LedgerView& view, Account const& account,
-        Amounts const& offer, std::uint32_t flags);
+        Amounts const& offer, std::uint32_t flags, beast::Journal journal);
     ~Taker () = default;
 
     void

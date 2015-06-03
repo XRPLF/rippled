@@ -26,6 +26,8 @@
 #include <ripple/json/to_string.h>
 
 #include <beast/cxx14/memory.h>
+#include <beast/utility/Journal.h>
+#include <beast/utility/WrappedSink.h>
 #include <stdexcept>
 
 namespace ripple {
@@ -393,20 +395,13 @@ private:
         Clock::time_point const when (
             mEngine->getLedger ()->getParentCloseTimeNC ());
 
-        Taker taker (cross_type_, view, mTxnAccountID, taker_amount, mTxn.getFlags());
+        beast::WrappedSink takerSink (m_journal, "Taker ");
+
+        Taker taker (cross_type_, view, mTxnAccountID, taker_amount,
+            mTxn.getFlags(), beast::Journal (takerSink));
 
         try
         {
-            if (m_journal.debug)
-            {
-                auto const funds = view.accountFunds (
-                    taker.account(), taker_amount.in, fhIGNORE_FREEZE);
-
-                m_journal.debug << "Crossing:";
-                m_journal.debug << "      Taker: " << to_string (mTxnAccountID);
-                m_journal.debug << "    Balance: " << format_amount (funds);
-            }
-
             if (cross_type_ == CrossType::IouToIou)
                 return bridged_cross (taker, view, cancel_view, when);
 
