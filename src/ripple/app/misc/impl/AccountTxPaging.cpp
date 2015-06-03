@@ -45,9 +45,10 @@ convertBlobsToTxResult (
     tr->setStatus (Transaction::sqlTransactionStatus(status));
     tr->setLedger (ledger_index);
 
-    to.emplace_back(std::make_pair(std::move(tr),
-        std::make_shared<TransactionMetaSet> (
-            tr->getID (), tr->getLedger (), rawMeta)));
+    auto metaset = std::make_shared<TransactionMetaSet> (
+        tr->getID (), tr->getLedger (), rawMeta);
+
+    to.emplace_back(std::move(tr), metaset);
 };
 
 void

@@ -713,8 +713,8 @@ OverlayImpl::selectPeers (PeerSet& set, std::size_t limit,
         v.reserve(m_publicKeyMap.size());
         for_each_unlocked ([&](std::shared_ptr<PeerImp> && e)
         {
-            v.emplace_back(
-                e->getScore(score(e)), std::move(e));
+            auto const s = e->getScore(score(e));
+            v.emplace_back(s, std::move(e));
         });
     }
     std::sort(v.begin(), v.end(),
