@@ -97,39 +97,44 @@ public:
     ~Ledger();
 
     void updateHash ();
+
     void setClosed ()
     {
         mClosed = true;
     }
+    
     void setValidated()
     {
         mValidated = true;
     }
-    void setAccepted (
-        std::uint32_t closeTime, int closeResolution, bool correctCloseTime);
+    
+    void setAccepted (std::uint32_t closeTime,
+        int closeResolution, bool correctCloseTime);
 
     void setAccepted ();
+
     void setImmutable ();
+
     bool isClosed () const
     {
         return mClosed;
     }
+
     bool isAccepted () const
     {
         return mAccepted;
     }
+
     bool isValidated () const
     {
         return mValidated;
     }
+
     bool isImmutable () const
     {
         return mImmutable;
     }
-    bool isFixed () const
-    {
-        return mClosed || mImmutable;
-    }
+
     void setFull ()
     {
         mTransactionMap->setLedgerSeq (mLedgerSeq);
@@ -141,46 +146,57 @@ public:
     void setRaw (SerialIter& sit, bool hasPrefix);
 
     uint256 const& getHash ();
+
     uint256 const& getParentHash () const
     {
         return mParentHash;
     }
+
     uint256 const& getTransHash () const
     {
         return mTransHash;
     }
+
     uint256 const& getAccountHash () const
     {
         return mAccountHash;
     }
+
     std::uint64_t getTotalCoins () const
     {
         return mTotCoins;
     }
+
     void destroyCoins (std::uint64_t fee)
     {
         mTotCoins -= fee;
     }
+
     void setTotalCoins (std::uint64_t totCoins)
     {
         mTotCoins = totCoins;
     }
+
     std::uint32_t getCloseTimeNC () const
     {
         return mCloseTime;
     }
+
     std::uint32_t getParentCloseTimeNC () const
     {
         return mParentCloseTime;
     }
+
     std::uint32_t getLedgerSeq () const
     {
         return mLedgerSeq;
     }
+
     int getCloseResolution () const
     {
         return mCloseResolution;
     }
+
     bool getCloseAgree () const
     {
         return (mCloseFlags & sLCF_NoConsensusTime) == 0;
@@ -192,7 +208,9 @@ public:
         assert (!mImmutable);
         mCloseTime = ct;
     }
+
     void setCloseTime (boost::posix_time::ptime);
+
     boost::posix_time::ptime getCloseTime () const;
 
     // low level functions
@@ -200,6 +218,7 @@ public:
     {
         return mTransactionMap;
     }
+
     std::shared_ptr<SHAMap> const& peekAccountStateMap () const
     {
         return mAccountStateMap;
@@ -216,22 +235,29 @@ public:
 
     // Transaction Functions
     bool addTransaction (uint256 const& id, Serializer const& txn);
+
     bool addTransaction (
         uint256 const& id, Serializer const& txn, Serializer const& metaData);
+
     bool hasTransaction (uint256 const& TransID) const
     {
         return mTransactionMap->hasItem (TransID);
     }
+
     Transaction::pointer getTransaction (uint256 const& transID) const;
+
     bool getTransaction (
         uint256 const& transID,
         Transaction::pointer & txn, TransactionMetaSet::pointer & txMeta) const;
+
     bool getTransactionMeta (
         uint256 const& transID, TransactionMetaSet::pointer & txMeta) const;
+
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
     static STTx::pointer getSTransaction (
         std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType);
+
     STTx::pointer getSMTransaction (
         std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
@@ -262,30 +288,26 @@ public:
     update (STLxe const& lxe);
 
     SLE::pointer getAccountRoot (Account const& accountID) const;
+
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
+
     void updateSkipList ();
 
     void visitAccountItems (
         Account const& accountID, std::function<void (SLE::ref)>) const;
+
     bool visitAccountItems (
         Account const& accountID,
         uint256 const& startAfter, // Entry to start after
         std::uint64_t const hint,  // Hint which page to start at
         unsigned int limit,
         std::function <bool (SLE::ref)>) const;
+
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
-    // database functions (low-level)
-    static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
-    static Ledger::pointer loadByHash (uint256 const& ledgerHash);
-    static uint256 getHashByIndex (std::uint32_t index);
-    static bool getHashesByIndex (
-        std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
-    static std::map< std::uint32_t, std::pair<uint256, uint256> >
-                  getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
-    // next/prev function
+    // Retrieve ledger entries
     SLE::pointer getSLE (uint256 const& uHash) const; // SLE is mutable
     SLE::pointer getSLEi (uint256 const& uHash) const; // SLE is immutable
 
@@ -311,6 +333,7 @@ public:
 
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;
+
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
@@ -380,7 +403,21 @@ public:
     }
 
     bool walkLedger () const;
+
     bool assertSane () const;
+
+    // database functions (low-level)
+    static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
+
+    static Ledger::pointer loadByHash (uint256 const& ledgerHash);
+
+    static uint256 getHashByIndex (std::uint32_t index);
+
+    static bool getHashesByIndex (
+        std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
+
+    static std::map< std::uint32_t, std::pair<uint256, uint256> >
+                  getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
 
 protected:
     // returned SLE is immutable
@@ -447,6 +484,8 @@ private:
     // Reserve increment in fee units
     std::uint32_t mutable mReserveIncrement = 0;
 };
+
+//------------------------------------------------------------------------------
 
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);

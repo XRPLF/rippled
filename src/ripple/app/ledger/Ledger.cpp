@@ -277,14 +277,10 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix)
     mCloseResolution =  sit.get8 ();
     mCloseFlags =       sit.get8 ();
     updateHash ();
-
-    if (mValidHash)
-    {
-        mTransactionMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, mTransHash,
-            getApp().family(), deprecatedLogs().journal("SHAMap"));
-        mAccountStateMap = std::make_shared<SHAMap> (SHAMapType::STATE, mAccountHash,
-            getApp().family(), deprecatedLogs().journal("SHAMap"));
-    }
+    mTransactionMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, mTransHash,
+        getApp().family(), deprecatedLogs().journal("SHAMap"));
+    mAccountStateMap = std::make_shared<SHAMap> (SHAMapType::STATE, mAccountHash,
+        getApp().family(), deprecatedLogs().journal("SHAMap"));
 }
 
 void Ledger::addRaw (Serializer& s) const
