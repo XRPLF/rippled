@@ -51,9 +51,7 @@ void TransactionEngine::txnWrite ()
         {
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaCREATE: " << sleEntry->getText ();
-
-            if (mLedger->writeBack (lepCREATE, sleEntry) & lepERROR)
-                assert (false);
+            mLedger->writeBack (lepCREATE, sleEntry);
         }
         break;
 
@@ -61,9 +59,7 @@ void TransactionEngine::txnWrite ()
         {
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaMODIFY: " << sleEntry->getText ();
-
-            if (mLedger->writeBack (lepNONE, sleEntry) & lepERROR)
-                assert (false);
+            mLedger->writeBack (lepNONE, sleEntry);
         }
         break;
 

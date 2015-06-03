@@ -254,7 +254,7 @@ public:
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
     AccountState::pointer getAccountState (const RippleAddress & acctID) const;
-    LedgerStateParms writeBack (LedgerStateParms parms, SLE::ref);
+    void writeBack (LedgerStateParms parms, SLE::ref);
     SLE::pointer getAccountRoot (Account const& accountID) const;
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
     void updateSkipList ();
