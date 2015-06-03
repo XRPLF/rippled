@@ -34,21 +34,6 @@ namespace ripple {
 
 class Job;
 
-enum LedgerStateParms
-{
-    lepNONE         = 0,    // no special flags
-
-    // input flags
-    lepCREATE       = 1,    // Create if not present
-
-    // output flags
-    lepOKAY         = 2,    // success
-    lepMISSING      = 4,    // No node in that slot
-    lepWRONGTYPE    = 8,    // Node of different type there
-    lepCREATED      = 16,   // Node was created
-    lepERROR        = 32,   // error
-};
-
 class SqliteStatement;
 
 // VFALCO TODO figure out exactly how this thing works.
@@ -398,9 +383,6 @@ public:
     bool assertSane () const;
 
 protected:
-    SLE::pointer getASNode (
-        LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let) const;
-
     // returned SLE is immutable
     SLE::pointer getASNodeI (uint256 const& nodeID, LedgerEntryType let) const;
 
@@ -411,6 +393,8 @@ protected:
     bool saveValidatedLedger (bool current);
 
 private:
+    SLE::pointer getFeeNode (uint256 const& nodeID) const;
+
     // Updates the fees cached in the ledger.
     // Safe to call concurrently. We shouldn't be storing
     // fees in the Ledger object, they should be a local side-structure
@@ -460,20 +444,6 @@ private:
     // Reserve increment in fee units
     std::uint32_t mutable mReserveIncrement = 0;
 };
-
-inline LedgerStateParms operator| (
-    const LedgerStateParms& l1, const LedgerStateParms& l2)
-{
-    return static_cast<LedgerStateParms> (
-        static_cast<int> (l1) | static_cast<int> (l2));
-}
-
-inline LedgerStateParms operator& (
-    const LedgerStateParms& l1, const LedgerStateParms& l2)
-{
-    return static_cast<LedgerStateParms> (
-        static_cast<int> (l1) & static_cast<int> (l2));
-}
 
 } // ripple
 

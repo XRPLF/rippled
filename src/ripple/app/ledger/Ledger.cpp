@@ -1280,38 +1280,18 @@ SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let) con
     return node;
 }
 
-SLE::pointer Ledger::getASNode (
-    LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let) const
+SLE::pointer
+Ledger::getFeeNode(uint256 const& nodeID) const
 {
-    std::shared_ptr<SHAMapItem> account = mAccountStateMap->peekItem (nodeID);
-
-    if (!account)
-    {
-        if ( (parms & lepCREATE) == 0 )
-        {
-            parms = lepMISSING;
-
-            return SLE::pointer ();
-        }
-
-        parms = parms | lepCREATED | lepOKAY;
-        SLE::pointer sle = std::make_shared<SLE> (let, nodeID);
-
-        return sle;
-    }
-
-    SLE::pointer sle =
-        std::make_shared<SLE> (account->peekSerializer (), nodeID);
-
-    if (sle->getType () != let)
-    {
-        // maybe it's a currency or something
-        parms = parms | lepWRONGTYPE;
-        return SLE::pointer ();
-    }
-
-    parms = parms | lepOKAY;
-
+    std::shared_ptr<SHAMapItem> account =
+        mAccountStateMap->peekItem (nodeID);
+    if (! account)
+        return {};
+    SLE::pointer sle = std::make_shared<SLE>(
+        account->peekSerializer(), nodeID);
+    // Make sure its the correct type
+    if (sle->getType () != ltFEE_SETTINGS)
+        return {};
     return sle;
 }
 
@@ -1635,9 +1615,7 @@ void Ledger::deprecatedUpdateCachedFees() const
     std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
     std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
-    LedgerStateParms p = lepNONE;
-    auto sle = getASNode (p, getLedgerFeeIndex (), ltFEE_SETTINGS);
-
+    auto sle = getFeeNode (getLedgerFeeIndex ());
     if (sle)
     {
         if (sle->getFieldIndex (sfBaseFee) != -1)
