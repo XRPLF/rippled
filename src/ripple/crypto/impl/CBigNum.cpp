@@ -27,6 +27,7 @@
 #include <ripple/crypto/CAutoBN_CTX.h>
 #include <stdexcept>
 #include <string>
+#include <algorithm>
 
 namespace ripple {
 
