@@ -19,12 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/SOTemplate.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
-
-SOTemplate::SOTemplate ()
-{
-}
 
 void SOTemplate::push_back (SOElement const& r)
 {
@@ -52,7 +49,7 @@ void SOTemplate::push_back (SOElement const& r)
 
     // Append the new element.
     //
-    mTypes.push_back (value_type (new SOElement (r)));
+    mTypes.push_back (std::make_unique<SOElement const> (r));
 }
 
 int SOTemplate::getIndex (SField const& f) const
