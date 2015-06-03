@@ -737,7 +737,7 @@ bool Ledger::saveValidatedLedger (bool current)
  * @return The ledger, ledger sequence, and ledger hash.
  */
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
-loadHelper(std::string const& sqlSuffix)
+loadLedgerHelper(std::string const& sqlSuffix)
 {
     Ledger::pointer ledger;
     uint256 ledgerHash;
@@ -828,7 +828,7 @@ Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
         std::ostringstream s;
         s << "WHERE LedgerSeq = " << ledgerIndex;
         std::tie (ledger, std::ignore, std::ignore) =
-            loadHelper (s.str ());
+            loadLedgerHelper (s.str ());
     }
 
     finishLoadByIndexOrHash (ledger);
@@ -842,7 +842,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
         std::ostringstream s;
         s << "WHERE LedgerHash = '" << ledgerHash << "'";
         std::tie (ledger, std::ignore, std::ignore) =
-            loadHelper (s.str ());
+            loadLedgerHelper (s.str ());
     }
 
     finishLoadByIndexOrHash (ledger);
@@ -944,52 +944,6 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
     }
 
     return ret;
-}
-
-Ledger::pointer Ledger::getLastFullLedger ()
-{
-    try
-    {
-        Ledger::pointer ledger;
-        std::uint32_t ledgerSeq;
-        uint256 ledgerHash;
-        std::tie (ledger, ledgerSeq, ledgerHash) =
-                loadHelper ("order by LedgerSeq desc limit 1");
-
-        if (!ledger)
-            return ledger;
-
-        ledger->setClosed ();
-
-        if (getApp().getOPs ().haveLedger (ledgerSeq))
-        {
-            ledger->setAccepted ();
-            ledger->setValidated ();
-        }
-
-        if (ledger->getHash () != ledgerHash)
-        {
-            if (ShouldLog (lsERROR, Ledger))
-            {
-                WriteLog (lsERROR, Ledger) << "Failed on ledger";
-                Json::Value p;
-                addJson (p, {*ledger, LedgerFill::full});
-                WriteLog (lsERROR, Ledger) << p;
-            }
-
-            assert (false);
-            return Ledger::pointer ();
-        }
-
-        WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
-        return ledger;
-    }
-    catch (SHAMapMissingNode& sn)
-    {
-        WriteLog (lsWARNING, Ledger)
-                << "Database contains ledger with missing nodes: " << sn;
-        return Ledger::pointer ();
-    }
 }
 
 void Ledger::setAcquiring (void)
