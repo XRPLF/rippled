@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/impl/ConsensusImp.h>
 #include <ripple/app/ledger/impl/LedgerConsensusImp.h>
-#include <ripple/app/ledger/LedgerTiming.h>
 #include <beast/utility/Journal.h>
 
 namespace ripple {
