@@ -24,57 +24,6 @@
 
 namespace ripple {
 
-/** Determines whether the current ledger should close at this time.
-
-    This function should be called when a ledger is open and there is no close
-    in progress, or when a transaction is received and no close is in progress.
-
-    @param anyTransactions indicates whether any transactions have been received
-    @param previousProposers proposers in the last closing
-    @param proposersClosed proposers who have currently closed this ledger
-    @param proposersValidated proposers who have validated the last closed ledger
-    @param previousMSeconds time, in milliseconds, for the previous ledger to
-                            reach consensus (in milliseconds)
-    @param currentMSeconds time, in milliseconds since the previous ledger closed
-    @param openMSeconds time, in milliseconds, since the previous LCL was computed
-    @param idleInterval the network's desired idle interval
-*/
-bool shouldCloseLedger (
-    bool anyTransactions,
-    int previousProposers,
-    int proposersClosed,
-    int proposersValidated,
-    int previousMSeconds,
-    int currentMSeconds,
-    int openMSeconds,
-    int idleInterval);
-
-/** What state the consensus process is on. */
-enum class ConsensusState
-{
-    No,           // We do not have consensus
-    MovedOn,      // The network has consensus without us
-    Yes           // We have consensus along with the network
-};
-
-/** Determine whether the network reached consensus and whether we joined.
-
-    @param previousProposers proposers in the last closing (not including us)
-    @param currentProposers proposers in this closing so far (not including us)
-    @param currentAgree proposers who agree with us
-    @param currentFinished proposers who have validated a ledger after this one
-    @param previousAgreeTime how long, in milliseconds, it took to agree on the
-                             last ledger
-    @param currentAgreeTime how long, in milliseconds, we've been trying to agree
-*/
-ConsensusState checkConsensus (
-    int previousProposers,
-    int currentProposers,
-    int currentAgree,
-    int currentClosed,
-    int previousAgreeTime,
-    int currentAgreeTime);
-
 /** Calculates the close time resolution for the specified ledger.
 
     The Ripple protocol uses binning to represent time intervals using only one
@@ -83,7 +32,7 @@ ConsensusState checkConsensus (
     The time resolution (i.e. the size of the intervals) is adjusted dynamically
     based on what happened in the last ledger, to try to avoid disagreements.
 */
-int getNextLedgerTimeResolution (
+int getNextLedgerTimeResolution ( // NOT OK
     int previousResolution,
     bool previousAgree,
     std::uint32_t ledgerSeq);
@@ -93,7 +42,7 @@ int getNextLedgerTimeResolution (
     @param closeTime The time to be rouned.
     @param closeResolution The resolution
 */
-std::uint32_t roundCloseTime (
+std::uint32_t roundCloseTime ( // NOT OK
     std::uint32_t closeTime,
     std::uint32_t closeResolution);
 

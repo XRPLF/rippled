@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_CONSENSUS_LEDGERCONSENSUS_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_LEDGERCONSENSUS_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_LEDGERCONSENSUS_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LEDGERCONSENSUS_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
@@ -33,6 +33,8 @@
 
 namespace ripple {
 
+class Consensus;
+
 /** Manager for achieving consensus on the next ledger.
 
     This object is created when the consensus process starts, and
@@ -41,7 +43,7 @@ namespace ripple {
 class LedgerConsensus
 {
 public:
-    virtual ~LedgerConsensus() = 0;
+    virtual ~LedgerConsensus() = default;
 
     virtual Json::Value getJson (bool full) = 0;
 
@@ -66,17 +68,10 @@ public:
     virtual void simulate () = 0;
 };
 
-std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (
-    int previousProposers, int previousConvergeTime,
-    InboundTransactions& inboundTransactions, LocalTxs& localtx,
-    LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-        std::uint32_t closeTime, FeeVote& feeVote);
-
 void
 applyTransactions(std::shared_ptr<SHAMap> const& set, Ledger::ref applyLedger,
-                  Ledger::ref checkLedger,
-                  CanonicalTXSet& retriableTransactions, bool openLgr);
+                  Ledger::ref checkLedger, CanonicalTXSet& retriableTransactions,
+                  bool openLgr);
 
 } // ripple
 
