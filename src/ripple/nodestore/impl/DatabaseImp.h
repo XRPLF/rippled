@@ -287,12 +287,12 @@ public:
                         uint256 const& hash,
                         Backend& backend)
     {
-        std::shared_ptr<NodeObject> object = NodeObject::createObject(
-            type, std::move(data), hash);
-
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
         assert (hash == sha512Hash(make_Slice(data)));
         #endif
+
+        std::shared_ptr<NodeObject> object = NodeObject::createObject(
+            type, std::move(data), hash);
 
         m_cache.canonicalize (hash, object, true);
 
