@@ -126,7 +126,7 @@ Ledger::Ledger (uint256 const& parentHash,
 }
 
 // Create a new ledger that's a snapshot of this one
-Ledger::Ledger (Ledger& ledger,
+Ledger::Ledger (Ledger const& ledger,
                 bool isMutable)
     : mParentHash (ledger.mParentHash)
     , mTotCoins (ledger.mTotCoins)

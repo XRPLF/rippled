@@ -67,13 +67,12 @@ public:
     using pointer = std::shared_ptr<Ledger>;
     using ref     = const std::shared_ptr<Ledger>&;
 
-    // ledger close flags
-    static const std::uint32_t sLCF_NoConsensusTime = 1;
-
-public:
+    Ledger (Ledger const&) = delete;
+    Ledger& operator= (Ledger const&) = delete;
 
     // used for the starting bootstrap ledger
-    Ledger (const RippleAddress & masterID, std::uint64_t startAmount);
+    Ledger (RippleAddress const& masterID,
+        std::uint64_t startAmount);
 
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
@@ -81,18 +80,21 @@ public:
             std::uint64_t totCoins, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded);
-    // used for database ledgers
 
+    // used for database ledgers
     Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
+
     Ledger (void const* data,
         std::size_t size, bool hasPrefix);
-    Ledger (bool dummy, Ledger & previous); // ledger after this one
-    Ledger (Ledger & target, bool isMutable); // snapshot
 
-    Ledger (Ledger const&) = delete;
-    Ledger& operator= (Ledger const&) = delete;
+    // Create a new ledger that follows this one
+    // VFALCO `previous` should be const
+    Ledger (bool dummy, Ledger& previous);
 
-    ~Ledger ();
+    // Create a new ledger that's a snapshot of this one
+    Ledger (Ledger const& target, bool isMutable);
+
+    ~Ledger();
 
     static Ledger::pointer getLastFullLedger ();
 
@@ -393,6 +395,9 @@ protected:
     bool saveValidatedLedger (bool current);
 
 private:
+    // ledger close flags
+    static const std::uint32_t sLCF_NoConsensusTime = 1;
+
     SLE::pointer getFeeNode (uint256 const& nodeID) const;
 
     // Updates the fees cached in the ledger.
