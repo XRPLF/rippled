@@ -96,8 +96,6 @@ public:
 
     ~Ledger();
 
-    static Ledger::pointer getLastFullLedger ();
-
     void updateHash ();
     void setClosed ()
     {
@@ -449,6 +447,9 @@ private:
     // Reserve increment in fee units
     std::uint32_t mutable mReserveIncrement = 0;
 };
+
+std::tuple<Ledger::pointer, std::uint32_t, uint256>
+loadLedgerHelper(std::string const& sqlSuffix);
 
 } // ripple
 

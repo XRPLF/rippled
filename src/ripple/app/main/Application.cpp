@@ -26,6 +26,7 @@
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/CollectorManager.h>
@@ -1041,6 +1042,7 @@ public:
 private:
     void updateTables ();
     void startNewLedger ();
+    Ledger::pointer getLastFullLedger();
     bool loadOldLedger (
         std::string const& ledgerID, bool replay, bool isFilename);
 
@@ -1076,6 +1078,53 @@ void ApplicationImp::startNewLedger ()
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
         assert (secondLedger->getAccountState (rootAddress));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
+    }
+}
+
+Ledger::pointer
+ApplicationImp::getLastFullLedger()
+{
+    try
+    {
+        Ledger::pointer ledger;
+        std::uint32_t ledgerSeq;
+        uint256 ledgerHash;
+        std::tie (ledger, ledgerSeq, ledgerHash) =
+                loadLedgerHelper ("order by LedgerSeq desc limit 1");
+
+        if (!ledger)
+            return ledger;
+
+        ledger->setClosed ();
+
+        if (getApp().getOPs ().haveLedger (ledgerSeq))
+        {
+            ledger->setAccepted ();
+            ledger->setValidated ();
+        }
+
+        if (ledger->getHash () != ledgerHash)
+        {
+            if (ShouldLog (lsERROR, Ledger))
+            {
+                WriteLog (lsERROR, Ledger) << "Failed on ledger";
+                Json::Value p;
+                addJson (p, {*ledger, LedgerFill::full});
+                WriteLog (lsERROR, Ledger) << p;
+            }
+
+            assert (false);
+            return Ledger::pointer ();
+        }
+
+        WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
+        return ledger;
+    }
+    catch (SHAMapMissingNode& sn)
+    {
+        WriteLog (lsWARNING, Ledger)
+                << "Database contains ledger with missing nodes: " << sn;
+        return Ledger::pointer ();
     }
 }
 
@@ -1185,7 +1234,9 @@ bool ApplicationImp::loadOldLedger (
             }
         }
         else if (ledgerID.empty () || (ledgerID == "latest"))
-            loadLedger = Ledger::getLastFullLedger ();
+        {
+            loadLedger = getLastFullLedger ();
+        }
         else if (ledgerID.length () == 64)
         {
             // by hash
