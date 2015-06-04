@@ -2,6 +2,13 @@ language: cpp
 compiler:
   - clang
   - gcc
+env:
+  - TARGET=debug
+  - TARGET=debug.nounity
+  # We can specify any combination of builds here, for example, to
+  # include release builds, too, uncomment the following lines.
+  #- TARGET=release
+  #- TARGET=release.nounity
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-software-properties
@@ -38,10 +45,10 @@ script:
   - scons vcxproj
   - git diff --exit-code
   # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
-  - scons $CC.debug
-  # We can be sure we're using the build/$CC.debug variant (-f so never err)
+  - scons $CC.$TARGET
+  # We can be sure we're using the build/$CC.$TARGET variant (-f so never err)
   - rm -f build/rippled 
-  - export RIPPLED_PATH="$PWD/build/$CC.debug/rippled"
+  - export RIPPLED_PATH="$PWD/build/$CC.$TARGET/rippled"
   # See what we've actually built
   - ldd $RIPPLED_PATH
   # Run unittests (under gdb)
@@ -52,7 +59,7 @@ script:
     # gdb --help
   - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args $RIPPLED_PATH --unittest
   - npm install
-  # Use build/(gcc|clang).debug/rippled
+  # Use build/(gcc|clang).$TARGET/rippled
   - |
     echo "exports.default_server_config = {\"rippled_path\" : \"$RIPPLED_PATH\"};" > test/config.js
 
