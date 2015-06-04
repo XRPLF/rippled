@@ -71,9 +71,7 @@ void TransactionEngine::txnWrite ()
         {
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaDELETE: " << sleEntry->getText ();
-
-            if (!mLedger->peekAccountStateMap ()->delItem (it.first))
-                assert (false);
+            mLedger->erase(it.first);
         }
         break;
         }
