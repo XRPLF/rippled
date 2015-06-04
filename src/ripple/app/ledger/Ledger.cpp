@@ -1037,6 +1037,13 @@ Ledger::update (SLE const& sle)
     assert(success);
 }
 
+void
+Ledger::erase (uint256 const& key)
+{
+    assert(mAccountStateMap->hasItem(key));
+    mAccountStateMap->delItem(key);
+}
+
 SLE::pointer Ledger::getSLE (uint256 const& uHash) const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekItem (uHash);

@@ -275,7 +275,7 @@ public:
 
     /** Fetch a deserialized account state SLE.
         Effects:
-            If the key exists, the item is deserialized
+            If the key exists, the item is flattened
                 and added to the SLE cache.
         The returned object may not be modified.
         @return `empty` if the key is not present
@@ -287,7 +287,7 @@ public:
         Effects:
             assert if the key already exists.
             The key in the AccountState map is associated
-                with a serialized copy of the SLE.
+                with an unflattened copy of the SLE.
         @note The key is taken from the SLE.
     */
     void
@@ -299,11 +299,20 @@ public:
             The previous flattened SLE associated with
                 the key is released.
             The key in the AccountState map is associated
-                with a serialized copy of the SLE.
+                with a flattened copy of the SLE.
         @note The key is taken from the SLE
     */
     void
     update (SLE const& sle);
+
+    /** Remove an account state SLE.
+        Effects:
+            assert if the key does not exist.
+            The flattened SLE associated with the key
+                is removed from the account state map.
+    */
+    void
+    erase (uint256 const& key);
 
     //--------------------------------------------------------------------------
 
