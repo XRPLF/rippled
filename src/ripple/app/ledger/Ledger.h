@@ -266,26 +266,26 @@ public:
     bool hasAccount (const RippleAddress & acctID) const;
     AccountState::pointer getAccountState (const RippleAddress & acctID) const;
 
-    /** Add a new STLxe.
+    /** Add a new SLE.
         Effects:
             assert if the key already exists.
             The key in the AccountState map is associated
-                with a serialized copy of the STLxe.
-        @note The key is taken from the STLxe.
+                with a serialized copy of the SLE.
+        @note The key is taken from the SLE.
     */
     void
-    insert (STLxe const& lxe);
+    insert (SLE const& sle);
 
-    /** Update an existing STLxe.
+    /** Update an existing SLE.
         Effects:
             assert if key does not already exist.
-            The previous STLxe associated with the key is released.
+            The previous SLE associated with the key is released.
             The key in the AccountState map is associated
-                with a serialized copy of the STLxe.
-        @note The key is taken from the STLxe
+                with a serialized copy of the SLE.
+        @note The key is taken from the SLE
     */
     void
-    update (STLxe const& lxe);
+    update (SLE const& sle);
 
     SLE::pointer getAccountRoot (Account const& accountID) const;
 
