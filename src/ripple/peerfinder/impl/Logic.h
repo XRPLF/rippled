@@ -62,7 +62,7 @@ public:
 
     // A set of non-unique IPAddresses without ports, used
     // to filter duplicates when making outgoing connections.
-    using ConnectedAddresses = std::multiset <beast::IP::Endpoint>;
+    using ConnectedAddresses = std::multiset <beast::IP::Address>;
 
     struct State
     {
@@ -286,7 +286,8 @@ public:
 
         // Check for duplicate connection
         {
-            auto const iter = state->connected_addresses.find (remote_endpoint);
+            auto const iter = state->connected_addresses.find (
+                remote_endpoint.address());
             if (iter != state->connected_addresses.end())
             {
                 if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
@@ -339,7 +340,7 @@ public:
         // Remote address must not already exist
         assert (result.second);
         // Add to the connected address list
-        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+        state->connected_addresses.emplace (remote_endpoint.address());
 
         // Update counts
         state->counts.add (*slot);
@@ -378,7 +379,7 @@ public:
         assert (result.second);
 
         // Add to the connected address list
-        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+        state->connected_addresses.emplace (remote_endpoint.address());
 
         // Update counts
         state->counts.add (*slot);
@@ -895,7 +896,7 @@ public:
         // Remove from connected address table
         {
             auto const iter (state->connected_addresses.find (
-                slot->remote_endpoint().at_port (0)));
+                slot->remote_endpoint().address()));
             // Address must exist
             assert (iter != state->connected_addresses.end ());
             state->connected_addresses.erase (iter);
