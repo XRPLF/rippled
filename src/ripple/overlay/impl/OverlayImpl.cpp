@@ -177,14 +177,14 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     handoff.moved = true;
 
-    if (journal.trace) journal.trace <<
+    if (journal.debug) journal.debug<<
         "Peer connection upgrade from " << remote_endpoint;
 
     error_code ec;
     auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
     if (ec)
     {
-        if (journal.trace) journal.trace <<
+        if (journal.debug) journal.debug <<
             remote_endpoint << " failed: " << ec.message();
         return handoff;
     }
@@ -252,7 +252,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         publicKey.toPublicKey(), cluster);
     if (result != PeerFinder::Result::success)
     {
-        if (journal.trace) journal.trace <<
+        if (journal.debug) journal.debug <<
             "Peer " << remote_endpoint << " redirected, slots full";
         handoff.moved = false;
         handoff.response = makeRedirectResponse(slot, request,
