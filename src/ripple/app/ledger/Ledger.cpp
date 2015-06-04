@@ -977,6 +977,38 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
     mCloseTime = iToSeconds (ptm);
 }
 
+//------------------------------------------------------------------------------
+
+bool
+Ledger::exists (uint256 const& key) const
+{
+    uint256 hash;
+    return static_cast<bool>(
+        mAccountStateMap->peekItem(key, hash));
+}
+
+std::shared_ptr<SLE const>
+Ledger::fetch (uint256 const& key) const
+{
+    uint256 hash;
+    auto node=
+        mAccountStateMap->peekItem (key, hash);
+    if (!node)
+        return { };
+    auto sle =
+        getApp().getSLECache().fetch(hash);
+
+    if (! sle)
+    {
+        sle = std::make_shared<SLE>(
+            node->peekSerializer(), node->getTag ());
+        sle->setImmutable ();
+        getApp().getSLECache().canonicalize(hash, sle);
+    }
+
+    return sle;
+}
+
 void
 Ledger::insert (SLE const& sle)
 {

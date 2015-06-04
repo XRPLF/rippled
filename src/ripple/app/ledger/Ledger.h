@@ -264,9 +264,26 @@ public:
 
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
+
     AccountState::pointer getAccountState (const RippleAddress & acctID) const;
 
-    /** Add a new SLE.
+    //--------------------------------------------------------------------------
+
+    /** Returns `true` if a ledger entry exists. */
+    bool
+    exists (uint256 const& key) const;
+
+    /** Fetch a deserialized account state SLE.
+        Effects:
+            If the key exists, the item is deserialized
+                and added to the SLE cache.
+        The returned object may not be modified.
+        @return `empty` if the key is not present
+    */
+    std::shared_ptr<SLE const>
+    fetch (uint256 const& key) const;
+
+    /** Add a new account state SLE.
         Effects:
             assert if the key already exists.
             The key in the AccountState map is associated
@@ -276,16 +293,20 @@ public:
     void
     insert (SLE const& sle);
 
-    /** Update an existing SLE.
+    /** Update an existing account state SLE.
         Effects:
             assert if key does not already exist.
-            The previous SLE associated with the key is released.
+            The previous flattened SLE associated with
+                the key is released.
             The key in the AccountState map is associated
                 with a serialized copy of the SLE.
         @note The key is taken from the SLE
     */
     void
     update (SLE const& sle);
+
+    //--------------------------------------------------------------------------
+
 
     SLE::pointer getAccountRoot (Account const& accountID) const;
 
