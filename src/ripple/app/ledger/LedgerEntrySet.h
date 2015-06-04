@@ -157,7 +157,7 @@ public:
     SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
     SLE::pointer entryCache (LedgerEntryType letType, uint256 const& uIndex);
 
-    std::shared_ptr<STLxe const>
+    std::shared_ptr<SLE const>
     entryCacheI (LedgerEntryType letType, uint256 const& uIndex);
 
     // Directory functions.
@@ -177,12 +177,12 @@ public:
 
     bool dirFirst (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
-    bool dirFirst (uint256 const& uRootIndex, std::shared_ptr<STLxe const>& sleNode,
+    bool dirFirst (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
     
     bool dirNext (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
-    bool dirNext (uint256 const& uRootIndex, std::shared_ptr<STLxe const>& sleNode,
+    bool dirNext (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
     
     bool dirIsEmpty (uint256 const& uDirIndex);

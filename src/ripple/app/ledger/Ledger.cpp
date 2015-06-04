@@ -978,12 +978,12 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 }
 
 void
-Ledger::insert (STLxe const& lxe)
+Ledger::insert (SLE const& sle)
 {
-    assert(! mAccountStateMap->hasItem(lxe.getIndex()));
+    assert(! mAccountStateMap->hasItem(sle.getIndex()));
     auto item = std::make_shared<SHAMapItem>(
-        lxe.getIndex());
-    lxe.add(item->peekSerializer());
+        sle.getIndex());
+    sle.add(item->peekSerializer());
     auto const success =
         mAccountStateMap->addGiveItem(
             item, false, false);
@@ -992,12 +992,12 @@ Ledger::insert (STLxe const& lxe)
 }
 
 void
-Ledger::update (STLxe const& lxe)
+Ledger::update (SLE const& sle)
 {
-    assert(mAccountStateMap->hasItem(lxe.getIndex()));
+    assert(mAccountStateMap->hasItem(sle.getIndex()));
     auto item = std::make_shared<SHAMapItem>(
-        lxe.getIndex());
-    lxe.add(item->peekSerializer());
+        sle.getIndex());
+    sle.add(item->peekSerializer());
     auto const success =
         mAccountStateMap->updateGiveItem(
             item, false, false);

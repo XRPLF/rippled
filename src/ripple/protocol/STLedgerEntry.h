@@ -122,9 +122,6 @@ private:
     bool                        mMutable;
 };
 
-using STLxe = STLedgerEntry;
-
-// DEPRECATED
 using SLE = STLedgerEntry;
 
 } // ripple

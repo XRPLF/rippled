@@ -128,7 +128,7 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
     return sleEntry;
 }
 
-std::shared_ptr<STLxe const>
+std::shared_ptr<SLE const>
 LedgerEntrySet::entryCacheI (LedgerEntryType letType, uint256 const& index)
 {
     return entryCache(letType, index);
@@ -939,7 +939,7 @@ bool LedgerEntrySet::dirFirst (
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirFirst (
     uint256 const& uRootIndex,  // --> Root of directory.
-    std::shared_ptr<STLxe const>& sleNode,      // <-- current node
+    std::shared_ptr<SLE const>& sleNode,      // <-- current node
     unsigned int& uDirEntry,    // <-- next entry
     uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
 {
@@ -1005,7 +1005,7 @@ bool LedgerEntrySet::dirNext (
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirNext (
     uint256 const& uRootIndex,  // --> Root of directory
-    std::shared_ptr<STLxe const>& sleNode,      // <-> current node
+    std::shared_ptr<SLE const>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-> next entry
     uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
 {
