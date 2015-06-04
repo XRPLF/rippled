@@ -249,10 +249,10 @@ void executeRPC (
         auto wo = Json::stringWriterObject (output);
         getResult (context, method, *wo, handler->name_);
     }
-    else if (auto method = handler->valueMethod_)
+    else if (auto method2 = handler->valueMethod_)
     {
         auto object = Json::Value (Json::objectValue);
-        getResult (context, method, object, handler->name_);
+        getResult (context, method2, object, handler->name_);
         if (strategy.streaming == YieldStrategy::Streaming::yes)
             output = jsonAsString (object);
         else

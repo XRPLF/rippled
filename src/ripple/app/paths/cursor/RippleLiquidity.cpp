@@ -172,12 +172,12 @@ void rippleLiquidity (
                 // going the other way
 
                 Issue issue{currency, uCurIssuerID};
-                auto numerator = mulRound (
+                auto numerator2 = mulRound (
                     saPrv, uQualityIn, issue, true);
                 // A part of current. All of previous. (Cur is the driver
                 // variable.)
                 STAmount saCurOut = divRound (
-                    numerator, uQualityOut, issue, true);
+                    numerator2, uQualityOut, issue, true);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "rippleLiquidity:4: saCurReq=" << saCurReq;

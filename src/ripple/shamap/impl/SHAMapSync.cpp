@@ -256,14 +256,14 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
 
         // Process all deferred reads
         int hits = 0;
-        for (auto const& node : deferredReads)
+        for (auto const& deferredNode : deferredReads)
         {
-            auto parent = std::get<0>(node);
-            auto branch = std::get<1>(node);
-            auto const& nodeID = std::get<2>(node);
+            auto parent = std::get<0>(deferredNode);
+            auto branch = std::get<1>(deferredNode);
+            auto const& deferredNodeID = std::get<2>(deferredNode);
             auto const& nodeHash = parent->getChildHash (branch);
 
-            auto nodePtr = fetchNodeNT(nodeID, nodeHash, filter);
+            auto nodePtr = fetchNodeNT (deferredNodeID, nodeHash, filter);
             if (nodePtr)
             {
                 ++hits;
@@ -273,7 +273,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
             }
             else if ((max > 0) && (missingHashes.insert (nodeHash).second))
             {
-                nodeIDs.push_back (nodeID);
+                nodeIDs.push_back (deferredNodeID);
                 hashes.push_back (nodeHash);
 
                 --max;
@@ -386,10 +386,10 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer s;
-                            childNode->addRaw (s, snfWIRE);
+                            Serializer s2;
+                            childNode->addRaw (s2, snfWIRE);
                             nodeIDs.push_back (childID);
-                            rawNodes.push_back (std::move (s.peekData ()));
+                            rawNodes.push_back (std::move (s2.peekData ()));
                         }
                     }
                 }

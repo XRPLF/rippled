@@ -41,9 +41,9 @@ int charUnHex (unsigned char c)
                 hex ['a'+i] = 10 + i;
             }
         }
-        int operator[] (unsigned char c) const
+        int operator[] (unsigned char cc) const
         {
-            return hex[c];
+            return hex[cc];
         }
     };
 

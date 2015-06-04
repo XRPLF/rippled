@@ -183,10 +183,10 @@ parse_ProtocolVersions (std::string const& s)
 
     auto const list = beast::rfc2616::split_commas (s);
     std::vector<ProtocolVersion> result;
-    for (auto const& s : list)
+    for (auto const& i : list)
     {
         boost::smatch m;
-        if (! boost::regex_match (s, m, *re))
+        if (! boost::regex_match (i, m, *re))
             continue;
         int major;
         int minor;

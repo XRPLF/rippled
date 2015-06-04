@@ -142,8 +142,8 @@ public:
             return;
         }
 
-        for (auto const& it : servers)
-            addServer (it);
+        for (auto const& i : servers)
+            addServer (i);
         queryAll ();
     }
 

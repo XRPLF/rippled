@@ -125,7 +125,7 @@ public:
         testcase ("load/store");
 
         std::string const dbName("ManifestCacheTestDB");
-        { 
+        {
             // create a database, save the manifest to the db and reload and
             // check that the manifest caches are the same
             DatabaseCon::Setup setup;
@@ -144,8 +144,8 @@ public:
                         std::vector<Manifest const*> result;
                         result.reserve (32);
                         cache.for_each_manifest (
-                            [&result](Manifest const& m)
-            {result.push_back (&m);});
+                            [&result](Manifest const& manifest)
+            {result.push_back (&manifest);});
                         return result;
                     };
             auto sort =

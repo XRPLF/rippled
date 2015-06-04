@@ -249,9 +249,9 @@ zero32()
     static std::array<char, 32> v =
         []
         {
-            std::array<char, 32> v;
-            v.fill(0);
-            return v;
+            std::array<char, 32> vv;
+            vv.fill(0);
+            return vv;
         }();
     return v.data();
 }
@@ -300,8 +300,8 @@ nodeobject_compress (void const* in,
             if (n < 16)
             {
                 // 2 = inner node compressed
-                auto const type = 2U;
-                auto const vs = size_varint(type);
+                auto const type2 = 2U;
+                auto const vs = size_varint(type2);
                 result.second =
                     vs +
                     field<std::uint16_t>::size +    // mask
@@ -310,14 +310,14 @@ nodeobject_compress (void const* in,
                     std::uint8_t*>(bf(result.second));
                 result.first = out;
                 ostream os(out, result.second);
-                write<varint>(os, type);
+                write<varint>(os, type2);
                 write<std::uint16_t>(os, mask);
                 write(os, vh.data(), n * 32);
                 return result;
             }
             // 3 = full inner node
-            auto const type = 3U;
-            auto const vs = size_varint(type);
+            auto const type3 = 3U;
+            auto const vs = size_varint(type3);
             result.second =
                 vs +
                 n * 32;                         // hashes
@@ -325,7 +325,7 @@ nodeobject_compress (void const* in,
                 std::uint8_t*>(bf(result.second));
             result.first = out;
             ostream os(out, result.second);
-            write<varint>(os, type);
+            write<varint>(os, type3);
             write(os, vh.data(), n * 32);
             return result;
         }

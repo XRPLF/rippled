@@ -327,10 +327,10 @@ SField::getField (int code)
         // yet exist.
         StaticScopedLockType sl (SField_mutex);
 
-        auto it = unknownCodeToField.find (code);
+        auto i = unknownCodeToField.find (code);
 
-        if (it != unknownCodeToField.end ())
-            return * (it->second);
+        if (i != unknownCodeToField.end ())
+            return * (i->second);
         return *(unknownCodeToField[code] = std::unique_ptr<SField const>(
                        new SField(static_cast<SerializedTypeID>(type), field)));
     }

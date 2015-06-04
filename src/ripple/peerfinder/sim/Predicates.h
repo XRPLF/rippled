@@ -30,13 +30,18 @@ template <typename Node>
 class is_remote_node_pred
 {
 public:
-    is_remote_node_pred (Node const& node)
-        : node (node)
-        { }
+    is_remote_node_pred (Node const& node_)
+        : node (node_)
+    {
+    }
+
     template <typename Link>
     bool operator() (Link const& l) const
-        { return &node == &l.remote_node(); }
-private:
+    {
+        return &node == &l.remote_node();
+    }
+
+  private:
     Node const& node;
 };
 

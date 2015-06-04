@@ -888,18 +888,18 @@ public:
         // Remove the key if present
         if (slot->public_key () != boost::none)
         {
-            Keys::iterator const iter (state->keys.find (*slot->public_key()));
+            Keys::iterator const iter2 (state->keys.find (*slot->public_key()));
             // Key must exist
-            assert (iter != state->keys.end ());
-            state->keys.erase (iter);
+            assert (iter2 != state->keys.end ());
+            state->keys.erase (iter2);
         }
         // Remove from connected address table
         {
-            auto const iter (state->connected_addresses.find (
+            auto const iter2 (state->connected_addresses.find (
                 slot->remote_endpoint().address()));
             // Address must exist
-            assert (iter != state->connected_addresses.end ());
-            state->connected_addresses.erase (iter);
+            assert (iter2 != state->connected_addresses.end ());
+            state->connected_addresses.erase (iter2);
         }
 
         // Update counts

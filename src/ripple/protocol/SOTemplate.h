@@ -45,9 +45,9 @@ public:
     SField const&     e_field;
     SOE_Flags const   flags;
 
-    SOElement (SField const& fieldName, SOE_Flags flags)
+    SOElement (SField const& fieldName, SOE_Flags flags_)
         : e_field (fieldName)
-        , flags (flags)
+        , flags (flags_)
     {
     }
 };

@@ -112,7 +112,7 @@ public:
     {
         gen_.seed(n+1);
         uint256 key;
-        auto const data = 
+        auto const data =
             static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy (data + 1, key.size() - 1, gen_);
@@ -286,9 +286,9 @@ public:
 
         public:
             explicit
-            Body (suite& s, Backend& backend)
+            Body (suite& s, Backend& be)
                 : suite_ (s)
-                , backend_ (backend)
+                , backend_ (be)
                 , seq_(1)
             {
             }
@@ -342,12 +342,12 @@ public:
 
         public:
             Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
+                    Params const& params_, Backend& be)
                 : suite_(s)
-                , backend_ (backend)
+                , backend_ (be)
                 , seq1_ (1)
                 , gen_ (id + 1)
-                , dist_ (0, params.items - 1)
+                , dist_ (0, params_.items - 1)
             {
             }
 
@@ -404,13 +404,13 @@ public:
 
         public:
             Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
+                    Params const& pr, Backend& be)
                 : suite_ (s)
                 //, params_ (params)
-                , backend_ (backend)
+                , backend_ (be)
                 , seq2_ (2)
                 , gen_ (id + 1)
-                , dist_ (0, params.items - 1)
+                , dist_ (0, pr.items - 1)
             {
             }
 
@@ -469,15 +469,15 @@ public:
 
         public:
             Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
+                    Params const& pr, Backend& be)
                 : suite_ (s)
                 //, params_ (params)
-                , backend_ (backend)
+                , backend_ (be)
                 , seq1_ (1)
                 , seq2_ (2)
                 , gen_ (id + 1)
                 , rand_ (0, 99)
-                , dist_ (0, params.items - 1)
+                , dist_ (0, pr.items - 1)
             {
             }
 
@@ -508,7 +508,7 @@ public:
                 }
             }
         };
-        
+
         try
         {
             parallel_for_id<Body>(params.items, params.threads,
@@ -552,15 +552,15 @@ public:
 
         public:
             Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
+                    Params const& pr, Backend& be)
                 : suite_ (s)
-                , params_ (params)
-                , backend_ (backend)
+                , params_ (pr)
+                , backend_ (be)
                 , seq1_ (1)
                 , gen_ (id + 1)
                 , rand_ (0, 99)
-                , recent_ (params.items, params.items * 2 - 1)
-                , older_ (0, params.items - 1)
+                , recent_ (pr.items, pr.items * 2 - 1)
+                , older_ (0, pr.items - 1)
             {
             }
 
@@ -748,4 +748,3 @@ BEAST_DEFINE_TESTSUITE_MANUAL(Timing,NodeStore,ripple);
 
 }
 }
-
