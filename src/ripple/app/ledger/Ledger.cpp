@@ -1001,15 +1001,17 @@ Ledger::insert (SLE const& sle)
     assert(success);
 }
 
-std::shared_ptr<SLE>
+boost::optional<SLE>
 Ledger::fetch (uint256 const& key) const
 {
     auto const item =
         mAccountStateMap->peekItem(key);
     if (! item)
-        return {};
-    return std::make_shared<SLE>(
-        item->peekSerializer(), item->getTag());
+        return boost::none;
+    boost::optional<SLE> result;
+    result.emplace(item->peekSerializer(),
+        item->getTag());
+    return result;
 }
 
 void
