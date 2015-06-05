@@ -132,10 +132,14 @@ public:
         Effects:
             Gives the caller ownership of an
                 unflattened copy of the SLE.
+        @param type An optional LedgerEntryType. If type is
+                    engaged and the SLE's type does not match,
+                    then boost::none is returned.
         @return `empty` if the key is not present
     */
     boost::optional<SLE>
-    fetch (uint256 const& key) const;
+    fetch (uint256 const& key, boost::optional<
+        LedgerEntryType> type = boost::none) const;
 
     /** Replace an existing state SLE.
         Effects:
@@ -328,10 +332,6 @@ public:
 
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
-
-    SLE::pointer getAccountRoot (Account const& accountID) const;
-
-    SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
 
     void updateSkipList ();
 

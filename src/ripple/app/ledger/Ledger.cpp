@@ -1002,7 +1002,8 @@ Ledger::insert (SLE const& sle)
 }
 
 boost::optional<SLE>
-Ledger::fetch (uint256 const& key) const
+Ledger::fetch (uint256 const& key,
+    boost::optional<LedgerEntryType> type) const
 {
     auto const item =
         mAccountStateMap->peekItem(key);
@@ -1011,6 +1012,8 @@ Ledger::fetch (uint256 const& key) const
     boost::optional<SLE> result;
     result.emplace(item->peekSerializer(),
         item->getTag());
+    if (type && result->getType() != type)
+        return {};
     return result;
 }
 
@@ -1163,17 +1166,6 @@ Ledger::getFeeNode(uint256 const& nodeID) const
     if (sle->getType () != ltFEE_SETTINGS)
         return {};
     return sle;
-}
-
-SLE::pointer Ledger::getAccountRoot (Account const& accountID) const
-{
-    return getASNodeI (getAccountRootIndex (accountID), ltACCOUNT_ROOT);
-}
-
-SLE::pointer Ledger::getAccountRoot (RippleAddress const& naAccountID) const
-{
-    return getASNodeI (getAccountRootIndex (
-        naAccountID.getAccountID ()), ltACCOUNT_ROOT);
 }
 
 SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex) const
