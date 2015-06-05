@@ -23,6 +23,7 @@
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/app/ledger/SLECache.h>
 #include <ripple/app/misc/AccountState.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
@@ -524,9 +525,18 @@ private:
 };
 
 //------------------------------------------------------------------------------
+//
+// API
+//
+//------------------------------------------------------------------------------
 
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
+
+#if 0
+AccountState::pointer
+getAccountState (Ledger& ledger,RippleAddress const& accountID)
+#endif
 
 } // ripple
 
