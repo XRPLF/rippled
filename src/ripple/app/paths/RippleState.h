@@ -22,33 +22,46 @@
 
 #include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <cstdint>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
-//
-// A ripple line's state.
-// - Isolate ledger entry format.
-//
-
+/** Wraps a trust line SLE for convenience.
+    The complication of trust lines is that there is a
+    "low" account and a "high" account. This wraps the
+    SLE and expresses its data from the perspective of
+    a chosen account on the line.
+*/
+// VFALCO TODO Rename to TrustLine
 class RippleState
 {
 public:
+    // VFALCO Why is this shared_ptr?
     using pointer = std::shared_ptr <RippleState>;
 
 public:
-    RippleState () = delete;
+    RippleState() = delete;
 
-    virtual ~RippleState () { }
+    virtual ~RippleState() = default;
 
-    static RippleState::pointer makeItem (
-        Account const& accountID, STLedgerEntry::ref ledgerEntry);
+    static RippleState::pointer makeItem(
+        Account const& accountID,
+        std::shared_ptr<SLE const> sle);
 
-    LedgerEntryType getType ()
+    // Must be public, for make_shared
+    RippleState (std::shared_ptr<SLE const>&& sle,
+        Account const& viewAccount);
+
+    /** Returns the state map key for the ledger entry. */
+    uint256
+    key() const
     {
-        return ltRIPPLE_STATE;
+        return mLedgerEntry->getIndex();
     }
+
+    // VFALCO Take off the "get" from each function name
 
     Account const& getAccountID () const
     {
@@ -118,32 +131,10 @@ public:
         return ((std::uint32_t) (mViewLowest ? mLowQualityOut : mHighQualityOut));
     }
 
-    STLedgerEntry::pointer getSLE ()
-    {
-        return mLedgerEntry;
-    }
-
-    const STLedgerEntry& peekSLE () const
-    {
-        return *mLedgerEntry;
-    }
-
-    STLedgerEntry& peekSLE ()
-    {
-        return *mLedgerEntry;
-    }
-
     Json::Value getJson (int);
 
-    Blob getRaw () const;
-
 private:
-    RippleState (
-        STLedgerEntry::ref ledgerEntry,
-        Account const& viewAccount);
-
-private:
-    STLedgerEntry::pointer  mLedgerEntry;
+    std::shared_ptr<SLE const> mLedgerEntry;
 
     bool                            mViewLowest;
 
