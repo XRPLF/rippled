@@ -216,7 +216,7 @@ Json::Value doAccountLines (RPC::Context& context)
         result[jss::limit] = limit;
 
         RippleState::pointer line (visitData.items.back ());
-        result[jss::marker] = to_string (line->peekSLE ().getIndex ());
+        result[jss::marker] = to_string (line->key());
         visitData.items.pop_back ();
     }
 
