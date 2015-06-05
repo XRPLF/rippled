@@ -63,7 +63,7 @@ void TransactionEngine::txnWrite ()
         {
             WriteLog (lsDEBUG, TransactionEngine) <<
                 "applyTransaction: taaMODIFY: " << sleEntry->getText ();
-            mLedger->update(*sleEntry);
+            mLedger->replace(*sleEntry);
         }
         break;
 
