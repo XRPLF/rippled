@@ -1554,19 +1554,25 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 //------------------------------------------------------------------------------
 
 std::shared_ptr<SLE const>
-fetch (Ledger const& ledger,
-    uint256 const& key, SLECache& cache)
+fetch (Ledger const& ledger, uint256 const& key,
+    SLECache& cache, boost::optional<LedgerEntryType> type)
 {
     uint256 hash;
     auto const item =
         ledger.peekAccountStateMap()->peekItem(key, hash);
     if (! item)
         return {};
-    if (auto sle = cache.fetch(hash))
+    if (auto const sle = cache.fetch(hash))
+    {
+        if (type && sle->getType() != type)
+            return {};
         return sle;
-    SerialIter s(make_Slice(item->peekData()));
-    auto sle = std::make_shared<SLE>(
-        s, item->getTag());
+    }
+    SerialIter sit(make_Slice(item->peekData()));
+    auto sle = std::make_shared<SLE>(sit, item->key());
+    // VFALCO Should we still cache it if the type doesn't match?
+    if (type && sle->getType() != type)
+        return {};
     sle->setImmutable ();
     cache.canonicalize(hash, sle);
     return sle;
@@ -1575,7 +1581,7 @@ fetch (Ledger const& ledger,
 std::shared_ptr<SLE const>
 fetch (Ledger const& ledger, uint256 const& key)
 {
-    return fetch(ledger, key,
+    return fetch (ledger, key,
         getApp().getSLECache());
 }
 

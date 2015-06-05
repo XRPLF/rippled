@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -103,7 +104,8 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleOffer = fetch (*ledger, startAfter);
+        auto const sleOffer = fetch (*ledger, startAfter,
+            getApp().getSLECache());
 
         if (sleOffer == nullptr ||
             sleOffer->getType () != ltOFFER ||

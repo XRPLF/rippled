@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/paths/RippleState.h>
 
@@ -166,7 +167,8 @@ Json::Value doAccountLines (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleLine = fetch(*ledger, startAfter);
+        auto const sleLine = fetch(*ledger, startAfter,
+            getApp().getSLECache());
 
         if (sleLine == nullptr || sleLine->getType () != ltRIPPLE_STATE)
             return rpcError (rpcINVALID_PARAMS);

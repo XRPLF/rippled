@@ -703,7 +703,8 @@ int Pathfinder::getPathsOut (
     if (!it.second)
         return it.first->second;
 
-    auto sleAccount = fetch(*mLedger, getAccountRootIndex (account));
+    auto sleAccount = fetch(*mLedger, getAccountRootIndex (account),
+        getApp().getSLECache());
 
     if (!sleAccount)
         return 0;
@@ -840,7 +841,8 @@ bool Pathfinder::isNoRipple (
     Currency const& currency)
 {
     auto sleRipple = fetch (*mLedger,
-        getRippleStateIndex (toAccount, fromAccount, currency));
+        getRippleStateIndex (toAccount, fromAccount, currency),
+            getApp().getSLECache());
 
     auto const flag ((toAccount > fromAccount)
                      ? lsfHighNoRipple : lsfLowNoRipple);
@@ -918,7 +920,8 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto sleEnd = fetch(*mLedger, getAccountRootIndex (uEndAccount));
+            auto sleEnd = fetch(*mLedger, getAccountRootIndex (uEndAccount),
+                getApp().getSLECache());
 
             if (sleEnd)
             {
