@@ -29,6 +29,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/Book.h>
+#include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <mutex>
 
@@ -164,7 +165,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void updateHash ();
+    void
+    updateHash();
 
     void setClosed ()
     {
@@ -205,15 +207,37 @@ public:
 
     void setFull ()
     {
-        mTransactionMap->setLedgerSeq (mLedgerSeq);
-        mAccountStateMap->setLedgerSeq (mLedgerSeq);
+        mTransactionMap->setLedgerSeq (seq_);
+        mAccountStateMap->setLedgerSeq (seq_);
     }
 
     // ledger signature operations
     void addRaw (Serializer& s) const;
     void setRaw (SerialIter& sit, bool hasPrefix);
 
-    uint256 const& getHash ();
+    /** Return the hash of the ledger.
+        This will recalculate the hash if necessary.
+    */
+    uint256 const&
+    hash();
+
+    // DEPRECATED
+    uint256 const&
+    getHash()
+    {
+        return hash();
+    }
+
+    /** Return the hash of the ledger. */
+    uint256 const&
+    hash() const;
+
+    // DEPRECATED
+    uint256 const&
+    getHash() const
+    {
+        return hash();
+    }
 
     uint256 const& getParentHash () const
     {
@@ -255,9 +279,16 @@ public:
         return mParentCloseTime;
     }
 
+    LedgerIndex
+    seq() const
+    {
+        return seq_;
+    }
+
+    // DEPRECATED
     std::uint32_t getLedgerSeq () const
     {
-        return mLedgerSeq;
+        return seq_;
     }
 
     int getCloseResolution () const
@@ -360,9 +391,6 @@ public:
     // last node <hash, >begin
     uint256 getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const;
 
-    // Ledger hash table function
-    uint256 getLedgerHash (std::uint32_t ledgerIndex);
-
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;
 
@@ -413,13 +441,6 @@ public:
         return mReserveIncrement;
     }
 
-    /** Const version of getHash() which gets the current value without calling
-        updateHash(). */
-    uint256 const& getRawHash () const
-    {
-        return mHash;
-    }
-
     bool walkLedger () const;
 
     bool assertSane () const;
@@ -456,12 +477,12 @@ private:
     void deprecatedUpdateCachedFees() const;
 
     // The basic Ledger structure, can be opened, closed, or synching
-    uint256       mHash; // VFALCO This could be boost::optional<uint256>
-    uint256       mParentHash;
-    uint256       mTransHash;
-    uint256       mAccountHash;
+    uint256 mHash; // VFALCO This could be boost::optional<uint256>
+    uint256 mParentHash;
+    uint256 mTransHash;
+    uint256 mAccountHash;
     std::uint64_t mTotCoins;
-    std::uint32_t mLedgerSeq;
+    std::uint32_t seq_;
 
     // when this ledger closed
     std::uint32_t mCloseTime;
@@ -476,7 +497,7 @@ private:
     std::uint32_t mCloseFlags;
     bool mClosed = false;
     bool mValidated = false;
-    bool mValidHash = false;
+    bool mutable mValidHash = false;
     bool mAccepted = false;
     bool mImmutable;
 
@@ -543,6 +564,19 @@ forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
 AccountState::pointer
 getAccountState (Ledger const& ledger,
     RippleAddress const& accountID);
+
+/** Return the hash of a ledger by sequence.
+    The hash is retrieved by looking up the "skip list"
+    in the passed ledger. As the skip list is limited
+    in size, if the requested ledger sequence number is
+    out of the range of ledgers represented in the skip
+    list, then boost::none is returned.
+    @return The hash of the ledger with the
+            given sequence number or boost::none.
+*/
+boost::optional<uint256>
+hashOfSeq (Ledger const& ledger, LedgerIndex seq,
+    SLECache& cache, beast::Journal journal);
 
 } // ripple
 

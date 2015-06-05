@@ -73,7 +73,7 @@ makeGenesisAccount (Account const& id,
 
 Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     : mTotCoins (startAmount)
-    , mLedgerSeq (1) // First Ledger
+    , seq_ (1) // First Ledger
     , mCloseTime (0)
     , mParentCloseTime (0)
     , mCloseResolution (ledgerDefaultTimeResolution)
@@ -89,7 +89,7 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     WriteLog (lsTRACE, Ledger)
             << "root account: " << sle->getJson(0);
     insert(*sle);
-    mAccountStateMap->flushDirty (hotACCOUNT_NODE, mLedgerSeq);
+    mAccountStateMap->flushDirty (hotACCOUNT_NODE, seq_);
 }
 
 Ledger::Ledger (uint256 const& parentHash,
@@ -106,7 +106,7 @@ Ledger::Ledger (uint256 const& parentHash,
     , mTransHash (transHash)
     , mAccountHash (accountHash)
     , mTotCoins (totCoins)
-    , mLedgerSeq (ledgerSeq)
+    , seq_ (ledgerSeq)
     , mCloseTime (closeTime)
     , mParentCloseTime (parentCloseTime)
     , mCloseResolution (closeResolution)
@@ -144,7 +144,7 @@ Ledger::Ledger (Ledger const& ledger,
                 bool isMutable)
     : mParentHash (ledger.mParentHash)
     , mTotCoins (ledger.mTotCoins)
-    , mLedgerSeq (ledger.mLedgerSeq)
+    , seq_ (ledger.seq_)
     , mCloseTime (ledger.mCloseTime)
     , mParentCloseTime (ledger.mParentCloseTime)
     , mCloseResolution (ledger.mCloseResolution)
@@ -163,7 +163,7 @@ Ledger::Ledger (Ledger const& ledger,
 Ledger::Ledger (bool /* dummy */,
                 Ledger& prevLedger)
     : mTotCoins (prevLedger.mTotCoins)
-    , mLedgerSeq (prevLedger.mLedgerSeq + 1)
+    , seq_ (prevLedger.seq_ + 1)
     , mParentCloseTime (prevLedger.mCloseTime)
     , mCloseResolution (prevLedger.mCloseResolution)
     , mCloseFlags (0)
@@ -179,7 +179,7 @@ Ledger::Ledger (bool /* dummy */,
     assert (mParentHash.isNonZero ());
 
     mCloseResolution = getNextLedgerTimeResolution (prevLedger.mCloseResolution,
-        prevLedger.getCloseAgree (), mLedgerSeq);
+        prevLedger.getCloseAgree (), seq_);
 
     if (prevLedger.mCloseTime == 0)
     {
@@ -202,7 +202,7 @@ Ledger::Ledger (void const* data,
 
 Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
     : mTotCoins (0)
-    , mLedgerSeq (ledgerSeq)
+    , seq_ (ledgerSeq)
     , mCloseTime (closeTime)
     , mParentCloseTime (0)
     , mCloseResolution (ledgerDefaultTimeResolution)
@@ -246,9 +246,9 @@ void Ledger::setImmutable ()
         mAccountStateMap->setImmutable ();
 }
 
-void Ledger::updateHash ()
+void Ledger::updateHash()
 {
-    if (!mImmutable)
+    if (! mImmutable)
     {
         if (mTransactionMap)
             mTransHash = mTransactionMap->getHash ();
@@ -264,7 +264,7 @@ void Ledger::updateHash ()
     // VFALCO This has to match addRaw
     mHash = sha512Half(
         HashPrefix::ledgerMaster,
-        std::uint32_t(mLedgerSeq),
+        std::uint32_t(seq_),
         std::uint64_t(mTotCoins),
         mParentHash,
         mTransHash,
@@ -281,7 +281,7 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix)
     if (hasPrefix)
         sit.get32 ();
 
-    mLedgerSeq =        sit.get32 ();
+    seq_ =        sit.get32 ();
     mTotCoins =         sit.get64 ();
     mParentHash =       sit.get256 ();
     mTransHash =        sit.get256 ();
@@ -299,7 +299,7 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix)
 
 void Ledger::addRaw (Serializer& s) const
 {
-    s.add32 (mLedgerSeq);
+    s.add32 (seq_);
     s.add64 (mTotCoins);
     s.add256 (mParentHash);
     s.add256 (mTransHash);
@@ -414,7 +414,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
     }
 
     if (txn->getStatus () == NEW)
-        txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+        txn->setStatus (mClosed ? COMMITTED : INCLUDED, seq_);
 
     getApp().getMasterTransaction ().canonicalize (&txn);
     return txn;
@@ -457,7 +457,7 @@ STTx::pointer Ledger::getSMTransaction (
         SerialIter tSit (make_Slice(vl));
 
         txMeta = std::make_shared<TransactionMetaSet> (
-            item->key(), mLedgerSeq, sit.getVL ());
+            item->key(), seq_, sit.getVL ());
         return std::make_shared<STTx> (tSit);
     }
 
@@ -499,13 +499,13 @@ bool Ledger::getTransaction (
             it.getVL (); // skip transaction
 
         meta = std::make_shared<TransactionMetaSet> (
-            txID, mLedgerSeq, it.getVL ());
+            txID, seq_, it.getVL ());
     }
     else
         return false;
 
     if (txn->getStatus () == NEW)
-        txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+        txn->setStatus (mClosed ? COMMITTED : INCLUDED, seq_);
 
     getApp().getMasterTransaction ().canonicalize (&txn);
     return true;
@@ -525,7 +525,7 @@ bool Ledger::getTransactionMeta (
 
     SerialIter it (item->slice());
     it.getVL (); // skip transaction
-    meta = std::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
+    meta = std::make_shared<TransactionMetaSet> (txID, seq_, it.getVL ());
 
     return true;
 }
@@ -548,11 +548,18 @@ bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
 }
 
 uint256 const&
-Ledger::getHash ()
+Ledger::hash()
 {
-    if (!mValidHash)
-        updateHash ();
+    if (! mValidHash)
+        updateHash();
+    return mHash;
+}
 
+uint256 const&
+Ledger::hash() const
+{
+    assert (mValidHash);
+    assert (mImmutable);
     return mHash;
 }
 
@@ -593,7 +600,7 @@ bool Ledger::saveValidatedLedger (bool current)
         WriteLog (lsFATAL, Ledger) << "sAL: " << getAccountHash ()
                                    << " != " << mAccountStateMap->getHash ();
         WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
-                                   << mLedgerSeq << ", current=" << current;
+                                   << seq_ << ", current=" << current;
         assert (false);
     }
 
@@ -616,7 +623,7 @@ bool Ledger::saveValidatedLedger (bool current)
     catch (...)
     {
         WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
-        getApp().getLedgerMaster().failedSave(mLedgerSeq, mHash);
+        getApp().getLedgerMaster().failedSave(seq_, mHash);
         // Clients can now trust the database for information about this
         // ledger sequence.
         getApp().pendingSaves().erase(getLedgerSeq());
@@ -625,7 +632,7 @@ bool Ledger::saveValidatedLedger (bool current)
 
     {
         auto db = getApp().getLedgerDB ().checkoutDb();
-        *db << boost::str (deleteLedger % mLedgerSeq);
+        *db << boost::str (deleteLedger % seq_);
     }
 
     {
@@ -691,7 +698,7 @@ bool Ledger::saveValidatedLedger (bool current)
             }
             else
                 WriteLog (lsWARNING, Ledger)
-                    << "Transaction in ledger " << mLedgerSeq
+                    << "Transaction in ledger " << seq_
                     << " affects no accounts";
 
             *db <<
@@ -708,7 +715,7 @@ bool Ledger::saveValidatedLedger (bool current)
 
         // TODO(tom): ARG!
         *db << boost::str (addLedger %
-                           to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
+                           to_string (getHash ()) % seq_ % to_string (mParentHash) %
                            beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
                            mParentCloseTime % mCloseResolution % mCloseFlags %
                            to_string (mAccountHash) % to_string (mTransHash));
@@ -1093,7 +1100,7 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
         if (mHash.isNonZero ())
         {
             getApp().getInboundLedgers().acquire(
-                mHash, mLedgerSeq, InboundLedger::fcGENERIC);
+                mHash, seq_, InboundLedger::fcGENERIC);
         }
         throw;
     }
@@ -1141,81 +1148,6 @@ uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin)
         return uint256 ();
 
     return node->key();
-}
-
-uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
-{
-    // Return the hash of the specified ledger, 0 if not available
-
-    // Easy cases...
-    if (ledgerIndex > mLedgerSeq)
-    {
-        WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex
-                                     << " from " << mLedgerSeq << " future";
-        return uint256 ();
-    }
-
-    if (ledgerIndex == mLedgerSeq)
-        return getHash ();
-
-    if (ledgerIndex == (mLedgerSeq - 1))
-        return mParentHash;
-
-    // Within 256...
-    int diff = mLedgerSeq - ledgerIndex;
-
-    if (diff <= 256)
-    {
-        auto hashIndex = getSLEi (getLedgerHashIndex ());
-
-        if (hashIndex)
-        {
-            assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
-                    (mLedgerSeq - 1));
-            STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-
-            if (vec.size () >= diff)
-                return vec[vec.size () - diff];
-
-            WriteLog (lsWARNING, Ledger)
-                    << "Ledger " << mLedgerSeq
-                    << " missing hash for " << ledgerIndex
-                    << " (" << vec.size () << "," << diff << ")";
-        }
-        else
-        {
-            WriteLog (lsWARNING, Ledger)
-                    << "Ledger " << mLedgerSeq
-                    << ":" << getHash () << " missing normal list";
-        }
-    }
-
-    if ((ledgerIndex & 0xff) != 0)
-    {
-        WriteLog (lsDEBUG, Ledger) << "Can't get seq " << ledgerIndex
-                                     << " from " << mLedgerSeq << " past";
-        return uint256 ();
-    }
-
-    // in skiplist
-    auto hashIndex = getSLEi (getLedgerHashIndex (ledgerIndex));
-
-    if (hashIndex)
-    {
-        int lastSeq = hashIndex->getFieldU32 (sfLastLedgerSequence);
-        assert (lastSeq >= ledgerIndex);
-        assert ((lastSeq & 0xff) == 0);
-        int sDiff = (lastSeq - ledgerIndex) >> 8;
-
-        STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-
-        if (vec.size () > sDiff)
-            return vec[vec.size () - sDiff - 1];
-    }
-
-    WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex
-                                 << " from " << mLedgerSeq << " error";
-    return uint256 ();
 }
 
 bool Ledger::walkLedger () const
@@ -1291,10 +1223,10 @@ bool Ledger::assertSane () const
 // update the skip list with the information from our previous ledger
 void Ledger::updateSkipList ()
 {
-    if (mLedgerSeq == 0) // genesis ledger has no previous ledger
+    if (seq_ == 0) // genesis ledger has no previous ledger
         return;
 
-    std::uint32_t prevIndex = mLedgerSeq - 1;
+    std::uint32_t prevIndex = seq_ - 1;
 
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)
@@ -1650,6 +1582,78 @@ getAccountState (Ledger const& ledger,
         return {};
 
     return std::make_shared<AccountState>(sle, accountID);
+}
+
+boost::optional<uint256>
+hashOfSeq (Ledger const& ledger, LedgerIndex seq,
+    SLECache& cache, beast::Journal journal)
+{
+    // Easy cases...
+    if (seq > ledger.seq())
+    {
+        if (journal.warning) journal.warning <<
+            "Can't get seq " << seq <<
+            " from " << ledger.seq() << " future";
+        return boost::none;
+    }
+    if (seq == ledger.seq())
+        return ledger.getHash();
+    if (seq == (ledger.seq() - 1))
+        return ledger.getParentHash();
+
+    // Within 256...
+    {
+        int diff = ledger.seq() - seq;
+        if (diff <= 256)
+        {
+            auto const hashIndex = fetch(
+                ledger, getLedgerHashIndex(), cache);
+            if (hashIndex)
+            {
+                assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
+                        (ledger.seq() - 1));
+                STVector256 vec = hashIndex->getFieldV256 (sfHashes);
+                if (vec.size () >= diff)
+                    return vec[vec.size () - diff];
+                if (journal.warning) journal.warning <<
+                    "Ledger " << ledger.seq() <<
+                    " missing hash for " << seq <<
+                    " (" << vec.size () << "," << diff << ")";
+            }
+            else
+            {
+                if (journal.warning) journal.warning <<
+                    "Ledger " << ledger.seq() <<
+                    ":" << ledger.getHash () << " missing normal list";
+            }
+        }
+        if ((seq & 0xff) != 0)
+        {
+            if (journal.debug) journal.debug <<
+                "Can't get seq " << seq <<
+                " from " << ledger.seq() << " past";
+            return boost::none;
+        }
+    }
+
+    // in skiplist
+    auto const hashIndex = fetch(ledger,
+        getLedgerHashIndex(seq), cache);
+    if (hashIndex)
+    {
+        auto const lastSeq =
+            hashIndex->getFieldU32 (sfLastLedgerSequence);
+        assert (lastSeq >= seq);
+        assert ((lastSeq & 0xff) == 0);
+        auto const diff = (lastSeq - seq) >> 8;
+        STVector256 vec = hashIndex->getFieldV256 (sfHashes);
+        if (vec.size () > diff)
+            return vec[vec.size () - diff - 1];
+    }
+    if (journal.warning) journal.warning <<
+        "Can't get seq " << seq <<
+        " from " << ledger.seq() << " error";
+    return boost::none;
 }
 
 } // ripple

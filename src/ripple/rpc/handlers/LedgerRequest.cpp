@@ -63,27 +63,30 @@ Json::Value doLedgerRequest (RPC::Context& context)
         if (ledgerIndex >= ledger->getLedgerSeq())
             return RPC::make_param_error("Ledger index too large");
 
+        auto const j =
+            deprecatedLogs().journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated ledger
-        ledgerHash = ledger->getLedgerHash (ledgerIndex);
-
-        if (ledgerHash == zero)
+        auto ledgerHash = hashOfSeq(*ledger, ledgerIndex,
+            getApp().getSLECache(), j);
+        if (ledgerHash)
         {
             // Find a ledger more likely to have the hash of the desired ledger
             auto refIndex = (ledgerIndex + 255) & (~255);
-            auto refHash = ledger->getLedgerHash (refIndex);
-            assert (refHash.isNonZero ());
+            auto refHash = hashOfSeq(*ledger, refIndex,
+                getApp().getSLECache(), j);
+            assert(refHash);
 
-            ledger = ledgerMaster.getLedgerByHash (refHash);
-            if (!ledger)
+            ledger = ledgerMaster.getLedgerByHash (*refHash);
+            if (! ledger)
             {
                 // We don't have the ledger we need to figure out which ledger
                 // they want. Try to get it.
 
                 if (auto il = getApp().getInboundLedgers().acquire (
-                        refHash, refIndex, InboundLedger::fcGENERIC))
+                        *refHash, refIndex, InboundLedger::fcGENERIC))
                     return getJson (LedgerFill (*il));
 
-                if (auto il = getApp().getInboundLedgers().find (refHash))
+                if (auto il = getApp().getInboundLedgers().find (*refHash))
                 {
                     Json::Value jvResult = il->getJson (0);
 
@@ -95,8 +98,9 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 return Json::Value();
             }
 
-            ledgerHash = ledger->getLedgerHash (ledgerIndex);
-            assert (ledgerHash.isNonZero ());
+            ledgerHash = hashOfSeq(*ledger, ledgerIndex,
+                getApp().getSLECache(), j);
+            assert (ledgerHash);
         }
     }
 

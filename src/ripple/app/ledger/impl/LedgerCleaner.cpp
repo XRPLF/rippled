@@ -250,10 +250,11 @@ public:
 
     LedgerHash getLedgerHash(Ledger::pointer ledger, LedgerIndex index)
     {
-        LedgerHash hash;
+        boost::optional<LedgerHash> hash;
         try
         {
-            hash = ledger->getLedgerHash(index);
+            hash = hashOfSeq(*ledger, index,
+                getApp().getSLECache(), m_journal);
         }
         catch (SHAMapMissingNode &)
         {
@@ -262,7 +263,7 @@ public:
             getApp().getInboundLedgers().acquire (
                 ledger->getHash(), ledger->getLedgerSeq(), InboundLedger::fcGENERIC);
         }
-        return hash;
+        return *hash;
     }
 
     /** Process a single ledger

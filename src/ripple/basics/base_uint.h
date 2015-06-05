@@ -123,7 +123,15 @@ private:
     }
 
 public:
-    base_uint () { *this = beast::zero; }
+    base_uint()
+    {
+        *this = beast::zero;
+    }
+
+    base_uint(beast::Zero)
+    {
+        *this = beast::zero;
+    }
 
     explicit base_uint (Blob const& vch)
     {
