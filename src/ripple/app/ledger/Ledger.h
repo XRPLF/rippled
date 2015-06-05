@@ -82,35 +82,6 @@ public:
     using pointer = std::shared_ptr<Ledger>;
     using ref     = const std::shared_ptr<Ledger>&;
 
-    enum TransResult
-    {
-        TR_ERROR    = -1,
-        TR_SUCCESS  = 0,
-        TR_NOTFOUND = 1,
-        TR_ALREADY  = 2,
-
-        // the transaction itself is corrupt
-        TR_BADTRANS = 3,
-
-        // one of the accounts is invalid
-        TR_BADACCT  = 4,
-
-        // the sending(apply)/receiving(remove) account is broke
-        TR_INSUFF   = 5,
-
-        // account is past this transaction
-        TR_PASTASEQ = 6,
-
-        // account is missing transactions before this
-        TR_PREASEQ  = 7,
-
-        // ledger too early
-        TR_BADLSEQ  = 8,
-
-        // amount is less than Tx fee
-        TR_TOOSMALL = 9,
-    };
-
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
 
@@ -331,24 +302,12 @@ public:
 
     // Ledger hash table function
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
-    using LedgerHashes = std::vector<std::pair<std::uint32_t, uint256>>;
-    LedgerHashes getLedgerHashes () const;
-
-    std::vector<uint256> getLedgerAmendments () const;
 
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
-    //
-    // Offer functions
-    //
-
-    SLE::pointer getOffer (uint256 const& uIndex) const;
-    SLE::pointer getOffer (Account const& account, std::uint32_t uSequence) const;
-
-    //
     // Directory functions
     // Directories are doubly linked lists of nodes.
 

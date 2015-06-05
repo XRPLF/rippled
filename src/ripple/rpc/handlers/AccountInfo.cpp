@@ -62,7 +62,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         return jvAccepted;
 
     AccountState::pointer asAccepted =
-        context.netOps.getAccountState (ledger, naAccount);
+        ledger->getAccountState(naAccount);
 
     if (asAccepted)
     {

@@ -40,7 +40,7 @@ Json::Value accounts (
 
         naAccount.setAccountPublic (naMasterGenerator, uIndex++);
 
-        AccountState::pointer as    = netOps.getAccountState (lrLedger, naAccount);
+        AccountState::pointer as    = lrLedger->getAccountState (naAccount);
 
         if (as)
         {

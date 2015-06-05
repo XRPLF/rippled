@@ -246,13 +246,6 @@ public:
         int maxTransactions) override;
 
     //
-    // Account functions.
-    //
-
-    AccountState::pointer getAccountState (
-        Ledger::ref lrLedger, RippleAddress const& accountID) override;
-
-    //
     // Directory functions.
     //
 
@@ -1080,16 +1073,6 @@ int NetworkOPsImp::findTransactionsByDestination (
 {
     // WRITEME
     return 0;
-}
-
-//
-// Account functions
-//
-
-AccountState::pointer NetworkOPsImp::getAccountState (
-    Ledger::ref lrLedger, RippleAddress const& accountID)
-{
-    return lrLedger->getAccountState (accountID);
 }
 
 //

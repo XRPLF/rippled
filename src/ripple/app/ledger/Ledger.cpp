@@ -1344,18 +1344,6 @@ SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex) const
 }
 
 SLE::pointer
-Ledger::getOffer (uint256 const& uIndex) const
-{
-    return getASNodeI (uIndex, ltOFFER);
-}
-
-SLE::pointer
-Ledger::getOffer (Account const& account, std::uint32_t uSequence) const
-{
-    return getOffer (getOfferIndex (account, uSequence));
-}
-
-SLE::pointer
 Ledger::getRippleState (uint256 const& uNode) const
 {
     return getASNodeI (uNode, ltRIPPLE_STATE);
@@ -1441,36 +1429,6 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
     WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex
                                  << " from " << mLedgerSeq << " error";
     return uint256 ();
-}
-
-Ledger::LedgerHashes Ledger::getLedgerHashes () const
-{
-    LedgerHashes ret;
-    SLE::pointer hashIndex = getSLEi (getLedgerHashIndex ());
-
-    if (hashIndex)
-    {
-        STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-        int size = vec.size ();
-        ret.reserve (size);
-        auto seq = hashIndex->getFieldU32 (sfLastLedgerSequence) - size;
-
-        for (int i = 0; i < size; ++i)
-            ret.push_back (std::make_pair (++seq, vec[i]));
-    }
-
-    return ret;
-}
-
-std::vector<uint256> Ledger::getLedgerAmendments () const
-{
-    std::vector<uint256> amendments;
-    SLE::pointer sleAmendments = getSLEi (getLedgerAmendmentIndex ());
-
-    if (sleAmendments)
-        amendments = static_cast<decltype(amendments)> (sleAmendments->getFieldV256 (sfAmendments));
-
-    return amendments;
 }
 
 bool Ledger::walkLedger () const
