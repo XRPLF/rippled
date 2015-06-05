@@ -149,8 +149,9 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        auto asSrc = getApp().getOPs ().getAccountState (
-            crCache->getLedger(), raSrcAccount);
+        auto asSrc = getAccountState(
+            *crCache->getLedger(), raSrcAccount,
+                getApp().getSLECache());
 
         if (!asSrc)
         {
@@ -160,8 +161,8 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
         }
         else
         {
-            auto asDst = getApp().getOPs ().getAccountState (
-                lrLedger, raDstAccount);
+            auto asDst = getAccountState(*lrLedger,
+                raDstAccount, getApp().getSLECache());
 
             Json::Value& jvDestCur =
                     (jvStatus[jss::destination_currencies] = Json::arrayValue);
@@ -187,7 +188,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
             else
             {
                 bool const disallowXRP (
-                    asDst->peekSLE ().getFlags() & lsfDisallowXRP);
+                    asDst->sle().getFlags() & lsfDisallowXRP);
 
                 auto usDestCurrID = accountDestCurrencies (
                         raDstAccount, crCache, !disallowXRP);
@@ -196,7 +197,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                     jvDestCur.append (to_string (currency));
 
                 jvStatus["destination_tag"] =
-                        (asDst->peekSLE ().getFlags () & lsfRequireDestTag)
+                        (asDst->sle().getFlags () & lsfRequireDestTag)
                         != 0;
             }
         }

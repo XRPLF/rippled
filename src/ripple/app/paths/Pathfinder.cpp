@@ -271,7 +271,7 @@ bool Pathfinder::findPaths (int searchLevel)
     bool bSrcXrp = isXRP (mSrcCurrency);
     bool bDstXrp = isXRP (mDstAmount.getCurrency());
 
-    if (!mLedger->getSLEi (getAccountRootIndex (mSrcAccount)))
+    if (! mLedger->exists (getAccountRootIndex (mSrcAccount)))
     {
         // We can't even start without a source account.
         WriteLog (lsDEBUG, Pathfinder) << "invalid source account";
@@ -279,14 +279,14 @@ bool Pathfinder::findPaths (int searchLevel)
     }
 
     if ((mEffectiveDst != mDstAccount) &&
-        ! mLedger->getSLEi (getAccountRootIndex (mEffectiveDst)))
+        ! mLedger->exists (getAccountRootIndex (mEffectiveDst)))
     {
         WriteLog (lsDEBUG, Pathfinder)
             << "Non-existent gateway";
         return false;
     }
 
-    if (!mLedger->getSLEi (getAccountRootIndex (mDstAccount)))
+    if (! mLedger->exists (getAccountRootIndex (mDstAccount)))
     {
         // Can't find the destination account - we must be funding a new
         // account.
@@ -703,7 +703,8 @@ int Pathfinder::getPathsOut (
     if (!it.second)
         return it.first->second;
 
-    auto sleAccount = mLedger->getSLEi (getAccountRootIndex (account));
+    auto sleAccount = fetch(*mLedger, getAccountRootIndex (account),
+        getApp().getSLECache());
 
     if (!sleAccount)
         return 0;
@@ -839,8 +840,9 @@ bool Pathfinder::isNoRipple (
     Account const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = mLedger->getSLEi (
-        getRippleStateIndex (toAccount, fromAccount, currency));
+    auto sleRipple = fetch (*mLedger,
+        getRippleStateIndex (toAccount, fromAccount, currency),
+            getApp().getSLECache());
 
     auto const flag ((toAccount > fromAccount)
                      ? lsfHighNoRipple : lsfLowNoRipple);
@@ -918,7 +920,9 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto sleEnd = mLedger->getSLEi(getAccountRootIndex (uEndAccount));
+            auto const sleEnd = fetch(
+                *mLedger, getAccountRootIndex (uEndAccount),
+                    getApp().getSLECache());
 
             if (sleEnd)
             {

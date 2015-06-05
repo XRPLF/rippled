@@ -2205,6 +2205,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\SLECache.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\tests\common_ledger.cpp">
       <Filter>ripple\app\ledger\tests</Filter>
     </ClCompile>

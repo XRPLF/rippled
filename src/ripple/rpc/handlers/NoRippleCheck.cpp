@@ -106,15 +106,17 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         return result;
     }
 
-    AccountState::pointer accountState = ledger->getAccountState (rippleAddress);
+    AccountState::pointer accountState =
+        getAccountState(*ledger, rippleAddress,
+            getApp().getSLECache());
     if (! accountState)
         return rpcError (rpcACT_NOT_FOUND);
 
-    std::uint32_t seq = accountState->peekSLE().getFieldU32 (sfSequence);
+    std::uint32_t seq = accountState->sle().getFieldU32 (sfSequence);
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = accountState->peekSLE().getFieldU32 (sfFlags) & lsfDefaultRipple;
+    bool bDefaultRipple = accountState->sle().getFieldU32 (sfFlags) & lsfDefaultRipple;
 
     if (bDefaultRipple & ! roleGateway)
     {
@@ -135,8 +137,9 @@ Json::Value doNoRippleCheck (RPC::Context& context)
 
     auto const accountID = rippleAddress.getAccountID ();
 
-    ledger->visitAccountItems (accountID, uint256(), 0, limit,
-        [&](SLE::ref ownedItem)
+    forEachItemAfter (*ledger, accountID, getApp().getSLECache(),
+            uint256(), 0, limit,
+        [&](std::shared_ptr<SLE const> const& ownedItem)
         {
             if (ownedItem->getType() == ltRIPPLE_STATE)
             {

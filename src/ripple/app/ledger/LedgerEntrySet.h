@@ -155,7 +155,10 @@ public:
 
     // higher-level ledger functions
     SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
-    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& uIndex);
+    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& key);
+
+    std::shared_ptr<SLE const>
+    entryCacheI (LedgerEntryType letType, uint256 const& uIndex);
 
     // Directory functions.
     TER dirAdd (
@@ -174,9 +177,16 @@ public:
 
     bool dirFirst (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool dirFirst (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
+        unsigned int & uDirEntry, uint256 & uEntryIndex);
+    
     bool dirNext (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool dirNext (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
+        unsigned int & uDirEntry, uint256 & uEntryIndex);
+    
     bool dirIsEmpty (uint256 const& uDirIndex);
+    
     TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
 
     uint256 getNextLedgerIndex (uint256 const& uHash);
@@ -322,8 +332,8 @@ private:
     bool threadTx (
         SLE::ref threadTo, Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
-    bool threadOwners (
-        SLE::ref node, Ledger::ref ledger, NodeToLedgerEntry& newMods);
+    bool threadOwners (std::shared_ptr<SLE const> const& node,
+        Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
     TER rippleSend (
         Account const& uSenderID, Account const& uReceiverID,

@@ -45,10 +45,9 @@ AccountInfo::balance(
         return STAmount(issue, 0, 0);
     if (isXRP(issue))
         return root_->getFieldAmount(sfBalance);
-    auto amount = ledger_->getRippleState(
+    auto amount = ledger_->fetch(getRippleStateIndex(
         account_, issue.account,
-            issue.currency)->getFieldAmount(
-                sfBalance);
+            issue.currency))->getFieldAmount(sfBalance);
     amount.setIssuer(issue.account);
     if (account_.id() > issue.account)
         amount.negate();
@@ -204,7 +203,7 @@ Env::autofill (JTx& jt)
         auto const account =
             lookup(jv[jss::Account].asString());
         auto const ar =
-            ledger->getAccountRoot(account);
+            ledger->fetch(getAccountRootIndex(account));
         if (ar->isFieldPresent(sfRegularKey))
             jtx::sign(jv, lookup(
                 ar->getFieldAccount160(sfRegularKey)));

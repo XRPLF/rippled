@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -62,7 +63,8 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (bIndex)
         result[jss::account_index] = iIndex;
 
-    if (! ledger->hasAccount (rippleAddress))
+    if (! ledger->exists(getAccountRootIndex(
+            rippleAddress.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -88,7 +90,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     Account const& raAccount (rippleAddress.getAccountID ());
     Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
-    std::vector <SLE::pointer> offers;
+    std::vector <std::shared_ptr<SLE const>> offers;
     unsigned int reserve (limit);
     uint256 startAfter;
     std::uint64_t startHint;
@@ -103,7 +105,8 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        SLE::pointer sleOffer (ledger->getSLEi (startAfter));
+        auto const sleOffer = fetch (*ledger, startAfter,
+            getApp().getSLECache());
 
         if (sleOffer == nullptr ||
             sleOffer->getType () != ltOFFER ||
@@ -130,8 +133,9 @@ Json::Value doAccountOffers (RPC::Context& context)
         offers.reserve (++reserve);
     }
 
-    if (! ledger->visitAccountItems (raAccount, startAfter, startHint, reserve,
-        [&offers](SLE::ref offer)
+    if (! forEachItemAfter(*ledger, raAccount, getApp().getSLECache(),
+            startAfter, startHint, reserve,
+        [&offers](std::shared_ptr<SLE const> const& offer)
         {
             if (offer->getType () == ltOFFER)
             {

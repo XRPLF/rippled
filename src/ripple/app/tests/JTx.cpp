@@ -170,8 +170,9 @@ fill_seq (Json::Value& jv,
         return;
     RippleAddress ra;
     ra.setAccountID(jv[jss::Account].asString());
-    auto const ar = ledger.getAccountRoot(
-        ra.getAccountID());
+    auto const ar = ledger.fetch(
+        getAccountRootIndex(ra.getAccountID()));
+
     jv[jss::Sequence] =
         ar->getFieldU32(sfSequence);
 }

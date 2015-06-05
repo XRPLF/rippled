@@ -68,7 +68,8 @@ Json::Value doAccountObjects (RPC::Context& context)
         }
     }
 
-    if (! ledger->hasAccount (raAccount))
+    if (! ledger->exists(getAccountRootIndex(
+            raAccount.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
     auto type = ltINVALID;

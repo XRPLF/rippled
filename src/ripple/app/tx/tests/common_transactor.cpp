@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <ripple/app/tx/tests/common_transactor.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/tests/common_ledger.h>
@@ -136,7 +137,9 @@ void TestLedger::applyTecTransaction (STTx const& tx, TER err, bool check)
 AccountState::pointer
 TestLedger::getAccountState (UserAccount const& acct) const
 {
-    return lastClosedLedger_->getAccountState (acct.acctPublicKey ());
+    return ripple::getAccountState(
+        *lastClosedLedger_, acct.acctPublicKey(),
+            getApp().getSLECache());
 }
 
 //------------------------------------------------------------------------------
@@ -362,12 +365,13 @@ void payInDrops (TestLedger& ledger,
 
 std::uint64_t getNativeBalance(TestLedger& ledger, UserAccount& acct)
 {
-    return ledger.getAccountState(acct)->getBalance().mantissa ();
+    return ledger.getAccountState(acct)->sle().getFieldAmount(
+        sfBalance).mantissa();
 }
 
 std::uint32_t getOwnerCount(TestLedger& ledger, UserAccount& acct)
 {
-    return ledger.getAccountState(acct)->getSLE()->getFieldU32 (sfOwnerCount);
+    return ledger.getAccountState(acct)->sle().getFieldU32 (sfOwnerCount);
 }
 
 std::vector<RippleState::pointer> getRippleStates (
@@ -375,9 +379,9 @@ std::vector<RippleState::pointer> getRippleStates (
 {
     std::vector <RippleState::pointer> states;
 
-    ledger.openLedger()->visitAccountItems (
-        acct.getID(),
-        [&states, &acct, &peer](SLE::ref sleCur)
+    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+        [&states, &acct, &peer](
+            std::shared_ptr<SLE const> const& sleCur)
         {
             // See whether this SLE is a lt_RIPPLE_STATE
             if (!sleCur || sleCur->getType () != ltRIPPLE_STATE)
@@ -394,14 +398,14 @@ std::vector<RippleState::pointer> getRippleStates (
     return states;
 }
 
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getOffersOnAccount (TestLedger& ledger, UserAccount const& acct)
 {
-    std::vector <SLE::pointer> offers;
+    std::vector <std::shared_ptr<SLE const>> offers;
 
-    ledger.openLedger()->visitAccountItems (
-        acct.getID(),
-        [&offers, &acct](SLE::ref sleCur)
+    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+        [&offers, &acct](
+            std::shared_ptr<SLE const> const& sleCur)
         {
             // If sleCur is an ltOFFER save it.
             if (sleCur && sleCur->getType () == ltOFFER)
@@ -410,14 +414,14 @@ getOffersOnAccount (TestLedger& ledger, UserAccount const& acct)
     return offers;
 }
 
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct)
 {
-    std::vector <SLE::pointer> offers;
+    std::vector <std::shared_ptr<SLE const>> offers;
 
-    ledger.openLedger()->visitAccountItems (
-        acct.getID(),
-        [&offers, &acct](SLE::ref sleCur)
+    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+        [&offers, &acct](
+            std::shared_ptr<SLE const> const& sleCur)
         {
             // If sleCur is an ltTICKET save it.
             if (sleCur && sleCur->getType () == ltTICKET)

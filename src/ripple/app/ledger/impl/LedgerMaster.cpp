@@ -635,14 +635,16 @@ public:
     void fixMismatch (Ledger::ref ledger)
     {
         int invalidate = 0;
-        uint256 hash;
+        boost::optional<uint256> hash;
 
         for (std::uint32_t lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
+        {
             if (haveLedger (lSeq))
             {
                 try
                 {
-                    hash = ledger->getLedgerHash (lSeq);
+                    hash = hashOfSeq(*ledger, lSeq,
+                        getApp().getSLECache(), m_journal);
                 }
                 catch (...)
                 {
@@ -652,12 +654,12 @@ public:
                     return;
                 }
 
-                if (hash.isNonZero ())
+                if (hash)
                 {
                     // try to close the seam
                     Ledger::pointer otherLedger = getLedgerBySeq (lSeq);
 
-                    if (otherLedger && (otherLedger->getHash () == hash))
+                    if (otherLedger && (otherLedger->getHash () == *hash))
                     {
                         // we closed the seam
                         CondLog (invalidate != 0, lsWARNING, LedgerMaster) <<
@@ -670,6 +672,7 @@ public:
                 clearLedger (lSeq);
                 ++invalidate;
             }
+        }
 
         // all prior ledgers invalidated
         CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " <<
@@ -963,24 +966,24 @@ public:
         WriteLog (lsTRACE, LedgerMaster) << "advanceThread>";
     }
 
+    // VFALCO NOTE This should return boost::optional<uint256>
     LedgerHash getLedgerHashForHistory (LedgerIndex index)
     {
         // Try to get the hash of a ledger we need to fetch for history
-        uint256 ret;
+        boost::optional<LedgerHash> ret;
 
         if (mHistLedger && (mHistLedger->getLedgerSeq() >= index))
         {
-            ret = mHistLedger->getLedgerHash (index);
-            if (ret.isZero())
+            ret = hashOfSeq(*mHistLedger, index,
+                getApp().getSLECache(), m_journal);
+            if (! ret)
                 ret = walkHashBySeq (index, mHistLedger);
-	}
-
-        if (ret.isZero ())
-        {
-            ret = walkHashBySeq (index);
         }
 
-        return ret;
+        if (! ret)
+            ret = walkHashBySeq (index);
+
+        return *ret;
     }
 
     // Try to publish ledgers, acquire missing ledgers
@@ -1160,31 +1163,35 @@ public:
                     WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
 
                     Ledger::pointer ledger;
-                    uint256 hash = valLedger->getLedgerHash (seq); // This can throw
-
+                    // This can throw
+                    auto hash = hashOfSeq(*valLedger, seq,
+                        getApp().getSLECache(), m_journal);
+                    // VFALCO TODO Restructure this code so that zero is not used
+                    if (! hash)
+                        hash = zero; // kludge
                     if (seq == valSeq)
-                    { // We need to publish the ledger we just fully validated
+                    {
+                        // We need to publish the ledger we just fully validated
                         ledger = valLedger;
+                    }
+                    else if (hash->isZero())
+                    {
+                        WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << valSeq << " does not have hash for " << seq;
+                        assert (false);
                     }
                     else
                     {
-                        if (hash.isZero ())
-                        {
-                            WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << valSeq << " does not have hash for " << seq;
-                            assert (false);
-                        }
-
-                        ledger = mLedgerHistory.getLedgerByHash (hash);
+                        ledger = mLedgerHistory.getLedgerByHash (*hash);
                     }
 
+                    // Can we try to acquire the ledger we need?
                     if (! ledger && (++acqCount < 4))
-                    { // We can try to acquire the ledger we need
-                        ledger =
-                            getApp().getInboundLedgers ().acquire (hash, seq, InboundLedger::fcGENERIC);
-                    }
+                        ledger = getApp().getInboundLedgers ().acquire(
+                            *hash, seq, InboundLedger::fcGENERIC);
 
+                    // Did we acquire the next ledger we need to publish?
                     if (ledger && (ledger->getLedgerSeq() == pubSeq))
-                    { // We acquired the next ledger we need to publish
+                    {
                         ledger->setValidated();
                         ret.push_back (ledger);
                         ++pubSeq;
@@ -1217,33 +1224,41 @@ public:
     }
 
     // Return the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
+    // VFALCO NOTE This should return boost::optional<uint256>
     uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
     {
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
-        uint256 hash = knownGoodLedger->getLedgerHash(desiredSeq);
+        auto hash = hashOfSeq(*knownGoodLedger, desiredSeq,
+            getApp().getSLECache(), m_journal);
 
         // Not directly in the given ledger
-        if (hash.isZero ())
+        if (! hash)
         {
             std::uint32_t seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
-            uint256 i = knownGoodLedger->getLedgerHash(seq);
-            if (i.isNonZero())
+            hash = hashOfSeq(*knownGoodLedger,
+                seq, getApp().getSLECache(), m_journal);
+            if (hash)
             {
-                Ledger::pointer l = getLedgerByHash(i);
+                auto l = getLedgerByHash(*hash);
                 if (l)
                 {
-                    hash = l->getLedgerHash(desiredSeq);
-                    assert (hash.isNonZero());
+                    hash = hashOfSeq(*l, desiredSeq,
+                        getApp().getSLECache(), m_journal);
+                    assert (hash);
                 }
             }
             else
+            {
                 assert(false);
+            }
         }
 
-        return hash;
+        // VFALCO NOTE This shouldn't be needed, but
+        //             preserves original behavior.
+        return hash ? *hash : zero; // kludge
     }
 
     void updatePaths (Job& job)
@@ -1401,6 +1416,7 @@ public:
         return Ledger::getHashByIndex (index);
     }
 
+    // VFALCO NOTE This should return boost::optional<uint256>
     uint256 walkHashBySeq (std::uint32_t index)
     {
         uint256 ledgerHash;
@@ -1419,37 +1435,41 @@ public:
         from the reference ledger or any prior ledger are not present
         in the node store.
     */
+    // VFALCO NOTE This should return boost::optional<uint256>
     uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
     {
-        uint256 ledgerHash;
         if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
-            return ledgerHash; // Nothing we can do. No validated ledger.
+        {
+            // Nothing we can do. No validated ledger.
+            return zero; 
+        }
 
         // See if the hash for the ledger we need is in the reference ledger
-        ledgerHash = referenceLedger->getLedgerHash (index);
-        if (ledgerHash.isZero())
-        {
-            // No, Try to get another ledger that might have the hash we need
-            // Compute the index and hash of a ledger that will have the hash we need
-            LedgerIndex refIndex = (index + 255) & (~255);
-            LedgerHash refHash = referenceLedger->getLedgerHash (refIndex);
+        auto ledgerHash = hashOfSeq(*referenceLedger, index,
+            getApp().getSLECache(), m_journal);
+        if (ledgerHash)
+            return *ledgerHash;
 
-            bool const nonzero (refHash.isNonZero ());
-            assert (nonzero);
-            if (nonzero)
+        // No, Try to get another ledger that might have the hash we need
+        // Compute the index and hash of a ledger that will have the hash we need
+        LedgerIndex refIndex = (index + 255) & (~255);
+        auto const refHash = hashOfSeq(*referenceLedger, refIndex,
+            getApp().getSLECache(), m_journal);
+        assert(refHash);
+        if (refHash)
+        {
+            // We found the hash and sequence of a better reference ledger
+            auto const ledger =
+                getApp().getInboundLedgers().acquire (
+                    *refHash, refIndex, InboundLedger::fcGENERIC);
+            if (ledger)
             {
-                // We found the hash and sequence of a better reference ledger
-                Ledger::pointer ledger =
-                    getApp().getInboundLedgers().acquire (
-                        refHash, refIndex, InboundLedger::fcGENERIC);
-                if (ledger)
-                {
-                    ledgerHash = ledger->getLedgerHash (index);
-                    assert (ledgerHash.isNonZero());
-                }
+                ledgerHash = hashOfSeq(*ledger, index,
+                    getApp().getSLECache(), m_journal);
+                assert (ledgerHash);
             }
         }
-        return ledgerHash;
+        return ledgerHash ? *ledgerHash : zero; // kludge
     }
 
     Ledger::pointer getLedgerBySeq (std::uint32_t index)
@@ -1465,9 +1485,10 @@ public:
 
                 try
                 {
-                    uint256 const& hash = valid->getLedgerHash (index);
-                    if (hash.isNonZero())
-                        return mLedgerHistory.getLedgerByHash (hash);
+                    auto const hash = hashOfSeq(*valid, index,
+                        getApp().getSLECache(), m_journal);
+                    if (hash)
+                        return mLedgerHistory.getLedgerByHash (*hash);
                 }
                 catch (...)
                 {

@@ -28,70 +28,35 @@
 namespace ripple {
 
 //
-// Provide abstract access to an account's state, such that access to the serialized format is hidden.
+// Provide abstract access to an account's state, such that
+// access to the serialized format is hidden.
 //
 
+// VFALCO TODO Remove this class, its redundant and hardly used
 class AccountState
 {
 public:
+    // VFALCO TODO Figure out if we need this to be shared
     using pointer = std::shared_ptr<AccountState>;
 
-public:
-    // For new accounts
-    explicit AccountState (RippleAddress const& naAccountID);
-
     // For accounts in a ledger
-    AccountState (SLE::ref ledgerEntry, RippleAddress const& naAccountI);
+    AccountState (std::shared_ptr<SLE const> sle,
+        RippleAddress const& naAccountI);
 
-    bool haveAuthorizedKey ()
-    {
-        return mLedgerEntry->isFieldPresent (sfRegularKey);
-    }
-
-    RippleAddress getAuthorizedKey ()
-    {
-        return mLedgerEntry->getFieldAccount (sfRegularKey);
-    }
-
-    STAmount getBalance () const
-    {
-        return mLedgerEntry->getFieldAmount (sfBalance);
-    }
-
-    std::uint32_t getSeq () const
-    {
-        return mLedgerEntry->getFieldU32 (sfSequence);
-    }
-
-    STLedgerEntry::pointer getSLE ()
-    {
-        return mLedgerEntry;
-    }
-
-    STLedgerEntry const& peekSLE () const
+    SLE const&
+    sle() const
     {
         return *mLedgerEntry;
     }
-
-    STLedgerEntry& peekSLE ()
-    {
-        return *mLedgerEntry;
-    }
-
-    Blob getRaw () const;
 
     void addJson (Json::Value& value);
 
-    void dump ();
-
+private:
+    // VFALCO TODO Remove this
     static std::string createGravatarUrl (uint128 uEmailHash);
 
-private:
-    RippleAddress const mAccountID;
-    RippleAddress                  mAuthorizedKey;
-    STLedgerEntry::pointer mLedgerEntry;
-
-    bool                           mValid;
+    bool mValid = false;
+    std::shared_ptr<SLE const> mLedgerEntry;
 };
 
 } // ripple
