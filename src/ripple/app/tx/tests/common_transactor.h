@@ -349,11 +349,11 @@ std::vector<RippleState::pointer> getRippleStates (
     TestLedger& ledger, UserAccount const& from, UserAccount const& peer);
 
 // Get all Offers on an account.
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getOffersOnAccount (TestLedger& ledger, UserAccount const& acct);
 
 // Get all Tickets on an account.
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct);
 
 } // test

@@ -193,10 +193,12 @@ Json::Value doAccountLines (RPC::Context& context)
         visitData.items.reserve (++reserve);
     }
 
-    if (! ledger->visitAccountItems (raAccount, startAfter, startHint, reserve,
-        [&visitData](SLE::ref sleCur)
+    if (! forEachItemAfter(*ledger, raAccount, getApp().getSLECache(),
+            startAfter, startHint, reserve,
+        [&visitData](std::shared_ptr<SLE const> const& sleCur)
         {
-            auto const line (RippleState::makeItem (visitData.accountID, sleCur));
+            auto const line =
+                RippleState::makeItem (visitData.accountID, sleCur);
             if (line != nullptr &&
                 (! visitData.rippleAddressPeer.isValid () ||
                 visitData.raPeerAccount == line->getAccountIDPeer ()))

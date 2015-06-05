@@ -1068,118 +1068,6 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
     return ret;
 }
 
-void Ledger::visitAccountItems (
-    Account const& accountID, std::function<void (SLE::ref)> func) const
-{
-    // Visit each item in this account's owner directory
-    uint256 rootIndex       = getOwnerDirIndex (accountID);
-    uint256 currentIndex    = rootIndex;
-
-    while (1)
-    {
-        SLE::pointer ownerDir   = getSLEi (currentIndex);
-
-        if (!ownerDir || (ownerDir->getType () != ltDIR_NODE))
-            return;
-
-        for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
-        {
-            func (getSLEi (node));
-        }
-
-        std::uint64_t uNodeNext = ownerDir->getFieldU64 (sfIndexNext);
-
-        if (!uNodeNext)
-            return;
-
-        currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
-    }
-
-}
-
-bool Ledger::visitAccountItems (
-    Account const& accountID,
-    uint256 const& startAfter,
-    std::uint64_t const hint,
-    unsigned int limit,
-    std::function <bool (SLE::ref)> func) const
-{
-    // Visit each item in this account's owner directory
-    uint256 const rootIndex (getOwnerDirIndex (accountID));
-    uint256 currentIndex (rootIndex);
-
-    // If startAfter is not zero try jumping to that page using the hint
-    if (startAfter.isNonZero ())
-    {
-        uint256 const hintIndex (getDirNodeIndex (rootIndex, hint));
-        SLE::pointer hintDir (getSLEi (hintIndex));
-        if (hintDir != nullptr)
-        {
-            for (auto const& node : hintDir->getFieldV256 (sfIndexes))
-            {
-                if (node == startAfter)
-                {
-                    // We found the hint, we can start here
-                    currentIndex = hintIndex;
-                    break;
-                }
-            }
-        }
-
-        bool found (false);
-        for (;;)
-        {
-            SLE::pointer ownerDir (getSLEi (currentIndex));
-
-            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
-                return found;
-
-            for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
-            {
-                if (!found)
-                {
-                    if (node == startAfter)
-                        found = true;
-                }
-                else if (func (getSLEi (node)) && limit-- <= 1)
-                {
-                    return found;
-                }
-            }
-
-            std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
-
-            if (uNodeNext == 0)
-                return found;
-
-            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
-        }
-    }
-    else
-    {
-        for (;;)
-        {
-            SLE::pointer ownerDir (getSLEi (currentIndex));
-
-            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
-                return true;
-
-            for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
-            {
-                if (func (getSLEi (node)) && limit-- <= 1)
-                    return true;
-            }
-
-            std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
-
-            if (uNodeNext == 0)
-                return true;
-
-            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
-        }
-    }
-}
-
 static void visitHelper (
     std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
 {
@@ -1689,6 +1577,99 @@ fetch (Ledger const& ledger, uint256 const& key)
 {
     return fetch(ledger, key,
         getApp().getSLECache());
+}
+
+void
+forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
+    std::function<void(std::shared_ptr<SLE const> const&)> f)
+{
+    auto rootIndex = getOwnerDirIndex (id);
+    auto currentIndex = rootIndex;
+    for(;;)
+    {
+        auto ownerDir = fetch(
+            ledger, currentIndex, cache, ltDIR_NODE);
+        if (! ownerDir)
+            return;
+        for (auto const& key : ownerDir->getFieldV256 (sfIndexes))
+            f(fetch(ledger, key, cache));
+        auto uNodeNext =
+            ownerDir->getFieldU64 (sfIndexNext);
+        if (! uNodeNext)
+            return;
+        currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
+    }
+}
+
+bool
+forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
+    uint256 const& after, std::uint64_t const hint, unsigned int limit,
+        std::function <bool (std::shared_ptr<SLE const> const&)> f)
+{
+    auto const rootIndex = getOwnerDirIndex(id);
+    auto currentIndex = rootIndex;
+
+    // If startAfter is not zero try jumping to that page using the hint
+    if (after.isNonZero ())
+    {
+        auto const hintIndex = getDirNodeIndex (rootIndex, hint);
+        auto hintDir = fetch(ledger, hintIndex, cache);
+        if (hintDir)
+        {
+            for (auto const& key : hintDir->getFieldV256 (sfIndexes))
+            {
+                if (key == after)
+                {
+                    // We found the hint, we can start here
+                    currentIndex = hintIndex;
+                    break;
+                }
+            }
+        }
+
+        bool found = false;
+        for (;;)
+        {
+            auto const ownerDir = fetch(ledger, currentIndex, cache);
+            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
+                return found;
+            for (auto const& key : ownerDir->getFieldV256 (sfIndexes))
+            {
+                if (! found)
+                {
+                    if (key == after)
+                        found = true;
+                }
+                else if (f (fetch (ledger, key, cache)) && limit-- <= 1)
+                {
+                    return found;
+                }
+            }
+
+            auto const uNodeNext =
+                ownerDir->getFieldU64(sfIndexNext);
+            if (uNodeNext == 0)
+                return found;
+            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
+        }
+    }
+    else
+    {
+        for (;;)
+        {
+            auto const ownerDir = fetch(ledger, currentIndex, cache);
+            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
+                return true;
+            for (auto const& key : ownerDir->getFieldV256 (sfIndexes))
+                if (f (fetch(ledger, key, cache)) && limit-- <= 1)
+                    return true;
+            auto const uNodeNext =
+                ownerDir->getFieldU64 (sfIndexNext);
+            if (uNodeNext == 0)
+                return true;
+            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
+        }
+    }
 }
 
 AccountState::pointer

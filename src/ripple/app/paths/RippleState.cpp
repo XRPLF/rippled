@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
@@ -75,12 +76,11 @@ getRippleStateItems (
     Ledger::ref ledger)
 {
     std::vector <RippleState::pointer> items;
-
-    ledger->visitAccountItems (accountID,
-        [&items,&accountID](SLE::ref sleCur)
+    forEachItem(*ledger, accountID, getApp().getSLECache(),
+        [&items,&accountID](
+        std::shared_ptr<SLE const> const&sleCur)
         {
              auto ret = RippleState::makeItem (accountID, sleCur);
-
              if (ret)
                 items.push_back (ret);
         });

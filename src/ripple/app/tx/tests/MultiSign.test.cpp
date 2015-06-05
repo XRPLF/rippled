@@ -1462,12 +1462,12 @@ class MultiSign_test : public beast::unit_test::suite
             }
             // Verify that alice has an offer.
             {
-                std::vector<SLE::pointer> offers =
+                auto offers =
                     getOffersOnAccount (ledger, alice);
                 expect (offers.size() == 1);
                 if (! offers.empty())
                 {
-                    SLE::pointer const& offer = offers[0];
+                    auto const& offer = offers[0];
                     expect (takerGets == offer->getFieldAmount(sfTakerGets));
                     expect (takerPays == offer->getFieldAmount(sfTakerPays));
                     offerSeq = offer->getFieldU32 (sfSequence);
@@ -1486,7 +1486,7 @@ class MultiSign_test : public beast::unit_test::suite
             }
             // Make sure alice's offer is really gone from the ledger.
             {
-                std::vector<SLE::pointer> offers =
+                auto offers =
                     getOffersOnAccount (ledger, alice);
                 expect (offers.empty() == true);
             }
@@ -1558,7 +1558,7 @@ class MultiSign_test : public beast::unit_test::suite
             }
             // Make sure Alice has the ticket.
             {
-                std::vector<SLE::pointer> tickets =
+                auto
                     getTicketsOnAccount (ledger, alice);
                 expect (tickets.size() == 1);
                 if (! tickets.empty())
@@ -1583,7 +1583,7 @@ class MultiSign_test : public beast::unit_test::suite
             }
             // Make sure the ticket is gone.
             {
-                std::vector<SLE::pointer> tickets =
+                auto tickets =
                     getTicketsOnAccount (ledger, alice);
                 expect (tickets.size() == 0);
             }
