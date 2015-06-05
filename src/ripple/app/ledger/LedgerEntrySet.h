@@ -332,8 +332,8 @@ private:
     bool threadTx (
         SLE::ref threadTo, Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
-    bool threadOwners (
-        SLE::ref node, Ledger::ref ledger, NodeToLedgerEntry& newMods);
+    bool threadOwners (std::shared_ptr<SLE const> const& node,
+        Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
     TER rippleSend (
         Account const& uSenderID, Account const& uReceiverID,

@@ -166,7 +166,7 @@ Json::Value doAccountLines (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        SLE::pointer sleLine (ledger->getSLEi (startAfter));
+        auto const sleLine = fetch(*ledger, startAfter);
 
         if (sleLine == nullptr || sleLine->getType () != ltRIPPLE_STATE)
             return rpcError (rpcINVALID_PARAMS);
@@ -179,7 +179,7 @@ Json::Value doAccountLines (RPC::Context& context)
             return rpcError (rpcINVALID_PARAMS);
 
         // Caller provided the first line (startAfter), add it as first result
-        auto const line (RippleState::makeItem (raAccount, sleLine));
+        auto const line = RippleState::makeItem (raAccount, sleLine);
         if (line == nullptr)
             return rpcError (rpcINVALID_PARAMS);
 

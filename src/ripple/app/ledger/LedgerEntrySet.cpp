@@ -116,7 +116,7 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
         if (!sleEntry)
         {
             assert (action != taaDELETE);
-            sleEntry = mImmutable ? mLedger->getSLEi (index) : mLedger->getSLE (index);
+            sleEntry = mImmutable ? mLedger->getSLEi(index) : mLedger->getSLE (index);
 
             if (sleEntry)
                 entryCache (sleEntry);
@@ -424,8 +424,9 @@ bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
     return false;
 }
 
-bool LedgerEntrySet::threadOwners (SLE::ref node, Ledger::ref ledger,
-                                   NodeToLedgerEntry& newMods)
+bool LedgerEntrySet::threadOwners(
+    std::shared_ptr<SLE const> const& node,
+        Ledger::ref ledger, NodeToLedgerEntry& newMods)
 {
     // thread new or modified node to owner or owners
     if (node->hasOneOwner ()) // thread to owner's account
@@ -489,7 +490,8 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
         if (type == &sfGeneric)
             continue;
 
-        SLE::pointer origNode = mLedger->getSLEi (it.first);
+        std::shared_ptr<SLE const> const origNode =
+            mLedger->getSLEi(it.first);
         SLE::pointer curNode = it.second.mEntry;
 
         if ((type == &sfModifiedNode) && (*curNode == *origNode))

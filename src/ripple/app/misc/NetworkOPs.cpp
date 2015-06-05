@@ -1142,7 +1142,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
         {
             for (auto const& uDirEntry : sleNode->getFieldV256 (sfIndexes))
             {
-                auto sleCur = lpLedger->getSLEi (uDirEntry);
+                auto sleCur = fetch(*lpLedger, uDirEntry);
 
                 switch (sleCur->getType ())
                 {

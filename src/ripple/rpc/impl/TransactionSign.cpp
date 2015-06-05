@@ -192,11 +192,8 @@ bool TxnSignApiFacade::hasAccountRoot () const
 {
     if (!netOPs_) // Unit testing.
         return true;
-
-    SLE::pointer const sleAccountRoot =
-        ledger_->getSLEi(getAccountRootIndex(accountID_));
-
-    return static_cast <bool> (sleAccountRoot);
+    return ledger_->exists(
+        getAccountRootIndex(accountID_));
 }
 
 error_code_i acctMatchesPubKey (
