@@ -920,8 +920,9 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto sleEnd = fetch(*mLedger, getAccountRootIndex (uEndAccount),
-                getApp().getSLECache());
+            auto const sleEnd = fetch(
+                *mLedger, getAccountRootIndex (uEndAccount),
+                    getApp().getSLECache());
 
             if (sleEnd)
             {
