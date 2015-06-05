@@ -88,7 +88,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     Account const& raAccount (rippleAddress.getAccountID ());
     Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
-    std::vector <SLE::pointer> offers;
+    std::vector <std::shared_ptr<SLE const>> offers;
     unsigned int reserve (limit);
     uint256 startAfter;
     std::uint64_t startHint;
@@ -130,8 +130,9 @@ Json::Value doAccountOffers (RPC::Context& context)
         offers.reserve (++reserve);
     }
 
-    if (! ledger->visitAccountItems (raAccount, startAfter, startHint, reserve,
-        [&offers](SLE::ref offer)
+    if (! forEachItemAfter(*ledger, raAccount, getApp().getSLECache(),
+            startAfter, startHint, reserve,
+        [&offers](std::shared_ptr<SLE const> const& offer)
         {
             if (offer->getType () == ltOFFER)
             {

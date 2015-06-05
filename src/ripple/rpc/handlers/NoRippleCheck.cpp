@@ -135,8 +135,9 @@ Json::Value doNoRippleCheck (RPC::Context& context)
 
     auto const accountID = rippleAddress.getAccountID ();
 
-    ledger->visitAccountItems (accountID, uint256(), 0, limit,
-        [&](SLE::ref ownedItem)
+    forEachItemAfter (*ledger, accountID, getApp().getSLECache(),
+            uint256(), 0, limit,
+        [&](std::shared_ptr<SLE const> const& ownedItem)
         {
             if (ownedItem->getType() == ltRIPPLE_STATE)
             {

@@ -335,16 +335,6 @@ public:
 
     void updateSkipList ();
 
-    void visitAccountItems (
-        Account const& accountID, std::function<void (SLE::ref)>) const;
-
-    bool visitAccountItems (
-        Account const& accountID,
-        uint256 const& startAfter, // Entry to start after
-        std::uint64_t const hint,  // Hint which page to start at
-        unsigned int limit,
-        std::function <bool (SLE::ref)>) const;
-
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
@@ -549,6 +539,22 @@ fetch (Ledger const& ledger, uint256 const& key, SLECache& cache);
 // DEPRECATED (calls getApp), use above
 std::shared_ptr<SLE const>
 fetch (Ledger const& ledger, uint256 const& key);
+
+/** Iterate all items in an account's owner directory. */
+void
+forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
+    std::function<void (std::shared_ptr<SLE const> const&)> f);
+
+/** Iterate all items after an item in an owner directory.
+    @param after The key of the item to start after
+    @param hint The directory page containing `after`
+    @param limit The maximum number of items to return
+    @return `false` if the iteration failed
+*/
+bool
+forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
+    uint256 const& after, std::uint64_t const hint, unsigned int limit,
+        std::function <bool (std::shared_ptr<SLE const> const&)>);
 
 // DEPRECATED
 // VFALCO This could return by value
