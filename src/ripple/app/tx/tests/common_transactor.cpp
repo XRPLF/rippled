@@ -136,7 +136,7 @@ void TestLedger::applyTecTransaction (STTx const& tx, TER err, bool check)
 AccountState::pointer
 TestLedger::getAccountState (UserAccount const& acct) const
 {
-    return lastClosedLedger_->getAccountState (acct.acctPublicKey ());
+    return ripple::getAccountState (*lastClosedLedger_, acct.acctPublicKey ());
 }
 
 //------------------------------------------------------------------------------

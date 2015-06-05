@@ -128,6 +128,8 @@ public:
     void applyTecTransaction (STTx const& tx, TER err, bool check = true);
 
     // Return the AccountState for a UserAccount
+    // VFALCO This function is not necessary, just expose
+    //        the ledger data member and use the free function.
     AccountState::pointer getAccountState (UserAccount const& acct) const;
 
     // Return the current open ledger.

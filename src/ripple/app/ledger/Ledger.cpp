@@ -346,25 +346,6 @@ bool Ledger::addSLE (SLE const& sle)
     return mAccountStateMap->addItem(item, false, false);
 }
 
-AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID) const
-{
-    SLE::pointer sle = getSLEi (getAccountRootIndex (accountID));
-
-    if (!sle)
-    {
-        WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
-            " not found: " << accountID.humanAccountID () <<
-            ": " << to_string (getAccountRootIndex (accountID));
-
-        return AccountState::pointer ();
-    }
-
-    if (sle->getType () != ltACCOUNT_ROOT)
-        return AccountState::pointer ();
-
-    return std::make_shared<AccountState> (sle, accountID);
-}
-
 bool Ledger::addTransaction (uint256 const& txID, const Serializer& txn)
 {
     // low-level - just add to table
@@ -996,9 +977,14 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 bool
 Ledger::exists (uint256 const& key) const
 {
-    uint256 hash;
     return static_cast<bool>(
-        mAccountStateMap->peekItem(key, hash));
+        mAccountStateMap->peekItem(key));
+}
+
+std::shared_ptr<SHAMapItem const>
+Ledger::find (uint256 const& key) const
+{
+    return mAccountStateMap->peekItem(key);
 }
 
 void
@@ -1015,29 +1001,8 @@ Ledger::insert (SLE const& sle)
     assert(success);
 }
 
-std::shared_ptr<SLE const>
-Ledger::fetch (uint256 const& key) const
-{
-    uint256 hash;
-    auto node=
-        mAccountStateMap->peekItem (key, hash);
-    if (!node)
-        return {};
-    auto sle =
-        getApp().getSLECache().fetch(hash);
-    if (! sle)
-    {
-        sle = std::make_shared<SLE>(
-            node->peekSerializer(), node->getTag ());
-        sle->setImmutable ();
-        getApp().getSLECache().canonicalize(hash, sle);
-    }
-
-    return sle;
-}
-
 std::shared_ptr<SLE>
-Ledger::copy (uint256 const& key) const
+Ledger::fetch (uint256 const& key) const
 {
     auto const item =
         mAccountStateMap->peekItem(key);
@@ -1690,6 +1655,55 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
     }
 
     return ret;
+}
+
+//------------------------------------------------------------------------------
+//
+// API
+//
+//------------------------------------------------------------------------------
+
+std::shared_ptr<SLE const>
+fetch (Ledger const& ledger, uint256 const& key)
+{
+    // VFALCO TODO Pass SLECache as a parameter
+    auto& cache = getApp().getSLECache();
+    uint256 hash;
+    auto const item =
+        ledger.peekAccountStateMap()->peekItem(key, hash);
+    if (! item)
+        return {};
+    if (auto sle = cache.fetch(hash))
+        return sle;
+    SerialIter s(make_Slice(item->peekData()));
+    auto sle = std::make_shared<SLE>(
+        s, item->getTag());
+    sle->setImmutable ();
+    cache.canonicalize(hash, sle);
+    return sle;
+}
+
+AccountState::pointer
+getAccountState (Ledger const& ledger,
+    RippleAddress const& accountID)
+{
+    auto const sle = fetch(ledger,
+        getAccountRootIndex(accountID.getAccountID()));
+    if (!sle)
+    {
+        // VFALCO Do we really need to log here?
+        WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
+            " not found: " << accountID.humanAccountID () <<
+            ": " << to_string (getAccountRootIndex (accountID));
+
+        return {};
+    }
+
+    // VFALCO Does this ever really happen?
+    if (sle->getType () != ltACCOUNT_ROOT)
+        return {};
+
+    return std::make_shared<AccountState>(sle, accountID);
 }
 
 } // ripple
