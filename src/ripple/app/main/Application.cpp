@@ -1064,7 +1064,7 @@ void ApplicationImp::startNewLedger ()
 
     {
         Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
-        assert (firstLedger->getAccountState (rootAddress));
+        assert (getAccountState (*firstLedger, rootAddress));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
         firstLedger->updateHash ();
@@ -1076,7 +1076,7 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (secondLedger->getAccountState (rootAddress));
+        assert (getAccountState (*secondLedger, rootAddress));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
 }

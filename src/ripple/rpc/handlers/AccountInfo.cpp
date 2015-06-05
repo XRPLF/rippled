@@ -62,7 +62,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         return jvAccepted;
 
     AccountState::pointer asAccepted =
-        ledger->getAccountState(naAccount);
+        getAccountState(*ledger, naAccount);
 
     if (asAccepted)
     {

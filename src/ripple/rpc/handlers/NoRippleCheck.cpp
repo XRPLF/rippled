@@ -106,7 +106,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         return result;
     }
 
-    AccountState::pointer accountState = ledger->getAccountState (rippleAddress);
+    AccountState::pointer accountState = getAccountState (*ledger, rippleAddress);
     if (! accountState)
         return rpcError (rpcACT_NOT_FOUND);
 

@@ -266,13 +266,19 @@ public:
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
 
-    AccountState::pointer getAccountState (const RippleAddress & acctID) const;
-
     //--------------------------------------------------------------------------
 
     /** Returns `true` if a ledger entry exists. */
     bool
     exists (uint256 const& key) const;
+
+    /** Return the account state item for a key.
+        The item may not be modified.
+        @return The serialized ledger entry or empty
+                if the key does not exist.
+    */
+    std::shared_ptr<SHAMapItem const>
+    find (uint256 const& key) const;
 
     /** Add a new account state SLE.
         Effects:
@@ -284,16 +290,6 @@ public:
     void
     insert (SLE const& sle);
 
-    /** Fetch a deserialized account state SLE.
-        Effects:
-            If the key exists, the item is flattened
-                and added to the SLE cache.
-        The returned object may not be modified.
-        @return `empty` if the key is not present
-    */
-    std::shared_ptr<SLE const>
-    fetch (uint256 const& key) const;
-
     /** Fetch a modifiable account state SLE.
         Effects:
             Gives the caller ownership of an
@@ -301,7 +297,7 @@ public:
         @return `empty` if the key is not present
     */
     std::shared_ptr<SLE>
-    copy (uint256 const& key) const;
+    fetch (uint256 const& key) const;
 
     /** Replace an existing account state SLE.
         Effects:
@@ -533,12 +529,22 @@ private:
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
 
-#if 0
+/** Fetch a deserialized account state SLE.
+    Effects:
+        If the key exists, the item is flattened
+            and added to the SLE cache.
+    The returned object may not be modified.
+    @return `empty` if the key is not present
+*/
+std::shared_ptr<SLE const>
+fetch (Ledger const& ledger, uint256 const& key);
+
 // DEPRECATED
 // VFALCO This could return by value
+//        This should take AccountID parameter
 AccountState::pointer
-getAccountState (Ledger& ledger,RippleAddress const& accountID)
-#endif
+getAccountState (Ledger const& ledger,
+    RippleAddress const& accountID);
 
 } // ripple
 
