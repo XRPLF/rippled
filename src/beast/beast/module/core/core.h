@@ -68,7 +68,6 @@ class FileOutputStream;
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include <beast/module/core/time/AtExitHook.h>
 #include <beast/module/core/time/Time.h>
 #include <beast/module/core/threads/ScopedLock.h>
 #include <beast/module/core/threads/CriticalSection.h>

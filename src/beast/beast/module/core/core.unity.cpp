@@ -155,7 +155,6 @@
 #include <beast/module/core/thread/DeadlineTimer.cpp>
 #include <beast/module/core/thread/Workers.cpp>
 
-#include <beast/module/core/time/AtExitHook.cpp>
 #include <beast/module/core/time/Time.cpp>
 
 #if BEAST_MAC || BEAST_IOS
