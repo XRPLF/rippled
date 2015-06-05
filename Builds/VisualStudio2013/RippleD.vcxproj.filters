@@ -2976,7 +2976,7 @@
     <ClInclude Include="..\..\src\ripple\json\Output.h">
       <Filter>ripple\json</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\json\tests\JsonCpp.test.cpp">
+    <ClCompile Include="..\..\src\ripple\json\tests\json_value.test.cpp">
       <Filter>ripple\json\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\tests\Object.test.cpp">
