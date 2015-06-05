@@ -146,7 +146,6 @@ class FileOutputStream;
 
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
-#include <beast/module/core/threads/Process.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>

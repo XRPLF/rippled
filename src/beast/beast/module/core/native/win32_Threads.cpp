@@ -82,11 +82,6 @@ bool beast_isRunningUnderDebugger()
     return IsDebuggerPresent() != FALSE;
 }
 
-bool Process::isRunningUnderDebugger()
-{
-    return beast_isRunningUnderDebugger();
-}
-
 //==============================================================================
 
 } // beast

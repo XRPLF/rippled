@@ -31,9 +31,5 @@ bool beast_isRunningUnderDebugger()
     return false;
 }
 
-bool Process::isRunningUnderDebugger()
-{
-    return beast_isRunningUnderDebugger();
-}
 
 } // beast
