@@ -156,7 +156,7 @@ private:
     beast::asio::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
-    bool recent_empty_ = true;
+    bool low_sendq_ = true;
     std::unique_ptr <LoadEvent> load_event_;
     std::unique_ptr<Validators::Connection> validatorsConnection_;
     bool hopsAware_ = false;

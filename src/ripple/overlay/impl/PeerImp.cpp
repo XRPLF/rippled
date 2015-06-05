@@ -189,10 +189,17 @@ PeerImp::send (Message::pointer const& m)
         return;
     if(detaching_)
         return;
+
+    auto sendq_size = send_queue_.size();
+
+    if (sendq_size < Tuning::targetSendQueue)
+        low_sendq_ = true;
+
     send_queue_.push(m);
-    if(send_queue_.size() > 1)
+
+    if(sendq_size != 0)
         return;
-    recent_empty_ = true;
+
     boost::asio::async_write (stream_, boost::asio::buffer(
         send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
             &PeerImp::onWriteMessage, shared_from_this(),
@@ -499,13 +506,13 @@ PeerImp::onTimer (error_code const& ec)
         return close();
     }
 
-    if (! recent_empty_)
+    if (! low_sendq_)
     {
-        fail ("Timeout");
+        fail ("Large send queue");
         return;
     }
 
-    recent_empty_ = false;
+    low_sendq_ = false;
 
     // Make sequence unpredictable enough that a peer
     // can't fake their latency

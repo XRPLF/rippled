@@ -52,6 +52,9 @@ enum
 
     /** How often we check connections (seconds) */
     checkSeconds        =   10,
+
+    /** How many messages we consider reasonable sustained on a send queue */
+    targetSendQueue     =  100,
 };
 
 } // Tuning
