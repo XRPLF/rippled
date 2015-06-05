@@ -92,11 +92,11 @@ void fillJson (Object& json, LedgerFill const& fill)
             json[jss::closed] = true;
 
         // DEPRECATED
-        json[jss::hash] = to_string (ledger.getRawHash());
+        json[jss::hash] = to_string (ledger.getHash());
 
         // DEPRECATED
         json[jss::totalCoins]        = to_string (ledger.getTotalCoins());
-        json[jss::ledger_hash]       = to_string (ledger.getRawHash());
+        json[jss::ledger_hash]       = to_string (ledger.getHash());
         json[jss::transaction_hash]  = to_string (ledger.getTransHash());
         json[jss::account_hash]      = to_string (ledger.getAccountHash());
         json[jss::accepted]          = ledger.isAccepted();

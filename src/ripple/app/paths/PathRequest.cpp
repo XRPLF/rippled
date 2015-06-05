@@ -203,7 +203,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        jvStatus[jss::ledger_hash] = to_string (lrLedger->getHash ());
+        jvStatus[jss::ledger_hash] = to_string (lrLedger->hash ());
         jvStatus[jss::ledger_index] = lrLedger->getLedgerSeq ();
     }
     return bValid;

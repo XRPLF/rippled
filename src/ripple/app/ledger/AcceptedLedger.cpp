@@ -45,13 +45,13 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 
 AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (Ledger::ref ledger)
 {
-    AcceptedLedger::pointer ret = s_cache.fetch (ledger->getHash ());
+    AcceptedLedger::pointer ret = s_cache.fetch (ledger->hash());
 
     if (ret)
         return ret;
 
     ret = AcceptedLedger::pointer (new AcceptedLedger (ledger));
-    s_cache.canonicalize (ledger->getHash (), ret);
+    s_cache.canonicalize (ledger->hash (), ret);
     return ret;
 }
 
