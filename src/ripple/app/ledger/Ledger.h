@@ -448,8 +448,6 @@ private:
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
 
-    SLE::pointer getFeeNode (uint256 const& nodeID) const;
-
     // Updates the fees cached in the ledger.
     // Safe to call concurrently. We shouldn't be storing
     // fees in the Ledger object, they should be a local side-structure
