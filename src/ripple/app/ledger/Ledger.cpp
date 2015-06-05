@@ -1143,16 +1143,6 @@ uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin)
     return node->getTag ();
 }
 
-SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let) const
-{
-    SLE::pointer node = getSLEi (nodeID);
-
-    if (node && (node->getType () != let))
-        node.reset ();
-
-    return node;
-}
-
 SLE::pointer
 Ledger::getFeeNode(uint256 const& nodeID) const
 {
@@ -1166,24 +1156,6 @@ Ledger::getFeeNode(uint256 const& nodeID) const
     if (sle->getType () != ltFEE_SETTINGS)
         return {};
     return sle;
-}
-
-SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex) const
-{
-    return getASNodeI (uNodeIndex, ltDIR_NODE);
-}
-
-SLE::pointer
-Ledger::getRippleState (uint256 const& uNode) const
-{
-    return getASNodeI (uNode, ltRIPPLE_STATE);
-}
-
-SLE::pointer
-Ledger::getRippleState (
-    Account const& a, Account const& b, Currency const& currency) const
-{
-    return getRippleState (getRippleStateIndex (a, b, currency));
 }
 
 uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)

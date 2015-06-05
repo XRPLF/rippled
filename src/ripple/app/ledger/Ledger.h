@@ -375,9 +375,6 @@ public:
     // Given a directory root and and index compute the index of a node.
     static void ownerDirDescriber (SLE::ref, bool, Account const& owner);
 
-    // Return a node: root or normal
-    SLE::pointer getDirNode (uint256 const& uNodeIndex) const;
-
     //
     // Quality
     //
@@ -387,17 +384,6 @@ public:
         Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
         Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuer,
         const std::uint64_t & uRate);
-
-    //
-    // Ripple functions : credit lines
-    //
-
-    SLE::pointer
-    getRippleState (uint256 const& uNode) const;
-
-    SLE::pointer
-    getRippleState (
-        Account const& a, Account const& b, Currency const& currency) const;
 
     std::uint32_t getReferenceFeeUnits() const
     {
@@ -452,9 +438,6 @@ public:
                   getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
 
 protected:
-    // returned SLE is immutable
-    SLE::pointer getASNodeI (uint256 const& nodeID, LedgerEntryType let) const;
-
     void saveValidatedLedgerAsync(Job&, bool current)
     {
         saveValidatedLedger(current);
