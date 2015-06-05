@@ -23,10 +23,11 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/app/ledger/SLECache.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
-    
+   
 namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {
@@ -65,7 +66,6 @@ class DatabaseCon;
 class SHAMapStore;
 
 using NodeCache     = TaggedCache <uint256, Blob>;
-using SLECache      = TaggedCache <uint256, STLedgerEntry>;
 
 class Application : public beast::PropertyStream::Source
 {
