@@ -1143,21 +1143,6 @@ uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin)
     return node->getTag ();
 }
 
-SLE::pointer
-Ledger::getFeeNode(uint256 const& nodeID) const
-{
-    std::shared_ptr<SHAMapItem> account =
-        mAccountStateMap->peekItem (nodeID);
-    if (! account)
-        return {};
-    SLE::pointer sle = std::make_shared<SLE>(
-        account->peekSerializer(), nodeID);
-    // Make sure its the correct type
-    if (sle->getType () != ltFEE_SETTINGS)
-        return {};
-    return sle;
-}
-
 uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
 {
     // Return the hash of the specified ledger, 0 if not available
@@ -1449,7 +1434,9 @@ void Ledger::deprecatedUpdateCachedFees() const
     std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
     std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
-    auto sle = getFeeNode (getLedgerFeeIndex ());
+    // VFALCO NOTE this doesn't go through the SLECache
+    auto const sle = this->fetch(
+        getLedgerFeeIndex(), ltFEE_SETTINGS);
     if (sle)
     {
         if (sle->getFieldIndex (sfBaseFee) != -1)
