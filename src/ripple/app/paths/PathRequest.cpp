@@ -149,8 +149,8 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        auto asSrc = getApp().getOPs ().getAccountState (
-            crCache->getLedger(), raSrcAccount);
+        auto asSrc = crCache->getLedger()->getAccountState(
+            raSrcAccount);
 
         if (!asSrc)
         {
@@ -160,8 +160,8 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
         }
         else
         {
-            auto asDst = getApp().getOPs ().getAccountState (
-                lrLedger, raDstAccount);
+            auto asDst = lrLedger->getAccountState(
+                raDstAccount);
 
             Json::Value& jvDestCur =
                     (jvStatus[jss::destination_currencies] = Json::arrayValue);

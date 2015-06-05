@@ -111,7 +111,7 @@ void TxnSignApiFacade::snapshotAccountState (RippleAddress const& accountID)
 
     ledger_ = netOPs_->getCurrentLedger ();
     accountID_ = accountID;
-    accountState_ = netOPs_->getAccountState (ledger_, accountID_);
+    accountState_ = ledger_->getAccountState (accountID_);
 }
 
 bool TxnSignApiFacade::isValidAccount () const
@@ -248,11 +248,12 @@ error_code_i TxnSignApiFacade::multiAcctMatchesPubKey (
     RippleAddress const& publicKey) const
 {
     AccountState::pointer accountState;
+    // VFALCO Do we need to check netOPs_?
     if (netOPs_ && ledger_)
         // If it's available, get the AccountState for the multi-signer's
         // accountID.  It's okay if the AccountState is not available,
         // since they might be signing with a phantom (unfunded) account.
-        accountState = netOPs_->getAccountState (ledger_, accountID);
+        accountState = ledger_->getAccountState (accountID);
 
     return acctMatchesPubKey (accountState, accountID, publicKey);
 }

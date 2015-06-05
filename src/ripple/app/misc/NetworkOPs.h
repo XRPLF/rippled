@@ -170,14 +170,6 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Account functions
-    //
-
-    virtual AccountState::pointer getAccountState (Ledger::ref lrLedger,
-        RippleAddress const& accountID) = 0;
-
-    //--------------------------------------------------------------------------
-    //
     // Directory functions
     //
 
