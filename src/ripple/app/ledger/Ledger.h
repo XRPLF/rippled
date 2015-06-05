@@ -29,6 +29,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/Book.h>
+#include <boost/optional.hpp>
 #include <mutex>
 
 namespace ripple {
@@ -37,12 +38,18 @@ class Job;
 
 class SqliteStatement;
 
-// VFALCO TODO figure out exactly how this thing works.
-//         It seems like some ledger database is stored as a global, static in
-//         the class. But then what is the meaning of a Ledger object? Is this
-//         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
-//
-/** Holds some or all of a ledger.
+/** Holds a ledger.
+
+    The ledger is composed of two SHAMaps. The state map holds all of the
+    ledger entries such as account roots and order books. The tx map holds
+    all of the transactions and associated metadata that made it into that
+    particular ledger. Most of the operations on a ledger are concerned
+    with the state map.
+    
+    A View provides a structured interface to manipulate the state map in
+    a reversible way, with facilities to automatically produce metadata
+    when applying changes.
+
     This can hold just the header, a partial set of data, or the entire set
     of data. It all depends on what is in the corresponding SHAMap entry.
     Various functions are provided to populate or depopulate the caches that
@@ -96,6 +103,62 @@ public:
     Ledger (Ledger const& target, bool isMutable);
 
     ~Ledger();
+
+    //--------------------------------------------------------------------------
+
+    /** Returns `true` if a ledger entry exists. */
+    bool
+    exists (uint256 const& key) const;
+
+    /** Return the account state item for a key.
+        The item may not be modified.
+        @return The serialized ledger entry or empty
+                if the key does not exist.
+    */
+    std::shared_ptr<SHAMapItem const>
+    find (uint256 const& key) const;
+
+    /** Add a new account state SLE.
+        Effects:
+            assert if the key already exists.
+            The key in the AccountState map is associated
+                with an unflattened copy of the SLE.
+        @note The key is taken from the SLE.
+    */
+    void
+    insert (SLE const& sle);
+
+    /** Fetch a modifiable account state SLE.
+        Effects:
+            Gives the caller ownership of an
+                unflattened copy of the SLE.
+        @return `empty` if the key is not present
+    */
+    boost::optional<SLE>
+    fetch (uint256 const& key) const;
+
+    /** Replace an existing account state SLE.
+        Effects:
+            assert if key does not already exist.
+            The previous flattened SLE associated with
+                the key is released.
+            The key in the AccountState map is associated
+                with a flattened copy of the SLE.
+        @note The key is taken from the SLE
+    */
+    void
+    replace (SLE const& sle);
+
+    /** Remove an account state SLE.
+        Effects:
+            assert if the key does not exist.
+            The flattened SLE associated with the key
+                is released from the account state map.
+    */
+    void
+    erase (uint256 const& key);
+
+    //--------------------------------------------------------------------------
 
     void updateHash ();
 
@@ -265,62 +328,6 @@ public:
 
     // high-level functions
     bool hasAccount (const RippleAddress & acctID) const;
-
-    //--------------------------------------------------------------------------
-
-    /** Returns `true` if a ledger entry exists. */
-    bool
-    exists (uint256 const& key) const;
-
-    /** Return the account state item for a key.
-        The item may not be modified.
-        @return The serialized ledger entry or empty
-                if the key does not exist.
-    */
-    std::shared_ptr<SHAMapItem const>
-    find (uint256 const& key) const;
-
-    /** Add a new account state SLE.
-        Effects:
-            assert if the key already exists.
-            The key in the AccountState map is associated
-                with an unflattened copy of the SLE.
-        @note The key is taken from the SLE.
-    */
-    void
-    insert (SLE const& sle);
-
-    /** Fetch a modifiable account state SLE.
-        Effects:
-            Gives the caller ownership of an
-                unflattened copy of the SLE.
-        @return `empty` if the key is not present
-    */
-    std::shared_ptr<SLE>
-    fetch (uint256 const& key) const;
-
-    /** Replace an existing account state SLE.
-        Effects:
-            assert if key does not already exist.
-            The previous flattened SLE associated with
-                the key is released.
-            The key in the AccountState map is associated
-                with a flattened copy of the SLE.
-        @note The key is taken from the SLE
-    */
-    void
-    replace (SLE const& sle);
-
-    /** Remove an account state SLE.
-        Effects:
-            assert if the key does not exist.
-            The flattened SLE associated with the key
-                is released from the account state map.
-    */
-    void
-    erase (uint256 const& key);
-
-    //--------------------------------------------------------------------------
 
     SLE::pointer getAccountRoot (Account const& accountID) const;
 
