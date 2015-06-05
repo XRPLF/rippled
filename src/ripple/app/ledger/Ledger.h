@@ -534,6 +534,8 @@ std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
 
 #if 0
+// DEPRECATED
+// VFALCO This could return by value
 AccountState::pointer
 getAccountState (Ledger& ledger,RippleAddress const& accountID)
 #endif

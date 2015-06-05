@@ -187,7 +187,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
             else
             {
                 bool const disallowXRP (
-                    asDst->peekSLE ().getFlags() & lsfDisallowXRP);
+                    asDst->sle().getFlags() & lsfDisallowXRP);
 
                 auto usDestCurrID = accountDestCurrencies (
                         raDstAccount, crCache, !disallowXRP);
@@ -196,7 +196,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                     jvDestCur.append (to_string (currency));
 
                 jvStatus["destination_tag"] =
-                        (asDst->peekSLE ().getFlags () & lsfRequireDestTag)
+                        (asDst->sle().getFlags () & lsfRequireDestTag)
                         != 0;
             }
         }
