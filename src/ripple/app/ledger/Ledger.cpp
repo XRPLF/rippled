@@ -1221,6 +1221,7 @@ bool Ledger::assertSane () const
 }
 
 // update the skip list with the information from our previous ledger
+// VFALCO TODO Document this skip list concept
 void Ledger::updateSkipList ()
 {
     if (seq_ == 0) // genesis ledger has no previous ledger
@@ -1231,66 +1232,60 @@ void Ledger::updateSkipList ()
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)
     {
-        uint256 hash = getLedgerHashIndex (prevIndex);
-        SLE::pointer skipList = getSLE (hash);
+        auto const key = getLedgerHashIndex(prevIndex);
+        auto sle = fetch(key, ltLEDGER_HASHES);
         std::vector<uint256> hashes;
 
-        // VFALCO TODO Document this skip list concept
         bool created;
-        if (!skipList)
+        if (! sle)
         {
-            skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
+            sle.emplace(ltLEDGER_HASHES, key);
             created = true;
         }
         else
         {
-            hashes = static_cast<decltype(hashes)> (skipList->getFieldV256 (sfHashes));
+            hashes = static_cast<decltype(hashes)>(
+                sle->getFieldV256(sfHashes));
             created = false;
         }
 
         assert (hashes.size () <= 256);
         hashes.push_back (mParentHash);
-        skipList->setFieldV256 (sfHashes, STVector256 (hashes));
-        skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
+        sle->setFieldV256 (sfHashes, STVector256 (hashes));
+        sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
 
         if (created)
-            insert(*skipList);
+            insert(*sle);
         else
-            replace(*skipList);
+            replace(*sle);
     }
 
     // update record of past 256 ledger
-    uint256 hash = getLedgerHashIndex ();
-
-    SLE::pointer skipList = getSLE (hash);
-
+    auto const key = getLedgerHashIndex();
+    auto sle = fetch(key, ltLEDGER_HASHES);
     std::vector <uint256> hashes;
-
     bool created;
-    if (!skipList)
+    if (! sle)
     {
-        skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
+        sle.emplace(ltLEDGER_HASHES, key);
         created = true;
     }
     else
     {
-        hashes = static_cast<decltype(hashes)>(skipList->getFieldV256 (sfHashes));
+        hashes = static_cast<decltype(hashes)>(
+            sle->getFieldV256 (sfHashes));
         created = false;
     }
-
     assert (hashes.size () <= 256);
-
     if (hashes.size () == 256)
         hashes.erase (hashes.begin ());
-
     hashes.push_back (mParentHash);
-    skipList->setFieldV256 (sfHashes, STVector256 (hashes));
-    skipList->setFieldU32 (sfLastLedgerSequence, prevIndex);
-
+    sle->setFieldV256 (sfHashes, STVector256 (hashes));
+    sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
     if (created)
-        insert(*skipList);
+        insert(*sle);
     else
-        replace(*skipList);
+        replace(*sle);
 }
 
 /** Save, or arrange to save, a fully-validated ledger
