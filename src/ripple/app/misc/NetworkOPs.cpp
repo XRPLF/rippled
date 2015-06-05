@@ -1087,7 +1087,8 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
     std::uint64_t&      uNodeNext)
 {
     STVector256         svIndexes;
-    SLE::pointer        sleNode     = lrLedger->getDirNode (uNodeIndex);
+    auto const sleNode = fetch(*lrLedger, uNodeIndex,
+        getApp().getSLECache(), ltDIR_NODE);
 
     if (sleNode)
     {
@@ -1132,8 +1133,8 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 {
     Json::Value jvObjects (Json::objectValue);
     auto uRootIndex = getOwnerDirIndex (naAccount.getAccountID ());
-    auto sleNode = lpLedger->getDirNode (uRootIndex);
-
+    auto sleNode = fetch(*lpLedger, uRootIndex,
+        getApp().getSLECache(), ltDIR_NODE);
     if (sleNode)
     {
         std::uint64_t  uNodeDir;
@@ -1176,8 +1177,9 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
             if (uNodeDir)
             {
-                sleNode = lpLedger->getDirNode (
-                    getDirNodeIndex (uRootIndex, uNodeDir));
+                sleNode = fetch(*lpLedger, getDirNodeIndex(
+                    uRootIndex, uNodeDir), getApp().getSLECache(),
+                        ltDIR_NODE);
                 assert (sleNode);
             }
         }

@@ -39,8 +39,9 @@ getAccountObjects (Ledger const& ledger, Account const& account,
         found = true;
     }
 
-    auto dir = ledger.getDirNode (dirIndex);
-    if (dir == nullptr)
+    auto dir = fetch(ledger, dirIndex,
+        getApp().getSLECache(), ltDIR_NODE);
+    if (! dir)
         return false;
 
     std::uint32_t i = 0;
@@ -86,9 +87,10 @@ getAccountObjects (Ledger const& ledger, Account const& account,
         if (nodeIndex == 0)
             return true;
 
-        dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);        
-        dir = ledger.getDirNode (dirIndex);
-        if (dir == nullptr)
+        dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);
+        dir = fetch(ledger, dirIndex,
+            getApp().getSLECache(), ltDIR_NODE);
+        if (! dir)
             return true;
 
         if (i == limit)
