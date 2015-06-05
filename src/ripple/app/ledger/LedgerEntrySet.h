@@ -155,7 +155,7 @@ public:
 
     // higher-level ledger functions
     SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
-    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& uIndex);
+    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& key);
 
     std::shared_ptr<SLE const>
     entryCacheI (LedgerEntryType letType, uint256 const& uIndex);

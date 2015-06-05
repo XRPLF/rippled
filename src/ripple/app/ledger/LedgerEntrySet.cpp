@@ -103,35 +103,51 @@ SLE::pointer LedgerEntrySet::entryCreate (LedgerEntryType letType, uint256 const
     return sleNew;
 }
 
-SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const& index)
+SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const& key)
 {
     assert (mLedger);
-    SLE::pointer sleEntry;
+    SLE::pointer sle;
 
-    if (index.isNonZero ())
+    // VFALCO Shouldn't be calling this with invalid keys,
+    //        but apparently its happening. Need to track it down.
+    //assert(key.isNonZero ());
+
+    if (key.isNonZero ())
     {
         LedgerEntryAction action;
-        sleEntry = getEntry (index, action);
+        sle = getEntry (key, action);
 
-        if (!sleEntry)
+        if (! sle)
         {
             assert (action != taaDELETE);
-            sleEntry = mImmutable ? mLedger->getSLEi(index) : mLedger->getSLE (index);
+            if (mImmutable)
+            {
+                sle = mLedger->getSLEi(key);
+            }
+            else
+            {
+                auto maybe_sle = mLedger->fetch(key, letType);
+                if (maybe_sle)
+                    sle = std::make_shared<SLE>(
+                        std::move(*maybe_sle));
+            }
 
-            if (sleEntry)
-                entryCache (sleEntry);
+            if (sle)
+                entryCache (sle);
         }
         else if (action == taaDELETE)
-            sleEntry.reset ();
+        {
+            sle = nullptr;
+        }
     }
 
-    return sleEntry;
+    return sle;
 }
 
 std::shared_ptr<SLE const>
-LedgerEntrySet::entryCacheI (LedgerEntryType letType, uint256 const& index)
+LedgerEntrySet::entryCacheI (LedgerEntryType letType, uint256 const& key)
 {
-    return entryCache(letType, index);
+    return entryCache(letType, key);
 }
 
 void LedgerEntrySet::entryCache (SLE::ref sle)
@@ -376,12 +392,16 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         return me->second;
     }
 
-    SLE::pointer ret = ledger->getSLE (node);
+    auto sle = ledger->fetch(node);
+    if (sle)
+    {
+        auto p = std::make_shared<SLE>(
+            std::move(*sle));
+        newMods.insert (std::make_pair (node, p));
+        return p;
+    }
 
-    if (ret)
-        newMods.insert (std::make_pair (node, ret));
-
-    return ret;
+    return {};
 }
 
 bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,

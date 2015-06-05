@@ -142,6 +142,10 @@ public:
     fetch (uint256 const& key, boost::optional<
         LedgerEntryType> type = boost::none) const;
 
+    // DEPRECATED
+    // Retrieve immutable ledger entry
+    SLE::pointer getSLEi (uint256 const& uHash) const;
+
     /** Replace an existing state SLE.
         Effects:
             assert if key does not already exist.
@@ -369,10 +373,6 @@ public:
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
-
-    // Retrieve ledger entries
-    SLE::pointer getSLE (uint256 const& uHash) const; // SLE is mutable
-    SLE::pointer getSLEi (uint256 const& uHash) const; // SLE is immutable
 
     // VFALCO NOTE These seem to let you walk the list of ledgers
     //
