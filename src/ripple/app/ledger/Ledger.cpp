@@ -457,7 +457,7 @@ STTx::pointer Ledger::getSMTransaction (
         SerialIter tSit (make_Slice(vl));
 
         txMeta = std::make_shared<TransactionMetaSet> (
-            item->getTag (), mLedgerSeq, sit.getVL ());
+            item->key(), mLedgerSeq, sit.getVL ());
         return std::make_shared<STTx> (tSit);
     }
 
@@ -1047,7 +1047,7 @@ SLE::pointer Ledger::getSLE (uint256 const& uHash) const
     if (!node)
         return SLE::pointer ();
 
-    return std::make_shared<SLE> (node->peekSerializer (), node->getTag ());
+    return std::make_shared<SLE> (node->peekSerializer (), node->key());
 }
 
 SLE::pointer Ledger::getSLEi (uint256 const& uId) const
@@ -1063,7 +1063,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 
     if (!ret)
     {
-        ret = std::make_shared<SLE> (node->peekSerializer (), node->getTag ());
+        ret = std::make_shared<SLE> (node->peekSerializer (), node->key());
         ret->setImmutable ();
         getApp().getSLECache ().canonicalize (hash, ret);
     }
@@ -1074,7 +1074,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 static void visitHelper (
     std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
 {
-    function (std::make_shared<SLE> (item->peekSerializer(), item->getTag ()));
+    function (std::make_shared<SLE> (item->peekSerializer(), item->key()));
 }
 
 void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
@@ -1102,45 +1102,45 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
 uint256 Ledger::getFirstLedgerIndex () const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekFirstItem ();
-    return node ? node->getTag () : uint256 ();
+    return node ? node->key() : uint256 ();
 }
 
 uint256 Ledger::getLastLedgerIndex () const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekLastItem ();
-    return node ? node->getTag () : uint256 ();
+    return node ? node->key() : uint256 ();
 }
 
 uint256 Ledger::getNextLedgerIndex (uint256 const& uHash) const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
-    return node ? node->getTag () : uint256 ();
+    return node ? node->key() : uint256 ();
 }
 
 uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
 
-    if ((!node) || (node->getTag () > uEnd))
+    if ((!node) || (node->key() > uEnd))
         return uint256 ();
 
-    return node->getTag ();
+    return node->key();
 }
 
 uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash) const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekPrevItem (uHash);
-    return node ? node->getTag () : uint256 ();
+    return node ? node->key() : uint256 ();
 }
 
 uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const
 {
     std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
 
-    if ((!node) || (node->getTag () < uBegin))
+    if ((!node) || (node->key() < uBegin))
         return uint256 ();
 
-    return node->getTag ();
+    return node->key();
 }
 
 uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
