@@ -76,12 +76,4 @@ void CriticalSection::enter() const noexcept { EnterCriticalSection ((CRITICAL_S
 bool CriticalSection::tryEnter() const noexcept { return TryEnterCriticalSection ((CRITICAL_SECTION*) section) != FALSE; }
 void CriticalSection::exit() const noexcept { LeaveCriticalSection ((CRITICAL_SECTION*) section); }
 
-//==============================================================================
-bool beast_isRunningUnderDebugger()
-{
-    return IsDebuggerPresent() != FALSE;
-}
-
-//==============================================================================
-
 } // beast

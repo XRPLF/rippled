@@ -174,22 +174,18 @@
 #include <beast/module/core/native/mac_Files.mm>
 #include <beast/module/core/native/mac_Strings.mm>
 #include <beast/module/core/native/mac_SystemStats.mm>
-#include <beast/module/core/native/mac_Threads.mm>
 
 #elif BEAST_WINDOWS
 #include <beast/module/core/native/win32_Files.cpp>
 #include <beast/module/core/native/win32_SystemStats.cpp>
-#include <beast/module/core/native/win32_Threads.cpp>
 
 #elif BEAST_LINUX
 #include <beast/module/core/native/linux_Files.cpp>
 #include <beast/module/core/native/linux_SystemStats.cpp>
-#include <beast/module/core/native/linux_Threads.cpp>
 
 #elif BEAST_BSD
 #include <beast/module/core/native/bsd_Files.cpp>
 #include <beast/module/core/native/bsd_SystemStats.cpp>
-#include <beast/module/core/native/bsd_Threads.cpp>
 
 #elif BEAST_ANDROID
 #include "native/android_Files.cpp"

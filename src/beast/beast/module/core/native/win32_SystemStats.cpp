@@ -89,6 +89,12 @@ std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCo
 double Time::getMillisecondCounterHiRes() noexcept       { return hiResCounterHandler.getMillisecondCounterHiRes(); }
 
 //==============================================================================
+bool beast_isRunningUnderDebugger()
+{
+    return IsDebuggerPresent() != FALSE;
+}
+
+//==============================================================================
 std::string getComputerName()
 {
     char text [MAX_COMPUTERNAME_LENGTH + 2] = { 0 };

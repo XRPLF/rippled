@@ -28,6 +28,14 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
+bool beast_isRunningUnderDebugger()
+{
+    // XXX not implemented for FreeBSD!
+    // bassertfalse; // commented out since it calls isRunningUnderDebugger recursively
+    return false;
+}
+
+//==============================================================================
 std::string getComputerName()
 {
     char name [256] = { 0 };
