@@ -204,7 +204,7 @@ Env::autofill (JTx& jt)
         auto const account =
             lookup(jv[jss::Account].asString());
         auto const ar =
-            ledger->getAccountRoot(account);
+            ledger->fetch(getAccountRootIndex(account));
         if (ar->isFieldPresent(sfRegularKey))
             jtx::sign(jv, lookup(
                 ar->getFieldAccount160(sfRegularKey)));
