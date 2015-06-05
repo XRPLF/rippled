@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -207,7 +208,8 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto const sleNode = fetch(*lpLedger, uNodeIndex);
+        auto const sleNode = fetch(*lpLedger, uNodeIndex,
+            getApp().getSLECache());
 
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();

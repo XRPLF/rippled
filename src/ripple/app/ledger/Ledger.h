@@ -531,14 +531,14 @@ loadLedgerHelper(std::string const& sqlSuffix);
         If the key exists, the item is flattened
             and added to the SLE cache.
     The returned object may not be modified.
+    @param type An optional LedgerEntryType. If type is
+                engaged and the SLE's type does not match,
+                an empty shared_ptr is returned.
     @return `empty` if the key is not present
 */
 std::shared_ptr<SLE const>
-fetch (Ledger const& ledger, uint256 const& key, SLECache& cache);
-
-// DEPRECATED (calls getApp), use above
-std::shared_ptr<SLE const>
-fetch (Ledger const& ledger, uint256 const& key);
+fetch (Ledger const& ledger, uint256 const& key, SLECache& cache,
+    boost::optional<LedgerEntryType> type = boost::none);
 
 /** Iterate all items in an account's owner directory. */
 void
