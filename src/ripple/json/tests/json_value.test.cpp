@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-class JsonCpp_test : public beast::unit_test::suite
+class json_value_test : public beast::unit_test::suite
 {
 public:
     void test_bad_json ()
@@ -139,15 +139,72 @@ public:
         pass ();
     }
 
+    void
+    test_comparisons()
+    {
+        Json::Value a, b;
+        auto testEquals = [&] (std::string const& name) {
+            expect (a == b, "a == b " + name);
+            expect (a <= b, "a <= b " + name);
+            expect (a >= b, "a >= b " + name);
+
+            expect (! (a != b), "! (a != b) " + name);
+            expect (! (a < b), "! (a < b) " + name);
+            expect (! (a > b), "! (a > b) " + name);
+
+            expect (b == a, "b == a " + name);
+            expect (b <= a, "b <= a " + name);
+            expect (b >= a, "b >= a " + name);
+
+            expect (! (b != a), "! (b != a) " + name);
+            expect (! (b < a), "! (b < a) " + name);
+            expect (! (b > a), "! (b > a) " + name);
+        };
+
+        auto testGreaterThan = [&] (std::string const& name) {
+            expect (! (a == b), "! (a == b) " + name);
+            expect (! (a <= b), "! (a <= b) " + name);
+            expect (a >= b, "a >= b " + name);
+
+            expect (a != b, "a != b " + name);
+            expect (! (a < b), "! (a < b) " + name);
+            expect (a > b, "a > b " + name);
+
+            expect (! (b == a), "! (b == a) " + name);
+            expect (b <= a, "b <= a " + name);
+            expect (! (b >= a), "! (b >= a) " + name);
+
+            expect (b != a, "b != a " + name);
+            expect (b < a, "b < a " + name);
+            expect (! (b > a), "! (b > a) " + name);
+        };
+
+        a["a"] = Json::UInt (0);
+        b["a"] = Json::Int (0);
+        testEquals ("zero");
+
+        b["a"] = Json::Int (-1);
+        testGreaterThan ("negative");
+
+        Json::Int big = std::numeric_limits<int>::max();
+        Json::UInt bigger = big;
+        bigger++;
+
+        a["a"] = bigger;
+        b["a"] = big;
+        testGreaterThan ("big");
+    }
+
     void run ()
     {
         test_bad_json ();
         test_edge_cases ();
         test_copy ();
         test_move ();
+        test_comparisons ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JsonCpp,json,ripple);
+BEAST_DEFINE_TESTSUITE(json_value, json, ripple);
 
 } // ripple

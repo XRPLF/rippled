@@ -42,7 +42,7 @@
 #include <ripple/json/impl/Object.cpp>
 #include <ripple/json/impl/Output.cpp>
 
-#include <ripple/json/tests/JsonCpp.test.cpp>
+#include <ripple/json/tests/json_value.test.cpp>
 #include <ripple/json/tests/Object.test.cpp>
 #include <ripple/json/tests/Output.test.cpp>
 #include <ripple/json/tests/Writer.test.cpp>

@@ -443,77 +443,61 @@ Value::type () const
     return type_;
 }
 
-
-int
-Value::compare ( const Value& other )
+static
+int integerCmp (Int i, UInt ui)
 {
-    /*
-    int typeDelta = other.type_ - type_;
-    switch ( type_ )
-    {
-    case nullValue:
+    // All negative numbers are less than all unsigned numbers.
+    if (i < 0)
+        return -1;
 
-       return other.type_ == type_;
-    case intValue:
-       if ( other.type_.isNumeric()
-    case uintValue:
-    case realValue:
-    case booleanValue:
-       break;
-    case stringValue,
-       break;
-    case arrayValue:
-       delete value_.array_;
-       break;
-    case objectValue:
-       delete value_.map_;
-    default:
-       JSON_ASSERT_UNREACHABLE;
-    }
-    */
-    return 0;  // unreachable
+    // All unsigned numbers with bit 0 set are too big for signed integers.
+    if (ui & 0x8000)
+        return 1;
+
+    // Now we can safely compare.
+    return (i < ui) ? -1 : (i == ui) ? 0 : 1;
 }
 
-bool
-Value::operator < ( const Value& other ) const
+bool operator < (const Value& x, const Value& y)
 {
-    int typeDelta = type_ - other.type_;
+    if (auto signum = x.type_ - y.type_)
+    {
+        if (x.type_ == intValue && y.type_ == uintValue)
+            signum = integerCmp (x.value_.int_, y.value_.uint_);
+        else if (x.type_ == uintValue && y.type_ == intValue)
+            signum = - integerCmp (y.value_.int_, x.value_.uint_);
+        return signum < 0;
+    }
 
-    if ( typeDelta )
-        return typeDelta < 0 ? true : false;
-
-    switch ( type_ )
+    switch (x.type_)
     {
     case nullValue:
         return false;
 
     case intValue:
-        return value_.int_ < other.value_.int_;
+        return x.value_.int_ < y.value_.int_;
 
     case uintValue:
-        return value_.uint_ < other.value_.uint_;
+        return x.value_.uint_ < y.value_.uint_;
 
     case realValue:
-        return value_.real_ < other.value_.real_;
+        return x.value_.real_ < y.value_.real_;
 
     case booleanValue:
-        return value_.bool_ < other.value_.bool_;
+        return x.value_.bool_ < y.value_.bool_;
 
     case stringValue:
-        return ( value_.string_ == 0  &&  other.value_.string_ )
-               || ( other.value_.string_
-                    &&  value_.string_
-                    && strcmp ( value_.string_, other.value_.string_ ) < 0 );
+        return (x.value_.string_ == 0  &&  y.value_.string_)
+               || (y.value_.string_ && x.value_.string_ &&
+                   strcmp (x.value_.string_, y.value_.string_) < 0);
 
     case arrayValue:
     case objectValue:
     {
-        int delta = int ( value_.map_->size () - other.value_.map_->size () );
+        if (int signum = int (x.value_.map_->size ()) - y.value_.map_->size ())
+            return signum < 0;
 
-        if ( delta )
-            return delta < 0;
-
-        return (*value_.map_) < (*other.value_.map_);
+        return *x.value_.map_ < *y.value_.map_;
     }
 
     default:
@@ -523,75 +507,49 @@ Value::operator < ( const Value& other ) const
     return 0;  // unreachable
 }
 
-bool
-Value::operator <= ( const Value& other ) const
+bool operator== (const Value& x, const Value& y)
 {
-    return ! (other > *this);
-}
-
-bool
-Value::operator >= ( const Value& other ) const
-{
-    return ! (*this < other);
-}
-
-bool
-Value::operator > ( const Value& other ) const
-{
-    return other < *this;
-}
-
-bool
-Value::operator == ( const Value& other ) const
-{
-    //if ( type_ != other.type_ )
-    // GCC 2.95.3 says:
-    // attempt to take address of bit-field structure member `Json::Value::type_'
-    // Beats me, but a temp solves the problem.
-    int temp = other.type_;
-
-    if ( type_ != temp )
+    if (x.type_ != y.type_)
+    {
+        if (x.type_ == intValue && y.type_ == uintValue)
+            return ! integerCmp (x.value_.int_, y.value_.uint_);
+        if (x.type_ == uintValue && y.type_ == intValue)
+            return ! integerCmp (y.value_.int_, x.value_.uint_);
         return false;
+    }
 
-    switch ( type_ )
+    switch (x.type_)
     {
     case nullValue:
         return true;
 
     case intValue:
-        return value_.int_ == other.value_.int_;
+        return x.value_.int_ == y.value_.int_;
 
     case uintValue:
-        return value_.uint_ == other.value_.uint_;
+        return x.value_.uint_ == y.value_.uint_;
 
     case realValue:
-        return value_.real_ == other.value_.real_;
+        return x.value_.real_ == y.value_.real_;
 
     case booleanValue:
-        return value_.bool_ == other.value_.bool_;
+        return x.value_.bool_ == y.value_.bool_;
 
     case stringValue:
-        return ( value_.string_ == other.value_.string_ )
-               || ( other.value_.string_
-                    &&  value_.string_
-                    && strcmp ( value_.string_, other.value_.string_ ) == 0 );
+        return x.value_.string_ == y.value_.string_
+               || (y.value_.string_ && x.value_.string_ &&
+                    ! strcmp (x.value_.string_, y.value_.string_));
 
     case arrayValue:
     case objectValue:
-        return value_.map_->size () == other.value_.map_->size ()
-               && (*value_.map_) == (*other.value_.map_);
+        return x.value_.map_->size () == y.value_.map_->size ()
+               && *x.value_.map_ == *y.value_.map_;
 
     default:
         JSON_ASSERT_UNREACHABLE;
     }
 
     return 0;  // unreachable
-}
-
-bool
-Value::operator != ( const Value& other ) const
-{
-    return ! ( *this == other );
 }
 
 const char*

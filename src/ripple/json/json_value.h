@@ -89,6 +89,18 @@ private:
     const char* str_;
 };
 
+inline bool operator!= (StaticString x, StaticString y)
+{
+    // TODO(tom): could I use x != y here because StaticStrings are supposed to
+    // be unique?
+    return strcmp (x, y);
+}
+
+inline bool operator== (StaticString x, StaticString y)
+{
+    return ! (x != y);
+}
+
 inline bool operator== (std::string const& x, StaticString y)
 {
     return x == y.c_str();
@@ -234,16 +246,6 @@ public:
 
     ValueType type () const;
 
-    bool operator < ( const Value& other ) const;
-    bool operator <= ( const Value& other ) const;
-    bool operator >= ( const Value& other ) const;
-    bool operator > ( const Value& other ) const;
-
-    bool operator == ( const Value& other ) const;
-    bool operator != ( const Value& other ) const;
-
-    int compare ( const Value& other );
-
     const char* asCString () const;
     std::string asString () const;
     Int asInt () const;
@@ -369,6 +371,9 @@ public:
     iterator begin ();
     iterator end ();
 
+    friend bool operator== (const Value&, const Value&);
+    friend bool operator< (const Value&, const Value&);
+
 private:
     Value& resolveReference ( const char* key,
                               bool isStatic );
@@ -386,6 +391,34 @@ private:
     ValueType type_ : 8;
     int allocated_ : 1;     // Notes: if declared as bool, bitfield is useless.
 };
+
+bool operator== (const Value&, const Value&);
+
+inline
+bool operator!= (const Value& x, const Value& y)
+{
+    return ! (x == y);
+}
+
+bool operator< (const Value&, const Value&);
+
+inline
+bool operator<= (const Value& x, const Value& y)
+{
+    return ! (y < x);
+}
+
+inline
+bool operator> (const Value& x, const Value& y)
+{
+    return y < x;
+}
+
+inline
+bool operator>= (const Value& x, const Value& y)
+{
+    return ! (x < y);
+}
 
 /** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.
  *
