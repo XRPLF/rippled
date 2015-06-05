@@ -207,7 +207,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto sleNode = lpLedger->getSLEi(uNodeIndex);
+        auto const sleNode = fetch(*lpLedger, uNodeIndex);
 
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();

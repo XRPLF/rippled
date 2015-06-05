@@ -1666,10 +1666,9 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 //------------------------------------------------------------------------------
 
 std::shared_ptr<SLE const>
-fetch (Ledger const& ledger, uint256 const& key)
+fetch (Ledger const& ledger,
+    uint256 const& key, SLECache& cache)
 {
-    // VFALCO TODO Pass SLECache as a parameter
-    auto& cache = getApp().getSLECache();
     uint256 hash;
     auto const item =
         ledger.peekAccountStateMap()->peekItem(key, hash);
@@ -1683,6 +1682,13 @@ fetch (Ledger const& ledger, uint256 const& key)
     sle->setImmutable ();
     cache.canonicalize(hash, sle);
     return sle;
+}
+
+std::shared_ptr<SLE const>
+fetch (Ledger const& ledger, uint256 const& key)
+{
+    return fetch(ledger, key,
+        getApp().getSLECache());
 }
 
 AccountState::pointer

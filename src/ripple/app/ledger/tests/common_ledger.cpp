@@ -488,7 +488,7 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     return result.second;
 }
 
-SLE::pointer
+std::shared_ptr<SLE const>
 getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
     Currency currency)
@@ -501,14 +501,14 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
         throw std::runtime_error(
         "!uNodeIndex.isNonZero()");
 
-    return ledger->getSLEi(uNodeIndex);
+    return fetch(*ledger, uNodeIndex);
 }
 
 void
 verifyBalance(Ledger::pointer ledger, TestAccount const& account,
     Amount const& amount)
 {
-    auto sle = getLedgerEntryRippleState(ledger, account,
+    auto const sle = getLedgerEntryRippleState(ledger, account,
         amount.getIssuer(), amount.getCurrency());
     if (!sle)
         throw std::runtime_error(

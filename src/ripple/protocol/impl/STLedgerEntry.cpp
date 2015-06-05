@@ -118,22 +118,47 @@ Json::Value STLedgerEntry::getJson (int options) const
     return ret;
 }
 
-bool STLedgerEntry::isThreadedType ()
+bool STLedgerEntry::isThreadedType () const
 {
     return getFieldIndex (sfPreviousTxnID) != -1;
 }
 
-bool STLedgerEntry::isThreaded ()
+bool STLedgerEntry::isThreaded () const
 {
     return isFieldPresent (sfPreviousTxnID);
 }
 
-uint256 STLedgerEntry::getThreadedTransaction ()
+bool STLedgerEntry::hasOneOwner () const
+{
+    return (mType != ltACCOUNT_ROOT) && (getFieldIndex (sfAccount) != -1);
+}
+
+bool STLedgerEntry::hasTwoOwners () const
+{
+    return mType == ltRIPPLE_STATE;
+}
+
+RippleAddress STLedgerEntry::getOwner () const
+{
+    return getFieldAccount (sfAccount);
+}
+
+RippleAddress STLedgerEntry::getFirstOwner () const
+{
+    return RippleAddress::createAccountID (getFieldAmount (sfLowLimit).getIssuer ());
+}
+
+RippleAddress STLedgerEntry::getSecondOwner () const
+{
+    return RippleAddress::createAccountID (getFieldAmount (sfHighLimit).getIssuer ());
+}
+
+uint256 STLedgerEntry::getThreadedTransaction () const
 {
     return getFieldH256 (sfPreviousTxnID);
 }
 
-std::uint32_t STLedgerEntry::getThreadedLedger ()
+std::uint32_t STLedgerEntry::getThreadedLedger () const
 {
     return getFieldU32 (sfPreviousTxnLgrSeq);
 }
@@ -156,31 +181,6 @@ bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
     setFieldH256 (sfPreviousTxnID, txID);
     setFieldU32 (sfPreviousTxnLgrSeq, ledgerSeq);
     return true;
-}
-
-bool STLedgerEntry::hasOneOwner ()
-{
-    return (mType != ltACCOUNT_ROOT) && (getFieldIndex (sfAccount) != -1);
-}
-
-bool STLedgerEntry::hasTwoOwners ()
-{
-    return mType == ltRIPPLE_STATE;
-}
-
-RippleAddress STLedgerEntry::getOwner ()
-{
-    return getFieldAccount (sfAccount);
-}
-
-RippleAddress STLedgerEntry::getFirstOwner ()
-{
-    return RippleAddress::createAccountID (getFieldAmount (sfLowLimit).getIssuer ());
-}
-
-RippleAddress STLedgerEntry::getSecondOwner ()
-{
-    return RippleAddress::createAccountID (getFieldAmount (sfHighLimit).getIssuer ());
 }
 
 } // ripple

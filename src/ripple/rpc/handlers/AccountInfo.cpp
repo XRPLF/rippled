@@ -71,7 +71,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         // See if there's a SignerEntries for this account.
         Account const account = naAccount.getAccountID ();
         uint256 const signerListIndex = getSignerListIndex (account);
-        SLE::pointer signerList = ledger->getSLEi (signerListIndex);
+        auto const signerList = fetch(*ledger, signerListIndex);
 
         if (signerList)
         {

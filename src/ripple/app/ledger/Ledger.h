@@ -110,7 +110,7 @@ public:
     bool
     exists (uint256 const& key) const;
 
-    /** Return the account state item for a key.
+    /** Return the state item for a key.
         The item may not be modified.
         @return The serialized ledger entry or empty
                 if the key does not exist.
@@ -118,17 +118,17 @@ public:
     std::shared_ptr<SHAMapItem const>
     find (uint256 const& key) const;
 
-    /** Add a new account state SLE.
+    /** Add a new state SLE.
         Effects:
             assert if the key already exists.
-            The key in the AccountState map is associated
+            The key in the state map is associated
                 with an unflattened copy of the SLE.
         @note The key is taken from the SLE.
     */
     void
     insert (SLE const& sle);
 
-    /** Fetch a modifiable account state SLE.
+    /** Fetch a modifiable state SLE.
         Effects:
             Gives the caller ownership of an
                 unflattened copy of the SLE.
@@ -137,23 +137,23 @@ public:
     boost::optional<SLE>
     fetch (uint256 const& key) const;
 
-    /** Replace an existing account state SLE.
+    /** Replace an existing state SLE.
         Effects:
             assert if key does not already exist.
             The previous flattened SLE associated with
                 the key is released.
-            The key in the AccountState map is associated
+            The key in the state map is associated
                 with a flattened copy of the SLE.
         @note The key is taken from the SLE
     */
     void
     replace (SLE const& sle);
 
-    /** Remove an account state SLE.
+    /** Remove an state SLE.
         Effects:
             assert if the key does not exist.
             The flattened SLE associated with the key
-                is released from the account state map.
+                is released from the state map.
     */
     void
     erase (uint256 const& key);
@@ -536,13 +536,17 @@ private:
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
 
-/** Fetch a deserialized account state SLE.
+/** SLE cache-aware deserialized state SLE fetch.
     Effects:
         If the key exists, the item is flattened
             and added to the SLE cache.
     The returned object may not be modified.
     @return `empty` if the key is not present
 */
+std::shared_ptr<SLE const>
+fetch (Ledger const& ledger, uint256 const& key, SLECache& cache);
+
+// DEPRECATED (calls getApp), use above
 std::shared_ptr<SLE const>
 fetch (Ledger const& ledger, uint256 const& key);
 

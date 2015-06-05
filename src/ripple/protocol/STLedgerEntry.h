@@ -97,15 +97,15 @@ public:
         return mFormat;
     }
 
-    bool isThreadedType (); // is this a ledger entry that can be threaded
-    bool isThreaded ();     // is this ledger entry actually threaded
-    bool hasOneOwner ();    // This node has one other node that owns it
-    bool hasTwoOwners ();   // This node has two nodes that own it (like ripple balance)
-    RippleAddress getOwner ();
-    RippleAddress getFirstOwner ();
-    RippleAddress getSecondOwner ();
-    uint256 getThreadedTransaction ();
-    std::uint32_t getThreadedLedger ();
+    bool isThreadedType() const; // is this a ledger entry that can be threaded
+    bool isThreaded () const;     // is this ledger entry actually threaded
+    bool hasOneOwner () const;    // This node has one other node that owns it
+    bool hasTwoOwners () const;   // This node has two nodes that own it (like ripple balance)
+    RippleAddress getOwner () const;
+    RippleAddress getFirstOwner () const;
+    RippleAddress getSecondOwner () const;
+    uint256 getThreadedTransaction () const;
+    std::uint32_t getThreadedLedger () const;
     bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
 

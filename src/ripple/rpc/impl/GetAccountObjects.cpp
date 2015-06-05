@@ -60,7 +60,7 @@ getAccountObjects (Ledger const& ledger, Account const& account,
 
         for (; iter != entries.end (); ++iter)
         {
-            auto const sleNode = ledger.getSLEi (*iter);
+            auto const sleNode = fetch(ledger, *iter);
             if (type == ltINVALID || sleNode->getType () == type)
             {
                 jvObjects.append (sleNode->getJson (0));

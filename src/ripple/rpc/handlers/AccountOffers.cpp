@@ -103,7 +103,7 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        SLE::pointer sleOffer (ledger->getSLEi (startAfter));
+        auto const sleOffer = fetch (*ledger, startAfter);
 
         if (sleOffer == nullptr ||
             sleOffer->getType () != ltOFFER ||
