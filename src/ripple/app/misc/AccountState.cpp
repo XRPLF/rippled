@@ -29,25 +29,11 @@
 
 namespace ripple {
 
-AccountState::AccountState (RippleAddress const& naAccountID)
-    : mAccountID (naAccountID)
-    , mValid (false)
+AccountState::AccountState (std::shared_ptr<SLE const> sle,
+        RippleAddress const& naAccountID)
+    : mLedgerEntry (sle)
 {
-    if (naAccountID.isValid ())
-    {
-        mValid = true;
-
-        mLedgerEntry = std::make_shared <STLedgerEntry> (
-                           ltACCOUNT_ROOT, getAccountRootIndex (naAccountID));
-
-        mLedgerEntry->setFieldAccount (sfAccount, naAccountID.getAccountID ());
-    }
-}
-
-AccountState::AccountState (SLE::ref ledgerEntry, RippleAddress const& naAccountID) :
-    mAccountID (naAccountID), mLedgerEntry (ledgerEntry), mValid (false)
-{
-    if (!mLedgerEntry)
+    if (! mLedgerEntry)
         return;
 
     if (mLedgerEntry->getType () != ltACCOUNT_ROOT)
@@ -82,13 +68,6 @@ void AccountState::addJson (Json::Value& val)
     {
         val[jss::Invalid] = true;
     }
-}
-
-void AccountState::dump ()
-{
-    Json::Value j (Json::objectValue);
-    addJson (j);
-    WriteLog (lsINFO, Ledger) << j;
 }
 
 } // ripple

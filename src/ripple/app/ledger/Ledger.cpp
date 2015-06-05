@@ -51,6 +51,26 @@
 
 namespace ripple {
 
+/*  Create the "genesis" account root.
+    The genesis account root contains all the XRP
+    that will ever exist in the system.
+    @param id The AccountID of the account root
+    @param drops The number of drops to start with
+*/
+static
+std::shared_ptr<SLE const>
+makeGenesisAccount (Account const& id,
+    std::uint64_t drops)
+{
+    std::shared_ptr<SLE> sle =
+        std::make_shared<SLE>(ltACCOUNT_ROOT,
+            getAccountRootIndex(id));
+    sle->setFieldAccount (sfAccount, id);
+    sle->setFieldAmount (sfBalance, drops);
+    sle->setFieldU32 (sfSequence, 1);
+    return sle;
+}
+
 Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
@@ -64,17 +84,11 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     , mAccountStateMap (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
-    // special case: put coins in root account
-    auto startAccount = std::make_shared<AccountState> (masterID);
-    auto& sle = startAccount->peekSLE ();
-    sle.setFieldAmount (sfBalance, startAmount);
-    sle.setFieldU32 (sfSequence, 1);
-
+    auto const sle = makeGenesisAccount(
+        masterID.getAccountID(), startAmount);
     WriteLog (lsTRACE, Ledger)
-            << "root account: " << startAccount->peekSLE ().getJson (0);
-
-    insert(*startAccount->getSLE());
-
+            << "root account: " << sle->getJson(0);
+    insert(*sle);
     mAccountStateMap->flushDirty (hotACCOUNT_NODE, mLedgerSeq);
 }
 

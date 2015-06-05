@@ -362,12 +362,13 @@ void payInDrops (TestLedger& ledger,
 
 std::uint64_t getNativeBalance(TestLedger& ledger, UserAccount& acct)
 {
-    return ledger.getAccountState(acct)->getBalance().mantissa ();
+    return ledger.getAccountState(acct)->sle().getFieldAmount(
+        sfBalance).mantissa();
 }
 
 std::uint32_t getOwnerCount(TestLedger& ledger, UserAccount& acct)
 {
-    return ledger.getAccountState(acct)->getSLE()->getFieldU32 (sfOwnerCount);
+    return ledger.getAccountState(acct)->sle().getFieldU32 (sfOwnerCount);
 }
 
 std::vector<RippleState::pointer> getRippleStates (

@@ -127,7 +127,7 @@ std::uint32_t TxnSignApiFacade::getSeq () const
     if (!ledger_) // Unit testing.
         return 0;
 
-    return accountState_->getSeq ();
+    return accountState_->sle().getFieldU32(sfSequence);
 }
 
 Transaction::pointer TxnSignApiFacade::processTransaction (
@@ -217,7 +217,7 @@ error_code_i acctMatchesPubKey (
     }
 
     // If we *can* get to the accountRoot, check for MASTER_DISABLED
-    STLedgerEntry const& sle = accountState->peekSLE ();
+    auto const& sle = accountState->sle();
     if (isMasterKey)
     {
         if (sle.isFlag(lsfDisableMaster))
