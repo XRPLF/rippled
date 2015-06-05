@@ -343,32 +343,21 @@ public:
         This is a similar idea to getMillisecondCounter(), but with a higher
         resolution.
 
-        @see getHighResolutionTicksPerSecond, highResolutionTicksToSeconds,
-             secondsToHighResolutionTicks
+        @see getHighResolutionTicksPerSecond, highResolutionTicksToSeconds
     */
     static std::int64_t getHighResolutionTicks() noexcept;
 
     /** Returns the resolution of the high-resolution counter in ticks per second.
 
-        @see getHighResolutionTicks, highResolutionTicksToSeconds,
-             secondsToHighResolutionTicks
+        @see getHighResolutionTicks, highResolutionTicksToSeconds
     */
     static std::int64_t getHighResolutionTicksPerSecond() noexcept;
 
     /** Converts a number of high-resolution ticks into seconds.
 
-        @see getHighResolutionTicks, getHighResolutionTicksPerSecond,
-             secondsToHighResolutionTicks
+        @see getHighResolutionTicks, getHighResolutionTicksPerSecond
     */
     static double highResolutionTicksToSeconds (std::int64_t ticks) noexcept;
-
-    /** Converts a number seconds into high-resolution ticks.
-
-        @see getHighResolutionTicks, getHighResolutionTicksPerSecond,
-             highResolutionTicksToSeconds
-    */
-    static std::int64_t secondsToHighResolutionTicks (double seconds) noexcept;
-
 
 private:
     //==============================================================================

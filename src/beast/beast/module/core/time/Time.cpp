@@ -253,11 +253,6 @@ double Time::highResolutionTicksToSeconds (const std::int64_t ticks) noexcept
     return ticks / (double) getHighResolutionTicksPerSecond();
 }
 
-std::int64_t Time::secondsToHighResolutionTicks (const double seconds) noexcept
-{
-    return (std::int64_t) (seconds * (double) getHighResolutionTicksPerSecond());
-}
-
 //==============================================================================
 String Time::toString (const bool includeDate,
                        const bool includeTime,
