@@ -273,16 +273,6 @@ public:
     bool
     exists (uint256 const& key) const;
 
-    /** Fetch a deserialized account state SLE.
-        Effects:
-            If the key exists, the item is flattened
-                and added to the SLE cache.
-        The returned object may not be modified.
-        @return `empty` if the key is not present
-    */
-    std::shared_ptr<SLE const>
-    fetch (uint256 const& key) const;
-
     /** Add a new account state SLE.
         Effects:
             assert if the key already exists.
@@ -293,7 +283,26 @@ public:
     void
     insert (SLE const& sle);
 
-    /** Update an existing account state SLE.
+    /** Fetch a deserialized account state SLE.
+        Effects:
+            If the key exists, the item is flattened
+                and added to the SLE cache.
+        The returned object may not be modified.
+        @return `empty` if the key is not present
+    */
+    std::shared_ptr<SLE const>
+    fetch (uint256 const& key) const;
+
+    /** Fetch a modifiable account state SLE.
+        Effects:
+            Gives the caller ownership of an
+                unflattened copy of the SLE.
+        @return `empty` if the key is not present
+    */
+    std::shared_ptr<SLE>
+    copy (uint256 const& key) const;
+
+    /** Replace an existing account state SLE.
         Effects:
             assert if key does not already exist.
             The previous flattened SLE associated with
@@ -303,19 +312,18 @@ public:
         @note The key is taken from the SLE
     */
     void
-    update (SLE const& sle);
+    replace (SLE const& sle);
 
     /** Remove an account state SLE.
         Effects:
             assert if the key does not exist.
             The flattened SLE associated with the key
-                is removed from the account state map.
+                is released from the account state map.
     */
     void
     erase (uint256 const& key);
 
     //--------------------------------------------------------------------------
-
 
     SLE::pointer getAccountRoot (Account const& accountID) const;
 

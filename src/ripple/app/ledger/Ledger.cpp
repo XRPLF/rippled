@@ -987,28 +987,6 @@ Ledger::exists (uint256 const& key) const
         mAccountStateMap->peekItem(key, hash));
 }
 
-std::shared_ptr<SLE const>
-Ledger::fetch (uint256 const& key) const
-{
-    uint256 hash;
-    auto node=
-        mAccountStateMap->peekItem (key, hash);
-    if (!node)
-        return { };
-    auto sle =
-        getApp().getSLECache().fetch(hash);
-
-    if (! sle)
-    {
-        sle = std::make_shared<SLE>(
-            node->peekSerializer(), node->getTag ());
-        sle->setImmutable ();
-        getApp().getSLECache().canonicalize(hash, sle);
-    }
-
-    return sle;
-}
-
 void
 Ledger::insert (SLE const& sle)
 {
@@ -1023,8 +1001,40 @@ Ledger::insert (SLE const& sle)
     assert(success);
 }
 
+std::shared_ptr<SLE const>
+Ledger::fetch (uint256 const& key) const
+{
+    uint256 hash;
+    auto node=
+        mAccountStateMap->peekItem (key, hash);
+    if (!node)
+        return {};
+    auto sle =
+        getApp().getSLECache().fetch(hash);
+    if (! sle)
+    {
+        sle = std::make_shared<SLE>(
+            node->peekSerializer(), node->getTag ());
+        sle->setImmutable ();
+        getApp().getSLECache().canonicalize(hash, sle);
+    }
+
+    return sle;
+}
+
+std::shared_ptr<SLE>
+Ledger::copy (uint256 const& key) const
+{
+    auto const item =
+        mAccountStateMap->peekItem(key);
+    if (! item)
+        return {};
+    return std::make_shared<SLE>(
+        item->peekSerializer(), item->getTag());
+}
+
 void
-Ledger::update (SLE const& sle)
+Ledger::replace (SLE const& sle)
 {
     assert(mAccountStateMap->hasItem(sle.getIndex()));
     auto item = std::make_shared<SHAMapItem>(
@@ -1043,6 +1053,8 @@ Ledger::erase (uint256 const& key)
     assert(mAccountStateMap->hasItem(key));
     mAccountStateMap->delItem(key);
 }
+
+//------------------------------------------------------------------------------
 
 SLE::pointer Ledger::getSLE (uint256 const& uHash) const
 {
@@ -1494,7 +1506,7 @@ void Ledger::updateSkipList ()
         if (created)
             insert(*skipList);
         else
-            update(*skipList);
+            replace(*skipList);
     }
 
     // update record of past 256 ledger
@@ -1528,7 +1540,7 @@ void Ledger::updateSkipList ()
     if (created)
         insert(*skipList);
     else
-        update(*skipList);
+        replace(*skipList);
 }
 
 /** Save, or arrange to save, a fully-validated ledger
