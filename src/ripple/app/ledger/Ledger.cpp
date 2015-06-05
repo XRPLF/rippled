@@ -1047,16 +1047,6 @@ Ledger::erase (uint256 const& key)
 
 //------------------------------------------------------------------------------
 
-SLE::pointer Ledger::getSLE (uint256 const& uHash) const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekItem (uHash);
-
-    if (!node)
-        return SLE::pointer ();
-
-    return std::make_shared<SLE> (node->peekSerializer (), node->key());
-}
-
 SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 {
     uint256 hash;
@@ -1253,7 +1243,6 @@ void Ledger::updateSkipList ()
         hashes.push_back (mParentHash);
         sle->setFieldV256 (sfHashes, STVector256 (hashes));
         sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
-
         if (created)
             insert(*sle);
         else
