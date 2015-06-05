@@ -193,7 +193,12 @@ PeerImp::send (Message::pointer const& m)
     auto sendq_size = send_queue_.size();
 
     if (sendq_size < Tuning::targetSendQueue)
+    {
+        // To detect a peer that does not read from their
+        // side of the connection, we expect a peer to have
+        // a small send queue at least once per timer interval
         low_sendq_ = true;
+    }
 
     send_queue_.push(m);
 
