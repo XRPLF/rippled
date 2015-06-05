@@ -248,12 +248,6 @@ std::uint32_t Time::getApproximateMillisecondCounter() noexcept
 }
 
 //==============================================================================
-double Time::highResolutionTicksToSeconds (const std::int64_t ticks) noexcept
-{
-    return ticks / (double) getHighResolutionTicksPerSecond();
-}
-
-//==============================================================================
 String Time::toString (const bool includeDate,
                        const bool includeTime,
                        const bool includeSeconds,
