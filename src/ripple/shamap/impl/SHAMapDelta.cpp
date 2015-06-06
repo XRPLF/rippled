@@ -30,13 +30,13 @@ namespace ripple {
 // makes no sense at all. (And our sync algorithm will avoid
 // synchronizing matching branches too.)
 
-bool SHAMap::walkBranch (SHAMapTreeNode* node,
+bool SHAMap::walkBranch (SHAMapAbstractNode* node,
                          std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
                          Delta& differences, int& maxCount) const
 {
     // Walk a branch of a SHAMap that's matched by an empty branch or single item in the other map
-    std::stack <SHAMapTreeNode*, std::vector<SHAMapTreeNode*>> nodeStack;
-    nodeStack.push ({node});
+    std::stack <SHAMapAbstractNode*, std::vector<SHAMapAbstractNode*>> nodeStack;
+    nodeStack.push (node);
 
     bool emptyBranch = !otherMapItem;
 
@@ -48,14 +48,15 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node,
         if (node->isInner ())
         {
             // This is an inner node, add all non-empty branches
+            auto inner = static_cast<SHAMapInnerNode*>(node);
             for (int i = 0; i < 16; ++i)
-                if (!node->isEmptyBranch (i))
-                    nodeStack.push ({descendThrow (node, i)});
+                if (!inner->isEmptyBranch (i))
+                    nodeStack.push ({descendThrow (inner, i)});
         }
         else
         {
             // This is a leaf node, process its item
-            std::shared_ptr<SHAMapItem> item = node->peekItem ();
+            auto item = static_cast<SHAMapTreeNode*>(node)->peekItem();
 
             if (emptyBranch || (item->getTag () != otherMapItem->getTag ()))
             {
@@ -126,14 +127,14 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
     if (getHash () == otherMap->getHash ())
         return true;
 
-    using StackEntry = std::pair <SHAMapTreeNode*, SHAMapTreeNode*>;
+    using StackEntry = std::pair <SHAMapAbstractNode*, SHAMapAbstractNode*>;
     std::stack <StackEntry, std::vector<StackEntry>> nodeStack; // track nodes we've pushed
 
     nodeStack.push ({root_.get(), otherMap->root_.get()});
     while (!nodeStack.empty ())
     {
-        SHAMapTreeNode* ourNode = nodeStack.top().first;
-        SHAMapTreeNode* otherNode = nodeStack.top().second;
+        SHAMapAbstractNode* ourNode = nodeStack.top().first;
+        SHAMapAbstractNode* otherNode = nodeStack.top().second;
         nodeStack.pop ();
 
         if (!ourNode || !otherNode)
@@ -145,71 +146,79 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
         if (ourNode->isLeaf () && otherNode->isLeaf ())
         {
             // two leaves
-            if (ourNode->peekItem()->getTag () == otherNode->peekItem()->getTag ())
+            auto ours = static_cast<SHAMapTreeNode*>(ourNode);
+            auto other = static_cast<SHAMapTreeNode*>(otherNode);
+            if (ours->peekItem()->getTag () == other->peekItem()->getTag ())
             {
-                if (ourNode->peekItem()->peekData () != otherNode->peekItem()->peekData ())
+                if (ours->peekItem()->peekData () != other->peekItem()->peekData ())
                 {
-                    differences.insert (std::make_pair (ourNode->peekItem()->getTag (),
-                                                 DeltaRef (ourNode->peekItem (),
-                                                 otherNode->peekItem ())));
+                    differences.insert (std::make_pair (ours->peekItem()->getTag (),
+                                                 DeltaRef (ours->peekItem (),
+                                                 other->peekItem ())));
                     if (--maxCount <= 0)
                         return false;
                 }
             }
             else
             {
-                differences.insert (std::make_pair(ourNode->peekItem()->getTag (),
-                                                   DeltaRef(ourNode->peekItem(),
+                differences.insert (std::make_pair(ours->peekItem()->getTag (),
+                                                   DeltaRef(ours->peekItem(),
                                                    std::shared_ptr<SHAMapItem> ())));
                 if (--maxCount <= 0)
                     return false;
 
-                differences.insert(std::make_pair(otherNode->peekItem()->getTag (),
+                differences.insert(std::make_pair(other->peekItem()->getTag (),
                                                   DeltaRef(std::shared_ptr<SHAMapItem>(),
-                                                  otherNode->peekItem ())));
+                                                  other->peekItem ())));
                 if (--maxCount <= 0)
                     return false;
             }
         }
         else if (ourNode->isInner () && otherNode->isLeaf ())
         {
-            if (!walkBranch (ourNode, otherNode->peekItem (),
+            auto ours = static_cast<SHAMapInnerNode*>(ourNode);
+            auto other = static_cast<SHAMapTreeNode*>(otherNode);
+            if (!walkBranch (ours, other->peekItem (),
                     true, differences, maxCount))
                 return false;
         }
         else if (ourNode->isLeaf () && otherNode->isInner ())
         {
-            if (!otherMap->walkBranch (otherNode, ourNode->peekItem (),
+            auto ours = static_cast<SHAMapTreeNode*>(ourNode);
+            auto other = static_cast<SHAMapInnerNode*>(otherNode);
+            if (!otherMap->walkBranch (other, ours->peekItem (),
                                        false, differences, maxCount))
                 return false;
         }
         else if (ourNode->isInner () && otherNode->isInner ())
         {
+            auto ours = static_cast<SHAMapInnerNode*>(ourNode);
+            auto other = static_cast<SHAMapInnerNode*>(otherNode);
             for (int i = 0; i < 16; ++i)
-                if (ourNode->getChildHash (i) != otherNode->getChildHash (i))
+                if (ours->getChildHash (i) != other->getChildHash (i))
                 {
-                    if (otherNode->isEmptyBranch (i))
+                    if (other->isEmptyBranch (i))
                     {
                         // We have a branch, the other tree does not
-                        SHAMapTreeNode* iNode = descendThrow (ourNode, i);
+                        SHAMapAbstractNode* iNode = descendThrow (ours, i);
                         if (!walkBranch (iNode,
                                          std::shared_ptr<SHAMapItem> (), true,
                                          differences, maxCount))
                             return false;
                     }
-                    else if (ourNode->isEmptyBranch (i))
+                    else if (ours->isEmptyBranch (i))
                     {
                         // The other tree has a branch, we do not
-                        SHAMapTreeNode* iNode =
-                            otherMap->descendThrow(otherNode, i);
+                        SHAMapAbstractNode* iNode =
+                            otherMap->descendThrow(other, i);
                         if (!otherMap->walkBranch (iNode,
                                                    std::shared_ptr<SHAMapItem>(),
                                                    false, differences, maxCount))
                             return false;
                     }
                     else // The two trees have different non-empty branches
-                        nodeStack.push ({descendThrow (ourNode, i),
-                                        otherMap->descendThrow (otherNode, i)});
+                        nodeStack.push ({descendThrow (ours, i),
+                                        otherMap->descendThrow (other, i)});
                 }
         }
         else
@@ -224,26 +233,27 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
     if (!root_->isInner ())  // root_ is only node, and we have it
         return;
 
-    using StackEntry = std::shared_ptr<SHAMapTreeNode>;
+    using StackEntry = std::shared_ptr<SHAMapInnerNode>;
     std::stack <StackEntry, std::vector <StackEntry>> nodeStack;
 
-    nodeStack.push (root_);
+    nodeStack.push (std::static_pointer_cast<SHAMapInnerNode>(root_));
 
     while (!nodeStack.empty ())
     {
-        std::shared_ptr<SHAMapTreeNode> node = std::move (nodeStack.top());
+        std::shared_ptr<SHAMapInnerNode> node = std::move (nodeStack.top());
         nodeStack.pop ();
 
         for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch (i))
             {
-                std::shared_ptr<SHAMapTreeNode> nextNode = descendNoStore (node, i);
+                std::shared_ptr<SHAMapAbstractNode> nextNode = descendNoStore (node, i);
 
                 if (nextNode)
                 {
                     if (nextNode->isInner ())
-                        nodeStack.push (std::move (nextNode));
+                        nodeStack.push(
+                            std::static_pointer_cast<SHAMapInnerNode>(nextNode));
                 }
                 else
                 {
