@@ -374,22 +374,9 @@ public:
 
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
-    // VFALCO NOTE These seem to let you walk the list of ledgers
-    //
-    uint256 getFirstLedgerIndex () const;
-    uint256 getLastLedgerIndex () const;
-
-    // first node >hash
-    uint256 getNextLedgerIndex (uint256 const& uHash) const;
-
-    // first node >hash, <end
-    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) const;
-
-    // last node <hash
-    uint256 getPrevLedgerIndex (uint256 const& uHash) const;
-
-    // last node <hash, >begin
-    uint256 getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const;
+    // first node >hash, <last
+    uint256 getNextLedgerIndex (uint256 const& hash,
+        boost::optional<uint256> const& last = boost::none) const;
 
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;

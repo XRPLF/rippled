@@ -1096,47 +1096,13 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
     }
 }
 
-uint256 Ledger::getFirstLedgerIndex () const
+uint256 Ledger::getNextLedgerIndex (uint256 const& hash,
+    boost::optional<uint256> const& last) const
 {
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekFirstItem ();
-    return node ? node->key() : uint256 ();
-}
-
-uint256 Ledger::getLastLedgerIndex () const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekLastItem ();
-    return node ? node->key() : uint256 ();
-}
-
-uint256 Ledger::getNextLedgerIndex (uint256 const& uHash) const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
-    return node ? node->key() : uint256 ();
-}
-
-uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
-
-    if ((!node) || (node->key() > uEnd))
-        return uint256 ();
-
-    return node->key();
-}
-
-uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash) const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekPrevItem (uHash);
-    return node ? node->key() : uint256 ();
-}
-
-uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const
-{
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekNextItem (uHash);
-
-    if ((!node) || (node->key() < uBegin))
-        return uint256 ();
-
+    auto const node =
+        mAccountStateMap->peekNextItem(hash);
+    if ((! node) || (last && node->key() >= *last))
+        return {};
     return node->key();
 }
 
