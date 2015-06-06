@@ -122,6 +122,8 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
             assert (action != taaDELETE);
             if (mImmutable)
             {
+                // VFALCO NOTE We'd like all immutable callers to go through
+                //             entryCacheI, then we can avoid calling getSLEi.
                 sle = mLedger->getSLEi(key);
             }
             else
