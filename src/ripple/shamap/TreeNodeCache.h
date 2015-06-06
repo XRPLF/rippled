@@ -24,9 +24,9 @@
 
 namespace ripple {
 
-class SHAMapTreeNode;
+class SHAMapAbstractNode;
 
-using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
+using TreeNodeCache = TaggedCache <uint256, SHAMapAbstractNode>;
 
 } // ripple
 

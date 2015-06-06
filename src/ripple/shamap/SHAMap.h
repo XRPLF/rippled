@@ -83,7 +83,7 @@ private:
     beast::Journal                  journal_;
     std::uint32_t                   seq_;
     std::uint32_t                   ledgerSeq_; // sequence number of ledger this is part of
-    std::shared_ptr<SHAMapTreeNode> root_;
+    std::shared_ptr<SHAMapAbstractNode> root_;
     SHAMapState                     state_;
     SHAMapType                      type_;
     bool                            backed_ = true; // Map is backed by the database
@@ -153,7 +153,7 @@ public:
     std::shared_ptr<SHAMapItem> peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type) const;
     std::shared_ptr<SHAMapItem> peekPrevItem (uint256 const& ) const;
 
-    void visitNodes (std::function<bool (SHAMapTreeNode&)> const&) const;
+    void visitNodes (std::function<bool (SHAMapAbstractNode&)> const&) const;
     void visitLeaves(std::function<void (std::shared_ptr<SHAMapItem> const&)> const&) const;
 
     // comparison/sync functions
@@ -192,7 +192,7 @@ public:
 
     using fetchPackEntry_t = std::pair <uint256, Blob>;
 
-    void visitDifferences (SHAMap * have, std::function<bool (SHAMapTreeNode&)>) const;
+    void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
 
     void getFetchPack (SHAMap * have, bool includeLeaves, int max,
         std::function<void (uint256 const&, const Blob&)>) const;
@@ -203,30 +203,30 @@ public:
 
 private:
     using SharedPtrNodeStack =
-        std::stack<std::pair<std::shared_ptr<SHAMapTreeNode>, SHAMapNodeID>>;
+        std::stack<std::pair<std::shared_ptr<SHAMapAbstractNode>, SHAMapNodeID>>;
     using DeltaRef = std::pair<std::shared_ptr<SHAMapItem> const&,
                                std::shared_ptr<SHAMapItem> const&>;
 
     int unshare ();
 
      // tree node cache operations
-    std::shared_ptr<SHAMapTreeNode> getCache (uint256 const& hash) const;
-    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapTreeNode>&) const;
+    std::shared_ptr<SHAMapAbstractNode> getCache (uint256 const& hash) const;
+    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapAbstractNode>&) const;
 
     // database operations
-    std::shared_ptr<SHAMapTreeNode> fetchNodeFromDB (uint256 const& hash) const;
-    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (uint256 const& hash) const;
-    std::shared_ptr<SHAMapTreeNode> fetchNodeNT (
+    std::shared_ptr<SHAMapAbstractNode> fetchNodeFromDB (uint256 const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (uint256 const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (
         SHAMapNodeID const& id,
         uint256 const& hash,
         SHAMapSyncFilter *filter) const;
-    std::shared_ptr<SHAMapTreeNode> fetchNode (uint256 const& hash) const;
-    std::shared_ptr<SHAMapTreeNode> checkFilter (uint256 const& hash, SHAMapNodeID const& id,
-        SHAMapSyncFilter* filter) const;
+    std::shared_ptr<SHAMapAbstractNode> fetchNode (uint256 const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> checkFilter(uint256 const& hash,
+        SHAMapNodeID const& id, SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
     void dirtyUp (SharedPtrNodeStack& stack,
-                  uint256 const& target, std::shared_ptr<SHAMapTreeNode> terminal);
+                  uint256 const& target, std::shared_ptr<SHAMapAbstractNode> terminal);
 
     /** Get the path from the root to the specified node */
     SharedPtrNodeStack
@@ -236,44 +236,50 @@ private:
     SHAMapTreeNode* walkToPointer (uint256 const& id) const;
 
     /** Unshare the node, allowing it to be modified */
-    void unshareNode (std::shared_ptr<SHAMapTreeNode>&, SHAMapNodeID const& nodeID);
+    template <class Node>
+        std::shared_ptr<Node>
+        unshareNode(std::shared_ptr<Node>, SHAMapNodeID const& nodeID);
 
     /** prepare a node to be modified before flushing */
-    void preFlushNode (std::shared_ptr<SHAMapTreeNode>& node) const;
+    template <class Node>
+        std::shared_ptr<Node>
+        preFlushNode(std::shared_ptr<Node> node) const;
 
     /** write and canonicalize modified node */
-    void writeNode (NodeObjectType t, std::uint32_t seq,
-        std::shared_ptr<SHAMapTreeNode>& node) const;
+    std::shared_ptr<SHAMapAbstractNode>
+        writeNode(NodeObjectType t, std::uint32_t seq,
+                  std::shared_ptr<SHAMapAbstractNode> node) const;
 
-    SHAMapTreeNode* firstBelow (SHAMapTreeNode*) const;
-    SHAMapTreeNode* lastBelow (SHAMapTreeNode*) const;
+    SHAMapTreeNode* firstBelow (SHAMapAbstractNode*) const;
+    SHAMapTreeNode* lastBelow (SHAMapAbstractNode*) const;
 
     // Simple descent
     // Get a child of the specified node
-    SHAMapTreeNode* descend (SHAMapTreeNode*, int branch) const;
-    SHAMapTreeNode* descendThrow (SHAMapTreeNode*, int branch) const;
-    std::shared_ptr<SHAMapTreeNode> descend (std::shared_ptr<SHAMapTreeNode> const&, int branch) const;
-    std::shared_ptr<SHAMapTreeNode> descendThrow (std::shared_ptr<SHAMapTreeNode> const&, int branch) const;
+    SHAMapAbstractNode* descend (SHAMapInnerNode*, int branch) const;
+    SHAMapAbstractNode* descendThrow (SHAMapInnerNode*, int branch) const;
+    std::shared_ptr<SHAMapAbstractNode> descend (std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
+    std::shared_ptr<SHAMapAbstractNode> descendThrow (std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
 
     // Descend with filter
-    SHAMapTreeNode* descendAsync (SHAMapTreeNode* parent, int branch,
+    SHAMapAbstractNode* descendAsync (SHAMapInnerNode* parent, int branch,
         SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending) const;
 
-    std::pair <SHAMapTreeNode*, SHAMapNodeID>
-        descend (SHAMapTreeNode* parent, SHAMapNodeID const& parentID,
+    std::pair <SHAMapAbstractNode*, SHAMapNodeID>
+        descend (SHAMapInnerNode* parent, SHAMapNodeID const& parentID,
         int branch, SHAMapSyncFilter* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
-    std::shared_ptr<SHAMapTreeNode> descendNoStore (std::shared_ptr<SHAMapTreeNode> const&, int branch) const;
+    std::shared_ptr<SHAMapAbstractNode>
+        descendNoStore (std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
 
     /** If there is only one leaf below this node, get its contents */
-    std::shared_ptr<SHAMapItem> onlyBelow (SHAMapTreeNode*) const;
+    std::shared_ptr<SHAMapItem> onlyBelow (SHAMapAbstractNode*) const;
 
     bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash) const;
     bool hasLeafNode (uint256 const& tag, uint256 const& hash) const;
 
-    bool walkBranch (SHAMapTreeNode* node,
+    bool walkBranch (SHAMapAbstractNode* node,
                      std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount) const;
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);

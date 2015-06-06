@@ -245,7 +245,7 @@ SHAMapStoreImp::onLedgerClosed (Ledger::pointer validatedLedger)
 
 bool
 SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
-        SHAMapTreeNode const& node)
+        SHAMapAbstractNode const& node)
 {
     // Copy a single record from node to database_
     database_->fetchNode (node.getNodeHash());

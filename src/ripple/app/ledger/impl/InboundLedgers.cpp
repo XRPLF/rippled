@@ -235,16 +235,16 @@ public:
                 if (!node.has_nodeid () || !node.has_nodedata ())
                     return;
 
-                SHAMapTreeNode newNode(
+                auto newNode = SHAMapAbstractNode::make(
                     Blob (node.nodedata().begin(), node.nodedata().end()),
                     0, snfWIRE, uZero, false);
 
                 s.erase();
-                newNode.addRaw(s, snfPREFIX);
+                newNode->addRaw(s, snfPREFIX);
 
                 auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
-                getApp().getOPs().addFetchPack (newNode.getNodeHash(), blob);
+                getApp().getOPs().addFetchPack (newNode->getNodeHash(), blob);
             }
         }
         catch (...)
