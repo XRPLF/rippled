@@ -63,7 +63,8 @@ Json::Value doAccountInfo (RPC::Context& context)
         return jvAccepted;
 
     AccountState::pointer asAccepted =
-        getAccountState(*ledger, naAccount);
+        getAccountState(*ledger, naAccount,
+            getApp().getSLECache());
 
     if (asAccepted)
     {

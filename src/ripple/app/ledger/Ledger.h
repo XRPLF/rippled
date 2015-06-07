@@ -550,7 +550,8 @@ forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
 //        This should take AccountID parameter
 AccountState::pointer
 getAccountState (Ledger const& ledger,
-    RippleAddress const& accountID);
+    RippleAddress const& accountID,
+        SLECache& cache);
 
 /** Return the hash of a ledger by sequence.
     The hash is retrieved by looking up the "skip list"

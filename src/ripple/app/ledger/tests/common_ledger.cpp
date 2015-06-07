@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/ledger/tests/common_ledger.h>
-#include <ripple/protocol/RippleAddress.h>
-
-#include <ripple/protocol/Indexes.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/rpc/impl/RipplePathFind.h>
 #include <ripple/json/json_writer.h>
 
@@ -491,7 +491,7 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 std::shared_ptr<SLE const>
 getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
-    Currency currency)
+        Currency currency)
 {
     auto uNodeIndex = getRippleStateIndex(
         account1.pk.getAccountID(), account2.pk.getAccountID(),
@@ -501,7 +501,8 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
         throw std::runtime_error(
         "!uNodeIndex.isNonZero()");
 
-    return fetch(*ledger, uNodeIndex);
+    return fetch(*ledger, uNodeIndex,
+        getApp().getSLECache());
 }
 
 void
