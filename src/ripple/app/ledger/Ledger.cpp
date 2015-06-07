@@ -1411,13 +1411,6 @@ fetch (Ledger const& ledger, uint256 const& key,
     return sle;
 }
 
-std::shared_ptr<SLE const>
-fetch (Ledger const& ledger, uint256 const& key)
-{
-    return fetch (ledger, key,
-        getApp().getSLECache());
-}
-
 void
 forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
     std::function<void(std::shared_ptr<SLE const> const&)> f)
@@ -1513,10 +1506,12 @@ forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
 
 AccountState::pointer
 getAccountState (Ledger const& ledger,
-    RippleAddress const& accountID)
+    RippleAddress const& accountID,
+        SLECache& cache)
 {
-    auto const sle = fetch(ledger,
-        getAccountRootIndex(accountID.getAccountID()));
+    auto const sle = fetch (ledger,
+        getAccountRootIndex(accountID.getAccountID()),
+            cache);
     if (!sle)
     {
         // VFALCO Do we really need to log here?

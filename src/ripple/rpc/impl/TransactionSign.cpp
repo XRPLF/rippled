@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerFees.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -111,7 +112,8 @@ void TxnSignApiFacade::snapshotAccountState (RippleAddress const& accountID)
 
     ledger_ = netOPs_->getCurrentLedger ();
     accountID_ = accountID;
-    accountState_ = getAccountState (*ledger_, accountID_);
+    accountState_ = getAccountState (
+        *ledger_, accountID_, getApp().getSLECache());
 }
 
 bool TxnSignApiFacade::isValidAccount () const
@@ -250,7 +252,8 @@ error_code_i TxnSignApiFacade::multiAcctMatchesPubKey (
         // If it's available, get the AccountState for the multi-signer's
         // accountID.  It's okay if the AccountState is not available,
         // since they might be signing with a phantom (unfunded) account.
-        accountState = getAccountState (*ledger_, accountID);
+        accountState = getAccountState (
+            *ledger_, accountID, getApp().getSLECache());
 
     return acctMatchesPubKey (accountState, accountID, publicKey);
 }

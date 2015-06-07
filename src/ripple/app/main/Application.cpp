@@ -58,6 +58,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
@@ -1064,7 +1065,7 @@ void ApplicationImp::startNewLedger ()
 
     {
         Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
-        assert (getAccountState (*firstLedger, rootAddress));
+        assert (firstLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
         firstLedger->updateHash ();
@@ -1076,7 +1077,7 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (getAccountState (*secondLedger, rootAddress));
+        assert (secondLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
 }
