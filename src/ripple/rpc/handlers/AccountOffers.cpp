@@ -63,7 +63,8 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (bIndex)
         result[jss::account_index] = iIndex;
 
-    if (! ledger->hasAccount (rippleAddress))
+    if (! ledger->exists(getAccountRootIndex(
+            rippleAddress.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
     unsigned int limit;

@@ -335,11 +335,6 @@ void Ledger::setAccepted ()
     setImmutable ();
 }
 
-bool Ledger::hasAccount (RippleAddress const& accountID) const
-{
-    return mAccountStateMap->hasItem (getAccountRootIndex (accountID));
-}
-
 bool Ledger::addSLE (SLE const& sle)
 {
     SHAMapItem item (sle.getIndex(), sle.getSerializer());
