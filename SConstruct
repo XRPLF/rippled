@@ -56,7 +56,7 @@ The following environment variables modify the build environment:
       If set, used to detect a toolchain.
 
     BOOST_ROOT
-      Path to the boost directory. 
+      Path to the boost directory.
     OPENSSL_ROOT
       Path to the openssl directory.
 
@@ -637,7 +637,8 @@ def get_soci_sources(style):
         'src/sqlite', ]
     append_sources(result,
                    'src/ripple/unity/soci.cpp',
-                   CPPPATH=cpp_path)
+                   CPPPATH=cpp_path,
+                   CCFLAGS=['-Wno-deprecated-declarations'])
     if style == 'unity':
         append_sources(result,
                        'src/ripple/unity/soci_ripple.cpp',
@@ -943,4 +944,3 @@ def do_count(target, source, env):
     print "Total unit test lines: %d" % lines
 
 PhonyTargets(env, count = do_count)
-
