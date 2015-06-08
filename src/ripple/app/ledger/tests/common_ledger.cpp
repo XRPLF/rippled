@@ -143,7 +143,7 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
     initializePathfinding();
     Ledger::pointer ledger = std::make_shared<Ledger>(master.pk,
         start_amount_drops);
-    ledger->updateHash();
+    ledger->getHash(); // updates the hash
     ledger->setClosed();
     if (!ledger->assertSane())
         throw std::runtime_error(

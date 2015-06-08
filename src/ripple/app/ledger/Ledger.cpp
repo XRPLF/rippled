@@ -543,18 +543,10 @@ bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
 }
 
 uint256 const&
-Ledger::hash()
+Ledger::getHash()
 {
     if (! mValidHash)
         updateHash();
-    return mHash;
-}
-
-uint256 const&
-Ledger::hash() const
-{
-    assert (mValidHash);
-    assert (mImmutable);
     return mHash;
 }
 
@@ -1146,7 +1138,7 @@ bool Ledger::walkLedger () const
     return missingNodes1.empty () && missingNodes2.empty ();
 }
 
-bool Ledger::assertSane () const
+bool Ledger::assertSane ()
 {
     if (mHash.isNonZero () &&
             mAccountHash.isNonZero () &&
