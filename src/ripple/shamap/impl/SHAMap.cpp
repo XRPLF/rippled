@@ -507,6 +507,19 @@ SHAMap::onlyBelow (SHAMapTreeNode* node) const
     return node->peekItem ();
 }
 
+static std::shared_ptr<
+    SHAMapItem const> const nullConstSHAMapItem;
+
+std::shared_ptr<SHAMapItem const>
+SHAMap::fetch (uint256 const& key) const
+{
+    SHAMapTreeNode const* const leaf =
+        walkToPointer(key);
+    if (! leaf)
+        return nullConstSHAMapItem;
+    return leaf->peekItem();
+}
+
 static const std::shared_ptr<SHAMapItem> no_item;
 
 std::shared_ptr<SHAMapItem> SHAMap::peekFirstItem () const
