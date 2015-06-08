@@ -26,6 +26,8 @@
 #include <type_traits>
 #include <utility>
 
+#if ! BEAST_NO_CXX14_INTEGER_SEQUENCE
+
 namespace std {
 
 template <class T, T... Ints>
@@ -165,5 +167,7 @@ using index_sequence_for =
 #endif
 
 }
+
+#endif
 
 #endif
