@@ -55,8 +55,8 @@ Json::Value doAccountInfo (RPC::Context& context)
 
     // Get info on account.
 
-    Json::Value jvAccepted = RPC::accountFromString (
-        ledger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps);
+    auto jvAccepted = RPC::accountFromString (
+        naAccount, bIndex, strIdent, iIndex, bStrict);
 
     if (!jvAccepted.empty ())
         return jvAccepted;

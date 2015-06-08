@@ -29,13 +29,11 @@ namespace RPC {
 //
 // Returns a Json::objectValue, containing error information if there was one.
 Json::Value accountFromString (
-    Ledger::ref lrLedger,
     RippleAddress& naAccount,
     bool& bIndex,
     std::string const& strIdent,
     int const iIndex,
-    bool const bStrict,
-    NetworkOPs& netOps)
+    bool const bStrict)
 {
     RippleAddress   naSeed;
 

@@ -90,11 +90,11 @@ Json::Value doAccountLines (RPC::Context& context)
     int iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
     RippleAddress rippleAddress;
 
-    Json::Value const jv (RPC::accountFromString (ledger, rippleAddress, bIndex,
-        strIdent, iIndex, false, context.netOps));
+    auto jv = RPC::accountFromString (
+        rippleAddress, bIndex, strIdent, iIndex, false);
     if (! jv.empty ())
     {
-        for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
+        for (auto it = jv.begin (); it != jv.end (); ++it)
             result[it.memberName ()] = it.key ();
 
         return result;
@@ -117,8 +117,8 @@ Json::Value doAccountLines (RPC::Context& context)
         if (bPeerIndex)
             result[jss::peer_index] = iPeerIndex;
 
-        result = RPC::accountFromString (ledger, rippleAddressPeer, bPeerIndex,
-            strPeer, iPeerIndex, false, context.netOps);
+        result = RPC::accountFromString (
+            rippleAddressPeer, bPeerIndex, strPeer, iPeerIndex, false);
 
         if (! result.empty ())
             return result;

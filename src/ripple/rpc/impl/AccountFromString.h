@@ -27,13 +27,11 @@ namespace ripple {
 namespace RPC {
 
 Json::Value accountFromString (
-    Ledger::ref lrLedger,
     RippleAddress& naAccount,
     bool& bIndex,
     std::string const& strIdent,
-    const int iIndex,
-    const bool bStrict,
-    NetworkOPs& netOps);
+    int iIndex,
+    bool bStrict);
 
 } // RPC
 } // ripple
