@@ -25,6 +25,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STAmount.h>
@@ -45,15 +46,15 @@ class AccountInfo
 private:
     Account account_;
     std::shared_ptr<Ledger> ledger_;
-    std::shared_ptr<STLedgerEntry> root_;
+    boost::optional<SLE const> root_;
 
 public:
     AccountInfo(Account const& account,
             std::shared_ptr<Ledger> ledger)
         : account_(account)
         , ledger_(std::move(ledger))
-        , root_(ledger_->getAccountRoot(
-            account.id()))
+        , root_(ledger_->fetch(
+            getAccountRootIndex(account.id())))
     {
     }
 

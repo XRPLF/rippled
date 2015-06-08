@@ -26,6 +26,7 @@
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/CollectorManager.h>
@@ -57,6 +58,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
@@ -1041,6 +1043,7 @@ public:
 private:
     void updateTables ();
     void startNewLedger ();
+    Ledger::pointer getLastFullLedger();
     bool loadOldLedger (
         std::string const& ledgerID, bool replay, bool isFilename);
 
@@ -1062,10 +1065,10 @@ void ApplicationImp::startNewLedger ()
 
     {
         Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
-        assert (firstLedger->getAccountState (rootAddress));
+        assert (firstLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
-        firstLedger->updateHash ();
+        firstLedger->getHash(); // updates the hash
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
         m_ledgerMaster->pushLedger (firstLedger);
@@ -1074,8 +1077,55 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (secondLedger->getAccountState (rootAddress));
+        assert (secondLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
+    }
+}
+
+Ledger::pointer
+ApplicationImp::getLastFullLedger()
+{
+    try
+    {
+        Ledger::pointer ledger;
+        std::uint32_t ledgerSeq;
+        uint256 ledgerHash;
+        std::tie (ledger, ledgerSeq, ledgerHash) =
+                loadLedgerHelper ("order by LedgerSeq desc limit 1");
+
+        if (!ledger)
+            return ledger;
+
+        ledger->setClosed ();
+
+        if (getApp().getOPs ().haveLedger (ledgerSeq))
+        {
+            ledger->setAccepted ();
+            ledger->setValidated ();
+        }
+
+        if (ledger->getHash () != ledgerHash)
+        {
+            if (ShouldLog (lsERROR, Ledger))
+            {
+                WriteLog (lsERROR, Ledger) << "Failed on ledger";
+                Json::Value p;
+                addJson (p, {*ledger, LedgerFill::full});
+                WriteLog (lsERROR, Ledger) << p;
+            }
+
+            assert (false);
+            return Ledger::pointer ();
+        }
+
+        WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
+        return ledger;
+    }
+    catch (SHAMapMissingNode& sn)
+    {
+        WriteLog (lsWARNING, Ledger)
+                << "Database contains ledger with missing nodes: " << sn;
+        return Ledger::pointer ();
     }
 }
 
@@ -1185,7 +1235,9 @@ bool ApplicationImp::loadOldLedger (
             }
         }
         else if (ledgerID.empty () || (ledgerID == "latest"))
-            loadLedger = Ledger::getLastFullLedger ();
+        {
+            loadLedger = getLastFullLedger ();
+        }
         else if (ledgerID.length () == 64)
         {
             // by hash

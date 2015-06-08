@@ -45,7 +45,7 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 
 AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (Ledger::ref ledger)
 {
-    AcceptedLedger::pointer ret = s_cache.fetch (ledger->getHash ());
+    AcceptedLedger::pointer ret = s_cache.fetch (ledger->getHash());
 
     if (ret)
         return ret;

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
@@ -25,25 +26,27 @@
 
 namespace ripple {
 
-RippleState::pointer RippleState::makeItem (
-    Account const& accountID, STLedgerEntry::ref ledgerEntry)
+RippleState::pointer
+RippleState::makeItem (
+    Account const& accountID,
+        std::shared_ptr<SLE const> sle)
 {
     // VFALCO Does this ever happen in practice?
-    if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
-        return pointer ();
-
-    return pointer (new RippleState (ledgerEntry, accountID));
+    if (! sle || sle->getType () != ltRIPPLE_STATE)
+        return {};
+    return std::make_shared<RippleState>(
+        std::move(sle), accountID);
 }
 
 RippleState::RippleState (
-        STLedgerEntry::ref ledgerEntry,
+    std::shared_ptr<SLE const>&& sle,
         Account const& viewAccount)
-    : mLedgerEntry (ledgerEntry)
-    , mLowLimit (ledgerEntry->getFieldAmount (sfLowLimit))
-    , mHighLimit (ledgerEntry->getFieldAmount (sfHighLimit))
+    : mLedgerEntry (std::move(sle))
+    , mLowLimit (mLedgerEntry->getFieldAmount (sfLowLimit))
+    , mHighLimit (mLedgerEntry->getFieldAmount (sfHighLimit))
     , mLowID (mLowLimit.getIssuer ())
     , mHighID (mHighLimit.getIssuer ())
-    , mBalance (ledgerEntry->getFieldAmount (sfBalance))
+    , mBalance (mLedgerEntry->getFieldAmount (sfBalance))
 {
     mFlags          = mLedgerEntry->getFieldU32 (sfFlags);
 
@@ -73,12 +76,11 @@ getRippleStateItems (
     Ledger::ref ledger)
 {
     std::vector <RippleState::pointer> items;
-
-    ledger->visitAccountItems (accountID,
-        [&items,&accountID](SLE::ref sleCur)
+    forEachItem(*ledger, accountID, getApp().getSLECache(),
+        [&items,&accountID](
+        std::shared_ptr<SLE const> const&sleCur)
         {
              auto ret = RippleState::makeItem (accountID, sleCur);
-
              if (ret)
                 items.push_back (ret);
         });

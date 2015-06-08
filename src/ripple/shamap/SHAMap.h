@@ -127,6 +127,19 @@ public:
     bool updateGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
     bool addGiveItem (std::shared_ptr<SHAMapItem> const&, bool isTransaction, bool hasMeta);
 
+    /** Fetch an item given its key.
+        This retrieves the item whose key matches.
+        If the item does not exist, an empty pointer is returned.
+        Exceptions:
+            Can throw SHAMapMissingNode
+        @note This can cause NodeStore reads
+    */
+    // VFALCO NOTE This should return `const&` when SHAMapTreeNode
+    //             stores std::shared_ptr<SHAMapItem const>
+    std::shared_ptr<SHAMapItem const>
+    fetch (uint256 const& key) const;
+
+    // VFALCO NOTE Is "save a copy" the in imperative or indicative mood?
     // save a copy if you only need a temporary
     std::shared_ptr<SHAMapItem> peekItem (uint256 const& id) const;
     std::shared_ptr<SHAMapItem> peekItem (uint256 const& id, uint256 & hash) const;

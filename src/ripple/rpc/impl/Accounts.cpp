@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/Accounts.h>
+#include <ripple/app/main/Application.h>
 
 namespace ripple {
 namespace RPC {
@@ -40,7 +41,8 @@ Json::Value accounts (
 
         naAccount.setAccountPublic (naMasterGenerator, uIndex++);
 
-        AccountState::pointer as    = netOps.getAccountState (lrLedger, naAccount);
+        AccountState::pointer as    =
+            getAccountState (*lrLedger, naAccount, getApp().getSLECache());
 
         if (as)
         {

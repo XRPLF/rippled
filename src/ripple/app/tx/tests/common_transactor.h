@@ -128,6 +128,8 @@ public:
     void applyTecTransaction (STTx const& tx, TER err, bool check = true);
 
     // Return the AccountState for a UserAccount
+    // VFALCO This function is not necessary, just expose
+    //        the ledger data member and use the free function.
     AccountState::pointer getAccountState (UserAccount const& acct) const;
 
     // Return the current open ledger.
@@ -347,11 +349,11 @@ std::vector<RippleState::pointer> getRippleStates (
     TestLedger& ledger, UserAccount const& from, UserAccount const& peer);
 
 // Get all Offers on an account.
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getOffersOnAccount (TestLedger& ledger, UserAccount const& acct);
 
 // Get all Tickets on an account.
-std::vector <SLE::pointer>
+std::vector <std::shared_ptr<SLE const>>
 getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct);
 
 } // test

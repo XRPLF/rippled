@@ -103,29 +103,53 @@ SLE::pointer LedgerEntrySet::entryCreate (LedgerEntryType letType, uint256 const
     return sleNew;
 }
 
-SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const& index)
+SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const& key)
 {
     assert (mLedger);
-    SLE::pointer sleEntry;
+    SLE::pointer sle;
 
-    if (index.isNonZero ())
+    // VFALCO Shouldn't be calling this with invalid keys,
+    //        but apparently its happening. Need to track it down.
+    //assert(key.isNonZero ());
+
+    if (key.isNonZero ())
     {
         LedgerEntryAction action;
-        sleEntry = getEntry (index, action);
+        sle = getEntry (key, action);
 
-        if (!sleEntry)
+        if (! sle)
         {
             assert (action != taaDELETE);
-            sleEntry = mImmutable ? mLedger->getSLEi (index) : mLedger->getSLE (index);
+            if (mImmutable)
+            {
+                // VFALCO NOTE We'd like all immutable callers to go through
+                //             entryCacheI, then we can avoid calling getSLEi.
+                sle = mLedger->getSLEi(key);
+            }
+            else
+            {
+                auto maybe_sle = mLedger->fetch(key, letType);
+                if (maybe_sle)
+                    sle = std::make_shared<SLE>(
+                        std::move(*maybe_sle));
+            }
 
-            if (sleEntry)
-                entryCache (sleEntry);
+            if (sle)
+                entryCache (sle);
         }
         else if (action == taaDELETE)
-            sleEntry.reset ();
+        {
+            sle = nullptr;
+        }
     }
 
-    return sleEntry;
+    return sle;
+}
+
+std::shared_ptr<SLE const>
+LedgerEntrySet::entryCacheI (LedgerEntryType letType, uint256 const& key)
+{
+    return entryCache(letType, key);
 }
 
 void LedgerEntrySet::entryCache (SLE::ref sle)
@@ -370,12 +394,16 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         return me->second;
     }
 
-    SLE::pointer ret = ledger->getSLE (node);
+    auto sle = ledger->fetch(node);
+    if (sle)
+    {
+        auto p = std::make_shared<SLE>(
+            std::move(*sle));
+        newMods.insert (std::make_pair (node, p));
+        return p;
+    }
 
-    if (ret)
-        newMods.insert (std::make_pair (node, ret));
-
-    return ret;
+    return {};
 }
 
 bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,
@@ -418,8 +446,9 @@ bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
     return false;
 }
 
-bool LedgerEntrySet::threadOwners (SLE::ref node, Ledger::ref ledger,
-                                   NodeToLedgerEntry& newMods)
+bool LedgerEntrySet::threadOwners(
+    std::shared_ptr<SLE const> const& node,
+        Ledger::ref ledger, NodeToLedgerEntry& newMods)
 {
     // thread new or modified node to owner or owners
     if (node->hasOneOwner ()) // thread to owner's account
@@ -483,7 +512,8 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
         if (type == &sfGeneric)
             continue;
 
-        SLE::pointer origNode = mLedger->getSLEi (it.first);
+        std::shared_ptr<SLE const> const origNode =
+            mLedger->getSLEi(it.first);
         SLE::pointer curNode = it.second.mEntry;
 
         if ((type == &sfModifiedNode) && (*curNode == *origNode))
@@ -929,6 +959,22 @@ bool LedgerEntrySet::dirFirst (
     return LedgerEntrySet::dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
+// Return the first entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirFirst (
+    uint256 const& uRootIndex,  // --> Root of directory.
+    std::shared_ptr<SLE const>& sleNode,      // <-- current node
+    unsigned int& uDirEntry,    // <-- next entry
+    uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
+{
+    sleNode     = entryCacheI (ltDIR_NODE, uRootIndex);
+    uDirEntry   = 0;
+
+    assert (sleNode);           // Never probe for directories.
+
+    return LedgerEntrySet::dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
+}
+
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
 bool LedgerEntrySet::dirNext (
@@ -954,6 +1000,57 @@ bool LedgerEntrySet::dirNext (
         else
         {
             SLE::pointer sleNext = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
+            uDirEntry   = 0;
+
+            if (!sleNext)
+            { // This should never happen
+                WriteLog (lsFATAL, LedgerEntrySet)
+                        << "Corrupt directory: index:"
+                        << uRootIndex << " next:" << uNodeNext;
+                return false;
+            }
+
+            sleNode = sleNext;
+            // TODO(tom): make this iterative.
+            return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
+        }
+    }
+
+    uEntryIndex = svIndexes[uDirEntry++];
+
+    WriteLog (lsTRACE, LedgerEntrySet) << "dirNext:" <<
+        " uDirEntry=" << uDirEntry <<
+        " uEntryIndex=" << uEntryIndex;
+
+    return true;
+}
+
+// Return the current entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirNext (
+    uint256 const& uRootIndex,  // --> Root of directory
+    std::shared_ptr<SLE const>& sleNode,      // <-> current node
+    unsigned int& uDirEntry,    // <-> next entry
+    uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
+{
+    STVector256 const svIndexes = sleNode->getFieldV256 (sfIndexes);
+
+    assert (uDirEntry <= svIndexes.size ());
+
+    if (uDirEntry >= svIndexes.size ())
+    {
+        std::uint64_t const uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
+
+        if (!uNodeNext)
+        {
+            uEntryIndex.zero ();
+
+            return false;
+        }
+        else
+        {
+            auto const sleNext = entryCacheI(
+                ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
             uDirEntry   = 0;
 
             if (!sleNext)

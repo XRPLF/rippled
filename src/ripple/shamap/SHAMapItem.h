@@ -43,7 +43,15 @@ public:
 
     Slice slice() const;
 
+    uint256 const&
+    key() const
+    {
+        return mTag;
+    }
+
+    // DEPRECATED
     uint256 const& getTag() const;
+
     Blob const& peekData() const;
     Serializer& peekSerializer();
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/GetAccountObjects.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 
@@ -38,8 +39,9 @@ getAccountObjects (Ledger const& ledger, Account const& account,
         found = true;
     }
 
-    auto dir = ledger.getDirNode (dirIndex);
-    if (dir == nullptr)
+    auto dir = fetch(ledger, dirIndex,
+        getApp().getSLECache(), ltDIR_NODE);
+    if (! dir)
         return false;
 
     std::uint32_t i = 0;
@@ -60,7 +62,8 @@ getAccountObjects (Ledger const& ledger, Account const& account,
 
         for (; iter != entries.end (); ++iter)
         {
-            auto const sleNode = ledger.getSLEi (*iter);
+            auto const sleNode = fetch(ledger, *iter,
+                getApp().getSLECache());
             if (type == ltINVALID || sleNode->getType () == type)
             {
                 jvObjects.append (sleNode->getJson (0));
@@ -84,9 +87,10 @@ getAccountObjects (Ledger const& ledger, Account const& account,
         if (nodeIndex == 0)
             return true;
 
-        dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);        
-        dir = ledger.getDirNode (dirIndex);
-        if (dir == nullptr)
+        dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);
+        dir = fetch(ledger, dirIndex,
+            getApp().getSLECache(), ltDIR_NODE);
+        if (! dir)
             return true;
 
         if (i == limit)

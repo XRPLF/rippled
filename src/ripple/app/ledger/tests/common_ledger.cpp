@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/ledger/tests/common_ledger.h>
-#include <ripple/protocol/RippleAddress.h>
-
-#include <ripple/protocol/Indexes.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/rpc/impl/RipplePathFind.h>
 #include <ripple/json/json_writer.h>
 
@@ -143,7 +143,7 @@ createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
     initializePathfinding();
     Ledger::pointer ledger = std::make_shared<Ledger>(master.pk,
         start_amount_drops);
-    ledger->updateHash();
+    ledger->getHash(); // updates the hash
     ledger->setClosed();
     if (!ledger->assertSane())
         throw std::runtime_error(
@@ -488,10 +488,10 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     return result.second;
 }
 
-SLE::pointer
+std::shared_ptr<SLE const>
 getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
-    Currency currency)
+        Currency currency)
 {
     auto uNodeIndex = getRippleStateIndex(
         account1.pk.getAccountID(), account2.pk.getAccountID(),
@@ -501,14 +501,15 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
         throw std::runtime_error(
         "!uNodeIndex.isNonZero()");
 
-    return ledger->getSLEi(uNodeIndex);
+    return fetch(*ledger, uNodeIndex,
+        getApp().getSLECache());
 }
 
 void
 verifyBalance(Ledger::pointer ledger, TestAccount const& account,
     Amount const& amount)
 {
-    auto sle = getLedgerEntryRippleState(ledger, account,
+    auto const sle = getLedgerEntryRippleState(ledger, account,
         amount.getIssuer(), amount.getCurrency());
     if (!sle)
         throw std::runtime_error(
