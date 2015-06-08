@@ -560,7 +560,7 @@ getAccountState (Ledger const& ledger,
             given sequence number or boost::none.
 */
 boost::optional<uint256>
-hashOfSeq (Ledger const& ledger, LedgerIndex seq,
+hashOfSeq (Ledger& ledger, LedgerIndex seq,
     SLECache& cache, beast::Journal journal);
 
 } // ripple
