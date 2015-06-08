@@ -101,7 +101,8 @@ Json::Value doAccountLines (RPC::Context& context)
         return result;
     }
 
-    if (! ledger->hasAccount (rippleAddress))
+    if (! ledger->exists(getAccountRootIndex(
+            rippleAddress.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
     std::string strPeer (params.isMember (jss::peer)

@@ -365,9 +365,6 @@ public:
         std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 
-    // high-level functions
-    bool hasAccount (const RippleAddress & acctID) const;
-
     void updateSkipList ();
 
     void visitStateItems (std::function<void (SLE::ref)>) const;
