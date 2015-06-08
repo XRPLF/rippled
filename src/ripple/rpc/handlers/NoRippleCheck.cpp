@@ -96,8 +96,8 @@ Json::Value doNoRippleCheck (RPC::Context& context)
     int iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
     RippleAddress rippleAddress;
 
-    Json::Value const jv (RPC::accountFromString (ledger, rippleAddress, bIndex,
-        strIdent, iIndex, false, context.netOps));
+    Json::Value const jv = RPC::accountFromString (
+        rippleAddress, bIndex, strIdent, iIndex, false);
     if (! jv.empty ())
     {
         for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)

@@ -58,8 +58,8 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     // Get info on account.
     bool bIndex; // out param
     RippleAddress naAccount; // out param
-    Json::Value jvAccepted (RPC::accountFromString (
-        ledger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps));
+    Json::Value jvAccepted (
+        RPC::accountFromString (naAccount, bIndex, strIdent, iIndex, bStrict));
 
     if (!jvAccepted.empty ())
         return jvAccepted;

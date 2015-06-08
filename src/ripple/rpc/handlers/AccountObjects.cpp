@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-/** General RPC command that can retrieve objects in the account root.    
+/** General RPC command that can retrieve objects in the account root.
     {
       account: <account>|<account_public_key>
       account_index: <integer> // optional, defaults to 0
@@ -57,8 +57,8 @@ Json::Value doAccountObjects (RPC::Context& context)
         auto const strIdent = params[jss::account].asString ();
         auto iIndex = context.params.isMember (jss::account_index)
             ? context.params[jss::account_index].asUInt () : 0;
-        auto jv = RPC::accountFromString (ledger, raAccount, bIndex,
-            strIdent, iIndex, false, context.netOps);
+        auto jv = RPC::accountFromString (
+            raAccount, bIndex, strIdent, iIndex, false);
         if (! jv.empty ())
         {
             for (auto it = jv.begin (); it != jv.end (); ++it)
@@ -100,7 +100,7 @@ Json::Value doAccountObjects (RPC::Context& context)
                 { return t.first == filter; });
         if (iter == types->end ())
             return RPC::invalid_field_error (jss::type);
-        
+
         type = iter->second;
     }
 
@@ -120,7 +120,7 @@ Json::Value doAccountObjects (RPC::Context& context)
                 std::min (limit, RPC::Tuning::maxObjectsPerRequest));
         }
     }
-    
+
     uint256 dirIndex;
     uint256 entryIndex;
     if (params.isMember (jss::marker))
@@ -128,7 +128,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         auto const& marker = params[jss::marker];
         if (! marker.isString ())
             return RPC::expected_field_error (jss::marker, "string");
-        
+
         std::stringstream ss (marker.asString ());
         std::string s;
         if (!std::getline(ss, s, ','))
@@ -139,7 +139,7 @@ Json::Value doAccountObjects (RPC::Context& context)
 
         if (! std::getline (ss, s, ','))
             return RPC::invalid_field_error (jss::marker);
-        
+
         if (! entryIndex.SetHex (s))
             return RPC::invalid_field_error (jss::marker);
     }
@@ -150,7 +150,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         return RPC::invalid_field_error (jss::marker);
     }
 
-    result[jss::account] = raAccount.humanAccountID ();    
+    result[jss::account] = raAccount.humanAccountID ();
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
