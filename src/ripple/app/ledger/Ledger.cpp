@@ -984,8 +984,7 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 bool
 Ledger::exists (uint256 const& key) const
 {
-    return static_cast<bool>(
-        mAccountStateMap->peekItem(key));
+    return mAccountStateMap->hasItem(key);
 }
 
 std::shared_ptr<SHAMapItem const>
