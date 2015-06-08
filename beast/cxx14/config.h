@@ -20,6 +20,8 @@
 #ifndef BEAST_CXX14_CONFIG_H_INCLUDED
 #define BEAST_CXX14_CONFIG_H_INCLUDED
 
+#include <ciso646>  // detect libc++ verison
+
 // Sets C++14 compatibility configuration macros based on build environment
 
 // Disables beast c++14 compatibility additions when set to 1
@@ -28,7 +30,7 @@
 #ifndef BEAST_NO_CXX14_COMPATIBILITY
 # ifdef _MSC_VER
 #  define BEAST_NO_CXX14_COMPATIBILITY 1
-# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201305
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
 #  define BEAST_NO_CXX14_COMPATIBILITY 1
 # else
 #  define BEAST_NO_CXX14_COMPATIBILITY 0
@@ -39,7 +41,7 @@
 #ifndef BEAST_NO_CXX14_MAKE_UNIQUE
 # ifdef _MSC_VER
 #  define BEAST_NO_CXX14_MAKE_UNIQUE 1
-# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201305
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
 #  define BEAST_NO_CXX14_MAKE_UNIQUE 1
 # else
 #  define BEAST_NO_CXX14_MAKE_UNIQUE 0
@@ -48,7 +50,35 @@
 
 // Disables beast's std::equal safe iterator overloads
 #ifndef BEAST_NO_CXX14_EQUAL
-# define BEAST_NO_CXX14_EQUAL 0
+# ifdef _MSC_VER
+#  define BEAST_NO_CXX14_EQUAL 0
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
+#  define BEAST_NO_CXX14_EQUAL 1
+# else
+#  define BEAST_NO_CXX14_EQUAL 0
+# endif
+#endif
+
+// Disables beast's std::integer_sequence
+#ifndef BEAST_NO_CXX14_INTEGER_SEQUENCE
+# ifdef _MSC_VER
+#  define BEAST_NO_CXX14_INTEGER_SEQUENCE 0
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
+#  define BEAST_NO_CXX14_INTEGER_SEQUENCE 1
+# else
+#  define BEAST_NO_CXX14_INTEGER_SEQUENCE 0
+# endif
+#endif
+
+// Disables beast's std::make_reverse_iterator
+#ifndef BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR
+# ifdef _MSC_VER
+#  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 0
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
+#  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 1
+# else
+#  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 0
+# endif
 #endif
 
 #endif
