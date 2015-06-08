@@ -1524,7 +1524,7 @@ getAccountState (Ledger const& ledger,
 }
 
 boost::optional<uint256>
-hashOfSeq (Ledger const& ledger, LedgerIndex seq,
+hashOfSeq (Ledger& ledger, LedgerIndex seq,
     SLECache& cache, beast::Journal journal)
 {
     // Easy cases...

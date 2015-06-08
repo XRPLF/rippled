@@ -68,7 +68,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         // Try to get the hash of the desired ledger from the validated ledger
         auto ledgerHash = hashOfSeq(*ledger, ledgerIndex,
             getApp().getSLECache(), j);
-        if (ledgerHash)
+        if (! ledgerHash)
         {
             // Find a ledger more likely to have the hash of the desired ledger
             auto refIndex = (ledgerIndex + 255) & (~255);
