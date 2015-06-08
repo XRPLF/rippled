@@ -873,14 +873,6 @@ Value::empty () const
         return false;
 }
 
-
-bool
-Value::operator! () const
-{
-    return isNull ();
-}
-
-
 void
 Value::clear ()
 {
