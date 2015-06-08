@@ -80,9 +80,4 @@ std::int64_t Time::getHighResolutionTicksPerSecond() noexcept
     return 1000000;  // (microseconds)
 }
 
-double Time::getMillisecondCounterHiRes() noexcept
-{
-    return getHighResolutionTicks() * 0.001;
-}
-
 } // beast

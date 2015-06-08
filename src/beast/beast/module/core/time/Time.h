@@ -315,15 +315,6 @@ public:
     */
     static std::uint32_t getMillisecondCounter() noexcept;
 
-    /** Returns the number of millisecs since a fixed event (usually system startup).
-
-        This has the same function as getMillisecondCounter(), but returns a more accurate
-        value, using a higher-resolution timer if one is available.
-
-        @see getMillisecondCounter
-    */
-    static double getMillisecondCounterHiRes() noexcept;
-
     /** Less-accurate but faster version of getMillisecondCounter().
 
         This will return the last value that getMillisecondCounter() returned, so doesn't

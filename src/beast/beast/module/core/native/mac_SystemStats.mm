@@ -117,11 +117,6 @@ public:
         return (std::uint32_t) ((mach_absolute_time() * numerator) / denominator);
     }
 
-    inline double getMillisecondCounterHiRes() const noexcept
-    {
-        return mach_absolute_time() * highResTimerToMillisecRatio;
-    }
-
     std::int64_t highResTimerFrequency;
 
 private:
@@ -136,7 +131,6 @@ static HiResCounterHandler& hiResCounterHandler()
 }
 
 std::uint32_t beast_millisecondsSinceStartup() noexcept         { return hiResCounterHandler().millisecondsSinceStartup(); }
-double Time::getMillisecondCounterHiRes() noexcept      { return hiResCounterHandler().getMillisecondCounterHiRes(); }
 std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept { return hiResCounterHandler().highResTimerFrequency; }
 std::int64_t  Time::getHighResolutionTicks() noexcept          { return (std::int64_t) mach_absolute_time(); }
 

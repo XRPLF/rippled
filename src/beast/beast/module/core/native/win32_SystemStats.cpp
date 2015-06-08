@@ -73,11 +73,6 @@ public:
         return ticks.QuadPart + hiResTicksOffset;
     }
 
-    inline double getMillisecondCounterHiRes() noexcept
-    {
-        return getHighResolutionTicks() * hiResTicksScaleFactor;
-    }
-
     std::int64_t hiResTicksPerSecond, hiResTicksOffset;
     double hiResTicksScaleFactor;
 };
@@ -86,7 +81,6 @@ static HiResCounterHandler hiResCounterHandler;
 
 std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept  { return hiResCounterHandler.hiResTicksPerSecond; }
 std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCounterHandler.getHighResolutionTicks(); }
-double Time::getMillisecondCounterHiRes() noexcept       { return hiResCounterHandler.getMillisecondCounterHiRes(); }
 
 //==============================================================================
 bool beast_isRunningUnderDebugger()
