@@ -169,9 +169,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void
-    updateHash();
-
     void setClosed ()
     {
         mClosed = true;
@@ -223,25 +220,7 @@ public:
         This will recalculate the hash if necessary.
     */
     uint256 const&
-    hash();
-
-    // DEPRECATED
-    uint256 const&
-    getHash()
-    {
-        return hash();
-    }
-
-    /** Return the hash of the ledger. */
-    uint256 const&
-    hash() const;
-
-    // DEPRECATED
-    uint256 const&
-    getHash() const
-    {
-        return hash();
-    }
+    getHash();
 
     uint256 const& getParentHash () const
     {
@@ -427,7 +406,7 @@ public:
 
     bool walkLedger () const;
 
-    bool assertSane () const;
+    bool assertSane ();
 
     // database functions (low-level)
     static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
@@ -452,6 +431,9 @@ protected:
 private:
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
+
+    void
+    updateHash();
 
     // Updates the fees cached in the ledger.
     // Safe to call concurrently. We shouldn't be storing
@@ -481,7 +463,7 @@ private:
     std::uint32_t mCloseFlags;
     bool mClosed = false;
     bool mValidated = false;
-    bool mutable mValidHash = false;
+    bool mValidHash = false;
     bool mAccepted = false;
     bool mImmutable;
 

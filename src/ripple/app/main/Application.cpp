@@ -1068,7 +1068,7 @@ void ApplicationImp::startNewLedger ()
         assert (firstLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
-        firstLedger->updateHash ();
+        firstLedger->getHash(); // updates the hash
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
         m_ledgerMaster->pushLedger (firstLedger);

@@ -33,7 +33,7 @@ namespace ripple {
 
 struct LedgerFill
 {
-    LedgerFill (Ledger const& l,
+    LedgerFill (Ledger& l,
                 int o = 0,
                 RPC::Yield const& y = {},
                 RPC::YieldStrategy const& ys = {})
@@ -47,7 +47,7 @@ struct LedgerFill
     enum Options {
         dumpTxrp = 1, dumpState = 2, expand = 4, full = 8, binary = 16};
 
-    Ledger const& ledger;
+    Ledger& ledger;
     int options;
     RPC::Yield yield;
     RPC::YieldStrategy yieldStrategy;
@@ -75,7 +75,7 @@ void fillJson (Object& json, LedgerFill const& fill)
 {
     using namespace ripple::RPC;
 
-    auto const& ledger = fill.ledger;
+    auto& ledger = fill.ledger;
 
     bool const bFull (fill.options & LedgerFill::full);
     bool const bExpand (fill.options & LedgerFill::expand);
