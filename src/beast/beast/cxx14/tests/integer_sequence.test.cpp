@@ -21,6 +21,8 @@
 #include <BeastConfig.h>
 #endif
 
+#if ! BEAST_NO_CXX14_INTEGER_SEQUENCE
+
 #include <beast/cxx14/utility.h>
 
 #include <beast/unit_test/suite.h>
@@ -107,3 +109,5 @@ BEAST_DEFINE_TESTSUITE(integer_sequence,cxx14,beast);
 
 }
 }
+
+#endif
