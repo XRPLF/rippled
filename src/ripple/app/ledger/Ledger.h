@@ -46,7 +46,7 @@ class SqliteStatement;
     all of the transactions and associated metadata that made it into that
     particular ledger. Most of the operations on a ledger are concerned
     with the state map.
-    
+
     A View provides a structured interface to manipulate the state map in
     a reversible way, with facilities to automatically produce metadata
     when applying changes.
@@ -173,12 +173,12 @@ public:
     {
         mClosed = true;
     }
-    
+
     void setValidated()
     {
         mValidated = true;
     }
-    
+
     void setAccepted (std::uint32_t closeTime,
         int closeResolution, bool correctCloseTime);
 
@@ -544,6 +544,25 @@ getAccountState (Ledger const& ledger,
 boost::optional<uint256>
 hashOfSeq (Ledger& ledger, LedgerIndex seq,
     SLECache& cache, beast::Journal journal);
+
+/** Find a ledger index from which we could easily get the requested ledger
+
+    The index that we return should meet two requirements:
+        1) It must be the index of a ledger that has the hash of the ledger
+            we are looking for. This means that its sequence must be equal to
+            greater than the sequence that we want but not more than 256 greater
+            since each ledger contains the hashes of the 256 previous ledgers.
+
+        2) Its hash must be easy for us to find. This means it must be 0 mod 256
+            because every such ledger is permanently enshrined in a LedgerHashes
+            page which we can easily retrieve via the skip list.
+*/
+inline
+LedgerIndex
+getCandidateLedger (LedgerIndex requested)
+{
+    return (requested + 255) & (~255);
+}
 
 } // ripple
 
