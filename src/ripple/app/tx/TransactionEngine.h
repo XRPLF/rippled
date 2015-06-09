@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerEntrySet.h>
+#include <boost/optional.hpp>
 #include <utility>
 
 namespace ripple {
@@ -35,11 +36,7 @@ static multisign_t const multisign;
 // One instance per ledger.
 // Only one transaction applied at a time.
 class TransactionEngine
-    : public CountedObject <TransactionEngine>
 {
-public:
-    static char const* getCountedObjectName () { return "TransactionEngine"; }
-
 private:
     bool enableMultiSign_ =
 #if RIPPLE_ENABLE_MULTI_SIGN
@@ -48,17 +45,16 @@ private:
         false;
 #endif
 
-    LedgerEntrySet mNodes;
-
-    void txnWrite ();
+    boost::optional<LedgerEntrySet> mNodes;
 
 protected:
     Ledger::pointer mLedger;
     int mTxnSeq = 0;
 
 public:
-    TransactionEngine () = default;
+    TransactionEngine() = default;
 
+    explicit
     TransactionEngine (Ledger::ref ledger)
         : mLedger (ledger)
     {
@@ -81,7 +77,7 @@ public:
     LedgerEntrySet&
     view ()
     {
-        return mNodes;
+        return *mNodes;
     }
 
     Ledger::ref

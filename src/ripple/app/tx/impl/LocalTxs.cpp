@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/LocalTxs.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -125,8 +126,9 @@ public:
             return true;
         if (ledger->hasTransaction (txn.getID ()))
             return true;
-        auto const sle = ledger->fetch(
-            getAccountRootIndex(txn.getAccount()));
+        auto const sle = fetch(*ledger,
+            getAccountRootIndex(txn.getAccount().getAccountID()),
+                getApp().getSLECache());
         if (! sle)
             return false;
         if (sle->getFieldU32 (sfSequence) > txn.getSeq ())

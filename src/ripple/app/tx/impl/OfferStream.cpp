@@ -122,8 +122,8 @@ OfferStream::step ()
         // Calculate owner funds
         // NIKB NOTE The calling code also checks the funds, how expensive is
         //           looking up the funds twice?
-        STAmount const owner_funds (view().accountFunds (
-            m_offer.owner(), amount.out, fhZERO_IF_FROZEN));
+        auto const owner_funds = funds(view(),
+            m_offer.owner(), amount.out, fhZERO_IF_FROZEN);
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -131,7 +131,7 @@ OfferStream::step ()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = view_cancel().accountFunds (
+            auto const original_funds = funds(view_cancel(),
                 m_offer.owner(), amount.out, fhZERO_IF_FROZEN);
 
             if (original_funds == owner_funds)

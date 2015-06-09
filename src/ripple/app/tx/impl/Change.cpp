@@ -122,15 +122,18 @@ private:
         SLE::pointer amendmentObject (mEngine->view().entryCache (ltAMENDMENTS, index));
 
         if (!amendmentObject)
-            amendmentObject = mEngine->view().entryCreate(ltAMENDMENTS, index);
+        {
+            amendmentObject = std::make_shared<SLE>(
+                ltAMENDMENTS, index);
+            mEngine->view().entryCreate(amendmentObject);
+        }
 
-        STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
+        STVector256 amendments =
+            amendmentObject->getFieldV256(sfAmendments);
 
         if (std::find (amendments.begin(), amendments.end(),
-            amendment) != amendments.end ())
-        {
+                amendment) != amendments.end ())
             return tefALREADY;
-        }
 
         amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
@@ -151,7 +154,11 @@ private:
         SLE::pointer feeObject = mEngine->view().entryCache (ltFEE_SETTINGS, index);
 
         if (!feeObject)
-            feeObject = mEngine->view().entryCreate (ltFEE_SETTINGS, index);
+        {
+            feeObject = std::make_shared<SLE>(
+                ltFEE_SETTINGS, index);
+            mEngine->view().entryCreate(feeObject);
+        }
 
         // VFALCO-FIXME this generates errors
         // m_journal.trace <<

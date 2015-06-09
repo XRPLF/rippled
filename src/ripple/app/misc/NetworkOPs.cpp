@@ -2496,9 +2496,10 @@ Json::Value NetworkOPsImp::transJson(
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue ().account)
         {
+            // VFALCO Why are we doing this hack?
             LedgerEntrySet les (lpCurrent, tapNONE, true);
-            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));
-
+            auto const ownerFunds = funds(
+                les,account, amount, fhIGNORE_FREEZE);
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
@@ -2947,8 +2948,13 @@ void NetworkOPsImp::getBookPage (
 
             m_journal.trace << "getBookPage: bDirectAdvance";
 
-            sleOfferDir = lesActive.entryCache (
-                ltDIR_NODE, lpLedger->getNextLedgerIndex (uTipIndex, uBookEnd));
+            uint256 const ledgerIndex = 
+                    lpLedger->getNextLedgerIndex (uTipIndex, uBookEnd);
+            if (ledgerIndex.isNonZero())
+                sleOfferDir = lesActive.entryCache (
+                    ltDIR_NODE, ledgerIndex);
+            else
+                sleOfferDir.reset();
 
             if (!sleOfferDir)
             {

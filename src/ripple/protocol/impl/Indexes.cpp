@@ -21,6 +21,7 @@
 #include <ripple/basics/SHA512Half.h>
 #include <ripple/protocol/Indexes.h>
 #include <beast/utility/static_initializer.h>
+#include <cassert>
 
 namespace ripple {
 
@@ -191,5 +192,119 @@ getSignerListIndex (Account const& account)
         std::uint16_t(spaceSignerList),
         account);
 }
+
+//------------------------------------------------------------------------------
+
+namespace keylet {
+
+Keylet account_t::operator()(
+    Account const& id) const
+{
+    return { ltACCOUNT_ROOT,
+        getAccountRootIndex(id) };
+}
+
+Keylet account_t::operator()(
+    RippleAddress const& ra) const
+{
+    return { ltACCOUNT_ROOT,
+        getAccountRootIndex(ra.getAccountID()) };
+}
+
+Keylet owndir_t::operator()(
+    Account const& id) const
+{
+    return { ltDIR_NODE,
+        getOwnerDirIndex(id) };
+}
+
+Keylet skip_t::operator()() const
+{
+    return { ltLEDGER_HASHES,
+        getLedgerHashIndex() };
+}
+
+Keylet skip_t::operator()(LedgerIndex ledger) const
+{
+    return { ltLEDGER_HASHES,
+        getLedgerHashIndex(ledger) };
+}
+
+Keylet amendments_t::operator()() const
+{
+    return { ltAMENDMENTS,
+        getLedgerAmendmentIndex() };
+}
+
+Keylet fee_t::operator()() const
+{
+    return { ltFEE_SETTINGS,
+        getLedgerFeeIndex() };
+}
+
+Keylet book_t::operator()(Book const& b) const
+{
+    return { ltDIR_NODE,
+        getBookBase(b) };
+}
+
+Keylet offer_t::operator()(Account const& id,
+    std::uint32_t seq) const
+{
+    return { ltOFFER,
+        getOfferIndex(id, seq) };
+}
+
+Keylet item_t::operator()(Keylet const& k,
+    std::uint64_t index,
+        LedgerEntryType type) const
+{
+    return { type,
+        getDirNodeIndex(k.key, index) };
+}
+
+Keylet quality_t::operator()(Keylet const& k,
+    std::uint64_t q) const
+{
+    assert(k.type == ltDIR_NODE);
+    return { ltDIR_NODE,
+        getQualityIndex(k.key, q) };
+}
+
+Keylet next_t::operator()(Keylet const& k) const
+{
+    assert(k.type == ltDIR_NODE);
+    return { ltDIR_NODE,
+        getQualityNext(k.key) };
+}
+
+Keylet ticket_t::operator()(Account const& id,
+    std::uint32_t seq) const
+{
+    return { ltTICKET,
+        getTicketIndex(id, seq) };
+}
+
+Keylet trust_t::operator()(Account const& id0,
+    Account const& id1, Currency const& currency) const
+{
+    return { ltRIPPLE_STATE,
+        getRippleStateIndex(id0, id1, currency) };
+}
+
+Keylet trust_t::operator()(Account const& id,
+    Issue const& issue) const
+{
+    return { ltRIPPLE_STATE,
+        getRippleStateIndex(id, issue) };
+}
+
+Keylet signers_t::operator()(Account const& id) const
+{
+    return { ltSIGNER_LIST,
+        getSignerListIndex(id) };
+}
+
+} // keylet
 
 } // ripple

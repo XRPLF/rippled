@@ -128,7 +128,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                         = node().sleOffer->getFieldAmount (sfTakerGets);
 
                 // Funds left.
-                node().saOfferFunds = ledger().accountFunds (
+                node().saOfferFunds = funds (ledger(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
                     fhZERO_IF_FROZEN);
@@ -329,7 +329,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
                 // Only the current node is allowed to use the source.
 
-                node().saOfferFunds = ledger().accountFunds (
+                node().saOfferFunds = funds(ledger(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
                     fhZERO_IF_FROZEN);
