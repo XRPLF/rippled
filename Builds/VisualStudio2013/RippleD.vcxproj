@@ -559,6 +559,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\intrusive\LockFreeStack.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\is_call_possible.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Memory.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\asio.unity.cpp">

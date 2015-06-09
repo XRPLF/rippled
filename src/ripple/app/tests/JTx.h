@@ -88,6 +88,63 @@ static autofill_t const autofill;
 struct disabled_t { disabled_t() { } };
 static disabled_t const disabled;
 
+struct MaybeAnyAmount;
+
+struct any_t
+{
+    any_t() { }
+
+    inline
+    MaybeAnyAmount
+    operator()(STAmount const& sta) const;
+};
+
+// This wrapper helps pay destinations
+// in their own issue using generic syntax
+struct MaybeAnyAmount
+{
+    bool is_any;
+    STAmount value;
+
+    MaybeAnyAmount() = delete;
+    MaybeAnyAmount (MaybeAnyAmount const&) = default;
+    MaybeAnyAmount& operator= (MaybeAnyAmount const&) = default;
+
+    MaybeAnyAmount (STAmount const& amount)
+        : is_any(false)
+        , value(amount)
+    {
+    }
+
+    MaybeAnyAmount (STAmount const& amount,
+            any_t const*)
+        : is_any(true)
+        , value(amount)
+    {
+    }
+
+    // Reset the issue to a specific account
+    void
+    to (ripple::Account const& id)
+    {
+        if (! is_any)
+            return;
+        value.setIssuer(id);
+    }
+};
+
+inline
+MaybeAnyAmount
+any_t::operator()(STAmount const& sta) const
+{
+    return MaybeAnyAmount(sta, this);
+}
+
+/** Returns an amount representing "any issuer"
+    @note With respect to what the recipient will accept
+*/
+static any_t const any;
+
 //
 // JSON generators
 //
@@ -95,7 +152,8 @@ static disabled_t const disabled;
 /** Create a payment. */
 Json::Value
 pay (Account const& account,
-    Account const& to, STAmount const& amount);
+    Account const& to,
+        MaybeAnyAmount amount);
 
 /** Create an offer. */
 Json::Value
@@ -237,7 +295,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 };
 
 /** Set the flags on a JTx. */
@@ -254,24 +312,40 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 };
 
 /** Set Paths, SendMax on a JTx. */
-class path
+class paths
 {
 private:
+    Issue in_;
     int depth_;
     unsigned int limit_;
-    STAmount sendmax_;
 
 public:
-    path (STAmount const& sendmax, int depth = 7,
-            unsigned int limit = 4)
-        : depth_(depth)
+    paths (Issue const& in,
+            int depth = 7, unsigned int limit = 4)
+        : in_(in)
+        , depth_(depth)
         , limit_(limit)
-        , sendmax_(sendmax)
+    {
+    }
 
+    void
+    operator()(Env const&, JTx& jtx) const;
+};
+
+
+/** Sets the SendMax on a JTx. */
+class sendmax
+{
+private:
+    STAmount amount_;
+
+public:
+    sendmax (STAmount const& amount)
+        : amount_(amount)
     {
     }
 
@@ -300,7 +374,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 
 private:
     template <class AccountType>
@@ -348,7 +422,7 @@ public:
         Account, Account>> sigs);
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 };
 
 inline
@@ -387,7 +461,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 };
 
 /** Set the regular signature on a JTx.
@@ -420,7 +494,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const;
+    operator()(Env const&, JTx& jt) const;
 };
 
 /** Set the expected result code for a JTx
@@ -439,9 +513,9 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& tx) const
+    operator()(Env const&, JTx& jt) const
     {
-        tx.ter = v_;
+        jt.ter = v_;
     }
 };
 

@@ -164,9 +164,11 @@ public:
         expect(env[gw].balance(Account("carol")["USD"]) == USD(-50));
 
         env(offer("carol", XRP(50), USD(50)));
-        env(pay("alice", "bob", USD(10)),                       ter(tecPATH_DRY));
-        env(pay("alice", "bob", USD(10)), path(XRP(10)),        ter(tecPATH_PARTIAL));
-        env(pay("alice", "bob", USD(10)), path(XRP(20)));
+        env(pay("alice", "bob", any(USD(10))),                  ter(tecPATH_DRY));
+        env(pay("alice", "bob", any(USD(10))),
+            paths(XRP), sendmax(XRP(10)),                       ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", any(USD(10))), paths(XRP),
+            sendmax(XRP(20)));
         expect(env["bob"].balance(USD) == USD(10));
         expect(env["carol"].balance(USD) == USD(39.5));
 

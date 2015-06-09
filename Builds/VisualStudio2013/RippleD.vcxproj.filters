@@ -1056,6 +1056,9 @@
     <ClInclude Include="..\..\src\beast\beast\intrusive\LockFreeStack.h">
       <Filter>beast\intrusive</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\is_call_possible.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Memory.h">
       <Filter>beast</Filter>
     </ClInclude>

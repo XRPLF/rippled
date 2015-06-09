@@ -35,11 +35,13 @@ namespace jtx {
 
 Json::Value
 pay (Account const& account,
-    Account const& to, STAmount const& amount)
+    Account const& to,
+        MaybeAnyAmount amount)
 {
+    amount.to(to);
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(0);
+    jv[jss::Amount] = amount.value.getJson(0);
     jv[jss::Destination] = to.human();
     jv[jss::TransactionType] = "Payment";
     jv[jss::Flags] = tfUniversal;
@@ -204,39 +206,39 @@ parse (Json::Value const& jv)
 }
 
 void
-fee::operator()(Env const&, JTx& tx) const
+fee::operator()(Env const&, JTx& jt) const
 {
     if (boost::indeterminate(b_))
-        tx[jss::Fee] =
+        jt[jss::Fee] =
             v_.getJson(0);
     else
-        tx.fill_fee = b_;
+        jt.fill_fee = b_;
 }
 
 void
-flags::operator()(Env const&, JTx& tx) const
+flags::operator()(Env const&, JTx& jt) const
 {
-    tx[jss::Flags] =
+    jt[jss::Flags] =
         v_ /*| tfUniversal*/;
 }
 
 void
-path::operator()(Env const& env, JTx& jtx) const
+paths::operator()(Env const& env, JTx& jt) const
 {
-    auto& jv = jtx.jv;
+    auto& jv = jt.jv;
     auto const from = env.lookup(
         jv[jss::Account].asString());
     auto const to = env.lookup(
         jv[jss::Destination].asString());
-    jv[jss::SendMax] = sendmax_.getJson(0);
+    auto const amount = amountFromJson(
+        sfAmount, jv[jss::Amount]);
     STPath fp;
     STPathSet ps;
     auto const found = findPathsForOneIssuer(
         std::make_shared<RippleLineCache>(
             env.ledger), from, to,
-                sendmax_.issue(), sendmax_,
-                    depth_, limit_,
-                        ps, fp);
+                in_, amount,
+                    depth_, limit_, ps, fp);
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (found && ! ps.isDefault())
@@ -244,7 +246,13 @@ path::operator()(Env const& env, JTx& jtx) const
 }
 
 void
-msig::operator()(Env const& env, JTx& tx) const
+sendmax::operator()(Env const& env, JTx& jt) const
+{
+    jt.jv[jss::SendMax] = amount_.getJson(0);
+}
+
+void
+msig::operator()(Env const& env, JTx& jt) const
 {
     // VFALCO Inefficient pre-C++14
     auto accounts = accounts_;
@@ -253,7 +261,7 @@ msig::operator()(Env const& env, JTx& tx) const
         {
             return lhs.id() < rhs.id();
         });
-    tx.signer = [accounts, &env](Env&, JTx& jt)
+    jt.signer = [accounts, &env](Env&, JTx& jt)
     {
         jt["SigningPubKey"] = "";
         boost::optional<STObject> st;
@@ -311,11 +319,11 @@ msig2_t::msig2_t (std::vector<std::pair<
 }
 
 void
-msig2_t::operator()(Env const& env, JTx& tx) const
+msig2_t::operator()(Env const& env, JTx& jt) const
 {
     // VFALCO Inefficient pre-C++14
     auto const sigs = sigs_;
-    tx.signer = [sigs, &env](Env&, JTx& jt)
+    jt.signer = [sigs, &env](Env&, JTx& jt)
     {
         jt["SigningPubKey"] = "";
         boost::optional<STObject> st;
@@ -361,29 +369,29 @@ msig2_t::operator()(Env const& env, JTx& tx) const
 }
 
 void
-seq::operator()(Env const&, JTx& tx) const
+seq::operator()(Env const&, JTx& jt) const
 {
     if (boost::indeterminate(b_))
-        tx[jss::Sequence] = v_;
+        jt[jss::Sequence] = v_;
     else
-        tx.fill_seq = b_;
+        jt.fill_seq = b_;
 }
 
 void
-sig::operator()(Env const&, JTx& tx) const
+sig::operator()(Env const&, JTx& jt) const
 {
     if(boost::indeterminate(b_))
     {
         // VFALCO Inefficient pre-C++14
         auto const account = account_;
-        tx.signer = [account](Env&, JTx& jt)
+        jt.signer = [account](Env&, JTx& jt)
         {
             jtx::sign(jt.jv, account);
         };
     }
     else
     {
-        tx.fill_sig = b_;
+        jt.fill_sig = b_;
     }
 }
 

@@ -31,6 +31,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
 #include <boost/logic/tribool.hpp>
 #include <beast/cxx14/type_traits.h> // <type_traits>
@@ -132,7 +133,7 @@ public:
     template <class JsonValue,
         class... FN>
     JTx
-    tx (JsonValue&& jv, FN const&... fN)
+    jt (JsonValue&& jv, FN const&... fN)
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
@@ -148,10 +149,10 @@ public:
     Json::Value
     json (JsonValue&&jv, FN const&... fN)
     {
-        auto jt = tx(
+        auto tj = jt(
             std::forward<JsonValue>(jv),
                 fN...);
-        return std::move(jt.jv);
+        return std::move(tj.jv);
     }
 
     /** Submit an existing JTx. */
@@ -164,7 +165,7 @@ public:
     void
     apply (JsonValue&& jv, FN const&... fN)
     {
-        submit(tx(std::forward<
+        submit(jt(std::forward<
             JsonValue>(jv), fN...));
     }
 
@@ -229,18 +230,71 @@ private:
 
     inline
     void
+    invoke (STTx& stx)
+    {
+    }
+
+    template <class F>
+    inline
+    void
+    maybe_invoke (STTx& stx, F const& f,
+        std::false_type)
+    {
+    }
+
+    template <class F>
+    void
+    maybe_invoke (STTx& stx, F const& f,
+        std::true_type)
+    {
+        f(*this, stx);
+    }
+
+    // Invoke funclets on stx
+    // Note: The STTx may not be modified
+    template <class F, class... FN>
+    void
+    invoke (STTx& stx, F const& f,
+        FN const&... fN)
+    {
+        maybe_invoke(stx, f,
+            beast::is_call_possible<F,
+                void(Env&, STTx const&)>());
+        invoke(stx, fN...);
+    }
+
+    inline
+    void
     invoke (JTx&)
     {
     }
 
-    // Invoke funclets on tx
+    template <class F>
+    inline
+    void
+    maybe_invoke (JTx& jt, F const& f,
+        std::false_type)
+    {
+    }
+
+    template <class F>
+    void
+    maybe_invoke (JTx& jt, F const& f,
+        std::true_type)
+    {
+        f(*this, jt);
+    }
+
+    // Invoke funclets on jt
     template <class F, class... FN>
     void
-    invoke (JTx& tx, F const& f,
+    invoke (JTx& jt, F const& f,
         FN const&... fN)
     {
-        f(*this, tx);
-        invoke(tx, fN...);
+        maybe_invoke(jt, f,
+            beast::is_call_possible<F,
+                void(Env&, JTx&)>());
+        invoke(jt, fN...);
     }
 
     // Map of account IDs to Account
