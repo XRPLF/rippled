@@ -352,7 +352,7 @@ public:
             {
                 // No, Try to get another ledger that might have the hash we need
                 // Compute the index and hash of a ledger that will have the hash we need
-                LedgerIndex refIndex = (ledgerIndex + 255) & (~255);
+                LedgerIndex refIndex = getCandidateLedger (ledgerIndex);
                 LedgerHash refHash = getLedgerHash (referenceLedger, refIndex);
 
                 bool const nonzero (refHash.isNonZero ());

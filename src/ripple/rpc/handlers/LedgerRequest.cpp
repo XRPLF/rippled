@@ -71,7 +71,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         if (! ledgerHash)
         {
             // Find a ledger more likely to have the hash of the desired ledger
-            auto refIndex = (ledgerIndex + 255) & (~255);
+            auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex,
                 getApp().getSLECache(), j);
             assert(refHash);
