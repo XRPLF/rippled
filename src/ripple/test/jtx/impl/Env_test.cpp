@@ -1,24 +1,24 @@
 //------------------------------------------------------------------------------
 /*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tests/Env.h>
+#include <ripple/test/jtx.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
@@ -29,6 +29,54 @@ namespace test {
 class Env_test : public beast::unit_test::suite
 {
 public:
+    // Test Env::fund
+    void
+    testFund()
+    {
+        using namespace jtx;
+        Env env(*this);
+        auto const n = XRP(10000);
+
+        // check syntax
+        env.fund(n, "alice");
+        env.fund(n, "bob", "carol");
+        env.fund(n, "dave", noripple("eric"));
+        env.fund(n, "fred", noripple("gary", "hank"));
+        env.fund(n, noripple("irene"));
+        env.fund(n, noripple("jim"), "karen");
+        env.fund(n, noripple("lisa", "mary"));
+    }
+
+    // Test the cond functors
+    void
+    testCond()
+    {
+        using namespace jtx;
+        Env env(*this);
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        // Account root for alice should not exist
+        env.require(balance("alice", none, XRP));
+        // Fund alice and the gateway
+        env.fund(XRP(10000), "alice", gw);
+        // Trust line for alice should not exist
+        env.require(balance("alice", none, USD));
+        // Extend trust to gateway
+        env.trust(USD(100), "alice");
+        // Check XRP balance
+        env.require(balance("alice", XRP(10000) - drops(10)));
+        // Trust line balance should be zero
+        env.require(balance("alice", USD(0)));
+        // Gateway pays alice 10/USD, verify the balance
+        env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
+
+        env.require(nflags("alice", asfRequireDest));
+        env(fset("alice", asfRequireDest), require(flags("alice", asfRequireDest)));
+        env(fclear("alice", asfRequireDest), require(nflags("alice", asfRequireDest)));
+    }
+
     void
     testAutofill()
     {
@@ -69,12 +117,12 @@ public:
         env(noop(alice), sig(alice));
 
         // Regular key only
-        env(set(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), sig(alice));
         env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice),                            ter(tefMASTER_DISABLED));
-        env(clear(alice, asfDisableMaster), sig(alice),         ter(tefMASTER_DISABLED));
-        env(clear(alice, asfDisableMaster), sig(bob));
+        env(fclear(alice, asfDisableMaster), sig(alice),         ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(alice));
     }
 
@@ -136,7 +184,6 @@ public:
     testPayments()
     {
         using namespace jtx;
-
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -157,16 +204,19 @@ public:
         expect(env[gw].balance(XRP) == XRP(10000));
 
         env.trust(USD(100), "alice", "bob", "carol");
+        env.require(owners("alice", 1), lines("alice", 1));
         env(rate(gw, 1.05));
 
         env(pay(gw, "carol", USD(50)));
         expect(env["carol"].balance(USD) == USD(50));
         expect(env[gw].balance(Account("carol")["USD"]) == USD(-50));
 
-        env(offer("carol", XRP(50), USD(50)));
-        env(pay("alice", "bob", USD(10)),                       ter(tecPATH_DRY));
-        env(pay("alice", "bob", USD(10)), path(XRP(10)),        ter(tecPATH_PARTIAL));
-        env(pay("alice", "bob", USD(10)), path(XRP(20)));
+        env(offer("carol", XRP(50), USD(50)), require(owners("carol", 2)));
+        env(pay("alice", "bob", any(USD(10))),                  ter(tecPATH_DRY));
+        env(pay("alice", "bob", any(USD(10))),
+            paths(XRP), sendmax(XRP(10)),                       ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", any(USD(10))), paths(XRP),
+            sendmax(XRP(20)));
         expect(env["bob"].balance(USD) == USD(10));
         expect(env["carol"].balance(USD) == USD(39.5));
 
@@ -176,19 +226,19 @@ public:
         env(noop("alice"), sig("alice"));
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
-        env(set("alice", asfDisableMaster),                     ter(tecNEED_MASTER_KEY));
-        env(set("alice", asfDisableMaster), sig("eric"),        ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster),                     ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster), sig("eric"),        ter(tecNEED_MASTER_KEY));
         expect(! (env["alice"].flags() & lsfDisableMaster));
-        env(set("alice", asfDisableMaster), sig("alice"));
+        env(fset("alice", asfDisableMaster), sig("alice"));
         expect(env["alice"].flags() & lsfDisableMaster);
         env(regkey("alice", disabled),                          ter(tecMASTER_DISABLED));
         env(noop("alice"));
         env(noop("alice"), sig("alice"),                        ter(tefMASTER_DISABLED));
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
-        env(clear("alice", asfDisableMaster), sig("bob"),       ter(tefBAD_AUTH));
-        env(clear("alice", asfDisableMaster), sig("alice"),     ter(tefMASTER_DISABLED));
-        env(clear("alice", asfDisableMaster));
+        env(fclear("alice", asfDisableMaster), sig("bob"),       ter(tefBAD_AUTH));
+        env(fclear("alice", asfDisableMaster), sig("alice"),     ter(tefMASTER_DISABLED));
+        env(fclear("alice", asfDisableMaster));
         expect(! (env["alice"].flags() & lsfDisableMaster));
         env(regkey("alice", disabled));
         env(noop("alice"), sig("eric"),                         ter(tefBAD_AUTH_MASTER));
@@ -196,13 +246,33 @@ public:
     }
 
     void
+    testTicket()
+    {
+        using namespace jtx;
+        ticket::create("alice", "bob");
+        ticket::create("alice", 60);
+        ticket::create("alice", "bob", 60);
+        ticket::create("alice", 60, "bob");
+
+        Env env(*this);
+        env.fund(XRP(10000), "alice");
+        env(noop("alice"),                  require(owners("alice", 0)));
+        env(ticket::create("alice"),        require(owners("alice", 1)));
+        env(ticket::create("alice"),        require(owners("alice", 2)));
+    }
+
+    void
     run()
     {
+        testFund();
+
+        testCond();
         testAutofill();
         testKeyType();
         testMultiSign();
         testMultiSign2();
         testPayments();
+        testTicket();
     }
 };
 
