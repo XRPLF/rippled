@@ -17,100 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TESTS_COMMON_H_INCLUDED
-#define RIPPLE_APP_TESTS_COMMON_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
+#define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
-#include <ripple/protocol/Issue.h>
 #include <ripple/protocol/RippleAddress.h>
-#include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
-#include <cstdint>
+#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {
 namespace test {
+namespace jtx {
 
-namespace detail {
-
-struct XRP_t
-{
-    XRP_t() = default;
-
-    /** Implicit conversion to Issue.
-
-        This allows passing XRP where
-        an Issue is expected.
-    */
-    operator Issue() const
-    {
-        return xrpIssue();
-    }
-
-    /** Returns an amount of XRP as STAmount
-
-        @param v The number of XRP (not drops)
-    */
-    STAmount operator()(double v) const;
-};
-
-} // detail
-
-/** Converts to XRP Issue or STAmount.
-
-    Examples:
-        XRP         Converts to the XRP Issue
-        XRP(10)     Returns STAmount of 10 XRP
-*/
-extern detail::XRP_t XRP;
-
-/** Returns an XRP STAmount.
-
-    Example:
-        drops(10)   Returns STAmount of 10 drops
-*/
-inline
-STAmount
-drops (std::uint64_t v)
-{
-    return STAmount(v, false);
-}
-
-/** Converts to IOU Issue or STAmount.
-
-    Examples:
-        IOU         Converts to the underlying Issue
-        IOU(10)     Returns STAmount of 10 of
-                        the underlying Issue.
-*/
-class IOU
-{
-private:
-    Issue issue_;
-
-public:
-    IOU(Issue const& issue)
-        : issue_(issue)
-    {
-    }
-
-    /** Implicit conversion to Issue.
-
-        This allows passing an IOU
-        value where an Issue is expected.
-    */
-    operator Issue() const
-    {
-        return issue_;
-    }
-
-    STAmount operator()(double v) const;
-
-    // VFALCO TODO
-    // STAmount operator()(char const* s) const;
-};
-
-//------------------------------------------------------------------------------
+class IOU;
 
 /** Immutable cryptographic account descriptor. */
 class Account
@@ -150,6 +70,13 @@ public:
     {
     }
     /** @} */
+
+    /** Return the name */
+    std::string const&
+    name() const
+    {
+        return name_;
+    }
 
     /** Return the public key. */
     RippleAddress const&
@@ -195,16 +122,33 @@ public:
     /** Returns an IOU for the specified gateway currency. */
     IOU
     operator[](std::string const& s) const;
-
-    /** Meet the requirements of StrictWeakOrdering. */
-    friend
-    bool
-    operator< (Account const& lhs, Account const& rhs)
-    {
-        return lhs.id() < rhs.id();
-    }
 };
 
+inline
+bool
+operator== (Account const& lhs,
+    Account const& rhs) noexcept
+{
+    return lhs.id() == rhs.id();
+}
+
+template <class Hasher>
+void
+hash_append (Hasher& h,
+    Account const& v) noexcept
+{
+    hash_append(h, v.id());
+}
+
+inline
+bool
+operator< (Account const& lhs,
+    Account const& rhs) noexcept
+{
+    return lhs.id() < rhs.id();
+}
+
+} // jtx
 } // test
 } // ripple
 
