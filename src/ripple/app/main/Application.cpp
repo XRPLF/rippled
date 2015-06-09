@@ -44,7 +44,6 @@
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/seconds_clock.h>
@@ -1001,39 +1000,18 @@ public:
         // VFALCO NOTE Does the order of calls matter?
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
-        //
 
-        family_.fullbelow().sweep ();
-
-        logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, std::bind (
-            &TransactionMaster::sweep, &m_txMaster));
-
-        logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, std::bind (
-            &NodeStore::Database::sweep, m_nodeStore.get()));
-
-        logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, std::bind (
-            &LedgerMaster::sweep, m_ledgerMaster.get()));
-
-        logTimedCall (m_journal.warning, "TempNodeCache::sweep", __FILE__, __LINE__, std::bind (
-            &NodeCache::sweep, &m_tempNodeCache));
-
-        logTimedCall (m_journal.warning, "Validations::sweep", __FILE__, __LINE__, std::bind (
-            &Validations::sweep, mValidations.get ()));
-
-        logTimedCall (m_journal.warning, "InboundLedgers::sweep", __FILE__, __LINE__, std::bind (
-            &InboundLedgers::sweep, &getInboundLedgers ()));
-
-        logTimedCall (m_journal.warning, "SLECache::sweep", __FILE__, __LINE__, std::bind (
-            &SLECache::sweep, &m_sleCache));
-
-        logTimedCall (m_journal.warning, "AcceptedLedger::sweep", __FILE__, __LINE__,
-            &AcceptedLedger::sweep);
-
-        logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,std::bind (
-            &TreeNodeCache::sweep, &family().treecache()));
-
-        logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, std::bind (
-            &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
+        family().fullbelow().sweep ();
+        getMasterTransaction().sweep();
+        getNodeStore().sweep();
+        getLedgerMaster().sweep();
+        getTempNodeCache().sweep();
+        getValidations().sweep();
+        getInboundLedgers().sweep();
+        getSLECache().sweep();
+        AcceptedLedger::sweep();
+        family().treecache().sweep();
+        getOPs().sweepFetchPack();
 
         // VFALCO NOTE does the call to sweep() happen on another thread?
         m_sweepTimer.setExpiration (getConfig ().getSize (siSweepInterval));
