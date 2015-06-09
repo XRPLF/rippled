@@ -1978,8 +1978,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\LoggedTimings.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">

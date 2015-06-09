@@ -31,7 +31,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/DatabaseCon.h>
@@ -221,15 +220,6 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
 
 Ledger::~Ledger ()
 {
-    if (mTransactionMap)
-    {
-        logTimedDestroy <Ledger> (mTransactionMap, "mTransactionMap");
-    }
-
-    if (mAccountStateMap)
-    {
-        logTimedDestroy <Ledger> (mAccountStateMap, "mAccountStateMap");
-    }
 }
 
 void Ledger::setImmutable ()

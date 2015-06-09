@@ -2682,9 +2682,6 @@
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\LoggedTimings.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
