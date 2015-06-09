@@ -984,20 +984,19 @@ Ledger::insert (SLE const& sle)
     assert(success);
 }
 
-boost::optional<SLE>
+std::shared_ptr<SLE>
 Ledger::fetch (uint256 const& key,
     boost::optional<LedgerEntryType> type) const
 {
     auto const item =
         mAccountStateMap->peekItem(key);
     if (! item)
-        return boost::none;
-    boost::optional<SLE> result;
-    result.emplace(item->peekSerializer(),
-        item->getTag());
-    if (type && result->getType() != type)
-        return {};
-    return result;
+        return nullptr;
+    auto const sle = std::make_shared<SLE>(
+        item->peekSerializer(), item->getTag());
+    if (type && sle->getType() != type)
+        return nullptr;
+    return sle;
 }
 
 void
@@ -1171,7 +1170,8 @@ void Ledger::updateSkipList ()
         bool created;
         if (! sle)
         {
-            sle.emplace(ltLEDGER_HASHES, key);
+            sle = std::make_shared<SLE>(
+                ltLEDGER_HASHES, key);
             created = true;
         }
         else
@@ -1198,7 +1198,8 @@ void Ledger::updateSkipList ()
     bool created;
     if (! sle)
     {
-        sle.emplace(ltLEDGER_HASHES, key);
+        sle = std::make_shared<SLE>(
+            ltLEDGER_HASHES, key);
         created = true;
     }
     else

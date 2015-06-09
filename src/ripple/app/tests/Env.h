@@ -46,7 +46,7 @@ class AccountInfo
 private:
     Account account_;
     std::shared_ptr<Ledger> ledger_;
-    boost::optional<SLE const> root_;
+    std::shared_ptr<SLE const> root_;
 
 public:
     AccountInfo(Account const& account,

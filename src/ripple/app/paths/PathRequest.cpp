@@ -32,7 +32,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/module/core/text/LexicalCast.h>
-#include <boost/log/trivial.hpp>
+#include <boost/optional.hpp>
 #include <tuple>
 
 namespace ripple {
@@ -480,7 +480,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
         if (valid)
         {
-            LedgerEntrySet lesSandbox (cache->getLedger (), tapNONE);
+            LedgerEntrySet lesSandbox(
+                cache->getLedger(), tapNONE);
             auto& sourceAccount = !isXRP (currIssuer.account)
                     ? currIssuer.account
                     : isXRP (currIssuer.currency)
@@ -505,7 +506,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.push_back (fullLiquidityPath);
-                lesSandbox.clear();
+                reconstruct(lesSandbox, cache->getLedger (), tapNONE);
                 rc = path::RippleCalc::rippleCalculate (
                     lesSandbox,
                     saMaxAmount,

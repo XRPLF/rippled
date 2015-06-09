@@ -31,53 +31,6 @@ namespace ripple {
 // XXX Make sure all fields are recognized in transactions.
 //
 
-void TransactionEngine::txnWrite ()
-{
-    // Write back the account states
-    for (auto& it : mNodes)
-    {
-        // VFALCO TODO rvalue move the mEntry, make
-        //             sure the mNodes is not used after
-        //             this function is called.
-        SLE::ref sleEntry = it.second.mEntry;
-
-        switch (it.second.mAction)
-        {
-        case taaNONE:
-            assert (false);
-            break;
-
-        case taaCACHED:
-            break;
-
-        case taaCREATE:
-        {
-            // VFALCO Is this logging necessary anymore?
-            WriteLog (lsDEBUG, TransactionEngine) <<
-                "applyTransaction: taaCREATE: " << sleEntry->getText ();
-            mLedger->insert(*sleEntry);
-        }
-        break;
-
-        case taaMODIFY:
-        {
-            WriteLog (lsDEBUG, TransactionEngine) <<
-                "applyTransaction: taaMODIFY: " << sleEntry->getText ();
-            mLedger->replace(*sleEntry);
-        }
-        break;
-
-        case taaDELETE:
-        {
-            WriteLog (lsDEBUG, TransactionEngine) <<
-                "applyTransaction: taaDELETE: " << sleEntry->getText ();
-            mLedger->erase(it.first);
-        }
-        break;
-        }
-    }
-}
-
 std::pair<TER, bool>
 TransactionEngine::applyTransaction (
     STTx const& txn,
@@ -96,7 +49,8 @@ TransactionEngine::applyTransaction (
         return std::make_pair(temINVALID_FLAG, false);
     }
 
-    mNodes.init (mLedger, txID, mLedger->getLedgerSeq (), params);
+    mNodes.emplace(mLedger, txID,
+        mLedger->getLedgerSeq(), params);
 
 #ifdef BEAST_DEBUG
     if (1)
@@ -146,9 +100,10 @@ TransactionEngine::applyTransaction (
         // only claim the transaction fee
         WriteLog (lsDEBUG, TransactionEngine) <<
             "Reprocessing tx " << txID << " to only claim fee";
-        mNodes.clear ();
+        mNodes.emplace(mLedger, txID,
+            mLedger->getLedgerSeq(), params);
 
-        SLE::pointer txnAcct = mNodes.entryCache (ltACCOUNT_ROOT,
+        SLE::pointer txnAcct = mNodes->entryCache (ltACCOUNT_ROOT,
             getAccountRootIndex (txn.getSourceAccount ()));
 
         if (!txnAcct)
@@ -182,7 +137,7 @@ TransactionEngine::applyTransaction (
                         fee = balance;
                     txnAcct->setFieldAmount (sfBalance, balance - fee);
                     txnAcct->setFieldU32 (sfSequence, t_seq + 1);
-                    mNodes.entryModify (txnAcct);
+                    mNodes->entryModify (txnAcct);
                     didApply = true;
                 }
             }
@@ -202,7 +157,7 @@ TransactionEngine::applyTransaction (
         WriteLog (lsFATAL, TransactionEngine) <<
             transToken (terResult) << ": " << transHuman (terResult);
         WriteLog (lsFATAL, TransactionEngine) <<
-            mNodes.getJson (0);
+            mNodes->getJson (0);
         didApply = false;
         terResult = tefINTERNAL;
     }
@@ -212,9 +167,10 @@ TransactionEngine::applyTransaction (
         // Transaction succeeded fully or (retries are not allowed and the
         // transaction could claim a fee)
         Serializer m;
-        mNodes.calcRawMeta (m, terResult, mTxnSeq++);
+        mNodes->calcRawMeta (m, terResult, mTxnSeq++);
 
-        txnWrite ();
+        assert(mLedger == mNodes->getLedger());
+        mNodes->apply();
 
         Serializer s;
         txn.add (s);
@@ -253,7 +209,7 @@ TransactionEngine::applyTransaction (
         }
     }
 
-    mNodes.clear ();
+    mNodes = boost::none;
 
     if (!(params & tapOPEN_LEDGER) && isTemMalformed (terResult))
     {

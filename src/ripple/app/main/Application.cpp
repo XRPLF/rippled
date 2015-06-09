@@ -1194,6 +1194,8 @@ bool ApplicationImp::loadOldLedger (
 
                              if (stp.object && (uIndex.isNonZero()))
                              {
+                                 // VFALCO TODO This is the only place that
+                                 //             constructor is used, try to remove it
                                  STLedgerEntry sle (*stp.object, uIndex);
                                  bool ok = loadLedger->addSLE (sle);
                                  if (!ok)

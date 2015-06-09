@@ -233,10 +233,11 @@ public:
             }
 
             // Create the account.
-            auto const newIndex = getAccountRootIndex (uDstAccountID);
-            sleDst = mEngine->view().entryCreate (ltACCOUNT_ROOT, newIndex);
+            sleDst = std::make_shared<SLE>(ltACCOUNT_ROOT,
+                getAccountRootIndex (uDstAccountID));
             sleDst->setFieldAccount (sfAccount, uDstAccountID);
             sleDst->setFieldU32 (sfSequence, 1);
+            mEngine->view().entryCreate(sleDst);
         }
         else if ((sleDst->getFlags () & lsfRequireDestTag) &&
                  !mTxn.isFieldPresent (sfDestinationTag))

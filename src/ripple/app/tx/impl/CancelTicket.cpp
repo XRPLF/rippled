@@ -52,9 +52,11 @@ public:
         if (!sleTicket)
             return tecNO_ENTRY;
 
-        Account const ticket_owner (sleTicket->getFieldAccount160 (sfAccount));
+        auto const ticket_owner =
+            sleTicket->getFieldAccount160 (sfAccount);
 
-        bool authorized (mTxnAccountID == ticket_owner);
+        bool authorized =
+            mTxnAccountID == ticket_owner;
 
         // The target can also always remove a ticket
         if (!authorized && sleTicket->isFieldPresent (sfTarget))
@@ -77,7 +79,8 @@ public:
         TER const result = mEngine->view ().dirDelete (false, hint,
             getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
 
-        mEngine->view ().decrementOwnerCount (ticket_owner);
+        adjustOwnerCount(mEngine->view(), mEngine->view().entryCache(
+            ltACCOUNT_ROOT, getAccountRootIndex(ticket_owner)), -1);
         mEngine->view ().entryDelete (sleTicket);
 
         return result;

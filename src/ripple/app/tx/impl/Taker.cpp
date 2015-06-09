@@ -581,9 +581,9 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
 }
 
 STAmount
-Taker::get_funds (Account const& account, STAmount const& funds) const
+Taker::get_funds (Account const& account, STAmount const& amount) const
 {
-    return view_.accountFunds (account, funds, fhZERO_IF_FROZEN);
+    return funds(view_, account, amount, fhZERO_IF_FROZEN);
 }
 
 TER Taker::transfer_xrp (

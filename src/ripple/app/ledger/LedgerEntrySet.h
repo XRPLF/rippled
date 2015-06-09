@@ -24,7 +24,9 @@
 #include <ripple/app/ledger/DeferredCredits.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
+#include <utility>
 
 namespace ripple {
 
@@ -50,37 +52,10 @@ enum TransactionEngineParams
     tapADMIN            = 0x400,
 };
 
-enum LedgerEntryAction
-{
-    taaNONE,
-    taaCACHED,  // Unmodified.
-    taaMODIFY,  // Modifed, must have previously been taaCACHED.
-    taaDELETE,  // Delete, must have previously been taaDELETE or taaMODIFY.
-    taaCREATE,  // Newly created.
-};
-
 enum FreezeHandling
 {
     fhIGNORE_FREEZE,
     fhZERO_IF_FROZEN
-};
-
-class LedgerEntrySetEntry
-    : public CountedObject <LedgerEntrySetEntry>
-{
-public:
-    static char const* getCountedObjectName () { return "LedgerEntrySetEntry"; }
-
-    SLE::pointer        mEntry;
-    LedgerEntryAction   mAction;
-    int                 mSeq;
-
-    LedgerEntrySetEntry (SLE::ref e, LedgerEntryAction a, int s)
-        : mEntry (e)
-        , mAction (a)
-        , mSeq (s)
-    {
-    }
 };
 
 /** An LES is a LedgerEntrySet.
@@ -91,30 +66,73 @@ public:
     transaction finishes, the LES is committed into the ledger to make
     the modifications. The transaction metadata is built from the LES too.
 */
-/** @{ */
 class LedgerEntrySet
-    : public CountedObject <LedgerEntrySet>
 {
+private:
+    using NodeToLedgerEntry =
+        hash_map<uint256, SLE::pointer>;
+
+    enum Action
+    {
+        taaNONE,
+        taaCACHED,  // Unmodified.
+        taaMODIFY,  // Modifed, must have previously been taaCACHED.
+        taaDELETE,  // Delete, must have previously been taaDELETE or taaMODIFY.
+        taaCREATE,  // Newly created.
+    };
+
+    class Item
+    {
+    public:
+        int mSeq;
+        Action mAction;
+        std::shared_ptr<SLE> mEntry;
+
+        Item (SLE::ref e, Action a, int s)
+            : mSeq (s)
+            , mAction (a)
+            , mEntry (e)
+        {
+        }
+    };
+
+    Ledger::pointer mLedger;
+    // Implementation requires an ordered container
+    std::map<uint256, Item> mEntries;
+    boost::optional<DeferredCredits> mDeferredCredits;
+    TransactionMetaSet mSet;
+    TransactionEngineParams mParams = tapNONE;
+    int mSeq = 0;
+    bool mImmutable = false;
+
 public:
-    static char const* getCountedObjectName () { return "LedgerEntrySet"; }
+    LedgerEntrySet& operator= (LedgerEntrySet const&) = delete;
 
-    LedgerEntrySet (
-        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false)
-        : mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
-    {
-    }
+    /** Construct a copy.
+        Effects:
+            The copy is identical except that
+            the sequence number is one higher.
+    */
+    LedgerEntrySet (LedgerEntrySet const&);
 
-    LedgerEntrySet () : mParams (tapNONE), mSeq (0), mImmutable (false)
-    {
-    }
+    LedgerEntrySet (Ledger::ref ledger,
+        uint256 const& transactionID,
+            std::uint32_t ledgerID,
+                TransactionEngineParams params);
 
-    // Make a duplicate of this set.
-    LedgerEntrySet duplicate () const;
+    LedgerEntrySet (Ledger::ref ledger,
+        TransactionEngineParams tep,
+            bool immutable = false);
+
+    /** Apply changes to the backing ledger. */
+    void
+    apply();
 
     // Swap the contents of two sets
     void swapWith (LedgerEntrySet&);
 
-    void invalidate ()
+    // VFALCO Only called from RippleCalc.cpp
+    void deprecatedInvalidate()
     {
         mLedger.reset ();
         mDeferredCredits.reset ();
@@ -135,18 +153,10 @@ public:
         ++mSeq;
     }
 
-    void init (Ledger::ref ledger, uint256 const& transactionID,
-               std::uint32_t ledgerID, TransactionEngineParams params);
-
-    void clear ();
-
     Ledger::pointer& getLedger ()
     {
         return mLedger;
     }
-
-    // basic entry functions
-    SLE::pointer getEntry (uint256 const& index, LedgerEntryAction&);
 
     void entryCache (SLE::ref);     // Add this entry to the cache
     void entryCreate (SLE::ref);    // This entry will be created
@@ -154,7 +164,6 @@ public:
     void entryModify (SLE::ref);    // This entry will be modified
 
     // higher-level ledger functions
-    SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
     SLE::pointer entryCache (LedgerEntryType letType, uint256 const& key);
 
     std::shared_ptr<SLE const>
@@ -177,35 +186,24 @@ public:
 
     bool dirFirst (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
+
     bool dirFirst (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
     
     bool dirNext (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
+
     bool dirNext (uint256 const& uRootIndex, std::shared_ptr<SLE const>& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
     
     bool dirIsEmpty (uint256 const& uDirIndex);
     
-    TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
-
     uint256 getNextLedgerIndex (uint256 const& uHash);
     uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd);
 
-    /** @{ */
-    void incrementOwnerCount (SLE::ref sleAccount);
-    void incrementOwnerCount (Account const& owner);
-    void increaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch);
-    /** @} */
-
-    /** @{ */
-    void decrementOwnerCount (SLE::ref sleAccount);
-    void decrementOwnerCount (Account const& owner);
-    void decreaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch);
-    /** @} */
-
     // Offer functions.
     TER offerDelete (SLE::pointer);
+
     TER offerDelete (uint256 const& offerIndex)
     {
         return offerDelete( entryCache (ltOFFER, offerIndex));
@@ -220,6 +218,7 @@ public:
     bool isGlobalFrozen (Account const& issuer);
 
     void enableDeferredCredits (bool enable=true);
+
     bool areCreditsDeferred () const;
 
     TER rippleCredit (
@@ -229,8 +228,7 @@ public:
     STAmount accountHolds (
         Account const& account, Currency const& currency,
         Account const& issuer, FreezeHandling freezeHandling);
-    STAmount accountFunds (
-        Account const& account, const STAmount & saDefault, FreezeHandling freezeHandling);
+
     TER accountSend (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount);
@@ -248,45 +246,14 @@ public:
         STAmount const& saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
+
     TER trustDelete (
         SLE::ref sleRippleState, Account const& uLowAccountID,
         Account const& uHighAccountID);
 
     Json::Value getJson (int) const;
+
     void calcRawMeta (Serializer&, TER result, std::uint32_t index);
-
-    // iterator functions
-    using iterator = std::map<uint256, LedgerEntrySetEntry>::iterator;
-    using const_iterator = std::map<uint256, LedgerEntrySetEntry>::const_iterator;
-
-    bool empty () const
-    {
-        return mEntries.empty ();
-    }
-    const_iterator cbegin () const
-    {
-        return mEntries.cbegin ();
-    }
-    const_iterator cend () const
-    {
-        return mEntries.cend ();
-    }
-    const_iterator begin () const
-    {
-        return mEntries.cbegin ();
-    }
-    const_iterator end () const
-    {
-        return mEntries.cend ();
-    }
-    iterator begin ()
-    {
-        return mEntries.begin ();
-    }
-    iterator end ()
-    {
-        return mEntries.end ();
-    }
 
     void setDeliveredAmount (STAmount const& amt)
     {
@@ -302,24 +269,7 @@ public:
     TER transfer_xrp (Account const& from, Account const& to, STAmount const& amount);
 
 private:
-    Ledger::pointer mLedger;
-    std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
-    // Defers credits made to accounts until later
-    boost::optional<DeferredCredits> mDeferredCredits;
-
-    using NodeToLedgerEntry = hash_map<uint256, SLE::pointer>;
-
-    TransactionMetaSet mSet;
-    TransactionEngineParams mParams;
-    int mSeq;
-    bool mImmutable;
-
-    LedgerEntrySet (
-        Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry>& e,
-        const TransactionMetaSet & s, int m, boost::optional<DeferredCredits> const& ft) :
-        mLedger (ledger), mEntries (e), mDeferredCredits (ft), mSet (s), mParams (tapNONE),
-        mSeq (m), mImmutable (false)
-    {}
+    SLE::pointer getEntry (uint256 const& index, Action&);
 
     SLE::pointer getForMod (
         uint256 const& node, Ledger::ref ledger,
@@ -359,8 +309,17 @@ private:
                       STAmount const& amount);
 };
 
+template <class... Args>
+inline
+void
+reconstruct (LedgerEntrySet& v, Args&&... args) noexcept
+{
+    v.~LedgerEntrySet();
+    new(&v) LedgerEntrySet(
+        std::forward<Args>(args)...);
+}
+
 using LedgerView = LedgerEntrySet;
-/** @} */
 
 //------------------------------------------------------------------------------
 
@@ -381,6 +340,30 @@ rippleTransferRate (LedgerEntrySet& ledger, Account const& issuer);
 std::uint32_t
 rippleTransferRate (LedgerEntrySet& ledger, Account const& uSenderID,
     Account const& uReceiverID, Account const& issuer);
+
+//------------------------------------------------------------------------------
+//
+// API
+//
+//------------------------------------------------------------------------------
+
+/** Adjust the owner count up or down. */
+void
+adjustOwnerCount (LedgerEntrySet& view,
+    std::shared_ptr<SLE> const& sle, int amount);
+
+// Returns the funds available for account for a currency/issuer.
+// Use when you need a default for rippling account's currency.
+// XXX Should take into account quality?
+// --> saDefault/currency/issuer
+// <-- saFunds: Funds available. May be negative.
+//
+// If the issuer is the same as account, funds are unlimited, use result is
+// saDefault.
+STAmount
+funds (LedgerEntrySet& view, Account const& id,
+    STAmount const& saDefault,
+        FreezeHandling freezeHandling);
 
 } // ripple
 
