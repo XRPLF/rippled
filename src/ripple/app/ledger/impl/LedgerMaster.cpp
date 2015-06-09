@@ -1441,7 +1441,7 @@ public:
         if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
         {
             // Nothing we can do. No validated ledger.
-            return zero; 
+            return zero;
         }
 
         // See if the hash for the ledger we need is in the reference ledger
@@ -1450,23 +1450,41 @@ public:
         if (ledgerHash)
             return *ledgerHash;
 
-        // No, Try to get another ledger that might have the hash we need
-        // Compute the index and hash of a ledger that will have the hash we need
-        LedgerIndex refIndex = (index + 255) & (~255);
+        // The hash is not in the reference ledger. Get another ledger which can
+        // be located easily and should contain the hash.
+        LedgerIndex refIndex = getCandidateLedger(index);
         auto const refHash = hashOfSeq(*referenceLedger, refIndex,
             getApp().getSLECache(), m_journal);
         assert(refHash);
         if (refHash)
         {
-            // We found the hash and sequence of a better reference ledger
-            auto const ledger =
-                getApp().getInboundLedgers().acquire (
-                    *refHash, refIndex, InboundLedger::fcGENERIC);
+            // Try the hash and sequence of a better reference ledger just found
+            auto ledger = mLedgerHistory.getLedgerByHash (*refHash);
+
             if (ledger)
             {
-                ledgerHash = hashOfSeq(*ledger, index,
-                    getApp().getSLECache(), m_journal);
-                assert (ledgerHash);
+                try
+                {
+                    ledgerHash = hashOfSeq(*ledger, index,
+                        getApp().getSLECache(), m_journal);
+                }
+                catch(SHAMapMissingNode&)
+                {
+                    ledger.reset();
+                }
+            }
+
+            // Try to acquire the complete ledger
+            if (!ledger)
+            {
+                auto const ledger = getApp().getInboundLedgers().acquire (
+                    *refHash, refIndex, InboundLedger::fcGENERIC);
+                if (ledger)
+                {
+                    ledgerHash = hashOfSeq(*ledger, index,
+                        getApp().getSLECache(), m_journal);
+                    assert (ledgerHash);
+                }
             }
         }
         return ledgerHash ? *ledgerHash : zero; // kludge
