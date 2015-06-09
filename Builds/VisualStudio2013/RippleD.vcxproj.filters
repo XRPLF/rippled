@@ -1212,16 +1212,10 @@
     <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_SystemStats.cpp">
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_Threads.cpp">
-      <Filter>beast\module\core\native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_Files.cpp">
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_SystemStats.cpp">
-      <Filter>beast\module\core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_Threads.cpp">
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
     <None Include="..\..\src\beast\beast\module\core\native\mac_Files.mm">
@@ -1231,9 +1225,6 @@
       <Filter>beast\module\core\native</Filter>
     </None>
     <None Include="..\..\src\beast\beast\module\core\native\mac_SystemStats.mm">
-      <Filter>beast\module\core\native</Filter>
-    </None>
-    <None Include="..\..\src\beast\beast\module\core\native\mac_Threads.mm">
       <Filter>beast\module\core\native</Filter>
     </None>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\osx_ObjCHelpers.h">
@@ -1246,9 +1237,6 @@
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
-      <Filter>beast\module\core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Threads.cpp">
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\streams\FileInputSource.cpp">
@@ -1308,9 +1296,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
       <Filter>beast\module\core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
       <Filter>beast\module\core\threads</Filter>
     </ClInclude>
@@ -1328,12 +1313,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
       <Filter>beast\module\core\thread</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
-      <Filter>beast\module\core\time</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\time\AtExitHook.h">
-      <Filter>beast\module\core\time</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\Time.cpp">
       <Filter>beast\module\core\time</Filter>
@@ -1659,13 +1638,7 @@
     <ClInclude Include="..\..\src\beast\beast\utility\empty_base_optimization.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Error.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Debug.cpp">
-      <Filter>beast\utility\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\Error.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">

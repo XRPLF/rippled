@@ -686,16 +686,10 @@
     <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_Threads.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_Files.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_Threads.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <None Include="..\..\src\beast\beast\module\core\native\mac_Files.mm">
@@ -703,8 +697,6 @@
     <None Include="..\..\src\beast\beast\module\core\native\mac_Strings.mm">
     </None>
     <None Include="..\..\src\beast\beast\module\core\native\mac_SystemStats.mm">
-    </None>
-    <None Include="..\..\src\beast\beast\module\core\native\mac_Threads.mm">
     </None>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\osx_ObjCHelpers.h">
     </ClInclude>
@@ -714,9 +706,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Threads.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\streams\FileInputSource.cpp">
@@ -765,8 +754,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
@@ -780,11 +767,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\time\AtExitHook.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\Time.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1027,12 +1009,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\empty_base_optimization.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Error.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Debug.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\Error.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">
