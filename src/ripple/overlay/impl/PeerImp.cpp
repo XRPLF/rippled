@@ -517,6 +517,12 @@ PeerImp::onTimer (error_code const& ec)
         return;
     }
 
+    if (++no_ping_ >= Tuning::noPing)
+    {
+        fail ("No ping reply received");
+        return;
+    }
+
     if (lastPingSeq_ == 0)
     {
         // Make sequence unpredictable enough that a peer
@@ -530,11 +536,6 @@ PeerImp::onTimer (error_code const& ec)
 
         send (std::make_shared<Message> (
             message, protocol::mtPING));
-    }
-    else if (++no_ping_ >= Tuning::noPing)
-    {
-        fail ("No ping reply received");
-        return;
     }
 
     setTimer();
@@ -1477,6 +1478,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
         {
             if (p_journal_.debug) p_journal_.debug <<
                 "GetObject: Large send queue";
+            return;
         }
 
 
@@ -1927,6 +1929,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         {
             if (p_journal_.debug) p_journal_.debug <<
                 "GetLedger: Large send queue";
+            return;
         }
 
         if (getApp().getFeeTrack().isLoadedLocal() && ! cluster())
