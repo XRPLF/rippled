@@ -30,6 +30,7 @@
 #include <ripple/protocol/STTx.h>
 #include <beast/unit_test/suite.h>
 #include <boost/logic/tribool.hpp>
+#include <functional>
 #include <map>
 #include <set>
 #include <utility>
@@ -43,6 +44,13 @@ class Env;
 
 BOOST_TRIBOOL_THIRD_STATE(use_default)
 
+namespace jtx {
+namespace detail {
+using require_t = std::function<void(Env const&)>;
+using requires_t = std::vector<require_t>;
+} // detail
+} // jtx
+
 /** Execution context for applying a JSON transaction.
     This augments the transaction with various settings.
 */
@@ -53,6 +61,7 @@ struct JTx
     boost::tribool fill_seq = boost::logic::indeterminate;
     boost::tribool fill_sig = boost::logic::indeterminate;
     std::function<void(Env&, JTx&)> signer;
+    jtx::detail::requires_t requires;
     TER ter = tesSUCCESS;
 
     JTx() = default;
@@ -79,6 +88,10 @@ struct JTx
 
 namespace jtx {
 
+//
+// Dispatch Tags
+//
+
 struct none_t { none_t() { } };
 static none_t const none;
 
@@ -87,6 +100,10 @@ static autofill_t const autofill;
 
 struct disabled_t { disabled_t() { } };
 static disabled_t const disabled;
+
+//
+// Helpers
+//
 
 struct MaybeAnyAmount;
 
@@ -145,9 +162,53 @@ any_t::operator()(STAmount const& sta) const
 */
 static any_t const any;
 
+//------------------------------------------------------------------------------
+//
+// Utilities
+//
+//------------------------------------------------------------------------------
+
+/** Set the fee automatically. */
+void
+fill_fee (Json::Value& jv,
+    Ledger const& ledger);
+
+/** Set the sequence number automatically. */
+void
+fill_seq (Json::Value& jv,
+    Ledger const& ledger);
+
+/** Sign automatically.
+    @note This only works on accounts with multi-signing off.
+*/
+void
+sign (Json::Value& jv,
+    Account const& account);
+
+/** Thrown when parse fails. */
+struct parse_error : std::logic_error
+{
+    template <class String>
+    explicit
+    parse_error (String const& s)
+        : logic_error(s)
+    {
+    }
+};
+
+/** Convert JSON to STObject.
+    This throws on failure, the JSON must be correct.
+    @note Testing malformed JSON is beyond the scope of
+          this set of unit test routines.
+*/
+STObject
+parse (Json::Value const& jv);
+
+//------------------------------------------------------------------------------
 //
 // JSON generators
 //
+//------------------------------------------------------------------------------
 
 /** Create a payment. */
 Json::Value
@@ -224,45 +285,11 @@ Json::Value
 trust (Account const& account,
     STAmount const& amount);
 
-/** Set the fee automatically. */
-void
-fill_fee (Json::Value& jv,
-    Ledger const& ledger);
-
-/** Set the sequence number automatically. */
-void
-fill_seq (Json::Value& jv,
-    Ledger const& ledger);
-
-/** Sign automatically.
-    @note This only works on accounts with multi-signing off.
-*/
-void
-sign (Json::Value& jv,
-    Account const& account);
-
-/** Thrown when parse fails. */
-struct parse_error : std::logic_error
-{
-    template <class String>
-    explicit
-    parse_error (String const& s)
-        : logic_error(s)
-    {
-    }
-};
-
-/** Convert JSON to STObject.
-    This throws on failure, the JSON must be correct.
-    @note Testing malformed JSON is beyond the scope of
-          this set of unit test routines.
-*/
-STObject
-parse (Json::Value const& jv);
-
+//------------------------------------------------------------------------------
 //
 // Funclets
 //
+//------------------------------------------------------------------------------
 
 /** Set the fee on a JTx. */
 class fee
@@ -518,6 +545,268 @@ public:
         jt.ter = v_;
     }
 };
+
+//------------------------------------------------------------------------------
+//
+// Conditions
+//
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+inline
+void
+require_args (requires_t& vec)
+{
+}
+
+template <class Cond, class... Args>
+inline
+void
+require_args (requires_t& vec,
+    Cond const& cond, Args const&... args)
+{
+    vec.push_back(cond);
+    require_args(vec, args...);
+}
+
+} // detail
+
+// Standalone function composes
+// one condition functor from many.
+template <class...Args>
+detail::require_t
+required (Args const&... args)
+{
+    detail::requires_t vec;
+    detail::require_args(vec, args...);
+    return [vec](Env const& env)
+    {
+        for(auto const& f : vec)
+            f(env);
+    };
+}
+
+/** Check a set of conditions.
+
+    The conditions are checked after a JTx is
+    applied, and only if the resulting TER
+    matches the expected TER.
+*/
+class require
+{
+private:
+    detail::require_t cond_;
+
+public:
+    template<class... Args>
+    require(Args const&... args)
+        : cond_(required(args...))
+    {
+    }
+
+    void
+    operator()(Env const&, JTx& jt) const
+    {
+        jt.requires.emplace_back(cond_);
+    }
+};
+
+//
+// Conditions
+//
+
+namespace cond {
+
+/** A balance matches.
+
+    This allows "none" which means either the account
+    doesn't exist (no XRP) or the trust line does not
+    exist. If an amount is specified, the SLE must
+    exist even if the amount is 0, or else the test
+    fails.
+*/
+class balance
+{
+private:
+    bool none_;
+    Account account_;
+    STAmount value_;
+
+public:
+    balance (Account const& account, none_t,
+            Issue const& issue = XRP)
+        : account_(account)
+        , none_(true)
+        , value_(issue)
+    {
+    }
+
+    balance (Account const& account,
+            STAmount const& value)
+        : none_(false)
+        , account_(account)
+        , value_(value)
+    {
+    }
+
+    void
+    operator()(Env const&) const;
+};
+
+namespace detail {
+
+std::uint32_t
+owned_count_of (Ledger const& ledger,
+    ripple::Account const& id,
+        LedgerEntryType type);
+
+void
+owned_count_helper(Env const& env,
+    ripple::Account const& id,
+        LedgerEntryType type,
+            std::uint32_t value);
+
+} // detail
+
+// Helper for aliases
+template <LedgerEntryType Type>
+class owned_count
+{
+private:
+    Account account_;
+    std::uint32_t value_;
+
+public:
+    owned_count (Account const& account,
+            std::uint32_t value)
+        : account_(account)
+        , value_(value)
+    {
+    }
+
+    void
+    operator()(Env const& env) const
+    {
+        detail::owned_count_helper(
+            env, account_.id(), Type, value_);
+    }
+};
+
+/** The number of owned items matches. */
+class owners
+{
+private:
+    Account account_;
+    std::uint32_t value_;
+public:
+    owners (Account const& account,
+            std::uint32_t value)
+        : account_(account)
+        , value_(value)
+    {
+    }
+
+    void
+    operator()(Env const& env) const;
+};
+
+/** The number of trust lines matches. */
+using lines = owned_count<ltRIPPLE_STATE>;
+
+/** The number of owned offers matches. */
+using offers = owned_count<ltOFFER>;
+
+/** The number of signer lists matches. */
+using siglists = owned_count<ltSIGNER_LIST>;
+
+} // cond
+
+//------------------------------------------------------------------------------
+//
+// User Defined Example
+//
+//------------------------------------------------------------------------------
+
+/*
+    This shows how the system may be extended to other
+    generators, funclets, conditions, and operations,
+    without changing the base declarations.
+*/
+
+/** Ticket operations */
+namespace ticket {
+
+namespace detail {
+
+Json::Value
+create (Account const& account,
+    boost::optional<Account> const& target,
+        boost::optional<std::uint32_t> const& expire);
+
+inline
+void
+create_arg (boost::optional<Account>& opt,
+    boost::optional<std::uint32_t>&,
+        Account const& value)
+{
+    opt = value;
+}
+
+inline
+void
+create_arg (boost::optional<Account>&,
+    boost::optional<std::uint32_t>& opt,
+        std::uint32_t value)
+{
+    opt = value;
+}
+
+inline
+void
+create_args (boost::optional<Account>&,
+    boost::optional<std::uint32_t>&)
+{
+}
+
+template<class Arg, class... Args>
+void
+create_args(boost::optional<Account>& account_opt,
+    boost::optional<std::uint32_t>& expire_opt,
+        Arg const& arg, Args const&... args)
+{
+    create_arg(account_opt, expire_opt, arg);
+    create_args(account_opt, expire_opt, args...);
+}
+
+} // detail
+
+//
+// JSON Generators
+//
+
+template <class... Args>
+Json::Value
+create (Account const& account,
+    Args const&... args)
+{
+    boost::optional<Account> target;
+    boost::optional<std::uint32_t> expire;
+    detail::create_args(target, expire, args...);
+    return detail::create(
+        account, target, expire);
+}
+
+//
+// Conditions
+//
+
+/** The number of tickets matches. */
+using tickets = cond::owned_count<ltTICKET>;
+
+} // ticket
+
+
 
 } // jtx
 

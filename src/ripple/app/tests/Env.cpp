@@ -176,7 +176,14 @@ Env::submit (JTx const& tx)
     if (! test.expect(ter == tx.ter,
         "apply: " + transToken(ter) +
             " (" + transHuman(ter) + ")"))
+    {
         test.log << pretty(tx.jv);
+        // Don't check postconditions if
+        // we didn't get the expected result.
+        return;
+    }
+    for (auto const& f : tx.requires)
+        f(*this);
 }
 
 void

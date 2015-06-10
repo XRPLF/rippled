@@ -114,6 +114,36 @@ public:
     }
     /** @} */
 
+    /** Return an account root.
+        @return empty if the account does not exist.
+    */
+    std::shared_ptr<SLE const>
+    le (Account const& account) const
+    {
+        // VFALCO NOTE This hack should be removed
+        //             when fetch returns shared_ptr again
+        auto const st = ledger->fetch(
+            getAccountRootIndex(account.id()));
+        if (! st)
+            return nullptr;
+        return std::make_shared<SLE const>(*st);
+    }
+
+    /** Return a ledger entry.
+        @return empty if the ledger entry does not exist
+    */
+    // VFALCO NOTE Use Keylet here
+    std::shared_ptr<SLE const>
+    le (uint256 const& key) const
+    {
+        // VFALCO NOTE This hack should be removed
+        //             when fetch returns shared_ptr again
+        auto const st = ledger->fetch(key);
+        if (! st)
+            return nullptr;
+        return std::make_shared<SLE const>(*st);
+    }
+
     void auto_fee (bool value)
     {
         fill_fee_ = value;
@@ -155,7 +185,21 @@ public:
         return std::move(tj.jv);
     }
 
-    /** Submit an existing JTx. */
+    /** Check a set of requirements.
+        
+        The requirements are formed
+        from condition functors.
+    */
+    template <class... Args>
+    void
+    require (Args const&... args) const
+    {
+        jtx::required(args...)(*this);
+    }
+
+    /** Submit an existing JTx.
+        This calls postconditions.
+    */
     void
     submit (JTx const& tx);
 

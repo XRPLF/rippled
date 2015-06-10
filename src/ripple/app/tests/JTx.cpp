@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/tests/JTx.h>
 #include <ripple/app/tests/Env.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -138,6 +139,29 @@ signers (Account const& account, none_t)
     jv[jss::TransactionType] = "SignerListSet";
     return jv;
 }
+
+namespace ticket {
+
+namespace detail {
+
+Json::Value
+create (Account const& account,
+    boost::optional<Account> const& target,
+        boost::optional<std::uint32_t> const& expire)
+{
+    Json::Value jv;
+    jv[jss::Account] = account.human();
+    jv[jss::TransactionType] = "TicketCreate";
+    if (expire)
+        jv["Expiration"] = *expire;
+    if (target)
+        jv["Target"] = target->human();
+    return jv;
+}
+
+} // detail
+
+} // ticket
 
 Json::Value
 trust (Account const& account,
@@ -394,6 +418,89 @@ sig::operator()(Env const&, JTx& jt) const
         jt.fill_sig = b_;
     }
 }
+
+//------------------------------------------------------------------------------
+//
+// Conditions
+//
+//------------------------------------------------------------------------------
+
+namespace cond {
+
+void
+balance::operator()(Env const& env) const
+{
+    if (isXRP(value_.issue()))
+    {
+        auto const sle = env.le(account_);
+
+        if (none_)
+            env.test.expect(! sle);
+        else
+            env.test.expect(sle->getFieldAmount(
+                sfBalance) == value_);
+    }
+    else
+    {
+        auto const sle = env.le(
+            getRippleStateIndex(account_.id(),
+                value_.issue()));
+        if (none_)
+        {
+            env.test.expect(! sle);
+        }
+        else if (env.test.expect(sle))
+        {
+            auto amount =
+                sle->getFieldAmount(sfBalance);
+            amount.setIssuer(
+                value_.issue().account);
+            if (account_.id() >
+                    value_.issue().account)
+                amount.negate();
+            env.test.expect(amount == value_);
+        }
+    }
+}
+
+namespace detail {
+
+std::uint32_t
+owned_count_of(Ledger const& ledger,
+    ripple::Account const& id,
+        LedgerEntryType type)
+{
+    std::uint32_t count = 0;
+    forEachItem(ledger, id, getApp().getSLECache(),
+        [&count, type](std::shared_ptr<SLE const> const& sle)
+        {
+            if (sle->getType() == type)
+                ++count;
+        });
+    return count;
+}
+
+void
+owned_count_helper(Env const& env,
+    ripple::Account const& id,
+        LedgerEntryType type,
+            std::uint32_t value)
+{
+    env.test.expect(owned_count_of(
+        *env.ledger, id, type) == value);
+}
+
+} // detail
+
+void
+owners::operator()(Env const& env) const
+{
+    env.test.expect(env.le(
+        account_)->getFieldU32(sfOwnerCount) ==
+            value_);
+}
+
+} // cond
 
 } // jtx
 
