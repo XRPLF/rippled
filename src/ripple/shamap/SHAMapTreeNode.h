@@ -128,6 +128,7 @@ public:
              SHANodeFormat format, uint256 const& hash, bool hashValid);
 };
 
+// SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect that.
 class SHAMapTreeNode
     : public SHAMapAbstractNode
 {
@@ -227,6 +228,14 @@ SHAMapAbstractNode::isValid () const
     return mType != tnERROR;
 }
 
+inline
+bool
+SHAMapAbstractNode::isInBounds (SHAMapNodeID const &id) const
+{
+    // Nodes at depth 64 must be leaves
+    return (!isInner() || (id.getDepth() < 64));
+}
+
 // SHAMapInnerNode
 
 inline
@@ -262,14 +271,6 @@ void
 SHAMapInnerNode::setFullBelowGen (std::uint32_t gen)
 {
     mFullBelowGen = gen;
-}
-
-inline
-bool
-SHAMapAbstractNode::isInBounds (SHAMapNodeID const &id) const
-{
-    // Nodes at depth 64 must be leaves
-    return (!isInner() || (id.getDepth() < 64));
 }
 
 // SHAMapTreeNode
