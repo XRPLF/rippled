@@ -511,13 +511,13 @@ PeerImp::onTimer (error_code const& ec)
         return close();
     }
 
-    if (++large_sendq_ >= Tuning::sendqIntervals)
+    if (large_sendq_++ >= Tuning::sendqIntervals)
     {
         fail ("Large send queue");
         return;
     }
 
-    if (++no_ping_ >= Tuning::noPing)
+    if (no_ping_++ >= Tuning::noPing)
     {
         fail ("No ping reply received");
         return;

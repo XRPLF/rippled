@@ -60,7 +60,7 @@ enum
     sendqIntervals      =    3,
 
     /** How many timer intervals we can go without a ping reply */
-    noPing              =    3,
+    noPing              =    4,
 
     /** How many messages on a send queue before we refuse queries */
     dropSendQueue       =    5,
