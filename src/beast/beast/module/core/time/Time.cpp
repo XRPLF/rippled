@@ -219,26 +219,6 @@ Time Time::getCurrentTime() noexcept
 //==============================================================================
 std::uint32_t beast_millisecondsSinceStartup() noexcept;
 
-std::uint32_t Time::getMillisecondCounter() noexcept
-{
-    const std::uint32_t now = beast_millisecondsSinceStartup();
-
-    if (now < TimeHelpers::lastMSCounterValue)
-    {
-        // in multi-threaded apps this might be called concurrently, so
-        // make sure that our last counter value only increases and doesn't
-        // go backwards..
-        if (now < TimeHelpers::lastMSCounterValue - 1000)
-            TimeHelpers::lastMSCounterValue = now;
-    }
-    else
-    {
-        TimeHelpers::lastMSCounterValue = now;
-    }
-
-    return now;
-}
-
 //==============================================================================
 String Time::toString (const bool includeDate,
                        const bool includeTime,

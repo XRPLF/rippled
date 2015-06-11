@@ -301,18 +301,6 @@ public:
     */
     static std::int64_t currentTimeMillis() noexcept;
 
-    /** Returns the number of millisecs since a fixed event (usually system startup).
-
-        This returns a monotonically increasing value which it unaffected by changes to the
-        system clock. It should be accurate to within a few millisecs, depending on platform,
-        hardware, etc.
-
-        Being a 32-bit return value, it will of course wrap back to 0 after 2^32 seconds of
-        uptime, so be careful to take that into account. If you need a 64-bit time, you can
-        use currentTimeMillis() instead.
-    */
-    static std::uint32_t getMillisecondCounter() noexcept;
-
 private:
     //==============================================================================
     std::int64_t millisSinceEpoch;
