@@ -1,27 +1,31 @@
 //------------------------------------------------------------------------------
 /*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TESTS_ENV_H_INCLUDED
-#define RIPPLE_APP_TESTS_ENV_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ENV_H_INCLUDED
+#define RIPPLE_TEST_JTX_ENV_H_INCLUDED
 
-#include <ripple/app/tests/Common.h>
-#include <ripple/app/tests/JTx.h>
+#include <ripple/test/jtx/Account.h>
+#include <ripple/test/jtx/amounts.h>
+#include <ripple/test/jtx/JTx.h>
+#include <ripple/test/jtx/require.h>
+#include <ripple/test/jtx/tags.h>
+
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -31,6 +35,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
 #include <boost/logic/tribool.hpp>
 #include <beast/cxx14/type_traits.h> // <type_traits>
@@ -39,6 +44,8 @@
 
 namespace ripple {
 namespace test {
+
+namespace jtx {
 
 /** A view to an account's account root. */
 class AccountInfo
@@ -113,6 +120,36 @@ public:
     }
     /** @} */
 
+    /** Return an account root.
+        @return empty if the account does not exist.
+    */
+    std::shared_ptr<SLE const>
+    le (Account const& account) const
+    {
+        // VFALCO NOTE This hack should be removed
+        //             when fetch returns shared_ptr again
+        auto const st = ledger->fetch(
+            getAccountRootIndex(account.id()));
+        if (! st)
+            return nullptr;
+        return std::make_shared<SLE const>(*st);
+    }
+
+    /** Return a ledger entry.
+        @return empty if the ledger entry does not exist
+    */
+    // VFALCO NOTE Use Keylet here
+    std::shared_ptr<SLE const>
+    le (uint256 const& key) const
+    {
+        // VFALCO NOTE This hack should be removed
+        //             when fetch returns shared_ptr again
+        auto const st = ledger->fetch(key);
+        if (! st)
+            return nullptr;
+        return std::make_shared<SLE const>(*st);
+    }
+
     void auto_fee (bool value)
     {
         fill_fee_ = value;
@@ -132,7 +169,7 @@ public:
     template <class JsonValue,
         class... FN>
     JTx
-    tx (JsonValue&& jv, FN const&... fN)
+    jt (JsonValue&& jv, FN const&... fN)
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
@@ -148,13 +185,27 @@ public:
     Json::Value
     json (JsonValue&&jv, FN const&... fN)
     {
-        auto jt = tx(
+        auto tj = jt(
             std::forward<JsonValue>(jv),
                 fN...);
-        return std::move(jt.jv);
+        return std::move(tj.jv);
     }
 
-    /** Submit an existing JTx. */
+    /** Check a set of requirements.
+        
+        The requirements are formed
+        from condition functors.
+    */
+    template <class... Args>
+    void
+    require (Args const&... args) const
+    {
+        jtx::required(args...)(*this);
+    }
+
+    /** Submit an existing JTx.
+        This calls postconditions.
+    */
     void
     submit (JTx const& tx);
 
@@ -164,7 +215,7 @@ public:
     void
     apply (JsonValue&& jv, FN const&... fN)
     {
-        submit(tx(std::forward<
+        submit(jt(std::forward<
             JsonValue>(jv), fN...));
     }
 
@@ -229,18 +280,71 @@ private:
 
     inline
     void
+    invoke (STTx& stx)
+    {
+    }
+
+    template <class F>
+    inline
+    void
+    maybe_invoke (STTx& stx, F const& f,
+        std::false_type)
+    {
+    }
+
+    template <class F>
+    void
+    maybe_invoke (STTx& stx, F const& f,
+        std::true_type)
+    {
+        f(*this, stx);
+    }
+
+    // Invoke funclets on stx
+    // Note: The STTx may not be modified
+    template <class F, class... FN>
+    void
+    invoke (STTx& stx, F const& f,
+        FN const&... fN)
+    {
+        maybe_invoke(stx, f,
+            beast::is_call_possible<F,
+                void(Env&, STTx const&)>());
+        invoke(stx, fN...);
+    }
+
+    inline
+    void
     invoke (JTx&)
     {
     }
 
-    // Invoke funclets on tx
+    template <class F>
+    inline
+    void
+    maybe_invoke (JTx& jt, F const& f,
+        std::false_type)
+    {
+    }
+
+    template <class F>
+    void
+    maybe_invoke (JTx& jt, F const& f,
+        std::true_type)
+    {
+        f(*this, jt);
+    }
+
+    // Invoke funclets on jt
     template <class F, class... FN>
     void
-    invoke (JTx& tx, F const& f,
+    invoke (JTx& jt, F const& f,
         FN const&... fN)
     {
-        f(*this, tx);
-        invoke(tx, fN...);
+        maybe_invoke(jt, f,
+            beast::is_call_possible<F,
+                void(Env&, JTx&)>());
+        invoke(jt, fN...);
     }
 
     // Map of account IDs to Account
@@ -251,6 +355,8 @@ private:
     bool fill_seq_ = true;
     bool fill_sig_ = true;
 };
+
+} // jtx
 
 } // test
 } // ripple

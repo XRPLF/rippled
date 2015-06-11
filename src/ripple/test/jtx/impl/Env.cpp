@@ -1,24 +1,28 @@
 //------------------------------------------------------------------------------
 /*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tests/Env.h>
+#include <ripple/test/jtx/Env.h>
+#include <ripple/test/jtx/fee.h>
+#include <ripple/test/jtx/seq.h>
+#include <ripple/test/jtx/sig.h>
+#include <ripple/test/jtx/utility.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/basics/Slice.h>
@@ -36,6 +40,8 @@
 
 namespace ripple {
 namespace test {
+
+namespace jtx {
 
 STAmount
 AccountInfo::balance(
@@ -160,7 +166,8 @@ Env::submit (JTx const& tx)
     bool didApply;
     if (stx)
     {
-        TransactionEngine txe (ledger, multisign);
+        TransactionEngine txe (ledger,
+            tx_enable_test);
         std::tie(ter, didApply) = txe.applyTransaction(
             *stx, tapOPEN_LEDGER |
                 (true ? tapNONE : tapNO_CHECK_SIGN));
@@ -175,7 +182,14 @@ Env::submit (JTx const& tx)
     if (! test.expect(ter == tx.ter,
         "apply: " + transToken(ter) +
             " (" + transHuman(ter) + ")"))
+    {
         test.log << pretty(tx.jv);
+        // Don't check postconditions if
+        // we didn't get the expected result.
+        return;
+    }
+    for (auto const& f : tx.requires)
+        f(*this);
 }
 
 void
@@ -211,6 +225,8 @@ Env::autofill (JTx& jt)
             jtx::sign(jv, account);
     }
 }
+
+} // jtx
 
 } // test
 } // ripple
