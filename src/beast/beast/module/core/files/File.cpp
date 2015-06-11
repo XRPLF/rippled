@@ -338,9 +338,6 @@ bool File::isAChildOf (const File& potentialParent) const
     return getParentDirectory().isAChildOf (potentialParent);
 }
 
-int   File::hashCode() const    { return fullPath.hashCode(); }
-std::int64_t File::hashCode64() const  { return fullPath.hashCode64(); }
-
 //==============================================================================
 bool File::isAbsolutePath (const String& path)
 {

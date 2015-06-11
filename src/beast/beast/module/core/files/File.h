@@ -224,21 +224,6 @@ public:
     String getFileNameWithoutExtension() const;
 
     //==============================================================================
-    /** Returns a 32-bit hash-code that identifies this file.
-
-        This is based on the filename. Obviously it's possible, although unlikely, that
-        two files will have the same hash-code.
-    */
-    int hashCode() const;
-
-    /** Returns a 64-bit hash-code that identifies this file.
-
-        This is based on the filename. Obviously it's possible, although unlikely, that
-        two files will have the same hash-code.
-    */
-    std::int64_t hashCode64() const;
-
-    //==============================================================================
     /** Returns a file that represents a relative (or absolute) sub-path of the current one.
 
         This will find a child file or directory of the current object.
