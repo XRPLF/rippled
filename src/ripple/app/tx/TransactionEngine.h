@@ -29,8 +29,8 @@ namespace ripple {
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
-struct multisign_t { multisign_t() { } };
-static multisign_t const multisign;
+struct tx_enable_test_t { tx_enable_test_t() { } };
+static tx_enable_test_t const tx_enable_test;
 
 // One instance per ledger.
 // Only one transaction applied at a time.
@@ -43,6 +43,13 @@ public:
 private:
     bool enableMultiSign_ =
 #if RIPPLE_ENABLE_MULTI_SIGN
+        true;
+#else
+        false;
+#endif
+
+    bool enableTickets_ =
+#if RIPPLE_ENABLE_TICKETS
         true;
 #else
         false;
@@ -65,8 +72,10 @@ public:
         assert (mLedger);
     }
 
-    TransactionEngine (Ledger::ref ledger, multisign_t)
+    TransactionEngine (Ledger::ref ledger,
+            tx_enable_test_t)
         : enableMultiSign_(true)
+        , enableTickets_(true)
         , mLedger (ledger)
     {
         assert (mLedger);
@@ -76,6 +85,12 @@ public:
     enableMultiSign() const
     {
         return enableMultiSign_;
+    }
+
+    bool
+    enableTickets() const
+    {
+        return enableTickets_;
     }
 
     LedgerEntrySet&
