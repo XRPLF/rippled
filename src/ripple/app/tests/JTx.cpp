@@ -463,6 +463,22 @@ balance::operator()(Env const& env) const
     }
 }
 
+void
+flags::operator()(Env const& env) const
+{
+    auto const sle = env.le(account_);
+    env.test.expect((sle->getFieldU32(sfFlags) &
+        mask_) == mask_);
+}
+
+void
+nflags::operator()(Env const& env) const
+{
+    auto const sle = env.le(account_);
+    env.test.expect((sle->getFieldU32(sfFlags) &
+        mask_) == 0);
+}
+
 namespace detail {
 
 std::uint32_t

@@ -29,9 +29,9 @@ namespace test {
 class Env_test : public beast::unit_test::suite
 {
 public:
-    // Test the balance cond functor
+    // Test the cond functors
     void
-    testBalance()
+    testCond()
     {
         using namespace jtx;
         using namespace jtx::cond;
@@ -39,6 +39,7 @@ public:
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
+
         // Account root for alice should not exist
         env.require(balance("alice", none, XRP));
         // Fund alice and the gateway
@@ -53,6 +54,8 @@ public:
         env.require(balance("alice", USD(0)));
         // Gateway pays alice 10/USD, verify the balance
         env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
+
+
     }
 
     void
@@ -245,15 +248,14 @@ public:
     void
     run()
     {
-        testBalance();
-#if 0
-        //testTicket();
+        testCond();
+
         testAutofill();
         testKeyType();
         testMultiSign();
         testMultiSign2();
         testPayments();
-#endif
+        testTicket();
     }
 };
 

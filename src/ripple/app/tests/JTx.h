@@ -656,6 +656,90 @@ public:
 
 namespace detail {
 
+class flags_helper
+{
+protected:
+    std::uint32_t mask_;
+
+private:
+    inline
+    void
+    set_args()
+    {
+    }
+
+    template <class Flag,
+        class... Args>
+    void
+    set_args (std::uint32_t flag,
+        Args... args)
+    {
+        switch(flag)
+        {
+        case asfRequireDest:    set_ |= lsfRequireDestTag; break;
+        case asfRequireAuth:    set_ |= lsfRequireAuth; break;
+        case asfDisallowXRP:    set_ |= lsfDisallowXRP; break;
+        case asfDisableMaster:  set_ |= lsfDisableMaster; break;
+        //case asfAccountTxnID: // ???
+        case asfNoFreeze:       set_ |= lsfNoFreeze; break;
+        case asfGlobalFreeze:   set_ |= lsfGlobalFreeze; break;
+        case asfDefaultRipple:  set_ |= lsfDefaultRipple; break;
+        default:
+        throw std::runtime_error(
+            "unknown flag");
+        }
+        set_args(args...);
+    }
+
+protected:
+    template <class... Args>
+    flags_helper (Args... args)
+        : mask_(0)
+    {
+        set_args(mask_, args...);
+    }
+};
+
+} // detail
+
+/** Certain account flags are set */
+class flags : private detail::flags_helper
+{
+private:
+    Account account_;
+   
+public:
+    template <class... Args>
+    flags (Account const& account,
+            Args... args)
+        : flags_helper(args...)
+    {
+    }
+
+    void
+    operator()(Env const& env) const;
+};
+
+/** Certain account flags are clear */
+class nflags : private detail::flags_helper
+{
+private:
+    Account account_;
+   
+public:
+    template <class... Args>
+    nflags (Account const& account,
+            Args... args)
+        : flags_helper(args...)
+    {
+    }
+
+    void
+    operator()(Env const& env) const;
+};
+
+namespace detail {
+
 std::uint32_t
 owned_count_of (Ledger const& ledger,
     ripple::Account const& id,
