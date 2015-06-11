@@ -310,21 +310,8 @@ public:
         Being a 32-bit return value, it will of course wrap back to 0 after 2^32 seconds of
         uptime, so be careful to take that into account. If you need a 64-bit time, you can
         use currentTimeMillis() instead.
-
-        @see getApproximateMillisecondCounter
     */
     static std::uint32_t getMillisecondCounter() noexcept;
-
-    /** Less-accurate but faster version of getMillisecondCounter().
-
-        This will return the last value that getMillisecondCounter() returned, so doesn't
-        need to make a system call, but is less accurate - it shouldn't be more than
-        100ms away from the correct time, though, so is still accurate enough for a
-        lot of purposes.
-
-        @see getMillisecondCounter
-    */
-    static std::uint32_t getApproximateMillisecondCounter() noexcept;
 
 private:
     //==============================================================================

@@ -239,14 +239,6 @@ std::uint32_t Time::getMillisecondCounter() noexcept
     return now;
 }
 
-std::uint32_t Time::getApproximateMillisecondCounter() noexcept
-{
-    if (TimeHelpers::lastMSCounterValue == 0)
-        getMillisecondCounter();
-
-    return TimeHelpers::lastMSCounterValue;
-}
-
 //==============================================================================
 String Time::toString (const bool includeDate,
                        const bool includeTime,
