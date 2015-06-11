@@ -274,9 +274,6 @@
     <Filter Include="ripple\app\paths\tests">
       <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\tests">
-      <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\tx">
       <UniqueIdentifier>{50FDCDC1-EC9C-9F3B-34C9-EF4137E132B4}</UniqueIdentifier>
     </Filter>
@@ -411,6 +408,15 @@
     </Filter>
     <Filter Include="ripple\shamap\tests">
       <UniqueIdentifier>{F0AEA72D-7030-C8C7-1E34-1029BBD56886}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\test">
+      <UniqueIdentifier>{B25F5854-84AE-1CBD-DFFC-6515DD055652}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\test\impl">
+      <UniqueIdentifier>{CF7F0C3F-3D61-7764-BA8B-5FF38018425C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\test\jtx">
+      <UniqueIdentifier>{A21A3B94-5C44-3746-4F10-6FF8FF990CE3}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
@@ -2463,27 +2469,6 @@
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\Common.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tests\Common.h">
-      <Filter>ripple\app\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\Env.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tests\Env.h">
-      <Filter>ripple\app\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\Env_test.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tests\JTx.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tests\JTx.h">
-      <Filter>ripple\app\tests</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -4101,6 +4086,42 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\Account.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\amounts.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\Env.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\impl\Account.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\amounts.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\Env.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\Env_test.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\JTx.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\test\JTx.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\any.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\json.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\tags.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4111,9 +4132,6 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_paths.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app_tests.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_tx.cpp">
@@ -4195,6 +4213,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">

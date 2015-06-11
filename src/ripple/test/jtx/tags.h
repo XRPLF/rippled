@@ -17,10 +17,26 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_APP_TEST_TAGS_H_INCLUDED
+#define RIPPLE_APP_TEST_TAGS_H_INCLUDED
 
-#include <ripple/app/tests/Common.cpp>
-#include <ripple/app/tests/Env.cpp>
-#include <ripple/app/tests/JTx.cpp>
+namespace ripple {
+namespace test {
 
-#include <ripple/app/tests/Env_test.cpp>
+namespace jtx {
+
+struct none_t { };
+static none_t const none;
+
+struct autofill_t { autofill_t() { } };
+static autofill_t const autofill;
+
+struct disabled_t { disabled_t() { } };
+static disabled_t const disabled;
+
+} // jtx
+
+} // test
+} // ripple
+
+#endif
