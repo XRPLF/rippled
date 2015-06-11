@@ -79,7 +79,6 @@ public:
 
 static HiResCounterHandler hiResCounterHandler;
 
-std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept  { return hiResCounterHandler.hiResTicksPerSecond; }
 std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCounterHandler.getHighResolutionTicks(); }
 
 //==============================================================================

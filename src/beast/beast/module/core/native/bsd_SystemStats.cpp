@@ -62,9 +62,4 @@ std::int64_t Time::getHighResolutionTicks() noexcept
     return (t.tv_sec * (std::int64_t) 1000000) + (t.tv_nsec / 1000);
 }
 
-std::int64_t Time::getHighResolutionTicksPerSecond() noexcept
-{
-    return 1000000;  // (microseconds)
-}
-
 } // beast
