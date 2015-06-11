@@ -217,9 +217,6 @@ Time Time::getCurrentTime() noexcept
 }
 
 //==============================================================================
-std::uint32_t beast_millisecondsSinceStartup() noexcept;
-
-//==============================================================================
 String Time::toString (const bool includeDate,
                        const bool includeTime,
                        const bool includeSeconds,

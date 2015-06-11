@@ -30,12 +30,6 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
-std::uint32_t beast_millisecondsSinceStartup() noexcept
-{
-    return (std::uint32_t) timeGetTime();
-}
-
-//==============================================================================
 bool beast_isRunningUnderDebugger()
 {
     return IsDebuggerPresent() != FALSE;
