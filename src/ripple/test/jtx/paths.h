@@ -17,29 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_H_INCLUDED
-#define RIPPLE_TEST_JTX_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_PATHS_H_INCLUDED
+#define RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 
-// Convenience header that includes everything
-
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
-//#include <ripple/test/jtx/balance.h>
 #include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/fee.h>
-#include <ripple/test/jtx/json.h>
-#include <ripple/test/jtx/JTx.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/owners.h>
-#include <ripple/test/jtx/paths.h>
-#include <ripple/test/jtx/sendmax.h>
-#include <ripple/test/jtx/seq.h>
-#include <ripple/test/jtx/sig.h>
-#include <ripple/test/jtx/tags.h>
-#include <ripple/test/jtx/ter.h>
-#include <ripple/test/jtx/ticket.h>
-#include <ripple/test/jtx/txflags.h>
+#include <ripple/protocol/Issue.h>
+
+namespace ripple {
+namespace test {
+namespace jtx {
+
+/** Set Paths, SendMax on a JTx. */
+class paths
+{
+private:
+    Issue in_;
+    int depth_;
+    unsigned int limit_;
+
+public:
+    paths (Issue const& in,
+            int depth = 7, unsigned int limit = 4)
+        : in_(in)
+        , depth_(depth)
+        , limit_(limit)
+    {
+    }
+
+    void
+    operator()(Env const&, JTx& jtx) const;
+};
+
+} // jtx
+} // test
+} // ripple
 
 #endif
-

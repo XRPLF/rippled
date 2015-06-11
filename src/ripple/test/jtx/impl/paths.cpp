@@ -17,29 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_H_INCLUDED
-#define RIPPLE_TEST_JTX_H_INCLUDED
-
-// Convenience header that includes everything
-
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
-//#include <ripple/test/jtx/balance.h>
-#include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/fee.h>
-#include <ripple/test/jtx/json.h>
-#include <ripple/test/jtx/JTx.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/owners.h>
+#include <BeastConfig.h>
 #include <ripple/test/jtx/paths.h>
-#include <ripple/test/jtx/sendmax.h>
-#include <ripple/test/jtx/seq.h>
-#include <ripple/test/jtx/sig.h>
-#include <ripple/test/jtx/tags.h>
-#include <ripple/test/jtx/ter.h>
-#include <ripple/test/jtx/ticket.h>
-#include <ripple/test/jtx/txflags.h>
+#include <ripple/app/paths/FindPaths.h>
+#include <ripple/protocol/JsonFields.h>
 
-#endif
+namespace ripple {
+namespace test {
+namespace jtx {
 
+void
+paths::operator()(Env const& env, JTx& jt) const
+{
+    auto& jv = jt.jv;
+    auto const from = env.lookup(
+        jv[jss::Account].asString());
+    auto const to = env.lookup(
+        jv[jss::Destination].asString());
+    auto const amount = amountFromJson(
+        sfAmount, jv[jss::Amount]);
+    STPath fp;
+    STPathSet ps;
+    auto const found = findPathsForOneIssuer(
+        std::make_shared<RippleLineCache>(
+            env.ledger), from, to,
+                in_, amount,
+                    depth_, limit_, ps, fp);
+    // VFALCO TODO API to allow caller to examine the STPathSet
+    // VFALCO isDefault should be renamed to empty()
+    if (found && ! ps.isDefault())
+        jv[jss::Paths] = ps.getJson(0);
+}
+
+} // jtx
+} // test
+} // ripple

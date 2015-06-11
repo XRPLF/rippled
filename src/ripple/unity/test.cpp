@@ -22,10 +22,16 @@
 #include <ripple/test/jtx/impl/Account.cpp>
 #include <ripple/test/jtx/impl/amounts.cpp>
 #include <ripple/test/jtx/impl/Env.cpp>
+#include <ripple/test/jtx/impl/fee.cpp>
 #include <ripple/test/jtx/impl/json.cpp>
 #include <ripple/test/jtx/impl/JTx.cpp>
 #include <ripple/test/jtx/impl/multisign.cpp>
 #include <ripple/test/jtx/impl/owners.cpp>
+#include <ripple/test/jtx/impl/paths.cpp>
+#include <ripple/test/jtx/impl/sendmax.cpp>
+#include <ripple/test/jtx/impl/seq.cpp>
+#include <ripple/test/jtx/impl/sig.cpp>
 #include <ripple/test/jtx/impl/ticket.cpp>
+#include <ripple/test/jtx/impl/txflags.cpp>
 
 #include <ripple/test/jtx/impl/Env_test.cpp>

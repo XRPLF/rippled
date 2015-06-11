@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/ticket.h>
+#include <ripple/test/jtx.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>

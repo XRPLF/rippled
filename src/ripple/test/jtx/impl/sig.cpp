@@ -17,29 +17,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_H_INCLUDED
-#define RIPPLE_TEST_JTX_H_INCLUDED
-
-// Convenience header that includes everything
-
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
-//#include <ripple/test/jtx/balance.h>
-#include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/fee.h>
-#include <ripple/test/jtx/json.h>
-#include <ripple/test/jtx/JTx.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/owners.h>
-#include <ripple/test/jtx/paths.h>
-#include <ripple/test/jtx/sendmax.h>
-#include <ripple/test/jtx/seq.h>
+#include <BeastConfig.h>
 #include <ripple/test/jtx/sig.h>
-#include <ripple/test/jtx/tags.h>
-#include <ripple/test/jtx/ter.h>
-#include <ripple/test/jtx/ticket.h>
-#include <ripple/test/jtx/txflags.h>
 
-#endif
+namespace ripple {
+namespace test {
+namespace jtx {
 
+void
+sig::operator()(Env const&, JTx& jt) const
+{
+    if(boost::indeterminate(b_))
+    {
+        // VFALCO Inefficient pre-C++14
+        auto const account = account_;
+        jt.signer = [account](Env&, JTx& jt)
+        {
+            jtx::sign(jt.jv, account);
+        };
+    }
+    else
+    {
+        jt.fill_sig = b_;
+    }
+}
+
+} // jtx
+} // test
+} // ripple

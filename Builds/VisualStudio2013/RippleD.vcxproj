@@ -3353,6 +3353,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\amounts.h">
@@ -3360,6 +3362,8 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\any.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\fee.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\Account.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -3374,6 +3378,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\Env_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\fee.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3393,7 +3401,27 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\paths.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\sendmax.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\seq.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\sig.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\ticket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\txflags.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3405,9 +3433,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\owners.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\paths.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\sendmax.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\seq.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\sig.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\tags.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\ter.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\ticket.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\txflags.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>

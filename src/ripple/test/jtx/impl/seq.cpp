@@ -17,29 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_H_INCLUDED
-#define RIPPLE_TEST_JTX_H_INCLUDED
-
-// Convenience header that includes everything
-
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
-//#include <ripple/test/jtx/balance.h>
-#include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/fee.h>
-#include <ripple/test/jtx/json.h>
-#include <ripple/test/jtx/JTx.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/owners.h>
-#include <ripple/test/jtx/paths.h>
-#include <ripple/test/jtx/sendmax.h>
+#include <BeastConfig.h>
 #include <ripple/test/jtx/seq.h>
-#include <ripple/test/jtx/sig.h>
-#include <ripple/test/jtx/tags.h>
-#include <ripple/test/jtx/ter.h>
-#include <ripple/test/jtx/ticket.h>
-#include <ripple/test/jtx/txflags.h>
+#include <ripple/protocol/JsonFields.h>
 
-#endif
+namespace ripple {
+namespace test {
+namespace jtx {
 
+void
+seq::operator()(Env const&, JTx& jt) const
+{
+    if (boost::indeterminate(b_))
+        jt[jss::Sequence] = v_;
+    else
+        jt.fill_seq = b_;
+}
+
+} // jtx
+} // test
+} // ripple

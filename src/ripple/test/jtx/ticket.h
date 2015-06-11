@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 #define RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 
+#include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/Account.h>
 #include <ripple/test/jtx/owners.h>
 #include <boost/optional.hpp>

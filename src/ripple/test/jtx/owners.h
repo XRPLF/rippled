@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TEST_JTX_OWNERS_H_INCLUDED
 #define RIPPLE_TEST_JTX_OWNERS_H_INCLUDED
 
-#include <ripple/test/jtx/Account.h>
 #include <ripple/test/jtx/Env.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/protocol/LedgerFormats.h>

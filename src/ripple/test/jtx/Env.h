@@ -23,6 +23,8 @@
 #include <ripple/test/jtx/Account.h>
 #include <ripple/test/jtx/amounts.h>
 #include <ripple/test/jtx/JTx.h>
+#include <ripple/test/jtx/tags.h>
+
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
