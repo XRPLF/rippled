@@ -287,46 +287,6 @@ std::int64_t File::getSize() const
     return 0;
 }
 
-void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
-{
-    using namespace WindowsFileHelpers;
-    WIN32_FILE_ATTRIBUTE_DATA attributes;
-
-    if (GetFileAttributesEx (fullPath.toWideCharPointer(), GetFileExInfoStandard, &attributes))
-    {
-        modificationTime = fileTimeToTime (&attributes.ftLastWriteTime);
-        creationTime     = fileTimeToTime (&attributes.ftCreationTime);
-        accessTime       = fileTimeToTime (&attributes.ftLastAccessTime);
-    }
-    else
-    {
-        creationTime = accessTime = modificationTime = 0;
-    }
-}
-
-bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t creationTime) const
-{
-    using namespace WindowsFileHelpers;
-
-    bool ok = false;
-    HANDLE h = CreateFile (fullPath.toWideCharPointer(), GENERIC_WRITE, FILE_SHARE_READ, 0,
-                           OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-
-    if (h != INVALID_HANDLE_VALUE)
-    {
-        FILETIME m, a, c;
-
-        ok = SetFileTime (h,
-                          timeToFileTime (creationTime, &c),
-                          timeToFileTime (accessTime, &a),
-                          timeToFileTime (modificationTime, &m)) != 0;
-
-        CloseHandle (h);
-    }
-
-    return ok;
-}
-
 //==============================================================================
 File File::getSpecialLocation (const SpecialLocationType type)
 {

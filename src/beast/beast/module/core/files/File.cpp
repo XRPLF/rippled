@@ -447,15 +447,6 @@ Result File::createDirectory() const
 }
 
 //==============================================================================
-Time File::getLastModificationTime() const           { std::int64_t m, a, c; getFileTimesInternal (m, a, c); return Time (m); }
-Time File::getLastAccessTime() const                 { std::int64_t m, a, c; getFileTimesInternal (m, a, c); return Time (a); }
-Time File::getCreationTime() const                   { std::int64_t m, a, c; getFileTimesInternal (m, a, c); return Time (c); }
-
-bool File::setLastModificationTime (Time t) const    { return setFileTimesInternal (t.toMilliseconds(), 0, 0); }
-bool File::setLastAccessTime (Time t) const          { return setFileTimesInternal (0, t.toMilliseconds(), 0); }
-bool File::setCreationTime (Time t) const            { return setFileTimesInternal (0, 0, t.toMilliseconds()); }
-
-//==============================================================================
 int File::findChildFiles (Array<File>& results,
                           const int whatToLookFor,
                           const bool searchRecursively,

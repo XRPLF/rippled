@@ -27,7 +27,6 @@
 #include <beast/module/core/containers/Array.h>
 #include <beast/module/core/memory/MemoryBlock.h>
 #include <beast/module/core/misc/Result.h>
-#include <beast/module/core/time/Time.h>
 #include <beast/module/core/text/StringArray.h>
 #include <beast/module/core/threads/CriticalSection.h>
 
@@ -348,52 +347,6 @@ public:
                       bool applyRecursively = false) const;
 
     //==============================================================================
-    /** Returns the last modification time of this file.
-
-        @returns    the time, or an invalid time if the file doesn't exist.
-        @see setLastModificationTime, getLastAccessTime, getCreationTime
-    */
-    Time getLastModificationTime() const;
-
-    /** Returns the last time this file was accessed.
-
-        @returns    the time, or an invalid time if the file doesn't exist.
-        @see setLastAccessTime, getLastModificationTime, getCreationTime
-    */
-    Time getLastAccessTime() const;
-
-    /** Returns the time that this file was created.
-
-        @returns    the time, or an invalid time if the file doesn't exist.
-        @see getLastModificationTime, getLastAccessTime
-    */
-    Time getCreationTime() const;
-
-    /** Changes the modification time for this file.
-
-        @param newTime  the time to apply to the file
-        @returns true if it manages to change the file's time.
-        @see getLastModificationTime, setLastAccessTime, setCreationTime
-    */
-    bool setLastModificationTime (Time newTime) const;
-
-    /** Changes the last-access time for this file.
-
-        @param newTime  the time to apply to the file
-        @returns true if it manages to change the file's time.
-        @see getLastAccessTime, setLastModificationTime, setCreationTime
-    */
-    bool setLastAccessTime (Time newTime) const;
-
-    /** Changes the creation date for this file.
-
-        @param newTime  the time to apply to the file
-        @returns true if it manages to change the file's time.
-        @see getCreationTime, setLastModificationTime, setLastAccessTime
-    */
-    bool setCreationTime (Time newTime) const;
-
-    //==============================================================================
     /** Creates an empty file if it doesn't already exist.
 
         If the file that this object refers to doesn't exist, this will create a file
@@ -711,8 +664,6 @@ private:
     Result createDirectoryInternal (const String&) const;
     bool copyInternal (const File&) const;
     bool moveInternal (const File&) const;
-    bool setFileTimesInternal (std::int64_t m, std::int64_t a, std::int64_t c) const;
-    void getFileTimesInternal (std::int64_t& m, std::int64_t& a, std::int64_t& c) const;
     bool setFileReadOnlyInternal (bool) const;
 };
 

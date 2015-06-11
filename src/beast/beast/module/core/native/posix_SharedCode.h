@@ -190,37 +190,6 @@ bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
     return chmod (fullPath.toUTF8(), info.st_mode) == 0;
 }
 
-void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
-{
-    modificationTime = 0;
-    accessTime = 0;
-    creationTime = 0;
-
-    beast_statStruct info;
-    if (beast_stat (fullPath, info))
-    {
-        modificationTime = (std::int64_t) info.st_mtime * 1000;
-        accessTime = (std::int64_t) info.st_atime * 1000;
-        creationTime = (std::int64_t) info.st_ctime * 1000;
-    }
-}
-
-bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t /*creationTime*/) const
-{
-    beast_statStruct info;
-
-    if ((modificationTime != 0 || accessTime != 0) && beast_stat (fullPath, info))
-    {
-        struct utimbuf times;
-        times.actime  = accessTime != 0       ? (time_t) (accessTime / 1000)       : info.st_atime;
-        times.modtime = modificationTime != 0 ? (time_t) (modificationTime / 1000) : info.st_mtime;
-
-        return utime (fullPath.toUTF8(), &times) == 0;
-    }
-
-    return false;
-}
-
 bool File::deleteFile() const
 {
     if (! exists())
