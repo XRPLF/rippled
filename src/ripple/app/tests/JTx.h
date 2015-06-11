@@ -28,6 +28,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
 #include <boost/logic/tribool.hpp>
 #include <functional>
@@ -210,6 +211,20 @@ parse (Json::Value const& jv);
 //
 //------------------------------------------------------------------------------
 
+/** Add and/or remove flag. */
+Json::Value
+fset (Account const& account,
+    std::uint32_t on, std::uint32_t off = 0);
+
+/** Remove account flag. */
+inline
+Json::Value
+fclear (Account const& account,
+    std::uint32_t off)
+{
+    return fset(account, 0, off);
+}
+
 /** Create a payment. */
 Json::Value
 pay (Account const& account,
@@ -235,50 +250,13 @@ regkey (Account const& account,
 Json::Value
 regkey (Account const& account,
     Account const& signer);
-
-/** Add and/or remove flag. */
-Json::Value
-set (Account const& account,
-    std::uint32_t on, std::uint32_t off = 0);
-
-/** Remove account flag. */
-inline
-Json::Value
-clear (Account const& account,
-    std::uint32_t off)
-{
-    return set(account, 0, off);
-}
-
 /** The null transaction. */
 inline
 Json::Value
 noop (Account const& account)
 {
-    return set(account, 0);
+    return fset(account, 0);
 }
-
-struct signer
-{
-    std::uint32_t weight;
-    Account account;
-
-    signer (Account account_,
-            std::uint32_t weight_ = 1)
-        : weight(weight_)
-        , account(std::move(account_))
-    {
-    }
-};
-
-Json::Value
-signers (Account const& account,
-    std::uint32_t quorum,
-        std::vector<signer> const& v);
-
-/** Remove a signer list. */
-Json::Value
-signers (Account const& account, none_t);
 
 /** Modify a trust line. */
 Json::Value
@@ -325,23 +303,6 @@ public:
     operator()(Env const&, JTx& jt) const;
 };
 
-/** Set the flags on a JTx. */
-class flags
-{
-private:
-    std::uint32_t v_;
-
-public:
-    explicit
-    flags (std::uint32_t v)
-        : v_(v)
-    {
-    }
-
-    void
-    operator()(Env const&, JTx& jt) const;
-};
-
 /** Set Paths, SendMax on a JTx. */
 class paths
 {
@@ -380,85 +341,22 @@ public:
     operator()(Env const&, JTx& jtx) const;
 };
 
-/** Set a multisignature on a JTx. */
-class msig
+/** Set the flags on a JTx. */
+class txflags
 {
 private:
-    std::vector<Account> accounts_;
+    std::uint32_t v_;
 
 public:
-    msig (std::vector<Account> accounts)
-        : accounts_(std::move(accounts))
-    {
-    }
-
-    template <class AccountType, class... Accounts>
-    msig (AccountType&& a0, Accounts&&... aN)
-        : msig(make_vector(
-            std::forward<AccountType>(a0),
-                std::forward<Accounts>(aN)...))
+    explicit
+    txflags (std::uint32_t v)
+        : v_(v)
     {
     }
 
     void
     operator()(Env const&, JTx& jt) const;
-
-private:
-    template <class AccountType>
-    static
-    void
-    helper (std::vector<Account>& v,
-        AccountType&& account)
-    {
-        v.emplace_back(std::forward<
-            Account>(account));
-    }
-
-    template <class AccountType, class... Accounts>
-    static
-    void
-    helper (std::vector<Account>& v,
-        AccountType&& a0, Accounts&&... aN)
-    {
-        helper(v, std::forward<AccountType>(a0));
-        helper(v, std::forward<Accounts>(aN)...);
-    }
-
-    template <class... Accounts>
-    static
-    std::vector<Account>
-    make_vector(Accounts&&... accounts)
-    {
-        std::vector<Account> v;
-        v.reserve(sizeof...(accounts));
-        helper(v, std::forward<
-            Accounts>(accounts)...);
-        return v;
-    }
 };
-
-/** Set a multisignature on a JTx. */
-class msig2_t
-{
-private:
-    std::map<Account,
-        std::set<Account>> sigs_;
-
-public:
-    msig2_t (std::vector<std::pair<
-        Account, Account>> sigs);
-
-    void
-    operator()(Env const&, JTx& jt) const;
-};
-
-inline
-msig2_t
-msig2 (std::vector<std::pair<
-    Account, Account>> sigs)
-{
-    return msig2_t(std::move(sigs));
-}
 
 /** Set the sequence number on a JTx. */
 struct seq
@@ -668,27 +566,32 @@ private:
     {
     }
 
+    void
+    set_args (std::uint32_t flag)
+    {
+        switch(flag)
+        {
+        case asfRequireDest:    mask_ |= lsfRequireDestTag; break;
+        case asfRequireAuth:    mask_ |= lsfRequireAuth; break;
+        case asfDisallowXRP:    mask_ |= lsfDisallowXRP; break;
+        case asfDisableMaster:  mask_ |= lsfDisableMaster; break;
+        //case asfAccountTxnID: // ???
+        case asfNoFreeze:       mask_ |= lsfNoFreeze; break;
+        case asfGlobalFreeze:   mask_ |= lsfGlobalFreeze; break;
+        case asfDefaultRipple:  mask_ |= lsfDefaultRipple; break;
+        default:
+        throw std::runtime_error(
+            "unknown flag");
+        }
+    }
+
     template <class Flag,
         class... Args>
     void
     set_args (std::uint32_t flag,
         Args... args)
     {
-        switch(flag)
-        {
-        case asfRequireDest:    set_ |= lsfRequireDestTag; break;
-        case asfRequireAuth:    set_ |= lsfRequireAuth; break;
-        case asfDisallowXRP:    set_ |= lsfDisallowXRP; break;
-        case asfDisableMaster:  set_ |= lsfDisableMaster; break;
-        //case asfAccountTxnID: // ???
-        case asfNoFreeze:       set_ |= lsfNoFreeze; break;
-        case asfGlobalFreeze:   set_ |= lsfGlobalFreeze; break;
-        case asfDefaultRipple:  set_ |= lsfDefaultRipple; break;
-        default:
-        throw std::runtime_error(
-            "unknown flag");
-        }
-        set_args(args...);
+        set_args(flag, args...);
     }
 
 protected:
@@ -696,7 +599,7 @@ protected:
     flags_helper (Args... args)
         : mask_(0)
     {
-        set_args(mask_, args...);
+        set_args(args...);
     }
 };
 
@@ -713,6 +616,7 @@ public:
     flags (Account const& account,
             Args... args)
         : flags_helper(args...)
+        , account_(account)
     {
     }
 
@@ -731,6 +635,7 @@ public:
     nflags (Account const& account,
             Args... args)
         : flags_helper(args...)
+        , account_(account)
     {
     }
 
@@ -801,14 +706,119 @@ using lines = owned_count<ltRIPPLE_STATE>;
 /** The number of owned offers matches. */
 using offers = owned_count<ltOFFER>;
 
-/** The number of signer lists matches. */
-using siglists = owned_count<ltSIGNER_LIST>;
-
 } // cond
 
 //------------------------------------------------------------------------------
 //
-// User Defined Example
+// Multisigning
+//
+//------------------------------------------------------------------------------
+
+struct signer
+{
+    std::uint32_t weight;
+    Account account;
+
+    signer (Account account_,
+            std::uint32_t weight_ = 1)
+        : weight(weight_)
+        , account(std::move(account_))
+    {
+    }
+};
+
+Json::Value
+signers (Account const& account,
+    std::uint32_t quorum,
+        std::vector<signer> const& v);
+
+/** Remove a signer list. */
+Json::Value
+signers (Account const& account, none_t);
+
+/** Set a multisignature on a JTx. */
+class msig
+{
+private:
+    std::vector<Account> accounts_;
+
+public:
+    msig (std::vector<Account> accounts)
+        : accounts_(std::move(accounts))
+    {
+    }
+
+    template <class AccountType, class... Accounts>
+    msig (AccountType&& a0, Accounts&&... aN)
+        : msig(make_vector(
+            std::forward<AccountType>(a0),
+                std::forward<Accounts>(aN)...))
+    {
+    }
+
+    void
+    operator()(Env const&, JTx& jt) const;
+
+private:
+    template <class AccountType>
+    static
+    void
+    helper (std::vector<Account>& v,
+        AccountType&& account)
+    {
+        v.emplace_back(std::forward<
+            Account>(account));
+    }
+
+    template <class AccountType, class... Accounts>
+    static
+    void
+    helper (std::vector<Account>& v,
+        AccountType&& a0, Accounts&&... aN)
+    {
+        helper(v, std::forward<AccountType>(a0));
+        helper(v, std::forward<Accounts>(aN)...);
+    }
+
+    template <class... Accounts>
+    static
+    std::vector<Account>
+    make_vector(Accounts&&... accounts)
+    {
+        std::vector<Account> v;
+        v.reserve(sizeof...(accounts));
+        helper(v, std::forward<
+            Accounts>(accounts)...);
+        return v;
+    }
+};
+
+/** Set a multisignature on a JTx. */
+class msig2_t
+{
+private:
+    std::map<Account,
+        std::set<Account>> sigs_;
+
+public:
+    msig2_t (std::vector<std::pair<
+        Account, Account>> sigs);
+
+    void
+    operator()(Env const&, JTx& jt) const;
+};
+
+inline
+msig2_t
+msig2 (std::vector<std::pair<
+    Account, Account>> sigs)
+{
+    return msig2_t(std::move(sigs));
+}
+
+//------------------------------------------------------------------------------
+//
+// Tickets
 //
 //------------------------------------------------------------------------------
 
@@ -887,6 +897,9 @@ create (Account const& account,
 
 /** The number of tickets matches. */
 using tickets = cond::owned_count<ltTICKET>;
+
+/** The number of signer lists matches. */
+using siglists = cond::owned_count<ltSIGNER_LIST>;
 
 } // ticket
 

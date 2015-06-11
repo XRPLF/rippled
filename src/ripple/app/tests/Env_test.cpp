@@ -55,7 +55,9 @@ public:
         // Gateway pays alice 10/USD, verify the balance
         env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
 
-
+        env.require(nflags("alice", asfRequireDest));
+        env(fset("alice", asfRequireDest), require(flags("alice", asfRequireDest)));
+        env(fclear("alice", asfRequireDest), require(nflags("alice", asfRequireDest)));
     }
 
     void
@@ -98,12 +100,12 @@ public:
         env(noop(alice), sig(alice));
 
         // Regular key only
-        env(set(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), sig(alice));
         env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice),                            ter(tefMASTER_DISABLED));
-        env(clear(alice, asfDisableMaster), sig(alice),         ter(tefMASTER_DISABLED));
-        env(clear(alice, asfDisableMaster), sig(bob));
+        env(fclear(alice, asfDisableMaster), sig(alice),         ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(alice));
     }
 
@@ -208,19 +210,19 @@ public:
         env(noop("alice"), sig("alice"));
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
-        env(set("alice", asfDisableMaster),                     ter(tecNEED_MASTER_KEY));
-        env(set("alice", asfDisableMaster), sig("eric"),        ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster),                     ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster), sig("eric"),        ter(tecNEED_MASTER_KEY));
         expect(! (env["alice"].flags() & lsfDisableMaster));
-        env(set("alice", asfDisableMaster), sig("alice"));
+        env(fset("alice", asfDisableMaster), sig("alice"));
         expect(env["alice"].flags() & lsfDisableMaster);
         env(regkey("alice", disabled),                          ter(tecMASTER_DISABLED));
         env(noop("alice"));
         env(noop("alice"), sig("alice"),                        ter(tefMASTER_DISABLED));
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
-        env(clear("alice", asfDisableMaster), sig("bob"),       ter(tefBAD_AUTH));
-        env(clear("alice", asfDisableMaster), sig("alice"),     ter(tefMASTER_DISABLED));
-        env(clear("alice", asfDisableMaster));
+        env(fclear("alice", asfDisableMaster), sig("bob"),       ter(tefBAD_AUTH));
+        env(fclear("alice", asfDisableMaster), sig("alice"),     ter(tefMASTER_DISABLED));
+        env(fclear("alice", asfDisableMaster));
         expect(! (env["alice"].flags() & lsfDisableMaster));
         env(regkey("alice", disabled));
         env(noop("alice"), sig("eric"),                         ter(tefBAD_AUTH_MASTER));
@@ -232,7 +234,6 @@ public:
     {
         using namespace jtx;
         using namespace jtx::cond;
-        log << pretty(ticket::create("alice"));
         ticket::create("alice", "bob");
         ticket::create("alice", 60);
         ticket::create("alice", "bob", 60);
