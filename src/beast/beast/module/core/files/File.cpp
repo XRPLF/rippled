@@ -237,23 +237,6 @@ bool File::deleteRecursively() const
     return deleteFile() && worked;
 }
 
-bool File::moveFileTo (const File& newFile) const
-{
-    if (newFile.fullPath == fullPath)
-        return true;
-
-    if (! exists())
-        return false;
-
-   #if ! NAMES_ARE_CASE_SENSITIVE
-    if (*this != newFile)
-   #endif
-        if (! newFile.deleteFile())
-            return false;
-
-    return moveInternal (newFile);
-}
-
 //==============================================================================
 String File::getPathUpToLastSlash() const
 {
