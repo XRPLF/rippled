@@ -511,25 +511,6 @@ bool File::appendText (const String& text,
 }
 
 //==============================================================================
-static int countNumberOfSeparators (String::CharPointerType s)
-{
-    int num = 0;
-
-    for (;;)
-    {
-        const beast_wchar c = s.getAndAdvance();
-
-        if (c == 0)
-            break;
-
-        if (c == File::separator)
-            ++num;
-    }
-
-    return num;
-}
-
-//==============================================================================
 File File::createTempFile (const String& fileNameEnding)
 {
     const File tempFile (getSpecialLocation (tempDirectory)
