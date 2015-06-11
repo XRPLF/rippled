@@ -37,6 +37,8 @@
 namespace ripple {
 namespace test {
 
+namespace jtx {
+
 STAmount
 AccountInfo::balance(
     Issue const& issue) const
@@ -219,6 +221,8 @@ Env::autofill (JTx& jt)
             jtx::sign(jv, account);
     }
 }
+
+} // jtx
 
 } // test
 } // ripple

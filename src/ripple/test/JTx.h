@@ -45,16 +45,16 @@
 namespace ripple {
 namespace test {
 
+namespace jtx {
+
 class Env;
 
 BOOST_TRIBOOL_THIRD_STATE(use_default)
 
-namespace jtx {
 namespace detail {
 using require_t = std::function<void(Env const&)>;
 using requires_t = std::vector<require_t>;
 } // detail
-} // jtx
 
 /** Execution context for applying a JSON transaction.
     This augments the transaction with various settings.
@@ -88,10 +88,6 @@ struct JTx
         return jv[key];
     }
 };
-
-//------------------------------------------------------------------------------
-
-namespace jtx {
 
 //------------------------------------------------------------------------------
 //
@@ -774,8 +770,6 @@ using tickets = cond::owned_count<ltTICKET>;
 using siglists = cond::owned_count<ltSIGNER_LIST>;
 
 } // ticket
-
-
 
 } // jtx
 

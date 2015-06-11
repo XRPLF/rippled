@@ -42,6 +42,8 @@
 namespace ripple {
 namespace test {
 
+namespace jtx {
+
 /** A view to an account's account root. */
 class AccountInfo
 {
@@ -350,6 +352,8 @@ private:
     bool fill_seq_ = true;
     bool fill_sig_ = true;
 };
+
+} // jtx
 
 } // test
 } // ripple
