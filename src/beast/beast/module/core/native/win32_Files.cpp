@@ -297,11 +297,6 @@ File File::getCurrentWorkingDirectory()
     return File (String (dest));
 }
 
-bool File::setAsCurrentWorkingDirectory() const
-{
-    return SetCurrentDirectory (getFullPathName().toWideCharPointer()) != FALSE;
-}
-
 //==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
 {

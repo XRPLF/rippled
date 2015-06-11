@@ -67,11 +67,6 @@ File File::getCurrentWorkingDirectory()
     return File (CharPointer_UTF8 (cwd));
 }
 
-bool File::setAsCurrentWorkingDirectory() const
-{
-    return chdir (getFullPathName().toUTF8()) == 0;
-}
-
 //==============================================================================
 namespace
 {

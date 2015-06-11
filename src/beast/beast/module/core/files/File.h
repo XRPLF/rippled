@@ -520,19 +520,8 @@ public:
 
 
     //==============================================================================
-    /** Returns the current working directory.
-        @see setAsCurrentWorkingDirectory
-    */
+    /** Returns the current working directory. */
     static File getCurrentWorkingDirectory();
-
-    /** Sets the current working directory to be this file.
-
-        For this to work the file must point to a valid directory.
-
-        @returns true if the current directory has been changed.
-        @see getCurrentWorkingDirectory
-    */
-    bool setAsCurrentWorkingDirectory() const;
 
     //==============================================================================
     /** The system-specific file separator character.
