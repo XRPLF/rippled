@@ -93,11 +93,9 @@ transact_CancelTicket (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
-#if RIPPLE_ENABLE_TICKETS
-    return CancelTicket (txn, params, engine).apply ();
-#else
-    return temDISABLED;
-#endif
+    if (! engine->enableTickets())
+        return temDISABLED;
+    return CancelTicket (txn, params, engine).apply();
 }
 
 
