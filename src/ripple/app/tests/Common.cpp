@@ -47,6 +47,18 @@ IOU::operator()(double v) const
         std::to_string(v));
 }
 
+STAmount
+IOU::operator()(epsilon_t) const
+{
+    return STAmount(issue_, 1, -81);
+}
+
+STAmount
+IOU::operator()(detail::epsilon_multiple m) const
+{
+    return STAmount(issue_, m.n, -81);
+}
+
 //------------------------------------------------------------------------------
 
 #ifdef _MSC_VER

@@ -76,6 +76,31 @@ drops (std::uint64_t v)
     return STAmount(v, false);
 }
 
+namespace detail {
+
+struct epsilon_multiple
+{
+    std::size_t n;
+};
+
+} // detail
+
+// The smallest possible IOU STAmount
+struct epsilon_t
+{
+    epsilon_t()
+    {
+    }
+
+    detail::epsilon_multiple
+    operator()(std::size_t n) const
+    {
+        return { n };
+    }
+};
+
+static epsilon_t const epsilon;
+
 /** Converts to IOU Issue or STAmount.
 
     Examples:
@@ -105,6 +130,8 @@ public:
     }
 
     STAmount operator()(double v) const;
+    STAmount operator()(epsilon_t) const;
+    STAmount operator()(detail::epsilon_multiple) const;
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
