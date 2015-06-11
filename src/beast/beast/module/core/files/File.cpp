@@ -656,47 +656,6 @@ bool File::appendText (const String& text,
 }
 
 //==============================================================================
-String File::createLegalPathName (const String& original)
-{
-    String s (original);
-    String start;
-
-    if (s[1] == ':')
-    {
-        start = s.substring (0, 2);
-        s = s.substring (2);
-    }
-
-    return start + s.removeCharacters ("\"#@,;:<>*^|?")
-                    .substring (0, 1024);
-}
-
-String File::createLegalFileName (const String& original)
-{
-    String s (original.removeCharacters ("\"#@,;:<>*^|?\\/"));
-
-    const int maxLength = 128; // only the length of the filename, not the whole path
-    const int len = s.length();
-
-    if (len > maxLength)
-    {
-        const int lastDot = s.lastIndexOfChar ('.');
-
-        if (lastDot > std::max (0, len - 12))
-        {
-            s = s.substring (0, maxLength - (len - lastDot))
-                 + s.substring (lastDot);
-        }
-        else
-        {
-            s = s.substring (0, maxLength);
-        }
-    }
-
-    return s;
-}
-
-//==============================================================================
 static int countNumberOfSeparators (String::CharPointerType s)
 {
     int num = 0;

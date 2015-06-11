@@ -700,28 +700,6 @@ public:
     static const String separatorString;
 
     //==============================================================================
-    /** Returns a version of a filename with any illegal characters removed.
-
-        This will return a copy of the given string after removing characters
-        that are not allowed in a legal filename, and possibly shortening the
-        string if it's too long.
-
-        Because this will remove slashes, don't use it on an absolute pathname - use
-        createLegalPathName() for that.
-
-        @see createLegalPathName
-    */
-    static String createLegalFileName (const String& fileNameToFix);
-
-    /** Returns a version of a path with any illegal characters removed.
-
-        Similar to createLegalFileName(), but this won't remove slashes, so can
-        be used on a complete pathname.
-
-        @see createLegalFileName
-    */
-    static String createLegalPathName (const String& pathNameToFix);
-
     /** Indicates whether filenames are case-sensitive on the current operating system. */
     static bool areFileNamesCaseSensitive();
 
