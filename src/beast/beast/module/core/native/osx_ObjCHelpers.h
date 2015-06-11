@@ -54,16 +54,6 @@ namespace
     }
 }
 
-//==============================================================================
-template <typename ObjectType>
-struct NSObjectRetainer
-{
-    inline NSObjectRetainer (ObjectType* o) : object (o)  { [object retain]; }
-    inline ~NSObjectRetainer()                            { [object release]; }
-
-    ObjectType* object;
-};
-
 } // beast
 
 #endif   // BEAST_OSX_OBJCHELPERS_H_INCLUDED
