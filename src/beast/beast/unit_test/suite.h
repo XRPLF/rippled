@@ -346,11 +346,13 @@ bool
 suite::expect (Condition shouldBeTrue,
     String const& reason)
 {
-    if (shouldBeTrue)
+    bool const b =
+        static_cast<bool>(shouldBeTrue);
+    if (b)
         pass();
     else
         fail (reason);
-    return shouldBeTrue;
+    return b;
 }
 
 template <class Condition, class String>
@@ -359,11 +361,13 @@ bool
 suite::unexpected (Condition shouldBeFalse,
     String const& reason)
 {
-    if (! shouldBeFalse)
+    bool const b =
+        static_cast<bool>(shouldBeFalse);
+    if (! b)
         pass();
     else
         fail (reason);
-    return ! shouldBeFalse;
+    return ! b;
 }
 
 template <class>
