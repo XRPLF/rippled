@@ -137,7 +137,6 @@ class FileOutputStream;
 #include <beast/module/core/streams/InputStream.h>
 #include <beast/module/core/files/FileInputStream.h>
 #include <beast/module/core/streams/InputSource.h>
-#include <beast/module/core/streams/FileInputSource.h>
 #include <beast/module/core/streams/OutputStream.h>
 #include <beast/module/core/files/FileOutputStream.h>
 #include <beast/module/core/streams/MemoryOutputStream.h>

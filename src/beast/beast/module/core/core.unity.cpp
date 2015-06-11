@@ -141,7 +141,6 @@
 
 #include <beast/module/core/misc/Result.cpp>
 
-#include <beast/module/core/streams/FileInputSource.cpp>
 #include <beast/module/core/streams/InputStream.cpp>
 #include <beast/module/core/streams/MemoryOutputStream.cpp>
 #include <beast/module/core/streams/OutputStream.cpp>

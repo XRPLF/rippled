@@ -33,8 +33,6 @@ namespace beast
 
     This may be used to refer to a file, or some other kind of source, allowing a
     caller to create an input stream that can read from it when required.
-
-    @see FileInputSource
 */
 class InputSource
 {
