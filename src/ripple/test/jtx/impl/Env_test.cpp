@@ -58,11 +58,12 @@ public:
         auto const EUR = gw["EUR"];
 
         // Account root for alice should not exist
-        env.require(balance("alice", none, XRP));
+        env.require(balance("alice", none));
+        env.require(balance("alice", XRP(none)));
         // Fund alice and the gateway
         env.fund(XRP(10000), "alice", gw);
         // Trust line for alice should not exist
-        env.require(balance("alice", none, USD));
+        env.require(balance("alice", USD(none)));
         // Extend trust to gateway
         env.trust(USD(100), "alice");
         // Check XRP balance

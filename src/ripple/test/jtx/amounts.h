@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_AMOUNTS_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMOUNTS_H_INCLUDED
 
+#include <ripple/test/jtx/tags.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
@@ -27,6 +28,19 @@
 
 namespace ripple {
 namespace test {
+namespace jtx {
+
+// Represents "no amount" of a currency
+// This is distinct from zero or a balance.
+// For example, no USD means the trust line
+// doesn't even exist. Using this in an
+// inappropriate context will generate a
+// compile error.
+//
+struct None
+{
+    Issue issue;
+};
 
 namespace detail {
 
@@ -49,6 +63,12 @@ struct XRP_t
         @param v The number of XRP (not drops)
     */
     STAmount operator()(double v) const;
+
+    /** Returns None-of-XRP */
+    None operator()(none_t) const
+    {
+        return { xrpIssue() };
+    }
 };
 
 } // detail
@@ -132,8 +152,15 @@ public:
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
+
+    /** Returns None-of-Issue */
+    None operator()(none_t) const
+    {
+        return { issue_ };
+    }
 };
 
+} // jtx
 } // test
 } // ripple
 

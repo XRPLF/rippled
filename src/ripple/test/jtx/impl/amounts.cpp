@@ -23,6 +23,7 @@
 
 namespace ripple {
 namespace test {
+namespace jtx {
 
 namespace detail {
 
@@ -59,5 +60,6 @@ IOU::operator()(detail::epsilon_multiple m) const
     return STAmount(issue_, m.n, -81);
 }
 
+} // jtx
 } // test
 } // ripple

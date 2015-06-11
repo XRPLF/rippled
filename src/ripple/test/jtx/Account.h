@@ -28,6 +28,7 @@
 
 namespace ripple {
 namespace test {
+namespace jtx {
 
 /** Immutable cryptographic account descriptor. */
 class Account
@@ -122,6 +123,7 @@ public:
     }
 };
 
+} // jtx
 } // test
 } // ripple
 

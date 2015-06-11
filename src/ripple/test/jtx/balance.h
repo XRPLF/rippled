@@ -43,11 +43,19 @@ private:
     STAmount value_;
 
 public:
-    balance (Account const& account, none_t,
-            Issue const& issue = XRP)
+    balance (Account const& account,
+            none_t)
         : none_(true)
         , account_(account)
-        , value_(issue)
+        , value_(XRP)
+    {
+    }
+
+    balance (Account const& account,
+            None const& value)
+        : none_(true)
+        , account_(account)
+        , value_(value.issue)
     {
     }
 

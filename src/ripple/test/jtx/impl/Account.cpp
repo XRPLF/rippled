@@ -22,6 +22,7 @@
 
 namespace ripple {
 namespace test {
+namespace jtx {
 
 #ifdef _MSC_VER
 Account::Account (Account&& other)
@@ -77,5 +78,6 @@ Account::operator[](std::string const& s) const
     return IOU(Issue(currency, id()));
 }
 
+} // jtx
 } // test
 } // ripple
