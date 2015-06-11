@@ -41,7 +41,7 @@ public:
     void run ();
 
 private:
-    class Impl;
+    struct Impl;
     std::shared_ptr <Impl> impl_;
 
     Coroutine (std::shared_ptr <Impl> const&);
