@@ -418,66 +418,6 @@ bool File::containsSubDirectories() const
 }
 
 //==============================================================================
-File File::getNonexistentChildFile (const String& suggestedPrefix,
-                                    const String& suffix,
-                                    bool putNumbersInBrackets) const
-{
-    File f (getChildFile (suggestedPrefix + suffix));
-
-    if (f.exists())
-    {
-        int number = 1;
-        String prefix (suggestedPrefix);
-
-        // remove any bracketed numbers that may already be on the end..
-        if (prefix.trim().endsWithChar (')'))
-        {
-            putNumbersInBrackets = true;
-
-            const int openBracks  = prefix.lastIndexOfChar ('(');
-            const int closeBracks = prefix.lastIndexOfChar (')');
-
-            if (openBracks > 0
-                 && closeBracks > openBracks
-                 && prefix.substring (openBracks + 1, closeBracks).containsOnly ("0123456789"))
-            {
-                number = prefix.substring (openBracks + 1, closeBracks).getIntValue();
-                prefix = prefix.substring (0, openBracks);
-            }
-        }
-
-        // also use brackets if it ends in a digit.
-        putNumbersInBrackets = putNumbersInBrackets
-                                 || CharacterFunctions::isDigit (prefix.getLastCharacter());
-
-        do
-        {
-            String newName (prefix);
-
-            if (putNumbersInBrackets)
-                newName << '(' << ++number << ')';
-            else
-                newName << ++number;
-
-            f = getChildFile (newName + suffix);
-
-        } while (f.exists());
-    }
-
-    return f;
-}
-
-File File::getNonexistentSibling (const bool putNumbersInBrackets) const
-{
-    if (! exists())
-        return *this;
-
-    return getParentDirectory().getNonexistentChildFile (getFileNameWithoutExtension(),
-                                                         getFileExtension(),
-                                                         putNumbersInBrackets);
-}
-
-//==============================================================================
 String File::getFileExtension() const
 {
     const int indexOfDot = fullPath.lastIndexOfChar ('.');

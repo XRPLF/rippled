@@ -250,39 +250,6 @@ public:
     bool isAChildOf (const File& potentialParentDirectory) const;
 
     //==============================================================================
-    /** Chooses a filename relative to this one that doesn't already exist.
-
-        If this file is a directory, this will return a child file of this
-        directory that doesn't exist, by adding numbers to a prefix and suffix until
-        it finds one that isn't already there.
-
-        If the prefix + the suffix doesn't exist, it won't bother adding a number.
-
-        e.g. File ("/moose/fish").getNonexistentChildFile ("foo", ".txt", true) might
-             return "/moose/fish/foo(2).txt" if there's already a file called "foo.txt".
-
-        @param prefix                   the string to use for the filename before the number
-        @param suffix                   the string to add to the filename after the number
-        @param putNumbersInBrackets     if true, this will create filenames in the
-                                        format "prefix(number)suffix", if false, it will leave the
-                                        brackets out.
-    */
-    File getNonexistentChildFile (const String& prefix,
-                                  const String& suffix,
-                                  bool putNumbersInBrackets = true) const;
-
-    /** Chooses a filename for a sibling file to this one that doesn't already exist.
-
-        If this file doesn't exist, this will just return itself, otherwise it
-        will return an appropriate sibling that doesn't exist, e.g. if a file
-        "/moose/fish/foo.txt" exists, this might return "/moose/fish/foo(2).txt".
-
-        @param putNumbersInBrackets     whether to add brackets around the numbers that
-                                        get appended to the new filename.
-    */
-    File getNonexistentSibling (bool putNumbersInBrackets = true) const;
-
-    //==============================================================================
     /** Compares the pathnames for two files. */
     bool operator== (const File&) const;
     /** Compares the pathnames for two files. */
