@@ -310,28 +310,6 @@ public:
     bool operator> (const File&) const;
 
     //==============================================================================
-    /** Checks whether a file can be created or written to.
-
-        @returns    true if it's possible to create and write to this file. If the file
-                    doesn't already exist, this will check its parent directory to
-                    see if writing is allowed.
-        @see setReadOnly
-    */
-    bool hasWriteAccess() const;
-
-    /** Changes the write-permission of a file or directory.
-
-        @param shouldBeReadOnly     whether to add or remove write-permission
-        @param applyRecursively     if the file is a directory and this is true, it will
-                                    recurse through all the subfolders changing the permissions
-                                    of all files
-        @returns    true if it manages to change the file's permissions.
-        @see hasWriteAccess
-    */
-    bool setReadOnly (bool shouldBeReadOnly,
-                      bool applyRecursively = false) const;
-
-    //==============================================================================
     /** Creates an empty file if it doesn't already exist.
 
         If the file that this object refers to doesn't exist, this will create a file
@@ -609,9 +587,6 @@ private:
     String getPathUpToLastSlash() const;
 
     Result createDirectoryInternal (const String&) const;
-    bool copyInternal (const File&) const;
-    bool moveInternal (const File&) const;
-    bool setFileReadOnlyInternal (bool) const;
 };
 
 } // beast

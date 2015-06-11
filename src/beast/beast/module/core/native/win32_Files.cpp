@@ -128,29 +128,6 @@ bool File::isDirectory() const
     return ((attr & FILE_ATTRIBUTE_DIRECTORY) != 0) && (attr != INVALID_FILE_ATTRIBUTES);
 }
 
-bool File::hasWriteAccess() const
-{
-    if (exists())
-        return (WindowsFileHelpers::getAtts (fullPath) & FILE_ATTRIBUTE_READONLY) == 0;
-
-    // on windows, it seems that even read-only directories can still be written into,
-    // so checking the parent directory's permissions would return the wrong result..
-    return true;
-}
-
-bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
-{
-    const DWORD oldAtts = WindowsFileHelpers::getAtts (fullPath);
-
-    if (oldAtts == INVALID_FILE_ATTRIBUTES)
-        return false;
-
-    const DWORD newAtts = shouldBeReadOnly ? (oldAtts |  FILE_ATTRIBUTE_READONLY)
-                                           : (oldAtts & ~FILE_ATTRIBUTE_READONLY);
-    return newAtts == oldAtts
-            || SetFileAttributes (fullPath.toWideCharPointer(), newAtts) != FALSE;
-}
-
 //==============================================================================
 bool File::deleteFile() const
 {
@@ -159,16 +136,6 @@ bool File::deleteFile() const
 
     return isDirectory() ? RemoveDirectory (fullPath.toWideCharPointer()) != 0
                          : DeleteFile (fullPath.toWideCharPointer()) != 0;
-}
-
-bool File::copyInternal (const File& dest) const
-{
-    return CopyFile (fullPath.toWideCharPointer(), dest.getFullPathName().toWideCharPointer(), false) != 0;
-}
-
-bool File::moveInternal (const File& dest) const
-{
-    return MoveFile (fullPath.toWideCharPointer(), dest.getFullPathName().toWideCharPointer()) != 0;
 }
 
 Result File::createDirectoryInternal (const String& fileName) const

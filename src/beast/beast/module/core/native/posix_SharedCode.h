@@ -162,34 +162,6 @@ std::int64_t File::getSize() const
 }
 
 //==============================================================================
-bool File::hasWriteAccess() const
-{
-    if (exists())
-        return access (fullPath.toUTF8(), W_OK) == 0;
-
-    if ((! isDirectory()) && fullPath.containsChar (separator))
-        return getParentDirectory().hasWriteAccess();
-
-    return false;
-}
-
-bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
-{
-    beast_statStruct info;
-    if (! beast_stat (fullPath, info))
-        return false;
-
-    info.st_mode &= 0777;   // Just permissions
-
-    if (shouldBeReadOnly)
-        info.st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
-    else
-        // Give everybody write permission?
-        info.st_mode |= S_IWUSR | S_IWGRP | S_IWOTH;
-
-    return chmod (fullPath.toUTF8(), info.st_mode) == 0;
-}
-
 bool File::deleteFile() const
 {
     if (! exists())
@@ -199,22 +171,6 @@ bool File::deleteFile() const
         return rmdir (fullPath.toUTF8()) == 0;
 
     return remove (fullPath.toUTF8()) == 0;
-}
-
-bool File::moveInternal (const File& dest) const
-{
-    if (rename (fullPath.toUTF8(), dest.getFullPathName().toUTF8()) == 0)
-        return true;
-
-    if (hasWriteAccess() && copyInternal (dest))
-    {
-        if (deleteFile())
-            return true;
-
-        dest.deleteFile();
-    }
-
-    return false;
 }
 
 Result File::createDirectoryInternal (const String& fileName) const

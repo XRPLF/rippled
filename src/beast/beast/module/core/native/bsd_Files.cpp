@@ -24,29 +24,6 @@
 namespace beast
 {
 //==============================================================================
-bool File::copyInternal (const File& dest) const
-{
-    FileInputStream in (*this);
-
-    if (dest.deleteFile())
-    {
-        {
-            FileOutputStream out (dest);
-
-            if (out.failedToOpen())
-                return false;
-
-            if (out.writeFromInputStream (in, -1) == getSize())
-                return true;
-        }
-
-        dest.deleteFile();
-    }
-
-    return false;
-}
-
-//==============================================================================
 static File resolveXDGFolder (const char* const type, const char* const fallbackFolder)
 {
     File userDirs ("~/.config/user-dirs.dirs");

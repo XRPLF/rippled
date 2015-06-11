@@ -204,23 +204,6 @@ bool File::operator<  (const File& other) const     { return compareFilenames (f
 bool File::operator>  (const File& other) const     { return compareFilenames (fullPath, other.fullPath) >  0; }
 
 //==============================================================================
-bool File::setReadOnly (const bool shouldBeReadOnly,
-                        const bool applyRecursively) const
-{
-    bool worked = true;
-
-    if (applyRecursively && isDirectory())
-    {
-        Array <File> subFiles;
-        findChildFiles (subFiles, File::findFilesAndDirectories, false);
-
-        for (int i = subFiles.size(); --i >= 0;)
-            worked = subFiles.getReference(i).setReadOnly (shouldBeReadOnly, true) && worked;
-    }
-
-    return setFileReadOnlyInternal (shouldBeReadOnly) && worked;
-}
-
 bool File::deleteRecursively() const
 {
     bool worked = true;
