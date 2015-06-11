@@ -69,17 +69,6 @@ namespace WindowsFileHelpers
         return path;
     }
 
-    std::int64_t getDiskSpaceInfo (const String& path, const bool total)
-    {
-        ULARGE_INTEGER spc, tot, totFree;
-
-        if (GetDiskFreeSpaceEx (getDriveFromPath (path).toWideCharPointer(), &spc, &tot, &totFree))
-            return total ? (std::int64_t) tot.QuadPart
-                         : (std::int64_t) spc.QuadPart;
-
-        return 0;
-    }
-
     unsigned int getWindowsDriveType (const String& path)
     {
         return GetDriveType (getDriveFromPath (path).toWideCharPointer());
@@ -336,17 +325,6 @@ bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t acc
     }
 
     return ok;
-}
-
-//==============================================================================
-std::int64_t File::getBytesFreeOnVolume() const
-{
-    return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), false);
-}
-
-std::int64_t File::getVolumeTotalSize() const
-{
-    return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), true);
 }
 
 //==============================================================================

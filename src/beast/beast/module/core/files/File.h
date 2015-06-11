@@ -582,21 +582,6 @@ public:
                      bool writeUnicodeHeaderBytes = false) const;
 
     //==============================================================================
-    /** Returns the number of bytes free on the drive that this file lives on.
-
-        @returns the number of bytes free, or 0 if there's a problem finding this out
-        @see getVolumeTotalSize
-    */
-    std::int64_t getBytesFreeOnVolume() const;
-
-    /** Returns the total size of the drive that contains this file.
-
-        @returns the total number of bytes that the volume can hold
-        @see getBytesFreeOnVolume
-    */
-    std::int64_t getVolumeTotalSize() const;
-
-    //==============================================================================
     /** A set of types of location that can be passed to the getSpecialLocation() method.
     */
     enum SpecialLocationType

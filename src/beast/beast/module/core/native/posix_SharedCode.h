@@ -415,24 +415,5 @@ File beast_getExecutableFile()
    #endif
 }
 
-//==============================================================================
-std::int64_t File::getBytesFreeOnVolume() const
-{
-    struct statfs buf;
-    if (beast_doStatFS (*this, buf))
-        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_bavail; // Note: this returns space available to non-super user
-
-    return 0;
-}
-
-std::int64_t File::getVolumeTotalSize() const
-{
-    struct statfs buf;
-    if (beast_doStatFS (*this, buf))
-        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_blocks;
-
-    return 0;
-}
-
 } // beast
 #endif
