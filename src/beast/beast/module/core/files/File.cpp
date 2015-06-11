@@ -260,30 +260,6 @@ bool File::copyFileTo (const File& newFile) const
             || (exists() && newFile.deleteFile() && copyInternal (newFile));
 }
 
-bool File::copyDirectoryTo (const File& newDirectory) const
-{
-    if (isDirectory() && newDirectory.createDirectory())
-    {
-        Array<File> subFiles;
-        findChildFiles (subFiles, File::findFiles, false);
-
-        for (int i = 0; i < subFiles.size(); ++i)
-            if (! subFiles.getReference(i).copyFileTo (newDirectory.getChildFile (subFiles.getReference(i).getFileName())))
-                return false;
-
-        subFiles.clear();
-        findChildFiles (subFiles, File::findDirectories, false);
-
-        for (int i = 0; i < subFiles.size(); ++i)
-            if (! subFiles.getReference(i).copyDirectoryTo (newDirectory.getChildFile (subFiles.getReference(i).getFileName())))
-                return false;
-
-        return true;
-    }
-
-    return false;
-}
-
 //==============================================================================
 String File::getPathUpToLastSlash() const
 {
