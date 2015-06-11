@@ -116,8 +116,6 @@ namespace TimeHelpers
                                StringType (buffer) + (int) numChars);
         }
     }
-
-    static std::uint32_t lastMSCounterValue = 0;
 }
 
 //==============================================================================
