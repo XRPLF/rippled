@@ -390,16 +390,6 @@ public:
     */
     bool moveFileTo (const File& targetLocation) const;
 
-    /** Copies a file.
-
-        Tries to copy a file to a different location.
-        If the target file already exists, this will attempt to delete it first, and
-        will fail if this can't be done.
-
-        @returns    true if the operation succeeds
-    */
-    bool copyFileTo (const File& targetLocation) const;
-
     //==============================================================================
     /** Used in file searching, to specify whether to return files, directories, or both.
     */

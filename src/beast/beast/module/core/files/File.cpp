@@ -254,12 +254,6 @@ bool File::moveFileTo (const File& newFile) const
     return moveInternal (newFile);
 }
 
-bool File::copyFileTo (const File& newFile) const
-{
-    return (*this == newFile)
-            || (exists() && newFile.deleteFile() && copyInternal (newFile));
-}
-
 //==============================================================================
 String File::getPathUpToLastSlash() const
 {
