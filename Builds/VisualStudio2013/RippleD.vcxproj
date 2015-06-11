@@ -3439,6 +3439,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\paths.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\require.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\requires.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\sendmax.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\seq.h">

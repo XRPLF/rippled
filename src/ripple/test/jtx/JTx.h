@@ -24,6 +24,7 @@
 #include <ripple/test/jtx/amounts.h>
 #include <ripple/test/jtx/any.h>
 #include <ripple/test/jtx/json.h>
+#include <ripple/test/jtx/requires.h>
 #include <ripple/test/jtx/tags.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
@@ -50,11 +51,6 @@ class Env;
 
 BOOST_TRIBOOL_THIRD_STATE(use_default)
 
-namespace detail {
-using require_t = std::function<void(Env const&)>;
-using requires_t = std::vector<require_t>;
-} // detail
-
 /** Execution context for applying a JSON transaction.
     This augments the transaction with various settings.
 */
@@ -65,7 +61,7 @@ struct JTx
     boost::tribool fill_seq = boost::logic::indeterminate;
     boost::tribool fill_sig = boost::logic::indeterminate;
     std::function<void(Env&, JTx&)> signer;
-    jtx::detail::requires_t requires;
+    requires_t requires;
     TER ter = tesSUCCESS;
 
     JTx() = default;
@@ -85,72 +81,6 @@ struct JTx
     operator[](Key const& key)
     {
         return jv[key];
-    }
-};
-
-//------------------------------------------------------------------------------
-//
-// Conditions
-//
-//------------------------------------------------------------------------------
-
-namespace detail {
-
-inline
-void
-require_args (requires_t& vec)
-{
-}
-
-template <class Cond, class... Args>
-inline
-void
-require_args (requires_t& vec,
-    Cond const& cond, Args const&... args)
-{
-    vec.push_back(cond);
-    require_args(vec, args...);
-}
-
-} // detail
-
-// Standalone function composes
-// one condition functor from many.
-template <class...Args>
-detail::require_t
-required (Args const&... args)
-{
-    detail::requires_t vec;
-    detail::require_args(vec, args...);
-    return [vec](Env const& env)
-    {
-        for(auto const& f : vec)
-            f(env);
-    };
-}
-
-/** Check a set of conditions.
-
-    The conditions are checked after a JTx is
-    applied, and only if the resulting TER
-    matches the expected TER.
-*/
-class require
-{
-private:
-    detail::require_t cond_;
-
-public:
-    template<class... Args>
-    require(Args const&... args)
-        : cond_(required(args...))
-    {
-    }
-
-    void
-    operator()(Env const&, JTx& jt) const
-    {
-        jt.requires.emplace_back(cond_);
     }
 };
 

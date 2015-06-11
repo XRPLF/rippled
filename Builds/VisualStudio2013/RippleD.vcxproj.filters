@@ -4167,6 +4167,12 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\paths.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\require.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\requires.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\sendmax.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
