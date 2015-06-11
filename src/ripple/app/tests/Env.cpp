@@ -160,7 +160,8 @@ Env::submit (JTx const& tx)
     bool didApply;
     if (stx)
     {
-        TransactionEngine txe (ledger, multisign);
+        TransactionEngine txe (ledger,
+            tx_enable_test);
         std::tie(ter, didApply) = txe.applyTransaction(
             *stx, tapOPEN_LEDGER |
                 (true ? tapNONE : tapNO_CHECK_SIGN));
