@@ -408,15 +408,6 @@ int File::getNumberOfChildFiles (const int whatToLookFor, const String& wildCard
     return total;
 }
 
-bool File::containsSubDirectories() const
-{
-    if (! isDirectory())
-        return false;
-
-    DirectoryIterator di (*this, false, "*", findDirectories);
-    return di.next();
-}
-
 //==============================================================================
 String File::getFileExtension() const
 {

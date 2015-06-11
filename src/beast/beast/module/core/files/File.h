@@ -357,11 +357,6 @@ public:
     int getNumberOfChildFiles (int whatToLookFor,
                                const String& wildCardPattern = "*") const;
 
-    /** Returns true if this file is a directory that contains one or more subdirectories.
-        @see isDirectory, findChildFiles
-    */
-    bool containsSubDirectories() const;
-
     //==============================================================================
     /** Creates a stream to read from this file.
 
