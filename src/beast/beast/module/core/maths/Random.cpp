@@ -59,7 +59,6 @@ void Random::setSeedRandomly()
 
     combineSeed (globalSeed ^ (std::int64_t) (std::intptr_t) this);
     combineSeed (Time::getMillisecondCounter());
-    combineSeed (Time::getHighResolutionTicks());
     combineSeed (Time::currentTimeMillis());
     globalSeed ^= seed;
 

@@ -326,16 +326,6 @@ public:
     */
     static std::uint32_t getApproximateMillisecondCounter() noexcept;
 
-    //==============================================================================
-    // High-resolution timers..
-
-    /** Returns the current high-resolution counter's tick-count.
-
-        This is a similar idea to getMillisecondCounter(), but with a higher
-        resolution.
-    */
-    static std::int64_t getHighResolutionTicks() noexcept;
-
 private:
     //==============================================================================
     std::int64_t millisSinceEpoch;

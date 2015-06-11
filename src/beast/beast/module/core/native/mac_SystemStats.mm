@@ -131,6 +131,5 @@ static HiResCounterHandler& hiResCounterHandler()
 }
 
 std::uint32_t beast_millisecondsSinceStartup() noexcept         { return hiResCounterHandler().millisecondsSinceStartup(); }
-std::int64_t  Time::getHighResolutionTicks() noexcept          { return (std::int64_t) mach_absolute_time(); }
 
 } // beast
