@@ -22,6 +22,7 @@
 #include <ripple/test/jtx/fee.h>
 #include <ripple/test/jtx/seq.h>
 #include <ripple/test/jtx/sig.h>
+#include <ripple/test/jtx/utility.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/basics/Slice.h>

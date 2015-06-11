@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx/sig.h>
+#include <ripple/test/jtx/utility.h>
 
 namespace ripple {
 namespace test {

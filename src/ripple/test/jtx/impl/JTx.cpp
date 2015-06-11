@@ -34,62 +34,6 @@ namespace test {
 namespace jtx {
 
 void
-fill_fee (Json::Value& jv,
-    Ledger const& ledger)
-{
-    if (jv.isMember(jss::Fee))
-        return;
-    jv[jss::Fee] = std::to_string(
-        ledger.getBaseFee());
-}
-
-void
-fill_seq (Json::Value& jv,
-    Ledger const& ledger)
-{
-    if (jv.isMember(jss::Sequence))
-        return;
-    RippleAddress ra;
-    ra.setAccountID(jv[jss::Account].asString());
-    auto const ar = ledger.fetch(
-        getAccountRootIndex(ra.getAccountID()));
-
-    jv[jss::Sequence] =
-        ar->getFieldU32(sfSequence);
-}
-
-void
-sign (Json::Value& jv,
-    Account const& account)
-{
-    jv[jss::SigningPubKey] =
-        strHex(make_Slice(
-            account.pk().getAccountPublic()));
-    Serializer ss;
-    ss.add32 (HashPrefix::txSign);
-    parse(jv).add(ss);
-    jv[jss::TxnSignature] = strHex(make_Slice(
-        account.sk().accountPrivateSign(
-            ss.getData())));
-}
-
-STObject
-parse (Json::Value const& jv)
-{
-    STParsedJSONObject p("tx_json", jv);
-    if (! p.object)
-        throw parse_error(
-            rpcErrorString(p.error));
-    return std::move(*p.object);
-}
-
-//------------------------------------------------------------------------------
-//
-// Conditions
-//
-//------------------------------------------------------------------------------
-
-void
 balance::operator()(Env const& env) const
 {
     if (isXRP(value_.issue()))

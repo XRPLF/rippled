@@ -90,48 +90,6 @@ struct JTx
 
 //------------------------------------------------------------------------------
 //
-// Utilities
-//
-//------------------------------------------------------------------------------
-
-/** Set the fee automatically. */
-void
-fill_fee (Json::Value& jv,
-    Ledger const& ledger);
-
-/** Set the sequence number automatically. */
-void
-fill_seq (Json::Value& jv,
-    Ledger const& ledger);
-
-/** Sign automatically.
-    @note This only works on accounts with multi-signing off.
-*/
-void
-sign (Json::Value& jv,
-    Account const& account);
-
-/** Thrown when parse fails. */
-struct parse_error : std::logic_error
-{
-    template <class String>
-    explicit
-    parse_error (String const& s)
-        : logic_error(s)
-    {
-    }
-};
-
-/** Convert JSON to STObject.
-    This throws on failure, the JSON must be correct.
-    @note Testing malformed JSON is beyond the scope of
-          this set of unit test routines.
-*/
-STObject
-parse (Json::Value const& jv);
-
-//------------------------------------------------------------------------------
-//
 // Conditions
 //
 //------------------------------------------------------------------------------

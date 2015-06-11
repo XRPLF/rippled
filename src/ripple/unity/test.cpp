@@ -33,5 +33,6 @@
 #include <ripple/test/jtx/impl/sig.cpp>
 #include <ripple/test/jtx/impl/ticket.cpp>
 #include <ripple/test/jtx/impl/txflags.cpp>
+#include <ripple/test/jtx/impl/utility.cpp>
 
 #include <ripple/test/jtx/impl/Env_test.cpp>

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx/multisign.h>
+#include <ripple/test/jtx/utility.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
 
