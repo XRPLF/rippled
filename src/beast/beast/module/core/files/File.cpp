@@ -598,66 +598,6 @@ static int countNumberOfSeparators (String::CharPointerType s)
     return num;
 }
 
-String File::getRelativePathFrom (const File& dir)  const
-{
-    String thisPath (fullPath);
-
-    while (thisPath.endsWithChar (separator))
-        thisPath = thisPath.dropLastCharacters (1);
-
-    String dirPath (addTrailingSeparator (dir.existsAsFile() ? dir.getParentDirectory().getFullPathName()
-                                                             : dir.fullPath));
-
-    int commonBitLength = 0;
-    String::CharPointerType thisPathAfterCommon (thisPath.getCharPointer());
-    String::CharPointerType dirPathAfterCommon  (dirPath.getCharPointer());
-
-    {
-        String::CharPointerType thisPathIter (thisPath.getCharPointer());
-        String::CharPointerType dirPathIter  (dirPath.getCharPointer());
-
-        for (int i = 0;;)
-        {
-            const beast_wchar c1 = thisPathIter.getAndAdvance();
-            const beast_wchar c2 = dirPathIter.getAndAdvance();
-
-           #if NAMES_ARE_CASE_SENSITIVE
-            if (c1 != c2
-           #else
-            if ((c1 != c2 && CharacterFunctions::toLowerCase (c1) != CharacterFunctions::toLowerCase (c2))
-           #endif
-                 || c1 == 0)
-                break;
-
-            ++i;
-
-            if (c1 == separator)
-            {
-                thisPathAfterCommon = thisPathIter;
-                dirPathAfterCommon  = dirPathIter;
-                commonBitLength = i;
-            }
-        }
-    }
-
-    // if the only common bit is the root, then just return the full path..
-    if (commonBitLength == 0 || (commonBitLength == 1 && thisPath[1] == separator))
-        return fullPath;
-
-    const int numUpDirectoriesNeeded = countNumberOfSeparators (dirPathAfterCommon);
-
-    if (numUpDirectoriesNeeded == 0)
-        return thisPathAfterCommon;
-
-   #if BEAST_WINDOWS
-    String s (String::repeatedString ("..\\", numUpDirectoriesNeeded));
-   #else
-    String s (String::repeatedString ("../",  numUpDirectoriesNeeded));
-   #endif
-    s.appendCharPointer (thisPathAfterCommon);
-    return s;
-}
-
 //==============================================================================
 File File::createTempFile (const String& fileNameEnding)
 {

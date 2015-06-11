@@ -143,7 +143,7 @@ public:
         If you just want the file's name, you should use getFileName() or
         getFileNameWithoutExtension().
 
-        @see getFileName, getRelativePathFrom
+        @see getFileName
     */
     const String& getFullPathName() const noexcept          { return fullPath; }
 
@@ -161,23 +161,6 @@ public:
         @see getFullPathName, getFileNameWithoutExtension
     */
     String getFileName() const;
-
-    /** Creates a relative path that refers to a file relatively to a given directory.
-
-        e.g. File ("/moose/foo.txt").getRelativePathFrom (File ("/moose/fish/haddock"))
-             would return "../../foo.txt".
-
-        If it's not possible to navigate from one file to the other, an absolute
-        path is returned. If the paths are invalid, an empty string may also be
-        returned.
-
-        @param directoryToBeRelativeTo  the directory which the resultant string will
-                                        be relative to. If this is actually a file rather than
-                                        a directory, its parent directory will be used instead.
-                                        If it doesn't exist, it's assumed to be a directory.
-        @see getChildFile, isAbsolutePath
-    */
-    String getRelativePathFrom (const File& directoryToBeRelativeTo) const;
 
     //==============================================================================
     /** Returns the file's extension.
@@ -236,7 +219,7 @@ public:
         If the string is actually an absolute path, it will be treated as such, e.g.
             File ("/moose/fish").getChildFile ("/foo.txt") will produce "/foo.txt"
 
-        @see getSiblingFile, getParentDirectory, getRelativePathFrom, isAChildOf
+        @see getSiblingFile, getParentDirectory, isAChildOf
     */
     File getChildFile (String relativeOrAbsolutePath) const;
 
