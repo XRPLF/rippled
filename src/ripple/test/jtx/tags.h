@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TEST_TAGS_H_INCLUDED
-#define RIPPLE_APP_TEST_TAGS_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_TAGS_H_INCLUDED
+#define RIPPLE_TEST_JTX_TAGS_H_INCLUDED
 
 namespace ripple {
 namespace test {

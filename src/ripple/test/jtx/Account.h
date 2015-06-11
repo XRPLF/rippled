@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_ACCOUNT_H_INCLUDED
-#define RIPPLE_TEST_ACCOUNT_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
+#define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
-#include <ripple/test/amounts.h>
+#include <ripple/test/jtx/amounts.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/Account.h>
+#include <ripple/test/jtx/Account.h>
 
 namespace ripple {
 namespace test {

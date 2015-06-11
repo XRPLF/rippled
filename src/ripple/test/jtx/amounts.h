@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_AMOUNTS_H_INCLUDED
-#define RIPPLE_TEST_AMOUNTS_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_AMOUNTS_H_INCLUDED
+#define RIPPLE_TEST_JTX_AMOUNTS_H_INCLUDED
 
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>

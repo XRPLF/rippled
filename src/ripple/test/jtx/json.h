@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JSON_H_INCLUDED
-#define RIPPLE_TEST_JSON_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_JSON_H_INCLUDED
+#define RIPPLE_TEST_JTX_JSON_H_INCLUDED
 
 #include <ripple/test/jtx/any.h>
 #include <ripple/test/jtx/tags.h>
-#include <ripple/test/Account.h>
+#include <ripple/test/jtx/Account.h>
 #include <ripple/json/json_value.h>
 
 namespace ripple {

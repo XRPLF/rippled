@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_ENV_H_INCLUDED
-#define RIPPLE_TEST_ENV_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ENV_H_INCLUDED
+#define RIPPLE_TEST_JTX_ENV_H_INCLUDED
 
-#include <ripple/test/Account.h>
-#include <ripple/test/amounts.h>
-#include <ripple/test/JTx.h>
+#include <ripple/test/jtx/Account.h>
+#include <ripple/test/jtx/amounts.h>
+#include <ripple/test/jtx/JTx.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>

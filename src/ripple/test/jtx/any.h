@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TEST_ANY_H_INCLUDED
-#define RIPPLE_APP_TEST_ANY_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ANY_H_INCLUDED
+#define RIPPLE_TEST_JTX_ANY_H_INCLUDED
 
 #include <ripple/protocol/STAmount.h>
 

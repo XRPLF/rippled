@@ -18,14 +18,50 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/test/jtx/owners.h>
 
-#include <ripple/test/jtx/impl/Account.cpp>
-#include <ripple/test/jtx/impl/amounts.cpp>
-#include <ripple/test/jtx/impl/Env.cpp>
-#include <ripple/test/jtx/impl/json.cpp>
-#include <ripple/test/jtx/impl/JTx.cpp>
-#include <ripple/test/jtx/impl/multisign.cpp>
-#include <ripple/test/jtx/impl/owners.cpp>
-#include <ripple/test/jtx/impl/ticket.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
 
-#include <ripple/test/jtx/impl/Env_test.cpp>
+namespace detail {
+
+std::uint32_t
+owned_count_of(Ledger const& ledger,
+    ripple::Account const& id,
+        LedgerEntryType type)
+{
+    std::uint32_t count = 0;
+    forEachItem(ledger, id, getApp().getSLECache(),
+        [&count, type](std::shared_ptr<SLE const> const& sle)
+        {
+            if (sle->getType() == type)
+                ++count;
+        });
+    return count;
+}
+
+void
+owned_count_helper(Env const& env,
+    ripple::Account const& id,
+        LedgerEntryType type,
+            std::uint32_t value)
+{
+    env.test.expect(owned_count_of(
+        *env.ledger, id, type) == value);
+}
+
+} // detail
+
+void
+owners::operator()(Env const& env) const
+{
+    env.test.expect(env.le(
+        account_)->getFieldU32(sfOwnerCount) ==
+            value_);
+}
+
+} // jtx
+} // test
+} // ripple

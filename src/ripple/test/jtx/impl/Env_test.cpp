@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/Env.h>
+#include <ripple/test/jtx/Env.h>
+#include <ripple/test/jtx/multisign.h>
+#include <ripple/test/jtx/ticket.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
@@ -34,7 +36,6 @@ public:
     testCond()
     {
         using namespace jtx;
-        using namespace jtx::cond;
         Env env(*this);
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
@@ -167,7 +168,6 @@ public:
     testPayments()
     {
         using namespace jtx;
-        using namespace jtx::cond;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -233,7 +233,6 @@ public:
     testTicket()
     {
         using namespace jtx;
-        using namespace jtx::cond;
         ticket::create("alice", "bob");
         ticket::create("alice", 60);
         ticket::create("alice", "bob", 60);

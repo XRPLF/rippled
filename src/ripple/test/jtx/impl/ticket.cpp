@@ -17,18 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_H_INCLUDED
-#define RIPPLE_TEST_H_INCLUDED
+#include <BeastConfig.h>
+#include <ripple/test/jtx/ticket.h>
+#include <ripple/protocol/JsonFields.h>
 
-// Convenience header that includes everything
+namespace ripple {
+namespace test {
+namespace jtx {
 
-#include <ripple/test/Account.h>
-#include <ripple/test/amounts.h>
-#include <ripple/test/Env.h>
-#include <ripple/test/JTx.h>
-#include <ripple/test/jtx/any.h>
-#include <ripple/test/jtx/json.h>
-#include <ripple/test/jtx/json.h>
+namespace ticket {
 
-#endif
+namespace detail {
 
+Json::Value
+create (Account const& account,
+    boost::optional<Account> const& target,
+        boost::optional<std::uint32_t> const& expire)
+{
+    Json::Value jv;
+    jv[jss::Account] = account.human();
+    jv[jss::TransactionType] = "TicketCreate";
+    if (expire)
+        jv["Expiration"] = *expire;
+    if (target)
+        jv["Target"] = target->human();
+    return jv;
+}
+
+} // detail
+
+} // ticket
+
+} // jtx
+} // test
+} // ripple

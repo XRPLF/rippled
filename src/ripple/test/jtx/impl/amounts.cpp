@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/amounts.h>
+#include <ripple/test/jtx/amounts.h>
 #include <ripple/protocol/SystemParameters.h>
 
 namespace ripple {
