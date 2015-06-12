@@ -3813,6 +3813,12 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\FieldReader.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\FieldReader.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -3900,12 +3906,24 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\Coroutine.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\FieldReader.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\MockContext.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\tests\MockContext.h">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\tests\MockNetworkOPs.h">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>

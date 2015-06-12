@@ -3122,6 +3122,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\FieldReader.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\FieldReader.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3194,12 +3199,22 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\Coroutine.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\FieldReader.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\MockContext.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\tests\MockContext.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\tests\MockNetworkOPs.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
