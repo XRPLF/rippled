@@ -48,7 +48,6 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/seconds_clock.h>
-#include <ripple/basics/make_SSLContext.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/LoadFeeTrack.h>
