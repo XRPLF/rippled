@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-// Identifies a node in a SHA256 hash map
+// Identifies a node in a half-SHA512 (256 bit) hash map
 class SHAMapNodeID
 {
 private:
