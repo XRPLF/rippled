@@ -23,8 +23,7 @@
 // Convenience header that includes everything
 
 #include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
+#include <ripple/test/jtx/amount.h>
 #include <ripple/test/jtx/balance.h>
 #include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/fee.h>

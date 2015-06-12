@@ -21,7 +21,7 @@
 #define RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 
 #include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
+#include <ripple/test/jtx/amount.h>
 #include <ripple/test/jtx/owners.h>
 #include <ripple/test/jtx/tags.h>
 #include <cstdint>

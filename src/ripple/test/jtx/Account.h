@@ -20,15 +20,17 @@
 #ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
-#include <ripple/test/jtx/amounts.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
+#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {
 namespace test {
 namespace jtx {
+
+class IOU;
 
 /** Immutable cryptographic account descriptor. */
 class Account
@@ -68,6 +70,13 @@ public:
     {
     }
     /** @} */
+
+    /** Return the name */
+    std::string const&
+    name() const
+    {
+        return name_;
+    }
 
     /** Return the public key. */
     RippleAddress const&
@@ -113,15 +122,31 @@ public:
     /** Returns an IOU for the specified gateway currency. */
     IOU
     operator[](std::string const& s) const;
-
-    /** Meet the requirements of StrictWeakOrdering. */
-    friend
-    bool
-    operator< (Account const& lhs, Account const& rhs)
-    {
-        return lhs.id() < rhs.id();
-    }
 };
+
+inline
+bool
+operator== (Account const& lhs,
+    Account const& rhs) noexcept
+{
+    return lhs.id() == rhs.id();
+}
+
+template <class Hasher>
+void
+hash_append (Hasher& h,
+    Account const& v) noexcept
+{
+    hash_append(h, v.id());
+}
+
+inline
+bool
+operator< (Account const& lhs,
+    Account const& rhs) noexcept
+{
+    return lhs.id() < rhs.id();
+}
 
 } // jtx
 } // test

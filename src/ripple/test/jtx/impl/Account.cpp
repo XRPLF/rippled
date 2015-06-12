@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx/Account.h>
+#include <ripple/test/jtx/amount.h>
 
 namespace ripple {
 namespace test {
@@ -75,7 +76,7 @@ Account::operator[](std::string const& s) const
 {
     auto const currency = to_currency(s);
     assert(currency != noCurrency());
-    return IOU(Issue(currency, id()));
+    return IOU(*this, currency);
 }
 
 } // jtx

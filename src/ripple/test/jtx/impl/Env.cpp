@@ -49,37 +49,6 @@ namespace test {
 
 namespace jtx {
 
-STAmount
-AccountInfo::balance(
-    Issue const& issue) const
-{
-    if (! root_)
-        return STAmount(issue, 0, 0);
-    if (isXRP(issue))
-        return root_->getFieldAmount(sfBalance);
-    auto amount = ledger_->fetch(getRippleStateIndex(
-        account_, issue.account,
-            issue.currency))->getFieldAmount(sfBalance);
-    amount.setIssuer(issue.account);
-    if (account_.id() > issue.account)
-        amount.negate();
-    return amount;
-}
-
-std::uint32_t
-AccountInfo::seq() const
-{
-    return root_->getFieldU32(sfSequence);
-}
-
-std::uint32_t
-AccountInfo::flags() const
-{
-    return root_->getFieldU32(sfFlags);
-}
-
-//------------------------------------------------------------------------------
-
 Env::Env (beast::unit_test::suite& test_)
     : test(test_)
     , master("master", generateKeysFromSeed(
@@ -118,6 +87,46 @@ Env::lookup (ripple::Account const& id) const
     return iter->second;
 }
 
+PrettyAmount
+Env::balance (Account const& account) const
+{
+    auto const sle = le(account);
+    if (! sle)
+        return XRP(0);
+    return {
+        sle->getFieldAmount(sfBalance),
+            "" };
+}
+
+PrettyAmount
+Env::balance (Account const& account,
+    Issue const& issue) const
+{
+    if (isXRP(issue.currency))
+        return balance(account);
+    auto const sle = le(getRippleStateIndex(
+        account.id(), issue));
+    if (! sle)
+        return { STAmount( issue, 0 ),
+            account.name() };
+    auto amount = sle->getFieldAmount(sfBalance);
+    amount.setIssuer(issue.account);
+    if (account.id() > issue.account)
+        amount.negate();
+    return { amount,
+        lookup(issue.account).name() };
+}
+
+std::uint32_t
+Env::seq (Account const& account) const
+{
+    auto const sle = le(account);
+    if (! sle)
+        throw std::runtime_error(
+            "missing account root");
+    return sle->getFieldU32(sfSequence);
+}
+
 std::shared_ptr<SLE const>
 Env::le (Account const& account) const
 {
@@ -152,21 +161,24 @@ Env::fund (bool setDefaultRipple,
         // VFALCO NOTE Is the fee formula correct?
         apply(pay(master, account, amount +
             drops(ledger->getBaseFee())),
-                seq(jtx::autofill),
+                jtx::seq(jtx::autofill),
                     fee(jtx::autofill),
                         sig(jtx::autofill));
         apply(fset(account, asfDefaultRipple),
-            jtx::require(flags(account, asfDefaultRipple)));
+            jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                    sig(jtx::autofill));
+        require(flags(account, asfDefaultRipple));
     }
     else
     {
         apply(pay(master, account, amount),
-            seq(jtx::autofill),
+            jtx::seq(jtx::autofill),
                 fee(jtx::autofill),
                     sig(jtx::autofill));
         require(nflags(account, asfDefaultRipple));
     }
-    require(balance(account, amount));
+    require(jtx::balance(account, amount));
 }
 
 void
@@ -174,7 +186,7 @@ Env::trust (STAmount const& amount,
     Account const& account)
 {
     apply(jtx::trust(account, amount),
-        seq(jtx::autofill),
+        jtx::seq(jtx::autofill),
             fee(jtx::autofill),
                 sig(jtx::autofill));
 }

@@ -96,10 +96,14 @@ create (Account const& account,
         account, target, expire);
 }
 
+/** Cancel a ticket */
+//Json::Value
+//cancel (Account const& account,
+    
+} // ticket
+
 /** Match the number of tickets on the account. */
 using tickets = owner_count<ltTICKET>;
-
-} // ticket
 
 } // jtx
 

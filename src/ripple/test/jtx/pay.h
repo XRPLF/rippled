@@ -21,8 +21,7 @@
 #define RIPPLE_TEST_JTX_PAY_H_INCLUDED
 
 #include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
-#include <ripple/test/jtx/any.h>
+#include <ripple/test/jtx/amount.h>
 #include <ripple/json/json_value.h>
 
 namespace ripple {

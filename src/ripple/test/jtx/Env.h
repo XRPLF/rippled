@@ -21,7 +21,7 @@
 #define RIPPLE_TEST_JTX_ENV_H_INCLUDED
 
 #include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amounts.h>
+#include <ripple/test/jtx/amount.h>
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
@@ -170,21 +170,26 @@ public:
     lookup (ripple::Account const& id) const;
     /** @} */
 
-    /** Returns info on an Account. */
-    // DEPRECATED
-    /** @{ */
-    AccountInfo
-    info (Account const& account) const
-    {
-        return AccountInfo(account, ledger);
-    }
+    /** Returns the XRP balance on an account.
+        Returns 0 if the account does not exist.
+    */
+    PrettyAmount
+    balance (Account const& account) const;
 
-    AccountInfo
-    operator[](Account const& account) const
-    {
-        return info(account);
-    }
-    /** @} */
+    /** Returns the next sequence number on account.
+        Exceptions:
+            Throws if the account does not exist
+    */
+    std::uint32_t
+    seq (Account const& account) const;
+
+    /** Return the balance on an account.
+        Returns 0 if the trust line does not exist.
+    */
+    // VFALCO NOTE This should return a unit-less amount
+    PrettyAmount
+    balance (Account const& account,
+        Issue const& issue) const;
 
     /** Return an account root.
         @return empty if the account does not exist.
