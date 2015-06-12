@@ -120,7 +120,7 @@ struct noripple_helper
     template <class... Args>
     explicit
     noripple_helper(Args const&... args_)
-        : args { args_... }
+        : args { { args_... } }
     {
     }
 };

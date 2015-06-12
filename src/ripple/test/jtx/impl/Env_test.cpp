@@ -55,7 +55,6 @@ public:
         Env env(*this);
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
-        auto const EUR = gw["EUR"];
 
         // Account root for alice should not exist
         env.require(balance("alice", none));
