@@ -137,11 +137,11 @@ applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 
 // Create genesis ledger from a start amount in drops, and the public
 // master RippleAddress
-std::pair<Ledger::pointer, Ledger::pointer>
+std::pair<std::shared_ptr<Ledger const>, Ledger::pointer>
 createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master)
 {
     initializePathfinding();
-    Ledger::pointer ledger = std::make_shared<Ledger>(master.pk,
+    auto ledger = std::make_shared<Ledger>(master.pk,
         start_amount_drops);
     ledger->getHash(); // updates the hash
     ledger->setClosed();
@@ -198,7 +198,7 @@ createAndFundAccountsWithFlags(TestAccount& from,
     std::vector<std::string> passphrases,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer& ledger,
-    Ledger::pointer& LCL,
+    std::shared_ptr<Ledger const>& LCL,
     const std::uint32_t flags, bool sign)
 {
     auto accounts = createAndFundAccounts(from,
@@ -430,11 +430,14 @@ trust(TestAccount& from, TestAccount const& issuer,
 }
 
 void
-close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
+close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 {
     std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
     CanonicalTXSet retriableTransactions(set->getHash());
-    Ledger::pointer newLCL = std::make_shared<Ledger>(false, *LCL);
+    // Make a non-const copy of LCL. This won't be necessary once
+    // that other Ledger constructor can take a const Ledger.
+    Ledger oldLCL(*LCL, false);
+    Ledger::pointer newLCL = std::make_shared<Ledger>(false, oldLCL);
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
     applyTransactions(set, newLCL, newLCL, retriableTransactions, false);
@@ -453,8 +456,12 @@ close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL)
     bool closeTimeCorrect = true;
     newLCL->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
+    if (!newLCL->assertSane())
+        throw std::runtime_error(
+            "!newLCL->assertSane()");
+
     LCL = newLCL;
-    ledger = std::make_shared<Ledger>(false, *LCL);
+    ledger = std::make_shared<Ledger>(false, *newLCL);
 }
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,

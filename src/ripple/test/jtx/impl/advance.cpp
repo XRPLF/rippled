@@ -18,29 +18,21 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/test/jtx/advance.h>
+#include <ripple/app/ledger/tests/common_ledger.h>
+#include <ripple/app/ledger/LedgerConsensus.h>
 
-#include <ripple/test/jtx/impl/Account.cpp>
-#include <ripple/test/jtx/impl/advance.cpp>
-#include <ripple/test/jtx/impl/amount.cpp>
-#include <ripple/test/jtx/impl/balance.cpp>
-#include <ripple/test/jtx/impl/Env.cpp>
-#include <ripple/test/jtx/impl/fee.cpp>
-#include <ripple/test/jtx/impl/flags.cpp>
-#include <ripple/test/jtx/impl/json.cpp>
-#include <ripple/test/jtx/impl/memo.cpp>
-#include <ripple/test/jtx/impl/multisign.cpp>
-#include <ripple/test/jtx/impl/offer.cpp>
-#include <ripple/test/jtx/impl/owners.cpp>
-#include <ripple/test/jtx/impl/paths.cpp>
-#include <ripple/test/jtx/impl/pay.cpp>
-#include <ripple/test/jtx/impl/rate.cpp>
-#include <ripple/test/jtx/impl/regkey.cpp>
-#include <ripple/test/jtx/impl/sendmax.cpp>
-#include <ripple/test/jtx/impl/seq.cpp>
-#include <ripple/test/jtx/impl/sig.cpp>
-#include <ripple/test/jtx/impl/ticket.cpp>
-#include <ripple/test/jtx/impl/trust.cpp>
-#include <ripple/test/jtx/impl/txflags.cpp>
-#include <ripple/test/jtx/impl/utility.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
 
-#include <ripple/test/jtx/impl/Env_test.cpp>
+void
+advance(Env& env, std::shared_ptr<Ledger const>& last)
+{
+    close_and_advance(env.ledger, last);
+}
+
+
+} // jtx
+} // test
+} // ripple

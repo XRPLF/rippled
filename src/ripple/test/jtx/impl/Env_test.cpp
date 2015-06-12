@@ -531,6 +531,38 @@ public:
     }
 
     void
+    testAdvance()
+    {
+        using namespace jtx;
+        Env env(*this);
+        // Create the LCL as a copy of the Env's
+        // ledger. This will have the side effect
+        // of skipping one seq in Env.ledger the
+        // first time it is advanced. This can be
+        // worked around if desired by assigning
+        // an advanced ledger back to Env before
+        // starting, but it won't matter to most
+        // tests.
+        std::shared_ptr<Ledger const> lastClosedLedger = 
+            std::make_shared<Ledger>(
+                *env.ledger, false);
+
+        auto firstSeq = env.ledger->seq();
+
+        expect(lastClosedLedger->seq() == firstSeq);
+
+        advance(env, lastClosedLedger);
+
+        expect(lastClosedLedger->seq() == firstSeq + 1);
+        expect(env.ledger->seq() == firstSeq + 2);
+
+        advance(env, lastClosedLedger);
+
+        expect(lastClosedLedger->seq() == firstSeq + 2);
+        expect(env.ledger->seq() == firstSeq + 3);
+    }
+
+    void
     run()
     {
         // Hack to silence logging
@@ -543,7 +575,6 @@ public:
         testRequire();
         testKeyType();
         testPayments();
-
         testMultiSign();
         testMultiSign2();
         testTicket();
@@ -552,6 +583,7 @@ public:
         testJTxCopy();
         testJTxMove();
         testMemo();
+        testAdvance();
     }
 };
 

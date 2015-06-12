@@ -4068,6 +4068,9 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\advance.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\amount.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
@@ -4087,6 +4090,9 @@
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\Account.cpp">
+      <Filter>ripple\test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\advance.cpp">
       <Filter>ripple\test\jtx\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\amount.cpp">

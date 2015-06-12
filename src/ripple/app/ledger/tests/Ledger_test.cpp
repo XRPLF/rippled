@@ -30,7 +30,7 @@ class Ledger_test : public beast::unit_test::suite
 
         auto master = createAccount ("masterpassphrase", keyType);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger(100000*xrp, master);
 
@@ -96,7 +96,7 @@ class Ledger_test : public beast::unit_test::suite
 
         auto master = createAccount ("masterpassphrase", keyType);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger (100000 * xrp, master);
 
