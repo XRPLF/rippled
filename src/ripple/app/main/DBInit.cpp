@@ -116,9 +116,7 @@ const char* WalletDBInit[] =
 
     "CREATE TABLE IF NOT EXISTS NodeIdentity (      \
         PublicKey       CHARACTER(53),              \
-        PrivateKey      CHARACTER(52),              \
-        Dh512           TEXT,                       \
-        Dh1024          TEXT                        \
+        PrivateKey      CHARACTER(52)               \
     );",
 
     // Miscellaneous persistent information
