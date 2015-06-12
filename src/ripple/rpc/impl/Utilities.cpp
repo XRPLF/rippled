@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/Utilities.h>
+
 namespace ripple {
 namespace RPC {
 

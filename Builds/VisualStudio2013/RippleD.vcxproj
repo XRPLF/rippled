@@ -3221,6 +3221,8 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Utilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\Utilities.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

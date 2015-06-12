@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
 
