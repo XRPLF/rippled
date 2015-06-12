@@ -25,7 +25,7 @@ namespace test {
 
 namespace jtx {
 
-struct none_t { };
+struct none_t { none_t() { } };
 static none_t const none;
 
 struct autofill_t { autofill_t() { } };
