@@ -33,9 +33,11 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <beast/utility/Journal.h>
+#include <boost/iterator/iterator_facade.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <cassert>
 #include <stack>
 
 namespace ripple {
@@ -110,6 +112,19 @@ public:
         uint256 const& hash,
         Family& f,
         beast::Journal journal);
+
+    //--------------------------------------------------------------------------
+
+    /** Iterator to a SHAMap's leaves
+        This is always a const iterator.
+        Meets the requirements of ForwardRange.
+    */
+    class iterator;
+
+    iterator begin() const;
+    iterator end() const;
+
+    //--------------------------------------------------------------------------
 
     // Returns a new map that's a snapshot of this one.
     // Handles copy on write for mutable snapshots.
@@ -333,6 +348,70 @@ void
 SHAMap::setUnbacked ()
 {
     backed_ = false;
+}
+
+//------------------------------------------------------------------------------
+
+class SHAMap::iterator
+    : public boost::iterator_facade<
+        SHAMap::iterator,
+            std::shared_ptr<SHAMapItem const> const,
+                std::forward_iterator_tag>
+{
+private:
+    friend class boost::iterator_core_access;
+
+    SHAMap const* map_ = nullptr;
+    std::shared_ptr<
+        SHAMapItem const> item_;
+
+public:
+    iterator() = default;
+    iterator (iterator const&) = default;
+    iterator& operator= (iterator const&) = default;
+
+    iterator (SHAMap const& map,
+        std::shared_ptr<SHAMapItem const> const& item)
+        : map_(&map)
+        , item_(item)
+    {
+    }
+
+private:
+    void
+    increment()
+    {
+        item_ = map_->peekNextItem(
+            item_->key());
+    }
+
+    bool
+    equal (iterator const& other) const
+    {
+        assert(map_ == other.map_);
+        return item_ == other.item_;
+    }
+
+    std::shared_ptr<
+        SHAMapItem const> const&
+    dereference() const
+    {
+        return item_;
+    }
+};
+
+inline
+SHAMap::iterator
+SHAMap::begin() const
+{
+    return iterator(*this, peekFirstItem());
+}
+
+inline
+SHAMap::iterator
+SHAMap::end() const
+{
+    return iterator(*this, nullptr);
 }
 
 }
