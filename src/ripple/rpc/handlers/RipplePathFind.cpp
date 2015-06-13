@@ -306,7 +306,7 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                lesSandbox.clear();
+                reconstruct(lesSandbox, lpLedger, tapNONE);
                 rc = path::RippleCalc::rippleCalculate(
                     lesSandbox,
                     saMaxAmount,            // --> Amount to send is unlimited

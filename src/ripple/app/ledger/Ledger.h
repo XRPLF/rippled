@@ -25,6 +25,7 @@
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/app/ledger/SLECache.h>
 #include <ripple/app/misc/AccountState.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
@@ -138,9 +139,15 @@ public:
                     then boost::none is returned.
         @return `empty` if the key is not present
     */
-    boost::optional<SLE>
+    std::shared_ptr<SLE>
     fetch (uint256 const& key, boost::optional<
         LedgerEntryType> type = boost::none) const;
+
+    std::shared_ptr<SLE>
+    fetch (Keylet const& k) const
+    {
+        return fetch(k.key, k.type);
+    }
 
     // DEPRECATED
     // Retrieve immutable ledger entry

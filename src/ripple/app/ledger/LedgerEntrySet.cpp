@@ -34,31 +34,76 @@ namespace ripple {
 // VFALCO TODO Replace this macro with a documented language constant
 //        NOTE Is this part of the protocol?
 //
-#define DIR_NODE_MAX        32
+#define DIR_NODE_MAX  32
 
-void LedgerEntrySet::init (Ledger::ref ledger, uint256 const& transactionID,
-                           std::uint32_t ledgerID, TransactionEngineParams params)
+LedgerEntrySet::LedgerEntrySet (LedgerEntrySet const& other)
+    : mLedger(other.mLedger)
+    , mEntries(other.mEntries)
+    , mDeferredCredits(other.mDeferredCredits)
+    , mSet(other.mSet)
+    // VFALCO NOTE This is a change in behavior,
+    //        previous version set tapNONE
+    , mParams(other.mParams)
+    , mSeq(other.mSeq + 1)
 {
-    mEntries.clear ();
-    if (mDeferredCredits)
-        mDeferredCredits->clear ();
-    mLedger = ledger;
+}
+
+LedgerEntrySet::LedgerEntrySet(Ledger::ref ledger,
+    uint256 const& transactionID,
+        std::uint32_t ledgerID,
+            TransactionEngineParams params)
+    : mLedger(ledger)
+    , mParams(params)
+{
     mSet.init (transactionID, ledgerID);
-    mParams = params;
-    mSeq    = 0;
 }
 
-void LedgerEntrySet::clear ()
+LedgerEntrySet::LedgerEntrySet (Ledger::ref ledger,
+    TransactionEngineParams tep, bool immutable)
+    : mLedger (ledger)
+    , mParams (tep)
+    , mImmutable (immutable)
 {
-    mEntries.clear ();
-    mSet.clear ();
-    if (mDeferredCredits)
-        mDeferredCredits->clear ();
 }
 
-LedgerEntrySet LedgerEntrySet::duplicate () const
+void LedgerEntrySet::apply()
 {
-    return LedgerEntrySet (mLedger, mEntries, mSet, mSeq + 1, mDeferredCredits);
+    // Write back the account states
+    for (auto const& item : mEntries)
+    {
+        // VFALCO TODO rvalue move the mEntry, make
+        //             sure the mNodes is not used after
+        //             this function is called.
+        auto sle = item.second.mEntry;
+        switch (item.second.mAction)
+        {
+        case taaNONE:
+            assert (false);
+            break;
+
+        case taaCACHED:
+            break;
+
+        case taaCREATE:
+            // VFALCO Is this logging necessary anymore?
+            WriteLog (lsDEBUG, LedgerEntrySet) <<
+                "applyTransaction: taaCREATE: " << sle->getText ();
+            mLedger->insert(*sle);
+            break;
+
+        case taaMODIFY:
+            WriteLog (lsDEBUG, LedgerEntrySet) <<
+                "applyTransaction: taaMODIFY: " << sle->getText ();
+            mLedger->replace(*sle);
+            break;
+
+        case taaDELETE:
+            WriteLog (lsDEBUG, LedgerEntrySet) <<
+                "applyTransaction: taaDELETE: " << sle->getText ();
+            mLedger->erase(item.first);
+            break;
+        }
+    }
 }
 
 void LedgerEntrySet::swapWith (LedgerEntrySet& e)
@@ -74,7 +119,7 @@ void LedgerEntrySet::swapWith (LedgerEntrySet& e)
 
 // Find an entry in the set.  If it has the wrong sequence number, copy it and update the sequence number.
 // This is basically: copy-on-read.
-SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& action)
+SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, Action& action)
 {
     auto it = mEntries.find (index);
 
@@ -87,7 +132,7 @@ SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& 
     if (it->second.mSeq != mSeq)
     {
         assert (it->second.mSeq < mSeq);
-        it->second.mEntry = std::make_shared<STLedgerEntry> (*it->second.mEntry);
+        it->second.mEntry = std::make_shared<SLE> (*it->second.mEntry);
         it->second.mSeq = mSeq;
     }
 
@@ -95,26 +140,15 @@ SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& 
     return it->second.mEntry;
 }
 
-SLE::pointer LedgerEntrySet::entryCreate (LedgerEntryType letType, uint256 const& index)
-{
-    assert (index.isNonZero ());
-    SLE::pointer sleNew = std::make_shared<SLE> (letType, index);
-    entryCreate (sleNew);
-    return sleNew;
-}
-
 SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const& key)
 {
+    assert(key.isNonZero ());
     assert (mLedger);
     SLE::pointer sle;
 
-    // VFALCO Shouldn't be calling this with invalid keys,
-    //        but apparently its happening. Need to track it down.
-    //assert(key.isNonZero ());
-
     if (key.isNonZero ())
     {
-        LedgerEntryAction action;
+        Action action;
         sle = getEntry (key, action);
 
         if (! sle)
@@ -128,10 +162,7 @@ SLE::pointer LedgerEntrySet::entryCache (LedgerEntryType letType, uint256 const&
             }
             else
             {
-                auto maybe_sle = mLedger->fetch(key, letType);
-                if (maybe_sle)
-                    sle = std::make_shared<SLE>(
-                        std::move(*maybe_sle));
+                sle = mLedger->fetch(key, letType);
             }
 
             if (sle)
@@ -160,7 +191,7 @@ void LedgerEntrySet::entryCache (SLE::ref sle)
 
     if (it == mEntries.end ())
     {
-        mEntries.insert (std::make_pair (sle->getIndex (), LedgerEntrySetEntry (sle, taaCACHED, mSeq)));
+        mEntries.insert (std::make_pair (sle->getIndex (), Item (sle, taaCACHED, mSeq)));
         return;
     }
 
@@ -185,7 +216,7 @@ void LedgerEntrySet::entryCreate (SLE::ref sle)
 
     if (it == mEntries.end ())
     {
-        mEntries.insert (std::make_pair (sle->getIndex (), LedgerEntrySetEntry (sle, taaCREATE, mSeq)));
+        mEntries.insert (std::make_pair (sle->getIndex (), Item (sle, taaCREATE, mSeq)));
         return;
     }
 
@@ -223,7 +254,7 @@ void LedgerEntrySet::entryModify (SLE::ref sle)
 
     if (it == mEntries.end ())
     {
-        mEntries.insert (std::make_pair (sle->getIndex (), LedgerEntrySetEntry (sle, taaMODIFY, mSeq)));
+        mEntries.insert (std::make_pair (sle->getIndex (), Item (sle, taaMODIFY, mSeq)));
         return;
     }
 
@@ -260,7 +291,7 @@ void LedgerEntrySet::entryDelete (SLE::ref sle)
     if (it == mEntries.end ())
     {
         assert (false); // deleting an entry not cached?
-        mEntries.insert (std::make_pair (sle->getIndex (), LedgerEntrySetEntry (sle, taaDELETE, mSeq)));
+        mEntries.insert (std::make_pair (sle->getIndex (), Item (sle, taaDELETE, mSeq)));
         return;
     }
 
@@ -379,7 +410,8 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 
         if (it->second.mSeq != mSeq)
         {
-            it->second.mEntry = std::make_shared<STLedgerEntry> (*it->second.mEntry);
+            it->second.mEntry =
+                std::make_shared<SLE> (*it->second.mEntry);
             it->second.mSeq = mSeq;
         }
 
@@ -395,15 +427,10 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
     }
 
     auto sle = ledger->fetch(node);
-    if (sle)
-    {
-        auto p = std::make_shared<SLE>(
-            std::move(*sle));
-        newMods.insert (std::make_pair (node, p));
-        return p;
-    }
-
-    return {};
+    if (! sle)
+        return nullptr;
+    newMods.insert (std::make_pair (node, sle));
+    return sle;
 }
 
 bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,
@@ -611,36 +638,6 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson (0);
 }
 
-TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, std::uint32_t& uCount)
-{
-    std::uint64_t  uNodeDir    = 0;
-
-    uCount  = 0;
-
-    do
-    {
-        SLE::pointer    sleNode = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
-
-        if (sleNode)
-        {
-            uCount      += sleNode->getFieldV256 (sfIndexes).size ();
-
-            uNodeDir    = sleNode->getFieldU64 (sfIndexNext);       // Get next node.
-        }
-        else if (uNodeDir)
-        {
-            WriteLog (lsWARNING, LedgerEntrySet) << "dirCount: no such node";
-
-            assert (false);
-
-            return tefBAD_LEDGER;
-        }
-    }
-    while (uNodeDir);
-
-    return tesSUCCESS;
-}
-
 bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
 {
     std::uint64_t  uNodeDir = 0;
@@ -679,10 +676,10 @@ TER LedgerEntrySet::dirAdd (
     if (!sleRoot)
     {
         // No root, make it.
-        sleRoot     = entryCreate (ltDIR_NODE, uRootIndex);
+        sleRoot = std::make_shared<SLE>(ltDIR_NODE, uRootIndex);
         sleRoot->setFieldH256 (sfRootIndex, uRootIndex);
+        entryCreate (sleRoot);
         fDescriber (sleRoot, true);
-
         sleNode     = sleRoot;
         uNodeDir    = 0;
     }
@@ -726,8 +723,10 @@ TER LedgerEntrySet::dirAdd (
             entryModify (sleRoot);
 
             // Create the new node.
-            sleNode     = entryCreate (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
+            sleNode = std::make_shared<SLE>(
+                ltDIR_NODE, getDirNodeIndex(uRootIndex, uNodeDir));
             sleNode->setFieldH256 (sfRootIndex, uRootIndex);
+            entryCreate (sleNode);
 
             if (uNodeDir != 1)
                 sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
@@ -1080,7 +1079,7 @@ uint256 LedgerEntrySet::getNextLedgerIndex (uint256 const& uHash)
 {
     // find next node in ledger that isn't deleted by LES
     uint256 ledgerNext = uHash;
-    std::map<uint256, LedgerEntrySetEntry>::const_iterator it;
+    std::map<uint256, Item>::const_iterator it;
 
     do
     {
@@ -1113,69 +1112,6 @@ uint256 LedgerEntrySet::getNextLedgerIndex (
     return next;
 }
 
-void LedgerEntrySet::incrementOwnerCount (SLE::ref sleAccount)
-{
-    increaseOwnerCount (sleAccount, 1);
-}
-
-void LedgerEntrySet::incrementOwnerCount (Account const& owner)
-{
-    increaseOwnerCount(
-        entryCache (ltACCOUNT_ROOT, getAccountRootIndex (owner)), 1);
-}
-
-void
-LedgerEntrySet::increaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch)
-{
-    assert (sleAccount);
-
-    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
-    std::uint32_t new_count = current_count + howMuch;
-
-    // Check for integer overflow -- well defined behavior on unsigned.
-    if (new_count < current_count)
-    {
-        WriteLog (lsFATAL, LedgerEntrySet) <<
-            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
-            " owner count exceeds max!";
-        new_count = std::numeric_limits<std::uint32_t>::max ();
-    }
-    sleAccount->setFieldU32 (sfOwnerCount, new_count);
-    entryModify (sleAccount);
-}
-
-void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
-{
-    decreaseOwnerCount (sleAccount, 1);
-}
-
-void LedgerEntrySet::decrementOwnerCount (Account const& owner)
-{
-    decreaseOwnerCount(
-        entryCache (ltACCOUNT_ROOT, getAccountRootIndex (owner)), 1);
-}
-
-void
-LedgerEntrySet::decreaseOwnerCount (SLE::ref sleAccount, std::uint32_t howMuch)
-{
-    assert (sleAccount);
-
-    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
-    std::uint32_t new_count = current_count - howMuch;
-
-    // Check for integer underflow -- well defined behavior on unsigned.
-    if (new_count > current_count)
-    {
-        WriteLog (lsFATAL, LedgerEntrySet) <<
-            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
-            " owner count set below 0!";
-        new_count = 0;
-        assert (false); // "This is a dangerous place."  Stop in a debug build.
-    }
-    sleAccount->setFieldU32 (sfOwnerCount, new_count);
-    entryModify (sleAccount);
-}
-
 TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 {
     if (!sleOffer)
@@ -1197,7 +1133,8 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
         false, uBookNode, uDirectory, offerIndex, true, false);
 
     if (tesSUCCESS == terResult)
-        decrementOwnerCount (owner);
+        adjustOwnerCount(*this, entryCache(ltACCOUNT_ROOT,
+            getAccountRootIndex(owner)), -1);
 
     entryDelete (sleOffer);
 
@@ -1333,43 +1270,6 @@ bool LedgerEntrySet::isFrozen(
     return false;
 }
 
-// Returns the funds available for account for a currency/issuer.
-// Use when you need a default for rippling account's currency.
-// XXX Should take into account quality?
-// --> saDefault/currency/issuer
-// <-- saFunds: Funds available. May be negative.
-//
-// If the issuer is the same as account, funds are unlimited, use result is
-// saDefault.
-STAmount LedgerEntrySet::accountFunds (
-    Account const& account, STAmount const& saDefault, FreezeHandling zeroIfFrozen)
-{
-    STAmount    saFunds;
-
-    if (!saDefault.native () && saDefault.getIssuer () == account)
-    {
-        saFunds = saDefault;
-
-        WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
-            " account=" << to_string (account) <<
-            " saDefault=" << saDefault.getFullText () <<
-            " SELF-FUNDED";
-    }
-    else
-    {
-        saFunds = accountHolds (
-            account, saDefault.getCurrency (), saDefault.getIssuer (),
-            zeroIfFrozen);
-
-        WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
-            " account=" << to_string (account) <<
-            " saDefault=" << saDefault.getFullText () <<
-            " saFunds=" << saFunds.getFullText ();
-    }
-
-    return saFunds;
-}
-
 TER LedgerEntrySet::trustCreate (
     const bool      bSrcHigh,
     Account const&  uSrcAccountID,
@@ -1393,7 +1293,9 @@ TER LedgerEntrySet::trustCreate (
     auto const& uLowAccountID   = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID  =  bSrcHigh ? uSrcAccountID : uDstAccountID;
 
-    SLE::pointer sleRippleState  = entryCreate (ltRIPPLE_STATE, uIndex);
+    auto sleRippleState = std::make_shared<SLE>(
+        ltRIPPLE_STATE, uIndex);
+    entryCreate (sleRippleState);
 
     std::uint64_t   uLowNode;
     std::uint64_t   uHighNode;
@@ -1469,7 +1371,7 @@ TER LedgerEntrySet::trustCreate (
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
-        incrementOwnerCount (sleAccount);
+        adjustOwnerCount(*this, sleAccount, 1);
 
         // ONLY: Create ripple balance.
         sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);
@@ -1659,7 +1561,8 @@ TER LedgerEntrySet::rippleCredit (
             // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            decrementOwnerCount (uSenderID);
+            adjustOwnerCount(*this, entryCache(ltACCOUNT_ROOT,
+                getAccountRootIndex(uSenderID)), -1);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32 (
@@ -1881,9 +1784,9 @@ bool LedgerEntrySet::checkState (
 {
     std::uint32_t const flags (state->getFieldU32 (sfFlags));
 
-    auto sender_account = entryCache (ltACCOUNT_ROOT,
+    auto sle = entryCache (ltACCOUNT_ROOT,
         getAccountRootIndex (sender));
-    assert (sender_account);
+    assert (sle);
 
     // YYY Could skip this if rippling in reverse.
     if (before > zero
@@ -1893,7 +1796,7 @@ bool LedgerEntrySet::checkState (
         && (flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
         // Sender reserve is set.
         && static_cast <bool> (flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-           static_cast <bool> (sender_account->getFlags() & lsfDefaultRipple)
+           static_cast <bool> (sle->getFlags() & lsfDefaultRipple)
         && !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze))
         && !state->getFieldAmount (
             !bSenderHigh ? sfLowLimit : sfHighLimit)
@@ -1905,8 +1808,9 @@ bool LedgerEntrySet::checkState (
             !bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
         // Sender quality out is 0.
     {
+        // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        decrementOwnerCount (sender_account);
+        adjustOwnerCount(*this, sle, -1);
 
         // Clear reserve flag.
         state->setFieldU32 (sfFlags,
@@ -2144,6 +2048,72 @@ ScopedDeferCredits::~ScopedDeferCredits ()
         WriteLog (lsTRACE, DeferredCredits) << "Disable";
         les_.enableDeferredCredits (false);
     }
+}
+
+//------------------------------------------------------------------------------
+
+void
+adjustOwnerCount (LedgerEntrySet& view,
+    std::shared_ptr<SLE> const& sle, int amount)
+{
+    assert(amount != 0);
+    auto const current =
+        sle->getFieldU32 (sfOwnerCount);
+    auto adjusted = current + amount;
+    if (amount > 0)
+    {
+        // Overflow is well defined on unsigned
+        if (adjusted < current)
+        {
+            WriteLog (lsFATAL, LedgerEntrySet) <<
+                "Account " << sle->getFieldAccount160(sfAccount) <<
+                " owner count exceeds max!";
+            adjusted =
+                std::numeric_limits<std::uint32_t>::max ();
+        }
+    }
+    else
+    {
+        // Underflow is well defined on unsigned
+        if (adjusted > current)
+        {
+            WriteLog (lsFATAL, LedgerEntrySet) <<
+                "Account " << sle->getFieldAccount160 (sfAccount) <<
+                " owner count set below 0!";
+            adjusted = 0;
+            assert(false);
+        }
+    }
+    sle->setFieldU32 (sfOwnerCount, adjusted);
+    view.entryModify (sle);
+}
+
+STAmount
+funds (LedgerEntrySet& view, Account const& id,
+    STAmount const& saDefault, FreezeHandling freezeHandling)
+{
+    STAmount saFunds;
+
+    if (!saDefault.native () &&
+        saDefault.getIssuer () == id)
+    {
+        saFunds = saDefault;
+        WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
+            " account=" << to_string (id) <<
+            " saDefault=" << saDefault.getFullText () <<
+            " SELF-FUNDED";
+    }
+    else
+    {
+        saFunds = view.accountHolds(id,
+            saDefault.getCurrency(), saDefault.getIssuer(),
+                freezeHandling);
+        WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
+            " account=" << to_string (id) <<
+            " saDefault=" << saDefault.getFullText () <<
+            " saFunds=" << saFunds.getFullText ();
+    }
+    return saFunds;
 }
 
 } // ripple

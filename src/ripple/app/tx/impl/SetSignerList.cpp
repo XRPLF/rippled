@@ -234,8 +234,8 @@ SetSignerList::replaceSignerList (uint256 const& index)
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    SLE::pointer signerList (
-        mEngine->view().entryCreate (ltSIGNER_LIST, index));
+    auto signerList = std::make_shared<SLE>(ltSIGNER_LIST, index);
+    mEngine->view().entryCreate (signerList);
     writeSignersToLedger (signerList);
 
     // Lambda for call to dirAdd.
@@ -259,7 +259,8 @@ SetSignerList::replaceSignerList (uint256 const& index)
     signerList->setFieldU64 (sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts against the creator's reserve.
-    mEngine->view ().increaseOwnerCount (mTxnAccount, addedOwnerCount);
+    adjustOwnerCount(mEngine->view(),
+        mTxnAccount, addedOwnerCount);
 
     return result;
 }
@@ -295,13 +296,17 @@ SetSignerList::destroySignerList (uint256 const& index)
         getOwnerDirIndex (mTxnAccountID), index, false, (hint == 0));
 
     if (result == tesSUCCESS)
-        mEngine->view ().decreaseOwnerCount (mTxnAccount, removeFromOwnerCount);
+        adjustOwnerCount(mEngine->view(),
+            mTxnAccount, removeFromOwnerCount);
 
     mEngine->view ().entryDelete (signerList);
 
     return result;
 }
 
+// VFALCO NOTE This name is misleading, the signers
+//             are not written to the ledger they are
+//             added to the SLE.
 void
 SetSignerList::writeSignersToLedger (SLE::pointer ledgerEntry)
 {

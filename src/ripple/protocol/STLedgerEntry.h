@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 #define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 
-#include <ripple/protocol/LedgerFormats.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
@@ -35,10 +35,21 @@ public:
     using pointer = std::shared_ptr<STLedgerEntry>;
     using ref     = const std::shared_ptr<STLedgerEntry>&;
 
-public:
+    /** Create an empty object with the given key and type. */
+    explicit
+    STLedgerEntry (Keylet const& k);
+
+    STLedgerEntry (LedgerEntryType type,
+            uint256 const& key)
+        : STLedgerEntry(Keylet(type, key))
+    {
+    }
+
     STLedgerEntry (const Serializer & s, uint256 const& index);
+    
     STLedgerEntry (SerialIter & sit, uint256 const& index);
-    STLedgerEntry (LedgerEntryType type, uint256 const& index);
+  
+        
     STLedgerEntry (const STObject & object, uint256 const& index);
 
     STBase*
@@ -57,69 +68,81 @@ public:
     {
         return STI_LEDGERENTRY;
     }
+
     std::string getFullText () const override;
+    
     std::string getText () const override;
+    
     Json::Value getJson (int options) const override;
 
     /** Returns the 'key' (or 'index') of this item.
         The key identifies this entry's position in
         the SHAMap associative container.
     */
+    uint256 const&
+    key() const
+    {
+        return key_;
+    }
+
+    // DEPRECATED
     uint256 const& getIndex () const
     {
-        return mIndex;
-    }
-    void setIndex (uint256 const& i)
-    {
-        mIndex = i;
+        return key_;
     }
 
     void setImmutable ()
     {
         mMutable = false;
     }
+
     bool isMutable ()
     {
         return mMutable;
     }
-    STLedgerEntry::pointer getMutable () const;
 
     LedgerEntryType getType () const
     {
-        return mType;
+        return type_;
     }
+
     std::uint16_t getVersion () const
     {
         return getFieldU16 (sfLedgerEntryType);
     }
-    LedgerFormats::Item const* getFormat ()
-    {
-        return mFormat;
-    }
-
+    
     bool isThreadedType() const; // is this a ledger entry that can be threaded
+    
     bool isThreaded () const;     // is this ledger entry actually threaded
+    
     bool hasOneOwner () const;    // This node has one other node that owns it
+    
     bool hasTwoOwners () const;   // This node has two nodes that own it (like ripple balance)
+    
     RippleAddress getOwner () const;
+    
     RippleAddress getFirstOwner () const;
+    
     RippleAddress getSecondOwner () const;
+    
     uint256 getThreadedTransaction () const;
+    
     std::uint32_t getThreadedLedger () const;
+    
     bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
 
 private:
-    /** Make STObject comply with the template for this SLE type
+    /*  Make STObject comply with the template for this SLE type
         Can throw
     */
     void setSLEType ();
 
 private:
-    uint256                     mIndex;
-    LedgerEntryType             mType;
+    uint256 key_;
+    LedgerEntryType type_;
     LedgerFormats::Item const*  mFormat;
-    bool                        mMutable;
+    bool mMutable;
 };
 
 using SLE = STLedgerEntry;

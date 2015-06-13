@@ -30,7 +30,9 @@ TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
     TER resultCode = tecPATH_DRY;
     PathCursor pc = *this;
 
-    ledger() = lesCheckpoint.duplicate ();
+    // duplicate
+    reconstruct(rippleCalc_.mActiveLedger, lesCheckpoint);
+
     for (pc.nodeIndex_ = pc.nodeSize(); pc.nodeIndex_--; )
     {
         WriteLog (lsTRACE, RippleCalc)
@@ -59,7 +61,9 @@ TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
         return resultCode;
 
     // Do forward.
-    ledger() = lesCheckpoint.duplicate ();
+    // duplicate
+    reconstruct(rippleCalc_.mActiveLedger, lesCheckpoint);
+
     for (pc.nodeIndex_ = 0; pc.nodeIndex_ < pc.nodeSize(); ++pc.nodeIndex_)
     {
         WriteLog (lsTRACE, RippleCalc)

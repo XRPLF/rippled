@@ -268,7 +268,7 @@ TER PathState::pushNode (
             auto const& backNode = nodes_.back ();
             if (backNode.isAccount())
             {
-                auto sleRippleState = lesEntries.entryCache (
+                auto sleRippleState = lesEntries_->entryCache (
                     ltRIPPLE_STATE,
                     getRippleStateIndex (
                         backNode.account_,
@@ -295,7 +295,7 @@ TER PathState::pushNode (
                             << backNode.account_ << " and " << node.account_
                             << " for " << node.issue_.currency << "." ;
 
-                    auto sleBck  = lesEntries.entryCache (
+                    auto sleBck  = lesEntries_->entryCache (
                         ltACCOUNT_ROOT,
                         getAccountRootIndex (backNode.account_));
                     // Is the source account the highest numbered account ID?
@@ -323,13 +323,13 @@ TER PathState::pushNode (
 
                     if (resultCode == tesSUCCESS)
                     {
-                        STAmount saOwed = creditBalance (lesEntries,
+                        STAmount saOwed = creditBalance (*lesEntries_,
                             node.account_, backNode.account_,
                             node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
-                            saLimit = creditLimit (lesEntries,
+                            saLimit = creditLimit (*lesEntries_,
                                 node.account_,
                                 backNode.account_,
                                 node.issue_.currency);
@@ -437,7 +437,7 @@ TER PathState::expandPath (
     WriteLog (lsTRACE, RippleCalc)
         << "expandPath> " << spSourcePath.getJson (0);
 
-    lesEntries = lesSource.duplicate ();
+    lesEntries_.emplace(lesSource);
 
     terStatus = tesSUCCESS;
 
@@ -632,7 +632,7 @@ void PathState::checkFreeze()
         // Check each order book for a global freeze
         if (nodes_[i].uFlags & STPathElement::typeIssuer)
         {
-            sle = lesEntries.entryCache (ltACCOUNT_ROOT,
+            sle = lesEntries_->entryCache (ltACCOUNT_ROOT,
                 getAccountRootIndex (nodes_[i].issue_.account));
 
             if (sle && sle->isFlag (lsfGlobalFreeze))
@@ -651,7 +651,7 @@ void PathState::checkFreeze()
 
             if (inAccount != outAccount)
             {
-                sle = lesEntries.entryCache (ltACCOUNT_ROOT,
+                sle = lesEntries_->entryCache (ltACCOUNT_ROOT,
                     getAccountRootIndex (outAccount));
 
                 if (sle && sle->isFlag (lsfGlobalFreeze))
@@ -660,7 +660,7 @@ void PathState::checkFreeze()
                     return;
                 }
 
-                sle = lesEntries.entryCache (ltRIPPLE_STATE,
+                sle = lesEntries_->entryCache (ltRIPPLE_STATE,
                     getRippleStateIndex (inAccount,
                         outAccount, currencyID));
 
@@ -688,9 +688,9 @@ TER PathState::checkNoRipple (
     Currency const& currency)
 {
     // fetch the ripple lines into and out of this node
-    SLE::pointer sleIn = lesEntries.entryCache (ltRIPPLE_STATE,
+    SLE::pointer sleIn = lesEntries_->entryCache (ltRIPPLE_STATE,
         getRippleStateIndex (firstAccount, secondAccount, currency));
-    SLE::pointer sleOut = lesEntries.entryCache (ltRIPPLE_STATE,
+    SLE::pointer sleOut = lesEntries_->entryCache (ltRIPPLE_STATE,
         getRippleStateIndex (secondAccount, thirdAccount, currency));
 
     if (!sleIn || !sleOut)

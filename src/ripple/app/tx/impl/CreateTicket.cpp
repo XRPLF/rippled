@@ -85,14 +85,13 @@ public:
                 return tesSUCCESS;
         }
 
-        SLE::pointer sleTicket = mEngine->view().entryCreate (ltTICKET,
+        SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
             getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
-
         sleTicket->setFieldAccount (sfAccount, mTxnAccountID);
         sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
-
         if (expiration != 0)
             sleTicket->setFieldU32 (sfExpiration, expiration);
+        mEngine->view().entryCreate (sleTicket);
 
         if (mTxn.isFieldPresent (sfTarget))
         {
@@ -134,7 +133,7 @@ public:
         sleTicket->setFieldU64(sfOwnerNode, hint);
 
         // If we succeeded, the new entry counts agains the creator's reserve.
-        mEngine->view ().incrementOwnerCount (mTxnAccount);
+        adjustOwnerCount(mEngine->view(), mTxnAccount, 1);
 
         return result;
     }
