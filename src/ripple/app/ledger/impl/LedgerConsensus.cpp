@@ -1857,8 +1857,7 @@ void applyTransactions (std::shared_ptr<SHAMap> const& set,
 
     if (set)
     {
-        for (std::shared_ptr<SHAMapItem> item = set->peekFirstItem (); !!item;
-            item = set->peekNextItem (item->getTag ()))
+        for (auto const item : *set)
         {
             // If the checkLedger doesn't have the transaction
             if (!checkLedger->hasTransaction (item->getTag ()))

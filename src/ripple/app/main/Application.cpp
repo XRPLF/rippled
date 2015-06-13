@@ -1317,16 +1317,18 @@ bool ApplicationImp::loadOldLedger (
             cur = std::make_shared <Ledger> (*cur, true);
             assert (!cur->isImmutable());
 
-            for (auto it = txns->peekFirstItem(); it != nullptr;
-                 it = txns->peekNextItem(it->getTag()))
+            for (auto const& item : *txns)
             {
-                Transaction::pointer txn = replayLedger->getTransaction(it->getTag());
-                m_journal.info << txn->getJson(0);
+                auto const txn =
+                    replayLedger->getTransaction(item->getTag());
+                if (m_journal.info) m_journal.info <<
+                    txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                if (!cur->addTransaction(it->getTag(), s))
-                    m_journal.warning << "Unable to add transaction " << it->getTag();
-                getApp().getHashRouter().setFlag (it->getTag(), SF_SIGGOOD);
+                if (! cur->addTransaction(item->getTag(), s))
+                    if (m_journal.warning) m_journal.warning <<
+                        "Unable to add transaction " << item->getTag();
+                getApp().getHashRouter().setFlag (item->getTag(), SF_SIGGOOD);
             }
 
             // Switch to the mutable snapshot
