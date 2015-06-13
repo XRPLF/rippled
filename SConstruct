@@ -664,6 +664,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/peerfinder', '.cpp'))
     append_sources(result, *list_sources('src/ripple/protocol', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/test', '.cpp'))
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -685,7 +686,6 @@ def get_unity_sources():
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
-        'src/ripple/unity/app_tests.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
@@ -696,6 +696,7 @@ def get_unity_sources():
         'src/ripple/unity/json.cpp',
         'src/ripple/unity/protocol.cpp',
         'src/ripple/unity/shamap.cpp',
+        'src/ripple/unity/test.cpp',
     )
 
     result += get_soci_sources('unity')

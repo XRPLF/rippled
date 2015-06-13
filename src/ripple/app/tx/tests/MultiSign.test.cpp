@@ -1542,6 +1542,7 @@ class MultiSign_test : public beast::unit_test::suite
             }
         }
 #if RIPPLE_ENABLE_TICKETS
+#if 0
         // Multi-sign a ttTICKET_CREATE and cancel it using ttTICKET_CANCEL.
         {
             uint256 ticketIndex {7}; // Any non-zero value so we see it change.
@@ -1588,6 +1589,7 @@ class MultiSign_test : public beast::unit_test::suite
                 expect (tickets.size() == 0);
             }
         }
+#endif
 #endif // RIPPLE_ENABLE_TICKETS
     }
 
