@@ -157,11 +157,18 @@ public:
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
     using stCallback = std::function<void (Transaction::pointer, TER)>;
-    virtual void submitTransaction (Job&, STTx::pointer,
-        stCallback callback = stCallback ()) = 0;
-    virtual Transaction::pointer processTransactionCb (Transaction::pointer,
-        bool bAdmin, bool bLocal, FailHard failType, stCallback) = 0;
-    virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
+    virtual void submitTransaction (Job&, STTx::pointer) = 0;
+
+    /**
+     * Process transactions as they arrive from the network or which are
+     * submitted by clients. Process local transactions synchronously
+     *
+     * @param transaction Transaction object
+     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param bLocal Client submission.
+     * @param failType fail_hard setting from transaction submission.
+     */
+    virtual void processTransaction (Transaction::pointer transaction,
         bool bAdmin, bool bLocal, FailHard failType) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,

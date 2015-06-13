@@ -65,6 +65,7 @@
 #include <beast/utility/make_lock.h>
 #include <boost/optional.hpp>
 #include <tuple>
+#include <condition_variable>
 
 namespace ripple {
 
@@ -72,12 +73,39 @@ class NetworkOPsImp final
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
 {
-public:
-    enum Fault
+    /**
+     * Transaction with input flags and results to be applied in batches.
+     */
+    class TransactionStatus
     {
-        // Exceptions these functions can throw.
-        IO_ERROR    = 1,
-        NO_NETWORK  = 2,
+    public:
+        Transaction::pointer transaction;
+        bool admin;
+        bool local;
+        FailHard failType;
+        bool applied;
+        TER result;
+
+        TransactionStatus (
+                Transaction::pointer t,
+                bool a,
+                bool l,
+                FailHard f)
+            : transaction (t)
+            , admin (a)
+            , local (l)
+            , failType (f)
+        {}
+    };
+
+    /**
+     * Synchronization states for transaction batches.
+     */
+    enum class DispatchState : unsigned char
+    {
+        none,
+        scheduled,
+        running,
     };
 
 public:
@@ -207,35 +235,60 @@ public:
     //
 
     // Must complete immediately.
-    using stCallback = std::function<void (Transaction::pointer, TER)>;
-    void submitTransaction (
-        Job&, STTx::pointer,
-        stCallback callback = stCallback ()) override;
+    void submitTransaction (Job&, STTx::pointer) override;
 
-    Transaction::pointer processTransactionCb (
-        Transaction::pointer,
-        bool bAdmin, bool bLocal, FailHard failType, stCallback) override;
-
-    Transaction::pointer processTransaction (
+    void processTransaction (
         Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, FailHard failType) override
-    {
-        return processTransactionCb (
-            transaction, bAdmin, bLocal, failType, stCallback ());
-    }
+        bool bAdmin, bool bLocal, FailHard failType) override;
 
-    // VFALCO Workaround for MSVC std::function which doesn't swallow return
-    // types.
-    //
-private:
-    void processTransactionCbVoid (
-        Transaction::pointer p,
-        bool bAdmin, bool bLocal, FailHard failType, stCallback cb)
-    {
-        processTransactionCb (p, bAdmin, bLocal, failType, cb);
-    }
+    /**
+     * For transactions submitted directly by a client, apply batch of
+     * transactions and wait for this transaction to complete.
+     *
+     * @param transaction Transaction object.
+     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param failType fail_hard setting from transaction submission.
+     */
+    void doTransactionSync (Transaction::pointer transaction,
+        bool bAdmin, FailHard failType);
 
-public:
+    /**
+     * For transactions not submitted by a locally connected client, fire and
+     * forget. Add to batch and trigger it to be processed if there's no batch
+     * currently being applied.
+     *
+     * @param transaction Transaction object
+     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param failType fail_hard setting from transaction submission.
+     */
+    void doTransactionAsync (Transaction::pointer transaction,
+        bool bAdmin, FailHard failtype);
+
+    /**
+     * Apply transactions in batches. Continue until none are queued.
+     */
+    void transactionBatch();
+
+    /**
+     * Attempt to apply transactions and post-process based on the results.
+     *
+     * @param Lock that protects the transaction batching
+     */
+    void apply (std::unique_lock<std::mutex>& lock);
+
+    /**
+     * Apply each transaction to open ledger.
+     *
+     * @param ledger Open ledger.
+     * @param engine Engine that applies transactions to open ledger.
+     * @param transactions Batch of transactions to apply.
+     * @return Whether any transactions in batch succeeded.
+     */
+    bool batchApply (
+         Ledger::pointer& ledger,
+         TransactionEngine& engine,
+         std::vector<TransactionStatus>& transactions);
+
     Transaction::pointer findTransactionByID (
         uint256 const& transactionID) override;
 
@@ -594,6 +647,12 @@ private:
 
     // The number of nodes that we need to consider ourselves connected.
     std::size_t const m_network_quorum;
+
+    // Transaction batching.
+    std::condition_variable mCond;
+    std::mutex mMutex;
+    DispatchState mDispatchState = DispatchState::none;
+    std::vector <TransactionStatus> mTransactions;
 };
 
 //------------------------------------------------------------------------------
@@ -865,8 +924,7 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq)
             seq <= m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ();
 }
 
-void NetworkOPsImp::submitTransaction (
-    Job&, STTx::pointer iTrans, stCallback callback)
+void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
 {
     if (isNeedNetworkLedger ())
     {
@@ -923,28 +981,26 @@ void NetworkOPsImp::submitTransaction (
     }
 
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
-        std::bind (&NetworkOPsImp::processTransactionCbVoid,
+        std::bind (&NetworkOPsImp::processTransaction,
                    this,
                    std::make_shared<Transaction> (trans, Validate::NO, reason),
                    false,
                    false,
-                   FailHard::no,
-                   callback));
+                   FailHard::no));
 }
 
-Transaction::pointer NetworkOPsImp::processTransactionCb (
-    Transaction::pointer trans,
-    bool bAdmin, bool bLocal, FailHard failType, stCallback callback)
+void NetworkOPsImp::processTransaction (Transaction::pointer transaction,
+        bool bAdmin, bool bLocal, FailHard failType)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
-    int newFlags = getApp().getHashRouter ().getFlags (trans->getID ());
+    int newFlags = getApp().getHashRouter ().getFlags (transaction->getID ());
 
     if ((newFlags & SF_BAD) != 0)
     {
         // cached bad
-        trans->setStatus (INVALID);
-        trans->setResult (temBAD_SIGNATURE);
-        return trans;
+        transaction->setStatus (INVALID);
+        transaction->setResult (temBAD_SIGNATURE);
+        return;
     }
 
     if ((newFlags & SF_SIGGOOD) == 0)
@@ -952,112 +1008,236 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         // signature not checked
         std::string reason;
 
-        if (! trans->checkSign (reason))
+        if (! transaction->checkSign (reason))
         {
             m_journal.info << "Transaction has bad signature: " << reason;
-            trans->setStatus (INVALID);
-            trans->setResult (temBAD_SIGNATURE);
-            getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-            return trans;
+            transaction->setStatus (INVALID);
+            transaction->setResult (temBAD_SIGNATURE);
+            getApp().getHashRouter ().setFlag (transaction->getID (), SF_BAD);
+            return;
         }
-
-        getApp().getHashRouter ().setFlag (trans->getID (), SF_SIGGOOD);
     }
+
+    getApp().getHashRouter ().setFlag (transaction->getID (), SF_SIGGOOD);
+
+    if (bLocal)
+        doTransactionSync (transaction, bAdmin, failType);
+    else
+        doTransactionAsync (transaction, bAdmin, failType);
+}
+
+void NetworkOPsImp::doTransactionAsync (Transaction::pointer transaction,
+        bool bAdmin, FailHard failType)
+{
+    std::lock_guard<std::mutex> lock (mMutex);
+
+    if (transaction->getApplying())
+        return;
+
+    mTransactions.push_back (TransactionStatus (transaction, bAdmin, false,
+        failType));
+    transaction->setApplying();
+
+    if (mDispatchState == DispatchState::none)
+    {
+        m_job_queue.addJob (jtBATCH, "transactionBatch",
+                std::bind (&NetworkOPsImp::transactionBatch, this));
+        mDispatchState = DispatchState::scheduled;
+    }
+}
+
+void NetworkOPsImp::doTransactionSync (Transaction::pointer transaction,
+        bool bAdmin, FailHard failType)
+{
+    std::unique_lock<std::mutex> lock (mMutex);
+
+    if (! transaction->getApplying())
+    {
+        mTransactions.push_back (TransactionStatus (transaction, bAdmin, true,
+        failType));
+        transaction->setApplying();
+    }
+
+    do
+    {
+        if (mDispatchState == DispatchState::running)
+        {
+            // A batch processing job is already running, so wait.
+            mCond.wait (lock);
+        }
+        else
+        {
+            apply (lock);
+
+            if (mTransactions.size())
+            {
+                // More transactions need to be applied, but by another job.
+                m_job_queue.addJob (jtBATCH, "transactionBatch",
+                        std::bind (&NetworkOPsImp::transactionBatch, this));
+                mDispatchState = DispatchState::scheduled;
+            }
+        }
+    }
+    while (transaction->getApplying());
+}
+
+void NetworkOPsImp::transactionBatch()
+{
+    std::unique_lock<std::mutex> lock (mMutex);
+
+    if (mDispatchState == DispatchState::running)
+        return;
+
+    while (mTransactions.size())
+    {
+        apply (lock);
+    }
+}
+
+void NetworkOPsImp::apply (std::unique_lock<std::mutex>& lock)
+{
+    std::vector<TransactionStatus> transactions;
+    mTransactions.swap (transactions);
+    assert (! transactions.empty());
+
+    assert (mDispatchState != DispatchState::running);
+    mDispatchState = DispatchState::running;
+
+    lock.unlock();
+
+    Ledger::pointer ledger;
+    TransactionEngine engine;
 
     {
         auto lock = beast::make_lock(getApp().getMasterMutex());
 
-        bool didApply;
-        TER r = m_ledgerMaster.doTransaction (
-            trans->getSTransaction (),
-            bAdmin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN)
-            : (tapOPEN_LEDGER | tapNO_CHECK_SIGN), didApply);
-        trans->setResult (r);
-
-        if (isTemMalformed (r)) // malformed, cache bad
-            getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
-
-#ifdef BEAST_DEBUG
-        if (r != tesSUCCESS)
+        if (batchApply (ledger, engine, transactions))
         {
-            std::string token, human;
-            if (transResultInfo (r, token, human))
-                m_journal.info << "TransactionResult: "
-                               << token << ": " << human;
+            ledger->setImmutable();
+            m_ledgerMaster.getCurrentLedgerHolder().set (ledger);
         }
 
-#endif
-
-        if (callback)
-            callback (trans, r);
-
-        if (r == tefFAILURE)
-            throw Fault (IO_ERROR);
-
-        bool addLocal = bLocal;
-
-        if (r == tesSUCCESS)
+        for (TransactionStatus& e : transactions)
         {
-            m_journal.debug << "Transaction is now included in open ledger";
-            trans->setStatus (INCLUDED);
+            if (e.applied)
+            {
+                pubProposedTransaction (ledger,
+                    e.transaction->getSTransaction(), e.result);
+            }
 
-            // VFALCO NOTE The value of trans can be changed here!
-            getApp().getMasterTransaction ().canonicalize (&trans);
-        }
-        else if (r == tefPAST_SEQ)
-        {
-            // duplicate or conflict
-            m_journal.info << "Transaction is obsolete";
-            trans->setStatus (OBSOLETE);
-        }
-        else if (isTerRetry (r))
-        {
-            if (failType == FailHard::yes)
-                addLocal = false;
+            e.transaction->setResult (e.result);
+
+            if (isTemMalformed (e.result))
+                getApp().getHashRouter().setFlag (e.transaction->getID(), SF_BAD);
+
+    #ifdef BEAST_DEBUG
+            if (e.result != tesSUCCESS)
+            {
+                std::string token, human;
+
+                if (transResultInfo (e.result, token, human))
+                    m_journal.info << "TransactionResult: "
+                            << token << ": " << human;
+            }
+    #endif
+
+            bool addLocal = e.local;
+
+            if (e.result == tesSUCCESS)
+            {
+                m_journal.debug << "Transaction is now included in open ledger";
+                e.transaction->setStatus (INCLUDED);
+
+                // VFALCO NOTE The value of trans can be changed here!
+                getApp().getMasterTransaction ().canonicalize (&e.transaction);
+            }
+            else if (e.result == tefPAST_SEQ)
+            {
+                // duplicate or conflict
+                m_journal.info << "Transaction is obsolete";
+                e.transaction->setStatus (OBSOLETE);
+            }
+            else if (isTerRetry (e.result))
+            {
+                if (e.failType == FailHard::yes)
+                {
+                    addLocal = false;
+                }
+                else
+                {
+                    // transaction should be held
+                    m_journal.debug << "Transaction should be held: " << e.result;
+                    e.transaction->setStatus (HELD);
+                    getApp().getMasterTransaction().canonicalize (&e.transaction);
+                    m_ledgerMaster.addHeldTransaction (e.transaction);
+                }
+            }
             else
             {
-                // transaction should be held
-                m_journal.debug << "Transaction should be held: " << r;
-                trans->setStatus (HELD);
-                getApp().getMasterTransaction ().canonicalize (&trans);
-                m_ledgerMaster.addHeldTransaction (trans);
+                m_journal.debug << "Status other than success " << e.result;
+                e.transaction->setStatus (INVALID);
             }
-        }
-        else
-        {
-            m_journal.debug << "Status other than success " << r;
-            trans->setStatus (INVALID);
-        }
 
-        if (addLocal)
-        {
-            addLocalTx (m_ledgerMaster.getCurrentLedger (),
-                        trans->getSTransaction ());
-        }
-
-        if (didApply ||
-            ((mMode != omFULL) && (failType != FailHard::yes) && bLocal))
-        {
-            std::set<Peer::id_t> peers;
-
-            if (getApp().getHashRouter ().swapSet (
-                    trans->getID (), peers, SF_RELAYED))
+            if (addLocal)
             {
-                protocol::TMTransaction tx;
-                Serializer s;
-                trans->getSTransaction ()->add (s);
-                tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
-                tx.set_status (protocol::tsCURRENT);
-                tx.set_receivetimestamp (getNetworkTimeNC ());
-                // FIXME: This should be when we received it
-                getApp ().overlay ().foreach (send_if_not (
-                    std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-                    peer_in_set(peers)));
+                addLocalTx (m_ledgerMaster.getCurrentLedger(),
+                            e.transaction->getSTransaction());
+            }
+
+            if (e.applied ||
+                    ((mMode != omFULL) && (e.failType != FailHard::yes) && e.local))
+            {
+                std::set<Peer::id_t> peers;
+
+                if (getApp().getHashRouter().swapSet (
+                        e.transaction->getID(), peers, SF_RELAYED))
+                {
+                    protocol::TMTransaction tx;
+                    Serializer s;
+
+                    e.transaction->getSTransaction()->add (s);
+                    tx.set_rawtransaction (&s.getData().front(), s.getLength());
+                    tx.set_status (protocol::tsCURRENT);
+                    tx.set_receivetimestamp (getApp().getOPs().getNetworkTimeNC());
+                    // FIXME: This should be when we received it
+                    getApp().overlay().foreach (send_if_not (
+                        std::make_shared<Message> (tx, protocol::mtTRANSACTION),
+                        peer_in_set(peers)));
+                }
             }
         }
     }
 
-    return trans;
+    lock.lock();
+
+    for (TransactionStatus& e : transactions)
+        e.transaction->clearApplying();
+
+    mCond.notify_all();
+
+    mDispatchState = DispatchState::none;
+}
+
+bool NetworkOPsImp::batchApply (Ledger::pointer& ledger,
+        TransactionEngine& engine,
+        std::vector<TransactionStatus>& transactions)
+{
+    bool applied = false;
+    std::lock_guard <std::recursive_mutex> lock (m_ledgerMaster.peekMutex());
+
+    ledger = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
+    engine.setLedger (ledger);
+
+    for (TransactionStatus& e : transactions)
+    {
+        std::tie (e.result, e.applied) = engine.applyTransaction (
+            *e.transaction->getSTransaction(),
+            e.admin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
+            tapOPEN_LEDGER | tapNO_CHECK_SIGN));
+        applied |= e.applied;
+    }
+
+    return applied;
 }
 
 Transaction::pointer NetworkOPsImp::findTransactionByID (

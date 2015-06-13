@@ -74,7 +74,7 @@ public:
         STPathSet& pathsOut,
         STPath& fullLiquidityPath) const;
 
-    Transaction::pointer processTransaction (
+    void processTransaction (
         Transaction::ref tpTrans,
         bool bAdmin,
         bool bLocal,

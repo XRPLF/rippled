@@ -21,7 +21,6 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerHistory.h>
-#include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
@@ -396,27 +395,6 @@ public:
     void setBuildingLedger (LedgerIndex i)
     {
         mBuildingLedgerSeq.store (i);
-    }
-
-    TER doTransaction (STTx::ref txn, TransactionEngineParams params, bool& didApply)
-    {
-        Ledger::pointer ledger;
-        TransactionEngine engine;
-        TER result;
-        didApply = false;
-
-        {
-            ScopedLockType sl (m_mutex);
-            ledger = mCurrentLedger.getMutable ();
-            engine.setLedger (ledger);
-            std::tie(result, didApply) = engine.applyTransaction (*txn, params);
-        }
-        if (didApply)
-        {
-           mCurrentLedger.set (ledger);
-           getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
-        }
-        return result;
     }
 
     bool haveLedgerRange (std::uint32_t from, std::uint32_t to)
@@ -1369,6 +1347,11 @@ public:
     Ledger::pointer getCurrentLedger ()
     {
         return mCurrentLedger.get ();
+    }
+
+    LedgerHolder& getCurrentLedgerHolder() override
+    {
+        return mCurrentLedger;
     }
 
     // The finalized ledger is the last closed/accepted ledger

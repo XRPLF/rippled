@@ -30,10 +30,7 @@ namespace ripple {
 
 Transaction::Transaction (STTx::ref sit, Validate validate, std::string& reason)
     noexcept
-    : mInLedger (0),
-      mStatus (INVALID),
-      mResult (temUNCERTAIN),
-      mTransaction (sit)
+    : mTransaction (sit)
 {
     try
     {
