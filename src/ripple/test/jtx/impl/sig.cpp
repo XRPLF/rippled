@@ -28,18 +28,17 @@ namespace jtx {
 void
 sig::operator()(Env const&, JTx& jt) const
 {
-    if(boost::indeterminate(b_))
+    if (! manual_)
+        return;
+    jt.fill_sig = false;
+    if(account_)
     {
         // VFALCO Inefficient pre-C++14
-        auto const account = account_;
+        auto const account = *account_;
         jt.signer = [account](Env&, JTx& jt)
         {
             jtx::sign(jt.jv, account);
         };
-    }
-    else
-    {
-        jt.fill_sig = b_;
     }
 }
 

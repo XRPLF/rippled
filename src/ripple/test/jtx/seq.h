@@ -22,7 +22,7 @@
 
 #include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/tags.h>
-#include <boost/logic/tribool.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace test {
@@ -32,26 +32,24 @@ namespace jtx {
 struct seq
 {
 private:
-    std::uint32_t v_;
-    boost::tribool b_ =
-        boost::logic::indeterminate;
+    bool manual_ = true;
+    boost::optional<std::uint32_t> num_;
 
 public:
     explicit
     seq (autofill_t)
-        : b_(true)
+        : manual_(false)
     {
     }
 
     explicit
     seq (none_t)
-        : b_(false)
     {
     }
 
     explicit
-    seq (std::uint32_t v)
-        : v_(v)
+    seq (std::uint32_t num)
+        : num_(num)
     {
     }
 

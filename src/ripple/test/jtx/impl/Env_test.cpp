@@ -165,13 +165,6 @@ public:
             env.require(nflags("xavier", asfDefaultRipple));
             env.fund(n, "yana");
             env.require(flags("yana", asfDefaultRipple));
-
-            // fund always autofills
-            env.auto_fee(false);
-            env.auto_seq(false);
-            env.auto_sig(false);
-            env.fund(n, "zeke");
-            env.require(balance("zeke", n));
         }
 
         // trust
@@ -179,13 +172,6 @@ public:
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
             env(trust("alice", USD(100)), require(lines("alice", 1)));
-
-            // trust always autofills
-            env.auto_fee(false);
-            env.auto_seq(false);
-            env.auto_sig(false);
-            env.trust(USD(100), "bob");
-            env.require(lines("bob", 1));
         }
 
         // balance
@@ -215,7 +201,6 @@ public:
         {
             Env env(*this);
             env.fund(n, "alice");
-            env.auto_fee(false);
             env.require(balance("alice", n));
             env(noop("alice"), fee(1),                  ter(telINSUF_FEE_P));
             env(noop("alice"), seq(none),               ter(temMALFORMED));
@@ -223,9 +208,7 @@ public:
             env(noop("alice"), fee(none),               ter(temMALFORMED));
             env(noop("alice"), sig(none),               ter(temMALFORMED));
             env(noop("alice"), fee(autofill));
-            env.auto_seq(false);
             env(noop("alice"), fee(autofill), seq(autofill));
-            env.auto_sig(false);
             env(noop("alice"), fee(autofill), seq(autofill), sig(autofill));
         }
     }

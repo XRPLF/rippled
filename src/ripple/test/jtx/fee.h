@@ -23,7 +23,7 @@
 #include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/tags.h>
 #include <ripple/protocol/STAmount.h>
-#include <boost/logic/tribool.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace test {
@@ -33,28 +33,26 @@ namespace jtx {
 class fee
 {
 private:
-    STAmount v_;
-    boost::tribool b_ =
-        boost::logic::indeterminate;
+    bool manual_ = true;
+    boost::optional<STAmount> amount_;
 
 public:
     explicit
     fee (autofill_t)
-        : b_(true)
+        : manual_(false)
     {
     }
 
     explicit
     fee (none_t)
-        : b_(false)
     {
     }
 
     explicit
-    fee (STAmount const& v)
-        : v_(v)
+    fee (STAmount const& amount)
+        : amount_(amount)
     {
-        if (! isXRP(v_))
+        if (! isXRP(*amount_))
             throw std::runtime_error(
                 "fee: not XRP");
     }

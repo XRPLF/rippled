@@ -23,7 +23,6 @@
 #include <ripple/test/jtx/requires.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/TER.h>
-#include <boost/logic/tribool.hpp>
 #include <functional>
 
 namespace ripple {
@@ -32,17 +31,15 @@ namespace jtx {
 
 class Env;
 
-BOOST_TRIBOOL_THIRD_STATE(use_default)
-
 /** Execution context for applying a JSON transaction.
     This augments the transaction with various settings.
 */
 struct JTx
 {
     Json::Value jv;
-    boost::tribool fill_fee = boost::logic::indeterminate;
-    boost::tribool fill_seq = boost::logic::indeterminate;
-    boost::tribool fill_sig = boost::logic::indeterminate;
+    bool fill_fee = true;
+    bool fill_seq = true;
+    bool fill_sig = true;
     std::function<void(Env&, JTx&)> signer;
     requires_t requires;
     TER ter = tesSUCCESS;

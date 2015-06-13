@@ -37,7 +37,6 @@
 #include <ripple/protocol/STTx.h>
 #include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
-#include <boost/logic/tribool.hpp>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 #include <beast/cxx14/utility.h> // <utility>
 #include <functional>
@@ -48,36 +47,6 @@
 namespace ripple {
 namespace test {
 namespace jtx {
-
-/** A view to an account's account root. */
-class AccountInfo
-{
-private:
-    Account account_;
-    std::shared_ptr<Ledger> ledger_;
-    std::shared_ptr<SLE const> root_;
-
-public:
-    AccountInfo(Account const& account,
-            std::shared_ptr<Ledger> ledger)
-        : account_(account)
-        , ledger_(std::move(ledger))
-        , root_(ledger_->fetch(
-            getAccountRootIndex(account.id())))
-    {
-    }
-
-    STAmount
-    balance (Issue const& issue) const;
-
-    std::uint32_t
-    seq() const;
-
-    std::uint32_t
-    flags() const;
-};
-
-//------------------------------------------------------------------------------
 
 namespace detail {
 
@@ -164,10 +133,10 @@ public:
     /** Returns the Account given the AccountID. */
     /** @{ */
     Account const&
-    lookup (std::string const& base58ID) const;
+    lookup (AccountID const& id) const;
 
     Account const&
-    lookup (AccountID const& id) const;
+    lookup (std::string const& base58ID) const;
     /** @} */
 
     /** Returns the XRP balance on an account.
@@ -203,26 +172,6 @@ public:
     // VFALCO NOTE Use Keylet here
     std::shared_ptr<SLE const>
     le (uint256 const& key) const;
-
-    /** Set the fee autofill setting. */
-    void auto_fee (bool value)
-    {
-        fill_fee_ = value;
-    }
-
-    /** Set the sequence number autofill setting. */
-    void auto_seq (bool value)
-    {
-        fill_seq_ = value;
-    }
-
-    /** Set the signature autofill setting.
-        @note autofill multisigning is not supported
-    */
-    void auto_sig (bool value)
-    {
-        fill_sig_ = value;
-    }
 
     /** Create a JTx from parameters. */
     template <class JsonValue,
@@ -468,10 +417,6 @@ protected:
     // Map of account IDs to Account
     std::unordered_map<
         AccountID, Account> map_;
-
-    bool fill_fee_ = true;
-    bool fill_seq_ = true;
-    bool fill_sig_ = true;
 };
 
 } // jtx

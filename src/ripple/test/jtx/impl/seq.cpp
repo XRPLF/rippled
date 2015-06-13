@@ -28,10 +28,11 @@ namespace jtx {
 void
 seq::operator()(Env const&, JTx& jt) const
 {
-    if (boost::indeterminate(b_))
-        jt[jss::Sequence] = v_;
-    else
-        jt.fill_seq = b_;
+    if (! manual_)
+        return;
+    jt.fill_seq = false;
+    if (num_)
+        jt[jss::Sequence] = *num_;
 }
 
 } // jtx
