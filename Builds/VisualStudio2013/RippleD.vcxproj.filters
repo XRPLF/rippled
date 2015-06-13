@@ -4074,6 +4074,9 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\balance.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\basic_prop.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
@@ -4165,6 +4168,9 @@
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\pay.h">
+      <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\prop.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\rate.h">

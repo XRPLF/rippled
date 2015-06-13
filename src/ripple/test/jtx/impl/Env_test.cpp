@@ -413,6 +413,106 @@ public:
         Env env(*this);
     }
 
+    void testJTxProperties()
+    {
+        using namespace jtx;
+        JTx jt1;
+        // Test a straightforward
+        // property
+        expect(!jt1.get<int>());
+        jt1.set<int>(7);
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 7);
+        expect(!jt1.get<Env>());
+
+        // Test that the property is
+        // replaced if it exists.
+        jt1.set<int>(17);
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 17);
+        expect(!jt1.get<Env>());
+
+        // Test that modifying the
+        // returned prop is saved
+        *jt1.get<int>() = 42;
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 42);
+        expect(!jt1.get<Env>());
+
+        // Test get() const
+        auto const& jt2 = jt1;
+        expect(jt2.get<int>());
+        expect(*jt2.get<int>() == 42);
+        expect(!jt2.get<Env>());
+    }
+
+    void testProp()
+    {
+        using namespace jtx;
+        Env env(*this);
+        env.memoize("alice");
+
+        auto jt1 = env.jt(noop("alice"));
+        expect(!jt1.get<std::uint16_t>());
+
+        auto jt2 = env.jt(noop("alice"),
+            prop<std::uint16_t>(-1));
+        expect(jt2.get<std::uint16_t>());
+        expect(*jt2.get<std::uint16_t>() ==
+            65535);
+
+        auto jt3 = env.jt(noop("alice"),
+            prop<std::string>(
+                "Hello, world!"),
+                    prop<bool>(false));
+        expect(jt3.get<std::string>());
+        expect(*jt3.get<std::string>() ==
+            "Hello, world!");
+        expect(jt3.get<bool>());
+        expect(!*jt3.get<bool>());
+    }
+
+    void testJTxCopy()
+    {
+        using namespace jtx;
+        JTx jt1;
+        jt1.set<int>(7);
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 7);
+        expect(!jt1.get<Env>());
+        JTx jt2(jt1);
+        expect(jt2.get<int>());
+        expect(*jt2.get<int>() == 7);
+        expect(!jt2.get<Env>());
+        JTx jt3;
+        jt3 = jt1;
+        expect(jt3.get<int>());
+        expect(*jt3.get<int>() == 7);
+        expect(!jt3.get<Env>());
+    }
+
+    void testJTxMove()
+    {
+        using namespace jtx;
+        JTx jt1;
+        jt1.set<int>(7);
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 7);
+        expect(!jt1.get<Env>());
+        JTx jt2(std::move(jt1));
+        expect(!jt1.get<int>());
+        expect(!jt1.get<Env>());
+        expect(jt2.get<int>());
+        expect(*jt2.get<int>() == 7);
+        expect(!jt2.get<Env>());
+        jt1 = std::move(jt2);
+        expect(!jt2.get<int>());
+        expect(!jt2.get<Env>());
+        expect(jt1.get<int>());
+        expect(*jt1.get<int>() == 7);
+        expect(!jt1.get<Env>());
+    }
+
     void
     run()
     {
@@ -430,6 +530,11 @@ public:
         testMultiSign();
         testMultiSign2();
         testTicket();
+
+        testJTxProperties();
+        testProp();
+        testJTxCopy();
+        testJTxMove();
     }
 };
 

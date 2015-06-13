@@ -76,6 +76,9 @@ fill_seq (Json::Value& jv,
     auto const ar = ledger.fetch(
         getAccountRootIndex(ra.getAccountID()));
 
+    if (!ar)
+        return;
+
     jv[jss::Sequence] =
         ar->getFieldU32(sfSequence);
 }
