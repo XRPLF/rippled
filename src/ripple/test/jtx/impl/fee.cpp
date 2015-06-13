@@ -28,11 +28,12 @@ namespace jtx {
 void
 fee::operator()(Env const&, JTx& jt) const
 {
-    if (boost::indeterminate(b_))
+    if (! manual_)
+        return;
+    jt.fill_fee = false;
+    if (amount_)
         jt[jss::Fee] =
-            v_.getJson(0);
-    else
-        jt.fill_fee = b_;
+            amount_->getJson(0);
 }
 
 } // jtx

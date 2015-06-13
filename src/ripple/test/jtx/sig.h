@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_SIG_H_INCLUDED
 
 #include <ripple/test/jtx/Env.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace test {
@@ -32,20 +33,18 @@ namespace jtx {
 class sig
 {
 private:
-    Account account_;
-    boost::tribool b_ =
-        boost::logic::indeterminate;
+    bool manual_ = true;
+    boost::optional<Account> account_;
 
 public:
     explicit
     sig (autofill_t)
-        : b_(true)
+        : manual_(false)
     {
     }
 
     explicit
     sig (none_t)
-        : b_(false)
     {
     }
 

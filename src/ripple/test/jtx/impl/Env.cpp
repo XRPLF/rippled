@@ -68,16 +68,6 @@ Env::memoize (Account const& account)
 }
 
 Account const&
-Env::lookup (std::string const& base58ID) const
-{
-    RippleAddress ra;
-    if (! ra.setAccountID(base58ID))
-        throw std::runtime_error(
-            "Env::lookup: invalid account ID");
-    return lookup(ra.getAccountID());
-}
-
-Account const&
 Env::lookup (AccountID const& id) const
 {
     auto const iter = map_.find(id);
@@ -85,6 +75,16 @@ Env::lookup (AccountID const& id) const
         throw std::runtime_error(
             "Env::lookup:: unknown account ID");
     return iter->second;
+}
+
+Account const&
+Env::lookup (std::string const& base58ID) const
+{
+    RippleAddress ra;
+    if (! ra.setAccountID(base58ID))
+        throw std::runtime_error(
+            "Env::lookup: invalid account ID");
+    return lookup(ra.getAccountID());
 }
 
 PrettyAmount
@@ -130,24 +130,14 @@ Env::seq (Account const& account) const
 std::shared_ptr<SLE const>
 Env::le (Account const& account) const
 {
-    // VFALCO NOTE This hack should be removed
-    //             when fetch returns shared_ptr again
-    auto const st = ledger->fetch(
+    return ledger->fetch(
         getAccountRootIndex(account.id()));
-    if (! st)
-        return nullptr;
-    return std::make_shared<SLE const>(*st);
 }
 
 std::shared_ptr<SLE const>
 Env::le (uint256 const& key) const
 {
-    // VFALCO NOTE This hack should be removed
-    //             when fetch returns shared_ptr again
-    auto const st = ledger->fetch(key);
-    if (! st)
-        return nullptr;
-    return std::make_shared<SLE const>(*st);
+    return ledger->fetch(key);
 }
 
 void
@@ -229,21 +219,13 @@ void
 Env::autofill_sig (JTx& jt)
 {
     auto& jv = jt.jv;
-    auto const should = [](boost::tribool v, bool b)
-    {
-        if (boost::indeterminate(v))
-            return b;
-        return bool(v);
-    };
-
     if (jt.signer)
         jt.signer(*this, jt);
-    else if(should(jt.fill_sig, fill_sig_))
+    else if(jt.fill_sig)
     {
         auto const account =
             lookup(jv[jss::Account].asString());
-        auto const ar =
-            ledger->fetch(getAccountRootIndex(account));
+        auto const ar = le(account);
         if (ar->isFieldPresent(sfRegularKey))
             jtx::sign(jv, lookup(
                 ar->getFieldAccount160(sfRegularKey)));
@@ -256,19 +238,10 @@ void
 Env::autofill (JTx& jt)
 {
     auto& jv = jt.jv;
-    auto const should = [](boost::tribool v, bool b)
-    {
-        if (boost::indeterminate(v))
-            return b;
-        return bool(v);
-    };
-
-    if(should(jt.fill_fee, fill_fee_))
+    if(jt.fill_fee)
         jtx::fill_fee(jv, *ledger);
-    
-    if(should(jt.fill_seq, fill_seq_))
+    if(jt.fill_seq)
         jtx::fill_seq(jv, *ledger);
-
     // Must come last
     autofill_sig(jt);
 }
