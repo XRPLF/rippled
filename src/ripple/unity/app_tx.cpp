@@ -46,4 +46,5 @@
 #include <ripple/app/tx/tests/common_transactor.cpp>
 #include <ripple/app/tx/tests/MultiSign.test.cpp>
 #include <ripple/app/tx/tests/OfferStream.test.cpp>
+#include <ripple/app/tx/tests/Regression_test.cpp>
 #include <ripple/app/tx/tests/Taker.test.cpp>

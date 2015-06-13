@@ -2541,6 +2541,9 @@
     <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\Regression_test.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
