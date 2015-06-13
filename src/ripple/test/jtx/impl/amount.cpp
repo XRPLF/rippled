@@ -1,0 +1,123 @@
+//------------------------------------------------------------------------------
+/*
+  This file is part of rippled: https://github.com/ripple/rippled
+  Copyright (c) 2012-2015 Ripple Labs Inc.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose  with  or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#include <BeastConfig.h>
+#include <ripple/test/jtx/Account.h>
+#include <ripple/test/jtx/amount.h>
+#include <cassert>
+#include <cmath>
+#include <iomanip>
+
+namespace ripple {
+namespace test {
+namespace jtx {
+
+#if 0
+std::ostream&
+operator<<(std::ostream&& os,
+    AnyAmount const& amount)
+{
+    if (amount.is_any)
+    {
+        os << amount.value.getText() << "/" <<
+            to_string(amount.value.issue().currency) <<
+                "*";
+        return os;
+    }
+    os << amount.value.getText() << "/" <<
+        to_string(amount.value.issue().currency) <<
+            "(" << amount.name() << ")";
+    return os;
+}
+#endif
+
+PrettyAmount::operator AnyAmount() const
+{
+    return { amount_ };
+}
+
+std::ostream&
+operator<< (std::ostream& os,
+    PrettyAmount const& amount)
+{
+    if (amount.value().native())
+    {
+        // measure in hundredths
+        auto const c =
+            dropsPerXRP<int>::value / 100;
+        auto const n = amount.value().mantissa();
+        if(n < c)
+        {
+            if (amount.value().negative())
+                os << "-" << n << " drops";
+            else
+                os << n << " drops";
+            return os;
+        }
+        auto const d = double(n) /
+            dropsPerXRP<int>::value;
+        os.precision(6);
+        if (amount.value().negative())
+            os << "-" <<  d << " XRP";
+        else
+            os << d << " XRP";
+    }
+    else
+    {
+        os <<
+            amount.value().getText() << "/" <<
+                to_string(amount.value().issue().currency) <<
+                    "(" << amount.name() << ")";
+    }
+    return os;
+}
+
+//------------------------------------------------------------------------------
+
+detail::XRP_t const XRP { };
+
+PrettyAmount
+IOU::operator()(epsilon_t) const
+{
+    return { STAmount(issue(), 1, -81),
+        account_.name() };
+}
+
+PrettyAmount
+IOU::operator()(detail::epsilon_multiple m) const
+{
+    return { STAmount(issue(), m.n, -81),
+        account_.name() };
+}
+
+std::ostream&
+operator<<(std::ostream& os,
+    IOU const& iou)
+{
+    os <<
+        to_string(iou.issue().currency) <<
+            "(" << iou.account().name() << ")";
+    return os;
+}
+
+any_t const any { };
+
+} // jtx
+} // test
+} // ripple
