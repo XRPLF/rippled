@@ -37,6 +37,7 @@
 #include <ripple/test/jtx/owners.h>
 #include <ripple/test/jtx/paths.h>
 #include <ripple/test/jtx/pay.h>
+#include <ripple/test/jtx/prop.h>
 #include <ripple/test/jtx/rate.h>
 #include <ripple/test/jtx/regkey.h>
 #include <ripple/test/jtx/require.h>
