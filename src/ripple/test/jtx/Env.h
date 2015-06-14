@@ -167,7 +167,7 @@ public:
     lookup (std::string const& base58ID) const;
 
     Account const&
-    lookup (ripple::Account const& id) const;
+    lookup (AccountID const& id) const;
     /** @} */
 
     /** Returns the XRP balance on an account.
@@ -467,7 +467,7 @@ protected:
 
     // Map of account IDs to Account
     std::unordered_map<
-        ripple::Account, Account> map_;
+        AccountID, Account> map_;
 
     bool fill_fee_ = true;
     bool fill_seq_ = true;

@@ -90,8 +90,8 @@ public:
         //           trust node.
         STAmount const& saDstAmountReq,
 
-        Account const& uDstAccountID,
-        Account const& uSrcAccountID,
+        AccountID const& uDstAccountID,
+        AccountID const& uSrcAccountID,
 
         // A set of paths that are included in the transaction that we'll
         // explore for liquidity.
@@ -119,8 +119,8 @@ private:
         STAmount const& saMaxAmountReq,             // --> -1 = no limit.
         STAmount const& saDstAmountReq,
 
-        Account const& uDstAccountID,
-        Account const& uSrcAccountID,
+        AccountID const& uDstAccountID,
+        AccountID const& uSrcAccountID,
         STPathSet const& spsPaths)
             : mActiveLedger (activeLedger),
               saDstAmountReq_(saDstAmountReq),
@@ -139,8 +139,8 @@ private:
 
     STAmount const& saDstAmountReq_;
     STAmount const& saMaxAmountReq_;
-    Account const& uDstAccountID_;
-    Account const& uSrcAccountID_;
+    AccountID const& uDstAccountID_;
+    AccountID const& uSrcAccountID_;
     STPathSet const& spsPaths_;
 
     // The computed input amount.

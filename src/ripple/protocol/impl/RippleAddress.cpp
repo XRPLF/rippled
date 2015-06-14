@@ -325,7 +325,7 @@ void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
 // AccountID
 //
 
-Account RippleAddress::getAccountID () const
+AccountID RippleAddress::getAccountID () const
 {
     switch (nVersion)
     {
@@ -333,12 +333,12 @@ Account RippleAddress::getAccountID () const
         throw std::runtime_error ("unset source - getAccountID");
 
     case VER_ACCOUNT_ID:
-        return Account(vchData);
+        return AccountID(vchData);
 
     case VER_ACCOUNT_PUBLIC: {
         // Note, we are encoding the left.
         // TODO(tom): decipher this comment.
-        Account account;
+        AccountID account;
         account.copyFrom (Hash160 (vchData));
         return account;
     }
@@ -428,7 +428,7 @@ bool RippleAddress::setAccountID (
 {
     if (strAccountID.empty ())
     {
-        setAccountID (Account ());
+        setAccountID (AccountID ());
 
         mIsValid    = true;
     }
@@ -440,7 +440,7 @@ bool RippleAddress::setAccountID (
     return mIsValid;
 }
 
-void RippleAddress::setAccountID (Account const& hash160)
+void RippleAddress::setAccountID (AccountID const& hash160)
 {
     mIsValid        = true;
     SetData (VER_ACCOUNT_ID, hash160);
@@ -541,7 +541,7 @@ bool RippleAddress::accountPublicVerify (
             fullyCanonical);
 }
 
-RippleAddress RippleAddress::createAccountID (Account const& account)
+RippleAddress RippleAddress::createAccountID (AccountID const& account)
 {
     RippleAddress   na;
     na.setAccountID (account);

@@ -31,7 +31,7 @@ public:
     STAmount
     static raw (std::uint64_t mantissa, int exponent)
     {
-        return STAmount ({Currency(3), Account(3)}, mantissa, exponent);
+        return STAmount ({Currency(3), AccountID(3)}, mantissa, exponent);
     }
 
     template <class Integer>

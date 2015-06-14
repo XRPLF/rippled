@@ -26,7 +26,7 @@ namespace ripple {
 namespace RPC {
 
 bool
-getAccountObjects (Ledger const& ledger, Account const& account,
+getAccountObjects (Ledger const& ledger, AccountID const& account,
     LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
     std::uint32_t const limit, Json::Value& jvResult)
 {

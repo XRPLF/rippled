@@ -178,13 +178,13 @@ namespace std {
 template <bool ByValue>
 struct hash <ripple::IssueType <ByValue>>
     : private boost::base_from_member <std::hash <ripple::Currency>, 0>
-    , private boost::base_from_member <std::hash <ripple::Account>, 1>
+    , private boost::base_from_member <std::hash <ripple::AccountID>, 1>
 {
 private:
     using currency_hash_type = boost::base_from_member <
         std::hash <ripple::Currency>, 0>;
     using issuer_hash_type = boost::base_from_member <
-        std::hash <ripple::Account>, 1>;
+        std::hash <ripple::AccountID>, 1>;
 
 public:
     using value_type = std::size_t;

@@ -204,8 +204,8 @@ static
 std::uint32_t
 rippleQuality (
     LedgerEntrySet& ledger,
-    Account const& destination,
-    Account const& source,
+    AccountID const& destination,
+    AccountID const& source,
     Currency const& currency,
     SField const& sfLow,
     SField const& sfHigh)
@@ -238,8 +238,8 @@ rippleQuality (
 std::uint32_t
 quality_in (
     LedgerEntrySet& ledger,
-    Account const& uToAccountID,
-    Account const& uFromAccountID,
+    AccountID const& uToAccountID,
+    AccountID const& uFromAccountID,
     Currency const& currency)
 {
     return rippleQuality (ledger, uToAccountID, uFromAccountID, currency,
@@ -249,8 +249,8 @@ quality_in (
 std::uint32_t
 quality_out (
     LedgerEntrySet& ledger,
-    Account const& uToAccountID,
-    Account const& uFromAccountID,
+    AccountID const& uToAccountID,
+    AccountID const& uFromAccountID,
     Currency const& currency)
 {
     return rippleQuality (ledger, uToAccountID, uFromAccountID, currency,

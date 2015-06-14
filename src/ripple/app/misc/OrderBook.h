@@ -61,12 +61,12 @@ public:
         return mBook.out.currency;
     }
 
-    Account const& getIssuerIn () const
+    AccountID const& getIssuerIn () const
     {
         return mBook.in.account;
     }
 
-    Account const& getIssuerOut () const
+    AccountID const& getIssuerOut () const
     {
         return mBook.out.account;
     }

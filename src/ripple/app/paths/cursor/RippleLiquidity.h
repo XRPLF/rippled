@@ -42,15 +42,15 @@ void rippleLiquidity (
 std::uint32_t
 quality_in (
     LedgerEntrySet& ledger,
-    Account const& uToAccountID,
-    Account const& uFromAccountID,
+    AccountID const& uToAccountID,
+    AccountID const& uFromAccountID,
     Currency const& currency);
 
 std::uint32_t
 quality_out (
     LedgerEntrySet& ledger,
-    Account const& uToAccountID,
-    Account const& uFromAccountID,
+    AccountID const& uToAccountID,
+    AccountID const& uFromAccountID,
     Currency const& currency);
 
 } // path

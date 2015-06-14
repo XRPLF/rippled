@@ -34,12 +34,12 @@ namespace detail {
 
 std::uint32_t
 owned_count_of (Ledger const& ledger,
-    ripple::Account const& id,
+    AccountID const& id,
         LedgerEntryType type);
 
 void
 owned_count_helper(Env const& env,
-    ripple::Account const& id,
+    AccountID const& id,
         LedgerEntryType type,
             std::uint32_t value);
 

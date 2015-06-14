@@ -88,7 +88,7 @@ Json::Value doAccountOffers (RPC::Context& context)
         limit = RPC::Tuning::defaultOffersPerRequest;
     }
 
-    Account const& raAccount (rippleAddress.getAccountID ());
+    AccountID const& raAccount (rippleAddress.getAccountID ());
     Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
     std::vector <std::shared_ptr<SLE const>> offers;
     unsigned int reserve (limit);

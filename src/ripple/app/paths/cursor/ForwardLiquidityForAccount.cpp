@@ -47,11 +47,11 @@ TER PathCursor::forwardLiquidityForAccount () const
 
     std::uint64_t uRateMax = 0;
 
-    Account const& previousAccountID =
+    AccountID const& previousAccountID =
             previousNode().isAccount() ? previousNode().account_ :
             node().account_;
     // Offers are always issue.
-    Account const& nextAccountID =
+    AccountID const& nextAccountID =
             nextNode().isAccount() ? nextNode().account_ : node().account_;
 
     std::uint32_t uQualityIn = nodeIndex_

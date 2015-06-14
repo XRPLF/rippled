@@ -203,7 +203,7 @@ error_code_i acctMatchesPubKey (
     RippleAddress const& accountID,
     RippleAddress const& publicKey)
 {
-    Account const publicKeyAcctID = publicKey.getAccountID ();
+    AccountID const publicKeyAcctID = publicKey.getAccountID ();
     bool const isMasterKey = publicKeyAcctID == accountID.getAccountID ();
 
     // If we can't get the accountRoot, but the accountIDs match, that's
@@ -1210,7 +1210,7 @@ Json::Value transactionSubmitMultiSigned (
                     b.getFieldAccount (sfAccount).getAccountID ()); };
 
     {
-        // MultiSigners are submitted sorted in Account order.  This
+        // MultiSigners are submitted sorted in AccountID order.  This
         // assures that the same list will always have the same hash.
         multiSigners.sort (byFieldAccountID);
 

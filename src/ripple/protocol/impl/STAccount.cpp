@@ -29,7 +29,7 @@ STAccount::STAccount (SerialIter& sit, SField const& name)
 
 std::string STAccount::getText () const
 {
-    Account u;
+    AccountID u;
     RippleAddress a;
 
     if (!getValueH160 (u))
@@ -45,7 +45,7 @@ STAccount::construct (SerialIter& u, SField const& name)
     return new STAccount (name, u.getVLBuffer ());
 }
 
-STAccount::STAccount (SField const& n, Account const& v)
+STAccount::STAccount (SField const& n, AccountID const& v)
         : STBlob (n, v.data (), v.size ())
 {
 }
@@ -58,7 +58,7 @@ bool STAccount::isValueH160 () const
 RippleAddress STAccount::getValueNCA () const
 {
     RippleAddress a;
-    Account account;
+    AccountID account;
 
     if (getValueH160 (account))
         a.setAccountID (account);

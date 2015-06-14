@@ -345,56 +345,58 @@ STTx::checkMultiSign () const
         ? ECDSA::strict
         : ECDSA::not_strict;
 
-    // We need to detect (and reject) if a multi-signer is both signing
-    // directly and using a SigningFor.  Here's an example:
-    //
-    // {
-    //     ...
-    //     "MultiSigners": [
-    //         {
-    //             "SigningFor": {
-    //                 "Account": "<alice>",
-    //                 "SigningAccounts": [
-    //                     {
-    //                         "SigningAccount": {
-    //                             // * becky says that becky signs for alice. *
-    //                             "Account": "<becky>",
-    //     ...
-    //             "SigningFor": {
-    //                 "Account": "<becky>",
-    //                 "SigningAccounts": [
-    //                     {
-    //                         "SigningAccount": {
-    //                             // * cheri says that becky signs for alice. *
-    //                             "Account": "<cheri>",
-    //     ...
-    //     "tx_json": {
-    //         "Account": "<alice>",
-    //         ...
-    //     }
-    // }
-    //
-    // Why is this way of signing a problem?  Alice has a signer list, and
-    // Becky can show up in that list only once.  By design.  So if Becky
-    // signs twice -- once directly and once indirectly -- we have three
-    // options:
-    //
-    //  1. We can add Becky's weight toward Alice's quorum twice, once for
-    //     each signature.  This seems both unexpected and counter to Alice's
-    //     intention.
-    //
-    //  2. We could allow both signatures, but only add Becky's weight
-    //     toward Alice's quorum once.  This seems a bit better.  But it allows
-    //     our clients to ask rippled to do more work than necessary.  We
-    //     should also let the client know that only one of the signatures
-    //     was necessary.
-    //
-    //  3. The only way to tell the client that they have done more work
-    //     than necessary (and that one of the signatures will be ignored) is
-    //     to declare the transaction malformed.  This behavior also aligns
-    //     well with rippled's behavior if Becky had signed directly twice:
-    //     the transaction would be marked as malformed.
-    //
+    /*
+        We need to detect (and reject) if a multi-signer is both signing
+        directly and using a SigningFor.  Here's an example:
+        
+        {
+            ...
+            "MultiSigners": [
+                {
+                    "SigningFor": {
+                        "Account": "<alice>",
+                        "SigningAccounts": [
+                            {
+                                "SigningAccount": {
+                                    // * becky says that becky signs for alice. *
+                                    "Account": "<becky>",
+            ...
+                    "SigningFor": {
+                        "Account": "<becky>",
+                        "SigningAccounts": [
+                            {
+                                "SigningAccount": {
+                                    // * cheri says that becky signs for alice. *
+                                    "Account": "<cheri>",
+            ...
+            "tx_json": {
+                "Account": "<alice>",
+                ...
+            }
+        }
+        
+        Why is this way of signing a problem?  Alice has a signer list, and
+        Becky can show up in that list only once.  By design.  So if Becky
+        signs twice -- once directly and once indirectly -- we have three
+        options:
+        
+         1. We can add Becky's weight toward Alice's quorum twice, once for
+            each signature.  This seems both unexpected and counter to Alice's
+            intention.
+        
+         2. We could allow both signatures, but only add Becky's weight
+            toward Alice's quorum once.  This seems a bit better.  But it allows
+            our clients to ask rippled to do more work than necessary.  We
+            should also let the client know that only one of the signatures
+            was necessary.
+        
+         3. The only way to tell the client that they have done more work
+            than necessary (and that one of the signatures will be ignored) is
+            to declare the transaction malformed.  This behavior also aligns
+            well with rippled's behavior if Becky had signed directly twice:
+            the transaction would be marked as malformed.
+    */
+
     // We use this std::set to detect this form of double-signing.
     std::set<RippleAddress> firstLevelSigners;
 

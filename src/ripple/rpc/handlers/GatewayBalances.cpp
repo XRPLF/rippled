@@ -89,7 +89,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     auto accountID = naAccount.getAccountID();
 
     // Parse the specified hotwallet(s), if any
-    std::set <Account> hotWallets;
+    std::set <AccountID> hotWallets;
 
     if (params.isMember ("hotwallet"))
     {
@@ -138,8 +138,8 @@ Json::Value doGatewayBalances (RPC::Context& context)
     }
 
     std::map <Currency, STAmount> sums;
-    std::map <Account, std::vector <STAmount>> hotBalances;
-    std::map <Account, std::vector <STAmount>> assets;
+    std::map <AccountID, std::vector <STAmount>> hotBalances;
+    std::map <AccountID, std::vector <STAmount>> assets;
 
     // Traverse the cold wallet's trust lines
     forEachItem(*ledger, accountID, getApp().getSLECache(),

@@ -37,7 +37,7 @@ class Offer
 private:
     SLE::pointer m_entry;
     Quality m_quality;
-    Account m_account;
+    AccountID m_account;
 
     mutable Amounts m_amounts;
 
@@ -70,7 +70,7 @@ public:
     }
 
     /** Returns the account id of the offer's owner. */
-    Account const&
+    AccountID const&
     owner () const
     {
         return m_account;

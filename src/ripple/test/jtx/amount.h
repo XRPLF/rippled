@@ -358,7 +358,7 @@ struct AnyAmount
 
     // Reset the issue to a specific account
     void
-    to (ripple::Account const& id)
+    to (AccountID const& id)
     {
         if (! is_any)
             return;

@@ -162,7 +162,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                 }
                 if (needFix)
                 {
-                    Account peer =
+                    AccountID peer =
                         ownedItem->getFieldAmount (bLow ? sfHighLimit : sfLowLimit).getIssuer();
                     STAmount peerLimit = ownedItem->getFieldAmount (bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string (peerLimit.getCurrency());

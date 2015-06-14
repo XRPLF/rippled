@@ -58,7 +58,7 @@ getLedgerFeeIndex ()
 }
 
 uint256
-getAccountRootIndex (Account const& account)
+getAccountRootIndex (AccountID const& account)
 {
     return sha512Half(
         std::uint16_t(spaceAccount),
@@ -72,7 +72,7 @@ getAccountRootIndex (const RippleAddress & account)
 }
 
 uint256
-getGeneratorIndex (Account const& uGeneratorID)
+getGeneratorIndex (AccountID const& uGeneratorID)
 {
     return sha512Half(
         std::uint16_t(spaceGenerator),
@@ -93,7 +93,7 @@ getBookBase (Book const& book)
 }
 
 uint256
-getOfferIndex (Account const& account, std::uint32_t uSequence)
+getOfferIndex (AccountID const& account, std::uint32_t uSequence)
 {
     return sha512Half(
         std::uint16_t(spaceOffer),
@@ -102,7 +102,7 @@ getOfferIndex (Account const& account, std::uint32_t uSequence)
 }
 
 uint256
-getOwnerDirIndex (Account const& account)
+getOwnerDirIndex (AccountID const& account)
 {
     return sha512Half(
         std::uint16_t(spaceOwnerDir),
@@ -155,7 +155,7 @@ getQuality (uint256 const& uBase)
 }
 
 uint256
-getTicketIndex (Account const& account, std::uint32_t uSequence)
+getTicketIndex (AccountID const& account, std::uint32_t uSequence)
 {
     return sha512Half(
         std::uint16_t(spaceTicket),
@@ -164,7 +164,7 @@ getTicketIndex (Account const& account, std::uint32_t uSequence)
 }
 
 uint256
-getRippleStateIndex (Account const& a, Account const& b, Currency const& currency)
+getRippleStateIndex (AccountID const& a, AccountID const& b, Currency const& currency)
 {
     if (a < b)
         return sha512Half(
@@ -180,13 +180,13 @@ getRippleStateIndex (Account const& a, Account const& b, Currency const& currenc
 }
 
 uint256
-getRippleStateIndex (Account const& a, Issue const& issue)
+getRippleStateIndex (AccountID const& a, Issue const& issue)
 {
     return getRippleStateIndex (a, issue.account, issue.currency);
 }
 
 uint256
-getSignerListIndex (Account const& account)
+getSignerListIndex (AccountID const& account)
 {
     return sha512Half(
         std::uint16_t(spaceSignerList),
@@ -198,7 +198,7 @@ getSignerListIndex (Account const& account)
 namespace keylet {
 
 Keylet account_t::operator()(
-    Account const& id) const
+    AccountID const& id) const
 {
     return { ltACCOUNT_ROOT,
         getAccountRootIndex(id) };
@@ -212,7 +212,7 @@ Keylet account_t::operator()(
 }
 
 Keylet owndir_t::operator()(
-    Account const& id) const
+    AccountID const& id) const
 {
     return { ltDIR_NODE,
         getOwnerDirIndex(id) };
@@ -248,7 +248,7 @@ Keylet book_t::operator()(Book const& b) const
         getBookBase(b) };
 }
 
-Keylet offer_t::operator()(Account const& id,
+Keylet offer_t::operator()(AccountID const& id,
     std::uint32_t seq) const
 {
     return { ltOFFER,
@@ -278,28 +278,28 @@ Keylet next_t::operator()(Keylet const& k) const
         getQualityNext(k.key) };
 }
 
-Keylet ticket_t::operator()(Account const& id,
+Keylet ticket_t::operator()(AccountID const& id,
     std::uint32_t seq) const
 {
     return { ltTICKET,
         getTicketIndex(id, seq) };
 }
 
-Keylet trust_t::operator()(Account const& id0,
-    Account const& id1, Currency const& currency) const
+Keylet trust_t::operator()(AccountID const& id0,
+    AccountID const& id1, Currency const& currency) const
 {
     return { ltRIPPLE_STATE,
         getRippleStateIndex(id0, id1, currency) };
 }
 
-Keylet trust_t::operator()(Account const& id,
+Keylet trust_t::operator()(AccountID const& id,
     Issue const& issue) const
 {
     return { ltRIPPLE_STATE,
         getRippleStateIndex(id, issue) };
 }
 
-Keylet signers_t::operator()(Account const& id) const
+Keylet signers_t::operator()(AccountID const& id) const
 {
     return { ltSIGNER_LIST,
         getSignerListIndex(id) };

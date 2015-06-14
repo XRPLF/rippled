@@ -49,8 +49,8 @@ private:
 
 public:
     STPathElement (
-        Account const& account, Currency const& currency,
-        Account const& issuer, bool forceCurrency = false)
+        AccountID const& account, Currency const& currency,
+        AccountID const& issuer, bool forceCurrency = false)
         : mType (typeNone), mAccountID (account), mCurrencyID (currency)
         , mIssuerID (issuer), is_offer_ (isXRP(mAccountID))
     {
@@ -67,8 +67,8 @@ public:
     }
 
     STPathElement (
-        unsigned int uType, Account const& account, Currency const& currency,
-        Account const& issuer)
+        unsigned int uType, AccountID const& account, Currency const& currency,
+        AccountID const& issuer)
         : mType (uType), mAccountID (account), mCurrencyID (currency)
         , mIssuerID (issuer), is_offer_ (isXRP(mAccountID))
     {
@@ -101,7 +101,7 @@ public:
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
-    Account const&
+    AccountID const&
     getAccountID () const
     {
         return mAccountID;
@@ -113,7 +113,7 @@ public:
         return mCurrencyID;
     }
 
-    Account const&
+    AccountID const&
     getIssuerID () const
     {
         return mIssuerID;
@@ -131,9 +131,9 @@ public:
 
 private:
     unsigned int mType;
-    Account mAccountID;
+    AccountID mAccountID;
     Currency mCurrencyID;
-    Account mIssuerID;
+    AccountID mIssuerID;
 
     bool is_offer_;
     std::size_t hash_value_;
@@ -174,8 +174,8 @@ public:
 
     bool
     hasSeen (
-        Account const& account, Currency const& currency,
-        Account const& issuer) const;
+        AccountID const& account, Currency const& currency,
+        AccountID const& issuer) const;
 
     Json::Value
     getJson (int) const;

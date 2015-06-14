@@ -260,7 +260,7 @@ public:
     uint160 getFieldH160 (SField const& field) const;
     uint256 getFieldH256 (SField const& field) const;
     RippleAddress getFieldAccount (SField const& field) const;
-    Account getFieldAccount160 (SField const& field) const;
+    AccountID getFieldAccount160 (SField const& field) const;
 
     Blob getFieldVL (SField const& field) const;
     STAmount const& getFieldAmount (SField const& field) const;
@@ -282,7 +282,7 @@ public:
     void setFieldH128 (SField const& field, uint128 const&);
     void setFieldH256 (SField const& field, uint256 const& );
     void setFieldVL (SField const& field, Blob const&);
-    void setFieldAccount (SField const& field, Account const&);
+    void setFieldAccount (SField const& field, AccountID const&);
     void setFieldAccount (SField const& field, RippleAddress const& addr)
     {
         setFieldAccount (field, addr.getAccountID ());

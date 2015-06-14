@@ -71,7 +71,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         asAccepted->addJson (jvAccepted);
 
         // See if there's a SignerEntries for this account.
-        Account const account = naAccount.getAccountID ();
+        AccountID const account = naAccount.getAccountID ();
         uint256 const signerListIndex = getSignerListIndex (account);
         auto const signerList = fetch(*ledger, signerListIndex,
             getApp().getSLECache());

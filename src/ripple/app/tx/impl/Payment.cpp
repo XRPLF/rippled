@@ -90,7 +90,7 @@ public:
         if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
             return temBAD_AMOUNT;
 
-        Account const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
+        AccountID const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
 
         if (!uDstAccountID)
         {
@@ -173,7 +173,7 @@ public:
         bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
         bool const bPaths = mTxn.isFieldPresent (sfPaths);
         bool const bMax = mTxn.isFieldPresent (sfSendMax);
-        Account const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
+        AccountID const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
         STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
         STAmount maxSourceAmount;
         if (bMax)

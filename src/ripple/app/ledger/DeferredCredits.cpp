@@ -22,8 +22,8 @@
 
 namespace ripple {
 template <class TMap>
-void maybeLogCredit (Account const& sender,
-                     Account const& receiver,
+void maybeLogCredit (AccountID const& sender,
+                     AccountID const& receiver,
                      STAmount const& amount,
                      TMap const& adjMap)
 {
@@ -56,8 +56,8 @@ void maybeLogCredit (Account const& sender,
     WriteLog (lsTRACE, DeferredCredits) << str.str ();
 }
 
-void DeferredCredits::credit (Account const& sender,
-                              Account const& receiver,
+void DeferredCredits::credit (AccountID const& sender,
+                              AccountID const& receiver,
                               STAmount const& amount)
 {
     using std::get;
@@ -100,8 +100,8 @@ void DeferredCredits::credit (Account const& sender,
 
 // Get the adjusted balance of main for the
 // balance between main and other.
-STAmount DeferredCredits::adjustedBalance (Account const& main,
-                                           Account const& other,
+STAmount DeferredCredits::adjustedBalance (AccountID const& main,
+                                           AccountID const& other,
                                            STAmount const& curBalance) const
 {
     using std::get;

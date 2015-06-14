@@ -214,7 +214,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             "/" << incReserve;
 
         STTx trans (ttFEE);
-        trans.setFieldAccount (sfAccount, Account ());
+        trans.setFieldAccount (sfAccount, AccountID ());
         trans.setFieldU64 (sfBaseFee, baseFee);
         trans.setFieldU32 (sfReferenceFeeUnits, 10);
         trans.setFieldU32 (sfReserveBase, baseReserve);

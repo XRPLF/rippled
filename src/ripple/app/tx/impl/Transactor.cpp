@@ -359,7 +359,7 @@ struct GetSignerListResult
 // We need the SignerList for every SigningFor while multi-signing.
 GetSignerListResult
 getSignerList (
-    Account signingForAcctID, TransactionEngine* engine, beast::Journal journal)
+    AccountID signingForAcctID, TransactionEngine* engine, beast::Journal journal)
 {
     GetSignerListResult ret;
 
@@ -411,7 +411,7 @@ checkSigningAccounts (
     auto signerEntriesItr = signerEntries.begin ();
     for (auto const& signingAccount : signingAccounts)
     {
-        Account const signingAcctID =
+        AccountID const signingAcctID =
             signingAccount.getFieldAccount (sfAccount).getAccountID ();
 
         // Attempt to match the SignerEntry with a SigningAccount;
@@ -445,7 +445,7 @@ checkSigningAccounts (
         // We found the SigningAccount in the list of valid signers.  Now we
         // need to compute the accountID that is associated with the signer's
         // public key.
-        Account const signingAcctIDFromPubKey =
+        AccountID const signingAcctIDFromPubKey =
             RippleAddress::createAccountPublic (
                 signingAccount.getFieldVL (sfSigningPubKey)).getAccountID ();
 
@@ -558,7 +558,7 @@ TER Transactor::checkMultiSign ()
     auto signerEntriesItr = outer.signerEntries.begin ();
     for (auto const& signingFor : multiSigners)
     {
-        Account const signingForID =
+        AccountID const signingForID =
             signingFor.getFieldAccount (sfAccount).getAccountID ();
 
         STArray const& signingAccounts =

@@ -21,7 +21,7 @@
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
 #include <ripple/protocol/STTx.h>      // STTx::maxMultiSigners
-#include <ripple/protocol/UintTypes.h> // Account
+#include <ripple/protocol/UintTypes.h> // AccountID
 #include <ripple/protocol/TER.h>       // temMALFORMED
 #include <beast/utility/Journal.h>     // beast::Journal
 
@@ -36,10 +36,10 @@ class SignerEntries
 public:
     struct SignerEntry
     {
-        Account account;
+        AccountID account;
         std::uint16_t weight;
 
-        SignerEntry (Account const& inAccount, std::uint16_t inWeight)
+        SignerEntry (AccountID const& inAccount, std::uint16_t inWeight)
         : account (inAccount)
         , weight (inWeight)
         { }

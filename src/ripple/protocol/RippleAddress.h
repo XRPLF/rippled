@@ -123,16 +123,16 @@ public:
     //
     // Accounts IDs
     //
-    Account getAccountID () const;
+    AccountID getAccountID () const;
 
     std::string humanAccountID () const;
 
     bool setAccountID (
         std::string const& strAccountID,
         Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
-    void setAccountID (Account const& hash160In);
+    void setAccountID (AccountID const& hash160In);
 
-    static RippleAddress createAccountID (Account const& uiAccountID);
+    static RippleAddress createAccountID (AccountID const& uiAccountID);
 
     //
     // Accounts Public

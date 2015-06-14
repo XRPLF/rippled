@@ -34,8 +34,8 @@ namespace ripple {
 */
 STAmount creditLimit (
     LedgerEntrySet& ledger,
-    Account const& account,
-    Account const& issuer,
+    AccountID const& account,
+    AccountID const& issuer,
     Currency const& currency);
 
 /** Returns the amount of IOUs issued by issuer that are held by an account
@@ -46,8 +46,8 @@ STAmount creditLimit (
 */
 STAmount creditBalance (
     LedgerEntrySet& ledger,
-    Account const& account,
-    Account const& issuer,
+    AccountID const& account,
+    AccountID const& issuer,
     Currency const& currency);
 
 } // ripple

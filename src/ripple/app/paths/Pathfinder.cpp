@@ -94,7 +94,7 @@ bool comparePathRank (
 struct AccountCandidate
 {
     int priority;
-    Account account;
+    AccountID account;
 
     static const int highPriority = 10000;
 };
@@ -168,10 +168,10 @@ std::string pathTypeToString (Pathfinder::PathType const& type)
 
 Pathfinder::Pathfinder (
     RippleLineCache::ref cache,
-    Account const& uSrcAccount,
-    Account const& uDstAccount,
+    AccountID const& uSrcAccount,
+    AccountID const& uDstAccount,
     Currency const& uSrcCurrency,
-    Account const& uSrcIssuer,
+    AccountID const& uSrcIssuer,
     STAmount const& saDstAmount)
     :   mSrcAccount (uSrcAccount),
         mDstAccount (uDstAccount),
@@ -189,8 +189,8 @@ Pathfinder::Pathfinder (
 
 Pathfinder::Pathfinder (
     RippleLineCache::ref cache,
-    Account const& uSrcAccount,
-    Account const& uDstAccount,
+    AccountID const& uSrcAccount,
+    AccountID const& uDstAccount,
     Currency const& uSrcCurrency,
     STAmount const& saDstAmount)
     :   mSrcAccount (uSrcAccount),
@@ -250,7 +250,7 @@ bool Pathfinder::findPaths (int searchLevel)
     bool useIssuerAccount
             = mSrcIssuer && !currencyIsXRP && !isXRP (*mSrcIssuer);
     auto& account = useIssuerAccount ? *mSrcIssuer : mSrcAccount;
-    auto issuer = currencyIsXRP ? Account() : account;
+    auto issuer = currencyIsXRP ? AccountID() : account;
     mSource = STPathElement (account, mSrcCurrency, issuer);
     auto issuerString = mSrcIssuer
             ? to_string (*mSrcIssuer) : std::string ("none");
@@ -554,7 +554,7 @@ STPathSet Pathfinder::getBestPaths (
     int maxPaths,
     STPath& fullLiquidityPath,
     STPathSet& extraPaths,
-    Account const& srcIssuer)
+    AccountID const& srcIssuer)
 {
     WriteLog (lsDEBUG, Pathfinder) << "findPaths: " <<
         mCompletePaths.size() << " paths and " <<
@@ -691,9 +691,9 @@ bool Pathfinder::issueMatchesOrigin (Issue const& issue)
 
 int Pathfinder::getPathsOut (
     Currency const& currency,
-    Account const& account,
+    AccountID const& account,
     bool isDstCurrency,
-    Account const& dstAccount)
+    AccountID const& dstAccount)
 {
     Issue const issue (currency, account);
 
@@ -836,8 +836,8 @@ STPathSet& Pathfinder::addPathsForType (PathType const& pathType)
 }
 
 bool Pathfinder::isNoRipple (
-    Account const& fromAccount,
-    Account const& toAccount,
+    AccountID const& fromAccount,
+    AccountID const& toAccount,
     Currency const& currency)
 {
     auto sleRipple = fetch (*mLedger,

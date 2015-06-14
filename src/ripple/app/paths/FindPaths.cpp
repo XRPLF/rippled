@@ -27,8 +27,8 @@ class FindPaths::Impl {
 public:
     Impl (
         RippleLineCache::ref cache,
-        Account const& srcAccount,
-        Account const& dstAccount,
+        AccountID const& srcAccount,
+        AccountID const& dstAccount,
         STAmount const& dstAmount,
         int searchLevel,
         unsigned int maxPaths)
@@ -61,8 +61,8 @@ private:
     hash_map<Currency, std::unique_ptr<Pathfinder>> currencyMap_;
 
     RippleLineCache::ref cache_;
-    Account const srcAccount_;
-    Account const dstAccount_;
+    AccountID const srcAccount_;
+    AccountID const dstAccount_;
     STAmount const dstAmount_;
     int const searchLevel_;
     unsigned int const maxPaths_;
@@ -87,8 +87,8 @@ private:
 
 FindPaths::FindPaths (
     RippleLineCache::ref cache,
-    Account const& srcAccount,
-    Account const& dstAccount,
+    AccountID const& srcAccount,
+    AccountID const& dstAccount,
     STAmount const& dstAmount,
     int level,
     unsigned int maxPaths)
@@ -109,8 +109,8 @@ bool FindPaths::findPathsForIssue (
 
 bool findPathsForOneIssuer (
     RippleLineCache::ref cache,
-    Account const& srcAccount,
-    Account const& dstAccount,
+    AccountID const& srcAccount,
+    AccountID const& dstAccount,
     Issue const& srcIssue,
     STAmount const& dstAmount,
     int searchLevel,

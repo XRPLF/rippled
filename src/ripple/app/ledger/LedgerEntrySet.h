@@ -211,32 +211,32 @@ public:
 
     // Balance functions.
     bool isFrozen (
-        Account const& account,
+        AccountID const& account,
         Currency const& currency,
-        Account const& issuer);
+        AccountID const& issuer);
 
-    bool isGlobalFrozen (Account const& issuer);
+    bool isGlobalFrozen (AccountID const& issuer);
 
     void enableDeferredCredits (bool enable=true);
 
     bool areCreditsDeferred () const;
 
     TER rippleCredit (
-        Account const& uSenderID, Account const& uReceiverID,
+        AccountID const& uSenderID, AccountID const& uReceiverID,
         const STAmount & saAmount, bool bCheckIssuer = true);
 
     STAmount accountHolds (
-        Account const& account, Currency const& currency,
-        Account const& issuer, FreezeHandling freezeHandling);
+        AccountID const& account, Currency const& currency,
+        AccountID const& issuer, FreezeHandling freezeHandling);
 
     TER accountSend (
-        Account const& uSenderID, Account const& uReceiverID,
+        AccountID const& uSenderID, AccountID const& uReceiverID,
         const STAmount & saAmount);
 
     TER trustCreate (
         const bool      bSrcHigh,
-        Account const&  uSrcAccountID,
-        Account const&  uDstAccountID,
+        AccountID const&  uSrcAccountID,
+        AccountID const&  uDstAccountID,
         uint256 const&  uIndex,
         SLE::ref        sleAccount,
         const bool      bAuth,
@@ -248,8 +248,8 @@ public:
         const std::uint32_t uSrcQualityOut = 0);
 
     TER trustDelete (
-        SLE::ref sleRippleState, Account const& uLowAccountID,
-        Account const& uHighAccountID);
+        SLE::ref sleRippleState, AccountID const& uLowAccountID,
+        AccountID const& uHighAccountID);
 
     Json::Value getJson (int) const;
 
@@ -260,13 +260,13 @@ public:
         mSet.setDeliveredAmount (amt);
     }
 
-    TER issue_iou (Account const& account,
+    TER issue_iou (AccountID const& account,
         STAmount const& amount, Issue const& issue);
 
-    TER redeem_iou (Account const& account,
+    TER redeem_iou (AccountID const& account,
         STAmount const& amount, Issue const& issue);
 
-    TER transfer_xrp (Account const& from, Account const& to, STAmount const& amount);
+    TER transfer_xrp (AccountID const& from, AccountID const& to, STAmount const& amount);
 
 private:
     SLE::pointer getEntry (uint256 const& index, Action&);
@@ -286,26 +286,26 @@ private:
         Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
     TER rippleSend (
-        Account const& uSenderID, Account const& uReceiverID,
+        AccountID const& uSenderID, AccountID const& uReceiverID,
         const STAmount & saAmount, STAmount & saActual);
 
     STAmount rippleHolds (
-        Account const& account, Currency const& currency,
-        Account const& issuer, FreezeHandling zeroIfFrozen);
+        AccountID const& account, Currency const& currency,
+        AccountID const& issuer, FreezeHandling zeroIfFrozen);
 
     STAmount rippleTransferFee (
-        Account const& from, Account const& to,
-        Account const& issuer, STAmount const& saAmount);
+        AccountID const& from, AccountID const& to,
+        AccountID const& issuer, STAmount const& saAmount);
 
     bool checkState (SLE::pointer state, bool bSenderHigh,
-        Account const& sender, STAmount const& before, STAmount const& after);
+        AccountID const& sender, STAmount const& before, STAmount const& after);
 
-    STAmount adjustedBalance (Account const& main,
-                              Account const& other,
+    STAmount adjustedBalance (AccountID const& main,
+                              AccountID const& other,
                               STAmount const& amount) const;
 
-    void cacheCredit (Account const& sender,
-                      Account const& receiver,
+    void cacheCredit (AccountID const& sender,
+                      AccountID const& receiver,
                       STAmount const& amount);
 };
 
@@ -335,11 +335,11 @@ public:
 
 // NIKB FIXME: move these to the right place
 std::uint32_t
-rippleTransferRate (LedgerEntrySet& ledger, Account const& issuer);
+rippleTransferRate (LedgerEntrySet& ledger, AccountID const& issuer);
 
 std::uint32_t
-rippleTransferRate (LedgerEntrySet& ledger, Account const& uSenderID,
-    Account const& uReceiverID, Account const& issuer);
+rippleTransferRate (LedgerEntrySet& ledger, AccountID const& uSenderID,
+    AccountID const& uReceiverID, AccountID const& issuer);
 
 //------------------------------------------------------------------------------
 //
@@ -361,7 +361,7 @@ adjustOwnerCount (LedgerEntrySet& view,
 // If the issuer is the same as account, funds are unlimited, use result is
 // saDefault.
 STAmount
-funds (LedgerEntrySet& view, Account const& id,
+funds (LedgerEntrySet& view, AccountID const& id,
     STAmount const& saDefault,
         FreezeHandling freezeHandling);
 

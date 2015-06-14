@@ -27,7 +27,7 @@ namespace RPC {
 
 /** Gathers all objects for an account in a ledger.
     @param ledger Ledger to search account objects.
-    @param account Account to find objects for.
+    @param account AccountID to find objects for.
     @param type Gathers objects of this type. ltINVALID gathers all types.
     @param dirIndex Begin gathering account objects from this directory.
     @param entryIndex Begin gathering objects from this directory node.
@@ -35,7 +35,7 @@ namespace RPC {
     @param jvResult A JSON result that holds the request objects.
 */
 bool
-getAccountObjects (Ledger const& ledger, Account const& account,
+getAccountObjects (Ledger const& ledger, AccountID const& account,
     LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
     std::uint32_t const limit, Json::Value& jvResult);
 

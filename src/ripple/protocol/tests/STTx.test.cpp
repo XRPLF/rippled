@@ -101,10 +101,10 @@ public:
         RippleAddress const saGenerator = saSeed.createGeneratorPublic (saSeed);
         RippleAddress const saPublicAcct =
             saSeed.createAccountPublic (saGenerator, 1);
-        Account const saID = saPublicAcct.getAccountID ();
+        AccountID const saID = saPublicAcct.getAccountID ();
 
         // Create a field for SigningFor
-        Account const signingForID = txnPublicAcct.getAccountID ();
+        AccountID const signingForID = txnPublicAcct.getAccountID ();
 
         RippleAddress saPrivateAcct =
             saSeed.createAccountPrivate(saGenerator, saSeed, 0);

@@ -28,7 +28,7 @@ RippleLineCache::RippleLineCache (Ledger::ref l)
 }
 
 RippleLineCache::RippleStateVector const&
-RippleLineCache::getRippleLines (Account const& accountID)
+RippleLineCache::getRippleLines (AccountID const& accountID)
 {
     AccountKey key (accountID, hasher_ (accountID));
 

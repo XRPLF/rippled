@@ -318,7 +318,7 @@ public:
     //
 
     void getBookPage (bool bAdmin, Ledger::pointer lpLedger, Book const&,
-        Account const& uTakerID, const bool bProof, const unsigned int iLimit,
+        AccountID const& uTakerID, const bool bProof, const unsigned int iLimit,
             Json::Value const& jvMarker, Json::Value& jvResult) override;
 
     // Ledger proposal/close functions.
@@ -576,7 +576,7 @@ private:
 private:
     clock_type& m_clock;
 
-    using SubInfoMapType = hash_map <Account, SubMapType>;
+    using SubInfoMapType = hash_map <AccountID, SubMapType>;
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
     // XXX Split into more locks.
@@ -2899,7 +2899,7 @@ void NetworkOPsImp::getBookPage (
     bool bAdmin,
     Ledger::pointer lpLedger,
     Book const& book,
-    Account const& uTakerID,
+    AccountID const& uTakerID,
     bool const bProof,
     const unsigned int iLimit,
     Json::Value const& jvMarker,
@@ -2908,7 +2908,7 @@ void NetworkOPsImp::getBookPage (
     Json::Value& jvOffers =
             (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
-    std::map<Account, STAmount> umBalance;
+    std::map<AccountID, STAmount> umBalance;
     const uint256   uBookBase   = getBookBase (book);
     const uint256   uBookEnd    = getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
@@ -3123,7 +3123,7 @@ void NetworkOPsImp::getBookPage (
     bool bAdmin,
     Ledger::pointer lpLedger,
     Book const& book,
-    Account const& uTakerID,
+    AccountID const& uTakerID,
     bool const bProof,
     const unsigned int iLimit,
     Json::Value const& jvMarker,
@@ -3131,7 +3131,7 @@ void NetworkOPsImp::getBookPage (
 {
     auto& jvOffers = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
-    std::map<Account, STAmount> umBalance;
+    std::map<AccountID, STAmount> umBalance;
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);

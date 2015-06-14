@@ -30,11 +30,11 @@ class DeferredCredits
 {
 private:
     // lowAccount, highAccount
-    using Key = std::tuple<Account, Account, Currency>;
+    using Key = std::tuple<AccountID, AccountID, Currency>;
     // lowAccountCredits, highAccountCredits
     using Value = std::tuple<STAmount, STAmount>;
     static inline
-    Key makeKey(Account const& a1, Account const& a2, Currency const& c)
+    Key makeKey(AccountID const& a1, AccountID const& a2, Currency const& c)
     {
         if (a1 < a2)
             return std::make_tuple(a1, a2, c);
@@ -45,13 +45,13 @@ private:
     std::map<Key, Value> map_;
 
 public:
-    void credit (Account const& sender,
-                 Account const& receiver,
+    void credit (AccountID const& sender,
+                 AccountID const& receiver,
                  STAmount const& amount);
     // Get the adjusted balance of main for the
     // balance between main and other.
-    STAmount adjustedBalance (Account const& main,
-                              Account const& other,
+    STAmount adjustedBalance (AccountID const& main,
+                              AccountID const& other,
                               STAmount const& curBalance) const;
     void clear ();
 };

@@ -95,7 +95,7 @@ public:
 
         if (mTxn.isFieldPresent (sfTarget))
         {
-            Account const target_account (mTxn.getFieldAccount160 (sfTarget));
+            AccountID const target_account (mTxn.getFieldAccount160 (sfTarget));
 
             SLE::pointer sleTarget = mEngine->view().entryCache (ltACCOUNT_ROOT,
                 getAccountRootIndex (target_account));

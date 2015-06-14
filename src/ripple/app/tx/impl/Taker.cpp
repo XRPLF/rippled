@@ -51,7 +51,7 @@ BasicTaker::Rate::multiply (STAmount const& amount) const
 }
 
 BasicTaker::BasicTaker (
-        CrossType cross_type, Account const& account, Amounts const& amount,
+        CrossType cross_type, AccountID const& account, Amounts const& amount,
         Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
         std::uint32_t rate_out, beast::Journal journal)
     : account_ (account)
@@ -93,7 +93,7 @@ BasicTaker::BasicTaker (
 BasicTaker::Rate
 BasicTaker::effective_rate (
     std::uint32_t rate, Issue const &issue,
-    Account const& from, Account const& to)
+    AccountID const& from, AccountID const& to)
 {
     assert (rate != 0);
 
@@ -375,7 +375,7 @@ BasicTaker::flow_iou_to_iou (
 
 // Calculates the direct flow through the specified offer
 BasicTaker::Flow
-BasicTaker::do_cross (Amounts offer, Quality quality, Account const& owner)
+BasicTaker::do_cross (Amounts offer, Quality quality, AccountID const& owner)
 {
     assert (!done ());
 
@@ -414,8 +414,8 @@ BasicTaker::do_cross (Amounts offer, Quality quality, Account const& owner)
 // Calculates the bridged flow through the specified offers
 std::pair<BasicTaker::Flow, BasicTaker::Flow>
 BasicTaker::do_cross (
-    Amounts offer1, Quality quality1, Account const& owner1,
-    Amounts offer2, Quality quality2, Account const& owner2)
+    Amounts offer1, Quality quality1, AccountID const& owner1,
+    Amounts offer2, Quality quality2, AccountID const& owner2)
 {
     assert (!done ());
 
@@ -517,14 +517,14 @@ BasicTaker::do_cross (
 
 std::uint32_t
 Taker::calculateRate (
-    LedgerView& view, Account const& issuer, Account const& account)
+    LedgerView& view, AccountID const& issuer, AccountID const& account)
 {
     return isXRP (issuer) || (account == issuer)
         ? QUALITY_ONE
         : rippleTransferRate (view, issuer);
 }
 
-Taker::Taker (CrossType cross_type, LedgerView& view, Account const& account,
+Taker::Taker (CrossType cross_type, LedgerView& view, AccountID const& account,
         Amounts const& offer, std::uint32_t flags, beast::Journal journal)
     : BasicTaker (cross_type, account, offer, Quality(offer), flags,
         calculateRate(view, offer.in.getIssuer(), account),
@@ -581,14 +581,14 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
 }
 
 STAmount
-Taker::get_funds (Account const& account, STAmount const& amount) const
+Taker::get_funds (AccountID const& account, STAmount const& amount) const
 {
     return funds(view_, account, amount, fhZERO_IF_FROZEN);
 }
 
 TER Taker::transfer_xrp (
-    Account const& from,
-    Account const& to,
+    AccountID const& from,
+    AccountID const& to,
     STAmount const& amount)
 {
     if (!isXRP (amount))
@@ -605,7 +605,7 @@ TER Taker::transfer_xrp (
 }
 
 TER Taker::redeem_iou (
-    Account const& account,
+    AccountID const& account,
     STAmount const& amount,
     Issue const& issue)
 {
@@ -633,7 +633,7 @@ TER Taker::redeem_iou (
 }
 
 TER Taker::issue_iou (
-    Account const& account,
+    AccountID const& account,
     STAmount const& amount,
     Issue const& issue)
 {

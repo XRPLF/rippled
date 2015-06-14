@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-std::string to_string(Account const& account)
+std::string to_string(AccountID const& account)
 {
     return RippleAddress::createAccountID (account).humanAccountID ();
 }
@@ -111,7 +111,7 @@ Currency to_currency(std::string const& code)
     return currency;
 }
 
-bool to_issuer(Account& issuer, std::string const& s)
+bool to_issuer(AccountID& issuer, std::string const& s)
 {
     if (s.size () == (160 / 4))
     {
@@ -125,9 +125,9 @@ bool to_issuer(Account& issuer, std::string const& s)
     return success;
 }
 
-Account const& xrpAccount()
+AccountID const& xrpAccount()
 {
-    static Account const account(0);
+    static AccountID const account(0);
     return account;
 }
 
@@ -137,9 +137,9 @@ Currency const& xrpCurrency()
     return currency;
 }
 
-Account const& noAccount()
+AccountID const& noAccount()
 {
-    static Account const account(1);
+    static AccountID const account(1);
     return account;
 }
 
