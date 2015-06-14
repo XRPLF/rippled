@@ -176,6 +176,7 @@
 #elif BEAST_WINDOWS
 #include <beast/module/core/native/win32_Files.cpp>
 #include <beast/module/core/native/win32_SystemStats.cpp>
+#include <beast/module/core/native/win32_Threads.cpp>
 
 #elif BEAST_LINUX
 #include <beast/module/core/native/linux_Files.cpp>
