@@ -126,18 +126,18 @@ general form:
 
     {
         "TransactionType": "SignerListSet",
-        "AccountID": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+        "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
         "SignerQuorum": 7,
         "SignerEntries": [
             {
                 "SignerEntry": {
-                    "AccountID": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                    "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                     "SignerWeight": 4
                 }
             },
             {
                 "SignerEntry": {
-                    "AccountID": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
                     "SignerWeight": 3
                 }
             }
@@ -148,7 +148,7 @@ The data for a transaction that removes any signer list has this form:
 
     {
         "TransactionType": "SignerListSet",
-        "AccountID": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+        "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
         "SignerQuorum": 0
     }
 

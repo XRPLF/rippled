@@ -2066,7 +2066,7 @@ adjustOwnerCount (LedgerEntrySet& view,
         if (adjusted < current)
         {
             WriteLog (lsFATAL, LedgerEntrySet) <<
-                "AccountID " << sle->getFieldAccount160(sfAccount) <<
+                "Account " << sle->getFieldAccount160(sfAccount) <<
                 " owner count exceeds max!";
             adjusted =
                 std::numeric_limits<std::uint32_t>::max ();
@@ -2078,7 +2078,7 @@ adjustOwnerCount (LedgerEntrySet& view,
         if (adjusted > current)
         {
             WriteLog (lsFATAL, LedgerEntrySet) <<
-                "AccountID " << sle->getFieldAccount160 (sfAccount) <<
+                "Account " << sle->getFieldAccount160 (sfAccount) <<
                 " owner count set below 0!";
             adjusted = 0;
             assert(false);

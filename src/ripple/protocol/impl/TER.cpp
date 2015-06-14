@@ -82,7 +82,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tefMASTER_DISABLED,       "tefMASTER_DISABLED",       "Master key is disabled."                                       },
         { tefMAX_LEDGER,            "tefMAX_LEDGER",            "Ledger sequence too high."                                     },
         { tefNO_AUTH_REQUIRED,      "tefNO_AUTH_REQUIRED",      "Auth is not required."                                         },
-        { tefNOT_MULTI_SIGNING,     "tefNOT_MULTI_SIGNING",     "AccountID has no appropriate list of multi-signers."             },
+        { tefNOT_MULTI_SIGNING,     "tefNOT_MULTI_SIGNING",     "Account has no appropriate list of multi-signers."             },
         { tefPAST_SEQ,              "tefPAST_SEQ",              "This sequence number has already past."                        },
         { tefWRONG_PRIOR,           "tefWRONG_PRIOR",           "This previous transaction does not match."                     },
         { tefBAD_AUTH_MASTER,       "tefBAD_AUTH_MASTER",       "Auth for unclaimed account needs correct master key."          },
@@ -128,7 +128,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
 
         { terRETRY,                 "terRETRY",                 "Retry transaction."                                            },
         { terFUNDS_SPENT,           "terFUNDS_SPENT",           "Can't set password, password set funds already spent."         },
-        { terINSUF_FEE_B,           "terINSUF_FEE_B",           "AccountID balance can't pay fee."                                },
+        { terINSUF_FEE_B,           "terINSUF_FEE_B",           "Account balance can't pay fee."                                },
         { terLAST,                  "terLAST",                  "Process last."                                                 },
         { terNO_RIPPLE,             "terNO_RIPPLE",             "Path does not permit rippling."                                },
         { terNO_ACCOUNT,            "terNO_ACCOUNT",            "The source account does not exist."                            },

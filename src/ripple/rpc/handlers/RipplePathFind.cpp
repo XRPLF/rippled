@@ -288,8 +288,8 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                 saMaxAmount,            // --> Amount to send is unlimited
                 //     to get an estimate.
                 saDstAmount,            // --> Amount to deliver.
-                raDst.getAccountID(),  // --> AccountID to deliver to.
-                raSrc.getAccountID(),  // --> AccountID sending from.
+                raDst.getAccountID(),   // --> Account to deliver to.
+                raSrc.getAccountID(),   // --> Account sending from.
                 spsComputed);           // --> Path set.
 
             WriteLog(lsWARNING, RPCHandler)
@@ -312,9 +312,9 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     saMaxAmount,            // --> Amount to send is unlimited
                     //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
-                    raDst.getAccountID(),  // --> AccountID to deliver to.
-                    raSrc.getAccountID(),  // --> AccountID sending from.
-                    spsComputed);         // --> Path set.
+                    raDst.getAccountID(),   // --> Account to deliver to.
+                    raSrc.getAccountID(),   // --> Account sending from.
+                    spsComputed);           // --> Path set.
                 WriteLog(lsDEBUG, PathRequest)
                     << "Extra path element gives "
                     << transHuman(rc.result());

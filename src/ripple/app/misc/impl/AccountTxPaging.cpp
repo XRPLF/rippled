@@ -117,7 +117,7 @@ accountTxPage (
           Status,RawTxn,TxnMeta
           FROM AccountTransactions INNER JOIN Transactions
           ON Transactions.TransID = AccountTransactions.TransID
-          AND AccountTransactions.AccountID = '%s' WHERE
+          AND AccountTransactions.Account = '%s' WHERE
           )");
 
     std::string sql;

@@ -227,7 +227,7 @@ TER PathState::pushNode (
     }
     else if (hasAccount)
     {
-        // AccountID link
+        // Account link
         node.account_ = account;
         node.issue_.account = hasIssuer ? issuer :
                 (isXRP (node.issue_) ? xrpAccount() : account);

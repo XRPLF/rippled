@@ -420,7 +420,7 @@ checkSigningAccounts (
             if (++signerEntriesItr == signerEntries.end ())
             {
                 journal.trace <<
-                    "applyTransaction: Invalid SigningAccount.AccountID.";
+                    "applyTransaction: Invalid SigningAccount.Account.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -429,7 +429,7 @@ checkSigningAccounts (
         {
             // The SigningAccount is not in the SignerEntries.
             journal.trace <<
-                "applyTransaction: Invalid SigningAccount.AccountID.";
+                "applyTransaction: Invalid SigningAccount.Account.";
             ret.ter = tefBAD_SIGNATURE;
             return ret;
         }
@@ -437,7 +437,7 @@ checkSigningAccounts (
         {
             // The SigningAccount has a weight of zero and may not sign.
             journal.trace <<
-                "applyTransaction: SigningAccount.AccountID needs weight > 0.";
+                "applyTransaction: SigningAccount.Account needs weight > 0.";
             ret.ter = tefBAD_SIGNATURE;
             return ret;
         }
@@ -484,7 +484,7 @@ checkSigningAccounts (
             // Either Phantom or Master.  Phantom's automatically pass.
             if (signersAccountRoot)
             {
-                // Master Key.  AccountID may not have asfDisableMaster set.
+                // Master Key.  Account may not have asfDisableMaster set.
                 std::uint32_t const signerAccountFlags =
                     signersAccountRoot->getFieldU32 (sfFlags);
 
@@ -512,7 +512,7 @@ checkSigningAccounts (
             if (!signersAccountRoot->isFieldPresent (sfRegularKey))
             {
                 journal.trace <<
-                    "applyTransaction: AccountID lacks RegularKey.";
+                    "applyTransaction: Account lacks RegularKey.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -520,7 +520,7 @@ checkSigningAccounts (
                 signersAccountRoot->getFieldAccount160 (sfRegularKey))
             {
                 journal.trace <<
-                    "applyTransaction: AccountID doesn't match RegularKey.";
+                    "applyTransaction: Account doesn't match RegularKey.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -590,7 +590,7 @@ TER Transactor::checkMultiSign ()
                 if (++signerEntriesItr == outer.signerEntries.end ())
                 {
                     m_journal.trace <<
-                        "applyTransaction: Invalid SigningFor.AccountID.";
+                        "applyTransaction: Invalid SigningFor.Account.";
                     return tefBAD_SIGNATURE;
                 }
             }
@@ -598,14 +598,14 @@ TER Transactor::checkMultiSign ()
             {
                 // The signingForID is not in the SignerEntries.
                 m_journal.trace <<
-                    "applyTransaction: Invalid SigningFor.AccountID.";
+                    "applyTransaction: Invalid SigningFor.Account.";
                 return tefBAD_SIGNATURE;
             }
             if (signerEntriesItr->weight <= 0)
             {
                 // The SigningFor entry needs a weight greater than zero.
                 m_journal.trace <<
-                    "applyTransaction: SigningFor.AccountID needs weight > 0.";
+                    "applyTransaction: SigningFor.Account needs weight > 0.";
                 return tefBAD_SIGNATURE;
             }
 

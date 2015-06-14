@@ -112,7 +112,7 @@ public:
     /** Implicit conversion to AccountID.
 
         This allows passing an Account
-        where a AccountID is expected.
+        where an AccountID is expected.
     */
     operator AccountID() const
     {

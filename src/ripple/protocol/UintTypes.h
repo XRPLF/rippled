@@ -26,7 +26,7 @@
 namespace ripple {
 namespace detail {
 
-class AccountTag {};
+class AccountIDTag {};
 class CurrencyTag {};
 class DirectoryTag {};
 class NodeIDTag {};
@@ -38,7 +38,7 @@ class NodeIDTag {};
 using Directory = base_uint<256, detail::DirectoryTag>;
 
 /** AccountID is a hash representing a specific account. */
-using AccountID = base_uint<160, detail::AccountTag>;
+using AccountID = base_uint<160, detail::AccountIDTag>;
 
 /** Currency is a hash representing a specific currency. */
 using Currency = base_uint<160, detail::CurrencyTag>;

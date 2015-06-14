@@ -118,7 +118,7 @@ public:
         // The InnerObjectFormats say a SigningAccount is supposed to look
         // like this:
         // SigningAccount {
-        //     AccountID: "...",
+        //     Account: "...",
         //     MultiSignature: "...",
         //     PublicKey: "...""
         // }

@@ -639,7 +639,7 @@ bool Ledger::saveValidatedLedger (bool current)
             if (!accts.empty ())
             {
                 std::string sql ("INSERT INTO AccountTransactions "
-                                 "(TransID, AccountID, LedgerSeq, TxnSeq) VALUES ");
+                                 "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
 
                 // Try to make an educated guess on how much space we'll need
                 // for our arguments. In argument order we have:

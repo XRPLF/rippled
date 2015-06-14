@@ -51,16 +51,16 @@ const char* TxnDBInit[] =
 
     "CREATE TABLE IF NOT EXISTS AccountTransactions (         \
         TransID     CHARACTER(64),              \
-        AccountID     CHARACTER(64),              \
+        Account     CHARACTER(64),              \
         LedgerSeq   BIGINT UNSIGNED,            \
         TxnSeq      INTEGER                     \
     );",
     "CREATE INDEX IF NOT EXISTS AcctTxIDIndex ON              \
         AccountTransactions(TransID);",
     "CREATE INDEX IF NOT EXISTS AcctTxIndex ON                \
-        AccountTransactions(AccountID, LedgerSeq, TxnSeq, TransID);",
+        AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);",
     "CREATE INDEX IF NOT EXISTS AcctLgrIndex ON               \
-        AccountTransactions(LedgerSeq, AccountID, TransID);",
+        AccountTransactions(LedgerSeq, Account, TransID);",
 
     "END TRANSACTION;"
 };

@@ -235,8 +235,8 @@ public:
     // IN:OUT (with the last in the list being limiting factor)
     //  N  = Nothing
     //  T  = Taker Offer Balance
-    //  A  = Taker AccountID Balance
-    //  B  = Owner AccountID Balance
+    //  A  = Taker Account Balance
+    //  B  = Owner Account Balance
     //
     // (s) = sell semantics: taker wants unlimited output
     // (b) = buy semantics: taker wants a limited amount out

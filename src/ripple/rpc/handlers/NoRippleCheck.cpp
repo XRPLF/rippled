@@ -32,7 +32,7 @@ static void fillTransaction (
     Ledger::ref ledger)
 {
     txArray["Sequence"] = Json::UInt (sequence++);
-    txArray["AccountID"] = account.humanAccountID ();
+    txArray["Account"] = account.humanAccountID ();
     txArray["Fee"] = Json::UInt (scaleFeeLoad (
         getApp().getFeeTrack(), *ledger, 10, false));
 }

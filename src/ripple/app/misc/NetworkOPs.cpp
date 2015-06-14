@@ -1911,7 +1911,7 @@ NetworkOPsImp::transactionsSQL (
         sql =
             boost::str (boost::format (
                 "SELECT %s FROM AccountTransactions "
-                "WHERE AccountID = '%s' %s %s LIMIT %u, %u;")
+                "WHERE Account = '%s' %s %s LIMIT %u, %u;")
             % selection
             % account.humanAccountID ()
             % maxClause
@@ -1925,7 +1925,7 @@ NetworkOPsImp::transactionsSQL (
                 "SELECT %s FROM "
                 "AccountTransactions INNER JOIN Transactions "
                 "ON Transactions.TransID = AccountTransactions.TransID "
-                "WHERE AccountID = '%s' %s %s "
+                "WHERE Account = '%s' %s %s "
                 "ORDER BY AccountTransactions.LedgerSeq %s, "
                 "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
                 "LIMIT %u, %u;")
@@ -2109,7 +2109,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
 {
     std::vector<RippleAddress> accounts;
     std::string sql = str (boost::format (
-        "SELECT DISTINCT AccountID FROM AccountTransactions "
+        "SELECT DISTINCT Account FROM AccountTransactions "
         "INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%u';")
                            % ledgerSeq);
     RippleAddress acct;
