@@ -710,6 +710,9 @@
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Threads.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\streams\InputSource.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\streams\InputStream.cpp">
