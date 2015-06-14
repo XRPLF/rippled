@@ -26,8 +26,8 @@ namespace ripple {
 
 STAmount creditLimit (
     LedgerEntrySet& ledger,
-    Account const& account,
-    Account const& issuer,
+    AccountID const& account,
+    AccountID const& issuer,
     Currency const& currency)
 {
     STAmount result ({currency, account});
@@ -49,8 +49,8 @@ STAmount creditLimit (
 
 STAmount creditBalance (
     LedgerEntrySet& ledger,
-    Account const& account,
-    Account const& issuer,
+    AccountID const& account,
+    AccountID const& issuer,
     Currency const& currency)
 {
     STAmount result ({currency, account});

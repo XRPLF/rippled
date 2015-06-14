@@ -25,8 +25,8 @@ namespace ripple {
 
 /** Iterate through the directories in an order book */
 BookDirIterator::BookDirIterator(
-    Currency const& currencyIn, Account const& issuerIn,
-    Currency const& currencyOut, Account const& issuerOut)
+    Currency const& currencyIn, AccountID const& issuerIn,
+    Currency const& currencyOut, AccountID const& issuerOut)
 {
     mBase = ripple::getBookBase({{currencyIn, issuerIn},
             {currencyOut, issuerOut}});

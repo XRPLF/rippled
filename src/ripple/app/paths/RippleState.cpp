@@ -28,7 +28,7 @@ namespace ripple {
 
 RippleState::pointer
 RippleState::makeItem (
-    Account const& accountID,
+    AccountID const& accountID,
         std::shared_ptr<SLE const> sle)
 {
     // VFALCO Does this ever happen in practice?
@@ -40,7 +40,7 @@ RippleState::makeItem (
 
 RippleState::RippleState (
     std::shared_ptr<SLE const>&& sle,
-        Account const& viewAccount)
+        AccountID const& viewAccount)
     : mLedgerEntry (std::move(sle))
     , mLowLimit (mLedgerEntry->getFieldAmount (sfLowLimit))
     , mHighLimit (mLedgerEntry->getFieldAmount (sfHighLimit))
@@ -72,7 +72,7 @@ Json::Value RippleState::getJson (int)
 
 std::vector <RippleState::pointer>
 getRippleStateItems (
-    Account const& accountID,
+    AccountID const& accountID,
     Ledger::ref ledger)
 {
     std::vector <RippleState::pointer> items;

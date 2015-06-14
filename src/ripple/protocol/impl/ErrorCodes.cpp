@@ -47,10 +47,10 @@ public:
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")
     {
-        add (rpcACT_BITCOIN,           "actBitcoin",        "Account is bitcoin address.");
-        add (rpcACT_EXISTS,            "actExists",         "Account already exists.");
-        add (rpcACT_MALFORMED,         "actMalformed",      "Account malformed.");
-        add (rpcACT_NOT_FOUND,         "actNotFound",       "Account not found.");
+        add (rpcACT_BITCOIN,           "actBitcoin",        "AccountID is bitcoin address.");
+        add (rpcACT_EXISTS,            "actExists",         "AccountID already exists.");
+        add (rpcACT_MALFORMED,         "actMalformed",      "AccountID malformed.");
+        add (rpcACT_NOT_FOUND,         "actNotFound",       "AccountID not found.");
         add (rpcATX_DEPRECATED,        "deprecated",        "Use the new API or specify a ledger range.");
         add (rpcBAD_BLOB,              "badBlob",           "Blob must be a non-empty hex string.");
         add (rpcBAD_FEATURE,           "badFeature",        "Feature unknown or invalid.");

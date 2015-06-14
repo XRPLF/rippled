@@ -195,7 +195,7 @@ void multiSign (STTx& tx, std::vector<MultiSig>& multiSigs)
 void insertMultiSigs (STTx& tx, std::vector<MultiSig> const& multiSigs)
 {
     // Know when to change out SigningFor containers.
-    Account prevSigningForID;
+    AccountID prevSigningForID;
 
     // Create the MultiSigners array one STObject at a time.
     STArray multiSigners;
@@ -294,7 +294,7 @@ STTx getPaymentTx (
 }
 
 // Return a transaction that sets a regular key
-STTx getSetRegularKeyTx (UserAccount& acct, Account const& regKey)
+STTx getSetRegularKeyTx (UserAccount& acct, AccountID const& regKey)
 {
     STTx tx = getSeqTx (acct, ttREGULAR_KEY_SET);
     tx.setFieldAccount (sfRegularKey,  regKey);

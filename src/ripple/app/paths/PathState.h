@@ -50,8 +50,8 @@ class PathState : public CountedObject <PathState>
     TER expandPath (
         LedgerEntrySet const&   lesSource,
         STPath const&           spSourcePath,
-        Account const&          uReceiverID,
-        Account const&          uSenderID
+        AccountID const&          uReceiverID,
+        AccountID const&          uSenderID
     );
 
     path::Node::List& nodes() { return nodes_; }
@@ -97,8 +97,8 @@ class PathState : public CountedObject <PathState>
     void setIndex (int i) { mIndex  = i; }
     int index() const { return mIndex; }
 
-    TER checkNoRipple (Account const& destinationAccountID,
-                       Account const& sourceAccountID);
+    TER checkNoRipple (AccountID const& destinationAccountID,
+                       AccountID const& sourceAccountID);
     void checkFreeze ();
 
     static bool lessPriority (PathState const& lhs, PathState const& rhs);
@@ -116,21 +116,21 @@ class PathState : public CountedObject <PathState>
 
 private:
     TER checkNoRipple (
-        Account const&, Account const&, Account const&, Currency const&);
+        AccountID const&, AccountID const&, AccountID const&, Currency const&);
 
     /** Clear path structures, and clear each node. */
     void clear();
 
     TER pushNode (
         int const iType,
-        Account const& account,
+        AccountID const& account,
         Currency const& currency,
-        Account const& issuer);
+        AccountID const& issuer);
 
     TER pushImpliedNodes (
-        Account const& account,
+        AccountID const& account,
         Currency const& currency,
-        Account const& issuer);
+        AccountID const& issuer);
     
     Json::Value getJson () const;
 

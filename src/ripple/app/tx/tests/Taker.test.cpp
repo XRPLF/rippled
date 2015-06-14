@@ -40,7 +40,7 @@ class Taker_test : public beast::unit_test::suite
                 CrossType cross_type, Amounts const& amount, Quality const& quality,
                 STAmount const& funds, std::uint32_t flags, std::uint32_t rate_in,
                 std::uint32_t rate_out)
-            : BasicTaker (cross_type, Account(0x4701), amount, quality, flags, rate_in, rate_out)
+            : BasicTaker (cross_type, AccountID(0x4701), amount, quality, flags, rate_in, rate_out)
             , funds_ (funds)
         {
         }
@@ -52,7 +52,7 @@ class Taker_test : public beast::unit_test::suite
         }
 
         STAmount
-        get_funds (Account const& owner, STAmount const& funds) const
+        get_funds (AccountID const& owner, STAmount const& funds) const
         {
             if (owner == account ())
                 return funds_;
@@ -67,13 +67,13 @@ class Taker_test : public beast::unit_test::suite
                 return Amounts (offer.in.zeroed (), offer.out.zeroed ());
 
             // we need to emulate "unfunded offers" behavior
-            if (get_funds (Account (0x4702), offer.out) == zero)
+            if (get_funds (AccountID (0x4702), offer.out) == zero)
                 return Amounts (offer.in.zeroed (), offer.out.zeroed ());
 
             if (done ())
                 return Amounts (offer.in.zeroed (), offer.out.zeroed ());
 
-            auto result = do_cross (offer, quality, Account (0x4702));
+            auto result = do_cross (offer, quality, AccountID (0x4702));
 
             funds_ -= result.order.in;
 
@@ -97,8 +97,8 @@ class Taker_test : public beast::unit_test::suite
                     Amounts { offer2.in.zeroed (), offer2.out.zeroed () });
 
             auto result = do_cross (
-                offer1, quality1, Account (0x4703),
-                offer2, quality2, Account (0x4704));
+                offer1, quality1, AccountID (0x4703),
+                offer2, quality2, AccountID (0x4704));
 
             return std::make_pair (result.first.order, result.second.order);
         }
@@ -108,14 +108,14 @@ private:
     Issue const& usd () const
     {
         static Issue const issue (
-            Currency (0x5553440000000000), Account (0x4985601));
+            Currency (0x5553440000000000), AccountID (0x4985601));
         return issue;
     }
 
     Issue const& eur () const
     {
         static Issue const issue (
-            Currency (0x4555520000000000), Account (0x4985602));
+            Currency (0x4555520000000000), AccountID (0x4985602));
         return issue;
     }
 
@@ -235,8 +235,8 @@ public:
     // IN:OUT (with the last in the list being limiting factor)
     //  N  = Nothing
     //  T  = Taker Offer Balance
-    //  A  = Taker Account Balance
-    //  B  = Owner Account Balance
+    //  A  = Taker AccountID Balance
+    //  B  = Owner AccountID Balance
     //
     // (s) = sell semantics: taker wants unlimited output
     // (b) = buy semantics: taker wants a limited amount out

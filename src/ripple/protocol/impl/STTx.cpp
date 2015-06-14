@@ -353,23 +353,23 @@ STTx::checkMultiSign () const
     //     "MultiSigners": [
     //         {
     //             "SigningFor": {
-    //                 "Account": "<alice>",
+    //                 "AccountID": "<alice>",
     //                 "SigningAccounts": [
     //                     {
     //                         "SigningAccount": {
     //                             // * becky says that becky signs for alice. *
-    //                             "Account": "<becky>",
+    //                             "AccountID": "<becky>",
     //     ...
     //             "SigningFor": {
-    //                 "Account": "<becky>",
+    //                 "AccountID": "<becky>",
     //                 "SigningAccounts": [
     //                     {
     //                         "SigningAccount": {
     //                             // * cheri says that becky signs for alice. *
-    //                             "Account": "<cheri>",
+    //                             "AccountID": "<cheri>",
     //     ...
     //     "tx_json": {
-    //         "Account": "<alice>",
+    //         "AccountID": "<alice>",
     //         ...
     //     }
     // }

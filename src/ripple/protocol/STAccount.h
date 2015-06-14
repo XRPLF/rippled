@@ -35,7 +35,7 @@ public:
     {
         ;
     }
-    STAccount (SField const& n, Account const& v);
+    STAccount (SField const& n, AccountID const& v);
     STAccount (SField const& n) : STBlob (n)
     {
         ;

@@ -79,9 +79,9 @@ public:
     template <class Issue>
     void testIssueType ()
     {
-        Currency const c1 (1); Account const i1 (1);
-        Currency const c2 (2); Account const i2 (2);
-        Currency const c3 (3); Account const i3 (3);
+        Currency const c1 (1); AccountID const i1 (1);
+        Currency const c2 (2); AccountID const i2 (2);
+        Currency const c3 (3); AccountID const i3 (3);
 
         expect (Issue (c1, i1) != Issue (c2, i1));
         expect (Issue (c1, i1) <  Issue (c2, i1));
@@ -125,9 +125,9 @@ public:
     void testIssueSet ()
     {
         Currency const c1 (1);
-        Account   const i1 (1);
+        AccountID   const i1 (1);
         Currency const c2 (2);
-        Account   const i2 (2);
+        AccountID   const i2 (2);
         IssueRef const a1 (c1, i1);
         IssueRef const a2 (c2, i2);
 
@@ -171,9 +171,9 @@ public:
     void testIssueMap ()
     {
         Currency const c1 (1);
-        Account   const i1 (1);
+        AccountID   const i1 (1);
         Currency const c2 (2);
-        Account   const i2 (2);
+        AccountID   const i2 (2);
         IssueRef const a1 (c1, i1);
         IssueRef const a2 (c2, i2);
 
@@ -259,9 +259,9 @@ public:
     template <class Book>
     void testBook ()
     {
-        Currency const c1 (1); Account const i1 (1);
-        Currency const c2 (2); Account const i2 (2);
-        Currency const c3 (3); Account const i3 (3);
+        Currency const c1 (1); AccountID const i1 (1);
+        Currency const c2 (2); AccountID const i2 (2);
+        Currency const c3 (3); AccountID const i3 (3);
 
         Issue a1 (c1, i1);
         Issue a2 (c1, i2);
@@ -317,9 +317,9 @@ public:
     void testBookSet ()
     {
         Currency const c1 (1);
-        Account   const i1 (1);
+        AccountID   const i1 (1);
         Currency const c2 (2);
-        Account   const i2 (2);
+        AccountID   const i2 (2);
         IssueRef const a1 (c1, i1);
         IssueRef const a2 (c2, i2);
         BookRef  const b1 (a1, a2);
@@ -365,9 +365,9 @@ public:
     void testBookMap ()
     {
         Currency const c1 (1);
-        Account   const i1 (1);
+        AccountID   const i1 (1);
         Currency const c2 (2);
-        Account   const i2 (2);
+        AccountID   const i2 (2);
         IssueRef const a1 (c1, i1);
         IssueRef const a2 (c2, i2);
         BookRef  const b1 (a1, a2);
@@ -462,8 +462,8 @@ public:
         testcase ("Currency");
         testUnsigned <Currency> ();
 
-        testcase ("Account");
-        testUnsigned <Account> ();
+        testcase ("AccountID");
+        testUnsigned <AccountID> ();
 
         // ---
 

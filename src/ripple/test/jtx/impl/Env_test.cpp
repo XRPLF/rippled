@@ -58,7 +58,7 @@ public:
         Account("alice", KeyType::secp256k1);
         Account("alice", KeyType::ed25519);
         auto const gw = Account("gw");
-        [](ripple::Account){}(gw);
+        [](AccountID){}(gw);
         auto const USD = gw["USD"];
         void(Account("alice") < gw);
         std::set<Account>().emplace(gw);

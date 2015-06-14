@@ -38,8 +38,8 @@ public:
     }
 
     BookDirIterator (
-        Currency const& currencyIn, Account const& issuerIn,
-        Currency const& currencyOut, Account const& issuerOut);
+        Currency const& currencyIn, AccountID const& issuerIn,
+        Currency const& currencyOut, AccountID const& issuerOut);
 
     uint256 const& getBookBase () const
     {
@@ -133,9 +133,9 @@ public:
     OrderBookIterator (
         LedgerEntrySet& set,
         Currency const& currencyIn,
-        Account const& issuerIn,
+        AccountID const& issuerIn,
         Currency const& currencyOut,
-        Account const& issuerOut) :
+        AccountID const& issuerOut) :
             mEntrySet (set),
             mDirectoryIterator (currencyIn, issuerIn, currencyOut, issuerOut)
     {

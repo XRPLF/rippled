@@ -1502,7 +1502,7 @@ static void addTxnSeqField ()
     }
 
     WriteLog (lsINFO, Application) << "Building new index";
-    session << "CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);";
+    session << "CREATE INDEX AcctTxIndex ON AccountTransactions(AccountID, LedgerSeq, TxnSeq, TransID);";
 
     tr.commit ();
 }

@@ -605,13 +605,13 @@ RippleAddress STObject::getFieldAccount (SField const& field) const
     return cf->getValueNCA ();
 }
 
-Account STObject::getFieldAccount160 (SField const& field) const
+AccountID STObject::getFieldAccount160 (SField const& field) const
 {
     auto rf = peekAtPField (field);
     if (!rf)
         throw std::runtime_error ("Field not found");
 
-    Account account;
+    AccountID account;
     if (rf->getSType () != STI_NOTPRESENT)
     {
         const STAccount* cf = dynamic_cast<const STAccount*> (rf);
@@ -715,7 +715,7 @@ void STObject::setFieldV256 (SField const& field, STVector256 const& v)
     setFieldUsingSetValue <STVector256> (field, v);
 }
 
-void STObject::setFieldAccount (SField const& field, Account const& v)
+void STObject::setFieldAccount (SField const& field, AccountID const& v)
 {
     STBase* rf = getPField (field, true);
 

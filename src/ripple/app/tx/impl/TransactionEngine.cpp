@@ -128,7 +128,7 @@ TransactionEngine::applyTransaction (
                 if ((balance == zero) ||
                     ((params & tapOPEN_LEDGER) && (balance < fee)))
                 {
-                    // Account has no funds or ledger is open
+                    // AccountID has no funds or ledger is open
                     terResult = terINSUF_FEE_B;
                 }
                 else

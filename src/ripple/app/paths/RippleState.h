@@ -47,12 +47,12 @@ public:
     virtual ~RippleState() = default;
 
     static RippleState::pointer makeItem(
-        Account const& accountID,
+        AccountID const& accountID,
         std::shared_ptr<SLE const> sle);
 
     // Must be public, for make_shared
     RippleState (std::shared_ptr<SLE const>&& sle,
-        Account const& viewAccount);
+        AccountID const& viewAccount);
 
     /** Returns the state map key for the ledger entry. */
     uint256
@@ -63,12 +63,12 @@ public:
 
     // VFALCO Take off the "get" from each function name
 
-    Account const& getAccountID () const
+    AccountID const& getAccountID () const
     {
         return  mViewLowest ? mLowID : mHighID;
     }
 
-    Account const& getAccountIDPeer () const
+    AccountID const& getAccountIDPeer () const
     {
         return !mViewLowest ? mLowID : mHighID;
     }
@@ -143,8 +143,8 @@ private:
     STAmount const&                 mLowLimit;
     STAmount const&                 mHighLimit;
 
-    Account const&                  mLowID;
-    Account const&                  mHighID;
+    AccountID const&                  mLowID;
+    AccountID const&                  mHighID;
 
     std::uint64_t                   mLowQualityIn;
     std::uint64_t                   mLowQualityOut;
@@ -156,7 +156,7 @@ private:
 
 std::vector <RippleState::pointer>
 getRippleStateItems (
-    Account const& accountID,
+    AccountID const& accountID,
     Ledger::ref ledger);
 
 } // ripple

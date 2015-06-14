@@ -359,7 +359,7 @@ struct GetSignerListResult
 // We need the SignerList for every SigningFor while multi-signing.
 GetSignerListResult
 getSignerList (
-    Account signingForAcctID, TransactionEngine* engine, beast::Journal journal)
+    AccountID signingForAcctID, TransactionEngine* engine, beast::Journal journal)
 {
     GetSignerListResult ret;
 
@@ -411,7 +411,7 @@ checkSigningAccounts (
     auto signerEntriesItr = signerEntries.begin ();
     for (auto const& signingAccount : signingAccounts)
     {
-        Account const signingAcctID =
+        AccountID const signingAcctID =
             signingAccount.getFieldAccount (sfAccount).getAccountID ();
 
         // Attempt to match the SignerEntry with a SigningAccount;
@@ -420,7 +420,7 @@ checkSigningAccounts (
             if (++signerEntriesItr == signerEntries.end ())
             {
                 journal.trace <<
-                    "applyTransaction: Invalid SigningAccount.Account.";
+                    "applyTransaction: Invalid SigningAccount.AccountID.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -429,7 +429,7 @@ checkSigningAccounts (
         {
             // The SigningAccount is not in the SignerEntries.
             journal.trace <<
-                "applyTransaction: Invalid SigningAccount.Account.";
+                "applyTransaction: Invalid SigningAccount.AccountID.";
             ret.ter = tefBAD_SIGNATURE;
             return ret;
         }
@@ -437,7 +437,7 @@ checkSigningAccounts (
         {
             // The SigningAccount has a weight of zero and may not sign.
             journal.trace <<
-                "applyTransaction: SigningAccount.Account needs weight > 0.";
+                "applyTransaction: SigningAccount.AccountID needs weight > 0.";
             ret.ter = tefBAD_SIGNATURE;
             return ret;
         }
@@ -445,7 +445,7 @@ checkSigningAccounts (
         // We found the SigningAccount in the list of valid signers.  Now we
         // need to compute the accountID that is associated with the signer's
         // public key.
-        Account const signingAcctIDFromPubKey =
+        AccountID const signingAcctIDFromPubKey =
             RippleAddress::createAccountPublic (
                 signingAccount.getFieldVL (sfSigningPubKey)).getAccountID ();
 
@@ -484,7 +484,7 @@ checkSigningAccounts (
             // Either Phantom or Master.  Phantom's automatically pass.
             if (signersAccountRoot)
             {
-                // Master Key.  Account may not have asfDisableMaster set.
+                // Master Key.  AccountID may not have asfDisableMaster set.
                 std::uint32_t const signerAccountFlags =
                     signersAccountRoot->getFieldU32 (sfFlags);
 
@@ -512,7 +512,7 @@ checkSigningAccounts (
             if (!signersAccountRoot->isFieldPresent (sfRegularKey))
             {
                 journal.trace <<
-                    "applyTransaction: Account lacks RegularKey.";
+                    "applyTransaction: AccountID lacks RegularKey.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -520,7 +520,7 @@ checkSigningAccounts (
                 signersAccountRoot->getFieldAccount160 (sfRegularKey))
             {
                 journal.trace <<
-                    "applyTransaction: Account doesn't match RegularKey.";
+                    "applyTransaction: AccountID doesn't match RegularKey.";
                 ret.ter = tefBAD_SIGNATURE;
                 return ret;
             }
@@ -558,7 +558,7 @@ TER Transactor::checkMultiSign ()
     auto signerEntriesItr = outer.signerEntries.begin ();
     for (auto const& signingFor : multiSigners)
     {
-        Account const signingForID =
+        AccountID const signingForID =
             signingFor.getFieldAccount (sfAccount).getAccountID ();
 
         STArray const& signingAccounts =
@@ -590,7 +590,7 @@ TER Transactor::checkMultiSign ()
                 if (++signerEntriesItr == outer.signerEntries.end ())
                 {
                     m_journal.trace <<
-                        "applyTransaction: Invalid SigningFor.Account.";
+                        "applyTransaction: Invalid SigningFor.AccountID.";
                     return tefBAD_SIGNATURE;
                 }
             }
@@ -598,14 +598,14 @@ TER Transactor::checkMultiSign ()
             {
                 // The signingForID is not in the SignerEntries.
                 m_journal.trace <<
-                    "applyTransaction: Invalid SigningFor.Account.";
+                    "applyTransaction: Invalid SigningFor.AccountID.";
                 return tefBAD_SIGNATURE;
             }
             if (signerEntriesItr->weight <= 0)
             {
                 // The SigningFor entry needs a weight greater than zero.
                 m_journal.trace <<
-                    "applyTransaction: SigningFor.Account needs weight > 0.";
+                    "applyTransaction: SigningFor.AccountID needs weight > 0.";
                 return tefBAD_SIGNATURE;
             }
 

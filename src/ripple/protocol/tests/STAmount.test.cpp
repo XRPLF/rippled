@@ -175,7 +175,7 @@ public:
         {
             testcase ("set value (iou)");
 
-            Issue const usd (Currency (0x5553440000000000), Account (0x4985601));
+            Issue const usd (Currency (0x5553440000000000), AccountID (0x4985601));
 
             testSetValue ("1", usd);
             testSetValue ("10", usd);

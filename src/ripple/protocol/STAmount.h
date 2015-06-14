@@ -146,7 +146,7 @@ public:
 
     // These three are deprecated
     Currency const& getCurrency() const { return mIssue.currency; }
-    Account const& getIssuer() const { return mIssue.account; }
+    AccountID const& getIssuer() const { return mIssue.account; }
 
     int
     signum() const noexcept
@@ -219,7 +219,7 @@ public:
         clear();
     }
 
-    void setIssuer (Account const& uIssuer)
+    void setIssuer (AccountID const& uIssuer)
     {
         mIssue.account = uIssuer;
         setIssue(mIssue);

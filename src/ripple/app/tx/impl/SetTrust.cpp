@@ -102,7 +102,7 @@ public:
         bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
 
         Currency const currency (saLimitAmount.getCurrency ());
-        Account uDstAccountID (saLimitAmount.getIssuer ());
+        AccountID uDstAccountID (saLimitAmount.getIssuer ());
 
         // true, iff current is high account.
         bool const bHigh = mTxnAccountID > uDstAccountID;

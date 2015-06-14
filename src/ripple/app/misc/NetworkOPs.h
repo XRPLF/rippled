@@ -201,7 +201,7 @@ public:
         bool bAdmin,
         Ledger::pointer lpLedger,
         Book const& book,
-        Account const& uTakerID,
+        AccountID const& uTakerID,
         bool const bProof,
         const unsigned int iLimit,
         Json::Value const& jvMarker,

@@ -59,8 +59,8 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     //           trust node.
     STAmount const& saDstAmountReq,
 
-    Account const& uDstAccountID,
-    Account const& uSrcAccountID,
+    AccountID const& uDstAccountID,
+    AccountID const& uSrcAccountID,
 
     // A set of paths that are included in the transaction that we'll
     // explore for liquidity.

@@ -44,7 +44,7 @@ public:
     }
 
     std::vector<RippleState::pointer> const&
-    getRippleLines (Account const& accountID);
+    getRippleLines (AccountID const& accountID);
 
 private:
     using LockType = RippleMutex;
@@ -56,10 +56,10 @@ private:
 
     struct AccountKey
     {
-        Account account_;
+        AccountID account_;
         std::size_t hash_value_;
 
-        AccountKey (Account const& account, std::size_t hash)
+        AccountKey (AccountID const& account, std::size_t hash)
             : account_ (account)
             , hash_value_ (hash)
         { }

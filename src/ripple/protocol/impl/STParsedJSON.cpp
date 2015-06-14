@@ -528,7 +528,7 @@ static boost::optional<detail::STVar> parseLeaf (
                     Json::Value const& currency = pathEl["currency"];
                     Json::Value const& issuer   = pathEl["issuer"];
                     bool hasCurrency            = false;
-                    Account uAccount, uIssuer;
+                    AccountID uAccount, uIssuer;
                     Currency uCurrency;
 
                     if (! account.isNull ())
@@ -623,7 +623,7 @@ static boost::optional<detail::STVar> parseLeaf (
 
             try
             {
-                Account account;
+                AccountID account;
                 if (!account.SetHexExact (strValue))
                 {
                     RippleAddress a;

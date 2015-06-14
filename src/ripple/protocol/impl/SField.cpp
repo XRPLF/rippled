@@ -194,7 +194,7 @@ SField              const sfMemoFormat      = make::one(&sfMemoFormat,    STI_VL
 SField const sfMultiSignature = make::one(&sfMultiSignature, STI_VL, 16, "MultiSignature");
 
 // account
-SField const sfAccount     = make::one(&sfAccount,     STI_ACCOUNT, 1, "Account");
+SField const sfAccount     = make::one(&sfAccount,     STI_ACCOUNT, 1, "AccountID");
 SField const sfOwner       = make::one(&sfOwner,       STI_ACCOUNT, 2, "Owner");
 SField const sfDestination = make::one(&sfDestination, STI_ACCOUNT, 3, "Destination");
 SField const sfIssuer      = make::one(&sfIssuer,      STI_ACCOUNT, 4, "Issuer");

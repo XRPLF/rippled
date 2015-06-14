@@ -40,20 +40,20 @@ static TestJSONTxt const testArray[] =
 
 // Valid SignerEntry
 {R"({
-    "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+    "AccountID" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
         {
             "SignerEntry" :
             {
-                "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                "AccountID" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                 "SignerWeight" : 4
             }
         },
         {
             "SignerEntry" :
             {
-                "Account" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                "AccountID" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
                 "SignerWeight" : 3
             }
         }
@@ -63,15 +63,15 @@ static TestJSONTxt const testArray[] =
 })", false
 },
 
-// SignerEntry missing Account
+// SignerEntry missing AccountID
 {R"({
-    "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+    "AccountID" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
         {
             "SignerEntry" :
             {
-                "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                "AccountID" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                 "SignerWeight" : 4
             }
         },
@@ -89,20 +89,20 @@ static TestJSONTxt const testArray[] =
 
 // SignerEntry missing SignerWeight
 {R"({
-    "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+    "AccountID" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
         {
             "SignerEntry" :
             {
-                "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                "AccountID" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                 "SignerWeight" : 4
             }
         },
         {
             "SignerEntry" :
             {
-                "Account" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                "AccountID" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
             }
         }
     ],
@@ -113,13 +113,13 @@ static TestJSONTxt const testArray[] =
 
 // SignerEntry with unexpected Amount
 {R"({
-    "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+    "AccountID" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
         {
             "SignerEntry" :
             {
-                "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                "AccountID" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                 "SignerWeight" : 4
             }
         },
@@ -127,7 +127,7 @@ static TestJSONTxt const testArray[] =
             "SignerEntry" :
             {
                 "Amount" : "1000000",
-                "Account" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                "AccountID" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
                 "SignerWeight" : 3
             }
         }
@@ -137,15 +137,15 @@ static TestJSONTxt const testArray[] =
 })", true
 },
 
-// SignerEntry with no Account and unexpected Amount
+// SignerEntry with no AccountID and unexpected Amount
 {R"({
-    "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
+    "AccountID" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
         {
             "SignerEntry" :
             {
-                "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+                "AccountID" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
                 "SignerWeight" : 4
             }
         },

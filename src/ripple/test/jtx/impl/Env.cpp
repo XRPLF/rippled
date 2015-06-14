@@ -78,7 +78,7 @@ Env::lookup (std::string const& base58ID) const
 }
 
 Account const&
-Env::lookup (ripple::Account const& id) const
+Env::lookup (AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())

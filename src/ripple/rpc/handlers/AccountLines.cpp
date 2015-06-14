@@ -27,9 +27,9 @@ namespace ripple {
 struct VisitData
 {
     std::vector <RippleState::pointer> items;
-    Account const& accountID;
+    AccountID const& accountID;
     RippleAddress const& rippleAddressPeer;
-    Account const& raPeerAccount;
+    AccountID const& raPeerAccount;
 };
 
 void addLine (Json::Value& jsonLines, RippleState const& line)
@@ -126,7 +126,7 @@ Json::Value doAccountLines (RPC::Context& context)
             return result;
     }
 
-    Account raPeerAccount;
+    AccountID raPeerAccount;
     if (rippleAddressPeer.isValid ())
         raPeerAccount = rippleAddressPeer.getAccountID ();
 
@@ -152,7 +152,7 @@ Json::Value doAccountLines (RPC::Context& context)
     }
 
     Json::Value& jsonLines (result[jss::lines] = Json::arrayValue);
-    Account const& raAccount(rippleAddress.getAccountID ());
+    AccountID const& raAccount(rippleAddress.getAccountID ());
     VisitData visitData = { {}, raAccount, rippleAddressPeer, raPeerAccount };
     unsigned int reserve (limit);
     uint256 startAfter;

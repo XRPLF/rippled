@@ -32,7 +32,7 @@ namespace path {
 // --> node.saRevDeliver: Do not exceed.
 
 TER PathCursor::deliverNodeForward (
-    Account const& uInAccountID,    // --> Input owner's account.
+    AccountID const& uInAccountID,    // --> Input owner's account.
     STAmount const& saInReq,        // --> Amount to deliver.
     STAmount& saInAct,              // <-- Amount delivered, this invocation.
     STAmount& saInFees) const       // <-- Fees charged, this invocation.

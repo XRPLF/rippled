@@ -87,9 +87,9 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
             auto hasCurrency = iType & STPathElement::typeCurrency;
             auto hasIssuer = iType & STPathElement::typeIssuer;
 
-            Account account;
+            AccountID account;
             Currency currency;
-            Account issuer;
+            AccountID issuer;
 
             if (hasAccount)
                 account.copyFrom (sit.get160 ());
@@ -135,8 +135,8 @@ STPathSet::isEquivalent (const STBase& t) const
 
 bool
 STPath::hasSeen (
-    Account const& account, Currency const& currency,
-    Account const& issuer) const
+    AccountID const& account, Currency const& currency,
+    AccountID const& issuer) const
 {
     for (auto& p: mPath)
     {

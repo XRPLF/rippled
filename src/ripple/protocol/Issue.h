@@ -33,7 +33,7 @@ namespace ripple {
     When ByValue is `false`, this only stores references, and the caller
     is responsible for managing object lifetime.
 
-    @see Currency, Account, Issue, IssueRef, Book
+    @see Currency, AccountID, Issue, IssueRef, Book
 */
 template <bool ByValue>
 class IssueType
@@ -43,7 +43,7 @@ public:
         std::conditional <ByValue, Currency, Currency const&>::type;
 
     using IssueAccount = typename
-        std::conditional <ByValue, Account, Account const&>::type;
+        std::conditional <ByValue, AccountID, AccountID const&>::type;
 
     IssueCurrency currency;
     IssueAccount account;
@@ -52,7 +52,7 @@ public:
     {
     }
 
-    IssueType (Currency const& c, Account const& a)
+    IssueType (Currency const& c, AccountID const& a)
             : currency (c), account (a)
     {
     }

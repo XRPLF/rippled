@@ -371,7 +371,7 @@ public:
     // Directories are doubly linked lists of nodes.
 
     // Given a directory root and and index compute the index of a node.
-    static void ownerDirDescriber (SLE::ref, bool, Account const& owner);
+    static void ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
 
     //
     // Quality
@@ -379,8 +379,8 @@ public:
 
     static void qualityDirDescriber (
         SLE::ref, bool,
-        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
-        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuer,
+        Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
+        Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
         const std::uint64_t & uRate);
 
     std::uint32_t getReferenceFeeUnits() const
@@ -517,7 +517,7 @@ fetch (Ledger const& ledger, uint256 const& key, SLECache& cache,
 
 /** Iterate all items in an account's owner directory. */
 void
-forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
+forEachItem (Ledger const& ledger, AccountID const& id, SLECache& cache,
     std::function<void (std::shared_ptr<SLE const> const&)> f);
 
 /** Iterate all items after an item in an owner directory.
@@ -527,7 +527,7 @@ forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
     @return `false` if the iteration failed
 */
 bool
-forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
+forEachItemAfter (Ledger const& ledger, AccountID const& id, SLECache& cache,
     uint256 const& after, std::uint64_t const hint, unsigned int limit,
         std::function <bool (std::shared_ptr<SLE const> const&)>);
 

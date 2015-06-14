@@ -29,8 +29,8 @@ class FindPaths
 public:
     FindPaths (
         RippleLineCache::ref cache,
-        Account const& srcAccount,
-        Account const& dstAccount,
+        AccountID const& srcAccount,
+        AccountID const& dstAccount,
         STAmount const& dstAmount,
         /** searchLevel is the maximum search level allowed in an output path.
          */
@@ -63,8 +63,8 @@ private:
 
 bool findPathsForOneIssuer (
     RippleLineCache::ref cache,
-    Account const& srcAccount,
-    Account const& dstAccount,
+    AccountID const& srcAccount,
+    AccountID const& dstAccount,
     Issue const& srcIssue,
     STAmount const& dstAmount,
 

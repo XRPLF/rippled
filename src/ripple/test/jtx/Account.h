@@ -41,7 +41,7 @@ private:
     //             instead of RippleAddress
     RippleAddress pk_;
     RippleAddress sk_;
-    ripple::Account id_;
+    AccountID id_;
     std::string human_; // base58 public key string
 
 public:
@@ -96,7 +96,7 @@ public:
 
         The Account ID is the uint160 hash of the public key.
     */
-    ripple::Account
+    AccountID
     id() const
     {
         return id_;
@@ -112,9 +112,9 @@ public:
     /** Implicit conversion to AccountID.
 
         This allows passing an Account
-        where a ripple::Account is expected.
+        where a AccountID is expected.
     */
-    operator ripple::Account() const
+    operator AccountID() const
     {
         return id_;
     }

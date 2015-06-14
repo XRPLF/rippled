@@ -214,7 +214,7 @@ ripplePathFind(RippleLineCache::pointer const& cache,
         Json::Value jvSource = jvSrcCurrencies[i];
 
         Currency uSrcCurrencyID;
-        Account uSrcIssuerID;
+        AccountID uSrcIssuerID;
 
         if (!jvSource.isObject())
             return std::make_pair(false, rpcError(rpcINVALID_PARAMS));
@@ -275,7 +275,7 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                 isXRP(uSrcIssuerID) ?
                 isXRP(uSrcCurrencyID) ? // Default to source account.
                 xrpAccount() :
-                Account(raSrc.getAccountID())
+                AccountID(raSrc.getAccountID())
                 : uSrcIssuerID;            // Use specifed issuer.
 
             STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
@@ -288,8 +288,8 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                 saMaxAmount,            // --> Amount to send is unlimited
                 //     to get an estimate.
                 saDstAmount,            // --> Amount to deliver.
-                raDst.getAccountID(),  // --> Account to deliver to.
-                raSrc.getAccountID(),  // --> Account sending from.
+                raDst.getAccountID(),  // --> AccountID to deliver to.
+                raSrc.getAccountID(),  // --> AccountID sending from.
                 spsComputed);           // --> Path set.
 
             WriteLog(lsWARNING, RPCHandler)
@@ -312,8 +312,8 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     saMaxAmount,            // --> Amount to send is unlimited
                     //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
-                    raDst.getAccountID(),  // --> Account to deliver to.
-                    raSrc.getAccountID(),  // --> Account sending from.
+                    raDst.getAccountID(),  // --> AccountID to deliver to.
+                    raSrc.getAccountID(),  // --> AccountID sending from.
                     spsComputed);         // --> Path set.
                 WriteLog(lsDEBUG, PathRequest)
                     << "Extra path element gives "

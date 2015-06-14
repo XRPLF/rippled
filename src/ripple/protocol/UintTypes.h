@@ -37,8 +37,8 @@ class NodeIDTag {};
     The last 64 bits of this are the quality. */
 using Directory = base_uint<256, detail::DirectoryTag>;
 
-/** Account is a hash representing a specific account. */
-using Account = base_uint<160, detail::AccountTag>;
+/** AccountID is a hash representing a specific account. */
+using AccountID = base_uint<160, detail::AccountTag>;
 
 /** Currency is a hash representing a specific currency. */
 using Currency = base_uint<160, detail::CurrencyTag>;
@@ -49,13 +49,13 @@ using NodeID = base_uint<160, detail::NodeIDTag>;
 using CurrencySet = hash_set<Currency>;
 
 /** A special account that's used as the "issuer" for XRP. */
-Account const& xrpAccount();
+AccountID const& xrpAccount();
 
 /** XRP currency. */
 Currency const& xrpCurrency();
 
 /** A placeholder for empty accounts. */
-Account const& noAccount();
+AccountID const& noAccount();
 
 /** A placeholder for empty currencies. */
 Currency const& noCurrency();
@@ -71,13 +71,13 @@ inline bool isXRP(Currency const& c)
     return c == zero;
 }
 
-inline bool isXRP(Account const& c)
+inline bool isXRP(AccountID const& c)
 {
     return c == zero;
 }
 
 /** Returns a human-readable form of the account. */
-std::string to_string(Account const&);
+std::string to_string(AccountID const&);
 
 /** Returns "", "XRP", or three letter ISO code. */
 std::string to_string(Currency const& c);
@@ -88,11 +88,11 @@ bool to_currency(Currency&, std::string const&);
 /** Tries to convert a string to a Currency, returns noCurrency() on failure. */
 Currency to_currency(std::string const&);
 
-/** Tries to convert a string to an Account representing an issuer, returns true
+/** Tries to convert a string to an AccountID representing an issuer, returns true
  * on success. */
-bool to_issuer(Account&, std::string const&);
+bool to_issuer(AccountID&, std::string const&);
 
-inline std::ostream& operator<< (std::ostream& os, Account const& x)
+inline std::ostream& operator<< (std::ostream& os, AccountID const& x)
 {
     os << to_string (x);
     return os;
@@ -109,7 +109,7 @@ inline std::ostream& operator<< (std::ostream& os, Currency const& x)
 namespace std {
 
 template <>
-struct hash <ripple::Account> : ripple::Account::hasher
+struct hash <ripple::AccountID> : ripple::AccountID::hasher
 {
 };
 

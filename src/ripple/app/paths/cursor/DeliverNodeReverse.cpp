@@ -36,7 +36,7 @@ namespace path {
 
 // To deliver from an order book, when computing
 TER PathCursor::deliverNodeReverse (
-    Account const& uOutAccountID,  // --> Output owner's account.
+    AccountID const& uOutAccountID,  // --> Output owner's account.
     STAmount const& saOutReq,      // --> Funds requested to be
                                    // delivered for an increment.
     STAmount& saOutAct) const      // <-- Funds actually delivered for an

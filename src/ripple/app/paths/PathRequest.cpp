@@ -321,7 +321,7 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
         {
             Json::Value const& jvCur = jvSrcCur[i];
             Currency uCur;
-            Account uIss;
+            AccountID uIss;
 
             if (!jvCur.isObject() || !jvCur.isMember (jss::currency) ||
                 !to_currency (uCur, jvCur[jss::currency].asString ()))

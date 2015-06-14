@@ -57,9 +57,9 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     const bool nextNodeIsAccount = isFinalNode || nextNode().isAccount();
 
-    Account const& previousAccountID = previousNodeIsAccount
+    AccountID const& previousAccountID = previousNodeIsAccount
         ? previousNode().account_ : node().account_;
-    Account const& nextAccountID = nextNodeIsAccount ? nextNode().account_
+    AccountID const& nextAccountID = nextNodeIsAccount ? nextNode().account_
         : node().account_;   // Offers are always issue.
 
     // This is the quality from from the previous node to this one.

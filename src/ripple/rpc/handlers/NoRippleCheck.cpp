@@ -32,7 +32,7 @@ static void fillTransaction (
     Ledger::ref ledger)
 {
     txArray["Sequence"] = Json::UInt (sequence++);
-    txArray["Account"] = account.humanAccountID ();
+    txArray["AccountID"] = account.humanAccountID ();
     txArray["Fee"] = Json::UInt (scaleFeeLoad (
         getApp().getFeeTrack(), *ledger, 10, false));
 }
@@ -162,7 +162,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                 }
                 if (needFix)
                 {
-                    Account peer =
+                    AccountID peer =
                         ownedItem->getFieldAmount (bLow ? sfHighLimit : sfLowLimit).getIssuer();
                     STAmount peerLimit = ownedItem->getFieldAmount (bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string (peerLimit.getCurrency());

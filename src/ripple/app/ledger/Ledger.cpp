@@ -58,7 +58,7 @@ namespace ripple {
 */
 static
 std::shared_ptr<SLE const>
-makeGenesisAccount (Account const& id,
+makeGenesisAccount (AccountID const& id,
     std::uint64_t drops)
 {
     std::shared_ptr<SLE> sle =
@@ -639,7 +639,7 @@ bool Ledger::saveValidatedLedger (bool current)
             if (!accts.empty ())
             {
                 std::string sql ("INSERT INTO AccountTransactions "
-                                 "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
+                                 "(TransID, AccountID, LedgerSeq, TxnSeq) VALUES ");
 
                 // Try to make an educated guess on how much space we'll need
                 // for our arguments. In argument order we have:
@@ -1260,15 +1260,15 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     return true;
 }
 
-void Ledger::ownerDirDescriber (SLE::ref sle, bool, Account const& owner)
+void Ledger::ownerDirDescriber (SLE::ref sle, bool, AccountID const& owner)
 {
     sle->setFieldAccount (sfOwner, owner);
 }
 
 void Ledger::qualityDirDescriber (
     SLE::ref sle, bool isNew,
-    Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
-    Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuer,
+    Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
+    Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
     const std::uint64_t& uRate)
 {
     sle->setFieldH160 (sfTakerPaysCurrency, uTakerPaysCurrency);
@@ -1389,7 +1389,7 @@ fetch (Ledger const& ledger, uint256 const& key,
 }
 
 void
-forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
+forEachItem (Ledger const& ledger, AccountID const& id, SLECache& cache,
     std::function<void(std::shared_ptr<SLE const> const&)> f)
 {
     auto rootIndex = getOwnerDirIndex (id);
@@ -1411,7 +1411,7 @@ forEachItem (Ledger const& ledger, Account const& id, SLECache& cache,
 }
 
 bool
-forEachItemAfter (Ledger const& ledger, Account const& id, SLECache& cache,
+forEachItemAfter (Ledger const& ledger, AccountID const& id, SLECache& cache,
     uint256 const& after, std::uint64_t const hint, unsigned int limit,
         std::function <bool (std::shared_ptr<SLE const> const&)> f)
 {

@@ -253,9 +253,9 @@ such as the root node of the state tree.
 
 # Ledger Structures #
 
-## Account Root ##
+## AccountID Root ##
 
-**Account:** A 160-bit account ID.
+**AccountID:** A 160-bit account ID.
 
 **Balance:** Balance in the account.
 

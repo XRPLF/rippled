@@ -103,9 +103,9 @@ bool PathState::lessPriority (PathState const& lhs, PathState const& rhs)
 //   an exact match.
 // - Real issuers must be specified for non-XRP.
 TER PathState::pushImpliedNodes (
-    Account const& account,    // --> Delivering to this account.
+    AccountID const& account,    // --> Delivering to this account.
     Currency const& currency,  // --> Delivering this currency.
-    Account const& issuer)    // --> Delivering this issuer.
+    AccountID const& issuer)    // --> Delivering this issuer.
 {
     TER resultCode = tesSUCCESS;
 
@@ -163,9 +163,9 @@ TER PathState::pushImpliedNodes (
 //                 terNO_LINE, tecPATH_DRY
 TER PathState::pushNode (
     const int iType,
-    Account const& account,    // If not specified, means an order book.
+    AccountID const& account,    // If not specified, means an order book.
     Currency const& currency,  // If not specified, default to previous.
-    Account const& issuer)     // If not specified, default to previous.
+    AccountID const& issuer)     // If not specified, default to previous.
 {
     path::Node node;
     const bool pathIsEmpty = nodes_.empty ();
@@ -227,7 +227,7 @@ TER PathState::pushNode (
     }
     else if (hasAccount)
     {
-        // Account link
+        // AccountID link
         node.account_ = account;
         node.issue_.account = hasIssuer ? issuer :
                 (isXRP (node.issue_) ? xrpAccount() : account);
@@ -420,17 +420,17 @@ TER PathState::pushNode (
 TER PathState::expandPath (
     const LedgerEntrySet& lesSource,
     STPath const& spSourcePath,
-    Account const& uReceiverID,
-    Account const& uSenderID)
+    AccountID const& uReceiverID,
+    AccountID const& uSenderID)
 {
     uQuality = 1;            // Mark path as active.
 
     Currency const& uMaxCurrencyID = saInReq.getCurrency ();
-    Account const& uMaxIssuerID = saInReq.getIssuer ();
+    AccountID const& uMaxIssuerID = saInReq.getIssuer ();
 
     Currency const& currencyOutID = saOutReq.getCurrency ();
-    Account const& issuerOutID = saOutReq.getIssuer ();
-    Account const& uSenderIssuerID
+    AccountID const& issuerOutID = saOutReq.getIssuer ();
+    AccountID const& uSenderIssuerID
         = isXRP(uMaxCurrencyID) ? xrpAccount() : uSenderID;
     // Sender is always issuer for non-XRP.
 
@@ -488,11 +488,11 @@ TER PathState::expandPath (
         // TODO(tom): complexify this next logic further in case someone
         // understands it.
         const auto nextAccountID   = spSourcePath.size ()
-                ? Account(spSourcePath. front ().getAccountID ())
+                ? AccountID(spSourcePath. front ().getAccountID ())
                 : !isXRP(currencyOutID)
                 ? (issuerOutID == uReceiverID)
-                ? Account(uReceiverID)
-                : Account(issuerOutID)                      // Use implied node.
+                ? AccountID(uReceiverID)
+                : AccountID(issuerOutID)                      // Use implied node.
                 : xrpAccount();
 
         WriteLog (lsDEBUG, RippleCalc)
@@ -646,8 +646,8 @@ void PathState::checkFreeze()
         if (nodes_[i].uFlags & STPathElement::typeAccount)
         {
             Currency const& currencyID = nodes_[i].issue_.currency;
-            Account const& inAccount = nodes_[i].account_;
-            Account const& outAccount = nodes_[i+1].account_;
+            AccountID const& inAccount = nodes_[i].account_;
+            AccountID const& outAccount = nodes_[i+1].account_;
 
             if (inAccount != outAccount)
             {
@@ -681,10 +681,10 @@ void PathState::checkFreeze()
     [second]->[third]
 */
 TER PathState::checkNoRipple (
-    Account const& firstAccount,
-    Account const& secondAccount,
+    AccountID const& firstAccount,
+    AccountID const& secondAccount,
     // This is the account whose constraints we are checking
-    Account const& thirdAccount,
+    AccountID const& thirdAccount,
     Currency const& currency)
 {
     // fetch the ripple lines into and out of this node
@@ -717,8 +717,8 @@ TER PathState::checkNoRipple (
 // Check a fully-expanded path to make sure it doesn't violate no-Ripple
 // settings.
 TER PathState::checkNoRipple (
-    Account const& uDstAccountID,
-    Account const& uSrcAccountID)
+    AccountID const& uDstAccountID,
+    AccountID const& uSrcAccountID)
 {
     // There must be at least one node for there to be two consecutive ripple
     // lines.

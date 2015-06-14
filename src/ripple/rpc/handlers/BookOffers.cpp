@@ -82,7 +82,7 @@ Json::Value doBookOffers (RPC::Context& context)
             "Invalid field 'taker_gets.currency', bad currency.");
     }
 
-    Account pay_issuer;
+    AccountID pay_issuer;
 
     if (taker_pays.isMember (jss::issuer))
     {
@@ -112,7 +112,7 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
 
-    Account get_issuer;
+    AccountID get_issuer;
 
     if (taker_gets.isMember (jss::issuer))
     {

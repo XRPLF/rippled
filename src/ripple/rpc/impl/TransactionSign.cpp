@@ -203,7 +203,7 @@ error_code_i acctMatchesPubKey (
     RippleAddress const& accountID,
     RippleAddress const& publicKey)
 {
-    Account const publicKeyAcctID = publicKey.getAccountID ();
+    AccountID const publicKeyAcctID = publicKey.getAccountID ();
     bool const isMasterKey = publicKeyAcctID == accountID.getAccountID ();
 
     // If we can't get the accountRoot, but the accountIDs match, that's
@@ -448,7 +448,7 @@ static Json::Value checkPayment(
 //
 // Returns a pair<Json::Value, RippleAddress>.  The Json::Value is non-empty
 // and contains as error if there was an error.  The returned RippleAddress
-// is the "Account" addressID if there was no error.
+// is the "AccountID" addressID if there was no error.
 //
 // This code does not check the "Sequence" field, since the expectations
 // for that field are particularly context sensitive.
@@ -476,7 +476,7 @@ checkTxJsonFields (
     if (! tx_json.isMember (jss::Account))
     {
         ret.first = RPC::make_error (rpcSRC_ACT_MISSING,
-            RPC::missing_field_message ("tx_json.Account"));
+            RPC::missing_field_message ("tx_json.AccountID"));
         return ret;
     }
 
@@ -485,7 +485,7 @@ checkTxJsonFields (
     if (! srcAddressID.setAccountID (tx_json[jss::Account].asString ()))
     {
         ret.first = RPC::make_error (rpcSRC_ACT_MALFORMED,
-            RPC::invalid_field_message ("tx_json.Account"));
+            RPC::invalid_field_message ("tx_json.AccountID"));
         return ret;
     }
 
@@ -1210,7 +1210,7 @@ Json::Value transactionSubmitMultiSigned (
                     b.getFieldAccount (sfAccount).getAccountID ()); };
 
     {
-        // MultiSigners are submitted sorted in Account order.  This
+        // MultiSigners are submitted sorted in AccountID order.  This
         // assures that the same list will always have the same hash.
         multiSigners.sort (byFieldAccountID);
 
@@ -1223,7 +1223,7 @@ Json::Value transactionSubmitMultiSigned (
         if (dupAccountItr != multiSignersEnd)
         {
             std::ostringstream err;
-            err << "Duplicate SigningFor:Account entries ("
+            err << "Duplicate SigningFor:AccountID entries ("
                 << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
                 << ") are not allowed.";
             return RPC::make_param_error(err.str ());
@@ -1245,7 +1245,7 @@ Json::Value transactionSubmitMultiSigned (
         if (dupAccountItr != signingAcctsEnd)
         {
             std::ostringstream err;
-            err << "Duplicate SigningAccounts:SigningAccount:Account entries ("
+            err << "Duplicate SigningAccounts:SigningAccount:AccountID entries ("
                 << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
                 << ") are not allowed.";
             return RPC::make_param_error(err.str ());
