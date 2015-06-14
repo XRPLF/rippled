@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/ledger/tests/common_ledger.h>
+#include <ripple/ledger/ViewAPI.h>
 
 namespace ripple {
 namespace test {
@@ -159,120 +160,120 @@ class DeferredCredits_test : public beast::unit_test::suite
         STAmount const toDebit (issue, 20);
         {
             // accountSend, no FT
-            LedgerEntrySet les (ledger, tapNONE);
+            MetaView les (ledger, tapNONE);
 
             expect (!les.areCreditsDeferred ());
 
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
 
-            les.accountSend (gw1Acc, aliceAcc, toCredit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            accountSend (les, gw1Acc, aliceAcc, toCredit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit);
 
-            les.accountSend (aliceAcc, gw1Acc, toDebit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            accountSend (les, aliceAcc, gw1Acc, toDebit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
             // rippleCredit, no FT
-            LedgerEntrySet les (ledger, tapNONE);
+            MetaView les (ledger, tapNONE);
 
             expect (!les.areCreditsDeferred ());
 
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
 
-            les.rippleCredit (gw1Acc, aliceAcc, toCredit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            rippleCredit (les, gw1Acc, aliceAcc, toCredit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit);
 
-            les.rippleCredit (aliceAcc, gw1Acc, toDebit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            rippleCredit (les, aliceAcc, gw1Acc, toDebit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
             // accountSend, w/ FT
-            LedgerEntrySet les (ledger, tapNONE);
+            MetaView les (ledger, tapNONE);
             les.enableDeferredCredits ();
             expect (les.areCreditsDeferred ());
 
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
 
-            les.accountSend (gw1Acc, aliceAcc, toCredit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            accountSend (les, gw1Acc, aliceAcc, toCredit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount);
 
-            les.accountSend (aliceAcc, gw1Acc, toDebit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            accountSend (les, aliceAcc, gw1Acc, toDebit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount - toDebit);
         }
 
         {
             // rippleCredit, w/ FT
-            LedgerEntrySet les (ledger, tapNONE);
+            MetaView les (ledger, tapNONE);
             les.enableDeferredCredits ();
             expect (les.areCreditsDeferred ());
 
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
 
-            les.rippleCredit (gw1Acc, aliceAcc, toCredit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            rippleCredit (les, gw1Acc, aliceAcc, toCredit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount);
 
-            les.rippleCredit (aliceAcc, gw1Acc, toDebit);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            rippleCredit (les, aliceAcc, gw1Acc, toDebit);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount - toDebit);
         }
 
         {
             // rippleCredit, w/ FT & ScopedDeferCredits
-            LedgerEntrySet les (ledger, tapNONE);
+            MetaView les (ledger, tapNONE);
 
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
             {
                 ScopedDeferCredits g (les);
-                les.rippleCredit (gw1Acc, aliceAcc, toCredit);
+                rippleCredit (les, gw1Acc, aliceAcc, toCredit);
                 expect (
-                    les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+                    accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount);
             }
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit);
         }
 
         {
-            // issue_iou
-            LedgerEntrySet les (ledger, tapNONE);
+            // issueIOU
+            MetaView les (ledger, tapNONE);
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
             les.enableDeferredCredits ();
             expect (les.areCreditsDeferred ());
 
-            les.redeem_iou (aliceAcc, toDebit, issue);
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            redeemIOU (les, aliceAcc, toDebit, issue);
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount - toDebit);
         }
         {
-            // redeem_iou
-            LedgerEntrySet les (ledger, tapNONE);
+            // redeemIOU
+            MetaView les (ledger, tapNONE);
             STAmount const startingAmount =
-                les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE);
+                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
             {
                 ScopedDeferCredits g (les);
                 expect (les.areCreditsDeferred ());
 
-                les.issue_iou (aliceAcc, toCredit, issue);
+                issueIOU (les, aliceAcc, toCredit, issue);
                 expect (
-                    les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+                    accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount);
             }
-            expect (les.accountHolds (aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE) ==
+            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
                     startingAmount + toCredit);
         }
     }

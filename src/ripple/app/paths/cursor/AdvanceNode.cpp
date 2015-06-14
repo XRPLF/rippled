@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 
 namespace ripple {
@@ -128,10 +129,11 @@ TER PathCursor::advanceNode (bool const bReverse) const
                         = node().sleOffer->getFieldAmount (sfTakerGets);
 
                 // Funds left.
-                node().saOfferFunds = funds (ledger(),
+                node().saOfferFunds = accountFunds (ledger(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
-                    fhZERO_IF_FROZEN);
+                    fhZERO_IF_FROZEN,
+                    getConfig());
                 node().bFundsDirty = false;
 
                 WriteLog (lsTRACE, RippleCalc)
@@ -143,7 +145,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 WriteLog (lsTRACE, RippleCalc) << "advanceNode: as is";
             }
         }
-        else if (!ledger().dirNext (
+        else if (!dirNext (ledger(),
             node().directory.current,
             node().directory.ledgerEntry,
             node().uEntry,
@@ -180,8 +182,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
         else
         {
             // Got a new offer.
-            node().sleOffer = ledger().entryCache (
-                ltOFFER, node().offerIndex_);
+            node().sleOffer = ledger().peek (keylet::offer(node().offerIndex_));
 
             if (!node().sleOffer)
             {
@@ -211,9 +212,8 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     << " node.offerIndex_=" << node().offerIndex_;
 
                 if (node().sleOffer->isFieldPresent (sfExpiration) &&
-                    (node().sleOffer->getFieldU32 (sfExpiration) <=
-                     ledger().getLedger ()->
-                     getParentCloseTimeNC ()))
+                        (node().sleOffer->getFieldU32 (sfExpiration) <=
+                            getParentCloseTimeNC(ledger())))
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
@@ -329,10 +329,11 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
                 // Only the current node is allowed to use the source.
 
-                node().saOfferFunds = funds(ledger(),
+                node().saOfferFunds = accountFunds(ledger(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
-                    fhZERO_IF_FROZEN);
+                    fhZERO_IF_FROZEN,
+                    getConfig());
                 // Funds held.
 
                 if (node().saOfferFunds <= zero)

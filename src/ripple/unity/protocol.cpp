@@ -26,6 +26,7 @@
 #include <ripple/protocol/impl/ErrorCodes.cpp>
 #include <ripple/protocol/impl/HashPrefix.cpp>
 #include <ripple/protocol/impl/Indexes.cpp>
+#include <ripple/protocol/impl/Keylet.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/Quality.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>

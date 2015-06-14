@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 #define RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 
+#include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -94,23 +95,13 @@ getSignerListIndex (AccountID const& account);
 
 //------------------------------------------------------------------------------
 
-/** A pair of SHAMap key and LedgerEntryType.
-    
-    A Keylet identifies both a key in the state map
-    and its ledger entry type.
+/* VFALCO TODO
+    For each of these operators that take just the uin256 and
+    only attach the LedgerEntryType, we can comment out that
+    operator to see what breaks, and those call sites are
+    candidates for having the Keylet either passed in a a
+    parameter, or having a data member that stores the keylet.
 */
-struct Keylet
-{
-    LedgerEntryType type;
-    uint256 key;
-
-    Keylet (LedgerEntryType type_,
-            uint256 const& key_)
-        : type(type_)
-        , key(key_)
-    {
-    }
-};
 
 /** Keylet computation funclets. */
 namespace keylet {
@@ -125,12 +116,15 @@ struct account_t
 };
 static account_t const account {};
 
-/** OWner directory */
-struct owndir_t
+/** The amendment table */
+struct amendments_t
 {
-    Keylet operator()(AccountID const& id) const;
+    Keylet operator()() const;
 };
-static owndir_t const ownerDir {};
+static amendments_t const amendments {};
+
+/** Any item that can be in an owner dir. */
+Keylet child (uint256 const& key);
 
 /** Skip list */
 struct skip_t
@@ -141,19 +135,13 @@ struct skip_t
 };
 static skip_t const skip {};
 
-/** The amendment table */
-struct amendments_t
-{
-    Keylet operator()() const;
-};
-static amendments_t const amendments {};
-
 /** The ledger fees */
-struct fee_t
+struct fees_t
 {
+    // VFALCO This could maybe be constexpr
     Keylet operator()() const;
 };
-static fee_t const fee {};
+static fees_t const fees {};
 
 /** The beginning of an order book */
 struct book_t
@@ -162,24 +150,36 @@ struct book_t
 };
 static book_t const book {};
 
+/** A trust line */
+struct line_t
+{
+    Keylet operator()(AccountID const& id0,
+        AccountID const& id1, Currency const& currency) const;
+
+    Keylet operator()(AccountID const& id,
+        Issue const& issue) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltRIPPLE_STATE, key };
+    }
+};
+static line_t const line {};
+
 /** An offer from an account */
 struct offer_t
 {
     Keylet operator()(AccountID const& id,
         std::uint32_t seq) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltOFFER, key };
+    }
 };
 static offer_t const offer {};
 
-/** An item in a directory */
-struct item_t
-{
-    Keylet operator()(Keylet const& k,
-        std::uint64_t index,
-            LedgerEntryType type) const;
-};
-static item_t const item {};
-
-/** The directory for a specific quality */
+/** The initial directory page for a specific quality */
 struct quality_t
 {
     Keylet operator()(Keylet const& k,
@@ -199,26 +199,46 @@ struct ticket_t
 {
     Keylet operator()(AccountID const& id,
         std::uint32_t seq) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltTICKET, key };
+    }
 };
 static ticket_t const ticket {};
-
-/** A trust line */
-struct trust_t
-{
-    Keylet operator()(AccountID const& id0,
-        AccountID const& id1, Currency const& currency) const;
-
-    Keylet operator()(AccountID const& id,
-        Issue const& issue) const;
-};
-static trust_t const trust {};
 
 /** A SignerList */
 struct signers_t
 {
     Keylet operator()(AccountID const& id) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltSIGNER_LIST, key };
+    }
 };
 static signers_t const signers {};
+
+//------------------------------------------------------------------------------
+
+/** Any ledger entry */
+Keylet unchecked(uint256 const& key);
+
+/** The root page of an account's directory */
+Keylet ownerDir (AccountID const& id);
+
+/** A page in a directory */
+/** @{ */
+Keylet page (uint256 const& root, std::uint64_t index);
+Keylet page (Keylet const& root, std::uint64_t index);
+/** @} */
+
+// DEPRECATED
+inline
+Keylet page (uint256 const& key)
+{
+    return { ltDIR_NODE, key };
+}
 
 } // keylet
 

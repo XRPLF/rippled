@@ -432,20 +432,20 @@ trust(TestAccount& from, TestAccount const& issuer,
 void
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 {
-    std::shared_ptr<SHAMap> set = ledger->peekTransactionMap();
-    CanonicalTXSet retriableTransactions(set->getHash());
+    auto const& set = ledger->txMap();
+    CanonicalTXSet retriableTransactions(set.getHash());
     // Make a non-const copy of LCL. This won't be necessary once
     // that other Ledger constructor can take a const Ledger.
     Ledger oldLCL(*LCL, false);
     Ledger::pointer newLCL = std::make_shared<Ledger>(false, oldLCL);
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
-    applyTransactions(set, newLCL, newLCL, retriableTransactions, false);
+    applyTransactions(&set, newLCL, newLCL, retriableTransactions, false);
     newLCL->updateSkipList();
     newLCL->setClosed();
-    newLCL->peekAccountStateMap()->flushDirty(
+    newLCL->stateMap().flushDirty(
         hotACCOUNT_NODE, newLCL->getLedgerSeq());
-    newLCL->peekTransactionMap()->flushDirty(
+    newLCL->txMap().flushDirty(
         hotTRANSACTION_NODE, newLCL->getLedgerSeq());
     using namespace std::chrono;
     auto const epoch_offset = days(10957);  // 2000-01-01
@@ -500,16 +500,15 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
     TestAccount const& account1, TestAccount const& account2,
         Currency currency)
 {
-    auto uNodeIndex = getRippleStateIndex(
+    auto k = keylet::line(
         account1.pk.getAccountID(), account2.pk.getAccountID(),
-        to_currency(currency.getCurrency()));
+            to_currency(currency.getCurrency()));
 
-    if (!uNodeIndex.isNonZero())
+    if (! k.key.isNonZero())
         throw std::runtime_error(
-        "!uNodeIndex.isNonZero()");
+        "!k.key.isNonZero()");
 
-    return fetch(*ledger, uNodeIndex,
-        getApp().getSLECache());
+    return ledger->read(k);
 }
 
 void

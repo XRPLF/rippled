@@ -18,22 +18,23 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-STAmount creditLimit (
-    LedgerEntrySet& ledger,
+STAmount
+creditLimit (
+    BasicView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)
 {
     STAmount result ({currency, account});
 
-    auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
-        getRippleStateIndex (account, issuer, currency));
+    auto sleRippleState = view.read(
+        keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -48,15 +49,15 @@ STAmount creditLimit (
 }
 
 STAmount creditBalance (
-    LedgerEntrySet& ledger,
+    BasicView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)
 {
     STAmount result ({currency, account});
 
-    auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
-        getRippleStateIndex (account, issuer, currency));
+    auto sleRippleState = view.read(
+        keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {

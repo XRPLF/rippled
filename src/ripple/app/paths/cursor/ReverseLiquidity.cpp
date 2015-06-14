@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 #include <tuple>
 

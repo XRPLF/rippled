@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_PATHSTATE_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHSTATE_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/app/paths/Node.h>
 #include <ripple/app/paths/Types.h>
 #include <boost/optional.hpp>
@@ -48,10 +48,10 @@ class PathState : public CountedObject <PathState>
     void reset(STAmount const& in, STAmount const& out);
 
     TER expandPath (
-        LedgerEntrySet const&   lesSource,
-        STPath const&           spSourcePath,
-        AccountID const&          uReceiverID,
-        AccountID const&          uSenderID
+        MetaView const&  viewSource,
+        STPath const&    spSourcePath,
+        AccountID const& uReceiverID,
+        AccountID const& uSenderID
     );
 
     path::Node::List& nodes() { return nodes_; }
@@ -103,10 +103,9 @@ class PathState : public CountedObject <PathState>
 
     static bool lessPriority (PathState const& lhs, PathState const& rhs);
 
-    // VFALCO Remove or rename to view, 
-    LedgerEntrySet& ledgerEntries()
+    MetaView& metaView()
     {
-        return *lesEntries_;
+        return *metaView_;
     }
 
     bool isDry() const
@@ -150,7 +149,7 @@ private:
     // Source may only be used there if not mentioned by an account.
     AccountIssueToNodeIndex umReverse;
 
-    boost::optional<LedgerEntrySet> lesEntries_;
+    boost::optional<MetaView> metaView_;
 
     int                         mIndex;    // Index/rank amoung siblings.
     std::uint64_t               uQuality;  // 0 = no quality/liquity left.

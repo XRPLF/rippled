@@ -196,7 +196,7 @@ bool InboundLedger::tryLocal ()
         {
             TransactionStateSF filter;
 
-            if (mLedger->peekTransactionMap ()->fetchRoot (
+            if (mLedger->txMap().fetchRoot (
                 mLedger->getTransHash (), &filter))
             {
                 auto h (mLedger->getNeededTransactionHashes (1, &filter));
@@ -224,7 +224,7 @@ bool InboundLedger::tryLocal ()
         {
             AccountStateSF filter;
 
-            if (mLedger->peekAccountStateMap ()->fetchRoot (
+            if (mLedger->stateMap().fetchRoot (
                 mLedger->getAccountHash (), &filter))
             {
                 auto h (mLedger->getNeededAccountStateHashes (1, &filter));
@@ -521,11 +521,11 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     {
         assert (mLedger);
 
-        if (!mLedger->peekAccountStateMap ()->isValid ())
+        if (!mLedger->stateMap().isValid ())
         {
             mFailed = true;
         }
-        else if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
+        else if (mLedger->stateMap().getHash ().isZero ())
         {
             // we need the root node
             tmGL.set_itype (protocol::liAS_NODE);
@@ -546,7 +546,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
 
             // Release the lock while we process the large state map
             sl.unlock();
-            mLedger->peekAccountStateMap ()->getMissingNodes (
+            mLedger->stateMap().getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
             sl.lock();
 
@@ -555,7 +555,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             {
                 if (nodeIDs.empty ())
                 {
-                    if (!mLedger->peekAccountStateMap ()->isValid ())
+                    if (!mLedger->stateMap().isValid ())
                         mFailed = true;
                     else
                     {
@@ -605,11 +605,11 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     {
         assert (mLedger);
 
-        if (!mLedger->peekTransactionMap ()->isValid ())
+        if (!mLedger->txMap().isValid ())
         {
             mFailed = true;
         }
-        else if (mLedger->peekTransactionMap ()->getHash ().isZero ())
+        else if (mLedger->txMap().getHash ().isZero ())
         {
             // we need the root node
             tmGL.set_itype (protocol::liTX_NODE);
@@ -627,12 +627,12 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
             TransactionStateSF filter;
-            mLedger->peekTransactionMap ()->getMissingNodes (
+            mLedger->txMap().getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
 
             if (nodeIDs.empty ())
             {
-                if (!mLedger->peekTransactionMap ()->isValid ())
+                if (!mLedger->txMap().isValid ())
                     mFailed = true;
                 else
                 {
@@ -823,14 +823,14 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            san += mLedger->peekTransactionMap ()->addRootNode (
+            san += mLedger->txMap().addRootNode (
                 mLedger->getTransHash (), *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood())
                 return false;
         }
         else
         {
-            san +=  mLedger->peekTransactionMap ()->addKnownNode (
+            san +=  mLedger->txMap().addKnownNode (
                 *nodeIDit, *nodeDatait, &tFilter);
             if (!san.isGood())
                 return false;
@@ -840,7 +840,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
         ++nodeDatait;
     }
 
-    if (!mLedger->peekTransactionMap ()->isSynching ())
+    if (!mLedger->txMap().isSynching ())
     {
         mHaveTransactions = true;
 
@@ -890,7 +890,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            san += mLedger->peekAccountStateMap ()->addRootNode (
+            san += mLedger->stateMap().addRootNode (
                 mLedger->getAccountHash (), *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood ())
             {
@@ -901,7 +901,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         }
         else
         {
-            san += mLedger->peekAccountStateMap ()->addKnownNode (
+            san += mLedger->stateMap().addKnownNode (
                 *nodeIDit, *nodeDatait, &tFilter);
             if (!san.isGood ())
             {
@@ -915,7 +915,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         ++nodeDatait;
     }
 
-    if (!mLedger->peekAccountStateMap ()->isSynching ())
+    if (!mLedger->stateMap().isSynching ())
     {
         mHaveState = true;
 
@@ -949,7 +949,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
     }
 
     AccountStateSF tFilter;
-    san += mLedger->peekAccountStateMap ()->addRootNode (
+    san += mLedger->stateMap().addRootNode (
         mLedger->getAccountHash (), data, snfWIRE, &tFilter);
     return san.isGood();
 }
@@ -973,7 +973,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
     }
 
     TransactionStateSF tFilter;
-    san += mLedger->peekTransactionMap ()->addRootNode (
+    san += mLedger->txMap().addRootNode (
         mLedger->getTransHash (), data, snfWIRE, &tFilter);
     return san.isGood();
 }

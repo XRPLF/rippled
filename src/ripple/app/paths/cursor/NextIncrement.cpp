@@ -34,7 +34,7 @@ namespace path {
 // This is the wrapper that restores a checkpointed version of the ledger so we
 // can write all over it without consequence.
 
-void PathCursor::nextIncrement (LedgerEntrySet const& lesCheckpoint) const
+void PathCursor::nextIncrement (MetaView const& lesCheckpoint) const
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.

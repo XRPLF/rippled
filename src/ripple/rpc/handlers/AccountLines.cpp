@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/ledger/CachedView.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/paths/RippleState.h>
 
@@ -101,7 +103,7 @@ Json::Value doAccountLines (RPC::Context& context)
         return result;
     }
 
-    if (! ledger->exists(getAccountRootIndex(
+    if (! ledger->exists(keylet::account(
             rippleAddress.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
@@ -168,7 +170,7 @@ Json::Value doAccountLines (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleLine = fetch(*ledger, startAfter,
+        auto const sleLine = cachedRead(*ledger, startAfter,
             getApp().getSLECache());
 
         if (sleLine == nullptr || sleLine->getType () != ltRIPPLE_STATE)
@@ -196,24 +198,28 @@ Json::Value doAccountLines (RPC::Context& context)
         visitData.items.reserve (++reserve);
     }
 
-    if (! forEachItemAfter(*ledger, raAccount, getApp().getSLECache(),
-            startAfter, startHint, reserve,
-        [&visitData](std::shared_ptr<SLE const> const& sleCur)
-        {
-            auto const line =
-                RippleState::makeItem (visitData.accountID, sleCur);
-            if (line != nullptr &&
-                (! visitData.rippleAddressPeer.isValid () ||
-                visitData.raPeerAccount == line->getAccountIDPeer ()))
-            {
-                visitData.items.emplace_back (line);
-                return true;
-            }
-
-            return false;
-        }))
     {
-        return rpcError (rpcINVALID_PARAMS);
+        CachedView const view(
+            *ledger, getApp().getSLECache());
+        if (! forEachItemAfter(view, raAccount,
+                startAfter, startHint, reserve,
+            [&visitData](std::shared_ptr<SLE const> const& sleCur)
+            {
+                auto const line =
+                    RippleState::makeItem (visitData.accountID, sleCur);
+                if (line != nullptr &&
+                    (! visitData.rippleAddressPeer.isValid () ||
+                    visitData.raPeerAccount == line->getAccountIDPeer ()))
+                {
+                    visitData.items.emplace_back (line);
+                    return true;
+                }
+
+                return false;
+            }))
+        {
+            return rpcError (rpcINVALID_PARAMS);
+        }
     }
 
     if (visitData.items.size () == reserve)

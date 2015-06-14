@@ -331,7 +331,7 @@ SHAMapStoreImp::run()
             }
 
             std::uint64_t nodeCount = 0;
-            validatedLedger_->peekAccountStateMap()->snapShot (
+            validatedLedger_->stateMap().snapShot (
                     false)->visitNodes (
                     std::bind (&SHAMapStoreImp::copyNode, this,
                     std::ref(nodeCount), std::placeholders::_1));

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 #define RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/STAmount.h>
 
 namespace ripple {
@@ -33,7 +33,7 @@ namespace ripple {
     @return The maximum amount that can be held.
 */
 STAmount creditLimit (
-    LedgerEntrySet& ledger,
+    BasicView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);
@@ -45,7 +45,7 @@ STAmount creditLimit (
     @param currency the IOU to check.
 */
 STAmount creditBalance (
-    LedgerEntrySet& ledger,
+    BasicView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);

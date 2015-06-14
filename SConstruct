@@ -658,6 +658,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
     append_sources(result, *list_sources('src/ripple/json', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/ledger', '.cpp'))
     append_sources(result, *list_sources('src/ripple/legacy', '.cpp'))
     append_sources(result, *list_sources('src/ripple/net', '.cpp'))
     append_sources(result, *list_sources('src/ripple/overlay', '.cpp'))
@@ -686,10 +687,12 @@ def get_unity_sources():
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
+        'src/ripple/unity/app_tests.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
         'src/ripple/unity/crypto.cpp',
+        'src/ripple/unity/ledger.cpp',
         'src/ripple/unity/net.cpp',
         'src/ripple/unity/overlay.cpp',
         'src/ripple/unity/peerfinder.cpp',

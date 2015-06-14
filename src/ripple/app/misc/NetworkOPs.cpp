@@ -24,12 +24,14 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/IHashRouter.h>
@@ -1267,7 +1269,7 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
     std::uint64_t&      uNodeNext)
 {
     STVector256         svIndexes;
-    auto const sleNode = fetch(*lrLedger, uNodeIndex,
+    auto const sleNode = cachedRead(*lrLedger, uNodeIndex,
         getApp().getSLECache(), ltDIR_NODE);
 
     if (sleNode)
@@ -1313,7 +1315,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 {
     Json::Value jvObjects (Json::objectValue);
     auto uRootIndex = getOwnerDirIndex (naAccount.getAccountID ());
-    auto sleNode = fetch(*lpLedger, uRootIndex,
+    auto sleNode = cachedRead(*lpLedger, uRootIndex,
         getApp().getSLECache(), ltDIR_NODE);
     if (sleNode)
     {
@@ -1323,7 +1325,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
         {
             for (auto const& uDirEntry : sleNode->getFieldV256 (sfIndexes))
             {
-                auto sleCur = fetch(*lpLedger, uDirEntry,
+                auto sleCur = cachedRead(*lpLedger, uDirEntry,
                     getApp().getSLECache());
 
                 switch (sleCur->getType ())
@@ -1357,7 +1359,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
             if (uNodeDir)
             {
-                sleNode = fetch(*lpLedger, getDirNodeIndex(
+                sleNode = cachedRead(*lpLedger, getDirNodeIndex(
                     uRootIndex, uNodeDir), getApp().getSLECache(),
                         ltDIR_NODE);
                 assert (sleNode);
@@ -2496,10 +2498,10 @@ Json::Value NetworkOPsImp::transJson(
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue ().account)
         {
-            // VFALCO Why are we doing this hack?
-            LedgerEntrySet les (lpCurrent, tapNONE, true);
-            auto const ownerFunds = funds(
-                les,account, amount, fhIGNORE_FREEZE);
+            CachedView const view(
+                *lpCurrent, getApp().getSLECache());
+            auto const ownerFunds = accountFunds(view,
+                account, amount, fhIGNORE_FREEZE, getConfig());
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
@@ -2921,20 +2923,22 @@ void NetworkOPsImp::getBookPage (
         m_journal.trace << "getBookPage: uTipIndex=" << uTipIndex;
     }
 
-    LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
+    CachedView const view(
+        *lpLedger, getApp().getSLECache());
 
-    const bool      bGlobalFreeze =  lesActive.isGlobalFrozen (book.out.account) ||
-                                     lesActive.isGlobalFrozen (book.in.account);
+    bool const bGlobalFreeze =
+        isGlobalFrozen(view, book.out.account) ||
+            isGlobalFrozen(view, book.in.account);
 
     bool            bDone           = false;
     bool            bDirectAdvance  = true;
 
-    SLE::pointer    sleOfferDir;
+    std::shared_ptr<SLE const> sleOfferDir;
     uint256         offerIndex;
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
-    auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
+    auto uTransferRate = rippleTransferRate(view, book.out.account);
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
     if (! bAdmin && left > 300)
@@ -2948,11 +2952,9 @@ void NetworkOPsImp::getBookPage (
 
             m_journal.trace << "getBookPage: bDirectAdvance";
 
-            uint256 const ledgerIndex = 
-                    lpLedger->getNextLedgerIndex (uTipIndex, uBookEnd);
-            if (ledgerIndex.isNonZero())
-                sleOfferDir = lesActive.entryCache (
-                    ltDIR_NODE, ledgerIndex);
+            auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
+            if (ledgerIndex)
+                sleOfferDir = view.read(keylet::page(*ledgerIndex));
             else
                 sleOfferDir.reset();
 
@@ -2966,7 +2968,7 @@ void NetworkOPsImp::getBookPage (
                 uTipIndex = sleOfferDir->getIndex ();
                 saDirRate = amountFromQuality (getQuality (uTipIndex));
 
-                lesActive.dirFirst (
+                cdirFirst (view,
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex);
 
                 m_journal.trace << "getBookPage:   uTipIndex=" << uTipIndex;
@@ -2976,7 +2978,7 @@ void NetworkOPsImp::getBookPage (
 
         if (!bDone)
         {
-            auto sleOffer = lesActive.entryCache (ltOFFER, offerIndex);
+            auto sleOffer = view.read(keylet::offer(offerIndex));
 
             if (sleOffer)
             {
@@ -3015,9 +3017,10 @@ void NetworkOPsImp::getBookPage (
                     {
                         // Did not find balance in table.
 
-                        saOwnerFunds = lesActive.accountHolds (
+                        saOwnerFunds = accountHolds (view,
                             uOfferOwnerID, book.out.currency,
-                            book.out.account, fhZERO_IF_FROZEN);
+                                book.out.account, fhZERO_IF_FROZEN,
+                                    getConfig());
 
                         if (saOwnerFunds < zero)
                         {
@@ -3096,7 +3099,7 @@ void NetworkOPsImp::getBookPage (
                 m_journal.warning << "Missing offer";
             }
 
-            if (!lesActive.dirNext (
+            if (! cdirNext(view,
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex))
             {
                 bDirectAdvance  = true;
@@ -3133,7 +3136,7 @@ void NetworkOPsImp::getBookPage (
 
     std::map<AccountID, STAmount> umBalance;
 
-    LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
+    MetaView  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
     auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
@@ -3365,13 +3368,13 @@ void NetworkOPsImp::makeFetchPack (
             newObj.set_data (s.getDataPtr (), s.getLength ());
             newObj.set_ledgerseq (lSeq);
 
-            wantLedger->peekAccountStateMap ()->getFetchPack
-                (haveLedger->peekAccountStateMap ().get (), true, 16384,
+            wantLedger->stateMap().getFetchPack
+                (&haveLedger->stateMap(), true, 16384,
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
                                std::placeholders::_2));
 
             if (wantLedger->getTransHash ().isNonZero ())
-                wantLedger->peekTransactionMap ()->getFetchPack (
+                wantLedger->txMap().getFetchPack (
                     nullptr, true, 512,
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
                                std::placeholders::_2));

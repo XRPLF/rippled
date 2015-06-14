@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/protocol/Quality.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Quality.h>
 
 namespace ripple {
 namespace path {

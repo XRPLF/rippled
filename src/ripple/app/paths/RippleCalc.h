@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/app/paths/PathState.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
@@ -73,7 +73,7 @@ public:
     };
 
     static Output rippleCalculate (
-        LedgerEntrySet& activeLedger,
+        MetaView& activeLedger,
 
         // Compute paths using this ledger entry set.  Up to caller to actually
         // apply to ledger.
@@ -99,7 +99,9 @@ public:
         Input const* const pInputs = nullptr);
 
     /** The active ledger. */
-    LedgerEntrySet& mActiveLedger;
+    // VFALCO TODO Fix this comment its not the ledger
+    // VFALCO TODO Rename this to view
+    MetaView& metaView;
 
     // If the transaction fails to meet some constraint, still need to delete
     // unfunded offers.
@@ -115,14 +117,14 @@ public:
 
 private:
     RippleCalc (
-        LedgerEntrySet& activeLedger,
+        MetaView& activeLedger,
         STAmount const& saMaxAmountReq,             // --> -1 = no limit.
         STAmount const& saDstAmountReq,
 
         AccountID const& uDstAccountID,
         AccountID const& uSrcAccountID,
         STPathSet const& spsPaths)
-            : mActiveLedger (activeLedger),
+            : metaView (activeLedger),
               saDstAmountReq_(saDstAmountReq),
               saMaxAmountReq_(saMaxAmountReq),
               uDstAccountID_(uDstAccountID),

@@ -21,7 +21,7 @@
 #define RIPPLE_APP_TX_TRANSACTIONENGINE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <boost/optional.hpp>
 #include <utility>
 
@@ -52,7 +52,7 @@ private:
         false;
 #endif
 
-    boost::optional<LedgerEntrySet> mNodes;
+    boost::optional<MetaView> mNodes;
 
     void txnWrite();
 
@@ -91,7 +91,8 @@ public:
         return enableTickets_;
     }
 
-    LedgerEntrySet&
+    // VFALCO TODO Change to return `View&`
+    MetaView&
     view ()
     {
         return *mNodes;
@@ -108,6 +109,13 @@ public:
     {
         assert (ledger);
         mLedger = ledger;
+    }
+
+    /** Sets the DeliveredAmount field in the metadata */
+    void
+    deliverAmount (STAmount const& delivered)
+    {
+        mNodes->setDeliveredAmount(delivered);
     }
 
     std::pair<TER, bool>

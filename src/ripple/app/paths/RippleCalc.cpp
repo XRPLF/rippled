@@ -21,6 +21,7 @@
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 
 namespace ripple {
@@ -28,21 +29,22 @@ namespace path {
 
 namespace {
 
-TER deleteOffers (
-    LedgerEntrySet& activeLedger, OfferSet& offers)
+static
+TER
+deleteOffers (View& view,
+    OfferSet const& offers)
 {
-    for (auto& o: offers)
-    {
-        if (TER r = activeLedger.offerDelete (o))
+    for (auto& e: offers)
+        if (TER r = offerDelete (view,
+                view.peek(keylet::offer(e))))
             return r;
-    }
     return tesSUCCESS;
 }
 
 } // namespace
 
 RippleCalc::Output RippleCalc::rippleCalculate (
-    LedgerEntrySet& activeLedger,
+    MetaView& activeLedger,
 
     // Compute paths using this ledger entry set.  Up to caller to actually
     // apply to ledger.
@@ -101,7 +103,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
     }
 
     pathState->expandPath (
-        mActiveLedger,
+        metaView,
         path,
         uDstAccountID_,
         uSrcAccountID_);
@@ -144,7 +146,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 // <-- TER: Only returns tepPATH_PARTIAL if partialPaymentAllowed.
 TER RippleCalc::rippleCalculate ()
 {
-    assert (mActiveLedger.isValid ());
+    assert (metaView.isValid ());
     WriteLog (lsTRACE, RippleCalc)
         << "rippleCalc>"
         << " saMaxAmountReq_:" << saMaxAmountReq_
@@ -206,7 +208,7 @@ TER RippleCalc::rippleCalculate ()
     while (resultCode == temUNCERTAIN)
     {
         int iBest = -1;
-        LedgerEntrySet lesCheckpoint = mActiveLedger;
+        MetaView lesCheckpoint = metaView;
         int iDry = 0;
 
         // True, if ever computed multi-quality.
@@ -285,12 +287,12 @@ TER RippleCalc::rippleCalculate ()
                             << " inPass()=" << pathState->inPass()
                             << " saOutPass=" << pathState->outPass();
 
-                        assert (mActiveLedger.isValid ());
-                        mActiveLedger.swapWith (pathState->ledgerEntries());
+                        assert (metaView.isValid ());
+                        metaView.swapWith (pathState->metaView());
                         // For the path, save ledger state.
 
                         // VFALCO Can this be done without the function call?
-                        mActiveLedger.deprecatedInvalidate();
+                        metaView.deprecatedInvalidate();
 
                         iBest   = pathState->index ();
                     }
@@ -337,14 +339,14 @@ TER RippleCalc::rippleCalculate ()
                 pathState->unfundedOffers().begin (),
                 pathState->unfundedOffers().end ());
 
-            // Record best pass' LedgerEntrySet to build off of and potentially
+            // Record best pass' MetaView to build off of and potentially
             // return.
-            assert (pathState->ledgerEntries().isValid ());
-            mActiveLedger.swapWith (pathState->ledgerEntries());
+            assert (pathState->metaView().isValid ());
+            metaView.swapWith (pathState->metaView());
             
             // VFALCO Why is this needed? Can it be done
             //        without the function call?
-            pathState->ledgerEntries().deprecatedInvalidate();
+            pathState->metaView().deprecatedInvalidate();
 
             actualAmountIn_ += pathState->inPass();
             actualAmountOut_ += pathState->outPass();
@@ -422,16 +424,16 @@ TER RippleCalc::rippleCalculate ()
             // We must restore the activeLedger from lesCheckpoint in the case
             // when iBest is -1 and just before the result is set to tesSUCCESS.
 
-            mActiveLedger.swapWith (lesCheckpoint);
+            metaView.swapWith (lesCheckpoint);
             resultCode   = tesSUCCESS;
         }
     }
 
     if (resultCode == tesSUCCESS)
     {
-        resultCode = deleteOffers(mActiveLedger, unfundedOffersFromBestPaths);
+        resultCode = deleteOffers(metaView, unfundedOffersFromBestPaths);
         if (resultCode == tesSUCCESS)
-            resultCode = deleteOffers(mActiveLedger, permanentlyUnfundedOffers_);
+            resultCode = deleteOffers(metaView, permanentlyUnfundedOffers_);
     }
 
     // If isOpenLedger, then ledger is not final, can vote no.

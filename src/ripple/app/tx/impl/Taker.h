@@ -21,9 +21,10 @@
 #define RIPPLE_APP_BOOK_TAKER_H_INCLUDED
 
 #include <ripple/app/tx/impl/Offer.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
-
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <functional>
@@ -233,16 +234,20 @@ public:
     get_funds (AccountID const& account, STAmount const& funds) const = 0;
 };
 
+//------------------------------------------------------------------------------
+
 class Taker
     : public BasicTaker
 {
 private:
     static
     std::uint32_t
-    calculateRate (LedgerView& view, AccountID const& issuer, AccountID const& account);
+    calculateRate (View const& view,
+        AccountID const& issuer,
+            AccountID const& account);
 
     // The underlying ledger entry we are dealing with
-    LedgerView& view_;
+    View& view_;
 
     // The amount of XRP that flowed if we were autobridging
     STAmount xrp_flow_;
@@ -262,19 +267,19 @@ private:
         BasicTaker::Flow const& flow2, Offer const& leg2);
 
     TER
-    transfer_xrp (AccountID const& from, AccountID const& to, STAmount const& amount);
+    transferXRP (AccountID const& from, AccountID const& to, STAmount const& amount);
 
     TER
-    redeem_iou (AccountID const& account, STAmount const& amount, Issue const& issue);
+    redeemIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
 
     TER
-    issue_iou (AccountID const& account, STAmount const& amount, Issue const& issue);
+    issueIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
 
 public:
     Taker () = delete;
     Taker (Taker const&) = delete;
 
-    Taker (CrossType cross_type, LedgerView& view, AccountID const& account,
+    Taker (CrossType cross_type, View& view, AccountID const& account,
         Amounts const& offer, std::uint32_t flags, beast::Journal journal);
     ~Taker () = default;
 

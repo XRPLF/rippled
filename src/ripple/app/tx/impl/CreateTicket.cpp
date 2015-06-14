@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -91,14 +92,13 @@ public:
         sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
         if (expiration != 0)
             sleTicket->setFieldU32 (sfExpiration, expiration);
-        mEngine->view().entryCreate (sleTicket);
+        mEngine->view().insert (sleTicket);
 
         if (mTxn.isFieldPresent (sfTarget))
         {
             AccountID const target_account (mTxn.getFieldAccount160 (sfTarget));
 
-            SLE::pointer sleTarget = mEngine->view().entryCache (ltACCOUNT_ROOT,
-                getAccountRootIndex (target_account));
+            SLE::pointer sleTarget = mEngine->view().peek (keylet::account(target_account));
 
             // Destination account does not exist.
             if (!sleTarget)
@@ -114,10 +114,10 @@ public:
 
         auto describer = [&](SLE::pointer p, bool b)
         {
-            Ledger::ownerDirDescriber(p, b, mTxnAccountID);
+            ownerDirDescriber(p, b, mTxnAccountID);
         };
 
-        TER result = mEngine->view ().dirAdd (
+        TER result = dirAdd(mEngine->view(),
             hint,
             getOwnerDirIndex (mTxnAccountID),
             sleTicket->getIndex (),

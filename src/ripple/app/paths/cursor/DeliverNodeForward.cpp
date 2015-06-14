@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 
 namespace ripple {
@@ -195,7 +196,7 @@ TER PathCursor::deliverNodeForward (
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.
-                resultCode = ledger().accountSend (
+                resultCode = accountSend (ledger(),
                     node().offerOwnerAccount_,
                     nextNode().account_,
                     saOutPassAct);
@@ -252,7 +253,7 @@ TER PathCursor::deliverNodeForward (
                 auto const& id = isXRP(node().issue_) ?
                         xrpAccount() : node().issue_.account;
                 auto outPassTotal = saOutPassAct + saOutPassFees;
-                ledger().accountSend (
+                accountSend (ledger(),
                     node().offerOwnerAccount_,
                     id,
                     outPassTotal);
@@ -286,7 +287,7 @@ TER PathCursor::deliverNodeForward (
             {
                 auto id = !isXRP(previousNode().issue_.currency) ?
                         uInAccountID : xrpAccount();
-                resultCode = ledger().accountSend (
+                resultCode = accountSend (ledger(),
                     id,
                     node().offerOwnerAccount_,
                     saInPassAct);
@@ -316,7 +317,7 @@ TER PathCursor::deliverNodeForward (
             node().sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
             node().sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-            ledger().entryModify (node().sleOffer);
+            ledger().update (node().sleOffer);
 
             if (saOutPassAct == saOutFunded || saTakerGetsNew == zero)
             {

@@ -21,7 +21,7 @@
 #define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
 
 #include <ripple/protocol/Quality.h>
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Indexes.h>
 #include <beast/utility/noexcept.h>
 
@@ -36,24 +36,18 @@ namespace ripple {
 class BookTip
 {
 private:
-    std::reference_wrapper <LedgerView> m_view;
+    View& view_;
     bool m_valid;
     uint256 m_book;
     uint256 m_end;
     uint256 m_dir;
     uint256 m_index;
-    SLE::pointer m_entry;
+    std::shared_ptr<SLE> m_entry;
     Quality m_quality;
-
-    LedgerView&
-    view() const noexcept
-    {
-        return m_view;
-    }
 
 public:
     /** Create the iterator. */
-    BookTip (LedgerView& view, BookRef book);
+    BookTip (View& view, BookRef book);
 
     uint256 const&
     dir() const noexcept

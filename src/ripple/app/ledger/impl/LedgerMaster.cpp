@@ -661,7 +661,7 @@ public:
     {
         // A new ledger has been accepted as part of the trusted chain
         WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
-        assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
+        assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
         ledger->setFull();

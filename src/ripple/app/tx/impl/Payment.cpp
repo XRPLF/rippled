@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/PaymentView.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -191,8 +192,8 @@ public:
             " saDstAmount=" << saDstAmount.getFullText ();
 
         // Open a ledger for editing.
-        auto const index = getAccountRootIndex (uDstAccountID);
-        SLE::pointer sleDst (mEngine->view().entryCache (ltACCOUNT_ROOT, index));
+        auto const k = keylet::account(uDstAccountID);
+        SLE::pointer sleDst = mEngine->view().peek (k);
 
         if (!sleDst)
         {
@@ -233,11 +234,10 @@ public:
             }
 
             // Create the account.
-            sleDst = std::make_shared<SLE>(ltACCOUNT_ROOT,
-                getAccountRootIndex (uDstAccountID));
+            sleDst = std::make_shared<SLE>(k);
             sleDst->setFieldAccount (sfAccount, uDstAccountID);
             sleDst->setFieldU32 (sfSequence, 1);
-            mEngine->view().entryCreate(sleDst);
+            mEngine->view().insert(sleDst);
         }
         else if ((sleDst->getFlags () & lsfRequireDestTag) &&
                  !mTxn.isFieldPresent (sfDestinationTag))
@@ -256,7 +256,7 @@ public:
             // Tell the engine that we are intending to change the the destination
             // account.  The source account gets always charged a fee so it's always
             // marked as modified.
-            mEngine->view().entryModify (sleDst);
+            mEngine->view().update (sleDst);
         }
 
         TER terResult;
@@ -293,7 +293,6 @@ public:
                 }
                 else
                 {
-
                     path::RippleCalc::Output rc;
                     {
                         ScopedDeferCredits g (mEngine->view ());
@@ -310,7 +309,7 @@ public:
                     // TODO: is this right?  If the amount is the correct amount, was
                     // the delivered amount previously set?
                     if (rc.result () == tesSUCCESS && rc.actualAmountOut != saDstAmount)
-                        mEngine->view ().setDeliveredAmount (rc.actualAmountOut);
+                        mEngine->deliverAmount (rc.actualAmountOut);
 
                     terResult = rc.result ();
                 }

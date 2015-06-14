@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>
@@ -235,18 +236,18 @@ SetSignerList::replaceSignerList (uint256 const& index)
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
     auto signerList = std::make_shared<SLE>(ltSIGNER_LIST, index);
-    mEngine->view().entryCreate (signerList);
+    mEngine->view().insert (signerList);
     writeSignersToLedger (signerList);
 
     // Lambda for call to dirAdd.
     auto describer = [&] (SLE::ref sle, bool dummy)
         {
-            Ledger::ownerDirDescriber (sle, dummy, mTxnAccountID);
+            ownerDirDescriber (sle, dummy, mTxnAccountID);
         };
 
     // Add the signer list to the account's directory.
     std::uint64_t hint;
-    TER result = mEngine->view ().dirAdd (
+    TER result = dirAdd(mEngine->view (),
         hint, getOwnerDirIndex (mTxnAccountID), index, describer);
 
     if (m_journal.trace) m_journal.trace <<
@@ -270,7 +271,7 @@ SetSignerList::destroySignerList (uint256 const& index)
 {
     // See if there's an ltSIGNER_LIST for this account.
     SLE::pointer signerList =
-        mEngine->view ().entryCache (ltSIGNER_LIST, index);
+        mEngine->view().peek (keylet::signers(index));
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signerList)
@@ -279,9 +280,9 @@ SetSignerList::destroySignerList (uint256 const& index)
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
     std::uint32_t removeFromOwnerCount = 0;
-    uint256 const signerListIndex = getSignerListIndex (mTxnAccountID);
+    auto const k = keylet::signers(mTxnAccountID);
     SLE::pointer accountSignersList =
-        mEngine->view ().entryCache (ltSIGNER_LIST, signerListIndex);
+        mEngine->view().peek (k);
     if (accountSignersList)
     {
         STArray const& actualList =
@@ -292,14 +293,14 @@ SetSignerList::destroySignerList (uint256 const& index)
     // Remove the node from the account directory.
     std::uint64_t const hint (signerList->getFieldU64 (sfOwnerNode));
 
-    TER const result  = mEngine->view ().dirDelete (false, hint,
+    TER const result  = dirDelete(mEngine->view (), false, hint,
         getOwnerDirIndex (mTxnAccountID), index, false, (hint == 0));
 
     if (result == tesSUCCESS)
         adjustOwnerCount(mEngine->view(),
             mTxnAccount, removeFromOwnerCount);
 
-    mEngine->view ().entryDelete (signerList);
+    mEngine->view ().erase (signerList);
 
     return result;
 }

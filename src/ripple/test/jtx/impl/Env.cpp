@@ -104,7 +104,7 @@ Env::balance (Account const& account,
 {
     if (isXRP(issue.currency))
         return balance(account);
-    auto const sle = le(getRippleStateIndex(
+    auto const sle = le(keylet::line(
         account.id(), issue));
     if (! sle)
         return { STAmount( issue, 0 ),
@@ -130,14 +130,13 @@ Env::seq (Account const& account) const
 std::shared_ptr<SLE const>
 Env::le (Account const& account) const
 {
-    return ledger->fetch(
-        getAccountRootIndex(account.id()));
+    return le(keylet::account(account.id()));
 }
 
 std::shared_ptr<SLE const>
-Env::le (uint256 const& key) const
+Env::le (Keylet const& k) const
 {
-    return ledger->fetch(key);
+    return ledger->read(k);
 }
 
 void

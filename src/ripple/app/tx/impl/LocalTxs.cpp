@@ -124,9 +124,9 @@ public:
     {
         if (txn.isExpired (ledger->getLedgerSeq ()))
             return true;
-        if (ledger->hasTransaction (txn.getID ()))
+        if (hasTransaction (*ledger, txn.getID ()))
             return true;
-        auto const sle = fetch(*ledger,
+        auto const sle = cachedRead(*ledger,
             getAccountRootIndex(txn.getAccount().getAccountID()),
                 getApp().getSLECache());
         if (! sle)

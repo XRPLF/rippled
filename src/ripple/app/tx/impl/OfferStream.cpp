@@ -19,10 +19,11 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/OfferStream.h>
+#include <ripple/ledger/ViewAPI.h>
 
 namespace ripple {
 
-OfferStream::OfferStream (LedgerView& view, LedgerView& view_cancel,
+OfferStream::OfferStream (View& view, View& view_cancel,
     BookRef book, Clock::time_point when, beast::Journal journal)
     : m_journal (journal)
     , m_view (view)
@@ -36,13 +37,13 @@ OfferStream::OfferStream (LedgerView& view, LedgerView& view_cancel,
 // Handle the case where a directory item with no corresponding ledger entry
 // is found. This shouldn't happen but if it does we clean it up.
 void
-OfferStream::erase (LedgerView& view)
+OfferStream::erase (View& view)
 {
-    // NIKB NOTE This should be using LedgerView::dirDelete, which would
+    // NIKB NOTE This should be using View::dirDelete, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p (view.entryCache (ltDIR_NODE, m_tip.dir()));
+    auto p = view.peek (keylet::page(m_tip.dir()));
 
     if (p == nullptr)
     {
@@ -65,7 +66,7 @@ OfferStream::erase (LedgerView& view)
 
     v.erase (it);
     p->setFieldV256 (sfIndexes, v);
-    view.entryModify (p);
+    view.update (p);
 
     if (m_journal.trace) m_journal.trace <<
         "Missing offer " << m_tip.index() <<
@@ -85,7 +86,7 @@ OfferStream::step ()
         if (! m_tip.step())
             return false;
 
-        SLE::pointer const& entry (m_tip.entry());
+        std::shared_ptr<SLE> entry = m_tip.entry();
 
         // Remove if missing
         if (! entry)
@@ -99,9 +100,11 @@ OfferStream::step ()
         if (entry->isFieldPresent (sfExpiration) &&
             entry->getFieldU32 (sfExpiration) <= m_when)
         {
-            view_cancel().offerDelete (entry->getIndex());
             if (m_journal.trace) m_journal.trace <<
                 "Removing expired offer " << entry->getIndex();
+            offerDelete (view_cancel(),
+                view_cancel().peek(
+                    keylet::offer(entry->key())));
             continue;
         }
 
@@ -112,9 +115,11 @@ OfferStream::step ()
         // Remove if either amount is zero
         if (amount.empty())
         {
-            view_cancel().offerDelete (entry->getIndex());
             if (m_journal.warning) m_journal.warning <<
                 "Removing bad offer " << entry->getIndex();
+            offerDelete (view_cancel(),
+                view_cancel().peek(
+                    keylet::offer(entry->key())));
             m_offer = Offer{};
             continue;
         }
@@ -122,8 +127,9 @@ OfferStream::step ()
         // Calculate owner funds
         // NIKB NOTE The calling code also checks the funds, how expensive is
         //           looking up the funds twice?
-        auto const owner_funds = funds(view(),
-            m_offer.owner(), amount.out, fhZERO_IF_FROZEN);
+        auto const owner_funds = accountFunds(view(),
+            m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
+                getConfig());
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -131,12 +137,14 @@ OfferStream::step ()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = funds(view_cancel(),
-                m_offer.owner(), amount.out, fhZERO_IF_FROZEN);
+            auto const original_funds = accountFunds(view_cancel(),
+                m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
+                    getConfig());
 
             if (original_funds == owner_funds)
             {
-                view_cancel().offerDelete (entry->getIndex());
+                offerDelete (view_cancel(), view_cancel().peek(
+                    keylet::offer(entry->key())));
                 if (m_journal.trace) m_journal.trace <<
                     "Removing unfunded offer " << entry->getIndex();
             }

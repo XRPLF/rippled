@@ -1862,7 +1862,8 @@ void
 PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 {
     protocol::TMGetLedger& packet = *m;
-    std::shared_ptr<SHAMap> map;
+    std::shared_ptr<SHAMap> shared;
+    SHAMap const* map = nullptr;
     protocol::TMLedgerData reply;
     bool fatLeaves = true;
 
@@ -1888,9 +1889,10 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         uint256 txHash;
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
 
-        map = getApp().getInboundTransactions().getSet (txHash, false);
+        shared = getApp().getInboundTransactions().getSet (txHash, false);
+        map = shared.get();
 
-        if (!map)
+        if (! map)
         {
             if (packet.has_querytype () && !packet.has_requestcookie ())
             {
@@ -2061,30 +2063,31 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 
-            std::shared_ptr<SHAMap> map = ledger->peekAccountStateMap ();
-
-            if (map && map->getHash ().isNonZero ())
+            if (ledger->haveStateMap())
             {
-                // return account state root node if possible
-                Serializer rootNode (768);
-
-                if (map->getRootNode (rootNode, snfWIRE))
+                auto const& stateMap = ledger->stateMap ();
+                if (stateMap.getHash() != zero)
                 {
-                    reply.add_nodes ()->set_nodedata (
-                        rootNode.getDataPtr (), rootNode.getLength ());
-
-                    if (ledger->getTransHash ().isNonZero ())
+                    // return account state root node if possible
+                    Serializer rootNode (768);
+                    if (stateMap.getRootNode(rootNode, snfWIRE))
                     {
-                        map = ledger->peekTransactionMap ();
+                        reply.add_nodes ()->set_nodedata (
+                            rootNode.getDataPtr (), rootNode.getLength ());
 
-                        if (map && map->getHash ().isNonZero ())
+                        if (ledger->getTransHash () != zero && ledger->haveTxMap ())
                         {
-                            rootNode.erase ();
+                            auto const& txMap = ledger->txMap ();
 
-                            if (map->getRootNode (rootNode, snfWIRE))
-                                reply.add_nodes ()->set_nodedata (
-                                    rootNode.getDataPtr (),
-                                        rootNode.getLength ());
+                            if (txMap.getHash() != zero)
+                            {
+                                rootNode.erase ();
+
+                                if (txMap.getRootNode (rootNode, snfWIRE))
+                                    reply.add_nodes ()->set_nodedata (
+                                        rootNode.getDataPtr (),
+                                            rootNode.getLength ());
+                            }
                         }
                     }
                 }
@@ -2098,13 +2101,15 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         if (packet.itype () == protocol::liTX_NODE)
         {
-            map = ledger->peekTransactionMap ();
+            assert (ledger->haveTxMap ());
+            map = &ledger->txMap ();
             logMe += " TX:";
             logMe += to_string (map->getHash ());
         }
         else if (packet.itype () == protocol::liAS_NODE)
         {
-            map = ledger->peekAccountStateMap ();
+            assert (ledger->haveStateMap ());
+            map = &ledger->stateMap ();
             logMe += " AS:";
             logMe += to_string (map->getHash ());
         }
@@ -2143,7 +2148,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         try
         {
-            if (map->getNodeFat (mn, nodeIDs, rawNodes, fatLeaves, depth))
+            // We are guaranteed that map is non-null, but we need to check
+            // to keep the compiler happy.
+            if (map && map->getNodeFat (mn, nodeIDs, rawNodes, fatLeaves, depth))
             {
                 assert (nodeIDs.size () == rawNodes.size ());
                 if (p_journal_.trace) p_journal_.trace <<

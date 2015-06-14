@@ -21,10 +21,10 @@
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
-
 #include <beast/cxx14/memory.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/WrappedSink.h>
@@ -46,8 +46,8 @@ private:
         // Only valid for custom currencies
         assert (!isXRP (issue.currency));
 
-        SLE::pointer const issuerAccount = mEngine->view().entryCache (
-            ltACCOUNT_ROOT, getAccountRootIndex (issue.account));
+        auto const issuerAccount = mEngine->view().read(
+            keylet::account(issue.account));
 
         if (!issuerAccount)
         {
@@ -62,9 +62,8 @@ private:
 
         if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
         {
-            SLE::pointer const trustLine (mEngine->view().entryCache (
-                ltRIPPLE_STATE, getRippleStateIndex (
-                    mTxnAccountID, issue.account, issue.currency)));
+            auto const trustLine = mEngine->view().read(
+                keylet::line(mTxnAccountID, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -97,12 +96,12 @@ private:
 
     static
     bool
-    dry_offer (LedgerView& view, Offer const& offer)
+    dry_offer (View& view, Offer const& offer)
     {
         if (offer.fully_consumed ())
             return true;
-        auto const amount = funds(view, offer.owner(),
-            offer.amount().out, fhZERO_IF_FROZEN);
+        auto const amount = accountFunds(view, offer.owner(),
+            offer.amount().out, fhZERO_IF_FROZEN, getConfig());
         return (amount <= zero);
     }
 
@@ -140,8 +139,8 @@ private:
     std::pair<TER, Amounts>
     bridged_cross (
         Taker& taker,
-        LedgerView& view,
-        LedgerView& view_cancel,
+        View& view,
+        View& view_cancel,
         Clock::time_point const when)
     {
         auto const& taker_amount = taker.original_offer ();
@@ -200,10 +199,11 @@ private:
                     m_journal.debug << "     in: " << offers_direct.tip ().amount().in;
                     m_journal.debug << "    out: " << offers_direct.tip ().amount ().out;
                     m_journal.debug << "  owner: " << offers_direct.tip ().owner ();
-                    m_journal.debug << "  funds: " << funds(view,
+                    m_journal.debug << "  funds: " << accountFunds(view,
                         offers_direct.tip ().owner (),
                         offers_direct.tip ().amount ().out,
-                        fhIGNORE_FREEZE);
+                        fhIGNORE_FREEZE,
+                        getConfig());
                 }
 
                 cross_result = taker.cross(offers_direct.tip ());
@@ -220,15 +220,17 @@ private:
             {
                 if (m_journal.debug)
                 {
-                    auto const owner1_funds_before = funds(view,
+                    auto const owner1_funds_before = accountFunds(view,
                         offers_leg1.tip ().owner (),
                         offers_leg1.tip ().amount ().out,
-                        fhIGNORE_FREEZE);
+                        fhIGNORE_FREEZE,
+                        getConfig());
 
-                    auto const owner2_funds_before = funds(view,
+                    auto const owner2_funds_before = accountFunds(view,
                         offers_leg2.tip ().owner (),
                         offers_leg2.tip ().amount ().out,
-                        fhIGNORE_FREEZE);
+                        fhIGNORE_FREEZE,
+                        getConfig());
 
                     m_journal.debug << count << " Bridge:";
                     m_journal.debug << " offer1: " << offers_leg1.tip ();
@@ -285,8 +287,8 @@ private:
     std::pair<TER, Amounts>
     direct_cross (
         Taker& taker,
-        LedgerView& view,
-        LedgerView& view_cancel,
+        View& view,
+        View& view_cancel,
         Clock::time_point const when)
     {
         OfferStream offers (
@@ -319,8 +321,8 @@ private:
                 m_journal.debug << "     in: " << offer.amount ().in;
                 m_journal.debug << "    out: " << offer.amount ().out;
                 m_journal.debug << "  owner: " << offer.owner ();
-                m_journal.debug << "  funds: " << funds(view,
-                    offer.owner (), offer.amount ().out, fhIGNORE_FREEZE);
+                m_journal.debug << "  funds: " << accountFunds(view,
+                    offer.owner (), offer.amount ().out, fhIGNORE_FREEZE, getConfig());
             }
 
             cross_result = taker.cross (offer);
@@ -386,8 +388,8 @@ private:
     // Charges fees on top to taker.
     std::pair<TER, Amounts>
     cross (
-        LedgerView& view,
-        LedgerView& cancel_view,
+        View& view,
+        View& cancel_view,
         Amounts const& taker_amount)
     {
         Clock::time_point const when (
@@ -541,8 +543,8 @@ public:
         return Transactor::preCheck ();
     }
 
-    TER
-    doApply () override
+    std::pair<TER, bool>
+    applyGuts (View& view, View& view_cancel)
     {
         std::uint32_t const uTxFlags = mTxn.getFlags ();
 
@@ -555,7 +557,7 @@ public:
         STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
 
         if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
-            return temBAD_AMOUNT;
+            return { temBAD_AMOUNT, true };
 
         auto const& uPaysIssuerID = saTakerPays.getIssuer ();
         auto const& uPaysCurrency = saTakerPays.getCurrency ();
@@ -584,26 +586,19 @@ public:
 
         // This is the ledger view that we work against. Transactions are applied
         // as we go on processing transactions.
-        LedgerView& view (mEngine->view ());
 
-        // This is a checkpoint with just the fees paid. If something goes wrong
-        // with this transaction, we roll back to this ledger.
-        LedgerView view_checkpoint (view);
+        auto const sleCreator = view.peek (
+            keylet::account(mTxnAccountID));
 
-        view.bumpSeq (); // Begin ledger variance.
-
-        SLE::pointer sleCreator = mEngine->view().entryCache (
-            ltACCOUNT_ROOT, getAccountRootIndex (mTxnAccountID));
-
-        if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
+        if (isGlobalFrozen (view, uPaysIssuerID) || isGlobalFrozen (view, uGetsIssuerID))
         {
             if (m_journal.warning) m_journal.warning <<
                 "Offer involves frozen asset";
 
             result = tecFROZEN;
         }
-        else if (funds(view,
-            mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
+        else if (accountFunds(view, mTxnAccountID, saTakerGets,
+            fhZERO_IF_FROZEN, getConfig()) <= zero)
         {
             if (m_journal.debug) m_journal.debug <<
                 "delay: Offers must be at least partially funded.";
@@ -624,14 +619,14 @@ public:
         if (result != tesSUCCESS)
         {
             m_journal.debug << "final result: " << transToken (result);
-            return result;
+            return { result, true };
         }
 
         // Process a cancellation request that's passed along with an offer.
         if (bHaveCancel)
         {
-            SLE::pointer sleCancel = mEngine->view().entryCache (ltOFFER,
-                getOfferIndex (mTxnAccountID, uCancelSequence));
+            auto const sleCancel = view.peek(
+                keylet::offer(mTxnAccountID, uCancelSequence));
 
             // It's not an error to not find the offer to cancel: it might have
             // been consumed or removed. If it is found, however, it's an error
@@ -639,7 +634,7 @@ public:
             if (sleCancel)
             {
                 m_journal.debug << "Create cancels order " << uCancelSequence;
-                result = view.offerDelete (sleCancel);
+                result = offerDelete (view, sleCancel);
             }
         }
 
@@ -649,7 +644,7 @@ public:
         if (bHaveExpiration &&
             (mEngine->getLedger ()->getParentCloseTimeNC () >= uExpiration))
         {
-            return tesSUCCESS;
+            return { tesSUCCESS, true };
         }
 
         // Make sure that we are authorized to hold what the taker will pay us.
@@ -682,7 +677,7 @@ public:
                 m_journal.trace << "    out: " << format_amount (taker_amount.out);
             }
 
-            std::tie(result, place_offer) = cross (view, view_checkpoint, taker_amount);
+            std::tie(result, place_offer) = cross (view, view_cancel, taker_amount);
             assert (result != tefINTERNAL);
 
             if (m_journal.trace)
@@ -698,7 +693,7 @@ public:
             if (result != tesSUCCESS)
             {
                 m_journal.debug << "final result: " << transToken (result);
-                return result;
+                return { result, true };
             }
 
             assert (saTakerGets.issue () == place_offer.in.issue ());
@@ -714,13 +709,13 @@ public:
                 m_journal.fatal << "Cross left offer negative!" <<
                     "     in: " << format_amount (place_offer.in) <<
                     "    out: " << format_amount (place_offer.out);
-                return tefINTERNAL;
+                return { tefINTERNAL, true };
             }
 
             if (place_offer.in == zero || place_offer.out == zero)
             {
                 m_journal.debug << "Offer fully crossed!";
-                return result;
+                return { result, true };
             }
 
             // We now need to adjust the offer to reflect the amount left after
@@ -735,7 +730,7 @@ public:
         if (result != tesSUCCESS)
         {
             m_journal.debug << "final result: " << transToken (result);
-            return result;
+            return { result, true };
         }
 
         if (m_journal.trace)
@@ -750,8 +745,7 @@ public:
         if (bFillOrKill)
         {
             m_journal.trace << "Fill or Kill: offer killed";
-            view.swapWith (view_checkpoint);
-            return tesSUCCESS;
+            return { tesSUCCESS, false };
         }
 
         // For 'immediate or cancel' offers, the amount remaining doesn't get
@@ -759,7 +753,7 @@ public:
         if (bImmediateOrCancel)
         {
             m_journal.trace << "Immediate or cancel: offer cancelled";
-            return tesSUCCESS;
+            return { tesSUCCESS, true };
         }
 
         if (mPriorBalance < getAccountReserve (sleCreator))
@@ -773,7 +767,7 @@ public:
             if (result != tesSUCCESS)
                 m_journal.debug << "final result: " << transToken (result);
 
-            return result;
+            return { result, true };
         }
 
         // We need to place the remainder of the offer into its order book.
@@ -784,10 +778,10 @@ public:
         uint256 uDirectory;
 
         // Add offer to owner's directory.
-        result = view.dirAdd (uOwnerNode,
+        result = dirAdd(view, uOwnerNode,
             getOwnerDirIndex (mTxnAccountID), offer_index,
             std::bind (
-                &Ledger::ownerDirDescriber, std::placeholders::_1,
+                &ownerDirDescriber, std::placeholders::_1,
                 std::placeholders::_2, mTxnAccountID));
 
         if (result == tesSUCCESS)
@@ -806,9 +800,9 @@ public:
             uDirectory = getQualityIndex (book_base, uRate);
 
             // Add offer to order book.
-            result = view.dirAdd (uBookNode, uDirectory, offer_index,
+            result = dirAdd (view, uBookNode, uDirectory, offer_index,
                 std::bind (
-                    &Ledger::qualityDirDescriber, std::placeholders::_1,
+                    &qualityDirDescriber, std::placeholders::_1,
                     std::placeholders::_2, saTakerPays.getCurrency (),
                     uPaysIssuerID, saTakerGets.getCurrency (),
                     uGetsIssuerID, uRate));
@@ -830,13 +824,31 @@ public:
                 sleOffer->setFlag (lsfPassive);
             if (bSell)
                 sleOffer->setFlag (lsfSell);
-            mEngine->view().entryCreate(sleOffer);
+            view.insert(sleOffer);
         }
 
         if (result != tesSUCCESS)
             m_journal.debug << "final result: " << transToken (result);
 
-        return result;
+        return { result, true };
+    }
+
+    TER
+    doApply() override
+    {
+        bool const openLedger = mParams & tapOPEN_LEDGER;
+        // This is the ledger view that we work against. Transactions are applied
+        // as we go on processing transactions.
+        MetaView view (mEngine->view(), openLedger);
+        // This is a checkpoint with just the fees paid. If something goes wrong
+        // with this transaction, we roll back to this ledger.
+        MetaView viewCancel (mEngine->view(), openLedger);
+        auto const result = applyGuts(view, viewCancel);
+        if (result.second)
+            view.apply();
+        else
+            viewCancel.apply();
+        return result.first;
     }
 };
 

@@ -103,8 +103,8 @@ TransactionEngine::applyTransaction (
         mNodes.emplace(mLedger, txID,
             mLedger->getLedgerSeq(), params);
 
-        SLE::pointer txnAcct = mNodes->entryCache (ltACCOUNT_ROOT,
-            getAccountRootIndex (txn.getSourceAccount ()));
+        SLE::pointer txnAcct = view().peek(
+            keylet::account(txn.getSourceAccount()));
 
         if (!txnAcct)
             terResult = terNO_ACCOUNT;
@@ -137,7 +137,7 @@ TransactionEngine::applyTransaction (
                         fee = balance;
                     txnAcct->setFieldAmount (sfBalance, balance - fee);
                     txnAcct->setFieldU32 (sfSequence, t_seq + 1);
-                    mNodes->entryModify (txnAcct);
+                    view().update (txnAcct);
                     didApply = true;
                 }
             }
@@ -169,7 +169,6 @@ TransactionEngine::applyTransaction (
         Serializer m;
         mNodes->calcRawMeta (m, terResult, mTxnSeq++);
 
-        assert(mLedger == mNodes->getLedger());
         mNodes->apply();
 
         Serializer s;
@@ -177,7 +176,7 @@ TransactionEngine::applyTransaction (
 
         if (params & tapOPEN_LEDGER)
         {
-            if (!mLedger->addTransaction (txID, s))
+            if (! addTransaction (*mLedger, txID, s))
             {
                 WriteLog (lsFATAL, TransactionEngine) <<
                     "Duplicate transaction applied";
@@ -187,7 +186,7 @@ TransactionEngine::applyTransaction (
         }
         else
         {
-            if (!mLedger->addTransaction (txID, s, m))
+            if (! addTransaction (*mLedger, txID, s, m))
             {
                 WriteLog (lsFATAL, TransactionEngine) <<
                     "Duplicate transaction applied to closed ledger";

@@ -21,18 +21,18 @@
 #define RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
 
 #include <ripple/app/tx/impl/BookTip.h>
-#include <ripple/app/tx/impl/Offer.h>
+#include <ripple/app/tx/impl/Offer.h>   
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
-
+#include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
-
 #include <functional>
 
 namespace ripple {
 
 /** Presents and consumes the offers in an order book.
 
-    Two `LedgerView` objects accumulate changes to the ledger. `view`
+    Two `View` objects accumulate changes to the ledger. `view`
     is applied when the calling transaction succeeds. If the calling
     transaction fails, then `view_cancel` is applied.
 
@@ -51,27 +51,27 @@ class OfferStream
 {
 private:
     beast::Journal m_journal;
-    std::reference_wrapper <LedgerView> m_view;
-    std::reference_wrapper <LedgerView> m_view_cancel;
+    std::reference_wrapper <View> m_view;
+    std::reference_wrapper <View> m_view_cancel;
     Book m_book;
     Clock::time_point m_when;
     BookTip m_tip;
     Offer m_offer;
 
     void
-    erase (LedgerView& view);
+    erase (View& view);
 
 public:
-    OfferStream (LedgerView& view, LedgerView& view_cancel, BookRef book,
+    OfferStream (View& view, View& view_cancel, BookRef book,
         Clock::time_point when, beast::Journal journal);
 
-    LedgerView&
+    View&
     view () noexcept
     {
         return m_view;
     }
 
-    LedgerView&
+    View&
     view_cancel () noexcept
     {
         return m_view_cancel;

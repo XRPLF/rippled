@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
 #define RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -52,7 +52,7 @@ class NodeDirectory {
             restartNeeded  = true;   // Restart at same quality.
     }
 
-    bool initialize (Book const& book, LedgerEntrySet& les)
+    bool initialize (Book const& book, MetaView& les)
     {
         if (current != zero)
             return false;
@@ -63,7 +63,7 @@ class NodeDirectory {
         // TODO(tom): it seems impossible that any actual offers with
         // quality == 0 could occur - we should disallow them, and clear
         // directory.ledgerEntry without the database call in the next line.
-        ledgerEntry = les.entryCache (ltDIR_NODE, current);
+        ledgerEntry = les.peek (keylet::page(current));
 
         // Advance, if didn't find it. Normal not to be unable to lookup
         // firstdirectory. Maybe even skip this lookup.
@@ -75,7 +75,7 @@ class NodeDirectory {
     }
 
     enum Advance {NO_ADVANCE, NEW_QUALITY, END_ADVANCE};
-    Advance advance(LedgerEntrySet& les)
+    Advance advance(MetaView& les)
     {
         if (!(advanceNeeded || restartNeeded))
             return NO_ADVANCE;
@@ -84,15 +84,18 @@ class NodeDirectory {
         // The Merkel radix tree is ordered by key so we can go to the next
         // quality in O(1).
         if (advanceNeeded)
-            current = les.getNextLedgerIndex (current, next);
-
+        {
+            auto const opt =
+                les.succ (current, next);
+            current = opt ? *opt : uint256{};
+        }
         advanceNeeded  = false;
         restartNeeded  = false;
 
         if (current == zero)
             return END_ADVANCE;
 
-        ledgerEntry = les.entryCache (ltDIR_NODE, current);
+        ledgerEntry = les.peek (keylet::page(current));
         return NEW_QUALITY;
     }
 };

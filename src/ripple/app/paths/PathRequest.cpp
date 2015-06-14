@@ -480,7 +480,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
         if (valid)
         {
-            LedgerEntrySet lesSandbox(
+            MetaView sandbox(
                 cache->getLedger(), tapNONE);
             auto& sourceAccount = !isXRP (currIssuer.account)
                     ? currIssuer.account
@@ -493,7 +493,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             m_journal.debug << iIdentifier
                             << " Paths found, calling rippleCalc";
             auto rc = path::RippleCalc::rippleCalculate (
-                lesSandbox,
+                sandbox,
                 saMaxAmount,
                 saDstAmount,
                 raDstAccount.getAccountID (),
@@ -506,9 +506,9 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.push_back (fullLiquidityPath);
-                reconstruct(lesSandbox, cache->getLedger (), tapNONE);
+                reconstruct(sandbox, cache->getLedger (), tapNONE);
                 rc = path::RippleCalc::rippleCalculate (
-                    lesSandbox,
+                    sandbox,
                     saMaxAmount,
                     saDstAmount,
                     raDstAccount.getAccountID (),

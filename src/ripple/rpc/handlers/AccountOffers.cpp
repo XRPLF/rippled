@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/ledger/ViewAPI.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -63,7 +65,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (bIndex)
         result[jss::account_index] = iIndex;
 
-    if (! ledger->exists(getAccountRootIndex(
+    if (! ledger->exists(keylet::account(
             rippleAddress.getAccountID())))
         return rpcError (rpcACT_NOT_FOUND);
 
@@ -105,7 +107,7 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleOffer = fetch (*ledger, startAfter,
+        auto const sleOffer = cachedRead (*ledger, startAfter,
             getApp().getSLECache());
 
         if (sleOffer == nullptr ||
@@ -133,20 +135,24 @@ Json::Value doAccountOffers (RPC::Context& context)
         offers.reserve (++reserve);
     }
 
-    if (! forEachItemAfter(*ledger, raAccount, getApp().getSLECache(),
-            startAfter, startHint, reserve,
-        [&offers](std::shared_ptr<SLE const> const& offer)
-        {
-            if (offer->getType () == ltOFFER)
-            {
-                offers.emplace_back (offer);
-                return true;
-            }
-
-            return false;
-        }))
     {
-        return rpcError (rpcINVALID_PARAMS);
+        CachedView const view(
+            *ledger, getApp().getSLECache());
+        if (! forEachItemAfter(*ledger, raAccount,
+                startAfter, startHint, reserve,
+            [&offers](std::shared_ptr<SLE const> const& offer)
+            {
+                if (offer->getType () == ltOFFER)
+                {
+                    offers.emplace_back (offer);
+                    return true;
+                }
+
+                return false;
+            }))
+        {
+            return rpcError (rpcINVALID_PARAMS);
+        }
     }
 
     if (offers.size () == reserve)

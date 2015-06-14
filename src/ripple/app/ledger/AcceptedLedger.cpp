@@ -33,7 +33,7 @@ TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {
-    for (auto const& item : *ledger->peekTransactionMap())
+    for (auto const& item : ledger->txMap())
     {
         SerialIter sit (item->slice());
         insert (std::make_shared<AcceptedLedgerTx>(

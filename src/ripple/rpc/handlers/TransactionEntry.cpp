@@ -67,7 +67,8 @@ Json::Value doTransactionEntry (RPC::Context& context)
             Transaction::pointer        tpTrans;
             TransactionMetaSet::pointer tmTrans;
 
-            if (!lpLedger->getTransaction (uTransID, tpTrans, tmTrans))
+            if (!getTransaction (*lpLedger, uTransID, tpTrans, tmTrans,
+                    getApp().getMasterTransaction()))
             {
                 jvResult[jss::error]   = "transactionNotFound";
             }

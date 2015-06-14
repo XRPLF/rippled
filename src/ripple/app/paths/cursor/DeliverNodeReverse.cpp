@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 
 namespace ripple {
@@ -279,7 +280,7 @@ TER PathCursor::deliverNodeReverse (
         // visited.  However, these deductions and adjustments are tenative.
         //
         // Must reset balances when going forward to perform actual transfers.
-        resultCode   = ledger().accountSend (
+        resultCode   = accountSend (ledger(),
             node().offerOwnerAccount_, node().issue_.account, saOutPassAct);
 
         if (resultCode != tesSUCCESS)
@@ -303,7 +304,7 @@ TER PathCursor::deliverNodeReverse (
         node().sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
         node().sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-        ledger().entryModify (node().sleOffer);
+        ledger().update (node().sleOffer);
 
         if (saOutPassAct == node().saTakerGets)
         {

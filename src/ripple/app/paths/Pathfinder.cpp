@@ -271,7 +271,7 @@ bool Pathfinder::findPaths (int searchLevel)
     bool bSrcXrp = isXRP (mSrcCurrency);
     bool bDstXrp = isXRP (mDstAmount.getCurrency());
 
-    if (! mLedger->exists (getAccountRootIndex (mSrcAccount)))
+    if (! mLedger->exists (keylet::account(mSrcAccount)))
     {
         // We can't even start without a source account.
         WriteLog (lsDEBUG, Pathfinder) << "invalid source account";
@@ -279,14 +279,14 @@ bool Pathfinder::findPaths (int searchLevel)
     }
 
     if ((mEffectiveDst != mDstAccount) &&
-        ! mLedger->exists (getAccountRootIndex (mEffectiveDst)))
+        ! mLedger->exists (keylet::account(mEffectiveDst)))
     {
         WriteLog (lsDEBUG, Pathfinder)
             << "Non-existent gateway";
         return false;
     }
 
-    if (! mLedger->exists (getAccountRootIndex (mDstAccount)))
+    if (! mLedger->exists (keylet::account (mDstAccount)))
     {
         // Can't find the destination account - we must be funding a new
         // account.
@@ -377,13 +377,13 @@ TER Pathfinder::getPathLiquidity (
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
 
-    LedgerEntrySet lesSandbox (mLedger, tapNONE);
+    MetaView sandbox (mLedger, tapNONE);
 
     try
     {
         // Compute a path that provides at least the minimum liquidity.
         auto rc = path::RippleCalc::rippleCalculate (
-            lesSandbox,
+            sandbox,
             mSrcAmount,
             minDstAmount,
             mDstAccount,
@@ -401,7 +401,7 @@ TER Pathfinder::getPathLiquidity (
         // Now try to compute the remaining liquidity.
         rcInput.partialPaymentAllowed = true;
         rc = path::RippleCalc::rippleCalculate (
-            lesSandbox,
+            sandbox,
             mSrcAmount,
             mDstAmount - amountOut,
             mDstAccount,
@@ -442,12 +442,12 @@ void Pathfinder::computePathRanks (int maxPaths)
     // Must subtract liquidity in default path from remaining amount.
     try
     {
-        LedgerEntrySet lesSandbox (mLedger, tapNONE);
+        MetaView sandbox (mLedger, tapNONE);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;
         auto rc = path::RippleCalc::rippleCalculate (
-            lesSandbox,
+            sandbox,
             mSrcAmount,
             mDstAmount,
             mDstAccount,
@@ -703,7 +703,7 @@ int Pathfinder::getPathsOut (
     if (!it.second)
         return it.first->second;
 
-    auto sleAccount = fetch(*mLedger, getAccountRootIndex (account),
+    auto sleAccount = cachedRead(*mLedger, getAccountRootIndex (account),
         getApp().getSLECache());
 
     if (!sleAccount)
@@ -840,7 +840,7 @@ bool Pathfinder::isNoRipple (
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = fetch (*mLedger,
+    auto sleRipple = cachedRead (*mLedger,
         getRippleStateIndex (toAccount, fromAccount, currency),
             getApp().getSLECache());
 
@@ -920,7 +920,7 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto const sleEnd = fetch(
+            auto const sleEnd = cachedRead(
                 *mLedger, getAccountRootIndex (uEndAccount),
                     getApp().getSLECache());
 

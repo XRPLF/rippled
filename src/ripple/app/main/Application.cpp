@@ -1042,7 +1042,7 @@ void ApplicationImp::startNewLedger ()
 
     {
         Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
-        assert (firstLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
+        assert (firstLedger->exists(keylet::account(rootAddress.getAccountID())));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
         firstLedger->getHash(); // updates the hash
@@ -1054,7 +1054,7 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (secondLedger->exists(getAccountRootIndex(rootAddress.getAccountID())));
+        assert (secondLedger->exists(keylet::account(rootAddress.getAccountID())));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
 }
@@ -1310,22 +1310,23 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
-            std::shared_ptr<SHAMap> const& txns = replayLedger->peekTransactionMap();
+            auto const& txns = replayLedger->txMap();
 
             // Get a mutable snapshot of the open ledger
             Ledger::pointer cur = getLedgerMaster().getCurrentLedger();
             cur = std::make_shared <Ledger> (*cur, true);
             assert (!cur->isImmutable());
 
-            for (auto const& item : *txns)
+            for (auto const& item : txns)
             {
                 auto const txn =
-                    replayLedger->getTransaction(item->getTag());
+                    getTransaction(*replayLedger, item->getTag(),
+                        getApp().getMasterTransaction());
                 if (m_journal.info) m_journal.info <<
                     txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                if (! cur->addTransaction(item->getTag(), s))
+                if (! addTransaction(*cur, item->getTag(), s))
                     if (m_journal.warning) m_journal.warning <<
                         "Unable to add transaction " << item->getTag();
                 getApp().getHashRouter().setFlag (item->getTag(), SF_SIGGOOD);

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/test/jtx/owners.h>
 
 namespace ripple {
@@ -33,7 +33,7 @@ owned_count_of(Ledger const& ledger,
         LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(ledger, id, getApp().getSLECache(),
+    forEachItem(ledger, id,
         [&count, type](std::shared_ptr<SLE const> const& sle)
         {
             if (sle->getType() == type)

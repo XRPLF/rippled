@@ -180,11 +180,11 @@ public:
     }
     const void* getDataPtr () const
     {
-        return &mData.front ();
+        return mData.data();
     }
     void* getDataPtr ()
     {
-        return &mData.front ();
+        return mData.data();
     }
     int getLength () const
     {

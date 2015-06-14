@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
@@ -78,13 +79,13 @@ public:
 
         uint256 const offerIndex (getOfferIndex (mTxnAccountID, uOfferSequence));
 
-        SLE::pointer sleOffer (mEngine->view().entryCache (ltOFFER,
-            offerIndex));
+        auto sleOffer = mEngine->view().peek (
+            keylet::offer(offerIndex));
 
         if (sleOffer)
         {
             m_journal.debug << "Trying to cancel offer #" << uOfferSequence;
-            return mEngine->view ().offerDelete (sleOffer);
+            return offerDelete (mEngine->view(), sleOffer);
         }
 
         m_journal.debug << "Offer #" << uOfferSequence << " can't be found.";

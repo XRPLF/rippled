@@ -117,15 +117,15 @@ private:
     {
         uint256 amendment (mTxn.getFieldH256 (sfAmendment));
 
-        auto const index = getLedgerAmendmentIndex ();
+        auto const k = keylet::amendments();
 
-        SLE::pointer amendmentObject (mEngine->view().entryCache (ltAMENDMENTS, index));
+        SLE::pointer amendmentObject =
+            mEngine->view().peek (k);
 
         if (!amendmentObject)
         {
-            amendmentObject = std::make_shared<SLE>(
-                ltAMENDMENTS, index);
-            mEngine->view().entryCreate(amendmentObject);
+            amendmentObject = std::make_shared<SLE>(k);
+            mEngine->view().insert(amendmentObject);
         }
 
         STVector256 amendments =
@@ -137,7 +137,7 @@ private:
 
         amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
-        mEngine->view().entryModify (amendmentObject);
+        mEngine->view().update (amendmentObject);
 
         getApp().getAmendmentTable ().enable (amendment);
 
@@ -149,15 +149,14 @@ private:
 
     TER applyFee ()
     {
-        auto const index = getLedgerFeeIndex ();
+        auto const k = keylet::fees();
 
-        SLE::pointer feeObject = mEngine->view().entryCache (ltFEE_SETTINGS, index);
+        SLE::pointer feeObject = mEngine->view().peek (k);
 
         if (!feeObject)
         {
-            feeObject = std::make_shared<SLE>(
-                ltFEE_SETTINGS, index);
-            mEngine->view().entryCreate(feeObject);
+            feeObject = std::make_shared<SLE>(k);
+            mEngine->view().insert(feeObject);
         }
 
         // VFALCO-FIXME this generates errors
@@ -173,7 +172,7 @@ private:
         feeObject->setFieldU32 (
             sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
 
-        mEngine->view().entryModify (feeObject);
+        mEngine->view().update (feeObject);
 
         // VFALCO-FIXME this generates errors
         // m_journal.trace <<

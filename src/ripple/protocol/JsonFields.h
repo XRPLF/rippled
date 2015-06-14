@@ -32,6 +32,8 @@ namespace jss {
 /* The "StaticString" field names are used instead of string literals to
    optimize the performance of accessing members of Json::Value objects.
 */
+// VFALCO What are these nonsense in/out comments?
+
 JSS ( AL_hit_rate );                // out: GetCounts
 JSS ( Account );                    // in: TransactionSign; field.
 JSS ( Amount );                     // in: TransactionSign; field.
@@ -72,7 +74,7 @@ JSS ( accounts );                   // in: LedgerEntry, Subscribe,
                                     //     handlers/Ledger, Unsubscribe
                                     // out: WalletAccounts
 JSS ( accounts_proposed );          // in: Subscribe, Unsubscribe
-JSS ( action );                     // out: LedgerEntrySet
+JSS ( action );
 JSS ( address );                    // out: PeerImp
 JSS ( affected );                   // out: AcceptedLedgerTx
 JSS ( age );                        // out: UniqueNodeList, NetworkOPs
@@ -232,7 +234,7 @@ JSS ( master_seed_hex );            // out: WalletPropose
 JSS ( max_ledger );                 // in/out: LedgerCleaner
 JSS ( message );                    // error.
 JSS ( meta );                       // out: NetworkOPs, AccountTx*, Tx
-JSS ( metaData );                   // out: LedgerEntrySet, LedgerToJson
+JSS ( metaData );
 JSS ( metadata );                   // out: TransactionEntry
 JSS ( method );                     // RPC
 JSS ( min_count );                  // in: GetCounts
@@ -245,7 +247,6 @@ JSS ( network_ledger );             // out: NetworkOPs
 JSS ( no_ripple );                  // out: AccountLines
 JSS ( no_ripple_peer );             // out: AccountLines
 JSS ( node );                       // in: UnlAdd, UnlDelete
-                                    // out: LedgerEntrySet, LedgerEntry
 JSS ( node_binary );                // out: LedgerEntry
 JSS ( node_hit_rate );              // out: GetCounts
 JSS ( node_read_bytes );            // out: GetCounts
@@ -253,7 +254,7 @@ JSS ( node_reads_hit );             // out: GetCounts
 JSS ( node_reads_total );           // out: GetCounts
 JSS ( node_writes );                // out: GetCounts
 JSS ( node_written_bytes );         // out: GetCounts
-JSS ( nodes );                      // out: LedgerEntrySet, PathState
+JSS ( nodes );                      // out: PathState
 JSS ( obligations );                // out: GatewayBalances
 JSS ( offer );                      // in: LedgerEntry
 JSS ( offers );                     // out: NetworkOPs, AccountOffers, Subscribe
@@ -362,7 +363,7 @@ JSS ( tx_unsigned );                // out: TransactionSign
 JSS ( txn_count );                  // out: NetworkOPs
 JSS ( txs );                        // out: TxHistory
 JSS ( type );                       // in: AccountObjects
-                                    // out: NetworkOPs, LedgerEntrySet
+                                    // out: NetworkOPs
                                     //      paths/Node.cpp, OverlayImpl, Logic
 JSS ( type_hex );                   // out: STPathSet
 JSS ( unl );                        // out: UnlList

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerEntrySet.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>

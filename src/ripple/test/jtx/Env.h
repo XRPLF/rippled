@@ -185,9 +185,8 @@ public:
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
-    // VFALCO NOTE Use Keylet here
     std::shared_ptr<SLE const>
-    le (uint256 const& key) const;
+    le (Keylet const& k) const;
 
     /** Create a JTx from parameters. */
     template <class JsonValue,

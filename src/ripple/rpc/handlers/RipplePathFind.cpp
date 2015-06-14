@@ -281,10 +281,10 @@ ripplePathFind(RippleLineCache::pointer const& cache,
             STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
             saMaxAmount.negate();
 
-            LedgerEntrySet lesSandbox(lpLedger, tapNONE);
+            MetaView sandbox(lpLedger, tapNONE);
 
             auto rc = path::RippleCalc::rippleCalculate(
-                lesSandbox,
+                sandbox,
                 saMaxAmount,            // --> Amount to send is unlimited
                 //     to get an estimate.
                 saDstAmount,            // --> Amount to deliver.
@@ -306,9 +306,9 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                reconstruct(lesSandbox, lpLedger, tapNONE);
+                reconstruct(sandbox, lpLedger, tapNONE);
                 rc = path::RippleCalc::rippleCalculate(
-                    lesSandbox,
+                    sandbox,
                     saMaxAmount,            // --> Amount to send is unlimited
                     //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.

@@ -20,6 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/ledger/LedgerFees.h>
+#include <ripple/ledger/CachedView.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -137,7 +139,9 @@ Json::Value doNoRippleCheck (RPC::Context& context)
 
     auto const accountID = rippleAddress.getAccountID ();
 
-    forEachItemAfter (*ledger, accountID, getApp().getSLECache(),
+    CachedView const view(
+        *ledger, getApp().getSLECache());
+    forEachItemAfter (view, accountID, 
             uint256(), 0, limit,
         [&](std::shared_ptr<SLE const> const& ownedItem)
         {
@@ -146,7 +150,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                 bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
                 bool const bNoRipple = ownedItem->getFieldU32(sfFlags) &
-                   (bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                    (bLow ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;

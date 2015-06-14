@@ -208,7 +208,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto const sleNode = fetch(*lpLedger, uNodeIndex,
+        auto const sleNode = cachedRead(*lpLedger, uNodeIndex,
             getApp().getSLECache());
 
         if (context.params.isMember(jss::binary))

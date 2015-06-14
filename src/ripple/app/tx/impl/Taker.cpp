@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
+#include <ripple/ledger/ViewAPI.h>
 
 namespace ripple {
 
@@ -517,14 +518,16 @@ BasicTaker::do_cross (
 
 std::uint32_t
 Taker::calculateRate (
-    LedgerView& view, AccountID const& issuer, AccountID const& account)
+    View const& view,
+        AccountID const& issuer,
+            AccountID const& account)
 {
     return isXRP (issuer) || (account == issuer)
         ? QUALITY_ONE
         : rippleTransferRate (view, issuer);
 }
 
-Taker::Taker (CrossType cross_type, LedgerView& view, AccountID const& account,
+Taker::Taker (CrossType cross_type, View& view, AccountID const& account,
         Amounts const& offer, std::uint32_t flags, beast::Journal journal)
     : BasicTaker (cross_type, account, offer, Quality(offer), flags,
         calculateRate(view, offer.in.getIssuer(), account),
@@ -580,19 +583,21 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
     offer.consume (view_, order);
 }
 
+// VFALCO This function should take a config parameter
 STAmount
 Taker::get_funds (AccountID const& account, STAmount const& amount) const
 {
-    return funds(view_, account, amount, fhZERO_IF_FROZEN);
+    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN,
+        getConfig());
 }
 
-TER Taker::transfer_xrp (
+TER Taker::transferXRP (
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount)
 {
     if (!isXRP (amount))
-        throw std::logic_error ("Using transfer_xrp with IOU");
+        throw std::logic_error ("Using transferXRP with IOU");
 
     if (from == to)
         return tesSUCCESS;
@@ -601,16 +606,16 @@ TER Taker::transfer_xrp (
     if (amount == zero)
         return tesSUCCESS;
 
-    return view_.transfer_xrp (from, to, amount);
+    return ripple::transferXRP (view_, from, to, amount);
 }
 
-TER Taker::redeem_iou (
+TER Taker::redeemIOU (
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue)
 {
     if (isXRP (amount))
-        throw std::logic_error ("Using redeem_iou with XRP");
+        throw std::logic_error ("Using redeemIOU with XRP");
 
     if (account == issue.account)
         return tesSUCCESS;
@@ -622,23 +627,23 @@ TER Taker::redeem_iou (
     // If we are trying to redeem some amount, then the account
     // must have a credit balance.
     if (get_funds (account, amount) <= zero)
-        throw std::logic_error ("redeem_iou has no funds to redeem");
+        throw std::logic_error ("redeemIOU has no funds to redeem");
 
-    auto ret = view_.redeem_iou (account, amount, issue);
+    auto ret = ripple::redeemIOU (view_, account, amount, issue);
 
     if (get_funds (account, amount) < zero)
-        throw std::logic_error ("redeem_iou redeemed more funds than available");
+        throw std::logic_error ("redeemIOU redeemed more funds than available");
 
     return ret;
 }
 
-TER Taker::issue_iou (
+TER Taker::issueIOU (
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue)
 {
     if (isXRP (amount))
-        throw std::logic_error ("Using issue_iou with XRP");
+        throw std::logic_error ("Using issueIOU with XRP");
 
     if (account == issue.account)
         return tesSUCCESS;
@@ -647,7 +652,7 @@ TER Taker::issue_iou (
     if (amount == zero)
         return tesSUCCESS;
 
-    return view_.issue_iou (account, amount, issue);
+    return ripple::issueIOU (view_, account, amount, issue);
 }
 
 // Performs funds transfers to fill the given offer and adjusts offer.
@@ -664,17 +669,17 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
         assert (!isXRP (flow.order.in));
 
         if(result == tesSUCCESS)
-            result = redeem_iou (account (), flow.issuers.in, flow.issuers.in.issue ());
+            result = redeemIOU (account (), flow.issuers.in, flow.issuers.in.issue ());
 
         if (result == tesSUCCESS)
-            result = issue_iou (offer.owner (), flow.order.in, flow.order.in.issue ());
+            result = issueIOU (offer.owner (), flow.order.in, flow.order.in.issue ());
     }
     else
     {
         assert (isXRP (flow.order.in));
 
         if (result == tesSUCCESS)
-            result = transfer_xrp (account (), offer.owner (), flow.order.in);
+            result = transferXRP (account (), offer.owner (), flow.order.in);
     }
 
     // Now send funds from the account whose offer we're taking
@@ -683,17 +688,17 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
         assert (!isXRP (flow.order.out));
 
         if(result == tesSUCCESS)
-            result = redeem_iou (offer.owner (), flow.issuers.out, flow.issuers.out.issue ());
+            result = redeemIOU (offer.owner (), flow.issuers.out, flow.issuers.out.issue ());
 
         if (result == tesSUCCESS)
-            result = issue_iou (account (), flow.order.out, flow.order.out.issue ());
+            result = issueIOU (account (), flow.order.out, flow.order.out.issue ());
     }
     else
     {
         assert (isXRP (flow.order.out));
 
         if (result == tesSUCCESS)
-            result = transfer_xrp (offer.owner (), account (), flow.order.out);
+            result = transferXRP (offer.owner (), account (), flow.order.out);
     }
 
     if (result == tesSUCCESS)
@@ -718,24 +723,24 @@ Taker::fill (
     if (leg1.owner () != account ())
     {
         if (result == tesSUCCESS)
-            result = redeem_iou (account (), flow1.issuers.in, flow1.issuers.in.issue ());
+            result = redeemIOU (account (), flow1.issuers.in, flow1.issuers.in.issue ());
 
         if (result == tesSUCCESS)
-            result = issue_iou (leg1.owner (), flow1.order.in, flow1.order.in.issue ());
+            result = issueIOU (leg1.owner (), flow1.order.in, flow1.order.in.issue ());
     }
 
     // leg1 to leg2: bridging over XRP
     if (result == tesSUCCESS)
-        result = transfer_xrp (leg1.owner (), leg2.owner (), flow1.order.out);
+        result = transferXRP (leg1.owner (), leg2.owner (), flow1.order.out);
 
     // leg2 to Taker: IOU
     if (leg2.owner () != account ())
     {
         if (result == tesSUCCESS)
-            result = redeem_iou (leg2.owner (), flow2.issuers.out, flow2.issuers.out.issue ());
+            result = redeemIOU (leg2.owner (), flow2.issuers.out, flow2.issuers.out.issue ());
 
         if (result == tesSUCCESS)
-            result = issue_iou (account (), flow2.order.out, flow2.order.out.issue ());
+            result = issueIOU (account (), flow2.order.out, flow2.order.out.issue ());
     }
 
     if (result == tesSUCCESS)

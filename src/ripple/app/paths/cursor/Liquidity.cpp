@@ -25,13 +25,13 @@
 namespace ripple {
 namespace path {
 
-TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
+TER PathCursor::liquidity (MetaView const& lesCheckpoint) const
 {
     TER resultCode = tecPATH_DRY;
     PathCursor pc = *this;
 
     // duplicate
-    reconstruct(rippleCalc_.mActiveLedger, lesCheckpoint);
+    reconstruct(rippleCalc_.metaView, lesCheckpoint);
 
     for (pc.nodeIndex_ = pc.nodeSize(); pc.nodeIndex_--; )
     {
@@ -62,7 +62,7 @@ TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
 
     // Do forward.
     // duplicate
-    reconstruct(rippleCalc_.mActiveLedger, lesCheckpoint);
+    reconstruct(rippleCalc_.metaView, lesCheckpoint);
 
     for (pc.nodeIndex_ = 0; pc.nodeIndex_ < pc.nodeSize(); ++pc.nodeIndex_)
     {

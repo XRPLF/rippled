@@ -71,14 +71,14 @@ fill_seq (Json::Value& jv,
 {
     if (jv.isMember(jss::Sequence))
         return;
+    // VFALCO TODO Use
+    //   parseBase58<AccountID>(jv[jss::Account].asString())
     RippleAddress ra;
     ra.setAccountID(jv[jss::Account].asString());
-    auto const ar = ledger.fetch(
-        getAccountRootIndex(ra.getAccountID()));
-
+    auto const ar = ledger.read(
+        keylet::account(ra.getAccountID()));
     if (!ar)
         return;
-
     jv[jss::Sequence] =
         ar->getFieldU32(sfSequence);
 }

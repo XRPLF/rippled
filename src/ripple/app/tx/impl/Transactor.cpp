@@ -171,7 +171,7 @@ TER Transactor::checkSeq ()
             return terPRE_SEQ;
         }
 
-        if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
+        if (hasTransaction (*mEngine->getLedger (), mTxn.getTransactionID ()))
             return tefALREADY;
 
         m_journal.trace << "applyTransaction: has past sequence number " <<
@@ -259,8 +259,7 @@ TER Transactor::apply ()
         return terResult;
 
     // Find source account
-    mTxnAccount = mEngine->view().entryCache (ltACCOUNT_ROOT,
-        getAccountRootIndex (mTxnAccountID));
+    mTxnAccount = mEngine->view().peek (keylet::account(mTxnAccountID));
 
     calculateFee ();
 
@@ -296,7 +295,7 @@ TER Transactor::apply ()
     if (terResult != tesSUCCESS) return (terResult);
 
     if (mTxnAccount)
-        mEngine->view().entryModify (mTxnAccount);
+        mEngine->view().update (mTxnAccount);
 
     return doApply ();
 }
@@ -363,9 +362,9 @@ getSignerList (
 {
     GetSignerListResult ret;
 
-    uint256 const index = getSignerListIndex (signingForAcctID);
+    auto const k = keylet::signers(signingForAcctID);
     SLE::pointer accountSignersList =
-        engine->view ().entryCache (ltSIGNER_LIST, index);
+        engine->view().peek (k);
 
     // If the signer list doesn't exist the account is not multi-signing.
     if (!accountSignersList)
@@ -474,10 +473,8 @@ checkSigningAccounts (
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        uint256 const signerAccountIndex = getAccountRootIndex (signingAcctID);
-
         SLE::pointer signersAccountRoot =
-            engine->view ().entryCache (ltACCOUNT_ROOT, signerAccountIndex);
+            engine->view().peek (keylet::account(signingAcctID));
 
         if (signingAcctIDFromPubKey == signingAcctID)
         {

@@ -42,9 +42,8 @@ balance::operator()(Env const& env) const
     }
     else
     {
-        auto const sle = env.le(
-            getRippleStateIndex(account_.id(),
-                value_.issue()));
+        auto const sle = env.le(keylet::line(
+            account_.id(), value_.issue()));
         if (none_)
         {
             env.test.expect(! sle);

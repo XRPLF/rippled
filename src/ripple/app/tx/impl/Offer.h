@@ -20,13 +20,11 @@
 #ifndef RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 #define RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/app/ledger/LedgerEntrySet.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/SField.h>
-
 #include <beast/utility/noexcept.h>
-
 #include <ostream>
 #include <stdexcept>
 
@@ -98,7 +96,8 @@ public:
 
     /** Adjusts the offer to indicate that we consumed some (or all) of it. */
     void
-    consume (LedgerView& view, Amounts const& consumed) const
+    consume (View& view,
+        Amounts const& consumed) const
     {
         if (consumed.in > m_amounts.in)
             throw std::logic_error ("can't consume more than is available.");
@@ -112,7 +111,7 @@ public:
         m_entry->setFieldAmount (sfTakerPays, m_amounts.in);
         m_entry->setFieldAmount (sfTakerGets, m_amounts.out);
 
-        view.entryModify (m_entry);
+        view.update (m_entry);
     }
 
     std::string id () const

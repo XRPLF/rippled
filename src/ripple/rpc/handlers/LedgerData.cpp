@@ -75,7 +75,7 @@ Json::Value doLedgerData (RPC::Context& context)
     jvResult[jss::ledger_index] = std::to_string( lpLedger->getLedgerSeq ());
 
     Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
-    SHAMap& map = *(lpLedger->peekAccountStateMap ());
+    auto& map = lpLedger->stateMap();
 
     for (;;)
     {

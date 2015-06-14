@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/ledger/CachedView.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/app/paths/RippleState.h>
@@ -142,46 +144,50 @@ Json::Value doGatewayBalances (RPC::Context& context)
     std::map <AccountID, std::vector <STAmount>> assets;
 
     // Traverse the cold wallet's trust lines
-    forEachItem(*ledger, accountID, getApp().getSLECache(),
-        [&](std::shared_ptr<SLE const> const& sle)
-        {
-            auto rs = RippleState::makeItem (accountID, sle);
-
-            if (!rs)
-                return;
-
-            int balSign = rs->getBalance().signum();
-            if (balSign == 0)
-                return;
-
-            auto const& peer = rs->getAccountIDPeer();
-
-            // Here, a negative balance means the cold wallet owes (normal)
-            // A positive balance means the cold wallet has an asset (unusual)
-
-            if (hotWallets.count (peer) > 0)
+    {
+        CachedView const view(
+            *ledger, getApp().getSLECache());
+        forEachItem(view, accountID, 
+            [&](std::shared_ptr<SLE const> const& sle)
             {
-                // This is a specified hot wallt
-                hotBalances[peer].push_back (-rs->getBalance ());
-            }
-            else if (balSign > 0)
-            {
-                // This is a gateway asset
-                assets[peer].push_back (rs->getBalance ());
-            }
-            else
-            {
-                // normal negative balance, obligation to customer
-                auto& bal = sums[rs->getBalance().getCurrency()];
-                if (bal == zero)
+                auto rs = RippleState::makeItem (accountID, sle);
+
+                if (!rs)
+                    return;
+
+                int balSign = rs->getBalance().signum();
+                if (balSign == 0)
+                    return;
+
+                auto const& peer = rs->getAccountIDPeer();
+
+                // Here, a negative balance means the cold wallet owes (normal)
+                // A positive balance means the cold wallet has an asset (unusual)
+
+                if (hotWallets.count (peer) > 0)
                 {
-                    // This is needed to set the currency code correctly
-                    bal = -rs->getBalance();
+                    // This is a specified hot wallt
+                    hotBalances[peer].push_back (-rs->getBalance ());
+                }
+                else if (balSign > 0)
+                {
+                    // This is a gateway asset
+                    assets[peer].push_back (rs->getBalance ());
                 }
                 else
-                    bal -= rs->getBalance();
-            }
-        });
+                {
+                    // normal negative balance, obligation to customer
+                    auto& bal = sums[rs->getBalance().getCurrency()];
+                    if (bal == zero)
+                    {
+                        // This is needed to set the currency code correctly
+                        bal = -rs->getBalance();
+                    }
+                    else
+                        bal -= rs->getBalance();
+                }
+            });
+    }
 
     if (! sums.empty())
     {

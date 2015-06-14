@@ -74,7 +74,7 @@ make_LedgerConsensus (
         std::uint32_t closeTime, FeeVote& feeVote);
 
 void
-applyTransactions(std::shared_ptr<SHAMap> const& set, Ledger::ref applyLedger,
+applyTransactions(SHAMap const* set, Ledger::ref applyLedger,
                   Ledger::ref checkLedger,
                   CanonicalTXSet& retriableTransactions, bool openLgr);
 

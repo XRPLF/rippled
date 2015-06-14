@@ -51,7 +51,7 @@ LedgerHistory::LedgerHistory (
 bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 {
     assert (ledger && ledger->isImmutable ());
-    assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
+    assert (ledger->stateMap().getHash ().isNonZero ());
 
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
@@ -134,7 +134,7 @@ void
 log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 {
     TransactionMetaSet::pointer metaData;
-    ledger->getTransactionMeta(tx, metaData);
+    getTransactionMeta(*ledger, tx, metaData);
 
     if (metaData != nullptr)
     {
@@ -155,9 +155,9 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
                         uint256 const& tx)
 {
     TransactionMetaSet::pointer validMetaData;
-    validLedger->getTransactionMeta(tx, validMetaData);
+    getTransactionMeta(*validLedger, tx, validMetaData);
     TransactionMetaSet::pointer builtMetaData;
-    builtLedger->getTransactionMeta(tx, builtMetaData);
+    getTransactionMeta(*builtLedger, tx, builtMetaData);
     assert(validMetaData != nullptr || builtMetaData != nullptr);
 
     if (validMetaData != nullptr && builtMetaData != nullptr)
@@ -309,13 +309,13 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
     using SHAMapItemInfo = std::pair<uint256, Blob>;
     std::vector <SHAMapItemInfo> builtTx, validTx;
     // Get built ledger hashes and metadata
-    builtLedger->peekTransactionMap()->visitLeaves(
+    builtLedger->txMap().visitLeaves(
         [&builtTx](std::shared_ptr<SHAMapItem> const& item)
         {
             builtTx.push_back({item->getTag(), item->peekData()});
         });
     // Get valid ledger hashes and metadata
-    validLedger->peekTransactionMap()->visitLeaves(
+    validLedger->txMap().visitLeaves(
         [&validTx](std::shared_ptr<SHAMapItem> const& item)
         {
             validTx.push_back({item->getTag(), item->peekData()});

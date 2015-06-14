@@ -75,7 +75,7 @@ Json::Value doTx (RPC::Context& context)
         {
             std::string meta;
 
-            if (lgr->getMetaHex (txn->getID (), meta))
+            if (getMetaHex (*lgr, txn->getID (), meta))
             {
                 ret[jss::meta] = meta;
                 okay = true;
@@ -85,7 +85,7 @@ Json::Value doTx (RPC::Context& context)
         {
             TransactionMetaSet::pointer txMeta;
 
-            if (lgr->getTransactionMeta (txn->getID (), txMeta))
+            if (getTransactionMeta (*lgr, txn->getID (), txMeta))
             {
                 okay = true;
                 auto meta = txMeta->getJson (0);

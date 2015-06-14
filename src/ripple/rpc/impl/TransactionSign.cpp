@@ -195,7 +195,7 @@ bool TxnSignApiFacade::hasAccountRoot () const
     if (!netOPs_) // Unit testing.
         return true;
     return ledger_->exists(
-        getAccountRootIndex(accountID_));
+        keylet::account(accountID_));
 }
 
 error_code_i acctMatchesPubKey (

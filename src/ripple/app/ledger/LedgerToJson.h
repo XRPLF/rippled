@@ -120,16 +120,16 @@ void fillJson (Object& json, LedgerFill const& fill)
         json[jss::closed] = false;
     }
 
-    auto &transactionMap = ledger.peekTransactionMap();
-    if (transactionMap && (bFull || fill.options & LedgerFill::dumpTxrp))
+    if (ledger.haveTxMap() && (bFull || fill.options & LedgerFill::dumpTxrp))
     {
+        auto const& txMap = ledger.txMap();
         auto&& txns = setArray (json, jss::transactions);
         SHAMapTreeNode::TNType type;
 
         CountedYield count (
             fill.yieldStrategy.transactionYieldCount, fill.yield);
-        for (auto item = transactionMap->peekFirstItem (type); item;
-             item = transactionMap->peekNextItem (item->getTag (), type))
+        for (auto item = txMap.peekFirstItem (type); item;
+             item = txMap.peekNextItem (item->getTag (), type))
         {
             count.yield();
             if (bFull || bExpand)
@@ -187,9 +187,9 @@ void fillJson (Object& json, LedgerFill const& fill)
         }
     }
 
-    auto& accountStateMap = ledger.peekAccountStateMap();
-    if (accountStateMap && (bFull || fill.options & LedgerFill::dumpState))
+    if (ledger.haveStateMap() && (bFull || fill.options & LedgerFill::dumpState))
     {
+        auto const& stateMap = ledger.stateMap();
         auto&& array = Json::setArray (json, jss::accountState);
         RPC::CountedYield count (
             fill.yieldStrategy.accountYieldCount, fill.yield);
@@ -197,7 +197,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         {
              if (bBinary)
              {
-                 ledger.peekAccountStateMap()->visitLeaves (
+                 stateMap.visitLeaves (
                      [&array] (std::shared_ptr<SHAMapItem> const& smi)
                      {
                          auto&& obj = appendObject (array);
@@ -217,7 +217,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         }
         else
         {
-            accountStateMap->visitLeaves(
+            stateMap.visitLeaves(
                 [&array, &count] (std::shared_ptr<SHAMapItem> const& smi)
                 {
                     count.yield();

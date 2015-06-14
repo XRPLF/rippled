@@ -23,7 +23,8 @@
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/tx/TransactionMeta.h>
-#include <ripple/app/ledger/SLECache.h>
+#include <ripple/ledger/SLECache.h>
+#include <ripple/ledger/View.h>
 #include <ripple/app/misc/AccountState.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
@@ -37,6 +38,7 @@
 namespace ripple {
 
 class Job;
+class TransactionMaster;
 
 class SqliteStatement;
 
@@ -69,6 +71,7 @@ class SqliteStatement;
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
+    , public BasicView
     , public CountedObject <Ledger>
 {
 public:
@@ -107,74 +110,49 @@ public:
     ~Ledger();
 
     //--------------------------------------------------------------------------
+    //
+    // BasicView
+    //
+    //--------------------------------------------------------------------------
 
-    /** Returns `true` if a ledger entry exists. */
     bool
-    exists (uint256 const& key) const;
+    exists (Keylet const& k) const override;
 
-    /** Return the state item for a key.
-        The item may not be modified.
-        @return The serialized ledger entry or empty
-                if the key does not exist.
-    */
-    std::shared_ptr<SHAMapItem const>
-    find (uint256 const& key) const;
+    boost::optional<uint256>
+    succ (uint256 const& key, boost::optional<
+        uint256> last = boost::none) const override;
 
-    /** Add a new state SLE.
-        Effects:
-            assert if the key already exists.
-            The key in the state map is associated
-                with an unflattened copy of the SLE.
-        @note The key is taken from the SLE.
-    */
+    std::shared_ptr<SLE const>
+    read (Keylet const& k) const override;
+
+    bool
+    unchecked_erase (uint256 const& key) override;
+
     void
-    insert (SLE const& sle);
+    unchecked_insert (std::shared_ptr<SLE>&& sle) override;
 
-    /** Fetch a modifiable state SLE.
-        Effects:
-            Gives the caller ownership of an
-                unflattened copy of the SLE.
-        @param type An optional LedgerEntryType. If type is
-                    engaged and the SLE's type does not match,
-                    then boost::none is returned.
-        @return `empty` if the key is not present
-    */
-    std::shared_ptr<SLE>
-    fetch (uint256 const& key, boost::optional<
-        LedgerEntryType> type = boost::none) const;
+    void
+    unchecked_replace (std::shared_ptr<SLE>&& sle) override;
 
-    std::shared_ptr<SLE>
-    fetch (Keylet const& k) const
+    BasicView const*
+    parent() const override
     {
-        return fetch(k.key, k.type);
+        return nullptr;
     }
 
-    // DEPRECATED
-    // Retrieve immutable ledger entry
-    SLE::pointer getSLEi (uint256 const& uHash) const;
-
-    /** Replace an existing state SLE.
-        Effects:
-            assert if key does not already exist.
-            The previous flattened SLE associated with
-                the key is released.
-            The key in the state map is associated
-                with a flattened copy of the SLE.
-        @note The key is taken from the SLE
-    */
-    void
-    replace (SLE const& sle);
-
-    /** Remove an state SLE.
-        Effects:
-            assert if the key does not exist.
-            The flattened SLE associated with the key
-                is released from the state map.
-    */
-    void
-    erase (uint256 const& key);
-
     //--------------------------------------------------------------------------
+
+    /** Hint that the contents have changed.
+        Thread Safety:
+            Not thread safe
+        Effects:
+            The next call to getHash will return updated hashes
+    */
+    void
+    touch()
+    {
+        mValidHash = false;
+    }
 
     void setClosed ()
     {
@@ -193,6 +171,7 @@ public:
 
     void setImmutable ();
 
+    // VFALCO Rename to closed
     bool isClosed () const
     {
         return mClosed;
@@ -215,8 +194,8 @@ public:
 
     void setFull ()
     {
-        mTransactionMap->setLedgerSeq (seq_);
-        mAccountStateMap->setLedgerSeq (seq_);
+        txMap_->setLedgerSeq (seq_);
+        stateMap_->setLedgerSeq (seq_);
     }
 
     // ledger signature operations
@@ -302,15 +281,43 @@ public:
 
     boost::posix_time::ptime getCloseTime () const;
 
-    // low level functions
-    std::shared_ptr<SHAMap> const& peekTransactionMap () const
+    // VFALCO NOTE We should ensure that there are
+    //             always valid state and tx maps
+    //             and get rid of these functions.
+    bool
+    haveStateMap() const
     {
-        return mTransactionMap;
+        return stateMap_ != nullptr;
     }
 
-    std::shared_ptr<SHAMap> const& peekAccountStateMap () const
+    bool
+    haveTxMap() const
     {
-        return mAccountStateMap;
+        return txMap_ != nullptr;
+    }
+
+    SHAMap const&
+    stateMap() const
+    {
+        return *stateMap_;
+    }
+
+    SHAMap&
+    stateMap()
+    {
+        return *stateMap_;
+    }
+
+    SHAMap const&
+    txMap() const
+    {
+        return *txMap_;
+    }
+
+    SHAMap&
+    txMap()
+    {
+        return *txMap_;
     }
 
     // returns false on error
@@ -322,34 +329,7 @@ public:
     bool isAcquiringTx (void) const;
     bool isAcquiringAS (void) const;
 
-    // Transaction Functions
-    bool addTransaction (uint256 const& id, Serializer const& txn);
-
-    bool addTransaction (
-        uint256 const& id, Serializer const& txn, Serializer const& metaData);
-
-    bool hasTransaction (uint256 const& TransID) const
-    {
-        return mTransactionMap->hasItem (TransID);
-    }
-
-    Transaction::pointer getTransaction (uint256 const& transID) const;
-
-    bool getTransaction (
-        uint256 const& transID,
-        Transaction::pointer & txn, TransactionMetaSet::pointer & txMeta) const;
-
-    bool getTransactionMeta (
-        uint256 const& transID, TransactionMetaSet::pointer & txMeta) const;
-
-    bool getMetaHex (uint256 const& transID, std::string & hex) const;
-
-    static STTx::pointer getSTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType);
-
-    STTx::pointer getSMTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
-        TransactionMetaSet::pointer & txMeta) const;
+    //--------------------------------------------------------------------------
 
     void updateSkipList ();
 
@@ -366,22 +346,6 @@ public:
 
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
-
-    // Directory functions
-    // Directories are doubly linked lists of nodes.
-
-    // Given a directory root and and index compute the index of a node.
-    static void ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
-
-    //
-    // Quality
-    //
-
-    static void qualityDirDescriber (
-        SLE::ref, bool,
-        Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
-        Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-        const std::uint64_t & uRate);
 
     std::uint32_t getReferenceFeeUnits() const
     {
@@ -439,6 +403,9 @@ private:
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
 
+    std::shared_ptr<SLE>
+    peek (Keylet const& k) const;
+
     void
     updateHash();
 
@@ -474,8 +441,8 @@ private:
     bool mAccepted = false;
     bool mImmutable;
 
-    std::shared_ptr<SHAMap> mTransactionMap;
-    std::shared_ptr<SHAMap> mAccountStateMap;
+    std::shared_ptr<SHAMap> txMap_;
+    std::shared_ptr<SHAMap> stateMap_;
 
     // Protects fee variables
     std::mutex mutable mutex_;
@@ -486,9 +453,9 @@ private:
     // Fee units for the reference transaction
     std::uint32_t mutable mReferenceFeeUnits = 0;
 
-    // Reserve base in fee units
+    // Reserve base in drops
     std::uint32_t mutable mReserveBase = 0;
-    // Reserve increment in fee units
+    // Reserve increment in drops
     std::uint32_t mutable mReserveIncrement = 0;
 };
 
@@ -512,24 +479,8 @@ loadLedgerHelper(std::string const& sqlSuffix);
     @return `empty` if the key is not present
 */
 std::shared_ptr<SLE const>
-fetch (Ledger const& ledger, uint256 const& key, SLECache& cache,
+cachedRead (Ledger const& ledger, uint256 const& key, SLECache& cache,
     boost::optional<LedgerEntryType> type = boost::none);
-
-/** Iterate all items in an account's owner directory. */
-void
-forEachItem (Ledger const& ledger, AccountID const& id, SLECache& cache,
-    std::function<void (std::shared_ptr<SLE const> const&)> f);
-
-/** Iterate all items after an item in an owner directory.
-    @param after The key of the item to start after
-    @param hint The directory page containing `after`
-    @param limit The maximum number of items to return
-    @return `false` if the iteration failed
-*/
-bool
-forEachItemAfter (Ledger const& ledger, AccountID const& id, SLECache& cache,
-    uint256 const& after, std::uint64_t const hint, unsigned int limit,
-        std::function <bool (std::shared_ptr<SLE const> const&)>);
 
 // DEPRECATED
 // VFALCO This could return by value
@@ -570,6 +521,60 @@ getCandidateLedger (LedgerIndex requested)
 {
     return (requested + 255) & (~255);
 }
+
+//------------------------------------------------------------------------------
+
+// VFALCO Should this take Slice? Should id be called key or hash? Or txhash?
+bool addTransaction (Ledger& ledger,
+        uint256 const& id, Serializer const& txn);
+
+bool addTransaction (Ledger& ledger,
+    uint256 const& id, Serializer const& txn, Serializer const& metaData);
+
+inline
+bool hasTransaction (Ledger const& ledger,
+    uint256 const& TransID)
+{
+    return ledger.txMap().hasItem (TransID);
+}
+
+// VFALCO NOTE This is called from only one place
+Transaction::pointer
+getTransaction (Ledger const& ledger,
+    uint256 const& transID, TransactionMaster& cache);
+
+// VFALCO NOTE This is called from only one place
+bool
+getTransaction (Ledger const& ledger,
+    uint256 const& transID, Transaction::pointer & txn,
+        TransactionMetaSet::pointer & txMeta,
+            TransactionMaster& cache);
+
+bool
+getTransactionMeta (Ledger const&,
+    uint256 const& transID,
+        TransactionMetaSet::pointer & txMeta);
+
+// VFALCO NOTE This is called from only one place
+bool
+getMetaHex (Ledger const& ledger,
+    uint256 const& transID, std::string & hex);
+
+void
+ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
+
+// VFALCO NOTE This is referenced from only one place
+void
+qualityDirDescriber (
+    SLE::ref, bool,
+    Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
+    Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
+    const std::uint64_t & uRate);
+
+//------------------------------------------------------------------------------
+
+std::uint32_t
+getParentCloseTimeNC (BasicView const& view);
 
 } // ripple
 

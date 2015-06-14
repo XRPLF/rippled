@@ -19,6 +19,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/TxFormats.h>
@@ -106,7 +107,7 @@ std::pair<TER, bool> TestLedger::applyTransaction (STTx const& tx, bool check)
 
     // Check for the transaction in the closed ledger.
     bool const foundTx =
-        lastClosedLedger_->hasTransaction(tx.getTransactionID());
+        hasTransaction(*lastClosedLedger_, tx.getTransactionID());
     suite_.expect (r.second == foundTx);
 
     return {r.first, r.second && foundTx};
@@ -378,7 +379,7 @@ std::vector<RippleState::pointer> getRippleStates (
 {
     std::vector <RippleState::pointer> states;
 
-    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+    forEachItem(*ledger.openLedger(), acct.getID(),
         [&states, &acct, &peer](
             std::shared_ptr<SLE const> const& sleCur)
         {
@@ -402,7 +403,7 @@ getOffersOnAccount (TestLedger& ledger, UserAccount const& acct)
 {
     std::vector <std::shared_ptr<SLE const>> offers;
 
-    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+    forEachItem(*ledger.openLedger(), acct.getID(),
         [&offers, &acct](
             std::shared_ptr<SLE const> const& sleCur)
         {
@@ -418,7 +419,7 @@ getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct)
 {
     std::vector <std::shared_ptr<SLE const>> offers;
 
-    forEachItem(*ledger.openLedger(), acct.getID(), getApp().getSLECache(),
+    forEachItem(*ledger.openLedger(), acct.getID(),
         [&offers, &acct](
             std::shared_ptr<SLE const> const& sleCur)
         {
