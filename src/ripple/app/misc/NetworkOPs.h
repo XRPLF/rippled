@@ -39,7 +39,6 @@ namespace ripple {
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
-class LedgerConsensus;
 class LedgerMaster;
 
 // This is the primary interface into the "client" portion of the program.
@@ -117,8 +116,6 @@ public:
     virtual std::uint32_t getNetworkTimeNC () const = 0;
     // Our best estimate of current ledger close time
     virtual std::uint32_t getCloseTimeNC () const = 0;
-    // Use *only* to timestamp our own validation
-    virtual std::uint32_t getValidationTimeNC () = 0;
     virtual void closeTimeOffset (int) = 0;
     virtual boost::posix_time::ptime getNetworkTimePT (int& offset) const = 0;
     virtual std::uint32_t getLedgerID (uint256 const& hash) = 0;
@@ -145,9 +142,6 @@ public:
     virtual bool isValidated (Ledger::ref l) = 0;
     virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
     virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
-
-    virtual STValidation::ref getLastValidation () = 0;
-    virtual void setLastValidation (STValidation::ref v) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -217,9 +211,6 @@ public:
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
 
-    virtual void takePosition (int seq,
-                               std::shared_ptr<SHAMap> const& position) = 0;
-
     virtual void mapComplete (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map) = 0;
 
@@ -241,20 +232,16 @@ public:
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
 
-    virtual void newLCL (
-        int proposers, int convergeTime, uint256 const& ledgerHash) = 0;
     // VFALCO TODO rename to setNeedNetworkLedger
     virtual void needNetworkLedger () = 0;
     virtual void clearNeedNetworkLedger () = 0;
     virtual bool isNeedNetworkLedger () = 0;
     virtual bool isFull () = 0;
-    virtual void setProposing (bool isProposing, bool isValidating) = 0;
-    virtual bool isProposing () = 0;
-    virtual bool isValidating () = 0;
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
-    virtual std::uint32_t getLastCloseTime () = 0;
+
+    // FIXME(NIKB): Remove the need for this function
     virtual void setLastCloseTime (std::uint32_t t) = 0;
 
     virtual Json::Value getConsensusInfo () = 0;
@@ -269,12 +256,6 @@ public:
         proposing being accepted.
     */
     virtual std::uint32_t acceptLedger () = 0;
-
-    using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;
-    virtual Proposals& peekStoredProposals () = 0;
-
-    virtual void storeProposal (LedgerProposal::ref proposal,
-        RippleAddress const& peerPublic) = 0;
 
     virtual uint256 getConsensusLCL () = 0;
 
