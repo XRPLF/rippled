@@ -346,6 +346,7 @@ public:
     {
         auto tid = (id == std::thread::id()) ? std::this_thread::get_id() : id;
 
+        ScopedLock lock (m_mutex);
         auto i = m_threadIds.find (tid);
         return (i == m_threadIds.end()) ? nullptr : i->second;
     }
