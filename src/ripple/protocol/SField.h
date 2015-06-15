@@ -381,6 +381,7 @@ extern SField const sfLowLimit;
 extern SField const sfHighLimit;
 extern SField const sfFee;
 extern SField const sfSendMax;
+extern SField const sfDeliverMin;
 
 // currency amount (uncommon)
 extern SField const sfMinimumOffer;

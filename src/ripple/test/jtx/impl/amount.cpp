@@ -52,6 +52,24 @@ PrettyAmount::operator AnyAmount() const
     return { amount_ };
 }
 
+template <typename T>
+static
+std::string
+to_places(const T d, std::uint8_t places)
+{
+    assert(places <= std::numeric_limits<T>::digits10);
+
+    std::ostringstream oss;
+    oss << std::setprecision(places) << std::fixed << d;
+
+    std::string out = oss.str();
+    out.erase(out.find_last_not_of('0') + 1, std::string::npos);
+    if (out.back() == '.')
+        out.pop_back();
+
+    return out;
+}
+
 std::ostream&
 operator<< (std::ostream& os,
     PrettyAmount const& amount)
@@ -72,11 +90,10 @@ operator<< (std::ostream& os,
         }
         auto const d = double(n) /
             dropsPerXRP<int>::value;
-        os.precision(6);
         if (amount.value().negative())
-            os << "-" <<  d << " XRP";
-        else
-            os << d << " XRP";
+            os << "-";
+
+        os << to_places(d, 6) << " XRP";
     }
     else
     {
