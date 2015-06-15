@@ -160,15 +160,16 @@ SField const sfTakerGetsCurrency = make::one(&sfTakerGetsCurrency, STI_HASH160, 
 SField const sfTakerGetsIssuer   = make::one(&sfTakerGetsIssuer,   STI_HASH160, 4, "TakerGetsIssuer");
 
 // currency amount (common)
-SField const sfAmount      = make::one(&sfAmount,      STI_AMOUNT, 1, "Amount");
-SField const sfBalance     = make::one(&sfBalance,     STI_AMOUNT, 2, "Balance");
-SField const sfLimitAmount = make::one(&sfLimitAmount, STI_AMOUNT, 3, "LimitAmount");
-SField const sfTakerPays   = make::one(&sfTakerPays,   STI_AMOUNT, 4, "TakerPays");
-SField const sfTakerGets   = make::one(&sfTakerGets,   STI_AMOUNT, 5, "TakerGets");
-SField const sfLowLimit    = make::one(&sfLowLimit,    STI_AMOUNT, 6, "LowLimit");
-SField const sfHighLimit   = make::one(&sfHighLimit,   STI_AMOUNT, 7, "HighLimit");
-SField const sfFee         = make::one(&sfFee,         STI_AMOUNT, 8, "Fee");
-SField const sfSendMax     = make::one(&sfSendMax,     STI_AMOUNT, 9, "SendMax");
+SField const sfAmount      = make::one(&sfAmount,      STI_AMOUNT,  1, "Amount");
+SField const sfBalance     = make::one(&sfBalance,     STI_AMOUNT,  2, "Balance");
+SField const sfLimitAmount = make::one(&sfLimitAmount, STI_AMOUNT,  3, "LimitAmount");
+SField const sfTakerPays   = make::one(&sfTakerPays,   STI_AMOUNT,  4, "TakerPays");
+SField const sfTakerGets   = make::one(&sfTakerGets,   STI_AMOUNT,  5, "TakerGets");
+SField const sfLowLimit    = make::one(&sfLowLimit,    STI_AMOUNT,  6, "LowLimit");
+SField const sfHighLimit   = make::one(&sfHighLimit,   STI_AMOUNT,  7, "HighLimit");
+SField const sfFee         = make::one(&sfFee,         STI_AMOUNT,  8, "Fee");
+SField const sfSendMax     = make::one(&sfSendMax,     STI_AMOUNT,  9, "SendMax");
+SField const sfDeliverMin  = make::one(&sfDeliverMin,  STI_AMOUNT, 10, "DeliverMin");
 
 // currency amount (uncommon)
 SField const sfMinimumOffer    = make::one(&sfMinimumOffer,    STI_AMOUNT, 16, "MinimumOffer");

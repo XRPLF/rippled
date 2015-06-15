@@ -172,7 +172,7 @@ struct XRP_t
                 std::int64_t, std::uint64_t>{v} *
                     dropsPerXRP<T>::value };
     }
-      
+
     PrettyAmount
     operator()(double v) const
     {

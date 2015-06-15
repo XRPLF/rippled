@@ -22,6 +22,7 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 
@@ -44,6 +45,12 @@ Payment::preCheck ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
+    bool const deliverMin =
+#if RIPPLE_ENABLE_DELIVERMIN
+#else
+        (view().flags() & tapENABLE_TESTING) &&
+#endif
+        mTxn.isFieldPresent(sfDeliverMin);
 
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
 
@@ -138,6 +145,45 @@ Payment::preCheck ()
             "No ripple direct specified for XRP to XRP.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
+    if (deliverMin)
+    {
+    #if ! RIPPLE_ENABLE_DELIVERMIN
+        if (! (view().flags() & tapENABLE_TESTING))
+            return temMALFORMED;
+    #endif
+
+        if (! partialPaymentAllowed)
+        {
+            j_.trace << "Malformed transaction: Partial payment not "
+                "specified for " << jss::DeliverMin.c_str() << ".";
+            return temBAD_AMOUNT;
+        }
+
+        auto const dMin = mTxn.getFieldAmount(sfDeliverMin);
+        if (!isLegalNet(dMin) || dMin <= zero)
+        {
+            j_.trace << "Malformed transaction: Invalid " <<
+                jss::DeliverMin.c_str() << " amount. " <<
+                    dMin.getFullText();
+            return temBAD_AMOUNT;
+        }
+        if (dMin.issue() != saDstAmount.issue())
+        {
+            j_.trace <<  "Malformed transaction: Dst issue differs "
+                "from " << jss::DeliverMin.c_str() << ". " <<
+                    dMin.getFullText();
+            return temBAD_AMOUNT;
+        }
+        if (bMax &&
+            (dMin.getCurrency() == maxSourceAmount.getCurrency() &&
+                dMin > maxSourceAmount))
+        {
+            j_.trace << "Malformed transaction: SendMax less than " <<
+                jss::DeliverMin.c_str() << ". " <<
+                    dMin.getFullText();
+            return temBAD_AMOUNT;
+        }
+    }
 
     return Transactor::preCheck ();
 }
@@ -152,6 +198,13 @@ Payment::doApply ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
+    bool const deliverMin =
+#if RIPPLE_ENABLE_DELIVERMIN
+#else
+        (view().flags() & tapENABLE_TESTING) &&
+#endif
+        mTxn.isFieldPresent(sfDeliverMin);
+
     AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
     STAmount maxSourceAmount;
@@ -291,8 +344,15 @@ Payment::doApply ()
 
                 // TODO: is this right?  If the amount is the correct amount, was
                 // the delivered amount previously set?
-                if (rc.result () == tesSUCCESS && rc.actualAmountOut != saDstAmount)
-                    ctx_.deliverAmount (rc.actualAmountOut);
+                if (rc.result () == tesSUCCESS &&
+                    rc.actualAmountOut != saDstAmount)
+                {
+                    if (deliverMin && rc.actualAmountOut <
+                        mTxn.getFieldAmount (sfDeliverMin))
+                        rc.setResult (tecPATH_PARTIAL);
+                    else
+                        ctx_.deliverAmount (rc.actualAmountOut);
+                }
 
                 terResult = rc.result ();
             }

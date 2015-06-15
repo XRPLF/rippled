@@ -192,4 +192,11 @@
 #define RIPPLE_USE_OPENSSL 0
 #endif
 
+/** Config: RIPPLE_ENABLE_DELIVERMIN
+    Enables processing of delivermin in transactions
+*/
+#ifndef RIPPLE_ENABLE_DELIVERMIN
+#define RIPPLE_ENABLE_DELIVERMIN 0
+#endif
+
 #endif
