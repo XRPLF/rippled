@@ -117,6 +117,13 @@ LICENSE file for more details.
 * Ripple Wiki - https://ripple.com/wiki/
 * Ripple Primer - https://ripple.com/ripple_primer.pdf
 * Ripple Primer (Market Making) - https://ripple.com/ripple-mm.pdf
-* Ripple Gateway Primer - https://ripple.com/ripple-gateways.pdf  
+* Ripple Gateway Primer - https://ripple.com/ripple-gateways.pdf
 * Consensus - https://wiki.ripple.com/Consensus
 
+- - -
+
+Copyright © 2015, Ripple Labs. All rights reserved.
+
+Portions of this document, including but not limited to the Ripple logo, images
+and image templates are the property of Ripple Labs and cannot be copied or
+used without permission.
