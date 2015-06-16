@@ -152,23 +152,25 @@ public:
         @note This can cause NodeStore reads
     */
     std::shared_ptr<SHAMapItem const> const&
-    fetch (uint256 const& key) const;
+        fetch (uint256 const& key) const;
 
     // VFALCO NOTE Is "save a copy" the in imperative or indicative mood?
     // save a copy if you only need a temporary
-    std::shared_ptr<SHAMapItem const> peekItem (uint256 const& id) const;
-    std::shared_ptr<SHAMapItem const> peekItem (uint256 const& id, uint256 & hash) const;
-    std::shared_ptr<SHAMapItem const>
+    std::shared_ptr<SHAMapItem const> const& peekItem (uint256 const& id) const;
+    std::shared_ptr<SHAMapItem const> const&
+        peekItem (uint256 const& id, uint256 & hash) const;
+    std::shared_ptr<SHAMapItem const> const&
         peekItem (uint256 const& id, SHAMapTreeNode::TNType & type) const;
 
     // traverse functions
-    std::shared_ptr<SHAMapItem const> peekFirstItem () const;
-    std::shared_ptr<SHAMapItem const> peekFirstItem (SHAMapTreeNode::TNType & type) const;
-    std::shared_ptr<SHAMapItem const> peekLastItem () const;
-    std::shared_ptr<SHAMapItem const> peekNextItem (uint256 const& ) const;
-    std::shared_ptr<SHAMapItem const>
+    std::shared_ptr<SHAMapItem const> const& peekFirstItem () const;
+    std::shared_ptr<SHAMapItem const> const&
+        peekFirstItem (SHAMapTreeNode::TNType & type) const;
+    std::shared_ptr<SHAMapItem const> const& peekLastItem () const;
+    std::shared_ptr<SHAMapItem const> const& peekNextItem (uint256 const& ) const;
+    std::shared_ptr<SHAMapItem const> const&
         peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type) const;
-    std::shared_ptr<SHAMapItem const> peekPrevItem (uint256 const& ) const;
+    std::shared_ptr<SHAMapItem const> const& peekPrevItem (uint256 const& ) const;
 
     void visitNodes (std::function<bool (SHAMapAbstractNode&)> const&) const;
     void
@@ -293,7 +295,7 @@ private:
         descendNoStore (std::shared_ptr<SHAMapInnerNode> const&, int branch) const;
 
     /** If there is only one leaf below this node, get its contents */
-    std::shared_ptr<SHAMapItem const> onlyBelow (SHAMapAbstractNode*) const;
+    std::shared_ptr<SHAMapItem const> const& onlyBelow (SHAMapAbstractNode*) const;
 
     bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash) const;
     bool hasLeafNode (uint256 const& tag, uint256 const& hash) const;

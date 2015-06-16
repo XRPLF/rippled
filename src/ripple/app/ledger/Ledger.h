@@ -117,7 +117,7 @@ public:
         @return The serialized ledger entry or empty
                 if the key does not exist.
     */
-    std::shared_ptr<SHAMapItem const>
+    std::shared_ptr<SHAMapItem const> const&
     find (uint256 const& key) const;
 
     /** Add a new state SLE.

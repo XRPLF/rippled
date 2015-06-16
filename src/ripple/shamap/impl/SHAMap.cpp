@@ -468,7 +468,9 @@ SHAMap::lastBelow (SHAMapAbstractNode* node) const
     while (true);
 }
 
-std::shared_ptr<SHAMapItem const>
+static const std::shared_ptr<SHAMapItem const> no_item;
+
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::onlyBelow (SHAMapAbstractNode* node) const
 {
     // If there is only one item below this node, return it
@@ -482,7 +484,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
             if (!inner->isEmptyBranch (i))
             {
                 if (nextNode)
-                    return std::shared_ptr<SHAMapItem const> ();
+                    return no_item;
 
                 nextNode = descendThrow (inner, i);
             }
@@ -491,7 +493,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
         if (!nextNode)
         {
             assert (false);
-            return std::shared_ptr<SHAMapItem const> ();
+            return no_item;
         }
 
         node = nextNode;
@@ -518,9 +520,8 @@ SHAMap::fetch (uint256 const& key) const
     return leaf->peekItem();
 }
 
-static const std::shared_ptr<SHAMapItem const> no_item;
-
-std::shared_ptr<SHAMapItem const> SHAMap::peekFirstItem () const
+std::shared_ptr<SHAMapItem const> const&
+SHAMap::peekFirstItem () const
 {
     SHAMapTreeNode* node = firstBelow (root_.get ());
 
@@ -530,7 +531,7 @@ std::shared_ptr<SHAMapItem const> SHAMap::peekFirstItem () const
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type) const
 {
     SHAMapTreeNode* node = firstBelow (root_.get ());
@@ -542,7 +543,8 @@ SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type) const
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem const> SHAMap::peekLastItem () const
+std::shared_ptr<SHAMapItem const> const&
+SHAMap::peekLastItem () const
 {
     SHAMapTreeNode* node = lastBelow (root_.get ());
 
@@ -552,13 +554,14 @@ std::shared_ptr<SHAMapItem const> SHAMap::peekLastItem () const
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem const> SHAMap::peekNextItem (uint256 const& id) const
+std::shared_ptr<SHAMapItem const> const&
+SHAMap::peekNextItem (uint256 const& id) const
 {
     SHAMapTreeNode::TNType type;
     return peekNextItem (id, type);
 }
 
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 {
     // Get a pointer to the next item in the tree after a given item - item need not be in tree
@@ -604,7 +607,7 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 }
 
 // Get a pointer to the previous item in the tree after a given item - item need not be in tree
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekPrevItem (uint256 const& id) const
 {
     auto stack = getStack (id, true);
@@ -640,7 +643,8 @@ SHAMap::peekPrevItem (uint256 const& id) const
     return no_item;
 }
 
-std::shared_ptr<SHAMapItem const> SHAMap::peekItem (uint256 const& id) const
+std::shared_ptr<SHAMapItem const> const&
+SHAMap::peekItem (uint256 const& id) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
 
@@ -650,7 +654,7 @@ std::shared_ptr<SHAMapItem const> SHAMap::peekItem (uint256 const& id) const
     return leaf->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
@@ -662,7 +666,7 @@ SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
     return leaf->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekItem (uint256 const& id, uint256& hash) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
