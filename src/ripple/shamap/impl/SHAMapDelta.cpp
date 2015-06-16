@@ -31,8 +31,8 @@ namespace ripple {
 // synchronizing matching branches too.)
 
 bool SHAMap::walkBranch (SHAMapAbstractNode* node,
-                         std::shared_ptr<SHAMapItem> const& otherMapItem, bool isFirstMap,
-                         Delta& differences, int& maxCount) const
+                         std::shared_ptr<SHAMapItem const> const& otherMapItem,
+                         bool isFirstMap,Delta& differences, int& maxCount) const
 {
     // Walk a branch of a SHAMap that's matched by an empty branch or single item in the other map
     std::stack <SHAMapAbstractNode*, std::vector<SHAMapAbstractNode*>> nodeStack;
@@ -63,10 +63,10 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
                 // unmatched
                 if (isFirstMap)
                     differences.insert (std::make_pair (item->getTag (),
-                                      DeltaRef (item, std::shared_ptr<SHAMapItem> ())));
+                        DeltaRef (item, std::shared_ptr<SHAMapItem const> ())));
                 else
                     differences.insert (std::make_pair (item->getTag (),
-                                      DeltaRef (std::shared_ptr<SHAMapItem> (), item)));
+                        DeltaRef (std::shared_ptr<SHAMapItem const> (), item)));
 
                 if (--maxCount <= 0)
                     return false;
@@ -98,13 +98,12 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
     {
         // otherMapItem was unmatched, must add
         if (isFirstMap) // this is first map, so other item is from second
-            differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                DeltaRef (std::shared_ptr<SHAMapItem>(),
-                                                          otherMapItem)));
+            differences.insert(std::make_pair(otherMapItem->getTag (),
+                                              DeltaRef(std::shared_ptr<SHAMapItem const>(),
+                                                       otherMapItem)));
         else
-            differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                DeltaRef (otherMapItem,
-                                                      std::shared_ptr<SHAMapItem> ())));
+            differences.insert(std::make_pair(otherMapItem->getTag (),
+                DeltaRef(otherMapItem, std::shared_ptr<SHAMapItem const>())));
 
         if (--maxCount <= 0)
             return false;
@@ -163,13 +162,12 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
             {
                 differences.insert (std::make_pair(ours->peekItem()->getTag (),
                                                    DeltaRef(ours->peekItem(),
-                                                   std::shared_ptr<SHAMapItem> ())));
+                                                   std::shared_ptr<SHAMapItem const>())));
                 if (--maxCount <= 0)
                     return false;
 
                 differences.insert(std::make_pair(other->peekItem()->getTag (),
-                                                  DeltaRef(std::shared_ptr<SHAMapItem>(),
-                                                  other->peekItem ())));
+                    DeltaRef(std::shared_ptr<SHAMapItem const>(), other->peekItem ())));
                 if (--maxCount <= 0)
                     return false;
             }
@@ -202,7 +200,7 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
                         // We have a branch, the other tree does not
                         SHAMapAbstractNode* iNode = descendThrow (ours, i);
                         if (!walkBranch (iNode,
-                                         std::shared_ptr<SHAMapItem> (), true,
+                                         std::shared_ptr<SHAMapItem const> (), true,
                                          differences, maxCount))
                             return false;
                     }
@@ -212,7 +210,7 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
                         SHAMapAbstractNode* iNode =
                             otherMap->descendThrow(other, i);
                         if (!otherMap->walkBranch (iNode,
-                                                   std::shared_ptr<SHAMapItem>(),
+                                                   std::shared_ptr<SHAMapItem const>(),
                                                    false, differences, maxCount))
                             return false;
                     }

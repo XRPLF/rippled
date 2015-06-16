@@ -55,7 +55,7 @@ SHAMapTreeNode::clone(std::uint32_t seq) const
     return std::make_shared<SHAMapTreeNode>(mItem, mType, seq, mHash);
 }
 
-SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item,
+SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
                                 TNType type, std::uint32_t seq)
     : SHAMapAbstractNode(type, seq)
     , mItem (item)
@@ -64,7 +64,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item,
     updateHash();
 }
 
-SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item,
+SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
                                 TNType type, std::uint32_t seq, uint256 const& hash)
     : SHAMapAbstractNode(type, seq, hash)
     , mItem (item)
@@ -105,7 +105,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         if (type == 0)
         {
             // transaction
-            auto item = std::make_shared<SHAMapItem>(
+            auto item = std::make_shared<SHAMapItem const>(
                 sha512Half(HashPrefix::transactionID,
                     Slice(s.data(), s.size())),
                         s.peekData());
@@ -125,7 +125,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
 
             if (u.isZero ()) throw std::runtime_error ("invalid AS node");
 
-            auto item = std::make_shared<SHAMapItem> (u, s.peekData ());
+            auto item = std::make_shared<SHAMapItem const> (u, s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
@@ -185,7 +185,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             if (u.isZero ())
                 throw std::runtime_error ("invalid TM node");
 
-            auto item = std::make_shared<SHAMapItem> (u, s.peekData ());
+            auto item = std::make_shared<SHAMapItem const> (u, s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq);
@@ -211,7 +211,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
 
         if (prefix == HashPrefix::transactionID)
         {
-            auto item = std::make_shared<SHAMapItem>(
+            auto item = std::make_shared<SHAMapItem const>(
                 sha512Half(make_Slice(rawNode)),
                     s.peekData ());
             if (hashValid)
@@ -233,7 +233,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
                 throw std::runtime_error ("invalid PLN node");
             }
 
-            auto item = std::make_shared<SHAMapItem> (u, s.peekData ());
+            auto item = std::make_shared<SHAMapItem const> (u, s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
@@ -265,7 +265,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             uint256 txID;
             s.get256 (txID, s.getLength () - 32);
             s.chop (32);
-            auto item = std::make_shared<SHAMapItem> (txID, s.peekData ());
+            auto item = std::make_shared<SHAMapItem const> (txID, s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq);
@@ -347,7 +347,7 @@ SHAMapTreeNode::updateHash()
 }
 
 void
-SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format)
+SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
@@ -397,7 +397,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format)
 }
 
 void
-SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
+SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
@@ -455,7 +455,7 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
         assert (false);
 }
 
-bool SHAMapTreeNode::setItem (std::shared_ptr<SHAMapItem> const& i, TNType type)
+bool SHAMapTreeNode::setItem (std::shared_ptr<SHAMapItem const> const& i, TNType type)
 {
     mType = type;
     mItem = i;

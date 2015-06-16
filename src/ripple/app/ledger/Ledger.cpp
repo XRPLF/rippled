@@ -342,9 +342,10 @@ addTransaction (Ledger& ledger,
     uint256 const& txID, const Serializer& txn)
 {
     // low-level - just add to table
-    auto item = std::make_shared<SHAMapItem> (txID, txn.peekData ());
+    auto item = std::make_shared<
+        SHAMapItem const> (txID, txn.peekData ());
 
-    if (! ledger.txMap().addGiveItem (item, true, false))
+    if (! ledger.txMap().addGiveItem (std::move(item), true, false))
     {
         WriteLog (lsWARNING, Ledger)
                 << "Attempt to add transaction to ledger that already had it";
@@ -363,9 +364,10 @@ bool addTransaction (Ledger& ledger,
     Serializer s (txn.getDataLength () + md.getDataLength () + 16);
     s.addVL (txn.peekData ());
     s.addVL (md.peekData ());
-    auto item = std::make_shared<SHAMapItem> (txID, s.peekData ());
+    auto item = std::make_shared<
+        SHAMapItem const> (txID, std::move(s));
 
-    if (! ledger.txMap().addGiveItem (item, true, true))
+    if (! ledger.txMap().addGiveItem (std::move(item), true, true))
     {
         WriteLog (lsFATAL, Ledger)
                 << "Attempt to add transaction+MD to ledger that already had it";
@@ -965,7 +967,7 @@ Ledger::unchecked_insert(
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<
-        SHAMapItem>(sle->key(),
+        SHAMapItem const>(sle->key(),
             std::move(ss));
     // VFALCO NOTE addGiveItem should take ownership
     auto const success =
@@ -984,7 +986,7 @@ Ledger::unchecked_replace(
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<
-        SHAMapItem>(sle->key(),
+        SHAMapItem const>(sle->key(),
             std::move(ss));
     // VFALCO NOTE updateGiveItem should take ownership
     auto const success =
@@ -1016,7 +1018,8 @@ Ledger::peek (Keylet const& k) const
 //------------------------------------------------------------------------------
 
 static void visitHelper (
-    std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
+    std::function<void (std::shared_ptr<SLE> const&)>& function,
+        std::shared_ptr<SHAMapItem const> const& item)
 {
     function (std::make_shared<SLE> (item->peekSerializer(), item->key()));
 }
@@ -1339,7 +1342,7 @@ cachedRead (Ledger const& ledger, uint256 const& key,
     SLECache& cache, boost::optional<LedgerEntryType> type)
 {
     uint256 hash;
-    auto const item =
+    auto const& item =
         ledger.stateMap().peekItem(key, hash);
     if (! item)
         return {};
