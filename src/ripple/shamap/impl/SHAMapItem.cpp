@@ -36,6 +36,12 @@ SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
 {
 }
 
+SHAMapItem::SHAMapItem (uint256 const& key, Serializer&& s)
+    : mTag(key)
+    , mData(std::move(s))
+{
+}
+
 // VFALCO This function appears not to be called
 void SHAMapItem::dump (beast::Journal journal)
 {

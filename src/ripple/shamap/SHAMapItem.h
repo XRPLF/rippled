@@ -40,6 +40,7 @@ public:
     explicit SHAMapItem (uint256 const& tag);
     SHAMapItem (uint256 const& tag, Blob const & data);
     SHAMapItem (uint256 const& tag, Serializer const& s);
+    SHAMapItem (uint256 const& key, Serializer&& s);
 
     Slice slice() const;
 
@@ -53,7 +54,6 @@ public:
     uint256 const& getTag() const;
 
     Blob const& peekData() const;
-    Serializer& peekSerializer();
     Serializer const& peekSerializer() const;
 
 public:  // public only to SHAMapTreeNode
@@ -107,13 +107,6 @@ Blob const&
 SHAMapItem::peekData() const
 {
     return mData.peekData();
-}
-
-inline
-Serializer& 
-SHAMapItem::peekSerializer()
-{
-    return mData;
 }
 
 inline

@@ -974,9 +974,10 @@ void
 Ledger::insert (SLE const& sle)
 {
     assert(! mAccountStateMap->hasItem(sle.getIndex()));
+    Serializer ss;
+    sle.add(ss);
     auto item = std::make_shared<SHAMapItem>(
-        sle.getIndex());
-    sle.add(item->peekSerializer());
+        sle.getIndex(), std::move(ss));
     auto const success =
         mAccountStateMap->addGiveItem(
             std::move(item), false, false);
@@ -1003,9 +1004,10 @@ void
 Ledger::replace (SLE const& sle)
 {
     assert(mAccountStateMap->hasItem(sle.getIndex()));
+    Serializer ss;
+    sle.add(ss);
     auto item = std::make_shared<SHAMapItem>(
-        sle.getIndex());
-    sle.add(item->peekSerializer());
+        sle.getIndex(), std::move(ss));
     auto const success =
         mAccountStateMap->updateGiveItem(
             std::move(item), false, false);
