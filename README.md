@@ -12,7 +12,7 @@ accelerate the movement of money. Ripple enables the world to move value the
 way it moves information on the Internet.
 
 ![Ripple Network](images/network.png)
-© 2015 Ripple Labs
+<p aligh=right>© 2015 Ripple Labs</p>
 
 **What is a Gateway?**
 
