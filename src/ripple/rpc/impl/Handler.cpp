@@ -109,6 +109,7 @@ HandlerTable HANDLERS({
     {   "can_delete",           byRef (&doCanDelete),           Role::ADMIN,   NO_CONDITION     },
     {   "connect",              byRef (&doConnect),             Role::ADMIN,   NO_CONDITION     },
     {   "consensus_info",       byRef (&doConsensusInfo),       Role::ADMIN,   NO_CONDITION     },
+    {   "gateway_balances",     byRef (&doGatewayBalances),     Role::USER,  NO_CONDITION  },
     {   "get_counts",           byRef (&doGetCounts),           Role::ADMIN,   NO_CONDITION     },
     {   "internal",             byRef (&doInternal),            Role::ADMIN,   NO_CONDITION     },
     {   "feature",              byRef (&doFeature),             Role::ADMIN,   NO_CONDITION     },
