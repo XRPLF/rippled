@@ -133,14 +133,15 @@ class SHAMapTreeNode
     : public SHAMapAbstractNode
 {
 private:
-    std::shared_ptr<SHAMapItem>     mItem;
+    std::shared_ptr<SHAMapItem const> mItem;
 
 public:
     SHAMapTreeNode (const SHAMapTreeNode&) = delete;
     SHAMapTreeNode& operator= (const SHAMapTreeNode&) = delete;
 
-    SHAMapTreeNode (std::shared_ptr<SHAMapItem> const& item, TNType type, std::uint32_t seq);
-    SHAMapTreeNode(std::shared_ptr<SHAMapItem> const& item, TNType type,
+    SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
+                    TNType type, std::uint32_t seq);
+    SHAMapTreeNode(std::shared_ptr<SHAMapItem const> const& item, TNType type,
                    std::uint32_t seq, uint256 const& hash);
     std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const override;
 
@@ -153,8 +154,8 @@ public:  // public only to SHAMap
 
     // item node function
     bool hasItem () const;
-    std::shared_ptr<SHAMapItem> const& peekItem () const;
-    bool setItem (std::shared_ptr<SHAMapItem> const& i, TNType type);
+    std::shared_ptr<SHAMapItem const> const& peekItem () const;
+    bool setItem (std::shared_ptr<SHAMapItem const> const& i, TNType type);
 
     std::string getString (SHAMapNodeID const&) const override;
     bool updateHash () override;
@@ -290,7 +291,7 @@ SHAMapTreeNode::hasItem () const
 }
 
 inline
-std::shared_ptr<SHAMapItem> const&
+std::shared_ptr<SHAMapItem const> const&
 SHAMapTreeNode::peekItem () const
 {
     return mItem;

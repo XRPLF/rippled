@@ -334,7 +334,7 @@ bool Ledger::addSLE (SLE const& sle)
 bool Ledger::addTransaction (uint256 const& txID, const Serializer& txn)
 {
     // low-level - just add to table
-    auto item = std::make_shared<SHAMapItem> (txID, txn.peekData ());
+    auto item = std::make_shared<SHAMapItem const> (txID, txn.peekData ());
 
     if (!mTransactionMap->addGiveItem (item, true, false))
     {
@@ -354,7 +354,7 @@ bool Ledger::addTransaction (
     Serializer s (txn.getDataLength () + md.getDataLength () + 16);
     s.addVL (txn.peekData ());
     s.addVL (md.peekData ());
-    auto item = std::make_shared<SHAMapItem> (txID, s.peekData ());
+    auto item = std::make_shared<SHAMapItem const> (txID, s.peekData ());
 
     if (!mTransactionMap->addGiveItem (item, true, true))
     {
@@ -370,7 +370,7 @@ bool Ledger::addTransaction (
 Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 {
     SHAMapTreeNode::TNType type;
-    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (transID, type);
+    std::shared_ptr<SHAMapItem const> item = mTransactionMap->peekItem (transID, type);
 
     if (!item)
         return Transaction::pointer ();
@@ -406,7 +406,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 }
 
 STTx::pointer Ledger::getSTransaction (
-    std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type)
+    std::shared_ptr<SHAMapItem const> const& item, SHAMapTreeNode::TNType type)
 {
     SerialIter sit (item->slice());
 
@@ -425,7 +425,7 @@ STTx::pointer Ledger::getSTransaction (
 }
 
 STTx::pointer Ledger::getSMTransaction (
-    std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode::TNType type,
+    std::shared_ptr<SHAMapItem const> const& item, SHAMapTreeNode::TNType type,
     TransactionMetaSet::pointer& txMeta) const
 {
     SerialIter sit (item->slice());
@@ -455,7 +455,7 @@ bool Ledger::getTransaction (
     TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
-    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (txID, type);
+    std::shared_ptr<SHAMapItem const> item = mTransactionMap->peekItem (txID, type);
 
     if (!item)
         return false;
@@ -500,7 +500,7 @@ bool Ledger::getTransactionMeta (
     uint256 const& txID, TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
-    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (txID, type);
+    std::shared_ptr<SHAMapItem const> item = mTransactionMap->peekItem (txID, type);
 
     if (!item)
         return false;
@@ -518,7 +518,7 @@ bool Ledger::getTransactionMeta (
 bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
 {
     SHAMapTreeNode::TNType type;
-    std::shared_ptr<SHAMapItem> item = mTransactionMap->peekItem (transID, type);
+    std::shared_ptr<SHAMapItem const> item = mTransactionMap->peekItem (transID, type);
 
     if (!item)
         return false;
@@ -1026,7 +1026,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 {
     uint256 hash;
 
-    std::shared_ptr<SHAMapItem> node = mAccountStateMap->peekItem (uId, hash);
+    std::shared_ptr<SHAMapItem const> node = mAccountStateMap->peekItem (uId, hash);
 
     if (!node)
         return SLE::pointer ();
@@ -1044,7 +1044,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 }
 
 static void visitHelper (
-    std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem> const& item)
+    std::function<void (SLE::ref)>& function, std::shared_ptr<SHAMapItem const> const& item)
 {
     function (std::make_shared<SLE> (item->peekSerializer(), item->key()));
 }

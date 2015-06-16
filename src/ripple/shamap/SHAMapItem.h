@@ -54,6 +54,7 @@ public:
 
     Blob const& peekData() const;
     Serializer& peekSerializer();
+    Serializer const& peekSerializer() const;
 
 public:  // public only to SHAMapTreeNode
     std::size_t size() const;
@@ -111,6 +112,13 @@ SHAMapItem::peekData() const
 inline
 Serializer& 
 SHAMapItem::peekSerializer()
+{
+    return mData;
+}
+
+inline
+Serializer const&
+SHAMapItem::peekSerializer() const
 {
     return mData;
 }

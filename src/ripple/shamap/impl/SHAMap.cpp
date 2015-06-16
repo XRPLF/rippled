@@ -468,7 +468,7 @@ SHAMap::lastBelow (SHAMapAbstractNode* node) const
     while (true);
 }
 
-std::shared_ptr<SHAMapItem>
+std::shared_ptr<SHAMapItem const>
 SHAMap::onlyBelow (SHAMapAbstractNode* node) const
 {
     // If there is only one item below this node, return it
@@ -482,7 +482,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
             if (!inner->isEmptyBranch (i))
             {
                 if (nextNode)
-                    return std::shared_ptr<SHAMapItem> ();
+                    return std::shared_ptr<SHAMapItem const> ();
 
                 nextNode = descendThrow (inner, i);
             }
@@ -491,7 +491,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
         if (!nextNode)
         {
             assert (false);
-            return std::shared_ptr<SHAMapItem> ();
+            return std::shared_ptr<SHAMapItem const> ();
         }
 
         node = nextNode;
@@ -508,7 +508,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
 static std::shared_ptr<
     SHAMapItem const> const nullConstSHAMapItem;
 
-std::shared_ptr<SHAMapItem const>
+std::shared_ptr<SHAMapItem const> const&
 SHAMap::fetch (uint256 const& key) const
 {
     SHAMapTreeNode const* const leaf =
@@ -518,9 +518,9 @@ SHAMap::fetch (uint256 const& key) const
     return leaf->peekItem();
 }
 
-static const std::shared_ptr<SHAMapItem> no_item;
+static const std::shared_ptr<SHAMapItem const> no_item;
 
-std::shared_ptr<SHAMapItem> SHAMap::peekFirstItem () const
+std::shared_ptr<SHAMapItem const> SHAMap::peekFirstItem () const
 {
     SHAMapTreeNode* node = firstBelow (root_.get ());
 
@@ -530,7 +530,8 @@ std::shared_ptr<SHAMapItem> SHAMap::peekFirstItem () const
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type) const
+std::shared_ptr<SHAMapItem const>
+SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type) const
 {
     SHAMapTreeNode* node = firstBelow (root_.get ());
 
@@ -541,7 +542,7 @@ std::shared_ptr<SHAMapItem> SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type)
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekLastItem () const
+std::shared_ptr<SHAMapItem const> SHAMap::peekLastItem () const
 {
     SHAMapTreeNode* node = lastBelow (root_.get ());
 
@@ -551,13 +552,13 @@ std::shared_ptr<SHAMapItem> SHAMap::peekLastItem () const
     return node->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekNextItem (uint256 const& id) const
+std::shared_ptr<SHAMapItem const> SHAMap::peekNextItem (uint256 const& id) const
 {
     SHAMapTreeNode::TNType type;
     return peekNextItem (id, type);
 }
 
-std::shared_ptr<SHAMapItem>
+std::shared_ptr<SHAMapItem const>
 SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 {
     // Get a pointer to the next item in the tree after a given item - item need not be in tree
@@ -603,7 +604,7 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 }
 
 // Get a pointer to the previous item in the tree after a given item - item need not be in tree
-std::shared_ptr<SHAMapItem>
+std::shared_ptr<SHAMapItem const>
 SHAMap::peekPrevItem (uint256 const& id) const
 {
     auto stack = getStack (id, true);
@@ -639,7 +640,7 @@ SHAMap::peekPrevItem (uint256 const& id) const
     return no_item;
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekItem (uint256 const& id) const
+std::shared_ptr<SHAMapItem const> SHAMap::peekItem (uint256 const& id) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
 
@@ -649,7 +650,8 @@ std::shared_ptr<SHAMapItem> SHAMap::peekItem (uint256 const& id) const
     return leaf->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
+std::shared_ptr<SHAMapItem const>
+SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
 
@@ -660,7 +662,8 @@ std::shared_ptr<SHAMapItem> SHAMap::peekItem (uint256 const& id, SHAMapTreeNode:
     return leaf->peekItem ();
 }
 
-std::shared_ptr<SHAMapItem> SHAMap::peekItem (uint256 const& id, uint256& hash) const
+std::shared_ptr<SHAMapItem const>
+SHAMap::peekItem (uint256 const& id, uint256& hash) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
 
@@ -728,7 +731,7 @@ bool SHAMap::delItem (uint256 const& id)
             else if (bc == 1)
             {
                 // If there's only one item, pull up on the thread
-                std::shared_ptr<SHAMapItem> item = onlyBelow (node.get ());
+                std::shared_ptr<SHAMapItem const> item = onlyBelow (node.get ());
 
                 if (item)
                 {
@@ -762,7 +765,7 @@ bool SHAMap::delItem (uint256 const& id)
 }
 
 bool
-SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
+SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                      bool isTransaction, bool hasMeta)
 {
     // add the specified item, does not update
@@ -801,7 +804,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
     {
         // this is a leaf node that has to be made an inner node holding two items
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(node);
-        std::shared_ptr<SHAMapItem> otherItem = leaf->peekItem ();
+        std::shared_ptr<SHAMapItem const> otherItem = leaf->peekItem ();
         assert (otherItem && (tag != otherItem->getTag ()));
 
         node = std::make_shared<SHAMapInnerNode>(node->getSeq());
@@ -838,7 +841,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem> const& item,
 
 bool SHAMap::addItem (const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 {
-    return addGiveItem (std::make_shared<SHAMapItem> (i), isTransaction, hasMetaData);
+    return addGiveItem(std::make_shared<SHAMapItem const>(i), isTransaction, hasMetaData);
 }
 
 uint256
@@ -854,7 +857,7 @@ SHAMap::getHash () const
 }
 
 bool
-SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem> const& item,
+SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                         bool isTransaction, bool hasMeta)
 {
     // can't change the tag but can change the hash

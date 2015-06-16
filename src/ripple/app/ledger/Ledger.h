@@ -345,10 +345,10 @@ public:
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
     static STTx::pointer getSTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType);
+        std::shared_ptr<SHAMapItem const> const&, SHAMapTreeNode::TNType);
 
     STTx::pointer getSMTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
+        std::shared_ptr<SHAMapItem const> const&, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 
     void updateSkipList ();

@@ -198,7 +198,7 @@ void fillJson (Object& json, LedgerFill const& fill)
              if (bBinary)
              {
                  ledger.peekAccountStateMap()->visitLeaves (
-                     [&array] (std::shared_ptr<SHAMapItem> const& smi)
+                     [&array] (std::shared_ptr<SHAMapItem const> const& smi)
                      {
                          auto&& obj = appendObject (array);
                          obj[jss::hash] = to_string(smi->getTag ());
@@ -218,7 +218,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         else
         {
             accountStateMap->visitLeaves(
-                [&array, &count] (std::shared_ptr<SHAMapItem> const& smi)
+                [&array, &count] (std::shared_ptr<SHAMapItem const> const& smi)
                 {
                     count.yield();
                     array.append (to_string(smi->getTag ()));
