@@ -168,6 +168,7 @@ JSS ( have_header );                // out: InboundLedger
 JSS ( have_state );                 // out: InboundLedger
 JSS ( have_transactions );          // out: InboundLedger
 JSS ( hostid );                     // out: NetworkOPs
+JSS ( hotwallet );                  // in: GatewayBalances.
 JSS ( id );                         // websocket.
 JSS ( ident );                      // in: AccountCurrencies, AccountInfo,
                                     //     OwnerInfo

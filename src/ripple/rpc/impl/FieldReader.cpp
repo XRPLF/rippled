@@ -57,8 +57,10 @@ void readImpl (std::vector <std::string>& result, FieldRequest const& req)
         return;
     }
 
-    if (!value.isArray())
+    if (!(value.isArray() && value.size()))
     {
+        // An empty array is an error, because if you allowed an empty array,
+        // you might as well make this field optional.
         req.reader.error = expected_field_error (req.field, "list of strings");
         return;
     }

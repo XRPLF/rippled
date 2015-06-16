@@ -154,12 +154,12 @@ public:
         return {};
     }
 
-    virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    virtual bool getValidatedRange (std::uint32_t&, std::uint32_t&)
     {
         return {};
     }
 
-    virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    virtual bool getFullValidatedRange (std::uint32_t&, std::uint32_t&)
     {
         return {};
     }
@@ -174,21 +174,23 @@ public:
     }
 
     using stCallback = std::function<void (Transaction::pointer, TER)>;
-    virtual void submitTransaction (Job&, STTx::pointer,
-        stCallback callback = stCallback ()) { }
+    virtual void submitTransaction (Job&, STTx::pointer)
+    {
+    }
+
     virtual Transaction::pointer processTransactionCb (Transaction::pointer,
         bool bAdmin, bool bLocal, FailHard failType, stCallback)
     {
         return {};
     }
 
-    virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
+    virtual void processTransaction (Transaction::pointer transaction,
         bool bAdmin, bool bLocal, FailHard failType)
     {
-        return {};
     }
 
-    virtual Transaction::pointer findTransactionByID (uint256 const& transactionID)
+    virtual Transaction::pointer findTransactionByID (
+        uint256 const& transactionID)
     {
         return {};
     }

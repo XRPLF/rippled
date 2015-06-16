@@ -89,8 +89,11 @@ struct FieldReader_test : TestOutputSuite
             setup ("required vector zero");
             params()[jss::paths] = Json::arrayValue;
             std::vector<std::string> paths;
-            expect (readRequired (*reader, paths, jss::paths));
-            expectEquals (paths.size(), 0);
+            expect (!readRequired (*reader, paths, jss::paths));
+            expectEquals (reader->error[jss::error], "invalidParams");
+            expectEquals (reader->error[jss::error_code], rpcINVALID_PARAMS);
+            expectEquals (reader->error[jss::error_message],
+                          "Invalid field 'paths', not list of strings.");
         }
         {
             setup ("required vector one");
