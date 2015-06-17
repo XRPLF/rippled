@@ -37,7 +37,7 @@ class Path_test : public TestSuite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
@@ -62,7 +62,7 @@ class Path_test : public TestSuite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
@@ -100,7 +100,7 @@ class Path_test : public TestSuite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
@@ -140,7 +140,7 @@ class Path_test : public TestSuite
 
         auto master = createAccount("masterpassphrase", KeyType::ed25519);
 
-        Ledger::pointer LCL;
+        std::shared_ptr<Ledger const> LCL;
         Ledger::pointer ledger;
         std::tie(LCL, ledger) = createGenesisLedger(100000 * xrp, master);
 
