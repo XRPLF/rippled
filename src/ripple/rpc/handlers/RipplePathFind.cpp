@@ -59,6 +59,25 @@ Json::Value doRipplePathFind (RPC::Context& context)
         if (!lpLedger)
             return jvResult;
     }
+    else
+    {
+        context.loadType = Resource::feeHighBurdenRPC;
+        lpLedger = context.netOps.getClosedLedger();
+
+        PathRequest::pointer request;
+        context.suspend ([&request, &context, &jvResult, &lpLedger](RPC::Callback const& c)
+        {
+            jvResult = getApp().getPathRequests().makeLegacyPathRequest (
+                request, c, lpLedger, context.params);
+            if (! request)
+                c();
+        });
+
+        if (request)
+            jvResult = request->doStatus (context.params);
+
+        return jvResult;
+    }
 
     if (!context.params.isMember (jss::source_account))
     {
