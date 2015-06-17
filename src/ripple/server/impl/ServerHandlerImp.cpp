@@ -181,24 +181,12 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     auto detach = session.detach();
 
-    if (setup_.yieldStrategy.useCoroutines ==
-        RPC::YieldStrategy::UseCoroutines::yes)
-    {
-        RPC::SuspendCallback suspend (
-            [this, detach] (RPC::Suspend const& suspend) {
-                processSession (detach, suspend);
-            });
-        RPC::Coroutine coroutine (suspend);
-        coroutine.run();
-    }
-    else
-    {
-        m_jobQueue.addJob (
-            jtCLIENT, "RPC-Client",
-            [=] (Job&) {
-                processSession (detach, RPC::Suspend());
-            });
-    }
+    RPC::SuspendCallback suspend (
+        [this, detach] (RPC::Suspend const& suspend) {
+            processSession (detach, suspend);
+        });
+    RPC::Coroutine coroutine (suspend);
+    coroutine.run();
 }
 
 void
