@@ -419,7 +419,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
 
     assert (seq_ >= 1);
     auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
-    if (!node)
+    if (!node || !node->isValid ())
         return SHAMapAddNode::invalid ();
 
 #ifdef BEAST_DEBUG
@@ -459,7 +459,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     assert (seq_ >= 1);
     auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
-    if (!node || node->getNodeHash () != hash)
+    if (!node || !node->isValid() || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
 
     if (backed_)
@@ -537,18 +537,18 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
             auto newNode = SHAMapAbstractNode::make(rawNode, 0, snfWIRE, uZero, false);
 
+            if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
+            {
+                if (journal_.warning) journal_.warning <<
+                    "Corrupt node received";
+                return SHAMapAddNode::invalid ();
+            }
+
             if (!newNode->isInBounds (iNodeID))
             {
                 // Map is provably invalid
                 state_ = SHAMapState::Invalid;
                 return SHAMapAddNode::useful ();
-            }
-
-            if (childHash != newNode->getNodeHash ())
-            {
-                if (journal_.warning) journal_.warning <<
-                    "Corrupt node received";
-                return SHAMapAddNode::invalid ();
             }
 
             if (backed_)
