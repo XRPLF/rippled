@@ -60,7 +60,6 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     : ServerHandler (parent)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
-    , m_jobQueue (jobQueue)
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))

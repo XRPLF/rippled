@@ -37,7 +37,6 @@ class ServerHandlerImp
 private:
     Resource::Manager& m_resourceManager;
     beast::Journal m_journal;
-    JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
     RPC::Continuation m_continuation;

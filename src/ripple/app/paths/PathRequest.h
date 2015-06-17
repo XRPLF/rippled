@@ -59,6 +59,12 @@ public:
         PathRequests&,
         beast::Journal journal);
 
+    PathRequest (
+        std::function <void (void)> const& completion,
+        int id,
+        PathRequests&,
+        beast::Journal journal);
+
     ~PathRequest ();
 
     bool        isValid ();
@@ -78,6 +84,7 @@ public:
     // update jvStatus
     Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast);
     InfoSub::pointer getSubscriber ();
+    bool hasCompletion ();
 
 private:
     bool isValid (RippleLineCache::ref crCache);
@@ -94,6 +101,7 @@ private:
     PathRequests& mOwner;
 
     std::weak_ptr<InfoSub> wpSubscriber; // Who this request came from
+    std::function <void (void)> fCompletion;
 
     Json::Value jvId;
     Json::Value jvStatus;                   // Last result
