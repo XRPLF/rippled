@@ -125,7 +125,7 @@ applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check = tru
 
 // Create genesis ledger from a start amount in drops, and the public
 // master RippleAddress
-std::pair<Ledger::pointer, Ledger::pointer>
+std::pair<std::shared_ptr<Ledger const>, Ledger::pointer>
 createGenesisLedger(std::uint64_t start_amount_drops, TestAccount const& master);
 
 // Create an account represented by public RippleAddress and private
@@ -148,7 +148,7 @@ createAndFundAccountsWithFlags(TestAccount& from,
     std::vector<std::string> passphrases,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer& ledger,
-    Ledger::pointer& LCL,
+    std::shared_ptr<Ledger const>& LCL,
     const std::uint32_t flags, bool sign = true);
 
 void
@@ -237,7 +237,7 @@ trust(TestAccount& from, TestAccount const& issuer,
                 Ledger::pointer const& ledger, bool sign = true);
 
 void
-close_and_advance(Ledger::pointer& ledger, Ledger::pointer& LCL);
+close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL);
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
     TestAccount const& dest, std::vector<Currency> srcCurrencies, 

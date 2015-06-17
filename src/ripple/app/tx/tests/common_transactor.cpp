@@ -103,7 +103,6 @@ std::pair<TER, bool> TestLedger::applyTransaction (STTx const& tx, bool check)
     // call to this method gets applied individually.  So this transaction
     // is guaranteed to be applied before the next one.
     close_and_advance(openLedger_, lastClosedLedger_);
-    suite_.expect (lastClosedLedger_->assertSane() == true);
 
     // Check for the transaction in the closed ledger.
     bool const foundTx =

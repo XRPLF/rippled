@@ -101,7 +101,7 @@ public:
 class TestLedger
 {
 private:
-    Ledger::pointer lastClosedLedger_;
+    std::shared_ptr<Ledger const> lastClosedLedger_;
     Ledger::pointer openLedger_;
     beast::unit_test::suite& suite_;
 

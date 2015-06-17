@@ -17,38 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_H_INCLUDED
-#define RIPPLE_TEST_JTX_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_ADVANCE_H_INCLUDED
+#define RIPPLE_TEST_JTX_ADVANCE_H_INCLUDED
 
-// Convenience header that includes everything
-
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/advance.h>
-#include <ripple/test/jtx/amount.h>
-#include <ripple/test/jtx/balance.h>
 #include <ripple/test/jtx/Env.h>
-#include <ripple/test/jtx/fee.h>
-#include <ripple/test/jtx/flags.h>
-#include <ripple/test/jtx/JTx.h>
-#include <ripple/test/jtx/multisign.h>
-#include <ripple/test/jtx/noop.h>
-#include <ripple/test/jtx/offer.h>
-#include <ripple/test/jtx/owners.h>
-#include <ripple/test/jtx/paths.h>
-#include <ripple/test/jtx/pay.h>
-#include <ripple/test/jtx/rate.h>
-#include <ripple/test/jtx/regkey.h>
-#include <ripple/test/jtx/require.h>
-#include <ripple/test/jtx/requires.h>
-#include <ripple/test/jtx/sendmax.h>
-#include <ripple/test/jtx/seq.h>
-#include <ripple/test/jtx/sig.h>
-#include <ripple/test/jtx/tags.h>
-#include <ripple/test/jtx/ter.h>
-#include <ripple/test/jtx/ticket.h>
-#include <ripple/test/jtx/trust.h>
-#include <ripple/test/jtx/txflags.h>
-#include <ripple/test/jtx/utility.h>
+
+namespace ripple {
+namespace test {
+namespace jtx {
+
+// TODO EHENNIS: Return the transaction list.
+// (Coming soon.)
+void
+advance(Env& env, std::shared_ptr<Ledger const>& last);
+
+} // jtx
+} // test
+} // ripple
 
 #endif
-
