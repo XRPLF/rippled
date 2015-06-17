@@ -29,7 +29,7 @@ namespace jtx {
 // TODO EHENNIS: Return the transaction list.
 // (Coming soon.)
 void
-advance(Env& env, std::shared_ptr<Ledger>& last);
+advance(Env& env, std::shared_ptr<Ledger const>& last);
 
 } // jtx
 } // test

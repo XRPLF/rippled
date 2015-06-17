@@ -427,7 +427,7 @@ public:
         // starting, but it won't matter to most
         // tests.
         auto lastClosedLedger = 
-            std::make_shared<Ledger>(
+            std::make_shared<Ledger const>(
                 *env.ledger, false);
 
         auto firstSeq = env.ledger->seq();

@@ -27,9 +27,11 @@ namespace test {
 namespace jtx {
 
 void
-advance(Env& env, std::shared_ptr<Ledger>& last)
+advance(Env& env, std::shared_ptr<Ledger const>& last)
 {
-    return close_and_advance(env.ledger, last);
+    std::shared_ptr<Ledger> temp;
+    close_and_advance(env.ledger, temp);
+    last = temp;
 }
 
 
