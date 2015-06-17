@@ -154,8 +154,8 @@ public:
     std::shared_ptr<SHAMapItem const> const&
         fetch (uint256 const& key) const;
 
-    // VFALCO NOTE Is "save a copy" the in imperative or indicative mood?
-    // save a copy if you only need a temporary
+    // Save a copy if you need to extend the life
+    // of the SHAMapItem beyond this SHAMap
     std::shared_ptr<SHAMapItem const> const& peekItem (uint256 const& id) const;
     std::shared_ptr<SHAMapItem const> const&
         peekItem (uint256 const& id, uint256 & hash) const;
