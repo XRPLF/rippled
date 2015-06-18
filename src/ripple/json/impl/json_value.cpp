@@ -825,10 +825,15 @@ Value::size () const
 bool
 Value::empty () const
 {
-    if ( isNull () || isArray () || isObject () )
-        return size () == 0u;
-    else
-        return false;
+    if (isNull ())
+        return true;
+
+    if (isString ()) {
+        auto s = asCString();
+        return !(s && strlen(s));
+    }
+
+    return (isArray () || isObject ()) && ! size ();
 }
 
 

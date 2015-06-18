@@ -28,6 +28,29 @@ namespace ripple {
 class json_value_test : public beast::unit_test::suite
 {
 public:
+    void test_empty()
+    {
+        expect (Json::Value().empty());
+
+        expect (Json::Value("").empty());
+
+        expect (! Json::Value("empty").empty());
+        expect (! Json::Value(false).empty());
+        expect (! Json::Value(true).empty());
+        expect (! Json::Value(0).empty());
+        expect (! Json::Value(1).empty());
+
+        Json::Value array (Json::arrayValue);
+        expect (array.empty());
+        array.append(0);
+        expect (!array.empty());
+
+        Json::Value object (Json::objectValue);
+        expect (object.empty());
+        object[""] = false;
+        expect (!object.empty());
+    }
+
     void test_bad_json ()
     {
         char const* s (
@@ -197,6 +220,7 @@ public:
 
     void run ()
     {
+        test_empty ();
         test_bad_json ();
         test_edge_cases ();
         test_copy ();
