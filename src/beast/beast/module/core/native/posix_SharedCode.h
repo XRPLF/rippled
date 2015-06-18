@@ -67,6 +67,21 @@ File File::getCurrentWorkingDirectory()
     return File (CharPointer_UTF8 (cwd));
 }
 
+// if this file doesn't exist, find a parent of it that does..
+inline
+bool beast_doStatFS (File f, struct statfs& result)
+{
+    for (int i = 5; --i >= 0;)
+    {
+        if (f.exists())
+            break;
+
+        f = f.getParentDirectory();
+    }
+
+    return statfs (f.getFullPathName().toUTF8(), &result) == 0;
+}
+
 //==============================================================================
 namespace
 {
@@ -83,20 +98,6 @@ namespace
     {
         return fileName.isNotEmpty()
                  && BEAST_STAT (fileName.toUTF8(), &info) == 0;
-    }
-
-    // if this file doesn't exist, find a parent of it that does..
-    bool beast_doStatFS (File f, struct statfs& result)
-    {
-        for (int i = 5; --i >= 0;)
-        {
-            if (f.exists())
-                break;
-
-            f = f.getParentDirectory();
-        }
-
-        return statfs (f.getFullPathName().toUTF8(), &result) == 0;
     }
 
     void updateStatInfoForFile (const String& path, bool* const isDir, std::int64_t* const fileSize,
