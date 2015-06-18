@@ -511,6 +511,15 @@
     <Filter Include="rocksdb2\utilities\ttl">
       <UniqueIdentifier>{395EACFC-5313-28FC-4686-B001C679D86A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="secp256k1">
+      <UniqueIdentifier>{91DD523A-1974-4AD0-719D-F02BF0544FA3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="secp256k1\include">
+      <UniqueIdentifier>{ECE6F4C7-0F1A-FC81-6DE9-76BC48243350}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="secp256k1\src">
+      <UniqueIdentifier>{E25BE380-48B7-7EA9-DFD6-F38F1E8A22FF}</UniqueIdentifier>
+    </Filter>
     <Filter Include="snappy">
       <UniqueIdentifier>{26306562-F81D-B6CD-B192-22BA51E1A96B}</UniqueIdentifier>
     </Filter>
@@ -4467,6 +4476,9 @@
     <ClCompile Include="..\..\src\ripple\unity\rpcx.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\secp256k1.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\server.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -5300,6 +5312,105 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\util\xxhash.h">
       <Filter>rocksdb2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\include\secp256k1.h">
+      <Filter>secp256k1\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecdsa.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecdsa_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\eckey.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\eckey_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_gen.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_gen_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_10x26.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_10x26_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_5x52.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_5x52_asm_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_5x52_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_5x52_int128_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\field_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\group.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\group_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\hash.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\hash_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\num.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\num_gmp.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\num_gmp_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\num_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_4x64.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_4x64_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_8x32.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_8x32_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\secp256k1\src\secp256k1.c">
+      <Filter>secp256k1\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\secp256k1\src\util.h">
+      <Filter>secp256k1\src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
       <Filter>snappy\config</Filter>
