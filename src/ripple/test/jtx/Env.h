@@ -310,6 +310,17 @@ public:
         These convenience functions are for easy set-up
         of the environment, they bypass fee, seq, and sig
         settings.
+
+        Preconditions:
+            The account must already exist
+
+        Effects:
+            A trust line is added for the account.
+            The account's sequence number is incremented.
+            The account is refunded for the transaction fee
+                to set the trust line.
+
+        The refund comes from the master account.
     */
     /** @{ */
     void

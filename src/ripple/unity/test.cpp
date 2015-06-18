@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/impl/Env.cpp>
 #include <ripple/test/jtx/impl/fee.cpp>
 #include <ripple/test/jtx/impl/flags.cpp>
+#include <ripple/test/jtx/impl/json.cpp>
 #include <ripple/test/jtx/impl/multisign.cpp>
 #include <ripple/test/jtx/impl/offer.cpp>
 #include <ripple/test/jtx/impl/owners.cpp>
