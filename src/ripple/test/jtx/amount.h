@@ -167,10 +167,12 @@ struct XRP_t
     PrettyAmount
     operator()(T v) const
     {
-        return { v *
-            dropsPerXRP<T>::value };
+        return { std::conditional_t<
+            std::is_signed<T>::value,
+                std::int64_t, std::uint64_t>{v} *
+                    dropsPerXRP<T>::value };
     }
-    
+      
     PrettyAmount
     operator()(double v) const
     {

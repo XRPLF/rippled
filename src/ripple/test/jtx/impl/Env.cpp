@@ -175,10 +175,17 @@ void
 Env::trust (STAmount const& amount,
     Account const& account)
 {
+    auto const start = balance(account);
     apply(jtx::trust(account, amount),
         jtx::seq(jtx::autofill),
             fee(jtx::autofill),
                 sig(jtx::autofill));
+    apply(pay(master, account,
+        drops(ledger->getBaseFee())),
+            jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                    sig(jtx::autofill));
+    test.expect(balance(account) == start);
 }
 
 void
