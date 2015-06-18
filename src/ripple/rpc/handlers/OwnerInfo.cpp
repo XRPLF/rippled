@@ -52,7 +52,7 @@ Json::Value doOwnerInfo (RPC::Context& context)
         iIndex,
         false);
 
-    ret[jss::accepted] = jAccepted.empty () ?
+    ret[jss::accepted] = ! jAccepted ?
             context.netOps.getOwnerInfo (closedLedger, accountID) : jAccepted;
 
     auto const& currentLedger = context.netOps.getCurrentLedger ();
@@ -63,9 +63,8 @@ Json::Value doOwnerInfo (RPC::Context& context)
         iIndex,
         false);
 
-    ret[jss::current] = jCurrent.empty () ?
+    ret[jss::current] = ! jCurrent ?
             context.netOps.getOwnerInfo (currentLedger, accountID) : jCurrent;
-
     return ret;
 }
 

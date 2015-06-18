@@ -48,7 +48,7 @@ Status ledgerFromRequest (
 
     // We need to support the legacy "ledger" field.
     auto& legacyLedger = params[jss::ledger];
-    if (!legacyLedger.empty())
+    if (legacyLedger)
     {
         if (legacyLedger.asString().size () > 12)
             hashValue = legacyLedger;
@@ -56,7 +56,7 @@ Status ledgerFromRequest (
             indexValue = legacyLedger;
     }
 
-    if (!hashValue.empty())
+    if (hashValue)
     {
         if (! hashValue.isString ())
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};

@@ -60,7 +60,7 @@ Json::Value doAccountObjects (RPC::Context& context)
             ? context.params[jss::account_index].asUInt () : 0;
         auto jv = RPC::accountFromString (
             accountID, bIndex, strIdent, iIndex, false);
-        if (! jv.empty ())
+        if (jv)
         {
             for (auto it = jv.begin (); it != jv.end (); ++it)
                 result[it.memberName ()] = it.key ();

@@ -107,19 +107,19 @@ private:
     {
         testcase ("OK");
         fillJson (Status ());
-        expect (value_.empty(), "Value for empty status");
+        expect (! value_, "Value for empty status");
 
         fillJson (0);
-        expect (value_.empty(), "Value for 0 status");
+        expect (! value_, "Value for 0 status");
 
         fillJson (Status::OK);
-        expect (value_.empty(), "Value for OK status");
+        expect (! value_, "Value for OK status");
 
         fillJson (tesSUCCESS);
-        expect (value_.empty(), "Value for tesSUCCESS");
+        expect (! value_, "Value for tesSUCCESS");
 
         fillJson (rpcSUCCESS);
-        expect (value_.empty(), "Value for rpcSUCCESS");
+        expect (! value_, "Value for rpcSUCCESS");
     }
 
     template <typename Type>
@@ -133,10 +133,10 @@ private:
         fillJson (Status (status, messages));
 
         auto prefix = label + ": ";
-        expect (!value_.empty(), prefix + "No value");
+        expect (bool (value_), prefix + "No value");
 
         auto error = value_[jss::error];
-        expect (!error.empty(), prefix + "No error.");
+        expect (bool (error), prefix + "No error.");
 
         auto code = error[jss::code].asInt();
         expect (status == code, prefix + "Wrong status " +

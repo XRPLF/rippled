@@ -403,7 +403,7 @@ public:
             send (cpClient, jvResult, false);
         }
         else if (!jrReader.parse (mpMessage->get_payload (), jvRequest) ||
-                 jvRequest.isNull () || !jvRequest.isObject ())
+                 ! jvRequest || !jvRequest.isObject ())
         {
             Json::Value jvResult (Json::objectValue);
 

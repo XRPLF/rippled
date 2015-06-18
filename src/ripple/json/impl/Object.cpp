@@ -204,7 +204,7 @@ void doCopyFrom (Object& to, Json::Value const& from)
 
 void copyFrom (Json::Value& to, Json::Value const& from)
 {
-    if (to.empty())  // Short circuit this very common case.
+    if (!to)  // Short circuit this very common case.
         to = from;
     else
         doCopyFrom (to, from);

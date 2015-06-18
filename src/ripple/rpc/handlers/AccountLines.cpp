@@ -95,7 +95,7 @@ Json::Value doAccountLines (RPC::Context& context)
 
     auto jv = RPC::accountFromString (
         accountID, bIndex, strIdent, iIndex, false);
-    if (! jv.empty ())
+    if (jv)
     {
         for (auto it = jv.begin (); it != jv.end (); ++it)
             result[it.memberName ()] = it.key ();
@@ -125,7 +125,7 @@ Json::Value doAccountLines (RPC::Context& context)
         result = RPC::accountFromString (
             raPeerAccount, bPeerIndex, strPeer, iPeerIndex, false);
 
-        if (! result.empty ())
+        if (result)
             return result;
     }
 

@@ -151,8 +151,8 @@ struct AccountTxPaging_test : beast::unit_test::suite
             expect (next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 5, 7);
 
-            expect(token["ledger"].isNull());
-            expect(token["seq"].isNull());
+            expect(! token["ledger"]);
+            expect(! token["seq"]);
         }
 
         token = Json::nullValue;
@@ -200,8 +200,8 @@ struct AccountTxPaging_test : beast::unit_test::suite
             expect(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 6, 11);
 
-            expect(token["ledger"].isNull());
-            expect(token["seq"].isNull());
+            expect(! token["ledger"]);
+            expect(! token["seq"]);
         }
 
         token = Json::nullValue;
@@ -241,8 +241,8 @@ struct AccountTxPaging_test : beast::unit_test::suite
             checkTransaction (txs_[2], 3, 5);
         }
 
-        expect (token["ledger"].isNull());
-        expect (token["seq"].isNull());
+        expect (! token["ledger"]);
+        expect (! token["seq"]);
     }
 };
 

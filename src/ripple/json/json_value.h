@@ -253,6 +253,8 @@ public:
     double asDouble () const;
     bool asBool () const;
 
+    /** isNull() tests to see if this field is null.  Don't use this method to
+        test for emptiness: use empty(). */
     bool isNull () const;
     bool isBool () const;
     bool isInt () const;
@@ -269,12 +271,10 @@ public:
     /// Number of values in array or object
     UInt size () const;
 
-    /// \brief Return true if empty array, empty object, or null;
-    /// otherwise, false.
-    bool empty () const;
-
-    /// Return isNull()
-    bool operator! () const;
+    /** Returns false if this is an empty array, empty object, empty string,
+        or null. */
+    explicit
+    operator bool() const;
 
     /// Remove all object members and array elements.
     /// \pre type() is arrayValue, objectValue, or nullValue

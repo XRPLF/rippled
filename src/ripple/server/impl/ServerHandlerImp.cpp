@@ -242,7 +242,7 @@ ServerHandlerImp::processRequest (
         Json::Reader reader;
         if ((request.size () > 1000000) ||
             ! reader.parse (request, jsonRPC) ||
-            jsonRPC.isNull () ||
+            ! jsonRPC ||
             ! jsonRPC.isObject ())
         {
             HTTPReply (400, "Unable to parse request", output);
@@ -258,7 +258,7 @@ ServerHandlerImp::processRequest (
 
     Json::Value const& method = jsonRPC ["method"];
 
-    if (method.isNull ()) {
+    if (! method) {
         HTTPReply (400, "Null method", output);
         return;
     }
@@ -313,7 +313,7 @@ ServerHandlerImp::processRequest (
     // and we take that first entry and validate that it's an object.
     Json::Value params = jsonRPC [jss::params];
 
-    if (params.isNull () || params.empty())
+    if (! params)
         params = Json::Value (Json::objectValue);
 
     else if (!params.isArray () || params.size() != 1)

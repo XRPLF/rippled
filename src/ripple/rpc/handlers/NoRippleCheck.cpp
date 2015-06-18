@@ -100,7 +100,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
 
     Json::Value const jv = RPC::accountFromString (
         accountID, bIndex, strIdent, iIndex, false);
-    if (! jv.empty ())
+    if (jv)
     {
         for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
             result[it.memberName ()] = it.key ();
