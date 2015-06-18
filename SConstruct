@@ -644,6 +644,15 @@ def get_soci_sources(style):
                        CPPPATH=cpp_path)
     return result
 
+def get_common_sources():
+    result = []
+    append_sources(
+        result,
+        'src/ripple/unity/secp256k1.cpp',
+        CPPPATH=[
+            'src/secp256k1',
+        ])
+    return result
 
 def get_classic_sources():
     result = []
@@ -667,6 +676,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
+   
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -677,8 +687,9 @@ def get_classic_sources():
         ])
 
     result += get_soci_sources('classic')
-    return result
+    result += get_common_sources()
 
+    return result
 
 def get_unity_sources():
     result = []
@@ -704,8 +715,6 @@ def get_unity_sources():
         'src/ripple/unity/test.cpp',
     )
 
-    result += get_soci_sources('unity')
-
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
@@ -714,6 +723,9 @@ def get_unity_sources():
             'src/snappy/snappy',
             'src/snappy/config',
         ])
+
+    result += get_soci_sources('unity')
+    result += get_common_sources()
 
     return result
 
