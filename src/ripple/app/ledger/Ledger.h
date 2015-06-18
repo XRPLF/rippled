@@ -117,7 +117,7 @@ public:
         @return The serialized ledger entry or empty
                 if the key does not exist.
     */
-    std::shared_ptr<SHAMapItem const>
+    std::shared_ptr<SHAMapItem const> const&
     find (uint256 const& key) const;
 
     /** Add a new state SLE.
@@ -345,10 +345,10 @@ public:
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
     static STTx::pointer getSTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType);
+        std::shared_ptr<SHAMapItem const> const&, SHAMapTreeNode::TNType);
 
     STTx::pointer getSMTransaction (
-        std::shared_ptr<SHAMapItem> const&, SHAMapTreeNode::TNType,
+        std::shared_ptr<SHAMapItem const> const&, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 
     void updateSkipList ();

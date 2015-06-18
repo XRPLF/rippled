@@ -68,7 +68,7 @@ public:
         unexpected (!sMap.addItem (i2, true, false), "no add");
         unexpected (!sMap.addItem (i1, true, false), "no add");
 
-        std::shared_ptr<SHAMapItem> i;
+        std::shared_ptr<SHAMapItem const> i;
         i = sMap.peekFirstItem ();
         unexpected (!i || (*i != i1), "bad traverse");
         i = sMap.peekNextItem (i->getTag ());

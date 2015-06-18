@@ -79,7 +79,7 @@ Json::Value doLedgerData (RPC::Context& context)
 
     for (;;)
     {
-       std::shared_ptr<SHAMapItem> item = map.peekNextItem (resumePoint);
+       auto item = map.peekNextItem (resumePoint);
        if (!item)
            break;
        resumePoint = item->getTag();
