@@ -273,8 +273,11 @@ public:
     /// otherwise, false.
     bool empty () const;
 
-    /// Return isNull()
-    bool operator! () const;
+    /** Return true if the Json::Value is defined. */
+    explicit operator bool() const
+    {
+        return ! isNull();
+    }
 
     /// Remove all object members and array elements.
     /// \pre type() is arrayValue, objectValue, or nullValue
