@@ -125,6 +125,22 @@ public:
 
 public:
     Env (beast::unit_test::suite& test_);
+    
+    /** Turn on JSON tracing.
+        With no arguments, trace all
+    */
+    void
+    trace(int howMany = -1)
+    {
+        trace_ = howMany;
+    }
+
+    /** Turn off JSON tracing. */
+    void
+    notrace()
+    {
+        trace_ = 0;
+    }
 
     /** Associate AccountID with account. */
     void
@@ -327,6 +343,8 @@ public:
     /** @} */
 
 protected:
+    int trace_ = 0;
+
     void
     autofill_sig (JTx& jt);
 
