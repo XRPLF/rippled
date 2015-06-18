@@ -23,6 +23,8 @@
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/protocol/types.h>
+#include <boost/optional.hpp>
 #include <map>
 #include <set>
 
@@ -99,8 +101,8 @@ private:
     Json::Value jvStatus;                   // Last result
 
     // Client request parameters
-    RippleAddress raSrcAccount;
-    RippleAddress raDstAccount;
+    boost::optional<AccountID> raSrcAccount;
+    boost::optional<AccountID> raDstAccount;
     STAmount saDstAmount;
 
     std::set<Issue> sciSourceCurrencies;

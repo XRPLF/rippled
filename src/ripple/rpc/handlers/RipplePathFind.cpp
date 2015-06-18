@@ -19,11 +19,13 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/RipplePathFind.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/types.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 #include <ripple/server/Role.h>
 
@@ -38,8 +40,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    RippleAddress raSrc;
-    RippleAddress raDst;
+    AccountID raSrc;
+    AccountID raDst;
     STAmount saDstAmount;
     Ledger::pointer lpLedger;
 
@@ -61,9 +63,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
     {
         jvResult = rpcError (rpcSRC_ACT_MISSING);
     }
-    else if (!context.params[jss::source_account].isString ()
-             || !raSrc.setAccountID (
-                 context.params[jss::source_account].asString ()))
+    else if (! deprecatedParseBase58(raSrc,
+        context.params[jss::source_account]))
     {
         jvResult = rpcError (rpcSRC_ACT_MALFORMED);
     }
@@ -71,9 +72,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
     {
         jvResult = rpcError (rpcDST_ACT_MISSING);
     }
-    else if (!context.params[jss::destination_account].isString ()
-             || !raDst.setAccountID (
-                 context.params[jss::destination_account].asString ()))
+    else if (! deprecatedParseBase58 (raDst,
+        context.params[jss::destination_account]))
     {
         jvResult = rpcError (rpcDST_ACT_MALFORMED);
     }
@@ -140,7 +140,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 jvDestCur.append (to_string (uCurrency));
 
         jvResult[jss::destination_currencies] = jvDestCur;
-        jvResult[jss::destination_account] = raDst.humanAccountID ();
+        jvResult[jss::destination_account] = getApp().accountIDCache().toBase58(raDst);
 
         int level = getConfig().PATH_SEARCH_OLD;
         if ((getConfig().PATH_SEARCH_MAX > level)
@@ -177,9 +177,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
 }
 
 Json::Value
-buildSrcCurrencies(RippleAddress const& raSrc, RippleLineCache::pointer const& cache)
+buildSrcCurrencies(AccountID const& account, RippleLineCache::pointer const& cache)
 {
-    auto currencies = accountSourceCurrencies(raSrc, cache, true);
+    auto currencies = accountSourceCurrencies(account, cache, true);
     auto jvSrcCurrencies = Json::Value(Json::arrayValue);
 
     for (auto const& uCurrency : currencies)
@@ -193,16 +193,16 @@ buildSrcCurrencies(RippleAddress const& raSrc, RippleLineCache::pointer const& c
 }
 
 std::pair<bool, Json::Value>
-ripplePathFind(RippleLineCache::pointer const& cache, 
-  RippleAddress const& raSrc, RippleAddress const& raDst,
+ripplePathFind (RippleLineCache::pointer const& cache, 
+  AccountID const& raSrc, AccountID const& raDst,
     STAmount const& saDstAmount, Ledger::pointer const& lpLedger, 
       Json::Value const& jvSrcCurrencies, 
         boost::optional<Json::Value> const& contextPaths, int const& level)
 {
     FindPaths fp(
         cache,
-        raSrc.getAccountID(),
-        raDst.getAccountID(),
+        raSrc,
+        raDst,
         saDstAmount,
         level,
         4); // max paths
@@ -230,7 +230,7 @@ ripplePathFind(RippleLineCache::pointer const& cache,
         }
 
         if (uSrcCurrencyID.isNonZero())
-            uSrcIssuerID = raSrc.getAccountID();
+            uSrcIssuerID = raSrc;
 
         // Parse optional issuer.
         if (jvSource.isMember(jss::issuer) &&
@@ -275,7 +275,7 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                 isXRP(uSrcIssuerID) ?
                 isXRP(uSrcCurrencyID) ? // Default to source account.
                 xrpAccount() :
-                AccountID(raSrc.getAccountID())
+                (raSrc)
                 : uSrcIssuerID;            // Use specifed issuer.
 
             STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
@@ -288,8 +288,8 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                 saMaxAmount,            // --> Amount to send is unlimited
                 //     to get an estimate.
                 saDstAmount,            // --> Amount to deliver.
-                raDst.getAccountID(),   // --> Account to deliver to.
-                raSrc.getAccountID(),   // --> Account sending from.
+                raDst,                  // --> Account to deliver to.
+                raSrc,                  // --> Account sending from.
                 spsComputed);           // --> Path set.
 
             WriteLog(lsWARNING, RPCHandler)
@@ -312,8 +312,8 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     saMaxAmount,            // --> Amount to send is unlimited
                     //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
-                    raDst.getAccountID(),   // --> Account to deliver to.
-                    raSrc.getAccountID(),   // --> Account sending from.
+                    raDst,                  // --> Account to deliver to.
+                    raSrc,                  // --> Account sending from.
                     spsComputed);           // --> Path set.
                 WriteLog(lsDEBUG, PathRequest)
                     << "Extra path element gives "

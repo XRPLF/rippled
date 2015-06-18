@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Utilities.h>
 #include <ripple/server/Role.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -36,7 +38,6 @@ Json::Value doAccountTx (RPC::Context& context)
 {
     auto& params = context.params;
 
-    RippleAddress   raAccount;
     int limit = params.isMember (jss::limit) ?
             params[jss::limit].asUInt () : -1;
     bool bBinary = params.isMember (jss::binary) && params[jss::binary].asBool ();
@@ -57,7 +58,9 @@ Json::Value doAccountTx (RPC::Context& context)
     if (!params.isMember (jss::account))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (params[jss::account].asString ()))
+    auto const account = parseBase58<AccountID>(
+        params[jss::account].asString());
+    if (! account)
         return rpcError (rpcACT_MALFORMED);
 
     context.loadType = Resource::feeMediumBurdenRPC;
@@ -101,13 +104,13 @@ Json::Value doAccountTx (RPC::Context& context)
 #endif
         Json::Value ret (Json::objectValue);
 
-        ret[jss::account] = raAccount.humanAccountID ();
+        ret[jss::account] = getApp().accountIDCache().toBase58(*account);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         if (bBinary)
         {
             auto txns = context.netOps.getTxsAccountB (
-                raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
+                *account, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
                 context.role == Role::ADMIN);
 
             for (auto& it: txns)
@@ -128,7 +131,7 @@ Json::Value doAccountTx (RPC::Context& context)
         else
         {
             auto txns = context.netOps.getTxsAccount (
-                raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
+                *account, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
                 context.role == Role::ADMIN);
 
             for (auto& it: txns)

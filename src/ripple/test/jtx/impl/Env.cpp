@@ -41,6 +41,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/types.h>
 #include <memory>
 // VFALCO TODO Use AnyPublicKey, AnySecretKey, AccountID
 
@@ -80,11 +81,12 @@ Env::lookup (AccountID const& id) const
 Account const&
 Env::lookup (std::string const& base58ID) const
 {
-    RippleAddress ra;
-    if (! ra.setAccountID(base58ID))
+    auto const account =
+        parseBase58<AccountID>(base58ID);
+    if (! account)
         throw std::runtime_error(
             "Env::lookup: invalid account ID");
-    return lookup(ra.getAccountID());
+    return lookup(*account);
 }
 
 PrettyAmount
@@ -240,7 +242,7 @@ Env::autofill_sig (JTx& jt)
         auto const ar = le(account);
         if (ar && ar->isFieldPresent(sfRegularKey))
             jtx::sign(jv, lookup(
-                ar->getFieldAccount160(sfRegularKey)));
+                ar->getAccountID(sfRegularKey)));
         else
             jtx::sign(jv, account);
     }

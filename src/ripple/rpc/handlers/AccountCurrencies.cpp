@@ -57,17 +57,18 @@ Json::Value doAccountCurrencies (RPC::Context& context)
 
     // Get info on account.
     bool bIndex; // out param
-    RippleAddress naAccount; // out param
+    AccountID accountID; // out param
     Json::Value jvAccepted (
-        RPC::accountFromString (naAccount, bIndex, strIdent, iIndex, bStrict));
+        RPC::accountFromString (accountID, bIndex, strIdent, iIndex, bStrict));
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
     std::set<Currency> send, receive;
-    for (auto const& item : getRippleStateItems (naAccount.getAccountID (), ledger))
+    for (auto const& item : getRippleStateItems (accountID, ledger))
     {
-        RippleState* rspEntry = (RippleState*) item.get ();
+        auto const rspEntry = item.get();
+
         STAmount const& saBalance = rspEntry->getBalance ();
 
         if (saBalance < rspEntry->getLimit ())

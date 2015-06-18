@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/types.h>
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 
@@ -37,7 +38,7 @@ public:
         RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
 
         STTx j (ttACCOUNT_SET);
-        j.setSourceAccount (publicAcct);
+        j.setAccountID (sfAccount, calcAccountID(publicAcct));
         j.setSigningPubKey (publicAcct);
         j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
         j.sign (privateAcct);
@@ -85,11 +86,13 @@ public:
         // Create a transaction
         RippleAddress txnSeed;
         txnSeed.setSeedRandom ();
+        // VFALCO Generators are no longer supported
         RippleAddress txnGenerator = txnSeed.createGeneratorPublic (txnSeed);
+        // VFALCO Use AnyPublicKey here
         RippleAddress txnPublicAcct = txnSeed.createAccountPublic (txnGenerator, 1);
 
         STTx txn (ttACCOUNT_SET);
-        txn.setSourceAccount (txnPublicAcct);
+        txn.setAccountID (sfAccount, calcAccountID(txnPublicAcct));
         txn.setSigningPubKey (txnPublicAcct);
         txn.setFieldVL (sfMessageKey, txnPublicAcct.getAccountPublic ());
         Blob const emptyBlob;  // Make empty signature for multi-signing
@@ -101,16 +104,17 @@ public:
         RippleAddress const saGenerator = saSeed.createGeneratorPublic (saSeed);
         RippleAddress const saPublicAcct =
             saSeed.createAccountPublic (saGenerator, 1);
-        AccountID const saID = saPublicAcct.getAccountID ();
+        AccountID const saID = calcAccountID(saPublicAcct);
 
         // Create a field for SigningFor
-        AccountID const signingForID = txnPublicAcct.getAccountID ();
+        AccountID const signingForID = calcAccountID(txnPublicAcct);
 
         RippleAddress saPrivateAcct =
             saSeed.createAccountPrivate(saGenerator, saSeed, 0);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer s = txn.getMultiSigningData (saPublicAcct, saPublicAcct);
+        Serializer s = txn.getMultiSigningData(
+            calcAccountID(saPublicAcct), calcAccountID(saPublicAcct));
 
         Blob saMultiSignature =
             saPrivateAcct.accountPrivateSign (s.getData());
@@ -137,7 +141,7 @@ public:
 
             // Insert SigningAccounts array into SigningFor object.
             STObject signingFor (sfSigningFor);
-            signingFor.setFieldAccount (sfAccount, signingForID);
+            signingFor.setAccountID (sfAccount, signingForID);
             signingFor.setFieldArray (sfSigningAccounts, signingAccts);
 
             // Insert SigningFor into MultiSigners.
@@ -169,7 +173,7 @@ public:
         {
             // Test case 1.  Make a valid SigningAccount object.
             STObject soTest1 (sfSigningAccount);
-            soTest1.setFieldAccount (sfAccount, saID);
+            soTest1.setAccountID (sfAccount, saID);
             soTest1.setFieldVL (sfSigningPubKey,
                 txnPublicAcct.getAccountPublic ());
             soTest1.setFieldVL (sfMultiSignature, saMultiSignature);
@@ -178,14 +182,14 @@ public:
         {
             // Test case 2.  Omit sfSigningPubKey from SigningAccount.
             STObject soTest2 (sfSigningAccount);
-            soTest2.setFieldAccount (sfAccount, saID);
+            soTest2.setAccountID (sfAccount, saID);
             soTest2.setFieldVL (sfMultiSignature, saMultiSignature);
             testMalformedSigningAccount (soTest2, false);
         }
         {
             // Test case 3.  Extra sfAmount in SigningAccount.
             STObject soTest3 (sfSigningAccount);
-            soTest3.setFieldAccount (sfAccount, saID);
+            soTest3.setAccountID (sfAccount, saID);
             soTest3.setFieldVL (sfSigningPubKey,
                 txnPublicAcct.getAccountPublic ());
             soTest3.setFieldVL (sfMultiSignature, saMultiSignature);

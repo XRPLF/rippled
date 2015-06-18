@@ -25,6 +25,7 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/types.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -120,36 +121,29 @@ STTx::getFullText () const
     return ret;
 }
 
-std::vector<RippleAddress>
+boost::container::flat_set<AccountID>
 STTx::getMentionedAccounts () const
 {
-    std::vector<RippleAddress> accounts;
+    boost::container::flat_set<AccountID> list;
 
     for (auto const& it : *this)
     {
         if (auto sa = dynamic_cast<STAccount const*> (&it))
         {
-            auto const na = sa->getValueNCA ();
-
-            if (std::find (accounts.cbegin (), accounts.cend (), na) == accounts.cend ())
-                accounts.push_back (na);
+            AccountID id;
+            assert(sa->isValueH160());
+            if (sa->getValueH160(id))
+                list.insert(id);
         }
         else if (auto sa = dynamic_cast<STAmount const*> (&it))
         {
             auto const& issuer = sa->getIssuer ();
-
-            if (isXRP (issuer))
-                continue;
-
-            RippleAddress na;
-            na.setAccountID (issuer);
-
-            if (std::find (accounts.cbegin (), accounts.cend (), na) == accounts.cend ())
-                accounts.push_back (na);
+            if (! isXRP (issuer))
+                list.insert(issuer);
         }
     }
 
-    return accounts;
+    return list;
 }
 
 static Blob getSigningData (STTx const& that)
@@ -226,11 +220,6 @@ void STTx::setSigningPubKey (RippleAddress const& naSignPubKey)
     setFieldVL (sfSigningPubKey, naSignPubKey.getAccountPublic ());
 }
 
-void STTx::setSourceAccount (RippleAddress const& naSource)
-{
-    setFieldAccount (sfAccount, naSource);
-}
-
 Json::Value STTx::getJson (int) const
 {
     Json::Value ret = STObject::getJson (0);
@@ -269,6 +258,7 @@ std::string STTx::getMetaSQL (std::uint32_t inLedger,
     return getMetaSQL (s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
 }
 
+// VFALCO This could be a free function elsewhere
 std::string
 STTx::getMetaSQL (Serializer rawTxn,
     std::uint32_t inLedger, char status, std::string const& escapedMetaData) const
@@ -281,7 +271,7 @@ STTx::getMetaSQL (Serializer rawTxn,
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % format->getName ()
-                % getSourceAccount ().humanAccountID ()
+                % toBase58(getAccountID(sfAccount))
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
@@ -338,7 +328,7 @@ STTx::checkMultiSign () const
     Serializer const dataStart (startMultiSigningData ());
 
     // We also use the sfAccount field inside the loop.  Get it once.
-    RippleAddress const txnAccountID = getFieldAccount (sfAccount);
+    auto const txnAccountID = getAccountID (sfAccount);
 
     // Determine whether signatures must be full canonical.
     ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
@@ -398,17 +388,16 @@ STTx::checkMultiSign () const
     */
 
     // We use this std::set to detect this form of double-signing.
-    std::set<RippleAddress> firstLevelSigners;
+    std::set<AccountID> firstLevelSigners;
 
     // SigningFors must be in sorted order by AccountID.
-    RippleAddress lastSigningForID;
-    lastSigningForID.setAccountID ("");
+    AccountID lastSigningForID = zero;
 
     // Every signature must verify or we reject the transaction.
     for (auto const& signingFor : multiSigners)
     {
-        RippleAddress const signingForID =
-            signingFor.getFieldAccount (sfAccount);
+        auto const signingForID =
+            signingFor.getAccountID (sfAccount);
 
         // SigningFors must be in order by account ID.  No duplicates allowed.
         if (lastSigningForID >= signingForID)
@@ -440,13 +429,12 @@ STTx::checkMultiSign () const
         }
 
         // SingingAccounts must be in sorted order by AccountID.
-        RippleAddress lastSigningAcctID;
-        lastSigningAcctID.setAccountID ("");
+        AccountID lastSigningAcctID = zero;
 
         for (auto const& signingAcct : signingAccounts)
         {
-            RippleAddress const signingAcctID =
-                signingAcct.getFieldAccount (sfAccount);
+            auto const signingAcctID =
+                signingAcct.getAccountID (sfAccount);
 
             // None of the multi-signers may sign for themselves.
             if (signingForID == signingAcctID)

@@ -31,6 +31,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/TxFormats.h>
+#include <ripple/protocol/types.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <cassert>
@@ -544,13 +545,14 @@ static boost::optional<detail::STVar> parseLeaf (
                         // set it, otherwise, we assume it's an AccountID
                         if (!uAccount.SetHexExact (account.asString ()))
                         {
-                            RippleAddress a;
-                            if (!a.setAccountID (account.asString ()))
+                            auto const a = parseBase58<AccountID>(
+                                account.asString());
+                            if (! a)
                             {
                                 error = invalid_data (element_name, "account");
                                 return ret;
                             }
-                            uAccount = a.getAccountID ();
+                            uAccount = *a;
                         }
                     }
 
@@ -586,13 +588,14 @@ static boost::optional<detail::STVar> parseLeaf (
 
                         if (!uIssuer.SetHexExact (issuer.asString ()))
                         {
-                            RippleAddress a;
-                            if (!a.setAccountID (issuer.asString ()))
+                            auto const a = parseBase58<AccountID>(
+                                issuer.asString());
+                            if (! a)
                             {
                                 error = invalid_data (element_name, "issuer");
                                 return ret;
                             }
-                            uIssuer = a.getAccountID ();
+                            uIssuer = *a;
                         }
                     }
 
@@ -623,18 +626,17 @@ static boost::optional<detail::STVar> parseLeaf (
 
             try
             {
-                AccountID account;
-                if (!account.SetHexExact (strValue))
+                // VFALCO This needs careful auditing
+                auto const account =
+                    parseHexOrBase58<AccountID>(
+                        strValue);
+                if (! account)
                 {
-                    RippleAddress a;
-                    if (!a.setAccountID (strValue))
-                    {
-                        error = invalid_data (json_name, fieldName);
-                        return ret;
-                    }
-                    account.copyFrom (a.getAccountID ());
+                    error = invalid_data (json_name, fieldName);
+                    return ret;
                 }
-                ret = detail::make_stvar <STAccount> (field, account);
+                ret = detail::make_stvar <STAccount>(
+                    field, *account);
             }
             catch (...)
             {

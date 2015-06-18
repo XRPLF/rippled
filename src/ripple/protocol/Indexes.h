@@ -54,9 +54,6 @@ uint256
 getAccountRootIndex (AccountID const& account);
 
 uint256
-getAccountRootIndex (const RippleAddress & account);
-
-uint256
 getGeneratorIndex (AccountID const& uGeneratorID);
 
 uint256
@@ -110,9 +107,6 @@ namespace keylet {
 struct account_t
 {
     Keylet operator()(AccountID const& id) const;
-
-    // DEPRECATED
-    Keylet operator()(RippleAddress const& ra) const;
 };
 static account_t const account {};
 

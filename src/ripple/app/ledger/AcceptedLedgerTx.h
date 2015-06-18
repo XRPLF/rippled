@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <boost/container/flat_set.hpp>
 
 namespace ripple {
 
@@ -63,7 +64,9 @@ public:
     {
         return mMeta;
     }
-    std::vector <RippleAddress> const& getAffected () const
+    
+    boost::container::flat_set<AccountID> const&
+    getAffected() const
     {
         return mAffected;
     }
@@ -104,7 +107,7 @@ private:
     STTx::pointer  mTxn;
     TransactionMetaSet::pointer     mMeta;
     TER                             mResult;
-    std::vector <RippleAddress>     mAffected;
+    boost::container::flat_set<AccountID> mAffected;
     Blob        mRawMeta;
     Json::Value                     mJson;
 

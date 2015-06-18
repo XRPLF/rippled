@@ -17,48 +17,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_ACCOUNTSTATE_H_INCLUDED
-#define RIPPLE_APP_MISC_ACCOUNTSTATE_H_INCLUDED
-
-#include <ripple/basics/Blob.h>
-#include <ripple/protocol/RippleAddress.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <BeastConfig.h>
+#include <ripple/protocol/types.h>
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 
-//
-// Provide abstract access to an account's state, such that
-// access to the serialized format is hidden.
-//
-
-// VFALCO TODO Remove this class, its redundant and hardly used
-class AccountState
+struct types_test : public beast::unit_test::suite
 {
-public:
-    // VFALCO TODO Figure out if we need this to be shared
-    using pointer = std::shared_ptr<AccountState>;
-
-    // For accounts in a ledger
-    AccountState (std::shared_ptr<SLE const> sle,
-        RippleAddress const& naAccountI);
-
-    SLE const&
-    sle() const
+    void
+    testAccountID()
     {
-        return *mLedgerEntry;
+        auto const s =
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+        if (expect(parseBase58<AccountID>(s)))
+            expect(toBase58(
+                *parseBase58<AccountID>(s)) == s);
     }
 
-    void addJson (Json::Value& value);
-
-private:
-    // VFALCO TODO Remove this
-    static std::string createGravatarUrl (uint128 uEmailHash);
-
-    bool mValid = false;
-    std::shared_ptr<SLE const> mLedgerEntry;
+    void
+    run() override
+    {
+        testAccountID();
+    }
 };
 
-} // ripple
+BEAST_DEFINE_TESTSUITE(types,protocol,ripple);
 
-#endif
+}

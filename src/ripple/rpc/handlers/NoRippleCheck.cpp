@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/ledger/CachedView.h>
@@ -29,12 +30,12 @@ namespace ripple {
 
 static void fillTransaction (
     Json::Value& txArray,
-    RippleAddress const& account,
+    AccountID const& accountID,
     std::uint32_t& sequence,
     Ledger::ref ledger)
 {
     txArray["Sequence"] = Json::UInt (sequence++);
-    txArray["Account"] = account.humanAccountID ();
+    txArray["Account"] = getApp().accountIDCache().toBase58 (accountID);
     txArray["Fee"] = Json::UInt (scaleFeeLoad (
         getApp().getFeeTrack(), *ledger, 10, false));
 }
@@ -96,10 +97,10 @@ Json::Value doNoRippleCheck (RPC::Context& context)
     std::string strIdent (params[jss::account].asString ());
     bool bIndex (params.isMember (jss::account_index));
     int iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
-    RippleAddress rippleAddress;
+    AccountID accountID;
 
     Json::Value const jv = RPC::accountFromString (
-        rippleAddress, bIndex, strIdent, iIndex, false);
+        accountID, bIndex, strIdent, iIndex, false);
     if (! jv.empty ())
     {
         for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
@@ -108,17 +109,17 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         return result;
     }
 
-    AccountState::pointer accountState =
-        getAccountState(*ledger, rippleAddress,
-            getApp().getSLECache());
-    if (! accountState)
+    auto const sle = cachedRead(*ledger,
+        keylet::account(accountID).key,
+            getApp().getSLECache(), ltACCOUNT_ROOT);
+    if (! sle)
         return rpcError (rpcACT_NOT_FOUND);
 
-    std::uint32_t seq = accountState->sle().getFieldU32 (sfSequence);
+    std::uint32_t seq = sle->getFieldU32 (sfSequence);
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = accountState->sle().getFieldU32 (sfFlags) & lsfDefaultRipple;
+    bool bDefaultRipple = sle->getFieldU32 (sfFlags) & lsfDefaultRipple;
 
     if (bDefaultRipple & ! roleGateway)
     {
@@ -133,15 +134,13 @@ Json::Value doNoRippleCheck (RPC::Context& context)
             Json::Value& tx = jvTransactions.append (Json::objectValue);
             tx["TransactionType"] = "AccountSet";
             tx["SetFlag"] = 8;
-            fillTransaction (tx, rippleAddress, seq, ledger);
+            fillTransaction (tx, accountID, seq, ledger);
         }
     }
 
-    auto const accountID = rippleAddress.getAccountID ();
-
     CachedView const view(
         *ledger, getApp().getSLECache());
-    forEachItemAfter (view, accountID, 
+    forEachItemAfter (view, accountID,
             uint256(), 0, limit,
         [&](std::shared_ptr<SLE const> const& ownedItem)
         {
@@ -181,7 +180,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                     tx["TransactionType"] = "TrustSet";
                     tx["LimitAmount"] = limitAmount.getJson (0);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
-                    fillTransaction(tx, rippleAddress, seq, ledger);
+                    fillTransaction(tx, accountID, seq, ledger);
 
                     return true;
                 }

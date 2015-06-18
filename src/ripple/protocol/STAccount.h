@@ -65,9 +65,6 @@ public:
     }
     std::string getText () const override;
 
-    RippleAddress getValueNCA () const;
-    void setValueNCA (RippleAddress const& nca);
-
     template <typename Tag>
     void setValueH160 (base_uint<160, Tag> const& v)
     {
@@ -75,6 +72,10 @@ public:
         assert (peekValue ().size () == (160 / 8));
     }
 
+    // VFALCO This is a clumsy interface, it should return
+    //        the value. And it should not be possible to
+    //        have anything other than a uint160 in here.
+    //        The base_uint tag should always be `AccountIDTag`.
     template <typename Tag>
     bool getValueH160 (base_uint<160, Tag>& v) const
     {

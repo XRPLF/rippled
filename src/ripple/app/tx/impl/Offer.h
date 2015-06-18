@@ -45,7 +45,7 @@ public:
     Offer (SLE::pointer const& entry, Quality quality)
         : m_entry (entry)
         , m_quality (quality)
-        , m_account (m_entry->getFieldAccount160 (sfAccount))
+        , m_account (m_entry->getAccountID (sfAccount))
         , m_amounts (
             m_entry->getFieldAmount (sfTakerPays),
             m_entry->getFieldAmount (sfTakerGets))

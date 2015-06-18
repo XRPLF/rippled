@@ -23,6 +23,7 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TER.h>
+#include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -91,8 +92,10 @@ public:
     STObject& getAffectedNode (SLE::ref node, SField const& type); // create if needed
     STObject& getAffectedNode (uint256 const& );
     const STObject& peekAffectedNode (uint256 const& ) const;
-    std::vector<RippleAddress> getAffectedAccounts ();
-
+    
+    /** Return a list of accounts affected by this transaction */
+    boost::container::flat_set<AccountID>
+    getAffectedAccounts() const;
 
     Json::Value getJson (int p) const
     {

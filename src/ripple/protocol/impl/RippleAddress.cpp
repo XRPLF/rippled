@@ -26,10 +26,12 @@
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/RipplePublicKey.h>
+#include <ripple/protocol/types.h>
 #include <beast/unit_test/suite.h>
 #include <ed25519-donna/ed25519.h>
 #include <openssl/ripemd.h>
@@ -83,19 +85,19 @@ bool verifySignature (Blob const& pubkey, uint256 const& hash, Blob const& sig,
 RippleAddress::RippleAddress ()
     : mIsValid (false)
 {
-    nVersion = VER_NONE;
+    nVersion = TOKEN_NONE;
 }
 
 void RippleAddress::clear ()
 {
-    nVersion = VER_NONE;
+    nVersion = TOKEN_NONE;
     vchData.clear ();
     mIsValid = false;
 }
 
 bool RippleAddress::isSet () const
 {
-    return nVersion != VER_NONE;
+    return nVersion != TOKEN_NONE;
 }
 
 //
@@ -145,7 +147,7 @@ RippleAddress RippleAddress::createNodePublic (std::string const& strPublic)
 RipplePublicKey
 RippleAddress::toPublicKey() const
 {
-    assert (nVersion == VER_NODE_PUBLIC);
+    assert (nVersion == TOKEN_NODE_PUBLIC);
     return RipplePublicKey (vchData.begin(), vchData.end());
 }
 
@@ -159,10 +161,10 @@ NodeID RippleAddress::getNodeID () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getNodeID");
 
-    case VER_NODE_PUBLIC: {
+    case TOKEN_NODE_PUBLIC: {
         // Note, we are encoding the left.
         NodeID node;
         node.copyFrom(Hash160 (vchData));
@@ -178,10 +180,10 @@ Blob const& RippleAddress::getNodePublic () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getNodePublic");
 
-    case VER_NODE_PUBLIC:
+    case TOKEN_NODE_PUBLIC:
         return vchData;
 
     default:
@@ -193,10 +195,10 @@ std::string RippleAddress::humanNodePublic () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanNodePublic");
 
-    case VER_NODE_PUBLIC:
+    case TOKEN_NODE_PUBLIC:
         return ToString ();
 
     default:
@@ -207,7 +209,7 @@ std::string RippleAddress::humanNodePublic () const
 bool RippleAddress::setNodePublic (std::string const& strPublic)
 {
     mIsValid = SetString (
-        strPublic, VER_NODE_PUBLIC, Base58::getRippleAlphabet ());
+        strPublic, TOKEN_NODE_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -216,7 +218,7 @@ void RippleAddress::setNodePublic (Blob const& vPublic)
 {
     mIsValid        = true;
 
-    SetData (VER_NODE_PUBLIC, vPublic);
+    SetData (TOKEN_NODE_PUBLIC, vPublic);
 }
 
 bool RippleAddress::verifyNodePublic (
@@ -250,10 +252,10 @@ Blob const& RippleAddress::getNodePrivateData () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getNodePrivateData");
 
-    case VER_NODE_PRIVATE:
+    case TOKEN_NODE_PRIVATE:
         return vchData;
 
     default:
@@ -265,10 +267,10 @@ uint256 RippleAddress::getNodePrivate () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source = getNodePrivate");
 
-    case VER_NODE_PRIVATE:
+    case TOKEN_NODE_PRIVATE:
         return uint256 (vchData);
 
     default:
@@ -280,10 +282,10 @@ std::string RippleAddress::humanNodePrivate () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanNodePrivate");
 
-    case VER_NODE_PRIVATE:
+    case TOKEN_NODE_PRIVATE:
         return ToString ();
 
     default:
@@ -294,7 +296,7 @@ std::string RippleAddress::humanNodePrivate () const
 bool RippleAddress::setNodePrivate (std::string const& strPrivate)
 {
     mIsValid = SetString (
-        strPrivate, VER_NODE_PRIVATE, Base58::getRippleAlphabet ());
+        strPrivate, TOKEN_NODE_PRIVATE, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -303,14 +305,14 @@ void RippleAddress::setNodePrivate (Blob const& vPrivate)
 {
     mIsValid = true;
 
-    SetData (VER_NODE_PRIVATE, vPrivate);
+    SetData (TOKEN_NODE_PRIVATE, vPrivate);
 }
 
 void RippleAddress::setNodePrivate (uint256 hash256)
 {
     mIsValid = true;
 
-    SetData (VER_NODE_PRIVATE, hash256);
+    SetData (TOKEN_NODE_PRIVATE, hash256);
 }
 
 void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
@@ -319,131 +321,6 @@ void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
 
     if (vchSig.empty())
         throw std::runtime_error ("Signing failed.");
-}
-
-//
-// AccountID
-//
-
-AccountID RippleAddress::getAccountID () const
-{
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - getAccountID");
-
-    case VER_ACCOUNT_ID:
-        return AccountID(vchData);
-
-    case VER_ACCOUNT_PUBLIC: {
-        // Note, we are encoding the left.
-        // TODO(tom): decipher this comment.
-        AccountID account;
-        account.copyFrom (Hash160 (vchData));
-        return account;
-    }
-
-    default:
-        throw badSourceError (nVersion);
-    }
-}
-
-using StaticLockType = std::mutex;
-using StaticScopedLockType = std::lock_guard <StaticLockType>;
-
-static StaticLockType s_lock;
-static hash_map <Blob, std::string> rncMapOld, rncMapNew;
-
-void RippleAddress::clearCache ()
-{
-    StaticScopedLockType sl (s_lock);
-
-    rncMapOld.clear ();
-    rncMapNew.clear ();
-}
-
-std::string RippleAddress::humanAccountID () const
-{
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - humanAccountID");
-
-    case VER_ACCOUNT_ID:
-    {
-        std::string ret;
-
-        {
-            StaticScopedLockType sl (s_lock);
-
-            auto it = rncMapNew.find (vchData);
-
-            if (it != rncMapNew.end ())
-            {
-                // Found in new map, nothing to do
-                ret = it->second;
-            }
-            else
-            {
-                it = rncMapOld.find (vchData);
-
-                if (it != rncMapOld.end ())
-                {
-                    ret = it->second;
-                    rncMapOld.erase (it);
-                }
-                else
-                    ret = ToString ();
-
-                if (rncMapNew.size () >= 128000)
-                {
-                    rncMapOld = std::move (rncMapNew);
-                    rncMapNew.clear ();
-                    rncMapNew.reserve (128000);
-                }
-
-                rncMapNew[vchData] = ret;
-            }
-        }
-
-        return ret;
-    }
-
-    case VER_ACCOUNT_PUBLIC:
-    {
-        RippleAddress   accountID;
-
-        (void) accountID.setAccountID (getAccountID ());
-
-        return accountID.ToString ();
-    }
-
-    default:
-        throw badSourceError (nVersion);
-    }
-}
-
-bool RippleAddress::setAccountID (
-    std::string const& strAccountID, Base58::Alphabet const& alphabet)
-{
-    if (strAccountID.empty ())
-    {
-        setAccountID (AccountID ());
-
-        mIsValid    = true;
-    }
-    else
-    {
-        mIsValid = SetString (strAccountID, VER_ACCOUNT_ID, alphabet);
-    }
-
-    return mIsValid;
-}
-
-void RippleAddress::setAccountID (AccountID const& hash160)
-{
-    mIsValid        = true;
-    SetData (VER_ACCOUNT_ID, hash160);
 }
 
 //
@@ -464,14 +341,14 @@ Blob const& RippleAddress::getAccountPublic () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getAccountPublic");
 
-    case VER_ACCOUNT_ID:
+    case TOKEN_ACCOUNT_ID:
         throw std::runtime_error ("public not available from account id");
         break;
 
-    case VER_ACCOUNT_PUBLIC:
+    case TOKEN_ACCOUNT_PUBLIC:
         return vchData;
 
     default:
@@ -483,13 +360,13 @@ std::string RippleAddress::humanAccountPublic () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanAccountPublic");
 
-    case VER_ACCOUNT_ID:
+    case TOKEN_ACCOUNT_ID:
         throw std::runtime_error ("public not available from account id");
 
-    case VER_ACCOUNT_PUBLIC:
+    case TOKEN_ACCOUNT_PUBLIC:
         return ToString ();
 
     default:
@@ -500,7 +377,7 @@ std::string RippleAddress::humanAccountPublic () const
 bool RippleAddress::setAccountPublic (std::string const& strPublic)
 {
     mIsValid = SetString (
-        strPublic, VER_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
+        strPublic, TOKEN_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -509,7 +386,7 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
 {
     mIsValid = true;
 
-    SetData (VER_ACCOUNT_PUBLIC, vPublic);
+    SetData (TOKEN_ACCOUNT_PUBLIC, vPublic);
 }
 
 void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
@@ -541,14 +418,6 @@ bool RippleAddress::accountPublicVerify (
             fullyCanonical);
 }
 
-RippleAddress RippleAddress::createAccountID (AccountID const& account)
-{
-    RippleAddress   na;
-    na.setAccountID (account);
-
-    return na;
-}
-
 //
 // AccountPrivate
 //
@@ -567,10 +436,10 @@ uint256 RippleAddress::getAccountPrivate () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getAccountPrivate");
 
-    case VER_ACCOUNT_PRIVATE:
+    case TOKEN_ACCOUNT_SECRET:
         return uint256::fromVoid (vchData.data() + (vchData.size() - 32));
 
     default:
@@ -581,7 +450,7 @@ uint256 RippleAddress::getAccountPrivate () const
 bool RippleAddress::setAccountPrivate (std::string const& strPrivate)
 {
     mIsValid = SetString (
-        strPrivate, VER_ACCOUNT_PRIVATE, Base58::getRippleAlphabet ());
+        strPrivate, TOKEN_ACCOUNT_SECRET, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -589,13 +458,13 @@ bool RippleAddress::setAccountPrivate (std::string const& strPrivate)
 void RippleAddress::setAccountPrivate (Blob const& vPrivate)
 {
     mIsValid = true;
-    SetData (VER_ACCOUNT_PRIVATE, vPrivate);
+    SetData (TOKEN_ACCOUNT_SECRET, vPrivate);
 }
 
 void RippleAddress::setAccountPrivate (uint256 hash256)
 {
     mIsValid = true;
-    SetData (VER_ACCOUNT_PRIVATE, hash256);
+    SetData (TOKEN_ACCOUNT_SECRET, hash256);
 }
 
 void RippleAddress::setAccountPrivate (
@@ -689,10 +558,10 @@ Blob const& RippleAddress::getGenerator () const
     // returns the public generator
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getGenerator");
 
-    case VER_FAMILY_GENERATOR:
+    case TOKEN_FAMILY_GENERATOR:
         // Do nothing.
         return vchData;
 
@@ -705,10 +574,10 @@ std::string RippleAddress::humanGenerator () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanGenerator");
 
-    case VER_FAMILY_GENERATOR:
+    case TOKEN_FAMILY_GENERATOR:
         return ToString ();
 
     default:
@@ -719,7 +588,7 @@ std::string RippleAddress::humanGenerator () const
 void RippleAddress::setGenerator (Blob const& vPublic)
 {
     mIsValid        = true;
-    SetData (VER_FAMILY_GENERATOR, vPublic);
+    SetData (TOKEN_FAMILY_GENERATOR, vPublic);
 }
 
 RippleAddress RippleAddress::createGeneratorPublic (RippleAddress const& naSeed)
@@ -737,10 +606,10 @@ uint128 RippleAddress::getSeed () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - getSeed");
 
-    case VER_FAMILY_SEED:
+    case TOKEN_FAMILY_SEED:
         return uint128 (vchData);
 
     default:
@@ -752,10 +621,10 @@ std::string RippleAddress::humanSeed1751 () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanSeed1751");
 
-    case VER_FAMILY_SEED:
+    case TOKEN_FAMILY_SEED:
     {
         std::string strHuman;
         std::string strLittle;
@@ -780,10 +649,10 @@ std::string RippleAddress::humanSeed () const
 {
     switch (nVersion)
     {
-    case VER_NONE:
+    case TOKEN_NONE:
         throw std::runtime_error ("unset source - humanSeed");
 
-    case VER_FAMILY_SEED:
+    case TOKEN_FAMILY_SEED:
         return ToString ();
 
     default:
@@ -809,7 +678,7 @@ int RippleAddress::setSeed1751 (std::string const& strHuman1751)
 
 bool RippleAddress::setSeed (std::string const& strSeed)
 {
-    mIsValid = SetString (strSeed, VER_FAMILY_SEED, Base58::getRippleAlphabet ());
+    mIsValid = SetString (strSeed, TOKEN_FAMILY_SEED, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -820,8 +689,10 @@ bool RippleAddress::setSeedGeneric (std::string const& strText)
     bool            bResult = true;
     uint128         uSeed;
 
+    if (parseBase58<AccountID>(strText))
+        return false;
+
     if (strText.empty ()
-            || naTemp.setAccountID (strText)
             || naTemp.setAccountPublic (strText)
             || naTemp.setAccountPrivate (strText)
             || naTemp.setNodePublic (strText)
@@ -853,7 +724,7 @@ void RippleAddress::setSeed (uint128 hash128)
 {
     mIsValid = true;
 
-    SetData (VER_FAMILY_SEED, hash128);
+    SetData (TOKEN_FAMILY_SEED, hash128);
 }
 
 void RippleAddress::setSeedRandom ()
@@ -976,6 +847,22 @@ KeyPair generateKeysFromSeed (KeyType type, RippleAddress const& seed)
     }
 
     return result;
+}
+
+// DEPRECATED
+AccountID
+calcAccountID (RippleAddress const& publicKey)
+{
+    auto const& pk =
+        publicKey.getAccountPublic();
+    ripesha_hasher rsh;
+    rsh(pk.data(), pk.size());
+    auto const d = static_cast<
+        ripesha_hasher::result_type>(rsh);
+    AccountID id;
+    static_assert(sizeof(d) == sizeof(id), "");
+    std::memcpy(id.data(), d.data(), d.size());
+    return id;
 }
 
 } // ripple

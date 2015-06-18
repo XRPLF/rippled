@@ -24,6 +24,7 @@
 #include <ripple/ledger/ViewAPIBasics.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/TER.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 

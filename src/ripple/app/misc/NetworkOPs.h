@@ -190,7 +190,7 @@ public:
     //
 
     virtual Json::Value getOwnerInfo (Ledger::pointer lpLedger,
-        RippleAddress const& naAccount) = 0;
+        AccountID const& account) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -286,7 +286,7 @@ public:
 
     //Helper function to generate SQL query to get transactions
     virtual std::string transactionsSQL (std::string selection,
-        RippleAddress const& account, std::int32_t minLedger, std::int32_t maxLedger,
+        AccountID const& account, std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit, bool binary,
             bool count, bool bAdmin) = 0;
 
@@ -295,28 +295,25 @@ public:
     using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs getAccountTxs (
-        RippleAddress const& account,
+        AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
         std::uint32_t offset, int limit, bool bAdmin) = 0;
 
     virtual AccountTxs getTxsAccount (
-        RippleAddress const& account,
+        AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
     using txnMetaLedgerType = std::tuple<std::string, std::string, std::uint32_t>;
     using MetaTxsList       = std::vector<txnMetaLedgerType>;
 
-    virtual MetaTxsList getAccountTxsB (RippleAddress const& account,
+    virtual MetaTxsList getAccountTxsB (AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
             std::uint32_t offset, int limit, bool bAdmin) = 0;
 
-    virtual MetaTxsList getTxsAccountB (RippleAddress const& account,
+    virtual MetaTxsList getTxsAccountB (AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
-
-    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (
-        std::uint32_t ledgerSeq) = 0;
 
     //--------------------------------------------------------------------------
     //

@@ -156,7 +156,8 @@ public:
 
 private:
     uint256         mTransactionID;
-    RippleAddress   mAccountFrom;
+    // VFALCO NOTE This member appears unused
+    AccountID       mAccountFrom;
     RippleAddress   mFromPubKey;    // Sign transaction with this. mSignPubKey
     RippleAddress   mSourcePrivate; // Sign transaction with this.
 

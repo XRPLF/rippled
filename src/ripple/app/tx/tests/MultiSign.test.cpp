@@ -19,6 +19,7 @@
 #include <ripple/app/tx/tests/common_transactor.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 namespace test {
@@ -36,7 +37,7 @@ class MultiSign_test : public beast::unit_test::suite
     UserAccount shade {KeyType::secp256k1, "shade"};
     UserAccount spook {KeyType::ed25519,   "spook"};
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_singleSig (KeyType kType)
     {
@@ -104,7 +105,7 @@ class MultiSign_test : public beast::unit_test::suite
         aliceBalanceCheck (1000);
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_noReserve (KeyType kType)
     {
@@ -148,7 +149,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_signerListSet (KeyType kType)
     {
@@ -283,7 +284,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_phantomSigners (KeyType kType)
     {
@@ -397,7 +398,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_masterSigners (KeyType kType)
     {
@@ -492,7 +493,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_regularSigners (KeyType kType)
     {
@@ -613,7 +614,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_heterogeneousSigners (KeyType kType)
     {
@@ -769,7 +770,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     void test_twoLevel(KeyType kType)
     {
@@ -1228,7 +1229,7 @@ class MultiSign_test : public beast::unit_test::suite
         }
     }
 
-//------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     // See if every kind of transaction can be successfully multi-signed.
     void test_txTypes(KeyType kType)
@@ -1350,7 +1351,7 @@ class MultiSign_test : public beast::unit_test::suite
                     RippleAddress::createSeedGeneric("BadNewsBears");
                 KeyPair regular = generateKeysFromSeed (kType, seed);
                 STTx tx = getSetRegularKeyTx (
-                    alice, regular.publicKey.getAccountID());
+                    alice, calcAccountID(regular.publicKey));
 
                 std::vector<MultiSig> multiSigs {
                     {alice, bogie, tx},
@@ -1376,7 +1377,7 @@ class MultiSign_test : public beast::unit_test::suite
                     RippleAddress::createSeedGeneric("alie");
                 KeyPair regular = generateKeysFromSeed (kType, seed);
                 STTx tx = getSetRegularKeyTx (
-                    alice, regular.publicKey.getAccountID());
+                    alice, calcAccountID(regular.publicKey));
 
                 std::vector<MultiSig> multiSigs {
                     {alice, bogie, tx},

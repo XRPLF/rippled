@@ -403,7 +403,7 @@ adjustOwnerCount (View& view,
         if (adjusted < current)
         {
             WriteLog (lsFATAL, View) <<
-                "Account " << sle->getFieldAccount160(sfAccount) <<
+                "Account " << sle->getAccountID(sfAccount) <<
                 " owner count exceeds max!";
             adjusted =
                 std::numeric_limits<std::uint32_t>::max ();
@@ -415,7 +415,7 @@ adjustOwnerCount (View& view,
         if (adjusted > current)
         {
             WriteLog (lsFATAL, View) <<
-                "Account " << sle->getFieldAccount160 (sfAccount) <<
+                "Account " << sle->getAccountID (sfAccount) <<
                 " owner count set below 0!";
             adjusted = 0;
             assert(false);
@@ -796,7 +796,7 @@ trustCreate (View& view,
         sleRippleState->getIndex (),
         [uLowAccountID](std::shared_ptr<SLE> const& sle, bool)
             {
-                sle->setFieldAccount (sfOwner, uLowAccountID);
+                sle->setAccountID (sfOwner, uLowAccountID);
             });
 
     if (tesSUCCESS == terResult)
@@ -807,7 +807,7 @@ trustCreate (View& view,
             sleRippleState->getIndex (),
             [uHighAccountID](std::shared_ptr<SLE> const& sle, bool)
                 {
-                    sle->setFieldAccount (sfOwner, uHighAccountID);
+                    sle->setAccountID (sfOwner, uHighAccountID);
                 });
     }
 
@@ -816,7 +816,7 @@ trustCreate (View& view,
         const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
         const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-        assert (sleAccount->getFieldAccount160 (sfAccount) ==
+        assert (sleAccount->getAccountID (sfAccount) ==
             (bSetHigh ? uHighAccountID : uLowAccountID));
         auto slePeer = view.peek (keylet::account(
             bSetHigh ? uLowAccountID : uHighAccountID));
@@ -923,7 +923,7 @@ offerDelete (View& view,
     if (! sle)
         return tesSUCCESS;
     auto offerIndex = sle->getIndex ();
-    auto owner = sle->getFieldAccount160  (sfAccount);
+    auto owner = sle->getAccountID  (sfAccount);
 
     // Detect legacy directories.
     bool bOwnerNode = sle->isFieldPresent (sfOwnerNode);

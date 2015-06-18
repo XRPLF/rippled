@@ -20,10 +20,14 @@
 #ifndef RIPPLE_RPC_PARSEACCOUNTIDS_H_INCLUDED
 #define RIPPLE_RPC_PARSEACCOUNTIDS_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/types.h>
+
 namespace ripple {
 namespace RPC {
 
-hash_set <RippleAddress> parseAccountIds (Json::Value const& jvArray);
+hash_set <AccountID>
+parseAccountIds (Json::Value const& jvArray);
 
 } // RPC
 } // ripple

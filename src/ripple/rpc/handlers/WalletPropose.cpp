@@ -96,7 +96,7 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::master_seed] = naSeed.humanSeed ();
     obj[jss::master_seed_hex] = to_string (naSeed.getSeed ());
     obj[jss::master_key] = naSeed.humanSeed1751();
-    obj[jss::account_id] = naAccount.humanAccountID ();
+    obj[jss::account_id] = toBase58(calcAccountID(naAccount));
     obj[jss::public_key] = naAccount.humanAccountPublic();
     obj[jss::key_type] = to_string (type);
 

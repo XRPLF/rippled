@@ -264,12 +264,15 @@ Json::Value doSubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            RippleAddress   raTakerID;
+            boost::optional<AccountID> takerID;
 
-            if (!j.isMember (jss::taker))
-                raTakerID.setAccountID (noAccount());
-            else if (!raTakerID.setAccountID (j[jss::taker].asString ()))
-                return rpcError (rpcBAD_ISSUER);
+            if (j.isMember (jss::taker))
+            {
+                takerID = parseBase58<AccountID>(
+                    j[jss::taker].asString());
+                if (! takerID)
+                    return rpcError (rpcBAD_ISSUER);
+            }
 
             if (!isConsistent (book))
             {
@@ -296,7 +299,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     {
                         context.netOps.getBookPage (context.role == Role::ADMIN,
                             lpLedger, field == jss::asks ? reversed (book) : book,
-                            raTakerID.getAccountID(), false, 0, jvMarker,
+                            takerID ? *takerID : noAccount(), false, 0, jvMarker,
                             jvOffers);
 
                         if (jvResult.isMember (field))

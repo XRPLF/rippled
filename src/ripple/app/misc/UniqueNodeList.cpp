@@ -932,7 +932,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
     {
         Json::Value node (Json::objectValue);
 
-        node["publicKey"]   = encodeCredential (key.first, VER_NODE_PUBLIC);
+        node["publicKey"]   = encodeCredential (key.first, TOKEN_NODE_PUBLIC);
         node["comment"]     = key.second;
 
         ret.append (node);

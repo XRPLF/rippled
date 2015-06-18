@@ -24,6 +24,7 @@ namespace ripple {
 namespace RPC {
 
 namespace detail {
+
 // A class that allows these methods to be called with or without a
 // real NetworkOPs instance.  This allows for unit testing.
 class TxnSignApiFacade
@@ -31,8 +32,8 @@ class TxnSignApiFacade
 private:
     NetworkOPs* const netOPs_;
     Ledger::pointer ledger_;
-    RippleAddress accountID_;
-    AccountState::pointer accountState_;
+    AccountID accountID_;
+    std::shared_ptr<SLE const> sle_;
 
 public:
     // Enum used to construct a Facade for unit tests.
@@ -59,14 +60,14 @@ public:
     , ledger_ (ledger)
     { }
 
-    void snapshotAccountState (RippleAddress const& accountID);
+    void snapshotAccountState (AccountID const& accountID);
 
     bool isValidAccount () const;
 
     std::uint32_t getSeq () const;
 
     bool findPathsForOneIssuer (
-        RippleAddress const& dstAccountID,
+        AccountID const& dstAccountID,
         Issue const& srcIssue,
         STAmount const& dstAmount,
         int searchLevel,
@@ -90,7 +91,7 @@ public:
         RippleAddress const& publicKey) const;
 
     error_code_i multiAcctMatchesPubKey (
-        RippleAddress const& acctID,
+        AccountID const& acctID,
         RippleAddress const& publicKey) const;
 
     int getValidatedLedgerAge () const;

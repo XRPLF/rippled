@@ -23,34 +23,40 @@
 namespace ripple {
 namespace RPC {
 
-// --> strIdent: public key, account ID, or regular seed.
-// --> bStrict: Only allow account id or public key.
-// <-- bIndex: true if iIndex > 0 and used the index.
-//
-// Returns a Json::objectValue, containing error information if there was one.
 Json::Value accountFromString (
-    RippleAddress& naAccount,
+    AccountID& result,
     bool& bIndex,
     std::string const& strIdent,
     int const iIndex,
     bool const bStrict)
 {
-    RippleAddress   naSeed;
-
-    if (naAccount.setAccountPublic (strIdent) ||
-        naAccount.setAccountID (strIdent))
+    // VFALCO Use AnyPublicKey
+    // Try public key
+    RippleAddress naAccount;
+    if (naAccount.setAccountPublic(strIdent))
     {
-        // Got the account.
+        result = calcAccountID(naAccount);
         bIndex = false;
-        return Json::Value (Json::objectValue);
+        return Json::objectValue;
+    }
+
+    // Try AccountID
+    auto accountID =
+        parseBase58<AccountID>(strIdent);
+    if (accountID)
+    {
+        result = *accountID;
+        bIndex = false;
+        return Json::objectValue;
     }
 
     if (bStrict)
     {
-        auto success = naAccount.setAccountID (
-            strIdent, Base58::getBitcoinAlphabet ());
-        return rpcError (success ? rpcACT_BITCOIN : rpcACT_MALFORMED);
+        accountID = deprecatedParseBitcoinAccountID(strIdent);
+        return rpcError (accountID ? rpcACT_BITCOIN : rpcACT_MALFORMED);
     }
+
+    RippleAddress   naSeed;
 
     // Otherwise, it must be a seed.
     if (!naSeed.setSeedGeneric (strIdent))
@@ -67,7 +73,8 @@ Json::Value accountFromString (
     bIndex  = !iIndex;
     naAccount.setAccountPublic (naGenerator, iIndex);
 
-    return Json::Value (Json::objectValue);
+    result = calcAccountID(naAccount);
+    return Json::objectValue;
 }
 
 } // RPC

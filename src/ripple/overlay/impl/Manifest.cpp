@@ -137,9 +137,9 @@ ManifestCache::configValidatorKey(
     {
         throw std::runtime_error ("Expected 34-byte validator key");
     }
-    if (key[0] != VER_NODE_PUBLIC)
+    if (key[0] != TOKEN_NODE_PUBLIC)
     {
-        throw std::runtime_error ("Expected VER_NODE_PUBLIC (28)");
+        throw std::runtime_error ("Expected TOKEN_NODE_PUBLIC (28)");
     }
     if (key[1] != 0xED)
     {

@@ -48,19 +48,12 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::account_root))
     {
-        RippleAddress   naAccount;
-
-        if (!naAccount.setAccountID (
-                context.params[jss::account_root].asString ())
-            || !naAccount.getAccountID ())
-        {
+        auto const account = parseBase58<AccountID>(
+            context.params[jss::account_root].asString());
+        if (! account || account->isZero())
             jvResult[jss::error]   = "malformedAddress";
-        }
         else
-        {
-            uNodeIndex
-                    = getAccountRootIndex (naAccount.getAccountID ());
-        }
+            uNodeIndex = keylet::account(*account).key;
     }
     else if (context.params.isMember (jss::directory))
     {
@@ -89,18 +82,16 @@ Json::Value doLedgerEntry (RPC::Context& context)
             }
             else if (context.params[jss::directory].isMember (jss::owner))
             {
-                RippleAddress   naOwnerID;
+                auto const ownerID = parseBase58<AccountID>(
+                    context.params[jss::directory][jss::owner].asString());
 
-                if (!naOwnerID.setAccountID (
-                        context.params[jss::directory][jss::owner].asString ()))
+                if (! ownerID)
                 {
                     jvResult[jss::error]   = "malformedAddress";
                 }
                 else
                 {
-                    uint256 uDirRoot
-                            = getOwnerDirIndex (
-                                naOwnerID.getAccountID ());
+                    uint256 uDirRoot = getOwnerDirIndex (*ownerID);
                     uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
                 }
             }
@@ -129,19 +120,18 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
+            // VFALCO Can we remove this?
             RippleAddress na0Public;      // To find the generator's index.
             RippleAddress naGenerator
                     = RippleAddress::createGeneratorPublic (naGeneratorID);
 
             na0Public.setAccountPublic (naGenerator, 0);
 
-            uNodeIndex  = getGeneratorIndex (na0Public.getAccountID ());
+            uNodeIndex  = getGeneratorIndex (calcAccountID(na0Public));
         }
     }
     else if (context.params.isMember (jss::offer))
     {
-        RippleAddress   naAccountID;
-
         if (!context.params[jss::offer].isObject ())
         {
             uNodeIndex.SetHex (context.params[jss::offer].asString ());
@@ -152,15 +142,15 @@ Json::Value doLedgerEntry (RPC::Context& context)
         {
             jvResult[jss::error]   = "malformedRequest";
         }
-        else if (!naAccountID.setAccountID (
-            context.params[jss::offer][jss::account].asString ()))
-        {
-            jvResult[jss::error]   = "malformedAddress";
-        }
         else
         {
-            uNodeIndex  = getOfferIndex (naAccountID.getAccountID (),
-                context.params[jss::offer][jss::seq].asUInt ());
+            auto const id = parseBase58<AccountID>(
+                context.params[jss::offer][jss::account].asString());
+            if (! id)
+                jvResult[jss::error]   = "malformedAddress";
+            else
+                uNodeIndex  = getOfferIndex (*id,
+                    context.params[jss::offer][jss::seq].asUInt ());
         }
     }
     else if (context.params.isMember (jss::ripple_state))
@@ -183,22 +173,26 @@ Json::Value doLedgerEntry (RPC::Context& context)
         {
             jvResult[jss::error]   = "malformedRequest";
         }
-        else if (!naA.setAccountID (
-                     jvRippleState[jss::accounts][0u].asString ())
-                 || !naB.setAccountID (
-                     jvRippleState[jss::accounts][1u].asString ()))
-        {
-            jvResult[jss::error]   = "malformedAddress";
-        }
-        else if (!to_currency (
-            uCurrency, jvRippleState[jss::currency].asString ()))
-        {
-            jvResult[jss::error]   = "malformedCurrency";
-        }
         else
         {
-            uNodeIndex  = getRippleStateIndex (
-                naA.getAccountID (), naB.getAccountID (), uCurrency);
+            auto const id1 = parseBase58<AccountID>(
+                jvRippleState[jss::accounts][0u].asString());
+            auto const id2 = parseBase58<AccountID>(
+                jvRippleState[jss::accounts][1u].asString());
+            if (! id1 || ! id2)
+            {
+                jvResult[jss::error]   = "malformedAddress";
+            }
+            else if (!to_currency (uCurrency,
+                jvRippleState[jss::currency].asString()))
+            {
+                jvResult[jss::error]   = "malformedCurrency";
+            }
+            else
+            {
+                uNodeIndex  = getRippleStateIndex(
+                    *id1, *id2, uCurrency);
+            }
         }
     }
     else

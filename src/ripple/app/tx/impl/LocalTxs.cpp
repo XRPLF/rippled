@@ -64,7 +64,7 @@ public:
         : m_txn (txn)
         , m_expire (index + holdLedgers)
         , m_id (txn->getTransactionID ())
-        , m_account (txn->getSourceAccount ())
+        , m_account (txn->getAccountID(sfAccount))
         , m_seq (txn->getSequence())
     {
         if (txn->isFieldPresent (sfLastLedgerSequence))
@@ -91,7 +91,7 @@ public:
         return m_txn;
     }
 
-    RippleAddress const& getAccount () const
+    AccountID const& getAccount () const
     {
         return m_account;
     }
@@ -101,9 +101,11 @@ private:
     STTx::pointer m_txn;
     LedgerIndex                    m_expire;
     uint256                        m_id;
-    RippleAddress                  m_account;
+    AccountID                      m_account;
     std::uint32_t                  m_seq;
 };
+
+//------------------------------------------------------------------------------
 
 class LocalTxsImp : public LocalTxs
 {
@@ -127,8 +129,8 @@ public:
         if (hasTransaction (*ledger, txn.getID ()))
             return true;
         auto const sle = cachedRead(*ledger,
-            getAccountRootIndex(txn.getAccount().getAccountID()),
-                getApp().getSLECache());
+            keylet::account(txn.getAccount()).key,
+                getApp().getSLECache(), ltACCOUNT_ROOT);
         if (! sle)
             return false;
         if (sle->getFieldU32 (sfSequence) > txn.getSeq ())

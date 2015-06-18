@@ -321,7 +321,7 @@ SetSignerList::writeSignersToLedger (SLE::pointer ledgerEntry)
         toLedger.emplace_back(sfSignerEntry);
         STObject& obj = toLedger.back();
         obj.reserve (2);
-        obj.setFieldAccount (sfAccount, entry.account);
+        obj.setAccountID (sfAccount, entry.account);
         obj.setFieldU16 (sfSignerWeight, entry.weight);
     }
 

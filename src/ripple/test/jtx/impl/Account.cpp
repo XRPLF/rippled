@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/test/jtx/Account.h>
 #include <ripple/test/jtx/amount.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 namespace test {
@@ -53,8 +54,8 @@ Account::Account(
 {
     pk_ = std::move(keys.publicKey);
     sk_ = std::move(keys.secretKey);
-    id_ = pk_.getAccountID();
-    human_ = pk_.humanAccountID();
+    id_ = calcAccountID(pk_);
+    human_ = toBase58(id_);
 }
 
 Account::Account (std::string name,

@@ -25,7 +25,6 @@
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/ledger/SLECache.h>
 #include <ripple/ledger/View.h>
-#include <ripple/app/misc/AccountState.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
@@ -83,9 +82,13 @@ public:
     Ledger (Ledger const&) = delete;
     Ledger& operator= (Ledger const&) = delete;
 
-    // used for the starting bootstrap ledger
-    Ledger (RippleAddress const& masterID,
-        std::uint64_t startAmount);
+    /** Construct the genesis ledger.
+
+        @param masterPublicKey The public of the account that
+               will hold `startAmount` XRP in drops.
+    */
+    Ledger (RippleAddress const& masterPublicKey,
+        std::uint64_t balanceInDrops);
 
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
@@ -482,14 +485,6 @@ std::shared_ptr<SLE const>
 cachedRead (Ledger const& ledger, uint256 const& key, SLECache& cache,
     boost::optional<LedgerEntryType> type = boost::none);
 
-// DEPRECATED
-// VFALCO This could return by value
-//        This should take AccountID parameter
-AccountState::pointer
-getAccountState (Ledger const& ledger,
-    RippleAddress const& accountID,
-        SLECache& cache);
-
 /** Return the hash of a ledger by sequence.
     The hash is retrieved by looking up the "skip list"
     in the passed ledger. As the skip list is limited
@@ -521,6 +516,18 @@ getCandidateLedger (LedgerIndex requested)
 {
     return (requested + 255) & (~255);
 }
+
+/** Inject JSON describing ledger entry
+
+    Effects:
+        Adds the JSON description of `sle` to `jv`.
+
+        If `sle` holds an account root, also adds the
+        urlgravatar field JSON if sfEmailHash is present.
+*/
+void
+injectSLE (Json::Value& jv,
+    SLE const& sle);
 
 //------------------------------------------------------------------------------
 

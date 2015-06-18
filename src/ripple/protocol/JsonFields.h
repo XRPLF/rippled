@@ -41,7 +41,7 @@ JSS ( ClearFlag );                  // field.
 JSS ( Destination );                // in: TransactionSign; field.
 JSS ( Fee );                        // in/out: TransactionSign; field.
 JSS ( Flags );                      // in/out: TransactionSign; field.
-JSS ( Invalid );                    // out: app/misc/AccountState
+JSS ( Invalid );                    //
 JSS ( LimitAmount );                // field.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign
@@ -371,7 +371,7 @@ JSS ( uptime );                     // out: GetCounts
 JSS ( url );                        // in/out: Subscribe, Unsubscribe
 JSS ( url_password );               // in: Subscribe
 JSS ( url_username );               // in: Subscribe
-JSS ( urlgravatar );                // out: AccountState
+JSS ( urlgravatar );                //
 JSS ( username );                   // in: Subscribe
 JSS ( validated );                  // out: NetworkOPs, LookupLedger, AccountTx*
                                     //      Tx

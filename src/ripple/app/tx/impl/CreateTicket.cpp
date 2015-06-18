@@ -88,7 +88,7 @@ public:
 
         SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
             getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
-        sleTicket->setFieldAccount (sfAccount, mTxnAccountID);
+        sleTicket->setAccountID (sfAccount, mTxnAccountID);
         sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
         if (expiration != 0)
             sleTicket->setFieldU32 (sfExpiration, expiration);
@@ -96,7 +96,7 @@ public:
 
         if (mTxn.isFieldPresent (sfTarget))
         {
-            AccountID const target_account (mTxn.getFieldAccount160 (sfTarget));
+            AccountID const target_account (mTxn.getAccountID (sfTarget));
 
             SLE::pointer sleTarget = mEngine->view().peek (keylet::account(target_account));
 
@@ -107,7 +107,7 @@ public:
             // The issuing account is the default account to which the ticket
             // applies so don't bother saving it if that's what's specified.
             if (target_account != mTxnAccountID)
-                sleTicket->setFieldAccount (sfTarget, target_account);
+                sleTicket->setAccountID (sfTarget, target_account);
         }
 
         std::uint64_t hint;

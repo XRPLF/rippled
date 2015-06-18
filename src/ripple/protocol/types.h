@@ -17,18 +17,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_PROTOCOL_TYPES_H_INCLUDED
+#define RIPPLE_PROTOCOL_TYPES_H_INCLUDED
 
-#include <ripple/app/misc/AmendmentTableImpl.cpp>
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/UniqueNodeList.cpp>
-#include <ripple/app/misc/Validations.cpp>
+// DEPRECATED HEADER
 
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
+#include <ripple/protocol/UintTypes.h>
 
-#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>
-#include <ripple/app/misc/tests/AmendmentTable.test.cpp>
+#endif

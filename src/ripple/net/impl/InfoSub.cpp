@@ -89,24 +89,24 @@ void InfoSub::onSendEmpty ()
 {
 }
 
-void InfoSub::insertSubAccountInfo (RippleAddress addr, bool rt)
+void InfoSub::insertSubAccountInfo (AccountID const& account, bool rt)
 {
     ScopedLockType sl (mLock);
 
     if (rt)
-        realTimeSubscriptions_.insert (addr);
+        realTimeSubscriptions_.insert (account);
     else
-        normalSubscriptions_.insert (addr);
+        normalSubscriptions_.insert (account);
 }
 
-void InfoSub::deleteSubAccountInfo (RippleAddress addr, bool rt)
+void InfoSub::deleteSubAccountInfo (AccountID const& account, bool rt)
 {
     ScopedLockType sl (mLock);
 
     if (rt)
-        realTimeSubscriptions_.erase (addr);
+        realTimeSubscriptions_.erase (account);
     else
-        normalSubscriptions_.erase (addr);
+        normalSubscriptions_.erase (account);
 }
 
 void InfoSub::clearPathRequest ()

@@ -93,21 +93,11 @@ void TransactionMetaSet::setAffectedNode (uint256 const& node, SField const& typ
     obj.setFieldU16 (sfLedgerEntryType, nodeType);
 }
 
-static void addIfUnique (std::vector<RippleAddress>& vector, RippleAddress const& address)
+boost::container::flat_set<AccountID>
+TransactionMetaSet::getAffectedAccounts() const
 {
-    for (auto const& a : vector)
-    {
-        if (a == address)
-            return;
-    }
-
-    vector.push_back (address);
-}
-
-std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
-{
-    std::vector<RippleAddress> accounts;
-    accounts.reserve (10);
+    boost::container::flat_set<AccountID> list;
+    list.reserve (10);
 
     // This code should match the behavior of the JS method:
     // Meta#getAffectedAccounts
@@ -118,15 +108,21 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
         if (index != -1)
         {
             const STObject* inner = dynamic_cast<const STObject*> (&it.peekAtIndex (index));
-
+            assert(inner);
             if (inner)
             {
                 for (auto const& field : *inner)
                 {
-                    const STAccount* sa = dynamic_cast<const STAccount*> (&field);
+                    STAccount const* sa =
+                        dynamic_cast<STAccount const*> (&field);
 
                     if (sa)
-                        addIfUnique (accounts, sa->getValueNCA ());
+                    {
+                        AccountID id;
+                        assert(sa->isValueH160());
+                        if (sa->getValueH160(id))
+                            list.insert(id);
+                    }
                     else if ((field.getFName () == sfLowLimit) || (field.getFName () == sfHighLimit) ||
                              (field.getFName () == sfTakerPays) || (field.getFName () == sfTakerGets))
                     {
@@ -137,11 +133,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
                             auto issuer = lim->getIssuer ();
 
                             if (issuer.isNonZero ())
-                            {
-                                RippleAddress na;
-                                na.setAccountID (issuer);
-                                addIfUnique (accounts, na);
-                            }
+                                list.insert(issuer);
                         }
                         else
                         {
@@ -150,11 +142,10 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
                     }
                 }
             }
-            else assert (false);
         }
     }
 
-    return accounts;
+    return list;
 }
 
 STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField const& type)

@@ -100,8 +100,10 @@ public:
 // This class collects a bunch of the ledger shenanigans tests have to do.
 class TestLedger
 {
+public:
+    std::shared_ptr<Ledger const> lastClosedLedger;
+
 private:
-    std::shared_ptr<Ledger const> lastClosedLedger_;
     Ledger::pointer openLedger_;
     beast::unit_test::suite& suite_;
 
@@ -126,11 +128,6 @@ public:
     // apply a transaction that we expect to fail but charges a fee.  Pass the
     // expected error code.
     void applyTecTransaction (STTx const& tx, TER err, bool check = true);
-
-    // Return the AccountState for a UserAccount
-    // VFALCO This function is not necessary, just expose
-    //        the ledger data member and use the free function.
-    AccountState::pointer getAccountState (UserAccount const& acct) const;
 
     // Return the current open ledger.
     Ledger::pointer openLedger ()

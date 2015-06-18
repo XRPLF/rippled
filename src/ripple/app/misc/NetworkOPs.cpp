@@ -313,7 +313,7 @@ public:
     //
 
     Json::Value getOwnerInfo (
-        Ledger::pointer lpLedger, RippleAddress const& naAccount) override;
+        Ledger::pointer lpLedger, AccountID const& account) override;
 
     //
     // Book functions.
@@ -454,7 +454,7 @@ public:
 
     //Helper function to generate SQL query to get transactions.
     std::string transactionsSQL (
-        std::string selection, RippleAddress const& account,
+        std::string selection, AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit,
         bool binary, bool count, bool bAdmin) override;
@@ -462,12 +462,12 @@ public:
     // Client information retrieval functions.
     using NetworkOPs::AccountTxs;
     AccountTxs getAccountTxs (
-        RippleAddress const& account,
+        AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
         std::uint32_t offset, int limit, bool bAdmin) override;
 
     AccountTxs getTxsAccount (
-        RippleAddress const& account, std::int32_t minLedger,
+        AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
         bool bAdmin) override;
 
@@ -476,18 +476,15 @@ public:
 
     MetaTxsList
     getAccountTxsB (
-        RippleAddress const& account, std::int32_t minLedger,
+        AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
         int limit, bool bAdmin) override;
 
     MetaTxsList
     getTxsAccountB (
-        RippleAddress const& account, std::int32_t minLedger,
+        AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool forward, Json::Value& token,
         int limit, bool bAdmin) override;
-
-    std::vector<RippleAddress> getLedgerAffectedAccounts (
-        std::uint32_t ledgerSeq) override;
 
     //
     // Monitoring: publisher side.
@@ -502,17 +499,17 @@ public:
     //
     void subAccount (
         InfoSub::ref ispListener,
-        const hash_set<RippleAddress>& vnaAccountIDs, bool rt) override;
+        hash_set<AccountID> const& vnaAccountIDs, bool rt) override;
     void unsubAccount (
         InfoSub::ref ispListener,
-        const hash_set<RippleAddress>& vnaAccountIDs,
+        hash_set<AccountID> const& vnaAccountIDs,
         bool rt);
 
     // Just remove the subscription from the tracking
     // not from the InfoSub. Needed for InfoSub destruction
     void unsubAccountInternal (
         std::uint64_t seq,
-        const hash_set<RippleAddress>& vnaAccountIDs,
+        hash_set<AccountID> const& vnaAccountIDs,
         bool rt);
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult) override;
@@ -561,9 +558,6 @@ private:
         const STTx& stTxn, TER terResult, bool bValidated,
         Ledger::ref lpCurrent);
     bool haveConsensusObject ();
-
-    Json::Value pubBootstrapAccountInfo (
-        Ledger::ref lpAccepted, RippleAddress const& naAccountID);
 
     void pubValidatedTransaction (
         Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
@@ -1311,10 +1305,10 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
 //
 
 Json::Value NetworkOPsImp::getOwnerInfo (
-    Ledger::pointer lpLedger, RippleAddress const& naAccount)
+    Ledger::pointer lpLedger, AccountID const& account)
 {
     Json::Value jvObjects (Json::objectValue);
-    auto uRootIndex = getOwnerDirIndex (naAccount.getAccountID ());
+    auto uRootIndex = getOwnerDirIndex (account);
     auto sleNode = cachedRead(*lpLedger, uRootIndex,
         getApp().getSLECache(), ltDIR_NODE);
     if (sleNode)
@@ -1863,7 +1857,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
 std::string
 NetworkOPsImp::transactionsSQL (
-    std::string selection, RippleAddress const& account,
+    std::string selection, AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit,
     bool binary, bool count, bool bAdmin)
@@ -1915,7 +1909,7 @@ NetworkOPsImp::transactionsSQL (
                 "SELECT %s FROM AccountTransactions "
                 "WHERE Account = '%s' %s %s LIMIT %u, %u;")
             % selection
-            % account.humanAccountID ()
+            % getApp().accountIDCache().toBase58(account)
             % maxClause
             % minClause
             % beast::lexicalCastThrow <std::string> (offset)
@@ -1932,7 +1926,7 @@ NetworkOPsImp::transactionsSQL (
                 "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
                 "LIMIT %u, %u;")
                     % selection
-                    % account.humanAccountID ()
+                    % getApp().accountIDCache().toBase58(account)
                     % maxClause
                     % minClause
                     % (descending ? "DESC" : "ASC")
@@ -1946,7 +1940,7 @@ NetworkOPsImp::transactionsSQL (
 }
 
 NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
-    RippleAddress const& account,
+    AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit, bool bAdmin)
 {
@@ -2009,7 +2003,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
 }
 
 std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
-    RippleAddress const& account,
+    AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit, bool bAdmin)
 {
@@ -2059,7 +2053,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
 
 NetworkOPsImp::AccountTxs
 NetworkOPsImp::getTxsAccount (
-    RippleAddress const& account, std::int32_t minLedger,
+    AccountID const& account, std::int32_t minLedger,
     std::int32_t maxLedger, bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
@@ -2084,7 +2078,7 @@ NetworkOPsImp::getTxsAccount (
 
 NetworkOPsImp::MetaTxsList
 NetworkOPsImp::getTxsAccountB (
-    RippleAddress const& account, std::int32_t minLedger,
+    AccountID const& account, std::int32_t minLedger,
     std::int32_t maxLedger,  bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
@@ -2104,36 +2098,6 @@ NetworkOPsImp::getTxsAccountB (
     accountTxPage(getApp().getTxnDB (), saveLedgerAsync, bound, account,
         minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
     return ret;
-}
-
-std::vector<RippleAddress>
-NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
-{
-    std::vector<RippleAddress> accounts;
-    std::string sql = str (boost::format (
-        "SELECT DISTINCT Account FROM AccountTransactions "
-        "INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%u';")
-                           % ledgerSeq);
-    RippleAddress acct;
-    {
-        auto db = getApp().getTxnDB ().checkoutDb ();
-        soci::blob accountBlob(*db);
-        soci::indicator bi;
-        soci::statement st = (db->prepare << sql, soci::into(accountBlob, bi));
-        st.execute ();
-        std::string accountStr;
-        while (st.fetch ())
-        {
-            if (soci::i_ok == bi)
-                convert (accountBlob, accountStr);
-            else
-                accountStr.clear ();
-
-            if (acct.setAccountID (accountStr))
-                accounts.push_back (acct);
-        }
-    }
-    return accounts;
 }
 
 bool NetworkOPsImp::recvValidation (
@@ -2336,26 +2300,6 @@ Json::Value NetworkOPsImp::getLedgerFetchInfo ()
     return getApp().getInboundLedgers().getInfo();
 }
 
-//
-// Monitoring: publisher side
-//
-
-Json::Value NetworkOPsImp::pubBootstrapAccountInfo (
-    Ledger::ref lpAccepted, RippleAddress const& naAccountID)
-{
-    Json::Value         jvObj (Json::objectValue);
-
-    jvObj[jss::type]           = "accountInfoBootstrap";
-    jvObj[jss::account]        = naAccountID.humanAccountID ();
-    jvObj[jss::owner]          = getOwnerInfo (lpAccepted, naAccountID);
-    jvObj[jss::ledger_index]   = lpAccepted->getLedgerSeq ();
-    jvObj[jss::ledger_hash]    = to_string (lpAccepted->getHash ());
-    jvObj[jss::ledger_time]
-            = Json::Value::UInt (utFromSeconds (lpAccepted->getCloseTimeNC ()));
-
-    return jvObj;
-}
-
 void NetworkOPsImp::pubProposedTransaction (
     Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult)
 {
@@ -2492,8 +2436,8 @@ Json::Value NetworkOPsImp::transJson(
 
     if (stTxn.getTxnType() == ttOFFER_CREATE)
     {
-        auto const account (stTxn.getSourceAccount ().getAccountID ());
-        auto const amount (stTxn.getFieldAmount (sfTakerGets));
+        auto const account = stTxn.getAccountID(sfAccount);
+        auto const amount = stTxn.getFieldAmount (sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue ().account)
@@ -2571,7 +2515,7 @@ void NetworkOPsImp::pubAccountTransaction (
             for (auto const& affectedAccount: alTx.getAffected ())
             {
                 auto simiIt
-                        = mSubRTAccount.find (affectedAccount.getAccountID ());
+                        = mSubRTAccount.find (affectedAccount);
                 if (simiIt != mSubRTAccount.end ())
                 {
                     auto it = simiIt->second.begin ();
@@ -2593,7 +2537,7 @@ void NetworkOPsImp::pubAccountTransaction (
 
                 if (bAccepted)
                 {
-                    simiIt  = mSubAccount.find (affectedAccount.getAccountID ());
+                    simiIt  = mSubAccount.find (affectedAccount);
 
                     if (simiIt != mSubAccount.end ())
                     {
@@ -2643,14 +2587,14 @@ void NetworkOPsImp::pubAccountTransaction (
 
 void NetworkOPsImp::subAccount (
     InfoSub::ref isrListener,
-    const hash_set<RippleAddress>& vnaAccountIDs, bool rt)
+    hash_set<AccountID> const& vnaAccountIDs, bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        m_journal.trace << "subAccount:"
-            " account: " << naAccountID.humanAccountID ();
+        if (m_journal.trace) m_journal.trace <<
+            "subAccount: account: " << toBase58(naAccountID);
 
         isrListener->insertSubAccountInfo (naAccountID, rt);
     }
@@ -2659,14 +2603,15 @@ void NetworkOPsImp::subAccount (
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        auto simIterator = subMap.find (naAccountID.getAccountID ());
+        auto simIterator = subMap.find (naAccountID);
         if (simIterator == subMap.end ())
         {
             // Not found, note that account has a new single listner.
             SubMapType  usisElement;
             usisElement[isrListener->getSeq ()] = isrListener;
-            subMap.insert (simIterator, make_pair (naAccountID.getAccountID (),
-                                                   usisElement));
+            // VFALCO NOTE This is making a needless copy of naAccountID
+            subMap.insert (simIterator,
+                make_pair(naAccountID, usisElement));
         }
         else
         {
@@ -2678,7 +2623,7 @@ void NetworkOPsImp::subAccount (
 
 void NetworkOPsImp::unsubAccount (
     InfoSub::ref isrListener,
-    hash_set<RippleAddress> const& vnaAccountIDs,
+    hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
     for (auto const& naAccountID : vnaAccountIDs)
@@ -2693,7 +2638,7 @@ void NetworkOPsImp::unsubAccount (
 
 void NetworkOPsImp::unsubAccountInternal (
     std::uint64_t uSeq,
-    hash_set<RippleAddress> const& vnaAccountIDs,
+    hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
     ScopedLockType sl (mSubLock);
@@ -2702,7 +2647,7 @@ void NetworkOPsImp::unsubAccountInternal (
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        auto simIterator = subMap.find (naAccountID.getAccountID ());
+        auto simIterator = subMap.find (naAccountID);
 
         if (simIterator != subMap.end ())
         {
@@ -2983,7 +2928,7 @@ void NetworkOPsImp::getBookPage (
             if (sleOffer)
             {
                 auto const uOfferOwnerID =
-                        sleOffer->getFieldAccount160 (sfAccount);
+                        sleOffer->getAccountID (sfAccount);
                 auto const& saTakerGets =
                         sleOffer->getFieldAmount (sfTakerGets);
                 auto const& saTakerPays =
@@ -3154,7 +3099,7 @@ void NetworkOPsImp::getBookPage (
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
         if (sleOffer)
         {
-            auto const uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
+            auto const uOfferOwnerID = sleOffer->getAccountID (sfAccount);
             auto const& saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
             auto const& saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
             STAmount saDirRate = obIterator.getCurrentRate ();

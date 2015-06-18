@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/TxFormats.h>
+#include <boost/container/flat_set.hpp>
 #include <boost/logic/tribool.hpp>
 
 namespace ripple {
@@ -94,16 +95,11 @@ public:
         setFieldAmount (sfFee, fee);
     }
 
-    RippleAddress getSourceAccount () const
-    {
-        return getFieldAccount (sfAccount);
-    }
     Blob getSigningPubKey () const
     {
         return getFieldVL (sfSigningPubKey);
     }
     void setSigningPubKey (const RippleAddress & naSignPubKey);
-    void setSourceAccount (const RippleAddress & naSource);
 
     std::uint32_t getSequence () const
     {
@@ -114,7 +110,8 @@ public:
         return setFieldU32 (sfSequence, seq);
     }
 
-    std::vector<RippleAddress> getMentionedAccounts () const;
+    boost::container::flat_set<AccountID>
+    getMentionedAccounts() const;
 
     uint256 getTransactionID () const;
 

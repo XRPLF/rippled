@@ -195,7 +195,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             else
             {
                 node().offerOwnerAccount_
-                        = node().sleOffer->getFieldAccount160 (sfAccount);
+                        = node().sleOffer->getAccountID (sfAccount);
                 node().saTakerPays
                         = node().sleOffer->getFieldAmount (sfTakerPays);
                 node().saTakerGets

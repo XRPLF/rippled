@@ -21,6 +21,7 @@
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -31,7 +32,7 @@ class SetRegularKey
     {
         if ( mTxnAccount
                 && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
-                && (mSigningPubKey.getAccountID () == mTxnAccountID))
+                && (calcAccountID(mSigningPubKey) == mTxnAccountID))
         {
             // flag is armed and they signed with the right account
             return 0;
@@ -76,8 +77,8 @@ public:
 
         if (mTxn.isFieldPresent (sfRegularKey))
         {
-            mTxnAccount->setFieldAccount (sfRegularKey,
-                mTxn.getFieldAccount160 (sfRegularKey));
+            mTxnAccount->setAccountID (sfRegularKey,
+                mTxn.getAccountID (sfRegularKey));
         }
         else
         {

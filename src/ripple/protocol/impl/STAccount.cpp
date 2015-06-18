@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -31,12 +32,11 @@ std::string STAccount::getText () const
 {
     AccountID u;
     RippleAddress a;
-
-    if (!getValueH160 (u))
+    if (! getValueH160 (u))
         return STBlob::getText ();
-
-    a.setAccountID (u);
-    return a.humanAccountID ();
+    // VFALCO This should use getApp().accountIDCache()
+    //        Maybe pass the cache in?
+    return toBase58(u);
 }
 
 STAccount*
@@ -53,22 +53,6 @@ STAccount::STAccount (SField const& n, AccountID const& v)
 bool STAccount::isValueH160 () const
 {
     return peekValue ().size () == (160 / 8);
-}
-
-RippleAddress STAccount::getValueNCA () const
-{
-    RippleAddress a;
-    AccountID account;
-
-    if (getValueH160 (account))
-        a.setAccountID (account);
-
-    return a;
-}
-
-void STAccount::setValueNCA (RippleAddress const& nca)
-{
-    setValueH160 (nca.getAccountID ());
 }
 
 } // ripple

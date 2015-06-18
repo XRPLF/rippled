@@ -22,6 +22,7 @@
 #include <ripple/test/jtx/utility.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 namespace test {
@@ -82,12 +83,16 @@ msig::operator()(Env const& env, JTx& jt) const
             env.test.log << pretty(jt.jv);
             throw;
         }
-        auto const signingForID = [](Json::Value const& jv)
-            {
-                RippleAddress ra;
-                ra.setAccountID(jv[jss::Account].asString());
-                return ra.getAccountID();
-            }(jt.jv);
+        auto const signFor =
+            parseBase58<AccountID>(
+                jt.jv[jss::Account].asString());
+        if (! signFor)
+        {
+            env.test.log <<
+                "invalid AccountID: '" <<
+                    jt.jv[jss::Account].asString() << "'";
+            throw parse_error("msig: bad Account");
+        }
         auto& jv = jt["MultiSigners"][0u]["SigningFor"];
         jv[jss::Account] = jt[jss::Account];
         auto& js = jv["SigningAccounts"];
@@ -103,7 +108,7 @@ msig::operator()(Env const& env, JTx& jt) const
             Serializer ss;
             ss.add32 (HashPrefix::txMultiSign);
             st->addWithoutSigningFields(ss);
-            ss.add160(signingForID);
+            ss.add160(*signFor);
             ss.add160(e.id());
             jo["MultiSignature"] = strHex(make_Slice(
                 e.sk().accountPrivateSign(ss.getData())));

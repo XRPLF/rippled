@@ -65,12 +65,6 @@ getAccountRootIndex (AccountID const& account)
 }
 
 uint256
-getAccountRootIndex (const RippleAddress & account)
-{
-    return getAccountRootIndex (account.getAccountID ());
-}
-
-uint256
 getGeneratorIndex (AccountID const& uGeneratorID)
 {
     return sha512Half(
@@ -201,13 +195,6 @@ Keylet account_t::operator()(
 {
     return { ltACCOUNT_ROOT,
         getAccountRootIndex(id) };
-}
-
-Keylet account_t::operator()(
-    RippleAddress const& ra) const
-{
-    return { ltACCOUNT_ROOT,
-        getAccountRootIndex(ra.getAccountID()) };
 }
 
 Keylet child (uint256 const& key)

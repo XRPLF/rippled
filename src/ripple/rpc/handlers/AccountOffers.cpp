@@ -47,10 +47,10 @@ Json::Value doAccountOffers (RPC::Context& context)
     std::string strIdent (params[jss::account].asString ());
     bool bIndex (params.isMember (jss::account_index));
     int const iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
-    RippleAddress rippleAddress;
+    AccountID accountID;
 
     Json::Value const jv = RPC::accountFromString (
-        rippleAddress, bIndex, strIdent, iIndex, false);
+        accountID, bIndex, strIdent, iIndex, false);
     if (! jv.empty ())
     {
         for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
@@ -60,13 +60,12 @@ Json::Value doAccountOffers (RPC::Context& context)
     }
 
     // Get info on account.
-    result[jss::account] = rippleAddress.humanAccountID ();
+    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
 
     if (bIndex)
         result[jss::account_index] = iIndex;
 
-    if (! ledger->exists(keylet::account(
-            rippleAddress.getAccountID())))
+    if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -90,7 +89,6 @@ Json::Value doAccountOffers (RPC::Context& context)
         limit = RPC::Tuning::defaultOffersPerRequest;
     }
 
-    AccountID const& raAccount (rippleAddress.getAccountID ());
     Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
     std::vector <std::shared_ptr<SLE const>> offers;
     unsigned int reserve (limit);
@@ -112,7 +110,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
         if (sleOffer == nullptr ||
             sleOffer->getType () != ltOFFER ||
-            raAccount != sleOffer->getFieldAccount160 (sfAccount))
+            accountID != sleOffer->getAccountID (sfAccount))
         {
             return rpcError (rpcINVALID_PARAMS);
         }
@@ -138,7 +136,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         CachedView const view(
             *ledger, getApp().getSLECache());
-        if (! forEachItemAfter(*ledger, raAccount,
+        if (! forEachItemAfter(*ledger, accountID,
                 startAfter, startHint, reserve,
             [&offers](std::shared_ptr<SLE const> const& offer)
             {

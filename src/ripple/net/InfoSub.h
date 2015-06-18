@@ -67,18 +67,18 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void subAccount (ref ispListener,
-            const hash_set<RippleAddress>& vnaAccountIDs,
+            hash_set<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void unsubAccount (ref isplistener,
-            const hash_set<RippleAddress>& vnaAccountIDs,
+            hash_set<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
 
         // for use during InfoSub destruction
         // Removes only from the server
         virtual void unsubAccountInternal (std::uint64_t uListener,
-            const hash_set<RippleAddress>& vnaAccountIDs,
+            hash_set<AccountID> const& vnaAccountIDs,
             bool realTime) = 0;
 
         // VFALCO TODO Document the bool return value
@@ -124,11 +124,11 @@ public:
     void onSendEmpty ();
 
     void insertSubAccountInfo (
-        RippleAddress addr,
+        AccountID const& account,
         bool rt);
 
     void deleteSubAccountInfo (
-        RippleAddress addr,
+        AccountID const& account,
         bool rt);
 
     void clearPathRequest ();
@@ -145,8 +145,8 @@ protected:
 private:
     Consumer                      m_consumer;
     Source&                       m_source;
-    hash_set <RippleAddress>      realTimeSubscriptions_;
-    hash_set <RippleAddress>      normalSubscriptions_;
+    hash_set <AccountID> realTimeSubscriptions_;
+    hash_set <AccountID> normalSubscriptions_;
     std::shared_ptr <PathRequest> mPathRequest;
     std::uint64_t                 mSeq;
 };

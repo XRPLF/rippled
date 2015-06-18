@@ -489,6 +489,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Issue,types,ripple);
+BEAST_DEFINE_TESTSUITE(Issue,protocol,ripple);
 
 }

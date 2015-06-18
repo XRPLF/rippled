@@ -104,7 +104,7 @@ TransactionEngine::applyTransaction (
             mLedger->getLedgerSeq(), params);
 
         SLE::pointer txnAcct = view().peek(
-            keylet::account(txn.getSourceAccount()));
+            keylet::account(txn.getAccountID(sfAccount)));
 
         if (!txnAcct)
             terResult = terNO_ACCOUNT;

@@ -34,7 +34,6 @@ namespace ripple {
 // }
 Json::Value doAccountTxOld (RPC::Context& context)
 {
-    RippleAddress   raAccount;
     std::uint32_t offset
             = context.params.isMember (jss::offset)
             ? context.params[jss::offset].asUInt () : 0;
@@ -56,7 +55,9 @@ Json::Value doAccountTxOld (RPC::Context& context)
     if (!context.params.isMember (jss::account))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (context.params[jss::account].asString ()))
+    auto const raAccount = parseBase58<AccountID>(
+        context.params[jss::account].asString());
+    if (! raAccount)
         return rpcError (rpcACT_MALFORMED);
 
     if (offset > 3000)
@@ -121,13 +122,13 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
         Json::Value ret (Json::objectValue);
 
-        ret[jss::account] = raAccount.humanAccountID ();
+        ret[jss::account] = getApp().accountIDCache().toBase58(*raAccount);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         if (bBinary)
         {
             auto txns = context.netOps.getAccountTxsB (
-                raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
+                *raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
                 context.role == Role::ADMIN);
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
@@ -149,7 +150,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
         else
         {
             auto txns = context.netOps.getAccountTxs (
-                raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
+                *raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
                 context.role == Role::ADMIN);
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)

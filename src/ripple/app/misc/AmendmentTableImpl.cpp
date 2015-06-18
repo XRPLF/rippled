@@ -557,7 +557,7 @@ AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
 
         // Create the transaction to enable the amendment
         STTx trans (ttAMENDMENT);
-        trans.setFieldAccount (sfAccount, AccountID ());
+        trans.setAccountID (sfAccount, AccountID ());
         trans.setFieldH256 (sfAmendment, uAmendment);
         uint256 txID = trans.getTransactionID ();
 

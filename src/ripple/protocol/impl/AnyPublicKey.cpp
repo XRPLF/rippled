@@ -95,7 +95,7 @@ toString (AnyPublicKey const& pk)
 {
     Blob buffer;
     buffer.reserve (1 + pk.size ());
-    buffer.push_back (VER_NODE_PUBLIC);
+    buffer.push_back (TOKEN_NODE_PUBLIC);
     auto const data = pk.data ();
     buffer.insert (buffer.end (), data, data + pk.size ());
     return Base58::encodeWithCheck (buffer);

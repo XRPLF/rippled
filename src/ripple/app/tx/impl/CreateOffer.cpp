@@ -811,7 +811,7 @@ public:
         if (result == tesSUCCESS)
         {
             auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
-            sleOffer->setFieldAccount (sfAccount, mTxnAccountID);
+            sleOffer->setAccountID (sfAccount, mTxnAccountID);
             sleOffer->setFieldU32 (sfSequence, uSequence);
             sleOffer->setFieldH256 (sfBookDirectory, uDirectory);
             sleOffer->setFieldAmount (sfTakerPays, saTakerPays);

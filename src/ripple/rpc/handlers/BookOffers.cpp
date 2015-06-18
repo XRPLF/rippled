@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -143,19 +144,16 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcDST_ISR_MALFORMED,
             "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
-    RippleAddress raTakerID;
-
+    boost::optional<AccountID> takerID;
     if (context.params.isMember (jss::taker))
     {
         if (! context.params [jss::taker].isString ())
             return RPC::expected_field_error (jss::taker, "string");
 
-        if (! raTakerID.setAccountID (context.params [jss::taker].asString ()))
+        takerID = parseBase58<AccountID>(
+            context.params [jss::taker].asString());
+        if (! takerID)
             return RPC::invalid_field_error (jss::taker);
-    }
-    else
-    {
-        raTakerID.setAccountID (noAccount());
     }
 
     if (pay_currency == get_currency && pay_issuer == get_issuer)
@@ -190,7 +188,7 @@ Json::Value doBookOffers (RPC::Context& context)
         context.role == Role::ADMIN,
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
-        raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);
+        takerID ? *takerID : zero, bProof, iLimit, jvMarker, jvResult);
 
     context.loadType = Resource::feeMediumBurdenRPC;
 

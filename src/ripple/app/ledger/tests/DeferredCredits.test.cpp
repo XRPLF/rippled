@@ -22,6 +22,7 @@
 
 namespace ripple {
 namespace test {
+
 class DeferredCredits_test : public beast::unit_test::suite
 {
     /*
@@ -152,8 +153,8 @@ class DeferredCredits_test : public beast::unit_test::suite
         verifyBalance (ledger, alice, Amount (50, "USD", gw1));
         verifyBalance (ledger, alice, Amount (50, "USD", gw2));
 
-        AccountID const gw1Acc (gw1.pk.getAccountID ());
-        AccountID const aliceAcc (alice.pk.getAccountID ());
+        AccountID const gw1Acc = calcAccountID(gw1.pk);
+        AccountID const aliceAcc = calcAccountID(alice.pk);
         ripple::Currency const usd (to_currency ("USD"));
         ripple::Issue const issue (usd, gw1Acc);
         STAmount const toCredit (issue, 30);

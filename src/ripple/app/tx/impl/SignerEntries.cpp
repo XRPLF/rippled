@@ -55,7 +55,7 @@ SignerEntries::deserialize (
         }
 
         // Extract SignerEntry fields.
-        AccountID const account = sEntry.getFieldAccount160 (sfAccount);
+        AccountID const account = sEntry.getAccountID (sfAccount);
         std::uint16_t const weight = sEntry.getFieldU16 (sfSignerWeight);
         accountVec.emplace_back (account, weight);
     }

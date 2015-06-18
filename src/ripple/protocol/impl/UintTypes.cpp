@@ -22,14 +22,10 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/types.h>
 #include <beast/utility/static_initializer.h>
 
 namespace ripple {
-
-std::string to_string(AccountID const& account)
-{
-    return RippleAddress::createAccountID (account).humanAccountID ();
-}
 
 std::string to_string(Currency const& currency)
 {
@@ -111,36 +107,10 @@ Currency to_currency(std::string const& code)
     return currency;
 }
 
-bool to_issuer(AccountID& issuer, std::string const& s)
-{
-    if (s.size () == (160 / 4))
-    {
-        issuer.SetHex (s);
-        return true;
-    }
-    RippleAddress address;
-    bool success = address.setAccountID (s);
-    if (success)
-        issuer = address.getAccountID ();
-    return success;
-}
-
-AccountID const& xrpAccount()
-{
-    static AccountID const account(0);
-    return account;
-}
-
 Currency const& xrpCurrency()
 {
     static Currency const currency(0);
     return currency;
-}
-
-AccountID const& noAccount()
-{
-    static AccountID const account(1);
-    return account;
 }
 
 Currency const& noCurrency()

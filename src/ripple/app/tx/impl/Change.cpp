@@ -56,7 +56,7 @@ public:
 
     TER checkSign () override
     {
-        if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
+        if (mTxn.getAccountID (sfAccount).isNonZero ())
         {
             m_journal.warning << "Bad source account";
             return temBAD_SRC_ACCOUNT;
@@ -95,7 +95,7 @@ public:
 
     TER preCheck () override
     {
-        mTxnAccountID = mTxn.getSourceAccount ().getAccountID ();
+        mTxnAccountID = mTxn.getAccountID(sfAccount);
 
         if (mTxnAccountID.isNonZero ())
         {

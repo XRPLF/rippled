@@ -123,31 +123,6 @@ bool STLedgerEntry::isThreaded () const
     return isFieldPresent (sfPreviousTxnID);
 }
 
-bool STLedgerEntry::hasOneOwner () const
-{
-    return (type_ != ltACCOUNT_ROOT) && (getFieldIndex (sfAccount) != -1);
-}
-
-bool STLedgerEntry::hasTwoOwners () const
-{
-    return type_ == ltRIPPLE_STATE;
-}
-
-RippleAddress STLedgerEntry::getOwner () const
-{
-    return getFieldAccount (sfAccount);
-}
-
-RippleAddress STLedgerEntry::getFirstOwner () const
-{
-    return RippleAddress::createAccountID (getFieldAmount (sfLowLimit).getIssuer ());
-}
-
-RippleAddress STLedgerEntry::getSecondOwner () const
-{
-    return RippleAddress::createAccountID (getFieldAmount (sfHighLimit).getIssuer ());
-}
-
 uint256 STLedgerEntry::getThreadedTransaction () const
 {
     return getFieldH256 (sfPreviousTxnID);

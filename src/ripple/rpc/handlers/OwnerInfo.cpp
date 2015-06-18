@@ -39,32 +39,32 @@ Json::Value doOwnerInfo (RPC::Context& context)
     bool bIndex;
     int iIndex = context.params.isMember (jss::account_index)
             ? context.params[jss::account_index].asUInt () : 0;
-    RippleAddress raAccount;
     Json::Value ret;
 
     // Get info on account.
 
     auto const& closedLedger = context.netOps.getClosedLedger ();
+    AccountID accountID;
     Json::Value jAccepted = RPC::accountFromString (
-        raAccount,
+        accountID,
         bIndex,
         strIdent,
         iIndex,
         false);
 
-    ret[jss::accepted] = jAccepted.empty () ? context.netOps.getOwnerInfo (
-        closedLedger, raAccount) : jAccepted;
+    ret[jss::accepted] = jAccepted.empty () ?
+            context.netOps.getOwnerInfo (closedLedger, accountID) : jAccepted;
 
     auto const& currentLedger = context.netOps.getCurrentLedger ();
     Json::Value jCurrent = RPC::accountFromString (
-        raAccount,
+        accountID,
         bIndex,
         strIdent,
         iIndex,
         false);
 
-    ret[jss::current] = jCurrent.empty () ? context.netOps.getOwnerInfo (
-        currentLedger, raAccount) : jCurrent;
+    ret[jss::current] = jCurrent.empty () ?
+            context.netOps.getOwnerInfo (currentLedger, accountID) : jCurrent;
 
     return ret;
 }

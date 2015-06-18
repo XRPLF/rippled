@@ -29,6 +29,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -586,19 +587,21 @@ MetaView::getForMod (uint256 const& key,
 }
 
 bool
-MetaView::threadTx (RippleAddress const& to,
+MetaView::threadTx (AccountID const& to,
     Mods& mods)
 {
-    auto const sle = getForMod(keylet::account(
-        to.getAccountID()).key, mods);
+    auto const sle = getForMod(
+        keylet::account(to).key, mods);
 #ifdef META_DEBUG
-    WriteLog (lsTRACE, View) << "Thread to " << threadTo.getAccountID ();
+    WriteLog (lsTRACE, View) <<
+        "Thread to " << toBase58(to);
 #endif
+    assert(sle);
     if (! sle)
     {
         WriteLog (lsFATAL, View) <<
-            "Threading to non-existent account: " << to.humanAccountID ();
-        assert (false);
+            "Threading to non-existent account: " <<
+                toBase58(to);
         return false;
     }
 
@@ -630,21 +633,25 @@ MetaView::threadOwners(std::shared_ptr<
     SLE const> const& sle, Mods& mods)
 {
     // thread new or modified sle to owner or owners
-    if (sle->hasOneOwner())
+    // VFALCO Why not isFieldPresent?
+    if (sle->getType() != ltACCOUNT_ROOT &&
+        sle->getFieldIndex(sfAccount) != -1)
     {
         // thread to owner's account
     #ifdef META_DEBUG
         WriteLog (lsTRACE, View) << "Thread to single owner";
     #endif
-        return threadTx (sle->getOwner(), mods);
+        return threadTx (sle->getAccountID(sfAccount), mods);
     }
-    else if (sle->hasTwoOwners ()) // thread to owner's accounts
+    else if (sle->getType() == ltRIPPLE_STATE)
     {
+        // thread to owner's accounts
     #ifdef META_DEBUG
         WriteLog (lsTRACE, View) << "Thread to two owners";
     #endif
-        return threadTx(sle->getFirstOwner(), mods) &&
-            threadTx(sle->getSecondOwner(), mods);
+        return
+            threadTx(sle->getFieldAmount(sfLowLimit).getIssuer(), mods) &&
+            threadTx(sle->getFieldAmount(sfHighLimit).getIssuer(), mods);
     }
     return false;
 }

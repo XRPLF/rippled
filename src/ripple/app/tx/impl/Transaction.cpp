@@ -28,15 +28,15 @@
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref sit, Validate validate, std::string& reason)
+Transaction::Transaction (STTx::ref stx, Validate validate, std::string& reason)
     noexcept
-    : mTransaction (sit)
+    : mTransaction (stx)
 {
     try
     {
         mFromPubKey.setAccountPublic (mTransaction->getSigningPubKey ());
         mTransactionID  = mTransaction->getTransactionID ();
-        mAccountFrom    = mTransaction->getSourceAccount ();
+        mAccountFrom    = mTransaction->getAccountID(sfAccount);
     }
     catch (std::exception& e)
     {

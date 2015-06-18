@@ -215,13 +215,16 @@ public:
     // Break the multi-signing hash computation into 2 parts for optimization.
     Serializer startMultiSigningData () const;
     void finishMultiSigningData (
-        RippleAddress const& signingForID,
-        RippleAddress const& signingID, Serializer& s) const;
+        AccountID const& signingForID,
+        AccountID const& signingID, Serializer& s) const;
 
+    // VFALCO Get functions are usually simple observers but
+    //        this one performs an expensive construction.
+    //
     // Get data to compute a complete multi-signature.
     Serializer getMultiSigningData (
-        RippleAddress const& signingForID,
-        RippleAddress const& signingID) const;
+        AccountID const& signingForID,
+        AccountID const& signingID) const;
 
     const STBase& peekAtIndex (int offset) const
     {
@@ -259,8 +262,7 @@ public:
 
     uint160 getFieldH160 (SField const& field) const;
     uint256 getFieldH256 (SField const& field) const;
-    RippleAddress getFieldAccount (SField const& field) const;
-    AccountID getFieldAccount160 (SField const& field) const;
+    AccountID getAccountID (SField const& field) const;
 
     Blob getFieldVL (SField const& field) const;
     STAmount const& getFieldAmount (SField const& field) const;
@@ -282,11 +284,9 @@ public:
     void setFieldH128 (SField const& field, uint128 const&);
     void setFieldH256 (SField const& field, uint256 const& );
     void setFieldVL (SField const& field, Blob const&);
-    void setFieldAccount (SField const& field, AccountID const&);
-    void setFieldAccount (SField const& field, RippleAddress const& addr)
-    {
-        setFieldAccount (field, addr.getAccountID ());
-    }
+
+    void setAccountID (SField const& field, AccountID const&);
+
     void setFieldAmount (SField const& field, STAmount const&);
     void setFieldPathSet (SField const& field, STPathSet const&);
     void setFieldV256 (SField const& field, STVector256 const& v);

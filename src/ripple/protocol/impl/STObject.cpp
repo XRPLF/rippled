@@ -347,19 +347,21 @@ STObject::startMultiSigningData () const
     return s;
 }
 
+// VFALCO This should not be a member,
+//        and the function shouldn't even exist
 void
 STObject::finishMultiSigningData (
-    RippleAddress const& signingForID,
-    RippleAddress const& signingID,
+    AccountID const& signingForID,
+    AccountID const& signingID,
     Serializer& s) const
 {
-    s.add160 (signingForID.getAccountID ());
-    s.add160 (signingID.getAccountID ());
+    s.add160 (signingForID);
+    s.add160 (signingID);
 }
 
 Serializer
 STObject::getMultiSigningData (
-    RippleAddress const& signingForID, RippleAddress const& signingID) const
+    AccountID const& signingForID, AccountID const& signingID) const
 {
     Serializer s (startMultiSigningData ());
     finishMultiSigningData (signingForID, signingID, s);
@@ -586,26 +588,7 @@ uint256 STObject::getFieldH256 (SField const& field) const
     return getFieldByValue <STHash256> (field);
 }
 
-RippleAddress STObject::getFieldAccount (SField const& field) const
-{
-    const STBase* rf = peekAtPField (field);
-
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return RippleAddress ();
-
-    const STAccount* cf = dynamic_cast<const STAccount*> (rf);
-
-    if (!cf)
-        throw std::runtime_error ("Wrong field type");
-
-    return cf->getValueNCA ();
-}
-
-AccountID STObject::getFieldAccount160 (SField const& field) const
+AccountID STObject::getAccountID (SField const& field) const
 {
     auto rf = peekAtPField (field);
     if (!rf)
@@ -715,7 +698,7 @@ void STObject::setFieldV256 (SField const& field, STVector256 const& v)
     setFieldUsingSetValue <STVector256> (field, v);
 }
 
-void STObject::setFieldAccount (SField const& field, AccountID const& v)
+void STObject::setAccountID (SField const& field, AccountID const& v)
 {
     STBase* rf = getPField (field, true);
 

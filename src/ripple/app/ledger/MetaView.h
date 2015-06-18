@@ -232,7 +232,7 @@ private:
         Mods& mods);
 
     bool
-    threadTx (RippleAddress const& to,
+    threadTx (AccountID const& to,
         Mods& mods);
 
     bool

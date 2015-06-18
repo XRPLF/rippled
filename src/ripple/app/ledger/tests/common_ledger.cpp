@@ -22,6 +22,7 @@
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/types.h>
 #include <ripple/rpc/impl/RipplePathFind.h>
 #include <ripple/json/json_writer.h>
 
@@ -62,7 +63,7 @@ Issuer::Issuer(TestAccount issuer)
 void
 Issuer::getJson(Json::Value& tx_json) const
 {
-    tx_json[jss::issuer] = issuer_.pk.humanAccountID();
+    tx_json[jss::issuer] = toBase58(calcAccountID(issuer_.pk));
 }
 
 TestAccount const&
@@ -213,7 +214,7 @@ Json::Value
 getCommonTransactionJson(TestAccount& account)
 {
     Json::Value tx_json;
-    tx_json[jss::Account] = account.pk.humanAccountID();
+    tx_json[jss::Account] = toBase58(calcAccountID(account.pk));
     tx_json[jss::Fee] = std::to_string(10);
     tx_json[jss::Sequence] = ++account.sequence;
     return tx_json;
@@ -269,7 +270,7 @@ getPaymentJson(TestAccount& from, TestAccount const& to,
 {
     Json::Value tx_json = getCommonTransactionJson(from);
     tx_json[jss::Amount] = amountJson;
-    tx_json[jss::Destination] = to.pk.humanAccountID();
+    tx_json[jss::Destination] = toBase58(calcAccountID(to.pk));
     tx_json[jss::TransactionType] = "Payment";
     tx_json[jss::Flags] = tfUniversal;
     return tx_json;
@@ -329,10 +330,12 @@ Ledger::pointer const& ledger, bool sign)
     STPathSet pathSet;
     STPath fullLiquidityPath;
     auto stDstAmount = amountFromJson(sfGeneric, amountJson);
-    Issue srcIssue = Issue(stDstAmount.getCurrency(), from.pk.getAccountID());
+    Issue srcIssue = Issue(stDstAmount.getCurrency(),
+        calcAccountID(from.pk));
 
-    auto found = findPathsForOneIssuer(cache, from.pk.getAccountID(), to.pk.getAccountID(),
-        srcIssue, stDstAmount, 7, 4, pathSet, fullLiquidityPath);
+    auto found = findPathsForOneIssuer(cache,
+        calcAccountID(from.pk), calcAccountID(to.pk),
+            srcIssue, stDstAmount, 7, 4, pathSet, fullLiquidityPath);
     if (!found)
         throw std::runtime_error(
         "!found");
@@ -421,7 +424,7 @@ trust(TestAccount& from, TestAccount const& issuer,
     Json::Value tx_json = getCommonTransactionJson(from);
     Json::Value& limitAmount = tx_json[jss::LimitAmount];
     limitAmount[jss::currency] = currency;
-    limitAmount[jss::issuer] = issuer.pk.humanAccountID();
+    limitAmount[jss::issuer] = toBase58(calcAccountID(issuer.pk));
     limitAmount[jss::value] = std::to_string(amount);
     tx_json[jss::TransactionType] = "TrustSet";
     tx_json[jss::Flags] = 0;    // tfClearNoRipple;
@@ -486,8 +489,9 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
     }
     log << "Source currencies: " << jvSrcCurrencies;
 
-    auto result = ripplePathFind(cache, src.pk, dest.pk, saDstAmount,
-        ledger, jvSrcCurrencies, contextPaths, level);
+    auto result = ripplePathFind(cache, calcAccountID(src.pk),
+        calcAccountID(dest.pk), saDstAmount,
+            ledger, jvSrcCurrencies, contextPaths, level);
     if(!result.first)
         throw std::runtime_error(
         "ripplePathFind find failed");
@@ -501,7 +505,7 @@ getLedgerEntryRippleState(Ledger::pointer ledger,
         Currency currency)
 {
     auto k = keylet::line(
-        account1.pk.getAccountID(), account2.pk.getAccountID(),
+        calcAccountID(account1.pk), calcAccountID(account2.pk),
             to_currency(currency.getCurrency()));
 
     if (! k.key.isNonZero())
@@ -525,7 +529,7 @@ verifyBalance(Ledger::pointer ledger, TestAccount const& account,
 
     auto high = sle->getFieldAmount(sfHighLimit);
     auto balance = sle->getFieldAmount(sfBalance);
-    if (high.getIssuer() == account.pk.getAccountID())
+    if (high.getIssuer() == calcAccountID(account.pk))
     {
         balance.negate();
     }
@@ -537,7 +541,7 @@ verifyBalance(Ledger::pointer ledger, TestAccount const& account,
 Json::Value pathNode (TestAccount const& acc)
 {
     Json::Value result;
-    result["account"] = acc.pk.humanAccountID();
+    result["account"] = toBase58(calcAccountID(acc.pk));
     result["type"] = 1;
     result["type_hex"] = "0000000000000001";
     return result;
@@ -550,7 +554,7 @@ Json::Value pathNode (OfferPathNode const& offer)
     result["type"] = 48;
     result["type_hex"] = "0000000000000030";
     if (offer.issuer)
-        result["issuer"] = offer.issuer->pk.humanAccountID();
+        result["issuer"] = toBase58(calcAccountID(offer.issuer->pk));
     return result;
 }
 

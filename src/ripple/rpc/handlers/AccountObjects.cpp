@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/rpc/impl/GetAccountObjects.h>
@@ -51,14 +52,14 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (ledger == nullptr)
         return result;
 
-    RippleAddress raAccount;
+    AccountID accountID;
     {
         bool bIndex;
         auto const strIdent = params[jss::account].asString ();
         auto iIndex = context.params.isMember (jss::account_index)
             ? context.params[jss::account_index].asUInt () : 0;
         auto jv = RPC::accountFromString (
-            raAccount, bIndex, strIdent, iIndex, false);
+            accountID, bIndex, strIdent, iIndex, false);
         if (! jv.empty ())
         {
             for (auto it = jv.begin (); it != jv.end (); ++it)
@@ -68,8 +69,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         }
     }
 
-    if (! ledger->exists(keylet::account(
-            raAccount.getAccountID())))
+    if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
     auto type = ltINVALID;
@@ -144,13 +144,13 @@ Json::Value doAccountObjects (RPC::Context& context)
             return RPC::invalid_field_error (jss::marker);
     }
 
-    if (! RPC::getAccountObjects (*ledger, raAccount.getAccountID (), type,
+    if (! RPC::getAccountObjects (*ledger, accountID, type,
         dirIndex, entryIndex, limit, result))
     {
         return RPC::invalid_field_error (jss::marker);
     }
 
-    result[jss::account] = raAccount.humanAccountID ();
+    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

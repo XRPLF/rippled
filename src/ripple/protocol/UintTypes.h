@@ -22,11 +22,11 @@
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/protocol/AccountID.h>
 
 namespace ripple {
 namespace detail {
 
-class AccountIDTag {};
 class CurrencyTag {};
 class DirectoryTag {};
 class NodeIDTag {};
@@ -37,47 +37,26 @@ class NodeIDTag {};
     The last 64 bits of this are the quality. */
 using Directory = base_uint<256, detail::DirectoryTag>;
 
-/** AccountID is a hash representing a specific account. */
-using AccountID = base_uint<160, detail::AccountIDTag>;
-
 /** Currency is a hash representing a specific currency. */
 using Currency = base_uint<160, detail::CurrencyTag>;
 
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
-using CurrencySet = hash_set<Currency>;
-
-/** A special account that's used as the "issuer" for XRP. */
-AccountID const& xrpAccount();
-
 /** XRP currency. */
 Currency const& xrpCurrency();
-
-/** A placeholder for empty accounts. */
-AccountID const& noAccount();
 
 /** A placeholder for empty currencies. */
 Currency const& noCurrency();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */
-
-
 Currency const& badCurrency();
 
 inline bool isXRP(Currency const& c)
 {
     return c == zero;
 }
-
-inline bool isXRP(AccountID const& c)
-{
-    return c == zero;
-}
-
-/** Returns a human-readable form of the account. */
-std::string to_string(AccountID const&);
 
 /** Returns "", "XRP", or three letter ISO code. */
 std::string to_string(Currency const& c);
@@ -88,16 +67,6 @@ bool to_currency(Currency&, std::string const&);
 /** Tries to convert a string to a Currency, returns noCurrency() on failure. */
 Currency to_currency(std::string const&);
 
-/** Tries to convert a string to an AccountID representing an issuer, returns true
- * on success. */
-bool to_issuer(AccountID&, std::string const&);
-
-inline std::ostream& operator<< (std::ostream& os, AccountID const& x)
-{
-    os << to_string (x);
-    return os;
-}
-
 inline std::ostream& operator<< (std::ostream& os, Currency const& x)
 {
     os << to_string (x);
@@ -107,11 +76,6 @@ inline std::ostream& operator<< (std::ostream& os, Currency const& x)
 } // ripple
 
 namespace std {
-
-template <>
-struct hash <ripple::AccountID> : ripple::AccountID::hasher
-{
-};
 
 template <>
 struct hash <ripple::Currency> : ripple::Currency::hasher

@@ -43,6 +43,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/types.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 #include <boost/optional.hpp>
@@ -65,7 +66,7 @@ makeGenesisAccount (AccountID const& id,
     std::shared_ptr<SLE> sle =
         std::make_shared<SLE>(ltACCOUNT_ROOT,
             getAccountRootIndex(id));
-    sle->setFieldAccount (sfAccount, id);
+    sle->setAccountID (sfAccount, id);
     sle->setFieldAmount (sfBalance, drops);
     sle->setFieldU32 (sfSequence, 1);
     return sle;
@@ -76,8 +77,10 @@ makeGenesisAccount (AccountID const& id,
 //        other constructor with appropriate parameters, and
 //        then create the master account / flush dirty.
 //
-Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
-    : mTotCoins (startAmount)
+// VFALCO Use `AnyPublicKey masterPublicKey`
+Ledger::Ledger (RippleAddress const& masterPublicKey,
+        std::uint64_t balanceInDrops)
+    : mTotCoins (balanceInDrops)
     , seq_ (1) // First Ledger
     , mCloseTime (0)
     , mParentCloseTime (0)
@@ -90,7 +93,8 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
         getApp().family(), deprecatedLogs().journal("SHAMap")))
 {
     auto sle = makeGenesisAccount(
-        masterID.getAccountID(), startAmount);
+        calcAccountID(masterPublicKey),
+            balanceInDrops);
     WriteLog (lsTRACE, Ledger)
             << "root account: " << sle->getJson(0);
     unchecked_insert(std::move(sle));
@@ -603,7 +607,7 @@ bool Ledger::saveValidatedLedger (bool current)
                 sql.reserve (sql.length () + (accts.size () * 128));
 
                 bool first = true;
-                for (auto const& it : accts)
+                for (auto const& account : accts)
                 {
                     if (!first)
                         sql += ", ('";
@@ -615,7 +619,7 @@ bool Ledger::saveValidatedLedger (bool current)
 
                     sql += txnId;
                     sql += "','";
-                    sql += it.humanAccountID ();
+                    sql += getApp().accountIDCache().toBase58(account);
                     sql += "',";
                     sql += ledgerSeq;
                     sql += ",";
@@ -703,7 +707,6 @@ loadLedgerHelper(std::string const& sqlSuffix)
 
     if (!db->got_data ())
     {
-        std::stringstream s;
         WriteLog (lsINFO, Ledger) << "Ledger not found: " << sqlSuffix;
         return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
     }
@@ -1236,7 +1239,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 void
 ownerDirDescriber (SLE::ref sle, bool, AccountID const& owner)
 {
-    sle->setFieldAccount (sfOwner, owner);
+    sle->setAccountID (sfOwner, owner);
 }
 
 void
@@ -1362,31 +1365,6 @@ cachedRead (Ledger const& ledger, uint256 const& key,
     return sle;
 }
 
-AccountState::pointer
-getAccountState (Ledger const& ledger,
-    RippleAddress const& accountID,
-        SLECache& cache)
-{
-    auto const sle = cachedRead (ledger,
-        getAccountRootIndex(accountID.getAccountID()),
-            cache);
-    if (!sle)
-    {
-        // VFALCO Do we really need to log here?
-        WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
-            " not found: " << accountID.humanAccountID () <<
-            ": " << to_string (getAccountRootIndex (accountID));
-
-        return {};
-    }
-
-    // VFALCO Does this ever really happen?
-    if (sle->getType () != ltACCOUNT_ROOT)
-        return {};
-
-    return std::make_shared<AccountState>(sle, accountID);
-}
-
 boost::optional<uint256>
 hashOfSeq (Ledger& ledger, LedgerIndex seq,
     SLECache& cache, beast::Journal journal)
@@ -1458,6 +1436,35 @@ hashOfSeq (Ledger& ledger, LedgerIndex seq,
         " from " << ledger.seq() << " error";
     return boost::none;
 }
+
+void
+injectSLE (Json::Value& jv,
+    SLE const& sle)
+{
+    jv = sle.getJson(0);
+    if (sle.getType() == ltACCOUNT_ROOT)
+    {
+        if (sle.isFieldPresent(sfEmailHash))
+        {
+            auto const& hash =
+                sle.getFieldH128(sfEmailHash);
+            Blob const b (hash.begin(), hash.end());
+            std::string md5 = strHex(b);
+            boost::to_lower(md5);
+            // VFALCO TODO Give a name and move this constant
+            //             to a more visible location. Also
+            //             shouldn't this be https?
+            jv[jss::urlgravatar] = str(boost::format(
+                "http://www.gravatar.com/avatar/%s") % md5);
+        }
+    }
+    else
+    {
+        jv[jss::Invalid] = true;
+    }
+}
+
+//------------------------------------------------------------------------------
 
 bool
 getMetaHex (Ledger const& ledger,

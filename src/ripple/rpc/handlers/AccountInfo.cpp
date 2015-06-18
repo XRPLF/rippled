@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -52,27 +53,26 @@ Json::Value doAccountInfo (RPC::Context& context)
     int iIndex = params.isMember (jss::account_index)
             ? params[jss::account_index].asUInt () : 0;
     bool bStrict = params.isMember (jss::strict) && params[jss::strict].asBool ();
-    RippleAddress naAccount;
+    AccountID accountID;
 
     // Get info on account.
 
     auto jvAccepted = RPC::accountFromString (
-        naAccount, bIndex, strIdent, iIndex, bStrict);
+        accountID, bIndex, strIdent, iIndex, bStrict);
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
-    AccountState::pointer asAccepted =
-        getAccountState(*ledger, naAccount,
-            getApp().getSLECache());
+    auto const sleAccepted = cachedRead(*ledger,
+        keylet::account(accountID).key,
+            getApp().getSLECache(), ltACCOUNT_ROOT);
 
-    if (asAccepted)
+    if (sleAccepted)
     {
-        asAccepted->addJson (jvAccepted);
+        injectSLE(jvAccepted, *sleAccepted);
 
         // See if there's a SignerEntries for this account.
-        AccountID const account = naAccount.getAccountID ();
-        uint256 const signerListIndex = getSignerListIndex (account);
+        uint256 const signerListIndex = getSignerListIndex (accountID);
         auto const signerList = cachedRead(*ledger, signerListIndex,
             getApp().getSLECache());
 
@@ -93,7 +93,7 @@ Json::Value doAccountInfo (RPC::Context& context)
     }
     else
     {
-        result[jss::account] = naAccount.humanAccountID ();
+        result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
         RPC::inject_error (rpcACT_NOT_FOUND, result);
     }
 

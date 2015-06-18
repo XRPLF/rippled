@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/ledger/ViewAPI.h>
 #include <ripple/rpc/impl/AccountFromString.h>
@@ -78,17 +79,16 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
     // Get info on account.
     bool bIndex; // out param
-    RippleAddress naAccount; // out param
-    Json::Value jvAccepted (RPC::accountFromString (
-        naAccount, bIndex, strIdent, iIndex, bStrict));
+    AccountID accountID;
+    Json::Value jvAccepted = RPC::accountFromString (
+        accountID, bIndex, strIdent, iIndex, bStrict);
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = naAccount.humanAccountID();
-    auto accountID = naAccount.getAccountID();
+    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set <AccountID> hotWallets;
@@ -103,13 +103,18 @@ Json::Value doGatewayBalances (RPC::Context& context)
             if (j.isString())
             {
                 RippleAddress ra;
-                if (! ra.setAccountPublic (j.asString ()) &&
-                    ! ra.setAccountID (j.asString()))
+                if (ra.setAccountPublic (j.asString ()))
                 {
-                    valid = false;
+                    hotWallets.insert(calcAccountID(ra));
                 }
                 else
-                    hotWallets.insert (ra.getAccountID ());
+                {
+                    auto const a =parseBase58<AccountID>(j.asString());
+                    if (! a)
+                        valid = false;
+                    else
+                      hotWallets.insert(*a);
+                }
             }
             else
             {
@@ -147,7 +152,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     {
         CachedView const view(
             *ledger, getApp().getSLECache());
-        forEachItem(view, accountID, 
+        forEachItem(view, accountID,
             [&](std::shared_ptr<SLE const> const& sle)
             {
                 auto rs = RippleState::makeItem (accountID, sle);

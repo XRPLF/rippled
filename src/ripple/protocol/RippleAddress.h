@@ -26,23 +26,12 @@
 #include <ripple/crypto/KeyType.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/RipplePublicKey.h>
+#include <ripple/protocol/tokens.h>
 #include <ripple/protocol/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/utility/noexcept.h>
 
 namespace ripple {
-
-enum VersionEncoding
-{
-    VER_NONE                = 1,
-    VER_NODE_PUBLIC         = 28,
-    VER_NODE_PRIVATE        = 32,
-    VER_ACCOUNT_ID          = 0,
-    VER_ACCOUNT_PUBLIC      = 35,
-    VER_ACCOUNT_PRIVATE     = 34,
-    VER_FAMILY_GENERATOR    = 41,
-    VER_FAMILY_SEED         = 33,
-};
 
 //
 // Used to hold addresses and parse and produce human formats.
@@ -78,10 +67,8 @@ public:
     void clear ();
     bool isSet () const;
 
-    static void clearCache ();
-
     /** Returns the public key.
-        Precondition: version == VER_NODE_PUBLIC
+        Precondition: version == TOKEN_NODE_PUBLIC
     */
     RipplePublicKey
     toPublicKey() const;
@@ -119,20 +106,6 @@ public:
     void signNodePrivate (uint256 const& hash, Blob& vchSig) const;
 
     static RippleAddress createNodePrivate (RippleAddress const& naSeed);
-
-    //
-    // Accounts IDs
-    //
-    AccountID getAccountID () const;
-
-    std::string humanAccountID () const;
-
-    bool setAccountID (
-        std::string const& strAccountID,
-        Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
-    void setAccountID (AccountID const& hash160In);
-
-    static RippleAddress createAccountID (AccountID const& uiAccountID);
 
     //
     // Accounts Public
@@ -299,6 +272,10 @@ uint256 keyFromSeed (uint128 const& seed);
 RippleAddress getSeedFromRPC (Json::Value const& params);
 
 KeyPair generateKeysFromSeed (KeyType keyType, RippleAddress const& seed);
+
+// DEPRECATED
+AccountID
+calcAccountID (RippleAddress const& publicKey);
 
 } // ripple
 

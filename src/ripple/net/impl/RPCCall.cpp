@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/basics/Log.h>
@@ -28,6 +29,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/SystemParameters.h>
+#include <ripple/protocol/types.h>
 #include <ripple/server/ServerHandler.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/asio/streambuf.hpp>
@@ -169,21 +171,24 @@ private:
     }
 
     // account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]
-    Json::Value parseAccountTransactions (Json::Value const& jvParams)
+    Json::Value
+    parseAccountTransactions (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
-        RippleAddress   raAccount;
         unsigned int    iParams = jvParams.size ();
 
-        if (!raAccount.setAccountID (jvParams[0u].asString ()))
+        auto const account =
+            parseBase58<AccountID>(jvParams[0u].asString());
+        if (! account)
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest[jss::account]    = raAccount.humanAccountID ();
+        jvRequest[jss::account]= getApp().accountIDCache().toBase58(*account);
 
         bool            bDone   = false;
 
         while (!bDone && iParams >= 2)
         {
+            // VFALCO Why is Json::StaticString appearing on the right side?
             if (jvParams[iParams - 1].asString () == jss::binary)
             {
                 jvRequest[jss::binary]     = true;
@@ -240,13 +245,14 @@ private:
     Json::Value parseTxAccount (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
-        RippleAddress   raAccount;
         unsigned int    iParams = jvParams.size ();
 
-        if (!raAccount.setAccountID (jvParams[0u].asString ()))
+        auto const account =
+            parseBase58<AccountID>(jvParams[0u].asString());
+        if (! account)
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest[jss::account]    = raAccount.humanAccountID ();
+        jvRequest[jss::account]    = getApp().accountIDCache().toBase58(*account);
 
         bool            bDone   = false;
 
@@ -568,7 +574,9 @@ private:
 
         RippleAddress   raAddress;
 
-        if (!raAddress.setAccountPublic (strIdent) && !raAddress.setAccountID (strIdent) && !raAddress.setSeedGeneric (strIdent))
+        if (! raAddress.setAccountPublic (strIdent) &&
+            ! parseBase58<AccountID>(strIdent) &&
+                ! raAddress.setSeedGeneric (strIdent))
             return rpcError (rpcACT_MALFORMED);
 
         // Get info on account.
@@ -586,7 +594,9 @@ private:
         {
             RippleAddress   raPeer;
 
-            if (!raPeer.setAccountPublic (strPeer) && !raPeer.setAccountID (strPeer) && !raPeer.setSeedGeneric (strPeer))
+            if (! raPeer.setAccountPublic (strPeer) &&
+                ! parseBase58<AccountID>(strPeer) &&
+                    ! raPeer.setSeedGeneric (strPeer))
                 return rpcError (rpcACT_MALFORMED);
 
             jvRequest["peer"]   = strPeer;

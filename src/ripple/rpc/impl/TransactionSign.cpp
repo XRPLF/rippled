@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -40,8 +40,8 @@ namespace detail {
 class SigningForParams
 {
 private:
-    RippleAddress const* const signingForAcctID_;
-    RippleAddress const* const multiSigningAcctID_;
+    AccountID const* const signingForAcctID_;
+    AccountID const* const multiSigningAcctID_;
     RippleAddress* const multiSignPublicKey_;
     Blob* const multiSignature_;
 public:
@@ -55,8 +55,8 @@ public:
     SigningForParams (SigningForParams const& rhs) = delete;
 
     SigningForParams (
-        RippleAddress const& signingForAcctID,
-        RippleAddress const& multiSigningAcctID,
+        AccountID const& signingForAcctID,
+        AccountID const& multiSigningAcctID,
         RippleAddress& multiSignPublicKey,
         Blob& multiSignature)
     : signingForAcctID_ (&signingForAcctID)
@@ -80,12 +80,12 @@ public:
     }
 
     // Don't call this method unless isMultiSigning() returns true.
-    RippleAddress const& getSigningFor ()
+    AccountID const& getSigningFor ()
     {
         return *signingForAcctID_;
     }
 
-    RippleAddress const& getSigner ()
+    AccountID const& getSigner ()
     {
         return *multiSigningAcctID_;
     }
@@ -105,15 +105,16 @@ public:
 
 // TxnSignApiFacade methods
 
-void TxnSignApiFacade::snapshotAccountState (RippleAddress const& accountID)
+void TxnSignApiFacade::snapshotAccountState (AccountID const& accountID)
 {
     if (!netOPs_) // Unit testing.
         return;
 
     ledger_ = netOPs_->getCurrentLedger ();
     accountID_ = accountID;
-    accountState_ = getAccountState (
-        *ledger_, accountID_, getApp().getSLECache());
+    sle_ = cachedRead(*ledger_,
+        keylet::account(accountID_).key,
+            getApp().getSLECache(), ltACCOUNT_ROOT);
 }
 
 bool TxnSignApiFacade::isValidAccount () const
@@ -121,7 +122,7 @@ bool TxnSignApiFacade::isValidAccount () const
     if (!ledger_) // Unit testing.
         return true;
 
-    return static_cast <bool> (accountState_);
+    return static_cast <bool> (sle_);
 }
 
 std::uint32_t TxnSignApiFacade::getSeq () const
@@ -129,7 +130,7 @@ std::uint32_t TxnSignApiFacade::getSeq () const
     if (!ledger_) // Unit testing.
         return 0;
 
-    return accountState_->sle().getFieldU32(sfSequence);
+    return sle_->getFieldU32(sfSequence);
 }
 
 void TxnSignApiFacade::processTransaction (
@@ -145,7 +146,7 @@ void TxnSignApiFacade::processTransaction (
 }
 
 bool TxnSignApiFacade::findPathsForOneIssuer (
-    RippleAddress const& dstAccountID,
+    AccountID const& dstAccountID,
     Issue const& srcIssue,
     STAmount const& dstAmount,
     int searchLevel,
@@ -160,8 +161,8 @@ bool TxnSignApiFacade::findPathsForOneIssuer (
     auto cache = std::make_shared<RippleLineCache> (ledger_);
     return ripple::findPathsForOneIssuer (
         cache,
-        accountID_.getAccountID (),
-        dstAccountID.getAccountID (),
+        accountID_,
+        dstAccountID,
         srcIssue,
         dstAmount,
         searchLevel,
@@ -199,12 +200,12 @@ bool TxnSignApiFacade::hasAccountRoot () const
 }
 
 error_code_i acctMatchesPubKey (
-    AccountState::pointer accountState,
-    RippleAddress const& accountID,
+    std::shared_ptr<SLE const> accountState,
+    AccountID const& accountID,
     RippleAddress const& publicKey)
 {
-    AccountID const publicKeyAcctID = publicKey.getAccountID ();
-    bool const isMasterKey = publicKeyAcctID == accountID.getAccountID ();
+    AccountID const publicKeyAcctID = calcAccountID(publicKey);
+    bool const isMasterKey = publicKeyAcctID == accountID;
 
     // If we can't get the accountRoot, but the accountIDs match, that's
     // good enough.
@@ -216,7 +217,7 @@ error_code_i acctMatchesPubKey (
     }
 
     // If we *can* get to the accountRoot, check for MASTER_DISABLED
-    auto const& sle = accountState->sle();
+    auto const& sle = *accountState;
     if (isMasterKey)
     {
         if (sle.isFlag(lsfDisableMaster))
@@ -226,7 +227,7 @@ error_code_i acctMatchesPubKey (
 
     // The last gasp is that we have public Regular key.
     if ((sle.isFieldPresent (sfRegularKey)) &&
-        (publicKeyAcctID == sle.getFieldAccount160 (sfRegularKey)))
+        (publicKeyAcctID == sle.getAccountID (sfRegularKey)))
     {
         return rpcSUCCESS;
     }
@@ -239,21 +240,24 @@ error_code_i TxnSignApiFacade::singleAcctMatchesPubKey (
     if (!netOPs_) // Unit testing.
         return rpcSUCCESS;
 
-    return acctMatchesPubKey (accountState_, accountID_, publicKey);
+    return acctMatchesPubKey (sle_, accountID_, publicKey);
 }
 
 error_code_i TxnSignApiFacade::multiAcctMatchesPubKey (
-    RippleAddress const& accountID,
+    AccountID const& accountID,
     RippleAddress const& publicKey) const
 {
-    AccountState::pointer accountState;
+    std::shared_ptr<SLE const> accountState;
     // VFALCO Do we need to check netOPs_?
     if (netOPs_ && ledger_)
-        // If it's available, get the AccountState for the multi-signer's
-        // accountID.  It's okay if the AccountState is not available,
+    {
+        // If it's available, get the account root for the multi-signer's
+        // accountID.  It's okay if the account root is not available,
         // since they might be signing with a phantom (unfunded) account.
-        accountState = getAccountState (
-            *ledger_, accountID, getApp().getSLECache());
+        accountState = cachedRead(*ledger_,
+            keylet::account(accountID).key,
+                getApp().getSLECache(), ltACCOUNT_ROOT);
+    }
 
     return acctMatchesPubKey (accountState, accountID, publicKey);
 }
@@ -356,7 +360,7 @@ enum class PathFind : unsigned char
 static Json::Value checkPayment(
     Json::Value const& params,
     Json::Value& tx_json,
-    RippleAddress const& raSrcAddressID,
+    AccountID const& raSrcAddressID,
     TxnSignApiFacade const& apiFacade,
     Role const role,
     PathFind const doPath)
@@ -364,8 +368,6 @@ static Json::Value checkPayment(
     // Only path find for Payments.
     if (tx_json[jss::TransactionType].asString () != "Payment")
         return Json::Value();
-
-    RippleAddress dstAccountID;
 
     if (!tx_json.isMember (jss::Amount))
         return RPC::missing_field_error ("tx_json.Amount");
@@ -378,7 +380,9 @@ static Json::Value checkPayment(
     if (!tx_json.isMember (jss::Destination))
         return RPC::missing_field_error ("tx_json.Destination");
 
-    if (!dstAccountID.setAccountID (tx_json[jss::Destination].asString ()))
+    auto const dstAccountID = parseBase58<AccountID>(
+        tx_json[jss::Destination].asString());
+    if (! dstAccountID)
         return RPC::invalid_field_error ("tx_json.Destination");
 
     if ((doPath == PathFind::dont) && params.isMember (jss::build_path))
@@ -402,7 +406,7 @@ static Json::Value checkPayment(
         {
             // If no SendMax, default to Amount with sender as issuer.
             saSendMax = amount;
-            saSendMax.setIssuer (raSrcAddressID.getAccountID ());
+            saSendMax.setIssuer (raSrcAddressID);
         }
 
         if (saSendMax.native () && amount.native ())
@@ -417,7 +421,7 @@ static Json::Value checkPayment(
             STPathSet spsPaths;
             STPath fullLiquidityPath;
             bool valid = apiFacade.findPathsForOneIssuer (
-                dstAccountID,
+                *dstAccountID,
                 saSendMax.issue (),
                 amount,
                 getConfig ().PATH_SEARCH_OLD,
@@ -446,20 +450,20 @@ static Json::Value checkPayment(
 
 // Validate (but don't modify) the contents of the tx_json.
 //
-// Returns a pair<Json::Value, RippleAddress>.  The Json::Value is non-empty
+// Returns a pair<Json::Value, AccountID>.  The Json::Value is non-empty
 // and contains as error if there was an error.  The returned RippleAddress
 // is the "Account" addressID if there was no error.
 //
 // This code does not check the "Sequence" field, since the expectations
 // for that field are particularly context sensitive.
-static std::pair<Json::Value, RippleAddress>
+static std::pair<Json::Value, AccountID>
 checkTxJsonFields (
     Json::Value const& tx_json,
     TxnSignApiFacade const& apiFacade,
     Role const role,
     bool const verify)
 {
-    std::pair<Json::Value, RippleAddress> ret;
+    std::pair<Json::Value, AccountID> ret;
 
     if (! tx_json.isObject ())
     {
@@ -480,9 +484,10 @@ checkTxJsonFields (
         return ret;
     }
 
-    RippleAddress srcAddressID;
+    auto const srcAddressID = parseBase58<AccountID>(
+        tx_json[jss::Account].asString());
 
-    if (! srcAddressID.setAccountID (tx_json[jss::Account].asString ()))
+    if (! srcAddressID)
     {
         ret.first = RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message ("tx_json.Account"));
@@ -506,7 +511,7 @@ checkTxJsonFields (
     }
 
     // It's all good.  Return the AddressID.
-    ret.second = std::move (srcAddressID);
+    ret.second = *srcAddressID;
     return ret;
 }
 
@@ -542,7 +547,9 @@ struct transactionPreProcessResult
     { }
 };
 
-static transactionPreProcessResult transactionPreProcessImpl (
+static
+transactionPreProcessResult
+transactionPreProcessImpl (
     Json::Value& params,
     TxnSignApiFacade& apiFacade,
     Role role,
@@ -569,7 +576,7 @@ static transactionPreProcessResult transactionPreProcessImpl (
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
-    RippleAddress const raSrcAddressID = std::move (txJsonResult.second);
+    auto const raSrcAddressID = txJsonResult.second;
 
     // This test covers the case where we're offline so the sequence number
     // cannot be determined locally.  If we're offline then the caller must
@@ -586,7 +593,7 @@ static transactionPreProcessResult transactionPreProcessImpl (
             WriteLog (lsDEBUG, RPCHandler)
                 << "transactionSign: Failed to find source account "
                 << "in current ledger: "
-                << raSrcAddressID.humanAccountID();
+                << toBase58(raSrcAddressID);
 
             return rpcError (rpcSRC_ACT_NOT_FOUND);
         }
@@ -630,8 +637,8 @@ static transactionPreProcessResult transactionPreProcessImpl (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
 
         WriteLog (lsTRACE, RPCHandler) <<
-            "verify: " << keypair.publicKey.humanAccountID() <<
-            " : " << raSrcAddressID.humanAccountID();
+            "verify: " << toBase58(calcAccountID(keypair.publicKey)) <<
+            " : " << toBase58(raSrcAddressID);
 
         // If multisigning then we need to return the public key.
         if (signingArgs.isMultiSigning())
@@ -687,8 +694,8 @@ static transactionPreProcessResult transactionPreProcessImpl (
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning ())
     {
-        Serializer s = stpTrans->getMultiSigningData (
-            signingArgs.getSigningFor (), signingArgs.getSigner ());
+        Serializer s = stpTrans->getMultiSigningData(
+            signingArgs.getSigningFor(), signingArgs.getSigner());
         Blob multiSignature = keypair.secretKey.accountPrivateSign(s.getData());
         signingArgs.moveMultiSignature (std::move (multiSignature));
     }
@@ -787,15 +794,16 @@ Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
 
 void insertMultiSigners (
     Json::Value& jvResult,
-    RippleAddress const& signingForAcctID,
-    RippleAddress const& signingAcctID,
+    AccountID const& signingForAcctID,
+    AccountID const& signingAcctID,
     RippleAddress const& accountPublic,
     Blob const& signature)
 {
     // Build a SigningAccount object to inject into the SigningAccounts.
     Json::Value signingAccount (Json::objectValue);
 
-    signingAccount[sfAccount.getJsonName ()] = signingAcctID.humanAccountID ();
+    signingAccount[sfAccount.getJsonName ()] =
+        getApp().accountIDCache().toBase58(signingAcctID);
 
     signingAccount[sfSigningPubKey.getJsonName ()] =
         strHex (accountPublic.getAccountPublic ());
@@ -813,7 +821,8 @@ void insertMultiSigners (
     // Put the signingForAcctID and the SigningAccounts in the SigningFor.
     Json::Value signingFor (Json::objectValue);
 
-    signingFor[sfAccount.getJsonName ()] = signingForAcctID.humanAccountID ();
+    signingFor[sfAccount.getJsonName ()] =
+        getApp().accountIDCache().toBase58(signingForAcctID);
 
     signingFor[sfSigningAccounts.getJsonName ()] = signingAccounts;
 
@@ -949,9 +958,9 @@ Json::Value transactionSignFor (
         return RPC::missing_field_error (accountField);
 
     // Turn the signer's account into a RippleAddress for multi-sign.
-    RippleAddress multiSignAddrID;
-    if (! multiSignAddrID.setAccountID (
-        jvRequest[accountField].asString ()))
+    auto const multiSignAddrID = parseBase58<AccountID>(
+        jvRequest[accountField].asString());
+    if (! multiSignAddrID)
     {
         return RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message (accountField));
@@ -964,9 +973,9 @@ Json::Value transactionSignFor (
         return RPC::missing_field_error (signing_forField);
 
     // Turn the signing_for account into a RippleAddress for multi-sign.
-    RippleAddress multiSignForAddrID;
-    if (! multiSignForAddrID.setAccountID (
-        jvRequest[signing_forField].asString ()))
+    auto const multiSignForAddrID = parseBase58<AccountID>(
+        jvRequest[signing_forField].asString ());
+    if (! multiSignForAddrID)
     {
         return RPC::make_error (rpcSIGN_FOR_MALFORMED,
             RPC::invalid_field_message (signing_forField));
@@ -984,8 +993,9 @@ Json::Value transactionSignFor (
     // Add and amend fields based on the transaction type.
     Blob multiSignature;
     RippleAddress multiSignPubKey;
-    SigningForParams signForParams (
-        multiSignForAddrID, multiSignAddrID, multiSignPubKey, multiSignature);
+    SigningForParams signForParams(
+        *multiSignForAddrID, *multiSignAddrID,
+            multiSignPubKey, multiSignature);
 
     transactionPreProcessResult preprocResult =
         transactionPreProcessImpl (
@@ -1000,7 +1010,7 @@ Json::Value transactionSignFor (
     // Make sure the multiSignAddrID can legitimately multi-sign.
     {
         error_code_i const err =
-            apiFacade.multiAcctMatchesPubKey (multiSignAddrID, multiSignPubKey);
+            apiFacade.multiAcctMatchesPubKey(*multiSignAddrID, multiSignPubKey);
 
         if (err != rpcSUCCESS)
             return rpcError (err);
@@ -1019,7 +1029,7 @@ Json::Value transactionSignFor (
 
     // Finally, do what we were called for: return a SigningFor object.
     insertMultiSigners (json,
-        multiSignForAddrID, multiSignAddrID, multiSignPubKey, multiSignature);
+        *multiSignForAddrID, *multiSignAddrID, multiSignPubKey, multiSignature);
 
     return json;
 }
@@ -1049,7 +1059,7 @@ Json::Value transactionSubmitMultiSigned (
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
-    RippleAddress const raSrcAddressID = std::move (txJsonResult.second);
+    auto const raSrcAddressID = txJsonResult.second;
 
     apiFacade.snapshotAccountState (raSrcAddressID);
     if (!apiFacade.isValidAccount ())
@@ -1058,7 +1068,7 @@ Json::Value transactionSubmitMultiSigned (
         WriteLog (lsDEBUG, RPCHandler)
             << "transactionSubmitMultiSigned: Failed to find source account "
             << "in current ledger: "
-            << raSrcAddressID.humanAccountID ();
+            << toBase58(raSrcAddressID);
 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
@@ -1199,15 +1209,18 @@ Json::Value transactionSubmitMultiSigned (
     }
 
     // Lambdas for sorting arrays and finding duplicates.
-    auto byFieldAccountID =
-        [] (STObject const& a, STObject const& b) {
-            return (a.getFieldAccount (sfAccount).getAccountID () <
-                b.getFieldAccount (sfAccount).getAccountID ()); };
+    auto byFieldAccountID = [](STObject const& a, STObject const& b)
+        {
+            return a.getAccountID(sfAccount) <
+                b.getAccountID(sfAccount);
+        };
 
     auto ifDuplicateAccountID =
-        [] (STObject const& a, STObject const& b) {
-            return (a.getFieldAccount (sfAccount).getAccountID () ==
-                    b.getFieldAccount (sfAccount).getAccountID ()); };
+        [](STObject const& a, STObject const& b)
+        {
+            return a.getAccountID(sfAccount) ==
+                b.getAccountID(sfAccount);
+        };
 
     {
         // MultiSigners are submitted sorted in AccountID order.  This
@@ -1224,7 +1237,7 @@ Json::Value transactionSubmitMultiSigned (
         {
             std::ostringstream err;
             err << "Duplicate SigningFor:Account entries ("
-                << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
+                << getApp().accountIDCache().toBase58(dupAccountItr->getAccountID(sfAccount))
                 << ") are not allowed.";
             return RPC::make_param_error(err.str ());
         }
@@ -1246,25 +1259,23 @@ Json::Value transactionSubmitMultiSigned (
         {
             std::ostringstream err;
             err << "Duplicate SigningAccounts:SigningAccount:Account entries ("
-                << dupAccountItr->getFieldAccount (sfAccount).humanAccountID ()
+                << getApp().accountIDCache().toBase58(dupAccountItr->getAccountID(sfAccount))
                 << ") are not allowed.";
             return RPC::make_param_error(err.str ());
         }
 
         // An account may not sign for itself.
-        RippleAddress const signingForAcct =
-            signingFor.getFieldAccount (sfAccount);
-
-        auto const selfSigningItr = std::find_if(
-            signingAccts.begin (), signingAcctsEnd,
-            [&signingForAcct](STObject const& elem)
-            { return elem.getFieldAccount (sfAccount) == signingForAcct; });
-
-        if (selfSigningItr != signingAcctsEnd)
+        auto const account =
+            signingFor.getAccountID(sfAccount);
+        if (std::find_if (signingAccts.begin(), signingAcctsEnd,
+            [&account](STObject const& elem)
+                {
+                    return elem.getAccountID(sfAccount) == account;
+                }) != signingAcctsEnd)
         {
             std::ostringstream err;
             err << "A SigningAccount may not SignFor itself ("
-                << signingForAcct.humanAccountID () << ").";
+                << getApp().accountIDCache().toBase58(account) << ").";
             return RPC::make_param_error(err.str ());
         }
     }

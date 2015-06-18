@@ -375,6 +375,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
@@ -1517,12 +1519,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\AccountState.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\AccountState.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\AmendmentTable.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\AmendmentTableImpl.cpp">
@@ -1701,10 +1697,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
@@ -2631,6 +2623,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\protocol\AccountID.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\AnyPublicKey.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\AnySecretKey.h">
@@ -2645,6 +2639,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\HashPrefix.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\AccountID.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\AnyPublicKey.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2775,6 +2773,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\tokens.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\TxFormats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2883,9 +2885,17 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\types_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\protocol\tokens.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TxFlags.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TxFormats.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\UInt160.h">
     </ClInclude>
