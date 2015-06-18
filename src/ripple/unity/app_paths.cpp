@@ -43,3 +43,5 @@
 #include <ripple/app/paths/cursor/RippleLiquidity.cpp>
 
 #include <ripple/app/paths/impl/PaymentView.cpp>
+
+#include <ripple/app/paths/tests/Path_test.cpp>

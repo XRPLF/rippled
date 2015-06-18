@@ -274,6 +274,9 @@
     <Filter Include="ripple\app\paths\impl">
       <UniqueIdentifier>{38932157-7DA1-A9CC-CABC-2A3D9CACF188}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\paths\tests">
+      <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\tests">
       <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
     </Filter>
@@ -2433,6 +2436,9 @@
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
+      <Filter>ripple\app\paths\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\Tuning.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
