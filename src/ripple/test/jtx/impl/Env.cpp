@@ -226,7 +226,7 @@ Env::autofill_sig (JTx& jt)
         auto const account =
             lookup(jv[jss::Account].asString());
         auto const ar = le(account);
-        if (ar->isFieldPresent(sfRegularKey))
+        if (ar && ar->isFieldPresent(sfRegularKey))
             jtx::sign(jv, lookup(
                 ar->getFieldAccount160(sfRegularKey)));
         else

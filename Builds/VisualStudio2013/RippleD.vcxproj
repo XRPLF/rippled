@@ -3341,6 +3341,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\balance.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\basic_prop.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\fee.h">
@@ -3444,6 +3446,8 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\paths.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\pay.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\prop.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\rate.h">
     </ClInclude>

@@ -21,9 +21,12 @@
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
 #include <ripple/test/jtx/requires.h>
+#include <ripple/test/jtx/basic_prop.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/TER.h>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace ripple {
 namespace test {
@@ -46,6 +49,34 @@ struct JTx
 
     JTx() = default;
 
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+    JTx(JTx&& src)
+        : jv(std::move(src.jv))
+        , fill_fee(std::move(src.fill_fee))
+        , fill_seq(std::move(src.fill_seq))
+        , fill_sig(std::move(src.fill_sig))
+        , signer(std::move(src.signer))
+        , requires(std::move(src.requires))
+        , ter(std::move(src.ter))
+        , props_(std::move(src.props_))
+    {
+    }
+
+    JTx& operator=(JTx&& src) noexcept
+    {
+        jv = std::move(src.jv);
+        fill_fee = std::move(src.fill_fee);
+        fill_seq = std::move(src.fill_seq);
+        fill_sig = std::move(src.fill_sig);
+        signer = std::move(src.signer);
+        requires = std::move(src.requires);
+        ter = std::move(src.ter);
+        props_ = std::move(src.props_);
+
+        return *this;
+    }
+#endif
+
     JTx (Json::Value&& jv_)
         : jv(std::move(jv_))
     {
@@ -62,6 +93,115 @@ struct JTx
     {
         return jv[key];
     }
+
+public:
+    /** Return a property if it exists
+
+        @return nullptr if the Prop does not exist
+    */
+    /** @{ */
+    template <class Prop>
+    Prop*
+    get()
+    {
+        for (auto& prop : props_.list)
+        {
+            if (auto test = dynamic_cast<
+                    prop_type<Prop>*>(
+                        prop.get()))
+                return &test->t;
+        }
+        return nullptr;
+    }
+
+    template <class Prop>
+    Prop const*
+    get() const
+    {
+        for (auto& prop : props_.list)
+        {
+            if (auto test = dynamic_cast<
+                    prop_type<Prop> const*>(
+                        prop.get()))
+                return &test->t;
+        }
+        return nullptr;
+    }
+    /** @} */
+
+    /** Set a property
+        If the property already exists,
+        it is replaced.
+    */
+    /** @{ */
+    void
+    set(std::unique_ptr<basic_prop> p)
+    {
+        for (auto& prop : props_.list)
+        {
+            if (prop->assignable(p.get()))
+            {
+                prop = std::move(p);
+                return;
+            }
+        }
+        props_.list.emplace_back(std::move(p));
+    }
+
+    template <class Prop, class... Args>
+    void
+    set(Args&&... args)
+    {
+        set(std::make_unique<
+            prop_type<Prop>>(
+                std::forward <Args> (
+                    args)...));
+    }
+    /** @} */
+
+private:
+    struct prop_list
+    {
+        prop_list() = default;
+
+        prop_list(prop_list const& src)
+        {
+            for (auto const& prop : src.list)
+                list.emplace_back(prop->clone());
+        }
+
+        prop_list& operator=(prop_list const& src)
+        {
+            if (this != &src)
+            {
+                list.clear();
+                for (auto const& prop : src.list)
+                    list.emplace_back(prop->clone());
+            }
+            return *this;
+        }
+
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+        prop_list(prop_list&& src)
+            : list(std::move(src.list))
+        {
+        }
+
+        prop_list& operator=(prop_list&& src)
+        {
+            list = std::move(src.list);
+            return *this;
+        }
+#else
+        prop_list(prop_list&& src) = default;
+        prop_list& operator=(prop_list&& src) = default;
+#endif
+
+        std::vector<std::unique_ptr<
+            basic_prop>> list;
+    };
+
+    prop_list props_;
 };
 
 } // jtx
