@@ -45,6 +45,7 @@
 #include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
 #include <ripple/app/paths/cursor/RippleLiquidity.cpp>
 #include <ripple/app/paths/RippleLineCache.cpp>
+#include <ripple/app/paths/tests/Path_test.cpp>
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
