@@ -61,7 +61,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     Json::Value jvAccepted (
         RPC::accountFromString (accountID, bIndex, strIdent, iIndex, bStrict));
 
-    if (!jvAccepted.empty ())
+    if (jvAccepted)
         return jvAccepted;
 
     std::set<Currency> send, receive;

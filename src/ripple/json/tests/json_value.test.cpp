@@ -25,30 +25,29 @@
 
 namespace ripple {
 
-class json_value_test : public beast::unit_test::suite
+struct json_value_test : beast::unit_test::suite
 {
-public:
-    void test_empty()
+    void test_bool()
     {
-        expect (Json::Value().empty());
+        expect (! Json::Value());
 
-        expect (Json::Value("").empty());
+        expect (! Json::Value(""));
 
-        expect (! Json::Value("empty").empty());
-        expect (! Json::Value(false).empty());
-        expect (! Json::Value(true).empty());
-        expect (! Json::Value(0).empty());
-        expect (! Json::Value(1).empty());
+        expect (bool (Json::Value("empty")));
+        expect (bool (Json::Value(false)));
+        expect (bool (Json::Value(true)));
+        expect (bool (Json::Value(0)));
+        expect (bool (Json::Value(1)));
 
         Json::Value array (Json::arrayValue);
-        expect (array.empty());
+        expect (! array);
         array.append(0);
-        expect (!array.empty());
+        expect (bool (array));
 
         Json::Value object (Json::objectValue);
-        expect (object.empty());
+        expect (! object);
         object[""] = false;
-        expect (!object.empty());
+        expect (bool (object));
     }
 
     void test_bad_json ()
@@ -148,7 +147,7 @@ public:
         expect (v1.asDouble () == 2.5);
 
         Json::Value v2 = std::move(v1);
-        expect (v1.isNull ());
+        expect (!v1);
         expect (v2.isDouble ());
         expect (v2.asDouble () == 2.5);
         expect (v1 != v2);
@@ -156,7 +155,7 @@ public:
         v1 = std::move(v2);
         expect (v1.isDouble ());
         expect (v1.asDouble () == 2.5);
-        expect (v2.isNull ());
+        expect (! v2);
         expect (v1 != v2);
 
         pass ();
@@ -220,7 +219,7 @@ public:
 
     void run ()
     {
-        test_empty ();
+        test_bool ();
         test_bad_json ();
         test_edge_cases ();
         test_copy ();

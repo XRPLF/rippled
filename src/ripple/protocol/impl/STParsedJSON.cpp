@@ -532,7 +532,7 @@ static boost::optional<detail::STVar> parseLeaf (
                     AccountID uAccount, uIssuer;
                     Currency uCurrency;
 
-                    if (! account.isNull ())
+                    if (account)
                     {
                         // human account id
                         if (! account.isString ())
@@ -556,7 +556,7 @@ static boost::optional<detail::STVar> parseLeaf (
                         }
                     }
 
-                    if (!currency.isNull ())
+                    if (currency)
                     {
                         // human currency
                         if (!currency.isString ())
@@ -577,7 +577,7 @@ static boost::optional<detail::STVar> parseLeaf (
                         }
                     }
 
-                    if (!issuer.isNull ())
+                    if (issuer)
                     {
                         // human account id
                         if (!issuer.isString ())

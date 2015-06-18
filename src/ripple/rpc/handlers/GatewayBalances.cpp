@@ -82,7 +82,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     Json::Value jvAccepted = RPC::accountFromString (
         accountID, bIndex, strIdent, iIndex, bStrict);
 
-    if (!jvAccepted.empty ())
+    if (jvAccepted)
         return jvAccepted;
 
     context.loadType = Resource::feeHighBurdenRPC;

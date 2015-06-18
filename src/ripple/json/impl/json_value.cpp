@@ -822,27 +822,19 @@ Value::size () const
 }
 
 
-bool
-Value::empty () const
+Value::operator bool () const
 {
     if (isNull ())
-        return true;
+        return false;
 
-    if (isString ()) {
+    if (isString ())
+    {
         auto s = asCString();
-        return !(s && strlen(s));
+        return s && strlen(s);
     }
 
-    return (isArray () || isObject ()) && ! size ();
+    return ! (isArray () || isObject ()) || size ();
 }
-
-
-bool
-Value::operator! () const
-{
-    return isNull ();
-}
-
 
 void
 Value::clear ()

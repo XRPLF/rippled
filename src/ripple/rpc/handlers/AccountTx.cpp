@@ -162,7 +162,7 @@ Json::Value doAccountTx (RPC::Context& context)
         ret[jss::ledger_index_max] = uLedgerMax;
         if (params.isMember (jss::limit))
             ret[jss::limit]        = limit;
-        if (!resumeToken.isNull())
+        if (resumeToken)
             ret[jss::marker] = resumeToken;
 
         return ret;

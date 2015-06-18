@@ -452,7 +452,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     jvStatus[jss::destination_account] = getApp().accountIDCache().toBase58(*raDstAccount);
     jvStatus[jss::destination_amount] = saDstAmount.getJson (0);
 
-    if (!jvId.isNull ())
+    if (jvId)
         jvStatus["id"] = jvId;
 
     Json::Value jvArray = Json::arrayValue;

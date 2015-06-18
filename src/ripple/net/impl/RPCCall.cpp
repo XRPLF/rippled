@@ -1047,7 +1047,7 @@ struct RPCCallImp
             if (!reader.parse (strData, jvReply))
                 throw std::runtime_error ("couldn't parse reply from server");
 
-            if (jvReply.isNull ())
+            if (!jvReply)
                 throw std::runtime_error ("expected reply to have result, error and id properties");
 
             Json::Value     jvResult (Json::objectValue);

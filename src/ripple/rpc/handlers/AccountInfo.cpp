@@ -60,7 +60,7 @@ Json::Value doAccountInfo (RPC::Context& context)
     auto jvAccepted = RPC::accountFromString (
         accountID, bIndex, strIdent, iIndex, bStrict);
 
-    if (!jvAccepted.empty ())
+    if (jvAccepted)
         return jvAccepted;
 
     auto const sleAccepted = cachedRead(*ledger,
