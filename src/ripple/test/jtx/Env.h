@@ -125,6 +125,22 @@ public:
 
 public:
     Env (beast::unit_test::suite& test_);
+    
+    /** Turn on JSON tracing.
+        With no arguments, trace all
+    */
+    void
+    trace(int howMany = -1)
+    {
+        trace_ = howMany;
+    }
+
+    /** Turn off JSON tracing. */
+    void
+    notrace()
+    {
+        trace_ = 0;
+    }
 
     /** Associate AccountID with account. */
     void
@@ -310,6 +326,17 @@ public:
         These convenience functions are for easy set-up
         of the environment, they bypass fee, seq, and sig
         settings.
+
+        Preconditions:
+            The account must already exist
+
+        Effects:
+            A trust line is added for the account.
+            The account's sequence number is incremented.
+            The account is refunded for the transaction fee
+                to set the trust line.
+
+        The refund comes from the master account.
     */
     /** @{ */
     void
@@ -327,6 +354,8 @@ public:
     /** @} */
 
 protected:
+    int trace_ = 0;
+
     void
     autofill_sig (JTx& jt);
 

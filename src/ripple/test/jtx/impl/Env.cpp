@@ -175,10 +175,17 @@ void
 Env::trust (STAmount const& amount,
     Account const& account)
 {
+    auto const start = balance(account);
     apply(jtx::trust(account, amount),
         jtx::seq(jtx::autofill),
             fee(jtx::autofill),
                 sig(jtx::autofill));
+    apply(pay(master, account,
+        drops(ledger->getBaseFee())),
+            jtx::seq(jtx::autofill),
+                fee(jtx::autofill),
+                    sig(jtx::autofill));
+    test.expect(balance(account) == start);
 }
 
 void
@@ -210,6 +217,12 @@ Env::submit (JTx const& jt)
         // Don't check postconditions if
         // we didn't get the expected result.
         return;
+    }
+    if (trace_)
+    {
+        if (trace_ > 0)
+            --trace_;
+        test.log << pretty(jt.jv);
     }
     for (auto const& f : jt.requires)
         f(*this);
@@ -243,7 +256,17 @@ Env::autofill (JTx& jt)
     if(jt.fill_seq)
         jtx::fill_seq(jv, *ledger);
     // Must come last
-    autofill_sig(jt);
+    try
+    {
+        autofill_sig(jt);
+    }
+    catch (parse_error const&)
+    {
+        test.log <<
+            "parse failed:\n" <<
+            pretty(jv);
+        throw;
+    }
 }
 
 std::shared_ptr<STTx>

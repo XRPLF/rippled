@@ -28,7 +28,9 @@
 #include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/fee.h>
 #include <ripple/test/jtx/flags.h>
+#include <ripple/test/jtx/json.h>
 #include <ripple/test/jtx/JTx.h>
+#include <ripple/test/jtx/memo.h>
 #include <ripple/test/jtx/multisign.h>
 #include <ripple/test/jtx/noop.h>
 #include <ripple/test/jtx/offer.h>

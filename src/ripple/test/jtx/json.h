@@ -17,29 +17,32 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_TEST_JTX_JSON_H_INCLUDED
+#define RIPPLE_TEST_JTX_JSON_H_INCLUDED
 
-#include <ripple/test/jtx/impl/Account.cpp>
-#include <ripple/test/jtx/impl/amount.cpp>
-#include <ripple/test/jtx/impl/balance.cpp>
-#include <ripple/test/jtx/impl/Env.cpp>
-#include <ripple/test/jtx/impl/fee.cpp>
-#include <ripple/test/jtx/impl/flags.cpp>
-#include <ripple/test/jtx/impl/json.cpp>
-#include <ripple/test/jtx/impl/memo.cpp>
-#include <ripple/test/jtx/impl/multisign.cpp>
-#include <ripple/test/jtx/impl/offer.cpp>
-#include <ripple/test/jtx/impl/owners.cpp>
-#include <ripple/test/jtx/impl/paths.cpp>
-#include <ripple/test/jtx/impl/pay.cpp>
-#include <ripple/test/jtx/impl/rate.cpp>
-#include <ripple/test/jtx/impl/regkey.cpp>
-#include <ripple/test/jtx/impl/sendmax.cpp>
-#include <ripple/test/jtx/impl/seq.cpp>
-#include <ripple/test/jtx/impl/sig.cpp>
-#include <ripple/test/jtx/impl/ticket.cpp>
-#include <ripple/test/jtx/impl/trust.cpp>
-#include <ripple/test/jtx/impl/txflags.cpp>
-#include <ripple/test/jtx/impl/utility.cpp>
+#include <ripple/test/jtx/Env.h>
+#include <ripple/json/json_value.h>
 
-#include <ripple/test/jtx/impl/Env_test.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
+
+/** Inject raw JSON. */
+class json
+{
+private:
+    Json::Value jv_;
+
+public:
+    explicit
+    json (std::string const&);
+
+    void
+    operator()(Env const&, JTx& jt) const;
+};
+
+} // jtx
+} // test
+} // ripple
+
+#endif
