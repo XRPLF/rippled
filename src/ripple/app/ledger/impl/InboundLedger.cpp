@@ -330,6 +330,9 @@ static void LADispatch (
         getApp().getLedgerMaster().checkAccept(la->getLedger());
         getApp().getLedgerMaster().tryAdvance();
     }
+    else
+        getApp().getInboundLedgers().logFailure (la->getHash(), la->getSeq());
+
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
 }
@@ -361,8 +364,6 @@ void InboundLedger::done ()
             getApp().getLedgerMaster ().storeLedger (mLedger);
         getApp().getInboundLedgers().onLedgerFetched(mReason);
     }
-    else
-        getApp().getInboundLedgers ().logFailure (mHash);
 
     // We hold the PeerSet lock, so must dispatch
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",

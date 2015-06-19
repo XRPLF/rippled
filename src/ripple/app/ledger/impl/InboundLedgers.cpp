@@ -26,6 +26,7 @@
 #include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/module/core/text/LexicalCast.h>
+#include <beast/container/aged_map.h>
 
 namespace ripple {
 
@@ -48,8 +49,7 @@ public:
         : Stoppable ("InboundLedgers", parent)
         , fetchRate_(clock.now())
         , m_clock (clock)
-        , mRecentFailures ("LedgerAcquireRecentFailures",
-            clock, 0, kReacquireIntervalSeconds)
+        , mRecentFailures (clock)
         , mCounter(collector->make_counter("ledger_fetches"))
     {
     }
@@ -200,14 +200,19 @@ public:
         return ret;
     }
 
-    void logFailure (uint256 const& h)
+    void logFailure (uint256 const& h, std::uint32_t seq)
     {
-        mRecentFailures.insert (h);
+        ScopedLockType sl (mLock);
+
+        mRecentFailures.emplace(h, seq);
     }
 
     bool isFailure (uint256 const& h)
     {
-        return mRecentFailures.exists (h);
+        ScopedLockType sl (mLock);
+
+        beast::expire (mRecentFailures, std::chrono::seconds (kReacquireIntervalSeconds));
+        return mRecentFailures.find (h) != mRecentFailures.end();
     }
 
     void doLedgerData (Job&, LedgerHash hash)
@@ -292,10 +297,19 @@ public:
                 assert (it.second);
                 acquires.push_back (it);
             }
+            for (auto const& it : mRecentFailures)
+            {
+                if (it.second > 1)
+                    ret[beast::lexicalCastThrow <std::string>(
+                        it.second)][jss::failed] = true;
+                else
+                    ret[to_string (it.first)][jss::failed] = true;
+            }
         }
 
         for (auto const& it : acquires)
         {
+            // getJson is expensive, so call without the lock
             std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
                 ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
@@ -328,8 +342,6 @@ public:
 
     void sweep ()
     {
-        mRecentFailures.sweep ();
-
         clock_type::time_point const now (m_clock.now());
 
         // Make a list of things to sweep, while holding the lock
@@ -360,6 +372,9 @@ public:
                     ++it;
                 }
             }
+
+            beast::expire (mRecentFailures, std::chrono::seconds (kReacquireIntervalSeconds));
+
         }
 
         WriteLog (lsDEBUG, InboundLedger) <<
@@ -387,7 +402,7 @@ private:
     LockType mLock;
 
     MapType mLedgers;
-    KeyCache <uint256> mRecentFailures;
+    beast::aged_map <uint256, std::uint32_t> mRecentFailures;
 
     beast::insight::Counter mCounter;
 };

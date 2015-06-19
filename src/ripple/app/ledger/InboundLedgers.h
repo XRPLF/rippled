@@ -63,7 +63,7 @@ public:
 
     virtual int getFetchCount (int& timeoutCount) = 0;
 
-    virtual void logFailure (uint256 const& h) = 0;
+    virtual void logFailure (uint256 const& h, std::uint32_t seq) = 0;
 
     virtual bool isFailure (uint256 const& h) = 0;
 
