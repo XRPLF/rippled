@@ -921,7 +921,7 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq)
 {
     // use when ledger was retrieved by seq
     return haveLedger (seq) &&
-            seq <= m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ();
+            seq <= m_ledgerMaster.getValidLedgerIndex ();
 }
 
 void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
