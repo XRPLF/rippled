@@ -125,13 +125,15 @@ public:
 
         destination.setSynching ();
 
-        unexpected (!source.getNodeFat (SHAMapNodeID (), nodeIDs, gotNodes,
-            (rand () % 2) == 0, rand () % 3),
-            "GetNodeFat");
+        unexpected (!source.getNodeFat (SHAMapNodeID (),
+            nodeIDs, gotNodes, (rand () % 2) == 0,
+                rand () % 3), "GetNodeFat");
 
         unexpected (gotNodes.size () < 1, "NodeSize");
 
-        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, nullptr).isGood(), "AddRootNode");
+        unexpected (!destination.addRootNode (boost::none,
+            *gotNodes.begin (), snfWIRE, nullptr).isGood(),
+                "AddRootNode");
 
         nodeIDs.clear ();
         gotNodes.clear ();
@@ -152,7 +154,9 @@ public:
             if (nodeIDs.empty ()) break;
 
             // get as many nodes as possible based on this information
-            for (nodeIDIterator = nodeIDs.begin (); nodeIDIterator != nodeIDs.end (); ++nodeIDIterator)
+            for (nodeIDIterator = nodeIDs.begin ();
+                nodeIDIterator != nodeIDs.end ();
+                    ++nodeIDIterator)
             {
                 if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes,
                     (rand () % 2) == 0, rand () % 3))

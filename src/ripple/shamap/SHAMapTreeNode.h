@@ -83,10 +83,6 @@ public:
         make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
              uint256 const& hash, bool hashValid);
 
-    // debugging
-#ifdef BEAST_DEBUG
-    static void dump (SHAMapNodeID const&, beast::Journal journal);
-#endif
 };
 
 class SHAMapInnerNode

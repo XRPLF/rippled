@@ -481,17 +481,6 @@ int SHAMapInnerNode::getBranchCount () const
     return count;
 }
 
-#ifdef BEAST_DEBUG
-
-void
-SHAMapAbstractNode::dump(const SHAMapNodeID & id, beast::Journal journal)
-{
-    if (journal.debug) journal.debug <<
-        "SHAMapTreeNode(" << id.getNodeID () << ")";
-}
-
-#endif  // BEAST_DEBUG
-
 std::string
 SHAMapAbstractNode::getString(const SHAMapNodeID & id) const
 {
