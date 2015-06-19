@@ -75,7 +75,7 @@ public:
     bool isInBounds (SHAMapNodeID const &id) const;
 
     virtual bool updateHash () = 0;
-    virtual void addRaw (Serializer&, SHANodeFormat format) = 0;
+    virtual void addRaw (Serializer&, SHANodeFormat format) const = 0;
     virtual std::string getString (SHAMapNodeID const&) const;
     virtual std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const = 0;
 
@@ -120,7 +120,7 @@ public:
 
     bool updateHash () override;
     void updateHashDeep();
-    void addRaw (Serializer&, SHANodeFormat format) override;
+    void addRaw (Serializer&, SHANodeFormat format) const override;
     std::string getString (SHAMapNodeID const&) const override;
 
     friend std::shared_ptr<SHAMapAbstractNode>
@@ -144,7 +144,7 @@ public:
                    std::uint32_t seq, uint256 const& hash);
     std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const override;
 
-    void addRaw (Serializer&, SHANodeFormat format) override;
+    void addRaw (Serializer&, SHANodeFormat format) const override;
 
 public:  // public only to SHAMap
 
