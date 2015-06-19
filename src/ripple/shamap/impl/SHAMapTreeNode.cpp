@@ -347,7 +347,7 @@ SHAMapTreeNode::updateHash()
 }
 
 void
-SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format)
+SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
@@ -397,7 +397,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format)
 }
 
 void
-SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
+SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
     assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
