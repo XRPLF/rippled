@@ -401,10 +401,10 @@ public:
 
         // Adjust tracking for each peer that takes this position
         std::vector<NodeID> peers;
-        for (auto& it : mPeerPositions)
+        for (auto& i : mPeerPositions)
         {
-            if (it.second->getCurrentHash () == map->getHash ())
-                peers.push_back (it.second->getPeerID ());
+            if (i.second->getCurrentHash () == map->getHash ())
+                peers.push_back (i.second->getPeerID ());
         }
 
         if (!peers.empty ())
@@ -1068,8 +1068,8 @@ private:
             }
 
             // Apply local transactions
-            TransactionEngine engine (newOL);
-            m_localTX.apply (engine);
+            TransactionEngine localEngine (newOL);
+            m_localTX.apply (localEngine);
 
             // We have a new Last Closed Ledger and new Open Ledger
             getApp().getLedgerMaster ().pushLedger (newLCL, newOL);
@@ -1453,11 +1453,11 @@ private:
         }
 
         // Update votes on disputed transactions
-        for (auto& it : mDisputes)
+        for (auto& dispute : mDisputes)
         {
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
-            if (it.second->updateVote (mClosePercent, mProposing))
+            if (dispute.second->updateVote (mClosePercent, mProposing))
             {
                 if (!changes)
                 {
@@ -1467,16 +1467,16 @@ private:
                     changes = true;
                 }
 
-                if (it.second->getOurVote ()) // now a yes
+                if (dispute.second->getOurVote ()) // now a yes
                 {
-                    ourPosition->addItem (SHAMapItem (it.first
-                        , it.second->peekTransaction ()), true, false);
-                    //              addedTx.push_back(it.first);
+                    ourPosition->addItem (SHAMapItem (dispute.first
+                        , dispute.second->peekTransaction ()), true, false);
+                    //              addedTx.push_back(dispute.first);
                 }
                 else // now a no
                 {
-                    ourPosition->delItem (it.first);
-                    //              removedTx.push_back(it.first);
+                    ourPosition->delItem (dispute.first);
+                    //              removedTx.push_back(dispute.first);
                 }
             }
         }
@@ -1522,20 +1522,19 @@ private:
                 << mPeerPositions.size () << " nw:" << neededWeight
                 << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
-            for (auto it = closeTimes.begin ()
-                , end = closeTimes.end (); it != end; ++it)
+            for (auto& i: closeTimes)
             {
                 WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq"
                     << mPreviousLedger->getLedgerSeq () + 1 << ": "
-                    << it->first << " has " << it->second << ", "
+                    << i.first << " has " << i.second << ", "
                     << threshVote << " required";
 
-                if (it->second >= threshVote)
+                if (i.second >= threshVote)
                 {
                     WriteLog (lsDEBUG, LedgerConsensus)
-                        << "Close time consensus reached: " << it->first;
-                    closeTime = it->first;
-                    threshVote = it->second;
+                        << "Close time consensus reached: " << i.first;
+                    closeTime = i.first;
+                    threshVote = i.second;
 
                     if (threshVote >= threshConsensus)
                         mHaveCloseTimeConsensus = true;

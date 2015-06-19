@@ -2061,27 +2061,27 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 
-            std::shared_ptr<SHAMap> map = ledger->peekAccountStateMap ();
+            std::shared_ptr<SHAMap> subMap = ledger->peekAccountStateMap ();
 
-            if (map && map->getHash ().isNonZero ())
+            if (subMap && subMap->getHash ().isNonZero ())
             {
                 // return account state root node if possible
                 Serializer rootNode (768);
 
-                if (map->getRootNode (rootNode, snfWIRE))
+                if (subMap->getRootNode (rootNode, snfWIRE))
                 {
                     reply.add_nodes ()->set_nodedata (
                         rootNode.getDataPtr (), rootNode.getLength ());
 
                     if (ledger->getTransHash ().isNonZero ())
                     {
-                        map = ledger->peekTransactionMap ();
+                        subMap = ledger->peekTransactionMap ();
 
-                        if (map && map->getHash ().isNonZero ())
+                        if (subMap && subMap->getHash ().isNonZero ())
                         {
                             rootNode.erase ();
 
-                            if (map->getRootNode (rootNode, snfWIRE))
+                            if (subMap->getRootNode (rootNode, snfWIRE))
                                 reply.add_nodes ()->set_nodedata (
                                     rootNode.getDataPtr (),
                                         rootNode.getLength ());

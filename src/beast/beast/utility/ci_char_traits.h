@@ -43,9 +43,9 @@ struct ci_less
         using char_type = typename String::value_type;
         return std::lexicographical_compare (
             begin(lhs), end(lhs), begin(rhs), end(rhs),
-            [] (char_type lhs, char_type rhs)
+            [] (char_type x, char_type y)
             {
-                return std::tolower(lhs) < std::tolower(rhs);
+                return std::tolower(x) < std::tolower(y);
             }
         );
     }
@@ -60,9 +60,9 @@ ci_equal(std::pair<const char*, std::size_t> lhs,
 {
     return std::equal (lhs.first, lhs.first + lhs.second,
                        rhs.first, rhs.first + rhs.second,
-        [] (char lhs, char rhs)
+        [] (char x, char y)
         {
-            return std::tolower(lhs) == std::tolower(rhs);
+            return std::tolower(x) == std::tolower(y);
         }
     );
 }

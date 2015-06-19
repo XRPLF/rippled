@@ -38,9 +38,9 @@ struct AddressV4
     AddressV4 ();
 
     /** Construct from a 32-bit unsigned.
-        @note Octets are formed in order from the MSB to the LSB.       
+        @note Octets are formed in order from the MSB to the LSB.
     */
-    explicit AddressV4 (std::uint32_t value_);
+    explicit AddressV4 (std::uint32_t);
 
     /** Construct from four individual octets..
         @note The resulting address is a.b.c.d

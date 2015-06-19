@@ -110,7 +110,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 
             if (remove)
             {
-                PathRequest::pointer pRequest = wRequest.lock ();
+                PathRequest::pointer removeRequest = wRequest.lock ();
 
                 ScopedLockType sl (mLock);
 
@@ -119,7 +119,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                 while (it != mRequests.end())
                 {
                     PathRequest::pointer itRequest = it->lock ();
-                    if (!itRequest || (itRequest == pRequest))
+                    if (!itRequest || (itRequest == removeRequest))
                     {
                         ++removed;
                         it = mRequests.erase (it);
@@ -196,8 +196,8 @@ Json::Value PathRequests::makePathRequest(
             std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
             while (it != mRequests.end ())
             {
-                PathRequest::pointer req = it->lock ();
-                if (req && !req->isNew ())
+                PathRequest::pointer validReq = it->lock ();
+                if (validReq && !req->isNew ())
                     break; // This request has been handled, we come before it
 
                 // This is a newer request, we come after it

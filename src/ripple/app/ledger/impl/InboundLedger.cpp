@@ -465,8 +465,6 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 Message::pointer packet (std::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS));
                 {
-                    ScopedLockType sl (mLock);
-
                     for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
                     {

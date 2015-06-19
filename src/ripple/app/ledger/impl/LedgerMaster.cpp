@@ -904,9 +904,8 @@ public:
                 // If we still don't know the sequence, get it
                 if (v.second.ledgerSeq_ == 0)
                 {
-                    Ledger::pointer ledger = getLedgerByHash (v.first);
-                    if (ledger)
-                        v.second.ledgerSeq_ = ledger->getLedgerSeq();
+                    if (Ledger::pointer seqLedger = getLedgerByHash (v.first))
+                        v.second.ledgerSeq_ = seqLedger->getLedgerSeq();
                 }
 
                 if (v.second.ledgerSeq_ > maxSeq)
@@ -1024,8 +1023,9 @@ public:
                                     setFullLedger(ledger, false, false);
                                     mHistLedger = ledger;
                                     if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
-                                    { // Previous ledger is in DB
-                                        ScopedLockType sl(m_mutex);
+                                    {
+                                        // Previous ledger is in DB
+                                        ScopedLockType lock (m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
                                             &LedgerMasterImp::tryFill, this,
@@ -1040,9 +1040,9 @@ public:
                                         for (int i = 0; i < ledger_fetch_size_; ++i)
                                         {
                                             std::uint32_t seq = missing - i;
-                                            uint256 hash = getLedgerHashForHistory (seq);
-                                            if (hash.isNonZero())
-                                                getApp().getInboundLedgers().acquire(hash,
+                                            uint256 hash2 = getLedgerHashForHistory (seq);
+                                            if (hash2.isNonZero())
+                                                getApp().getInboundLedgers().acquire(hash2,
                                                      seq, InboundLedger::fcHISTORY);
                                         }
                                     }

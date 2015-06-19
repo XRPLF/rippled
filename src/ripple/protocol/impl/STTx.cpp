@@ -134,9 +134,9 @@ STTx::getMentionedAccounts () const
             if (std::find (accounts.cbegin (), accounts.cend (), na) == accounts.cend ())
                 accounts.push_back (na);
         }
-        else if (auto sa = dynamic_cast<STAmount const*> (&it))
+        else if (auto sa2 = dynamic_cast<STAmount const*> (&it))
         {
-            auto const& issuer = sa->getIssuer ();
+            auto const& issuer = sa2->getIssuer ();
 
             if (isXRP (issuer))
                 continue;

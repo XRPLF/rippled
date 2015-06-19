@@ -265,15 +265,15 @@ TER PathState::pushNode (
 
         if (resultCode == tesSUCCESS && !nodes_.empty ())
         {
-            auto const& backNode = nodes_.back ();
-            if (backNode.isAccount())
+            auto const& newBackNode = nodes_.back ();
+            if (newBackNode.isAccount())
             {
                 auto sleRippleState = lesEntries_->entryCache (
                     ltRIPPLE_STATE,
                     getRippleStateIndex (
-                        backNode.account_,
+                        newBackNode.account_,
                         node.account_,
-                        backNode.issue_.currency));
+                        newBackNode.issue_.currency));
 
                 // A "RippleState" means a balance betweeen two accounts for a
                 // specific currency.
@@ -281,7 +281,7 @@ TER PathState::pushNode (
                 {
                     WriteLog (lsTRACE, RippleCalc)
                             << "pushNode: No credit line between "
-                            << backNode.account_ << " and " << node.account_
+                            << newBackNode.account_ << " and " << node.account_
                             << " for " << node.issue_.currency << "." ;
 
                     WriteLog (lsTRACE, RippleCalc) << getJson ();
@@ -292,20 +292,20 @@ TER PathState::pushNode (
                 {
                     WriteLog (lsTRACE, RippleCalc)
                             << "pushNode: Credit line found between "
-                            << backNode.account_ << " and " << node.account_
+                            << newBackNode.account_ << " and " << node.account_
                             << " for " << node.issue_.currency << "." ;
 
                     auto sleBck  = lesEntries_->entryCache (
                         ltACCOUNT_ROOT,
-                        getAccountRootIndex (backNode.account_));
+                        getAccountRootIndex (newBackNode.account_));
                     // Is the source account the highest numbered account ID?
-                    bool bHigh = backNode.account_ > node.account_;
+                    bool bHigh = newBackNode.account_ > node.account_;
 
                     if (!sleBck)
                     {
                         WriteLog (lsWARNING, RippleCalc)
                             << "pushNode: delay: can't receive IOUs from "
-                            << "non-existent issuer: " << backNode.account_;
+                            << "non-existent issuer: " << newBackNode.account_;
 
                         resultCode   = terNO_ACCOUNT;
                     }
@@ -324,14 +324,14 @@ TER PathState::pushNode (
                     if (resultCode == tesSUCCESS)
                     {
                         STAmount saOwed = creditBalance (*lesEntries_,
-                            node.account_, backNode.account_,
+                            node.account_, newBackNode.account_,
                             node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
                             saLimit = creditLimit (*lesEntries_,
                                 node.account_,
-                                backNode.account_,
+                                newBackNode.account_,
                                 node.issue_.currency);
                             if (-saOwed >= saLimit)
                             {

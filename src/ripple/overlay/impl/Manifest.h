@@ -164,10 +164,10 @@ private:
         MappedType(MappedType&&) = default;
         MappedType& operator=(MappedType&&) = default;
 #endif
-        MappedType(std::string comment,
+        MappedType(std::string comment_,
                    std::string serialized,
                    AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
-            :comment (std::move(comment))
+            :comment (std::move(comment_))
         {
             m.emplace (std::move(serialized), std::move(pk), std::move(spk),
                        seq);
