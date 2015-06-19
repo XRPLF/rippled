@@ -37,6 +37,12 @@ public:
     explicit
     json (std::string const&);
 
+    template <class T>
+    json (Json::StaticString const& key, T const& value)
+    {
+        jv_[key] = value;
+    }
+
     void
     operator()(Env const&, JTx& jt) const;
 };

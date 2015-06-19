@@ -2538,6 +2538,9 @@
     <ClCompile Include="..\..\src\ripple\app\tx\tests\MultiSign.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\Offer.test.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
