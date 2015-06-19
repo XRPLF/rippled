@@ -71,7 +71,7 @@ static bool ECDSAVerify (uint256 const& hash, std::uint8_t const* sig, size_t si
 
 static bool ECDSAVerify (uint256 const& hash, Blob const& sig, const openssl::ec_key& key)
 {
-    return ECDSAVerify (hash, sig.data(), sig.size(), (EC_KEY*) key.get());
+    return key.valid() && ECDSAVerify (hash, sig.data(), sig.size(), (EC_KEY*) key.get());
 }
 
 bool ECDSAVerify (uint256 const& hash,

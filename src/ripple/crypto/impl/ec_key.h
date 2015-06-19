@@ -31,31 +31,27 @@ class ec_key
 public:
     using pointer_t = struct opaque_EC_KEY*;
 
-private:
-    pointer_t ptr;
-
-    void destroy();
+    ec_key () : ptr(nullptr)
+    {
+    }
 
     ec_key (pointer_t raw) : ptr(raw)
     {
     }
-
-public:
-    static const ec_key invalid;
-
-    static ec_key acquire (pointer_t raw)  { return ec_key (raw); }
-
-    //ec_key() : ptr() {}
-
-    ec_key            (const ec_key&);
-    ec_key& operator= (const ec_key&) = delete;
 
     ~ec_key()
     {
         destroy();
     }
 
+    bool valid() const 
+    {
+        return ptr != nullptr;
+    }
+
     pointer_t get() const  { return ptr; }
+
+    ec_key            (const ec_key&);
 
     pointer_t release()
     {
@@ -66,7 +62,12 @@ public:
         return released;
     }
 
-    bool valid() const  { return ptr != nullptr; }
+private:
+    pointer_t ptr;
+
+    void destroy();
+
+    ec_key& operator= (const ec_key&) = delete;
 };
 
 } // openssl
