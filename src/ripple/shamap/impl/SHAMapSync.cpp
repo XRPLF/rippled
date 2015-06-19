@@ -406,25 +406,25 @@ bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format) const
     return true;
 }
 
-SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
-    SHANodeFormat format, SHAMapSyncFilter* filter)
+SHAMapAddNode SHAMap::addRootNode (boost::optional<uint256> const& hash,
+    Blob const& rootNode, SHANodeFormat format,
+    SHAMapSyncFilter* filter)
 {
     // we already have a root_ node
     if (root_->getNodeHash ().isNonZero ())
     {
         if (journal_.trace) journal_.trace <<
             "got root node, already have one";
+        assert (!hash || root_->getNodeHash () == *hash);
         return SHAMapAddNode::duplicate ();
     }
 
     assert (seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
-    if (!node)
-        return SHAMapAddNode::invalid ();
-
-#ifdef BEAST_DEBUG
-    node->dump (SHAMapNodeID (), journal_);
-#endif
+    auto node = SHAMapAbstractNode::make(rootNode,
+        0, format, uZero, false);
+    if (!node || !node->isValid() ||
+        (hash && node->getNodeHash () != *hash))
+            return SHAMapAddNode::invalid ();
 
     if (backed_)
         canonicalize (node->getNodeHash (), node);
@@ -438,44 +438,9 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
     {
         Serializer s;
         root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (),
-                         s.modData (), root_->getType ());
-    }
-
-    return SHAMapAddNode::useful ();
-}
-
-SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
-                                   SHAMapSyncFilter* filter)
-{
-    // we already have a root_ node
-    if (root_->getNodeHash ().isNonZero ())
-    {
-        if (journal_.trace) journal_.trace <<
-            "got root node, already have one";
-        assert (root_->getNodeHash () == hash);
-        return SHAMapAddNode::duplicate ();
-    }
-
-    assert (seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
-    if (!node || node->getNodeHash () != hash)
-        return SHAMapAddNode::invalid ();
-
-    if (backed_)
-        canonicalize (hash, node);
-
-    root_ = node;
-
-    if (root_->isLeaf())
-        clearSynching ();
-
-    if (filter)
-    {
-        Serializer s;
-        root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (), s.modData (),
-                         root_->getType ());
+        filter->gotNode (false, SHAMapNodeID{},
+            root_->getNodeHash (), s.modData (),
+                root_->getType ());
     }
 
     return SHAMapAddNode::useful ();
