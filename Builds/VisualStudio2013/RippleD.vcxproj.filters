@@ -43,8 +43,8 @@
     <Filter Include="beast\crypto">
       <UniqueIdentifier>{ED78E906-CE72-CDEF-3018-99E02603C37E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\crypto\impl">
-      <UniqueIdentifier>{398085D5-BDC7-D75C-2A1D-73395AC7A158}</UniqueIdentifier>
+    <Filter Include="beast\crypto\detail">
+      <UniqueIdentifier>{80B5AA79-B513-6410-D468-472E3E393BAA}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\crypto\tests">
       <UniqueIdentifier>{FF9CBE50-56A0-7B59-C99F-C873605C844B}</UniqueIdentifier>
@@ -825,10 +825,19 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <Filter>beast\crypto</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha512_context.h">
-      <Filter>beast\crypto\impl</Filter>
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
+      <Filter>beast\crypto\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha512.h">
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\ripemd_context.h">
+      <Filter>beast\crypto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
+      <Filter>beast\crypto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">

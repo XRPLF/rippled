@@ -27,6 +27,10 @@
 namespace beast {
 namespace detail {
 
+// Based on https://github.com/ogay/sha2
+// This implementation has been modified from the
+// original. It has been updated for C++11.
+
 /*
  * Updated to C++, zedwood.com 2012
  * Based on Olivier Gay's version
@@ -64,6 +68,17 @@ namespace detail {
  * SUCH DAMAGE.
  */
 
+struct sha256_context
+{
+    static unsigned int const block_size = 64;
+    static unsigned int const digest_size = 32;
+
+    unsigned int tot_len;
+    unsigned int len;
+    unsigned char block[2 * block_size];
+    std::uint32_t h[8];
+};
+
 struct sha512_context
 {
     static unsigned int const block_size = 128;
@@ -80,39 +95,184 @@ struct sha512_context
 #define BEAST_SHA2_ROTL(x, n)   ((x << n) | (x >> ((sizeof(x) << 3) - n)))
 #define BEAST_SHA2_CH(x, y, z)  ((x & y) ^ (~x & z))
 #define BEAST_SHA2_MAJ(x, y, z) ((x & y) ^ (x & z) ^ (y & z))
+#define BEAST_SHA256_F1(x) (BEAST_SHA2_ROTR(x,  2) ^ BEAST_SHA2_ROTR(x, 13) ^ BEAST_SHA2_ROTR(x, 22))
+#define BEAST_SHA256_F2(x) (BEAST_SHA2_ROTR(x,  6) ^ BEAST_SHA2_ROTR(x, 11) ^ BEAST_SHA2_ROTR(x, 25))
+#define BEAST_SHA256_F3(x) (BEAST_SHA2_ROTR(x,  7) ^ BEAST_SHA2_ROTR(x, 18) ^ BEAST_SHA2_SHFR(x,  3))
+#define BEAST_SHA256_F4(x) (BEAST_SHA2_ROTR(x, 17) ^ BEAST_SHA2_ROTR(x, 19) ^ BEAST_SHA2_SHFR(x, 10))
 #define BEAST_SHA512_F1(x) (BEAST_SHA2_ROTR(x, 28) ^ BEAST_SHA2_ROTR(x, 34) ^ BEAST_SHA2_ROTR(x, 39))
 #define BEAST_SHA512_F2(x) (BEAST_SHA2_ROTR(x, 14) ^ BEAST_SHA2_ROTR(x, 18) ^ BEAST_SHA2_ROTR(x, 41))
 #define BEAST_SHA512_F3(x) (BEAST_SHA2_ROTR(x,  1) ^ BEAST_SHA2_ROTR(x,  8) ^ BEAST_SHA2_SHFR(x,  7))
 #define BEAST_SHA512_F4(x) (BEAST_SHA2_ROTR(x, 19) ^ BEAST_SHA2_ROTR(x, 61) ^ BEAST_SHA2_SHFR(x,  6))
+#define BEAST_SHA2_PACK32(str, x)               \
+{                                               \
+    *(x) =                                      \
+        ((std::uint32_t) *((str) + 3)      )    \
+      | ((std::uint32_t) *((str) + 2) <<  8)    \
+      | ((std::uint32_t) *((str) + 1) << 16)    \
+      | ((std::uint32_t) *((str) + 0) << 24);   \
+}
 #define BEAST_SHA2_UNPACK32(x, str)             \
 {                                               \
-    *((str) + 3) = (std::uint8_t) ((x)      );         \
-    *((str) + 2) = (std::uint8_t) ((x) >>  8);         \
-    *((str) + 1) = (std::uint8_t) ((x) >> 16);         \
-    *((str) + 0) = (std::uint8_t) ((x) >> 24);         \
-}
-#define BEAST_SHA2_UNPACK64(x, str)             \
-{                                               \
-    *((str) + 7) = (std::uint8_t) ((x)      );         \
-    *((str) + 6) = (std::uint8_t) ((x) >>  8);         \
-    *((str) + 5) = (std::uint8_t) ((x) >> 16);         \
-    *((str) + 4) = (std::uint8_t) ((x) >> 24);         \
-    *((str) + 3) = (std::uint8_t) ((x) >> 32);         \
-    *((str) + 2) = (std::uint8_t) ((x) >> 40);         \
-    *((str) + 1) = (std::uint8_t) ((x) >> 48);         \
-    *((str) + 0) = (std::uint8_t) ((x) >> 56);         \
+    *((str) + 3) = (std::uint8_t) ((x)      );  \
+    *((str) + 2) = (std::uint8_t) ((x) >>  8);  \
+    *((str) + 1) = (std::uint8_t) ((x) >> 16);  \
+    *((str) + 0) = (std::uint8_t) ((x) >> 24);  \
 }
 #define BEAST_SHA2_PACK64(str, x)               \
 {                                               \
-    *(x) =   ((std::uint64_t) *((str) + 7)      )      \
-           | ((std::uint64_t) *((str) + 6) <<  8)      \
-           | ((std::uint64_t) *((str) + 5) << 16)      \
-           | ((std::uint64_t) *((str) + 4) << 24)      \
-           | ((std::uint64_t) *((str) + 3) << 32)      \
-           | ((std::uint64_t) *((str) + 2) << 40)      \
-           | ((std::uint64_t) *((str) + 1) << 48)      \
-           | ((std::uint64_t) *((str) + 0) << 56);     \
+    *(x) =                                      \
+          ((std::uint64_t) *((str) + 7)      )  \
+        | ((std::uint64_t) *((str) + 6) <<  8)  \
+        | ((std::uint64_t) *((str) + 5) << 16)  \
+        | ((std::uint64_t) *((str) + 4) << 24)  \
+        | ((std::uint64_t) *((str) + 3) << 32)  \
+        | ((std::uint64_t) *((str) + 2) << 40)  \
+        | ((std::uint64_t) *((str) + 1) << 48)  \
+        | ((std::uint64_t) *((str) + 0) << 56); \
 }
+#define BEAST_SHA2_UNPACK64(x, str)             \
+{                                               \
+    *((str) + 7) = (std::uint8_t) ((x)      );  \
+    *((str) + 6) = (std::uint8_t) ((x) >>  8);  \
+    *((str) + 5) = (std::uint8_t) ((x) >> 16);  \
+    *((str) + 4) = (std::uint8_t) ((x) >> 24);  \
+    *((str) + 3) = (std::uint8_t) ((x) >> 32);  \
+    *((str) + 2) = (std::uint8_t) ((x) >> 40);  \
+    *((str) + 1) = (std::uint8_t) ((x) >> 48);  \
+    *((str) + 0) = (std::uint8_t) ((x) >> 56);  \
+}
+
+//------------------------------------------------------------------------------
+
+// SHA256
+
+template <class = void>
+void sha256_transform (sha256_context& ctx,
+    unsigned char const* message,
+        unsigned int block_nb) noexcept
+{
+    static unsigned long long const K[64] = {
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+        0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+        0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+        0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+        0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+        0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    };
+    std::uint32_t w[64];
+    std::uint32_t wv[8];
+    std::uint32_t t1, t2;
+    unsigned char const* sub_block;
+    int i, j;
+    for (i = 0; i < (int) block_nb; i++) {
+        sub_block = message + (i << 6);
+        for (j = 0; j < 16; j++)
+            BEAST_SHA2_PACK32(&sub_block[j << 2], &w[j]);
+        for (j = 16; j < 64; j++)
+            w[j] =  BEAST_SHA256_F4(
+                w[j -  2]) + w[j -  7] +
+                    BEAST_SHA256_F3(w[j - 15]) +
+                        w[j - 16];
+        for (j = 0; j < 8; j++)
+            wv[j] = ctx.h[j];
+        for (j = 0; j < 64; j++) {
+            t1 = wv[7] + BEAST_SHA256_F2(wv[4]) +
+                BEAST_SHA2_CH(wv[4], wv[5], wv[6]) +
+                    K[j] + w[j];
+            t2 = BEAST_SHA256_F1(wv[0]) +
+                BEAST_SHA2_MAJ(wv[0], wv[1], wv[2]);
+            wv[7] = wv[6];
+            wv[6] = wv[5];
+            wv[5] = wv[4];
+            wv[4] = wv[3] + t1;
+            wv[3] = wv[2];
+            wv[2] = wv[1];
+            wv[1] = wv[0];
+            wv[0] = t1 + t2;
+        }
+        for (j = 0; j < 8; j++)
+            ctx.h[j] += wv[j];
+    }
+}
+
+template <class = void>
+void init (sha256_context& ctx) noexcept
+{
+    ctx.len = 0;
+    ctx.tot_len = 0;
+    ctx.h[0] = 0x6a09e667;
+    ctx.h[1] = 0xbb67ae85;
+    ctx.h[2] = 0x3c6ef372;
+    ctx.h[3] = 0xa54ff53a;
+    ctx.h[4] = 0x510e527f;
+    ctx.h[5] = 0x9b05688c;
+    ctx.h[6] = 0x1f83d9ab;
+    ctx.h[7] = 0x5be0cd19;
+}
+
+template <class = void>
+void update (sha256_context& ctx,
+    void const* message, std::size_t size) noexcept
+{
+    auto const pm = reinterpret_cast<
+        unsigned char const*>(message);
+    unsigned int block_nb;
+    unsigned int new_len, rem_len, tmp_len;
+    const unsigned char *shifted_message;
+    tmp_len = sha256_context::block_size - ctx.len;
+    rem_len = size < tmp_len ? size : tmp_len;
+    std::memcpy(&ctx.block[ctx.len], pm, rem_len);
+    if (ctx.len + size < sha256_context::block_size) {
+        ctx.len += size;
+        return;
+    }
+    new_len = size - rem_len;
+    block_nb = new_len / sha256_context::block_size;
+    shifted_message = pm + rem_len;
+    sha256_transform(ctx, ctx.block, 1);
+    sha256_transform(ctx, shifted_message, block_nb);
+    rem_len = new_len % sha256_context::block_size;
+    std::memcpy(ctx.block, &shifted_message[
+        block_nb << 6], rem_len);
+    ctx.len = rem_len;
+    ctx.tot_len += (block_nb + 1) << 6;
+}
+
+template <class = void>
+void finish (sha256_context& ctx,
+    void* digest) noexcept
+{
+    auto const pd = reinterpret_cast<
+        unsigned char*>(digest);
+    unsigned int block_nb;
+    unsigned int pm_len;
+    unsigned int len_b;
+    int i;
+    block_nb = (1 + ((sha256_context::block_size - 9) <
+        (ctx.len % sha256_context::block_size)));
+    len_b = (ctx.tot_len + ctx.len) << 3;
+    pm_len = block_nb << 6;
+    std::memset(ctx.block + ctx.len, 0, pm_len - ctx.len);
+    ctx.block[ctx.len] = 0x80;
+    BEAST_SHA2_UNPACK32(len_b, ctx.block + pm_len - 4);
+    sha256_transform(ctx, ctx.block, block_nb);
+    for (i = 0 ; i < 8; i++)
+        BEAST_SHA2_UNPACK32(ctx.h[i], &pd[i << 2]);
+}
+
+//------------------------------------------------------------------------------
+
+// SHA512
 
 template <class = void>
 void sha512_transform (sha512_context& ctx,
@@ -183,8 +343,7 @@ void sha512_transform (sha512_context& ctx,
                 BEAST_SHA2_CH(wv[4], wv[5], wv[6]) +
                     K[j] + w[j];
             t2 = BEAST_SHA512_F1(wv[0]) +
-                BEAST_SHA2_MAJ(wv[0],
-                    wv[1], wv[2]);
+                BEAST_SHA2_MAJ(wv[0], wv[1], wv[2]);
             wv[7] = wv[6];
             wv[6] = wv[5];
             wv[5] = wv[4];
@@ -202,6 +361,8 @@ void sha512_transform (sha512_context& ctx,
 template <class = void>
 void init (sha512_context& ctx) noexcept
 {
+    ctx.len = 0;
+    ctx.tot_len = 0;
     ctx.h[0] = 0x6a09e667f3bcc908ULL;
     ctx.h[1] = 0xbb67ae8584caa73bULL;
     ctx.h[2] = 0x3c6ef372fe94f82bULL;
@@ -210,8 +371,6 @@ void init (sha512_context& ctx) noexcept
     ctx.h[5] = 0x9b05688c2b3e6c1fULL;
     ctx.h[6] = 0x1f83d9abfb41bd6bULL; 
     ctx.h[7] = 0x5be0cd19137e2179ULL;
-    ctx.len = 0;
-    ctx.tot_len = 0;
 }
 
 template <class = void>
@@ -256,18 +415,12 @@ void finish (sha512_context& ctx,
         (ctx.len % sha512_context::block_size));
     len_b = (ctx.tot_len + ctx.len) << 3;
     pm_len = block_nb << 7;
-    memset(ctx.block + ctx.len, 0, pm_len - ctx.len);
+    std::memset(ctx.block + ctx.len, 0, pm_len - ctx.len);
     ctx.block[ctx.len] = 0x80;
     BEAST_SHA2_UNPACK32(len_b, ctx.block + pm_len - 4);
     sha512_transform(ctx, ctx.block, block_nb);
     for (i = 0 ; i < 8; i++)
         BEAST_SHA2_UNPACK64(ctx.h[i], &pd[i << 3]);
-}
-
-template <class = void>
-void secure_erase (sha512_context& ctx)
-{
-    std::memset(ctx.block, 0, sizeof(ctx.block));
 }
 
 } // detail

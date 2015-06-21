@@ -22,7 +22,7 @@
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Slice.h> // needed by most callers
-#include <beast/crypto/sha512.h>
+#include <beast/crypto/sha2.h>
 #include <beast/hash/hash_append.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 

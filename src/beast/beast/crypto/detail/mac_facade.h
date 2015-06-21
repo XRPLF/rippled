@@ -17,67 +17,42 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRYPTO_SHA512_H_INCLUDED
-#define BEAST_CRYPTO_SHA512_H_INCLUDED
+#ifndef BEAST_CRYPTO_MAC_FACADE_H_INCLUDED
+#define BEAST_CRYPTO_MAC_FACADE_H_INCLUDED
 
+#include <beast/crypto/secure_erase.h>
 #include <beast/hash/endian.h>
 #include <beast/utility/noexcept.h>
-#include <beast/crypto/impl/sha512_context.h>
+#include <type_traits>
 #include <array>
 
 namespace beast {
+namespace detail {
 
-class sha512_hasher
+// Message Authentication Code (MAC) facade
+template <class Context, bool Secure>
+class mac_facade
 {
-public:
-    static beast::endian const endian =
-        beast::endian::native;
-
-    using result_type =
-        std::array<std::uint8_t, 64>;
-
-    sha512_hasher()
-    {
-        detail::init(ctx_);
-    }
-
-    void
-    operator()(void const* data,
-        std::size_t size) noexcept
-    {
-        detail::update(ctx_, data, size);
-    }
-
-    explicit
-    operator result_type() noexcept
-    {
-        result_type digest;
-        finish(ctx_, &digest[0]);
-        return digest;
-    }
-
 private:
-    detail::sha512_context ctx_;
-};
+    Context ctx_;
 
-// secure version
-class sha512_hasher_s
-{
 public:
     static beast::endian const endian =
         beast::endian::native;
 
     using result_type =
-        std::array<std::uint8_t, 64>;
+        std::array<std::uint8_t,
+            Context::digest_size>;
 
-    sha512_hasher_s()
+    mac_facade() noexcept 
     {
         init(ctx_);
     }
 
-    ~sha512_hasher_s()
+    ~mac_facade()
     {
-        secure_erase(ctx_);
+        erase(std::integral_constant<
+            bool, Secure>{});
     }
 
     void
@@ -96,9 +71,21 @@ public:
     }
 
 private:
-    detail::sha512_context ctx_;
+    inline
+    void
+    erase (std::false_type) noexcept
+    {
+    }
+
+    inline
+    void
+    erase (std::true_type) noexcept
+    {
+        secure_erase(&ctx_, sizeof(ctx_));
+    }
 };
 
-}
+} // detail
+} // beast
 
 #endif

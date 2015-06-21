@@ -367,9 +367,15 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha512_context.h">
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha512.h">
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\ripemd_context.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
