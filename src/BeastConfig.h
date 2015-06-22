@@ -187,4 +187,9 @@
 #define RIPPLE_ENABLE_MULTI_SIGN 0
 #endif
 
+// Uses OpenSSL instead of alternatives
+#ifndef RIPPLE_USE_OPENSSL
+#define RIPPLE_USE_OPENSSL 0
+#endif
+
 #endif

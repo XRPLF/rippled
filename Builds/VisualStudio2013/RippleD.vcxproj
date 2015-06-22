@@ -2639,6 +2639,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\BuildInfo.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\digest.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\ErrorCodes.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\HashPrefix.h">
@@ -2656,6 +2658,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\ByteOrder.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\digest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
