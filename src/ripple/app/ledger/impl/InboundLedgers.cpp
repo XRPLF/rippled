@@ -24,6 +24,7 @@
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/container/aged_map.h>
@@ -42,7 +43,7 @@ private:
 public:
     using u256_acq_pair = std::pair<uint256, InboundLedger::pointer>;
     // How long before we try again to acquire the same ledger
-    static const int kReacquireIntervalSeconds = 300;
+    static const std::chrono::minutes kReacquireInterval;
 
     InboundLedgersImp (clock_type& clock, Stoppable& parent,
                        beast::insight::Collector::ptr const& collector)
@@ -211,7 +212,7 @@ public:
     {
         ScopedLockType sl (mLock);
 
-        beast::expire (mRecentFailures, std::chrono::seconds (kReacquireIntervalSeconds));
+        beast::expire (mRecentFailures, kReacquireInterval);
         return mRecentFailures.find (h) != mRecentFailures.end();
     }
 
@@ -373,7 +374,7 @@ public:
                 }
             }
 
-            beast::expire (mRecentFailures, std::chrono::seconds (kReacquireIntervalSeconds));
+            beast::expire (mRecentFailures, kReacquireInterval);
 
         }
 
@@ -408,6 +409,8 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+decltype(InboundLedgersImp::kReacquireInterval) InboundLedgersImp::kReacquireInterval{5};
 
 InboundLedgers::~InboundLedgers()
 {
