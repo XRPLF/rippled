@@ -58,6 +58,7 @@ public:
     Ledger::pointer acquire (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
+        bool isNew = true;
         InboundLedger::pointer inbound;
         {
             ScopedLockType sl (mLock);
@@ -67,12 +68,8 @@ public:
                 auto it = mLedgers.find (hash);
                 if (it != mLedgers.end ())
                 {
+                    isNew = false;
                     inbound = it->second;
-
-                    // If the acquisition failed, don't mark the item as
-                    // recently accessed so that it can expire.
-                    if (! inbound->isFailed ())
-                        inbound->update (seq);
                 }
                 else
                 {
@@ -84,6 +81,9 @@ public:
                 }
             }
         }
+        if (inbound && ! isNew && ! inbound->isFailed ())
+            inbound->update (seq);
+
         if (inbound && inbound->isComplete ())
             return inbound->getLedger();
         return {};
