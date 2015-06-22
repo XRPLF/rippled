@@ -181,9 +181,14 @@ getRippleStateIndex (AccountID const& a, Issue const& issue)
 uint256
 getSignerListIndex (AccountID const& account)
 {
+    // We are prepared for there to be multiple SignerLists in the future,
+    // but we don't have them yet.  In anticipation of multiple SignerLists
+    // We supply a 32-bit ID to locate the SignerList.  Until we actually
+    // *have* multiple signer lists, we can default that ID to zero.
     return sha512Half(
         std::uint16_t(spaceSignerList),
-        account);
+        account,
+        std::uint32_t (0));  // 0 == default SignerList ID.
 }
 
 //------------------------------------------------------------------------------

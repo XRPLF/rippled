@@ -338,36 +338,6 @@ uint256 STObject::getSigningHash (std::uint32_t prefix) const
     return s.getSHA512Half ();
 }
 
-Serializer
-STObject::startMultiSigningData () const
-{
-    Serializer s;
-    s.add32 (HashPrefix::txMultiSign);
-    add (s, false);
-    return s;
-}
-
-// VFALCO This should not be a member,
-//        and the function shouldn't even exist
-void
-STObject::finishMultiSigningData (
-    AccountID const& signingForID,
-    AccountID const& signingID,
-    Serializer& s) const
-{
-    s.add160 (signingForID);
-    s.add160 (signingID);
-}
-
-Serializer
-STObject::getMultiSigningData (
-    AccountID const& signingForID, AccountID const& signingID) const
-{
-    Serializer s (startMultiSigningData ());
-    finishMultiSigningData (signingForID, signingID, s);
-    return s;
-}
-
 int STObject::getFieldIndex (SField const& field) const
 {
     if (mType != nullptr)

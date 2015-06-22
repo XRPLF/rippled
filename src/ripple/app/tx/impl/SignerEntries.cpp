@@ -26,21 +26,22 @@
 
 namespace ripple {
 
-SignerEntries::Decoded
+std::pair<std::vector<SignerEntries::SignerEntry>, TER>
 SignerEntries::deserialize (
     STObject const& obj, beast::Journal journal, std::string const& annotation)
 {
-    Decoded s;
-    auto& accountVec (s.vec);
-    accountVec.reserve (maxEntries);
+    std::pair<std::vector<SignerEntry>, TER> s;
 
     if (!obj.isFieldPresent (sfSignerEntries))
     {
         if (journal.trace) journal.trace <<
             "Malformed " << annotation << ": Need signer entry array.";
-        s.ter = temMALFORMED;
+        s.second = temMALFORMED;
         return s;
     }
+
+    auto& accountVec = s.first;
+    accountVec.reserve (STTx::maxMultiSigners);
 
     STArray const& sEntries (obj.getFieldArray (sfSignerEntries));
     for (STObject const& sEntry : sEntries)
@@ -50,7 +51,7 @@ SignerEntries::deserialize (
         {
             journal.trace <<
                 "Malformed " << annotation << ": Expected SignerEntry.";
-            s.ter = temMALFORMED;
+            s.second = temMALFORMED;
             return s;
         }
 
@@ -60,7 +61,7 @@ SignerEntries::deserialize (
         accountVec.emplace_back (account, weight);
     }
 
-    s.ter = tesSUCCESS;
+    s.second = tesSUCCESS;
     return s;
 }
 

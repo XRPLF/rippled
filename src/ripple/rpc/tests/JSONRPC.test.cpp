@@ -80,14 +80,13 @@ R"({
 {
 "",
 "",
-"Missing field 'signing_for'.",
+"Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}},
 
 { "Pass in Sequence.",
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Sequence": 0,
@@ -107,7 +106,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Sequence": 0,
@@ -128,7 +126,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "fee_mult_max": 7,
     "tx_json": {
@@ -149,7 +146,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
     "tx_json": {
@@ -171,7 +167,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "fee_mult_max": "NotAFeeMultiplier",
     "tx_json": {
@@ -192,7 +187,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
     "tx_json": {
@@ -213,7 +207,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -231,7 +224,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -250,7 +242,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -268,7 +259,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -287,7 +277,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "build_path": 1,
     "tx_json": {
@@ -307,7 +296,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "build_path": 1,
     "tx_json": {
@@ -331,7 +319,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "build_path": 1,
     "tx_json": {
@@ -356,7 +343,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "build_path": 1,
     "tx_json": {
@@ -385,7 +371,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "build_path": 1,
     "tx_json": {
@@ -410,7 +395,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
@@ -428,7 +412,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -447,7 +430,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "rx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -466,7 +448,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -484,7 +465,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -503,7 +483,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -522,7 +501,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Amount": "1000000000",
@@ -540,7 +518,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "NotAnAccount",
@@ -559,7 +536,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "offline": 0,
     "tx_json": {
@@ -579,7 +555,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "offline": 1,
     "tx_json": {
@@ -599,7 +574,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "offline": 1,
     "tx_json": {
@@ -620,7 +594,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Flags": 0,
@@ -640,7 +613,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Flags": "NotGoodFlags",
@@ -660,7 +632,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "debug_signing": 0,
     "tx_json": {
@@ -680,7 +651,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -696,13 +666,12 @@ R"({
 "",
 "",
 "",
-"Missing field 'MultiSigners'."}},
+"Missing field 'Signers'."}},
 
 { "Missing 'Account' in sign_for.",
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Amount": "1000000000",
@@ -723,7 +692,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -744,7 +712,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -765,7 +732,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -786,7 +752,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -807,7 +772,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -828,7 +792,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -850,7 +813,6 @@ R"({
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-    "signing_for": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -870,19 +832,12 @@ R"({
 { "Minimal submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "MultiSigners": [
+    "Signers": [
         {
-            "SigningFor": {
-                "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-                "SigningAccounts": [
-                    {
-                        "SigningAccount": {
-                            "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                            "MultiSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                            "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-                        }
-                    }
-                ]
+            "Signer": {
+                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
             }
         }
     ],

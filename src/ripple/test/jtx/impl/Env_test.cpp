@@ -329,7 +329,7 @@ public:
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster),                    ter(tecNEED_MASTER_KEY));
         env(fset("alice", asfDisableMaster), sig("eric"),       ter(tecNEED_MASTER_KEY));
-        env.require(nflags("alice", asfDisableMaster)); 
+        env.require(nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), sig("alice"));
         env.require(flags("alice", asfDisableMaster));
         env(regkey("alice", disabled),                          ter(tecMASTER_DISABLED));
@@ -364,39 +364,8 @@ public:
         env(noop("alice"), msig("carol"));
         env(noop("alice"), msig("bob", "carol"));
         env(noop("alice"), msig("bob", "carol", "dilbert"),     ter(tefBAD_SIGNATURE));
-    }
 
-    // Two level Multi-sign
-    void
-    testMultiSign2()
-    {
-        using namespace jtx;
-
-        Env env(*this);
-        env.fund(XRP(10000), "alice", "bob", "carol");
-        env.fund(XRP(10000), "david", "eric", "frank", "greg");
-        env(signers("alice", 2, { { "bob", 1 },   { "carol", 1 } }));
-        env(signers("bob",   1, { { "david", 1 }, { "eric", 1 } }));
-        env(signers("carol", 1, { { "frank", 1 }, { "greg", 1 } }));
-
-        env(noop("alice"), msig2(
-        { { "bob", "david" } }),                                ter(tefBAD_QUORUM));
-        
-        env(noop("alice"), msig2(
-        { { "bob", "david" }, { "bob", "eric" } }),             ter(tefBAD_QUORUM));
-
-        env(noop("alice"), msig2(
-        { { "carol", "frank" } }),                              ter(tefBAD_QUORUM));
-        
-        env(noop("alice"), msig2(
-        { { "carol", "frank" }, { "carol", "greg" } }),         ter(tefBAD_QUORUM));
-
-        env(noop("alice"), msig2(
-        { { "bob", "david" }, { "carol", "frank" } }));
-
-        env(noop("alice"), msig2(
-        { { "bob", "david" }, { "bob", "eric" },
-          { "carol", "frank" }, { "carol", "greg" } }));
+        env(signers("alice", none));
     }
 
     void
@@ -581,7 +550,6 @@ public:
         testKeyType();
         testPayments();
         testMultiSign();
-        testMultiSign2();
         testTicket();
         testJTxProperties();
         testProp();

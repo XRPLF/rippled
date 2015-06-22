@@ -83,6 +83,7 @@ enum TER
     temDISABLED,
     temBAD_SIGNER,
     temBAD_QUORUM,
+    temBAD_WEIGHT,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,

@@ -22,6 +22,7 @@
 #include <ripple/test/jtx/utility.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Sign.h>
 #include <ripple/protocol/types.h>
 
 namespace ripple {
@@ -36,15 +37,15 @@ signers (Account const& account,
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = "SignerListSet";
-    jv["SignerQuorum"] = quorum;
-    auto& ja = jv["SignerEntries"];
+    jv[sfSignerQuorum.getJsonName()] = quorum;
+    auto& ja = jv[sfSignerEntries.getJsonName()];
     ja.resize(v.size());
     for(std::size_t i = 0; i < v.size(); ++i)
     {
         auto const& e = v[i];
-        auto& je = ja[i]["SignerEntry"];
+        auto& je = ja[i][sfSignerEntry.getJsonName()];
         je[jss::Account] = e.account.human();
-        je["SignerWeight"] = e.weight;
+        je[sfSignerWeight.getJsonName()] = e.weight;
     }
     return jv;
 }
@@ -55,24 +56,30 @@ signers (Account const& account, none_t)
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = "SignerListSet";
+    jv[sfSignerQuorum.getJsonName()] = 0;
     return jv;
 }
 
 //------------------------------------------------------------------------------
 
+msig::msig (std::vector<msig::Reg> signers_)
+        : signers(std::move(signers_))
+{
+    // Signatures must be applied in sorted order.
+    std::sort(signers.begin(), signers.end(),
+        [](msig::Reg const& lhs, msig::Reg const& rhs)
+        {
+            return lhs.acct.id() < rhs.acct.id();
+        });
+}
+
 void
 msig::operator()(Env const& env, JTx& jt) const
 {
-    // VFALCO Inefficient pre-C++14
-    auto accounts = accounts_;
-    std::sort(accounts.begin(), accounts.end(),
-        [](Account const& lhs, Account const& rhs)
-        {
-            return lhs.id() < rhs.id();
-        });
-    jt.signer = [accounts, &env](Env&, JTx& jt)
+    auto const mySigners = signers;
+    jt.signer = [mySigners, &env](Env&, JTx& jt)
     {
-        jt["SigningPubKey"] = "";
+        jt[sfSigningPubKey.getJsonName()] = "";
         boost::optional<STObject> st;
         try
         {
@@ -83,103 +90,20 @@ msig::operator()(Env const& env, JTx& jt) const
             env.test.log << pretty(jt.jv);
             throw;
         }
-        auto const signFor =
-            parseBase58<AccountID>(
-                jt.jv[jss::Account].asString());
-        if (! signFor)
+        auto& js = jt[sfSigners.getJsonName()];
+        js.resize(mySigners.size());
+        for(std::size_t i = 0; i < mySigners.size(); ++i)
         {
-            env.test.log <<
-                "invalid AccountID: '" <<
-                    jt.jv[jss::Account].asString() << "'";
-            throw parse_error("msig: bad Account");
-        }
-        auto& jv = jt["MultiSigners"][0u]["SigningFor"];
-        jv[jss::Account] = jt[jss::Account];
-        auto& js = jv["SigningAccounts"];
-        js.resize(accounts.size());
-        for(std::size_t i = 0; i < accounts.size(); ++i)
-        {
-            auto const& e = accounts[i];
-            auto& jo = js[i]["SigningAccount"];
-            jo[jss::Account] = e.human();
-            jo[jss::SigningPubKey] = strHex(e.pk().slice());
+            auto const& e = mySigners[i];
+            auto& jo = js[i][sfSigner.getJsonName()];
+            jo[jss::Account] = e.acct.human();
+            jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss;
-            ss.add32 (HashPrefix::txMultiSign);
-            st->addWithoutSigningFields(ss);
-            ss.add160(*signFor);
-            ss.add160(e.id());
-            auto const sig = ripple::sign(
-                *publicKeyType(e.pk().slice()),
-                    e.sk(), ss.slice());
-            jo["MultiSignature"] =
-                strHex(Slice{ sig.data(), sig.size() });
-        }
-    };
-}
-
-msig2_t::msig2_t (std::vector<std::pair<
-    Account, Account>> sigs)
-{
-    for (auto& sig : sigs)
-    {
-        auto result = sigs_.emplace(
-            std::piecewise_construct,
-                std::make_tuple(std::move(sig.first)),
-                    std::make_tuple());
-        result.first->second.emplace(
-            std::move(sig.second));
-    }
-}
-
-void
-msig2_t::operator()(Env const& env, JTx& jt) const
-{
-    // VFALCO Inefficient pre-C++14
-    auto const sigs = sigs_;
-    jt.signer = [sigs, &env](Env&, JTx& jt)
-    {
-        jt["SigningPubKey"] = "";
-        boost::optional<STObject> st;
-        try
-        {
-            st = parse(jt.jv);
-        }
-        catch(parse_error const&)
-        {
-            env.test.log << pretty(jt.jv);
-            throw;
-        }
-        auto& ja = jt["MultiSigners"];
-        ja.resize(sigs.size());
-        for (auto i = std::make_pair(0, sigs.begin());
-            i.first < sigs.size(); ++i.first, ++i.second)
-        {
-            auto const& sign_for = i.second->first;
-            auto const& list = i.second->second;
-            auto& ji = ja[i.first]["SigningFor"];
-            ji[jss::Account] = sign_for.human();
-            auto& js = ji["SigningAccounts"];
-            js.resize(list.size());
-            for (auto j = std::make_pair(0, list.begin());
-                j.first < list.size(); ++j.first, ++j.second)
-            {
-                auto& jj = js[j.first]["SigningAccount"];
-                jj[jss::Account] = j.second->human();
-                jj[jss::SigningPubKey] = strHex(
-                    j.second->pk().slice());
-
-                Serializer ss;
-                ss.add32 (HashPrefix::txMultiSign);
-                st->addWithoutSigningFields(ss);
-                ss.add160(sign_for.id());
-                ss.add160(j.second->id());
-                auto const sig = ripple::sign(
-                    *publicKeyType(j.second->pk().slice()),
-                        j.second->sk(), ss.slice());
-                jj["MultiSignature"] =
-                    strHex(Slice{ sig.data(), sig.size() });
-            }
+            Serializer ss {buildMultiSigningData (*st, e.acct.id())};
+            auto const sig = ripple::sign (
+                *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
+            jo[sfTxnSignature.getJsonName()] =
+            	strHex(Slice{ sig.data(), sig.size() });
         }
     };
 }
