@@ -54,16 +54,16 @@ enum
     checkSeconds        =   10,
 
     /** How often we latency/sendq probe connections */
-    timerSeconds        =    3,
+    timerSeconds        =    4,
 
     /** How many timer intervals a sendq has to stay large before we disconnect */
-    sendqIntervals      =    3,
+    sendqIntervals      =    4,
 
     /** How many timer intervals we can go without a ping reply */
-    noPing              =    4,
+    noPing              =   10,
 
     /** How many messages on a send queue before we refuse queries */
-    dropSendQueue       =    5,
+    dropSendQueue       =    8,
 
     /** How many messages we consider reasonable sustained on a send queue */
     targetSendQueue     =   16,
