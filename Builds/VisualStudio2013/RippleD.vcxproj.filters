@@ -2592,12 +2592,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\common_transactor.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\tests\common_transactor.h">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\DeliverMin.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>

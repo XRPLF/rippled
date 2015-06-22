@@ -58,14 +58,42 @@ signers (Account const& account, none_t);
 /** Set a multisignature on a JTx. */
 class msig
 {
-private:
-    std::vector<Account> accounts_;
+public:
+    struct Reg
+    {
+        Account acct;
+        Account sig;
+
+        Reg (Account const& masterSig)
+        : acct (masterSig)
+        , sig (masterSig)
+        { }
+
+        Reg (Account const& acct_, Account const& regularSig)
+        : acct (acct_)
+        , sig (regularSig)
+        { }
+
+        Reg (char const* masterSig)
+        : acct (masterSig)
+        , sig (masterSig)
+        { }
+
+        Reg (char const* acct_, char const* regularSig)
+        : acct (acct_)
+        , sig (regularSig)
+        { }
+
+        bool operator< (Reg const& rhs) const
+        {
+            return acct < rhs.acct;
+        }
+    };
+
+    std::vector<Reg> signers;
 
 public:
-    msig (std::vector<Account> accounts)
-        : accounts_(std::move(accounts))
-    {
-    }
+    msig (std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
     msig (AccountType&& a0, Accounts&&... aN)
@@ -82,17 +110,17 @@ private:
     template <class AccountType>
     static
     void
-    helper (std::vector<Account>& v,
+    helper (std::vector<Reg>& v,
         AccountType&& account)
     {
         v.emplace_back(std::forward<
-            Account>(account));
+            Reg>(account));
     }
 
     template <class AccountType, class... Accounts>
     static
     void
-    helper (std::vector<Account>& v,
+    helper (std::vector<Reg>& v,
         AccountType&& a0, Accounts&&... aN)
     {
         helper(v, std::forward<AccountType>(a0));
@@ -101,41 +129,16 @@ private:
 
     template <class... Accounts>
     static
-    std::vector<Account>
-    make_vector(Accounts&&... accounts)
+    std::vector<Reg>
+    make_vector(Accounts&&... signers)
     {
-        std::vector<Account> v;
-        v.reserve(sizeof...(accounts));
+        std::vector<Reg> v;
+        v.reserve(sizeof...(signers));
         helper(v, std::forward<
-            Accounts>(accounts)...);
+            Accounts>(signers)...);
         return v;
     }
 };
-
-//------------------------------------------------------------------------------
-
-/** Set a multisignature on a JTx. */
-class msig2_t
-{
-private:
-    std::map<Account,
-        std::set<Account>> sigs_;
-
-public:
-    msig2_t (std::vector<std::pair<
-        Account, Account>> sigs);
-
-    void
-    operator()(Env const&, JTx& jt) const;
-};
-
-inline
-msig2_t
-msig2 (std::vector<std::pair<
-    Account, Account>> sigs)
-{
-    return msig2_t(std::move(sigs));
-}
 
 //------------------------------------------------------------------------------
 

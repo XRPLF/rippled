@@ -71,23 +71,6 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (sleAccepted)
     {
         RPC::injectSLE(jvAccepted, *sleAccepted);
-
-        // See if there's a SignerEntries for this account.
-        auto const signerList = ledger->read (keylet::signers(accountID));
-
-        if (signerList)
-        {
-            // Return multi-signing information if there are multi-signers.
-            static const Json::StaticString multiSignersName("multisigners");
-            jvAccepted[multiSignersName] = signerList->getJson (0);
-            Json::Value& multiSignerJson = jvAccepted[multiSignersName];
-
-            // Remove unwanted fields.
-            multiSignerJson.removeMember (sfFlags.getName ());
-            multiSignerJson.removeMember (sfLedgerEntryType.getName ());
-            multiSignerJson.removeMember (sfOwnerNode.getName ());
-            multiSignerJson.removeMember ("index");
-        }
         result[jss::account_data] = jvAccepted;
     }
     else

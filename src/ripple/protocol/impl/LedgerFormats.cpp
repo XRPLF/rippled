@@ -122,12 +122,15 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfExpiration,          SOE_OPTIONAL)
             ;
 
-    // All three fields are SOE_REQUIRED because there is always a
+    // All fields are SOE_REQUIRED because there is always a
     // SignerEntries.  If there are no SignerEntries the node is deleted.
     add ("SignerList", ltSIGNER_LIST)
             << SOElement (sfOwnerNode,           SOE_REQUIRED)
             << SOElement (sfSignerQuorum,        SOE_REQUIRED)
             << SOElement (sfSignerEntries,       SOE_REQUIRED)
+            << SOElement (sfSignerListID,        SOE_REQUIRED)
+            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
+            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
             ;
 }
 

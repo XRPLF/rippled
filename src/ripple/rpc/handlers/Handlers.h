@@ -68,6 +68,7 @@ Json::Value doSign                  (RPC::Context&);
 Json::Value doSignFor               (RPC::Context&);
 Json::Value doStop                  (RPC::Context&);
 Json::Value doSubmit                (RPC::Context&);
+Json::Value doSubmitMultiSigned     (RPC::Context&);
 Json::Value doSubscribe             (RPC::Context&);
 Json::Value doTransactionEntry      (RPC::Context&);
 Json::Value doTx                    (RPC::Context&);

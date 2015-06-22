@@ -1847,12 +1847,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\common_transactor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\tests\common_transactor.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\DeliverMin.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>

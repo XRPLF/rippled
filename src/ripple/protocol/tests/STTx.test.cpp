@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
@@ -113,44 +114,34 @@ public:
             saSeed.createAccountPrivate(saGenerator, saSeed, 0);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer s = txn.getMultiSigningData(
-            calcAccountID(saPublicAcct), calcAccountID(saPublicAcct));
+        Serializer s = buildMultiSigningData (txn, saID);
 
         Blob saMultiSignature =
             saPrivateAcct.accountPrivateSign (s.getData());
 
-        // The InnerObjectFormats say a SigningAccount is supposed to look
+        // The InnerObjectFormats say a Signer is supposed to look
         // like this:
-        // SigningAccount {
+        // Signer {
         //     Account: "...",
-        //     MultiSignature: "...",
+        //     TxnSignature: "...",
         //     PublicKey: "...""
         // }
-        // Make one well formed SigningAccount and several mal-formed ones.
-        // See whether the serializer lets the good one through and catches
+        // Make one well formed Signer and several mal-formed ones.  See
+        // whether the serializer lets the good one through and catches
         // the bad ones.
 
         // This lambda contains the bulk of the test code.
         auto testMalformedSigningAccount =
             [this, &txn, &signingForID]
-                (STObject const& signingAcct, bool expectPass)
+                (STObject const& signer, bool expectPass)
         {
             // Create SigningAccounts array.
-            STArray signingAccts (sfSigningAccounts, 1);
-            signingAccts.push_back (signingAcct);
+            STArray signers (sfSigners, 1);
+            signers.push_back (signer);
 
-            // Insert SigningAccounts array into SigningFor object.
-            STObject signingFor (sfSigningFor);
-            signingFor.setAccountID (sfAccount, signingForID);
-            signingFor.setFieldArray (sfSigningAccounts, signingAccts);
-
-            // Insert SigningFor into MultiSigners.
-            STArray multiSigners (sfMultiSigners, 1);
-            multiSigners.push_back (signingFor);
-
-            // Insert MultiSigners into transaction.
+            // Insert signers into transaction.
             STTx tempTxn (txn);
-            tempTxn.setFieldArray (sfMultiSigners, multiSigners);
+            tempTxn.setFieldArray (sfSigners, signers);
 
             Serializer rawTxn;
             tempTxn.add (rawTxn);
@@ -167,41 +158,41 @@ public:
             }
             expect (serialized == expectPass,
                 "Unexpected serialized = " + std::to_string (serialized) +
-                      ".  Object:\n" + signingAcct.getFullText () + "\n");
+                      ".  Object:\n" + signer.getFullText () + "\n");
         };
 
         {
-            // Test case 1.  Make a valid SigningAccount object.
-            STObject soTest1 (sfSigningAccount);
+            // Test case 1.  Make a valid Signer object.
+            STObject soTest1 (sfSigner);
             soTest1.setAccountID (sfAccount, saID);
             soTest1.setFieldVL (sfSigningPubKey,
                 txnPublicAcct.getAccountPublic ());
-            soTest1.setFieldVL (sfMultiSignature, saMultiSignature);
+            soTest1.setFieldVL (sfTxnSignature, saMultiSignature);
             testMalformedSigningAccount (soTest1, true);
         }
         {
             // Test case 2.  Omit sfSigningPubKey from SigningAccount.
-            STObject soTest2 (sfSigningAccount);
+            STObject soTest2 (sfSigner);
             soTest2.setAccountID (sfAccount, saID);
-            soTest2.setFieldVL (sfMultiSignature, saMultiSignature);
+            soTest2.setFieldVL (sfTxnSignature, saMultiSignature);
             testMalformedSigningAccount (soTest2, false);
         }
         {
             // Test case 3.  Extra sfAmount in SigningAccount.
-            STObject soTest3 (sfSigningAccount);
+            STObject soTest3 (sfSigner);
             soTest3.setAccountID (sfAccount, saID);
             soTest3.setFieldVL (sfSigningPubKey,
                 txnPublicAcct.getAccountPublic ());
-            soTest3.setFieldVL (sfMultiSignature, saMultiSignature);
+            soTest3.setFieldVL (sfTxnSignature, saMultiSignature);
             soTest3.setFieldAmount (sfAmount, STAmount (10000));
             testMalformedSigningAccount (soTest3, false);
         }
         {
             // Test case 4.  Right number of fields, but wrong ones.
-            STObject soTest4 (sfSigningAccount);
+            STObject soTest4 (sfSigner);
             soTest4.setFieldVL (sfSigningPubKey,
                 txnPublicAcct.getAccountPublic ());
-            soTest4.setFieldVL (sfMultiSignature, saMultiSignature);
+            soTest4.setFieldVL (sfTxnSignature, saMultiSignature);
             soTest4.setFieldAmount (sfAmount, STAmount (10000));
             testMalformedSigningAccount (soTest4, false);
         }

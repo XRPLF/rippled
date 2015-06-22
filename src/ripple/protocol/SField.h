@@ -31,7 +31,7 @@ namespace ripple {
 
 Some fields have a different meaning for their
     default value versus not present.
-        Example: 
+        Example:
             QualityIn on a TrustLine
 
 */
@@ -390,6 +390,7 @@ extern SF_U32 const sfClearFlag;
 extern SF_U32 const sfSignerQuorum;
 extern SF_U32 const sfCancelAfter;
 extern SF_U32 const sfFinishAfter;
+extern SF_U32 const sfSignerListID;
 
 // 64-bit integers
 extern SF_U64 const sfIndexNext;
@@ -462,9 +463,7 @@ extern SF_Blob const sfMemoData;
 extern SF_Blob const sfMemoFormat;
 
 // variable length (uncommon)
-extern SF_Blob const sfMultiSignature;
 extern SF_Blob const sfProof;
-
 // account
 extern SF_Account const sfAccount;
 extern SF_Account const sfOwner;
@@ -493,14 +492,13 @@ extern SField const sfNewFields;
 extern SField const sfTemplateEntry;
 extern SField const sfMemo;
 extern SField const sfSignerEntry;
-extern SField const sfSigningAccount;
-extern SField const sfSigningFor;
+extern SField const sfSigner;
 extern SField const sfMajority;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
-extern SField const sfSigningAccounts;
-extern SField const sfMultiSigners;
+// extern SField const sfSigningAccounts;  // Never been used.
+extern SField const sfSigners;
 extern SField const sfSignerEntries;
 extern SField const sfTemplate;
 extern SField const sfNecessary;

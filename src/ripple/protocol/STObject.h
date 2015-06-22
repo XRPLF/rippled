@@ -423,20 +423,6 @@ public:
     uint256 getHash (std::uint32_t prefix) const;
     uint256 getSigningHash (std::uint32_t prefix) const;
 
-    // Break the multi-signing hash computation into 2 parts for optimization.
-    Serializer startMultiSigningData () const;
-    void finishMultiSigningData (
-        AccountID const& signingForID,
-        AccountID const& signingID, Serializer& s) const;
-
-    // VFALCO Get functions are usually simple observers but
-    //        this one performs an expensive construction.
-    //
-    // Get data to compute a complete multi-signature.
-    Serializer getMultiSigningData (
-        AccountID const& signingForID,
-        AccountID const& signingID) const;
-
     const STBase& peekAtIndex (int offset) const
     {
         return v_[offset].get();

@@ -97,7 +97,7 @@ issue a transaction that consumes that ticket.
 Any account can have one SignerList attached to it.  A SignerList contains the
 following elements:
 
- - A list of from 2 to a protocol-defined maximum of 8 signers.  Each signer in the array consists of:
+ - A list of from 1 to a protocol-defined maximum of 8 signers.  Each signer in the array consists of:
    - The signer's 160-bit account ID and
    - The signer's 16-bit weight (used to calculate whether a quorum is met).
  - And, for the entire list, a single 32-bit quorum value.

@@ -56,20 +56,13 @@ public:
         }
     };
 
-    struct Decoded
-    {
-        std::vector<SignerEntry> vec;
-        TER ter = temMALFORMED;
-    };
-
     // Deserialize a SignerEntries array from the network or from the ledger.
-    static Decoded deserialize (
+    static
+    std::pair<std::vector<SignerEntry>, TER>
+    deserialize (
         STObject const& obj,
         beast::Journal journal,
         std::string const& annotation);
-
-    static std::size_t const minEntries = 2;
-    static std::size_t const maxEntries = STTx::maxMultiSigners;
 };
 
 } // ripple
