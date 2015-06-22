@@ -85,6 +85,12 @@ private:
         STAmount const& saOutReq,
         STAmount& saOutAct) const;
 
+    // To deliver from an order book, when computing
+    TER deliverNodeReverseImpl (
+        AccountID const& uOutAccountID,
+        STAmount const& saOutReq,
+        STAmount& saOutAct) const;
+
     TER deliverNodeForward (
         AccountID const& uInAccountID,
         STAmount const& saInReq,

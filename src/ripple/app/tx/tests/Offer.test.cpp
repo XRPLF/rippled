@@ -23,31 +23,69 @@
 #include <ripple/basics/Log.h>
 #include <ripple/test/jtx.h>
 #include <ripple/test/jtx/Account.h>
+#include <ripple/ledger/tests/PathSet.h>
 
 namespace ripple {
 namespace test {
 
-// An offer exists
-bool isOffer (jtx::Env const& env,
-    jtx::Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets)
-{
-    bool exists = false;
-    forEachItem (*env.open(), account,
-        [&](std::shared_ptr<SLE const> const& sle)
-        {
-            if (sle->getType () == ltOFFER &&
-                sle->getFieldAmount (sfTakerPays) == takerPays &&
-                sle->getFieldAmount (sfTakerGets) == takerGets)
-                exists = true;
-        });
-    return exists;
-}
-
 class Offer_test : public beast::unit_test::suite
 {
 public:
+    void testRmFundedOffer ()
+    {
+        // We need at least two paths. One at good quality and one at bad quality.
+        // The bad quality path needs two offer books in a row. Each offer book
+        // should have two offers at the same quality, the offers should be
+        // completely consumed, and the payment should should require both offers to
+        // be satisified. The first offer must be "taker gets" XRP. Old, broken
+        // would remove the first "taker gets" xrp offer, even though the offer is
+        // still funded and not used for the payment.
+
+        using namespace jtx;
+        Env env (*this);
+        auto const gw = Account ("gateway");
+        auto const USD = gw["USD"];
+        auto const BTC = gw["BTC"];
+        Account const alice ("alice");
+        Account const bob ("bob");
+        Account const carol ("carol");
+
+        env.fund (XRP (10000), alice, bob, carol, gw);
+        env.trust (USD (1000), alice, bob, carol);
+        env.trust (BTC (1000), alice, bob, carol);
+
+        env (pay (gw, alice, BTC (1000)));
+
+        env (pay (gw, carol, USD (1000)));
+        env (pay (gw, carol, BTC (1000)));
+
+        // Must be two offers at the same quality
+        // "taker gets" must be XRP
+        // (Different amounts so I can distinguish the offers)
+        env (offer (carol, BTC (49), XRP (49)));
+        env (offer (carol, BTC (51), XRP (51)));
+
+        // Offers for the poor quality path
+        // Must be two offers at the same quality
+        env (offer (carol, XRP (50), USD (50)));
+        env (offer (carol, XRP (50), USD (50)));
+
+        // Offers for the good quality path
+        env (offer (carol, BTC (1), USD (100)));
+
+        PathSet paths (
+            Path (XRP, USD),
+            Path (USD));
+
+        env (pay ("alice", "bob", USD (100)),
+             json (paths.json ()),
+             sendmax (BTC (1000)),
+             txflags (tfPartialPayment));
+
+        require (balance ("bob", USD (100)));
+        expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
+            isOffer (env, "carol", BTC (49), XRP (49)));
+    }
     void testCanceledOffer ()
     {
         using namespace jtx;
@@ -87,6 +125,7 @@ public:
         // Hack to silence logging
         deprecatedLogs ().severity (beast::Journal::Severity::kNone);
         testCanceledOffer ();
+        testRmFundedOffer ();
     }
 };
 
