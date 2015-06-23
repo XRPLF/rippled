@@ -1331,16 +1331,16 @@ bool ApplicationImp::loadOldLedger (
             for (auto const& item : txns)
             {
                 auto const txn =
-                    getTransaction(*replayLedger, item->getTag(),
+                    getTransaction(*replayLedger, item->key(),
                         getApp().getMasterTransaction());
                 if (m_journal.info) m_journal.info <<
                     txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                cur->txInsert(item->getTag(),
+                cur->txInsert(item->key(),
                     std::make_shared<Serializer const>(
                         std::move(s)), nullptr);
-                getApp().getHashRouter().setFlag (item->getTag(), SF_SIGGOOD);
+                getApp().getHashRouter().setFlag (item->key(), SF_SIGGOOD);
             }
 
             // Switch to the mutable snapshot

@@ -20,9 +20,10 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 
-#include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/protocol/Serializer.h>
 #include <beast/utility/Journal.h>
 
 #include <cstddef>
@@ -33,87 +34,58 @@ namespace ripple {
 class SHAMapItem
 {
 private:
-    uint256 mTag;
-    Serializer mData;
+    uint256    tag_;
+    Blob       data_;
 
 public:
-    explicit SHAMapItem (uint256 const& tag);
     SHAMapItem (uint256 const& tag, Blob const & data);
     SHAMapItem (uint256 const& tag, Serializer const& s);
-    SHAMapItem (uint256 const& key, Serializer&& s);
 
     Slice slice() const;
 
-    uint256 const&
-    key() const
-    {
-        return mTag;
-    }
-
-    // DEPRECATED
-    uint256 const& getTag() const;
+    uint256 const& key() const;
 
     Blob const& peekData() const;
-    Serializer const& peekSerializer() const;
 
-public:  // public only to SHAMapTreeNode
     std::size_t size() const;
-
-private:
-    explicit SHAMapItem (Blob const& data);
-
     void const* data() const;
-    void dump (beast::Journal journal);
 };
 
 //------------------------------------------------------------------------------
 
 inline
-SHAMapItem::SHAMapItem (uint256 const& tag)
-    : mTag (tag)
-{
-}
-
-inline
 Slice
 SHAMapItem::slice() const
 {
-    return mData.slice();
+    return {data_.data(), data_.size()};
 }
 
 inline
 std::size_t
 SHAMapItem::size() const
 {
-    return mData.peekData().size();
+    return data_.size();
 }
 
 inline
 void const*
 SHAMapItem::data() const
 {
-    return mData.peekData().data();
+    return data_.data();
 }
 
 inline
 uint256 const&
-SHAMapItem::getTag() const
+SHAMapItem::key() const
 {
-    return mTag;
+    return tag_;
 }
 
 inline
 Blob const&
 SHAMapItem::peekData() const
 {
-    return mData.peekData();
-}
-
-inline
-Serializer const&
-SHAMapItem::peekSerializer() const
-{
-    return mData;
+    return data_;
 }
 
 } // ripple

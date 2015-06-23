@@ -1825,7 +1825,7 @@ void applyTransactions (
 
             // The transaction isn't in the check ledger, try to apply it
             WriteLog (lsDEBUG, LedgerConsensus) <<
-                "Processing candidate transaction: " << item->getTag ();
+                "Processing candidate transaction: " << item->key();
 
             try
             {

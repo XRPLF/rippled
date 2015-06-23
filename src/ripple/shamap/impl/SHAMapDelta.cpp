@@ -58,14 +58,14 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
             // This is a leaf node, process its item
             auto item = static_cast<SHAMapTreeNode*>(node)->peekItem();
 
-            if (emptyBranch || (item->getTag () != otherMapItem->getTag ()))
+            if (emptyBranch || (item->key() != otherMapItem->key()))
             {
                 // unmatched
                 if (isFirstMap)
-                    differences.insert (std::make_pair (item->getTag (),
+                    differences.insert (std::make_pair (item->key(),
                         DeltaRef (item, std::shared_ptr<SHAMapItem const> ())));
                 else
-                    differences.insert (std::make_pair (item->getTag (),
+                    differences.insert (std::make_pair (item->key(),
                         DeltaRef (std::shared_ptr<SHAMapItem const> (), item)));
 
                 if (--maxCount <= 0)
@@ -75,10 +75,10 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
             {
                 // non-matching items with same tag
                 if (isFirstMap)
-                    differences.insert (std::make_pair (item->getTag (),
+                    differences.insert (std::make_pair (item->key(),
                                                 DeltaRef (item, otherMapItem)));
                 else
-                    differences.insert (std::make_pair (item->getTag (),
+                    differences.insert (std::make_pair (item->key(),
                                                 DeltaRef (otherMapItem, item)));
 
                 if (--maxCount <= 0)
@@ -98,11 +98,11 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
     {
         // otherMapItem was unmatched, must add
         if (isFirstMap) // this is first map, so other item is from second
-            differences.insert(std::make_pair(otherMapItem->getTag (),
+            differences.insert(std::make_pair(otherMapItem->key(),
                                               DeltaRef(std::shared_ptr<SHAMapItem const>(),
                                                        otherMapItem)));
         else
-            differences.insert(std::make_pair(otherMapItem->getTag (),
+            differences.insert(std::make_pair(otherMapItem->key(),
                 DeltaRef(otherMapItem, std::shared_ptr<SHAMapItem const>())));
 
         if (--maxCount <= 0)
@@ -147,11 +147,11 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
             // two leaves
             auto ours = static_cast<SHAMapTreeNode*>(ourNode);
             auto other = static_cast<SHAMapTreeNode*>(otherNode);
-            if (ours->peekItem()->getTag () == other->peekItem()->getTag ())
+            if (ours->peekItem()->key() == other->peekItem()->key())
             {
                 if (ours->peekItem()->peekData () != other->peekItem()->peekData ())
                 {
-                    differences.insert (std::make_pair (ours->peekItem()->getTag (),
+                    differences.insert (std::make_pair (ours->peekItem()->key(),
                                                  DeltaRef (ours->peekItem (),
                                                  other->peekItem ())));
                     if (--maxCount <= 0)
@@ -160,13 +160,13 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
             }
             else
             {
-                differences.insert (std::make_pair(ours->peekItem()->getTag (),
+                differences.insert (std::make_pair(ours->peekItem()->key(),
                                                    DeltaRef(ours->peekItem(),
                                                    std::shared_ptr<SHAMapItem const>())));
                 if (--maxCount <= 0)
                     return false;
 
-                differences.insert(std::make_pair(other->peekItem()->getTag (),
+                differences.insert(std::make_pair(other->peekItem()->key(),
                     DeltaRef(std::shared_ptr<SHAMapItem const>(), other->peekItem ())));
                 if (--maxCount <= 0)
                     return false;

@@ -29,10 +29,10 @@ namespace ripple {
 namespace shamap {
 namespace tests {
 
-inline bool operator== (SHAMapItem const& a, SHAMapItem const& b) { return a.getTag() == b.getTag(); }
-inline bool operator!= (SHAMapItem const& a, SHAMapItem const& b) { return a.getTag() != b.getTag(); }
-inline bool operator== (SHAMapItem const& a, uint256 const& b) { return a.getTag() == b; }
-inline bool operator!= (SHAMapItem const& a, uint256 const& b) { return a.getTag() != b; }
+inline bool operator== (SHAMapItem const& a, SHAMapItem const& b) { return a.key() == b.key(); }
+inline bool operator!= (SHAMapItem const& a, SHAMapItem const& b) { return a.key() != b.key(); }
+inline bool operator== (SHAMapItem const& a, uint256 const& b) { return a.key() == b; }
+inline bool operator!= (SHAMapItem const& a, uint256 const& b) { return a.key() != b; }
 
 class SHAMap_test : public beast::unit_test::suite
 {
@@ -71,20 +71,20 @@ public:
         std::shared_ptr<SHAMapItem const> i;
         i = sMap.peekFirstItem ();
         unexpected (!i || (*i != i1), "bad traverse");
-        i = sMap.peekNextItem (i->getTag ());
+        i = sMap.peekNextItem (i->key());
         unexpected (!i || (*i != i2), "bad traverse");
-        i = sMap.peekNextItem (i->getTag ());
+        i = sMap.peekNextItem (i->key());
         unexpected (i, "bad traverse");
         sMap.addItem (i4, true, false);
-        sMap.delItem (i2.getTag ());
+        sMap.delItem (i2.key());
         sMap.addItem (i3, true, false);
         i = sMap.peekFirstItem ();
         unexpected (!i || (*i != i1), "bad traverse");
-        i = sMap.peekNextItem (i->getTag ());
+        i = sMap.peekNextItem (i->key());
         unexpected (!i || (*i != i3), "bad traverse");
-        i = sMap.peekNextItem (i->getTag ());
+        i = sMap.peekNextItem (i->key());
         unexpected (!i || (*i != i4), "bad traverse");
-        i = sMap.peekNextItem (i->getTag ());
+        i = sMap.peekNextItem (i->key());
         unexpected (i, "bad traverse");
 
         testcase ("snapshot");
@@ -92,7 +92,7 @@ public:
         std::shared_ptr<SHAMap> map2 = sMap.snapShot (false);
         unexpected (sMap.getHash () != mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
-        unexpected (!sMap.delItem (sMap.peekFirstItem ()->getTag ()), "bad mod");
+        unexpected (!sMap.delItem (sMap.peekFirstItem ()->key()), "bad mod");
         unexpected (sMap.getHash () == mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
 

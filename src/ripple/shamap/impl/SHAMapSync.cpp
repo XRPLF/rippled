@@ -606,7 +606,7 @@ bool SHAMap::deepCompare (SHAMap& other) const
                  return false;
             auto& nodePeek = static_cast<SHAMapTreeNode*>(node)->peekItem();
             auto& otherNodePeek = static_cast<SHAMapTreeNode*>(otherNode)->peekItem();
-            if (nodePeek->getTag() != otherNodePeek->getTag())
+            if (nodePeek->key() != otherNodePeek->key())
                 return false;
             if (nodePeek->peekData() != otherNodePeek->peekData())
                 return false;
@@ -742,7 +742,7 @@ SHAMap::visitDifferences(SHAMap* have,
     if (root_->isLeaf ())
     {
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(root_);
-        if (!have || !have->hasLeafNode(leaf->peekItem()->getTag(), leaf->getNodeHash()))
+        if (!have || !have->hasLeafNode(leaf->peekItem()->key(), leaf->getNodeHash()))
             func (*root_);
 
         return;
@@ -779,7 +779,7 @@ SHAMap::visitDifferences(SHAMap* have,
                         stack.push ({static_cast<SHAMapInnerNode*>(next), childID});
                 }
                 else if (!have || !have->hasLeafNode(
-                         static_cast<SHAMapTreeNode*>(next)->peekItem()->getTag(),
+                         static_cast<SHAMapTreeNode*>(next)->peekItem()->key(),
                          childHash))
                 {
                     if (! func (*next))
