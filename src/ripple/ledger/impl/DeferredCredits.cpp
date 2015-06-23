@@ -147,5 +147,16 @@ void DeferredCredits::clear ()
     map_.clear ();
 }
 
+void DeferredCredits::merge (std::pair <Key, Value> const& p)
+{
+    using std::get;
+    auto r = map_.emplace(p);
+    if (!r.second)
+    {
+        get<0>(r.first->second) += get<0>(p.second);
+        get<1>(r.first->second) += get<1>(p.second);
+    }
+}
+
 } // ripple
 

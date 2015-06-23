@@ -35,20 +35,18 @@ class PathState : public CountedObject <PathState>
     using Ptr = std::shared_ptr<PathState>;
     using List = std::vector<Ptr>;
 
-    PathState (STAmount const& saSend, STAmount const& saSendMax)
-        : mIndex (0)
+    PathState (MetaView& view, STAmount const& saSend, STAmount const& saSendMax)
+        : metaView_ (view)
+        , mIndex (0)
         , uQuality (0)
         , saInReq (saSendMax)
         , saOutReq (saSend)
     {
     }
 
-    explicit PathState (const PathState& psSrc) = default;
-
     void reset(STAmount const& in, STAmount const& out);
 
     TER expandPath (
-        MetaView const&  viewSource,
         STPath const&    spSourcePath,
         AccountID const& uReceiverID,
         AccountID const& uSenderID
@@ -105,7 +103,12 @@ class PathState : public CountedObject <PathState>
 
     MetaView& metaView()
     {
-        return *metaView_;
+        return metaView_;
+    }
+
+    void resetView (MetaView& view)
+    {
+        reconstruct (metaView_, view);
     }
 
     bool isDry() const
@@ -149,7 +152,7 @@ private:
     // Source may only be used there if not mentioned by an account.
     AccountIssueToNodeIndex umReverse;
 
-    boost::optional<MetaView> metaView_;
+    MetaView                    metaView_;
 
     int                         mIndex;    // Index/rank amoung siblings.
     std::uint64_t               uQuality;  // 0 = no quality/liquity left.

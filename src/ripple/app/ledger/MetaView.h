@@ -94,6 +94,7 @@ private:
     using list_type = std::map<uint256, Item>;
 
     BasicView* parent_;
+    MetaView* mParent_ = NULL;
     list_type items_;
     boost::optional<DeferredCredits> mDeferredCredits;
     TransactionMetaSet mSet;
@@ -115,13 +116,9 @@ public:
     MetaView (Ledger::ref ledger,
         TransactionEngineParams tep);
 
-    /** Construct a copy.
-        Effects:
-            The copy is identical except that
-            the sequence number is one higher.
+    /** Construct a nested view.
     */
-    // DEPRECATED
-    MetaView (MetaView const&);
+    MetaView (MetaView&);
 
     //--------------------------------------------------------------------------
     //

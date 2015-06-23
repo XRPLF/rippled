@@ -59,6 +59,10 @@ public:
                  STAmount const& amount);
 
     void clear ();
+
+    std::map<Key, Value>::iterator begin() { return map_.begin(); }
+    std::map<Key, Value>::iterator end() { return map_.end(); }
+    void merge (std::pair <Key, Value> const& p);
 };
 
 } // ripple
