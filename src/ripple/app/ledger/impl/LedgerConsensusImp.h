@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_IMPL_LEDGERCONSENSUSIMP_H_INCLUDED
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/impl/ConsensusImp.h>
 #include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
@@ -96,6 +97,7 @@ public:
             int previousConvergeTime,
             InboundTransactions& inboundTransactions,
             LocalTxs& localtx,
+            LedgerMaster& ledgerMaster,
             LedgerHash const & prevLCLHash,
             Ledger::ref previousLedger,
             std::uint32_t closeTime,
@@ -293,6 +295,7 @@ private:
     ConsensusImp& consensus_;
     InboundTransactions& inboundTransactions_;
     LocalTxs& m_localTX;
+    LedgerMaster& ledgerMaster_;
     FeeVote& m_feeVote;
 
     State state_;
@@ -340,8 +343,8 @@ private:
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
     int previousConvergeTime, InboundTransactions& inboundTransactions,
-    LocalTxs& localtx, LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
-    std::uint32_t closeTime, FeeVote& feeVote);
+    LocalTxs& localtx, LedgerMaster& ledgerMaster, LedgerHash const &prevLCLHash,
+    Ledger::ref previousLedger, std::uint32_t closeTime, FeeVote& feeVote);
 
 } // ripple
 

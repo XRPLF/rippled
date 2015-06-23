@@ -397,13 +397,6 @@ public:
         mBuildingLedgerSeq.store (i);
     }
 
-    bool haveLedgerRange (std::uint32_t from, std::uint32_t to)
-    {
-        ScopedLockType sl (mCompleteLock);
-        std::uint32_t prevMissing = mCompleteLedgers.prevMissing (to + 1);
-        return (prevMissing == RangeSet::absent) || (prevMissing < from);
-    }
-
     bool haveLedger (std::uint32_t seq)
     {
         ScopedLockType sl (mCompleteLock);

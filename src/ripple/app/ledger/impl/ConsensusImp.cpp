@@ -26,9 +26,10 @@
 
 namespace ripple {
 
-ConsensusImp::ConsensusImp (NetworkOPs& netops)
+ConsensusImp::ConsensusImp ()
     : journal_ (deprecatedLogs().journal("Consensus"))
-    , netops_ (netops)
+    , feeVote_ (make_FeeVote (setup_FeeVote (getConfig().section ("voting")),
+        deprecatedLogs().journal("FeeVote")))
     , proposing_ (false)
     , validating_ (false)
     , lastCloseProposers_ (0)
@@ -66,14 +67,14 @@ std::shared_ptr<LedgerConsensus>
 ConsensusImp::startRound (
     InboundTransactions& inboundTransactions,
     LocalTxs& localtx,
+    LedgerMaster& ledgerMaster,
     LedgerHash const &prevLCLHash,
     Ledger::ref previousLedger,
-    std::uint32_t closeTime,
-    FeeVote& feeVote)
+    std::uint32_t closeTime)
 {
     return make_LedgerConsensus (*this, lastCloseProposers_,
-        lastCloseConvergeTook_, inboundTransactions, localtx,
-        prevLCLHash, previousLedger, closeTime, feeVote);
+        lastCloseConvergeTook_, inboundTransactions, localtx, ledgerMaster,
+        prevLCLHash, previousLedger, closeTime, *feeVote_);
 }
 
 
@@ -108,10 +109,8 @@ ConsensusImp::newLCL (
 }
 
 std::uint32_t
-ConsensusImp::validationTimestamp ()
+ConsensusImp::validationTimestamp (std::uint32_t vt)
 {
-    std::uint32_t vt = netops_.getNetworkTimeNC ();
-
     if (vt <= lastValidationTimestamp_)
         vt = lastValidationTimestamp_ + 1;
 
@@ -174,9 +173,9 @@ ConsensusImp::peekStoredProposals ()
 //==============================================================================
 
 std::unique_ptr<Consensus>
-make_Consensus (NetworkOPs& netops)
+make_Consensus ()
 {
-    return std::make_unique<ConsensusImp> (netops);
+    return std::make_unique<ConsensusImp> ();
 }
 
 }

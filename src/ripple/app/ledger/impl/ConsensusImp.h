@@ -23,6 +23,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
+#include <ripple/app/misc/FeeVote.h>
 #include <ripple/shamap/SHAMap.h>
 #include <beast/utility/Journal.h>
 
@@ -33,7 +34,7 @@ class ConsensusImp
     : public Consensus
 {
 public:
-    ConsensusImp (NetworkOPs& netops);
+    ConsensusImp ();
 
     ~ConsensusImp () = default;
 
@@ -53,10 +54,10 @@ public:
     startRound (
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
+        LedgerMaster& ledgerMaster,
         LedgerHash const &prevLCLHash,
         Ledger::ref previousLedger,
-        std::uint32_t closeTime,
-        FeeVote& feeVote) override;
+        std::uint32_t closeTime) override;
 
     void
     setLastCloseTime (std::uint32_t t) override;
@@ -82,22 +83,19 @@ public:
         uint256 const& ledgerHash);
 
     std::uint32_t
-    validationTimestamp ();
+    validationTimestamp (std::uint32_t vt);
 
     std::uint32_t
     getLastCloseTime () const;
 
-    void takePosition (
-        int seq,
-        std::shared_ptr<SHAMap> const& position);
+    void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
 
     Consensus::Proposals&
     peekStoredProposals ();
 
 private:
     beast::Journal journal_;
-
-    NetworkOPs& netops_;
+    std::unique_ptr <FeeVote> feeVote_;
 
     bool proposing_;
     bool validating_;

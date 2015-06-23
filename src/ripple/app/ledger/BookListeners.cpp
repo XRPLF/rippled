@@ -41,9 +41,9 @@ void BookListeners::publish (Json::Value const& jvObj)
     std::string sObj = to_string (jvObj);
 
     ScopedLockType sl (mLock);
-    NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();
+    auto it = mListeners.cbegin ();
 
-    while (it != mListeners.end ())
+    while (it != mListeners.cend ())
     {
         InfoSub::pointer p = it->second.lock ();
 

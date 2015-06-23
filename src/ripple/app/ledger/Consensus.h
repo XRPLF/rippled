@@ -22,7 +22,6 @@
 
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/misc/FeeVote.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
 
@@ -65,10 +64,10 @@ public:
     startRound (
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
+        LedgerMaster& ledgerMaster,
         LedgerHash const &prevLCLHash,
         Ledger::ref previousLedger,
-        std::uint32_t closeTime,
-        FeeVote& feeVote) = 0;
+        std::uint32_t closeTime) = 0;
 
     /** Specified the network time when the last ledger closed */
     virtual
@@ -83,7 +82,7 @@ public:
 };
 
 std::unique_ptr<Consensus>
-make_Consensus (NetworkOPs& netops);
+make_Consensus ();
 
 }
 

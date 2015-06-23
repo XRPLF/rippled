@@ -79,9 +79,12 @@ public:
   @param openLgr               true if applyLedger is open, else false.
 */
 void
-applyTransactions(SHAMap const* set, Ledger::ref applyLedger,
-                  Ledger::ref checkLedger,
-                  CanonicalTXSet& retriableTransactions, bool openLgr);
+applyTransactions(
+    SHAMap const* set,
+    Ledger::ref applyLedger,
+    Ledger::ref checkLedger,
+    CanonicalTXSet& retriableTransactions,
+    bool openLgr);
 
 } // ripple
 
