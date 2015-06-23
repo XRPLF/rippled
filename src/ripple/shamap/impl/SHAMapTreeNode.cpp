@@ -328,13 +328,13 @@ SHAMapTreeNode::updateHash()
     {
         nh = sha512Half(HashPrefix::leafNode,
             make_Slice(mItem->peekData()),
-                mItem->getTag());
+                mItem->key());
     }
     else if (mType == tnTRANSACTION_MD)
     {
         nh = sha512Half(HashPrefix::txNode,
             make_Slice(mItem->peekData()),
-                mItem->getTag());
+                mItem->key());
     }
     else
         assert (false);
@@ -414,12 +414,12 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32 (HashPrefix::leafNode);
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add256 (mItem->key());
         }
         else
         {
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add256 (mItem->key());
             s.add8 (1);
         }
     }
@@ -442,12 +442,12 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32 (HashPrefix::txNode);
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add256 (mItem->key());
         }
         else
         {
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add256 (mItem->key());
             s.add8 (4);
         }
     }
@@ -534,7 +534,7 @@ SHAMapTreeNode::getString(const SHAMapNodeID & id) const
         ret += ",leaf\n";
 
     ret += "  Tag=";
-    ret += to_string (peekItem()->getTag ());
+    ret += to_string (peekItem()->key());
     ret += "\n  Hash=";
     ret += to_string (mHash);
     ret += "/";

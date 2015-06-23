@@ -48,6 +48,8 @@ public:
     STLedgerEntry (const Serializer & s, uint256 const& index);
     
     STLedgerEntry (SerialIter & sit, uint256 const& index);
+    STLedgerEntry(SerialIter&& sit, uint256 const& index)
+        : STLedgerEntry(sit, index) {}
   
         
     STLedgerEntry (const STObject & object, uint256 const& index);

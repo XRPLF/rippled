@@ -129,7 +129,7 @@ void fillJson (Object& json, LedgerFill const& fill)
         CountedYield count (
             fill.yieldStrategy.transactionYieldCount, fill.yield);
         for (auto item = txMap.peekFirstItem (type); item;
-             item = txMap.peekNextItem (item->getTag (), type))
+             item = txMap.peekNextItem (item->key(), type))
         {
             count.yield();
             if (bFull || bExpand)
@@ -167,7 +167,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                         STTx txn (tsit);
 
                         TxMeta meta (
-                            item->getTag (), ledger.getLedgerSeq(), sit.getVL ());
+                            item->key(), ledger.getLedgerSeq(), sit.getVL ());
 
                         auto&& txJson = appendObject (txns);
                         copyFrom(txJson, txn.getJson (0));
@@ -177,12 +177,12 @@ void fillJson (Object& json, LedgerFill const& fill)
                 else
                 {
                     auto&& error = appendObject (txns);
-                    error[to_string (item->getTag ())] = (int) type;
+                    error[to_string (item->key())] = (int) type;
                 }
             }
             else
             {
-                txns.append (to_string (item->getTag ()));
+                txns.append (to_string (item->key()));
             }
         }
     }
@@ -201,7 +201,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                      [&array] (std::shared_ptr<SHAMapItem const> const& smi)
                      {
                          auto&& obj = appendObject (array);
-                         obj[jss::hash] = to_string(smi->getTag ());
+                         obj[jss::hash] = to_string(smi->key());
                          obj[jss::tx_blob] = strHex(smi->peekData ());
                      });
              }
@@ -221,7 +221,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                 [&array, &count] (std::shared_ptr<SHAMapItem const> const& smi)
                 {
                     count.yield();
-                    array.append (to_string(smi->getTag ()));
+                    array.append (to_string(smi->key()));
                 });
         }
     }

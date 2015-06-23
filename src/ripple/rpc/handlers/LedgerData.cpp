@@ -82,7 +82,7 @@ Json::Value doLedgerData (RPC::Context& context)
        auto item = map.peekNextItem (resumePoint);
        if (!item)
            break;
-       resumePoint = item->getTag();
+       resumePoint = item->key();
 
        if (limit-- <= 0)
        {
@@ -96,13 +96,13 @@ Json::Value doLedgerData (RPC::Context& context)
            Json::Value& entry = nodes.append (Json::objectValue);
            entry[jss::data] = strHex (
                item->peekData().begin(), item->peekData().size());
-           entry[jss::index] = to_string (item->getTag ());
+           entry[jss::index] = to_string (item->key());
        }
        else
        {
-           SLE sle (item->peekSerializer(), item->getTag ());
+           SLE sle (SerialIter{item->data(), item->size()}, item->key());
            Json::Value& entry = nodes.append (sle.getJson (0));
-           entry[jss::index] = to_string (item->getTag ());
+           entry[jss::index] = to_string (item->key());
        }
     }
 

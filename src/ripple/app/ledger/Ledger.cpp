@@ -375,13 +375,8 @@ getTransaction (Ledger const& ledger,
         txn = Transaction::sharedTransaction (item->peekData (), Validate::YES);
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
-        Blob txnData;
-        int txnLength;
-
-        if (!item->peekSerializer().getVL (txnData, 0, txnLength))
-            return Transaction::pointer ();
-
-        txn = Transaction::sharedTransaction (txnData, Validate::NO);
+        auto sit = SerialIter{item->data(), item->size()};
+        txn = Transaction::sharedTransaction(sit.getVL(), Validate::NO);
     }
     else
     {
@@ -917,7 +912,7 @@ Ledger::read (Keylet const& k) const
     if (! value)
         return nullptr;
     auto sle = std::make_shared<SLE>(
-        value->peekSerializer(), value->key());
+        SerialIter{value->data(), value->size()}, value->key());
     if (! k.check(*sle))
         return nullptr;
     // VFALCO TODO Eliminate "immutable" runtime property
@@ -1037,7 +1032,7 @@ Ledger::peek (Keylet const& k) const
     if (! value)
         return nullptr;
     auto sle = std::make_shared<SLE>(
-        value->peekSerializer(), value->key());
+        SerialIter{value->data(), value->size()}, value->key());
     if (! k.check(*sle))
         return nullptr;
     // VFALCO TODO Eliminate "immutable" runtime property
@@ -1050,20 +1045,21 @@ Ledger::peek (Keylet const& k) const
 //------------------------------------------------------------------------------
 
 static void visitHelper (
-    std::function<void (std::shared_ptr<SLE> const&)>& function,
+    std::function<void (std::shared_ptr<SLE> const&)>& callback,
         std::shared_ptr<SHAMapItem const> const& item)
 {
-    function (std::make_shared<SLE> (item->peekSerializer(), item->key()));
+    callback(std::make_shared<SLE>(SerialIter{item->data(), item->size()},
+                                    item->key()));
 }
 
-void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
+void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
 {
     try
     {
         if (stateMap_)
         {
             stateMap_->visitLeaves(
-                std::bind(&visitHelper, std::ref(function),
+                std::bind(&visitHelper, std::ref(callback),
                           std::placeholders::_1));
         }
     }

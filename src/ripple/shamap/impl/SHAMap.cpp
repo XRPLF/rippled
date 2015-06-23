@@ -107,7 +107,7 @@ SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf) const
     }
 
     if (include_nonmatching_leaf ||
-        (std::static_pointer_cast<SHAMapTreeNode>(node)->peekItem()->getTag() == id))
+        (std::static_pointer_cast<SHAMapTreeNode>(node)->peekItem()->key() == id))
         stack.push ({node, nodeID});
 
     return stack;
@@ -164,7 +164,7 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id) const
     }
 
     auto ret = static_cast<SHAMapTreeNode*>(inNode);
-    return ret->peekItem()->getTag() == id ? ret : nullptr;
+    return ret->peekItem()->key() == id ? ret : nullptr;
 }
 
 std::shared_ptr<SHAMapAbstractNode>
@@ -577,7 +577,7 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
         if (node->isLeaf ())
         {
             auto leaf = static_cast<SHAMapTreeNode*>(node);
-            if (leaf->peekItem ()->getTag () > id)
+            if (leaf->peekItem ()->key() > id)
             {
                 type = leaf->getType ();
                 return leaf->peekItem ();
@@ -621,7 +621,7 @@ SHAMap::peekPrevItem (uint256 const& id) const
         if (node->isLeaf ())
         {
             auto leaf = static_cast<SHAMapTreeNode*>(node);
-            if (leaf->peekItem ()->getTag () < id)
+            if (leaf->peekItem ()->key() < id)
                 return leaf->peekItem ();
         }
         else
@@ -699,7 +699,7 @@ bool SHAMap::delItem (uint256 const& id)
     auto leaf = std::dynamic_pointer_cast<SHAMapTreeNode>(stack.top ().first);
     stack.pop ();
 
-    if (!leaf || (leaf->peekItem ()->getTag () != id))
+    if (!leaf || (leaf->peekItem ()->key() != id))
         return false;
 
     SHAMapTreeNode::TNType type = leaf->getType ();
@@ -773,7 +773,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                      bool isTransaction, bool hasMeta)
 {
     // add the specified item, does not update
-    uint256 tag = item->getTag ();
+    uint256 tag = item->key();
     SHAMapTreeNode::TNType type = !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
         (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM);
 
@@ -791,7 +791,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     if (node->isLeaf())
     {
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(node);
-        if (leaf->peekItem()->getTag() == tag)
+        if (leaf->peekItem()->key() == tag)
             return false;
     }
     node = unshareNode(std::move(node), nodeID);
@@ -809,14 +809,14 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
         // this is a leaf node that has to be made an inner node holding two items
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(node);
         std::shared_ptr<SHAMapItem const> otherItem = leaf->peekItem ();
-        assert (otherItem && (tag != otherItem->getTag ()));
+        assert (otherItem && (tag != otherItem->key()));
 
         node = std::make_shared<SHAMapInnerNode>(node->getSeq());
 
         int b1, b2;
 
         while ((b1 = nodeID.selectBranch (tag)) ==
-               (b2 = nodeID.selectBranch (otherItem->getTag ())))
+               (b2 = nodeID.selectBranch (otherItem->key())))
         {
             stack.push ({node, nodeID});
 
@@ -865,7 +865,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                         bool isTransaction, bool hasMeta)
 {
     // can't change the tag but can change the hash
-    uint256 tag = item->getTag ();
+    uint256 tag = item->key();
 
     assert (state_ != SHAMapState::Immutable);
 
@@ -878,7 +878,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     auto nodeID = stack.top ().second;
     stack.pop ();
 
-    if (!node || (node->peekItem ()->getTag () != tag))
+    if (!node || (node->peekItem ()->key() != tag))
     {
         assert (false);
         return false;

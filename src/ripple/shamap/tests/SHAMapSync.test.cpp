@@ -58,7 +58,7 @@ public:
         for (int i = 0; i < count; ++i)
         {
             std::shared_ptr<SHAMapItem> item = makeRandomAS ();
-            items.push_back (item->getTag ());
+            items.push_back (item->key());
 
             if (!map.addItem (*item, false, false))
             {

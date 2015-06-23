@@ -54,6 +54,7 @@ public:
     STTx (STTx const& other) = default;
 
     explicit STTx (SerialIter& sit);
+    explicit STTx (SerialIter&& sit) : STTx(sit) {}
     explicit STTx (TxType type);
 
     explicit STTx (STObject&& object);
