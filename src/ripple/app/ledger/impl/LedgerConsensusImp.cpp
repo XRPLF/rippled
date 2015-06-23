@@ -1059,7 +1059,6 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     auto newOL = std::make_shared<Ledger> (true, *newLCL);
 
     // Apply disputed transactions that didn't get in
-    TransactionEngine engine (newOL);
     bool anyDisputes = false;
     for (auto& it : mDisputes)
     {
@@ -1072,8 +1071,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     << "Test applying disputed transaction that did"
                     << " not get in";
                 SerialIter sit (it.second->peekTransaction().slice());
-                STTx::pointer txn
-                    = std::make_shared<STTx>(sit);
+
+                auto txn = std::make_shared<STTx>(sit);
 
                 retriableTransactions.push_back (txn);
                 anyDisputes = true;
