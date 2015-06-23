@@ -98,10 +98,9 @@ public:
         STPathSet const& spsPaths,
         Input const* const pInputs = nullptr);
 
-    /** The active ledger. */
-    // VFALCO TODO Fix this comment its not the ledger
-    // VFALCO TODO Rename this to view
+    // The view we are currently working on
     MetaView& metaView;
+
 
     // If the transaction fails to meet some constraint, still need to delete
     // unfunded offers.

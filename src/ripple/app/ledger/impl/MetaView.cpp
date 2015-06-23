@@ -69,16 +69,18 @@ MetaView::MetaView (Ledger::ref ledger,
 {
 }
 
-MetaView::MetaView (MetaView const& other)
-    : parent_(other.parent_)
+MetaView::MetaView (MetaView& other)
+    : parent_(&other)
+    , mParent_(&other)
     , items_(other.items_)
-    , mDeferredCredits(other.mDeferredCredits)
     , mSet(other.mSet)
     // VFALCO NOTE This is a change in behavior,
     //        previous version set tapNONE
     , mParams(other.mParams)
     , mSeq(other.mSeq + 1)
 {
+    if (other.mDeferredCredits)
+        mDeferredCredits.emplace();
 }
 
 //------------------------------------------------------------------------------
@@ -279,8 +281,23 @@ MetaView::deprecatedBalance(
         STAmount const& amount) const
 {
     if (mDeferredCredits)
+    {
+        if (mParent_)
+        {
+            assert (mParent_->mDeferredCredits);
+            return mDeferredCredits->adjustedBalance(
+                account, issuer, mParent_->deprecatedBalance(account, issuer, amount));
+        }
+
         return mDeferredCredits->adjustedBalance(
             account, issuer, amount);
+    }
+    else if (mParent_ && mParent_->mDeferredCredits)
+    {
+        return mParent_->mDeferredCredits->adjustedBalance(
+            account, issuer, amount);
+    }
+
     return amount;
 }
 
@@ -422,6 +439,7 @@ MetaView::deprecatedCreditHint(
 
 void MetaView::apply()
 {
+
     // Write back the account states
     for (auto& item : items_)
     {
@@ -433,7 +451,7 @@ void MetaView::apply()
         {
         case taaCACHED:
             assert(parent_->exists(
-                keylet::child(item.first)));
+                Keylet(sle->getType(), item.first)));
             break;
 
         case taaCREATE:
@@ -458,6 +476,20 @@ void MetaView::apply()
             break;
         }
     }
+
+    if (mDeferredCredits)
+    {
+        assert (mParent_ != NULL);
+        if (mParent_->areCreditsDeferred())
+        {
+            for (auto& credit : *mDeferredCredits)
+            {
+                // This will go away soon
+                mParent_->mDeferredCredits->merge (credit);
+            }
+        }
+    }
+
     // Safety precaution since we moved the
     // entries out, apply() cannot be called twice.
     items_.clear();
