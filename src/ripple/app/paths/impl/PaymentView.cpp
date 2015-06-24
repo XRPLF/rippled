@@ -18,49 +18,33 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx/owners.h>
+#include <ripple/app/paths/impl/PaymentView.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-namespace detail {
-
-std::uint32_t
-owned_count_of(Ledger const& ledger,
-    AccountID const& id,
-        LedgerEntryType type)
+STAmount
+PaymentView::balanceHook (AccountID const& account,
+    AccountID const& issuer,
+        STAmount const& amount) const
 {
-    std::uint32_t count = 0;
-    forEachItem(ledger, id,
-        [&count, type](std::shared_ptr<SLE const> const& sle)
-        {
-            if (sle->getType() == type)
-                ++count;
-        });
-    return count;
+    return tab_.adjustedBalance(
+        account, issuer, amount);
 }
 
 void
-owned_count_helper(Env const& env,
-    AccountID const& id,
-        LedgerEntryType type,
-            std::uint32_t value)
+PaymentView::creditHook (AccountID const& from,
+    AccountID const& to,
+        STAmount const& amount)
 {
-    env.test.expect(owned_count_of(
-        *env.ledger, id, type) == value);
+    tab_.credit(from, to, amount);
 }
-
-} // detail
 
 void
-owners::operator()(Env const& env) const
+PaymentView::apply()
 {
-    env.test.expect(env.le(
-        account_)->getFieldU32(sfOwnerCount) ==
-            value_);
+    view_.apply();
+    if (pv_)
+        pv_->tab_.apply(tab_);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // ripple

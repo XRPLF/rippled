@@ -22,7 +22,6 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/TxFlags.h>
 

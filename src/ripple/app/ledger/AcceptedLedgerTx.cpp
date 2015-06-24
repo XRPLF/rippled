@@ -21,7 +21,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/types.h>

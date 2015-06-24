@@ -24,16 +24,13 @@
 #include <ripple/app/paths/Credit.cpp>
 #include <ripple/app/paths/FindPaths.cpp>
 #include <ripple/app/paths/Pathfinder.cpp>
-
-#ifdef _MSC_VER
-#pragma warning (push)
-//#pragma warning (disable: 4309) // truncation of constant value
-#endif
 #include <ripple/app/paths/Node.cpp>
 #include <ripple/app/paths/PathRequest.cpp>
 #include <ripple/app/paths/PathRequests.cpp>
 #include <ripple/app/paths/PathState.cpp>
 #include <ripple/app/paths/RippleCalc.cpp>
+#include <ripple/app/paths/RippleLineCache.cpp>
+
 #include <ripple/app/paths/cursor/AdvanceNode.cpp>
 #include <ripple/app/paths/cursor/DeliverNodeForward.cpp>
 #include <ripple/app/paths/cursor/DeliverNodeReverse.cpp>
@@ -44,7 +41,5 @@
 #include <ripple/app/paths/cursor/ReverseLiquidity.cpp>
 #include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
 #include <ripple/app/paths/cursor/RippleLiquidity.cpp>
-#include <ripple/app/paths/RippleLineCache.cpp>
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
+
+#include <ripple/app/paths/impl/PaymentView.cpp>

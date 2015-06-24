@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/app/tx/impl/PaymentView.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -295,15 +294,19 @@ public:
                 {
                     path::RippleCalc::Output rc;
                     {
-                        ScopedDeferCredits g (mEngine->view ());
+                        PaymentView view (mEngine->view());
                         rc = path::RippleCalc::rippleCalculate (
-                            mEngine->view (),
+                            view,
                             maxSourceAmount,
                             saDstAmount,
                             uDstAccountID,
                             mTxnAccountID,
                             spsPaths,
                             &rcInput);
+                        // VFALCO NOTE We might not need to apply, depending
+                        //             on the TER. But always applying *should*
+                        //             be safe.
+                        view.apply();
                     }
 
                     // TODO: is this right?  If the amount is the correct amount, was

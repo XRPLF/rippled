@@ -19,7 +19,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/TxFormats.h>

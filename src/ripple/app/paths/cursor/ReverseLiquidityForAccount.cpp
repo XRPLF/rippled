@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Quality.h>
 
@@ -66,7 +65,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // This is the quality from from the previous node to this one.
     const std::uint32_t uQualityIn
          = (nodeIndex_ != 0)
-            ? quality_in (ledger(),
+            ? quality_in (view(),
                 node().account_,
                 previousAccountID,
                 node().issue_.currency)
@@ -75,7 +74,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // And this is the quality from the next one to this one.
     const std::uint32_t uQualityOut
         = (nodeIndex_ != lastNodeIndex)
-            ? quality_out (ledger(),
+            ? quality_out (view(),
                 node().account_,
                 nextAccountID,
                 node().issue_.currency)
@@ -84,7 +83,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // For previousNodeIsAccount:
     // Previous account is already owed.
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? creditBalance (ledger(),
+        ? creditBalance (view(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
@@ -92,7 +91,7 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // The limit amount that the previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? creditLimit (ledger(),
+        ? creditLimit (view(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
@@ -100,7 +99,7 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex_ != lastNodeIndex)
-        ? creditBalance (ledger(),
+        ? creditBalance (view(),
             node().account_,
             nextAccountID,
             node().issue_.currency)
@@ -318,7 +317,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     QUALITY_ONE,
-                    rippleTransferRate (ledger(), node().account_),
+                    rippleTransferRate (view(), node().account_),
                     saPrvRedeemReq,
                     node().saRevIssue,
                     previousNode().saRevRedeem,
@@ -404,7 +403,7 @@ TER PathCursor::reverseLiquidityForAccount () const
             rippleLiquidity (
                 rippleCalc_,
                 QUALITY_ONE,
-                rippleTransferRate (ledger(), node().account_),
+                rippleTransferRate (view(), node().account_),
                 saPrvRedeemReq,
                 node().saRevDeliver,
                 previousNode().saRevRedeem,
@@ -553,7 +552,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     QUALITY_ONE,
-                    rippleTransferRate (ledger(), node().account_),
+                    rippleTransferRate (view(), node().account_),
                     saPrvDeliverReq,
                     node().saRevIssue,
                     previousNode().saRevDeliver,
@@ -586,7 +585,7 @@ TER PathCursor::reverseLiquidityForAccount () const
         rippleLiquidity (
             rippleCalc_,
             QUALITY_ONE,
-            rippleTransferRate (ledger(), node().account_),
+            rippleTransferRate (view(), node().account_),
             saPrvDeliverReq,
             node().saRevDeliver,
             previousNode().saRevDeliver,

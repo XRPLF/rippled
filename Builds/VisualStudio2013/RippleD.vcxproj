@@ -1647,6 +1647,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\FindPaths.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\impl\PaymentView.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\impl\PaymentView.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\Node.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1751,8 +1757,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\impl\PaymentView.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetAccount.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2261,15 +2265,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\ledger\impl\ViewAPI.cpp">
+    <ClCompile Include="..\..\src\ripple\ledger\impl\View.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\ledger\SLECache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\ViewAPI.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\ViewAPIBasics.h">
     </ClInclude>

@@ -31,7 +31,6 @@
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/IHashRouter.h>

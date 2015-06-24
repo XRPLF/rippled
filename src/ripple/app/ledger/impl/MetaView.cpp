@@ -22,8 +22,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/app/ledger/MetaView.h>
-#include <ripple/ledger/DeferredCredits.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -69,34 +67,13 @@ MetaView::MetaView (Ledger::ref ledger,
 {
 }
 
-MetaView::MetaView (MetaView& other)
-    : parent_(&other)
-    , mParent_(&other)
-    , items_(other.items_)
-    , mSet(other.mSet)
-    // VFALCO NOTE This is a change in behavior,
-    //        previous version set tapNONE
-    , mParams(other.mParams)
-    , mSeq(other.mSeq + 1)
+MetaView::MetaView (MetaView& parent)
+    : parent_(&parent)
+    , mParams(parent.mParams)
 {
-    if (other.mDeferredCredits)
-        mDeferredCredits.emplace();
 }
 
 //------------------------------------------------------------------------------
-
-std::shared_ptr<SLE> const&
-MetaView::copyOnRead (
-    list_type::iterator iter)
-{
-    if (iter->second.mSeq != mSeq)
-    {
-        iter->second.mSeq = mSeq;
-        iter->second.mEntry = std::make_shared<SLE>(
-            *iter->second.mEntry);
-    }
-    return iter->second.mEntry;
-}
 
 bool
 MetaView::exists (Keylet const& k) const
@@ -105,9 +82,9 @@ MetaView::exists (Keylet const& k) const
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return parent_->exists(k);
-    if (iter->second.mAction == taaDELETE)
+    if (iter->second.first == taaDELETE)
         return false;
-    if (! k.check(*iter->second.mEntry))
+    if (! k.check(*iter->second.second))
         return false;
     return true;
 }
@@ -132,12 +109,12 @@ MetaView::succ (uint256 const& key,
         iter = items_.find(*next);
     }
     while (iter != items_.end() &&
-        iter->second.mAction == taaDELETE);
+        iter->second.first == taaDELETE);
     // Find non-deleted successor in our list
     for (iter = items_.upper_bound(key);
         iter != items_.end (); ++iter)
     {
-        if (iter->second.mAction != taaDELETE)
+        if (iter->second.first != taaDELETE)
         {
             // Found both, return the lower key
             if (! next || next > iter->first)
@@ -169,10 +146,10 @@ MetaView::read (Keylet const& k) const
             return nullptr;
         return sle;
     }
-    if (iter->second.mAction == taaDELETE)
+    if (iter->second.first == taaDELETE)
         return nullptr;
     auto const& sle =
-        iter->second.mEntry;
+        iter->second.second;
     if (! k.check(*sle))
         return nullptr;
     return sle;
@@ -191,18 +168,17 @@ MetaView::unchecked_erase (uint256 const& key)
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
             forward_as_tuple(key), forward_as_tuple(
-                make_shared<SLE>(*parent_->read(
-                    keylet::unchecked(key))),
-                        taaDELETE, mSeq));
+                taaDELETE, make_shared<SLE>(
+                    *parent_->read(keylet::unchecked(key)))));
         return true;
     }
-    if (iter->second.mAction == taaCREATE)
+    if (iter->second.first == taaCREATE)
     {
         items_.erase(iter);
         return true;
     }
-    assert(iter->second.mAction != taaDELETE);
-    iter->second.mAction = taaDELETE;
+    assert(iter->second.first != taaDELETE);
+    iter->second.first = taaDELETE;
     return true;
 }
 
@@ -221,11 +197,11 @@ MetaView::unchecked_insert(
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
             forward_as_tuple(sle->key()),
-                forward_as_tuple(move(sle),
-                    taaCREATE, mSeq));
+                forward_as_tuple(taaCREATE,
+                    move(sle)));
         return;
     }
-    switch(iter->second.mAction)
+    switch(iter->second.first)
     {
     case taaMODIFY:
         throw std::runtime_error(
@@ -243,9 +219,8 @@ MetaView::unchecked_insert(
     // VFALCO return Keylet from SLE
     assert(parent_->exists(
         Keylet{sle->getType(), sle->key()}));
-    iter->second.mSeq = mSeq;
-    iter->second.mEntry = std::move(sle);
-    iter->second.mAction = taaMODIFY;
+    iter->second.first = taaMODIFY;
+    iter->second.second = std::move(sle);
 }
 
 void
@@ -262,43 +237,16 @@ MetaView::unchecked_replace (std::shared_ptr<SLE>&& sle)
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
             forward_as_tuple(sle->key()),
-                forward_as_tuple(move(sle),
-                    taaMODIFY, mSeq));
+                forward_as_tuple(taaMODIFY,
+                    move(sle)));
         return;
     }
-    if (iter->second.mAction == taaDELETE)
+    if (iter->second.first == taaDELETE)
         throw std::runtime_error(
             "replace after delete");
-    if (iter->second.mAction != taaCREATE)
-        iter->second.mAction = taaMODIFY;
-    iter->second.mSeq = mSeq;
-    iter->second.mEntry = std::move(sle);
-}
-
-STAmount
-MetaView::deprecatedBalance(
-    AccountID const& account, AccountID const& issuer,
-        STAmount const& amount) const
-{
-    if (mDeferredCredits)
-    {
-        if (mParent_)
-        {
-            assert (mParent_->mDeferredCredits);
-            return mDeferredCredits->adjustedBalance(
-                account, issuer, mParent_->deprecatedBalance(account, issuer, amount));
-        }
-
-        return mDeferredCredits->adjustedBalance(
-            account, issuer, amount);
-    }
-    else if (mParent_ && mParent_->mDeferredCredits)
-    {
-        return mParent_->mDeferredCredits->adjustedBalance(
-            account, issuer, amount);
-    }
-
-    return amount;
+    if (iter->second.first != taaCREATE)
+        iter->second.first = taaMODIFY;
+    iter->second.second = std::move(sle);
 }
 
 std::shared_ptr<SLE>
@@ -319,18 +267,15 @@ MetaView::peek (Keylet const& k)
         iter = items_.emplace_hint (iter,
             std::piecewise_construct,
                 std::forward_as_tuple(sle->getIndex()),
-                    std::forward_as_tuple(
-                        std::make_shared<SLE>(
-                            *sle), taaCACHED, mSeq));
-        return iter->second.mEntry;
+                    std::forward_as_tuple(taaCACHED,
+                        std::make_shared<SLE>(*sle)));
+        return iter->second.second;
     }
-    if (iter->second.mAction == taaDELETE)
+    if (iter->second.first == taaDELETE)
         return nullptr;
-    auto sle =
-        copyOnRead(iter);
-    if (! k.check(*sle))
+    if (! k.check(*iter->second.second))
         return nullptr;
-    return sle;
+    return iter->second.second;
 }
 
 void
@@ -341,19 +286,18 @@ MetaView::erase (std::shared_ptr<SLE> const& sle)
     assert(iter != items_.end());
     if (iter == items_.end())
         return;
-    assert(iter->second.mSeq == mSeq);
-    assert(iter->second.mEntry == sle);
-    assert(iter->second.mAction != taaDELETE);
-    if (iter->second.mAction == taaDELETE)
+    assert(iter->second.first != taaDELETE);
+    assert(iter->second.second == sle);
+    if (iter->second.first == taaDELETE)
         return;
-    if (iter->second.mAction == taaCREATE)
+    if (iter->second.first == taaCREATE)
     {
         items_.erase(iter);
         return;
     }
-    assert(iter->second.mAction == taaCACHED ||
-            iter->second.mAction == taaMODIFY);
-    iter->second.mAction = taaDELETE;
+    assert(iter->second.first == taaCACHED ||
+            iter->second.first == taaMODIFY);
+    iter->second.first = taaDELETE;
 }
 
 void
@@ -368,10 +312,10 @@ MetaView::insert (std::shared_ptr<SLE> const& sle)
             Keylet{sle->getType(), sle->key()}));
         items_.emplace_hint(iter, std::piecewise_construct,
             std::forward_as_tuple(sle->getIndex()),
-                std::forward_as_tuple(sle, taaCREATE, mSeq));
+                std::forward_as_tuple(taaCREATE, sle));
         return;
     }
-    switch(iter->second.mAction)
+    switch(iter->second.first)
     {
     case taaMODIFY:
         throw std::runtime_error(
@@ -389,9 +333,8 @@ MetaView::insert (std::shared_ptr<SLE> const& sle)
     // Existed in parent, deleted here
     assert(parent_->exists(
         Keylet{sle->getType(), sle->key()}));
-    iter->second.mSeq = mSeq;
-    iter->second.mEntry = sle;
-    iter->second.mAction = taaMODIFY;
+    iter->second.first = taaMODIFY;
+    iter->second.second = sle;
 }
 
 void
@@ -406,33 +349,22 @@ MetaView::update (std::shared_ptr<SLE> const& sle)
             Keylet{sle->getType(), sle->key()}));
         items_.emplace_hint(iter, std::piecewise_construct,
             std::forward_as_tuple(sle->key()),
-                std::forward_as_tuple(sle, taaMODIFY, mSeq));
+                std::forward_as_tuple(taaMODIFY, sle));
         return;
     }
     // VFALCO Should we throw?
-    assert(iter->second.mSeq == mSeq);
-    assert(iter->second.mEntry == sle);
-    if (iter->second.mAction == taaDELETE)
+    assert(iter->second.second == sle);
+    if (iter->second.first == taaDELETE)
         throw std::runtime_error(
             "update after delete");
-    if (iter->second.mAction != taaCREATE)
-        iter->second.mAction = taaMODIFY;
+    if (iter->second.first != taaCREATE)
+        iter->second.first = taaMODIFY;
 }
 
 bool
 MetaView::openLedger() const
 {
     return mParams & tapOPEN_LEDGER;
-}
-
-void
-MetaView::deprecatedCreditHint(
-    AccountID const& from, AccountID const& to,
-        STAmount const& amount)
-{
-    if (mDeferredCredits)
-        return mDeferredCredits->credit(
-            from, to, amount);
 }
 
 //------------------------------------------------------------------------------
@@ -443,11 +375,11 @@ void MetaView::apply()
     // Write back the account states
     for (auto& item : items_)
     {
-        // VFALCO TODO rvalue move the mEntry, make
+        // VFALCO TODO rvalue move the second, make
         //             sure the mNodes is not used after
         //             this function is called.
-        auto& sle = item.second.mEntry;
-        switch (item.second.mAction)
+        auto& sle = item.second.second;
+        switch (item.second.first)
         {
         case taaCACHED:
             assert(parent_->exists(
@@ -477,33 +409,9 @@ void MetaView::apply()
         }
     }
 
-    if (mDeferredCredits)
-    {
-        assert (mParent_ != NULL);
-        if (mParent_->areCreditsDeferred())
-        {
-            for (auto& credit : *mDeferredCredits)
-            {
-                // This will go away soon
-                mParent_->mDeferredCredits->merge (credit);
-            }
-        }
-    }
-
     // Safety precaution since we moved the
     // entries out, apply() cannot be called twice.
     items_.clear();
-}
-
-void MetaView::swapWith (MetaView& e)
-{
-    using std::swap;
-    swap (parent_, e.parent_);
-    items_.swap (e.items_);
-    mSet.swap (e.mSet);
-    swap (mParams, e.mParams);
-    swap (mSeq, e.mSeq);
-    swap (mDeferredCredits, e.mDeferredCredits);
 }
 
 Json::Value MetaView::getJson (int) const
@@ -517,7 +425,7 @@ Json::Value MetaView::getJson (int) const
         Json::Value entry (Json::objectValue);
         entry[jss::node] = to_string (it->first);
 
-        switch (it->second.mEntry->getType ())
+        switch (it->second.second->getType ())
         {
         case ltINVALID:
             entry[jss::type] = "invalid";
@@ -547,7 +455,7 @@ Json::Value MetaView::getJson (int) const
             assert (false);
         }
 
-        switch (it->second.mAction)
+        switch (it->second.first)
         {
         case taaCACHED:
             entry[jss::action] = "cache";
@@ -588,15 +496,15 @@ MetaView::getForMod (uint256 const& key,
     auto iter = items_.find (key);
     if (iter != items_.end ())
     {
-        if (iter->second.mAction == taaDELETE)
+        if (iter->second.first == taaDELETE)
         {
             WriteLog (lsFATAL, View) <<
                 "Trying to thread to deleted node";
             return nullptr;
         }
-        if (iter->second.mAction == taaCACHED)
-            iter->second.mAction = taaMODIFY;
-        return copyOnRead(iter);
+        if (iter->second.first == taaCACHED)
+            iter->second.first = taaMODIFY;
+        return iter->second.second;
     }
     {
         auto miter = mods.find (key);
@@ -701,7 +609,7 @@ MetaView::calcRawMeta (Serializer& s,
     {
         auto type = &sfGeneric;
 
-        switch (it.second.mAction)
+        switch (it.second.first)
         {
         case taaMODIFY:
 #ifdef META_DEBUG
@@ -733,7 +641,7 @@ MetaView::calcRawMeta (Serializer& s,
 
         auto const origNode =
             parent_->read(keylet::unchecked(it.first));
-        auto curNode = it.second.mEntry;
+        auto curNode = it.second.second;
 
         if ((type == &sfModifiedNode) && (*curNode == *origNode))
             continue;
@@ -828,45 +736,6 @@ MetaView::calcRawMeta (Serializer& s,
 
     mSet.addRaw (s, result, index);
     WriteLog (lsTRACE, View) << "Metadata:" << mSet.getJson (0);
-}
-
-void MetaView::enableDeferredCredits (bool enable)
-{
-    assert(enable == !mDeferredCredits);
-
-    if (!enable)
-    {
-        mDeferredCredits.reset ();
-        return;
-    }
-
-    if (!mDeferredCredits)
-        mDeferredCredits.emplace ();
-}
-
-bool MetaView::areCreditsDeferred () const
-{
-    return static_cast<bool> (mDeferredCredits);
-}
-
-ScopedDeferCredits::ScopedDeferCredits (MetaView& l)
-    : les_ (l), enabled_ (false)
-{
-    if (!les_.areCreditsDeferred ())
-    {
-        WriteLog (lsTRACE, DeferredCredits) << "Enable";
-        les_.enableDeferredCredits (true);
-        enabled_ = true;
-    }
-}
-
-ScopedDeferCredits::~ScopedDeferCredits ()
-{
-    if (enabled_)
-    {
-        WriteLog (lsTRACE, DeferredCredits) << "Disable";
-        les_.enableDeferredCredits (false);
-    }
 }
 
 } // ripple
