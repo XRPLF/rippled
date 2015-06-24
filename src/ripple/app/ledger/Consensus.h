@@ -21,7 +21,7 @@
 #define RIPPLE_APP_LEDGER_CONSENSUS_H_INCLUDED
 
 #include <ripple/app/ledger/LedgerConsensus.h>
-#include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
 

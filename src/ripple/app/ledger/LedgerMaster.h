@@ -22,7 +22,6 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerHolder.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/core/Config.h>

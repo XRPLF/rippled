@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/shamap/SHAMap.h>
 #include <beast/utility/Journal.h>
 
