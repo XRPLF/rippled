@@ -92,11 +92,10 @@ private:
         STAmount& saInFees) const;
 
     // VFALCO TODO Rename this to view()
-    MetaView& ledger() const
+    PaymentView&
+    view() const
     {
-        // VFALCO Rename metaView to view
-        //return rippleCalc_.metaView;
-        return pathState_.metaView();
+        return pathState_.view();
     }
 
     NodeIndex nodeSize() const

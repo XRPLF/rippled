@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>

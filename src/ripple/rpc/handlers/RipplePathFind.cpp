@@ -22,6 +22,7 @@
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/impl/PaymentView.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
@@ -281,10 +282,11 @@ ripplePathFind(RippleLineCache::pointer const& cache,
             STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
             saMaxAmount.negate();
 
-            MetaView sandbox(lpLedger, tapNONE);
+            boost::optional<PaymentView> sandbox;
+            sandbox.emplace(lpLedger, tapNONE);
 
             auto rc = path::RippleCalc::rippleCalculate(
-                sandbox,
+                *sandbox,
                 saMaxAmount,            // --> Amount to send is unlimited
                 //     to get an estimate.
                 saDstAmount,            // --> Amount to deliver.
@@ -306,9 +308,9 @@ ripplePathFind(RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                reconstruct(sandbox, lpLedger, tapNONE);
+                sandbox.emplace(lpLedger, tapNONE);
                 rc = path::RippleCalc::rippleCalculate(
-                    sandbox,
+                    *sandbox,
                     saMaxAmount,            // --> Amount to send is unlimited
                     //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.

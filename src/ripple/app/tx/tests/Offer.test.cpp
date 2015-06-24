@@ -22,7 +22,6 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/test/jtx.h>
 #include <ripple/test/jtx/Account.h>
 

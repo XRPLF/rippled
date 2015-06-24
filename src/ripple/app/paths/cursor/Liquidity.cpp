@@ -30,7 +30,7 @@ TER PathCursor::liquidity () const
     TER resultCode = tecPATH_DRY;
     PathCursor pc = *this;
 
-    pathState_.resetView (rippleCalc_.metaView);
+    pathState_.resetView (rippleCalc_.view);
 
     for (pc.nodeIndex_ = pc.nodeSize(); pc.nodeIndex_--; )
     {
@@ -59,7 +59,7 @@ TER PathCursor::liquidity () const
     if (resultCode != tesSUCCESS)
         return resultCode;
 
-    pathState_.resetView (rippleCalc_.metaView);
+    pathState_.resetView (rippleCalc_.view);
 
     for (pc.nodeIndex_ = 0; pc.nodeIndex_ < pc.nodeSize(); ++pc.nodeIndex_)
     {

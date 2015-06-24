@@ -271,6 +271,9 @@
     <Filter Include="ripple\app\paths\cursor">
       <UniqueIdentifier>{9AD8D049-10A8-704C-D51A-FAD55B1F235F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\paths\impl">
+      <UniqueIdentifier>{38932157-7DA1-A9CC-CABC-2A3D9CACF188}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\paths\tests">
       <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
     </Filter>
@@ -2370,6 +2373,12 @@
     <ClInclude Include="..\..\src\ripple\app\paths\FindPaths.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\impl\PaymentView.cpp">
+      <Filter>ripple\app\paths\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\impl\PaymentView.h">
+      <Filter>ripple\app\paths\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\Node.cpp">
       <Filter>ripple\app\paths</Filter>
     </ClCompile>
@@ -2472,9 +2481,6 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Payment.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\impl\PaymentView.h">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetAccount.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2964,16 +2970,13 @@
     <ClCompile Include="..\..\src\ripple\ledger\impl\DeferredCredits.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\ledger\impl\ViewAPI.cpp">
+    <ClCompile Include="..\..\src\ripple\ledger\impl\View.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\ledger\SLECache.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
-      <Filter>ripple\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\ViewAPI.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\ViewAPIBasics.h">

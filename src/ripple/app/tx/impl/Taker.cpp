@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
-#include <ripple/ledger/ViewAPI.h>
 
 namespace ripple {
 

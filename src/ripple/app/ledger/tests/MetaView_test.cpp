@@ -21,7 +21,6 @@
 #include <ripple/test/jtx.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/MetaView.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {

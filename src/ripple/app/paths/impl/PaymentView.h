@@ -18,28 +18,61 @@
 //==============================================================================
 
 #ifndef RIPPLE_APP_PAYMENTVIEW_H_INCLUDED
+#define RIPPLE_APP_PAYMENTVIEW_H_INCLUDED
 
+#include <ripple/core/Config.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/ledger/View.h>
+#include <ripple/ledger/ViewAPIBasics.h>
 #include <ripple/ledger/DeferredCredits.h>
+#include <utility>
 
 namespace ripple {
 
 /** A View wrapper which makes credits unavailable to balances.
 
-    This is used for payments, so that consuming liquidity
-    from a path never causes portions of that path or other
-    paths to gain liquidity.
+    This is used for payments and pathfinding, so that consuming
+    liquidity from a path never causes portions of that path or
+    other paths to gain liquidity.
+
+    The behavior of certain free functions in the View API
+    will change via the balanceHook and creditHook overrides
+    of PaymentView.
 */
 class PaymentView : public View
 {
 private:
-    View& view_;
+    MetaView view_;
     DeferredCredits tab_;
+    PaymentView* pv_ = nullptr;
 
 public:
+    PaymentView (PaymentView const&) = delete;
+    PaymentView& operator= (PaymentView const&) = delete;
+
+    /** Construct contained MetaView from arguments */
+    template <class... Args>
     explicit
-    PaymentView (View& view)
-        : view_(view)
+    PaymentView (Args&&... args)
+        : view_ (std::forward<Args>(args)...)
+    {
+    }
+
+    /** Construct on top of existing PaymentView.
+
+        The changes are pushed to the parent when
+        apply() is called.
+
+        @param parent A non-null pointer to the parent.
+
+        @note A pointer is used to prevent confusion
+              with copy construction.
+    */
+    explicit
+    PaymentView (PaymentView* parent)
+        : view_ (*parent,
+            parent->openLedger())
+        , pv_ (parent)
     {
     }
 
@@ -91,15 +124,6 @@ public:
         return &view_;
     }
 
-    STAmount
-    deprecatedBalance (AccountID const& account,
-        AccountID const& issuer,
-            STAmount const& amount) const override
-    {
-        return tab_.adjustedBalance(
-            account, issuer, amount);
-    }
-
     //---------------------------------------------
 
     std::shared_ptr<SLE>
@@ -132,14 +156,20 @@ public:
         return view_.openLedger();
     }
 
-    // Unfortunately necessary for DeferredCredits
+    //--------------------------------------------------------------------------
+
+    STAmount
+    balanceHook (AccountID const& account,
+        AccountID const& issuer,
+            STAmount const& amount) const override;
+
     void
-    deprecatedCreditHint (AccountID const& from,
+    creditHook (AccountID const& from,
         AccountID const& to,
-            STAmount const& amount) override
-    {
-        tab_.credit(from, to, amount);
-    }
+            STAmount const& amount) override;
+
+    void
+    apply();
 };
 
 }  // ripple
