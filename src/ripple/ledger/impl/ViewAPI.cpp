@@ -146,16 +146,14 @@ accountHolds (BasicView const& view,
         {
             amount.clear (IssueRef (currency, issuer));
         }
-        else if (account > issuer)
-        {
-            // Put balance in account terms.
-            amount = sle->getFieldAmount (sfBalance);
-            amount.negate();
-            amount.setIssuer (issuer);
-        }
         else
         {
             amount = sle->getFieldAmount (sfBalance);
+            if (account > issuer)
+            {
+                // Put balance in account terms.
+                amount.negate();
+            }
             amount.setIssuer (issuer);
         }
         WriteLog (lsTRACE, View) << "accountHolds:" <<
