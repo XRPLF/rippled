@@ -39,7 +39,6 @@ namespace ripple {
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
-class LedgerConsensus;
 class LedgerMaster;
 
 // This is the primary interface into the "client" portion of the program.
@@ -74,13 +73,6 @@ protected:
 public:
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
-    enum Fault
-    {
-        // exceptions these functions can throw
-        IO_ERROR    = 1,
-        NO_NETWORK  = 2,
-    };
-
     enum OperatingMode
     {
         // how we process transactions or account balance requests
@@ -101,10 +93,6 @@ public:
         return noMeansDont ? FailHard::yes : FailHard::no;
     }
 
-    // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
-    //
-    using SubMapType = hash_map <std::uint64_t, InfoSub::wptr>;
-
 public:
     virtual ~NetworkOPs () = 0;
 
@@ -117,10 +105,7 @@ public:
     virtual std::uint32_t getNetworkTimeNC () const = 0;
     // Our best estimate of current ledger close time
     virtual std::uint32_t getCloseTimeNC () const = 0;
-    // Use *only* to timestamp our own validation
-    virtual std::uint32_t getValidationTimeNC () = 0;
     virtual void closeTimeOffset (int) = 0;
-    virtual boost::posix_time::ptime getNetworkTimePT (int& offset) const = 0;
     virtual std::uint32_t getLedgerID (uint256 const& hash) = 0;
     virtual std::uint32_t getCurrentLedgerID () = 0;
 
@@ -128,7 +113,6 @@ public:
     virtual std::string strOperatingMode () const = 0;
     virtual Ledger::pointer getClosedLedger () = 0;
     virtual Ledger::pointer getValidatedLedger () = 0;
-    virtual Ledger::pointer getPublishedLedger () = 0;
     virtual Ledger::pointer getCurrentLedger () = 0;
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
     virtual Ledger::pointer getLedgerBySeq (const std::uint32_t seq) = 0;
@@ -137,17 +121,10 @@ public:
     virtual uint256         getClosedLedgerHash () = 0;
 
     // Do we have this inclusive range of ledgers in our database
-    virtual bool haveLedgerRange (std::uint32_t from, std::uint32_t to) = 0;
     virtual bool haveLedger (std::uint32_t seq) = 0;
     virtual std::uint32_t getValidatedSeq () = 0;
-    virtual bool isValidated (std::uint32_t seq) = 0;
-    virtual bool isValidated (std::uint32_t seq, uint256 const& hash) = 0;
     virtual bool isValidated (Ledger::ref l) = 0;
     virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
-    virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
-
-    virtual STValidation::ref getLastValidation () = 0;
-    virtual void setLastValidation (STValidation::ref v) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -155,8 +132,6 @@ public:
     //
 
     // must complete immediately
-    // VFALCO TODO Make this a TxCallback structure
-    using stCallback = std::function<void (Transaction::pointer, TER)>;
     virtual void submitTransaction (Job&, STTx::pointer) = 0;
 
     /**
@@ -170,19 +145,6 @@ public:
      */
     virtual void processTransaction (Transaction::pointer transaction,
         bool bAdmin, bool bLocal, FailHard failType) = 0;
-    virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
-    virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
-        RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,
-            std::uint32_t endLedgerSeq, int maxTransactions) = 0;
-
-    //--------------------------------------------------------------------------
-    //
-    // Directory functions
-    //
-
-    virtual STVector256 getDirNodeInfo (Ledger::ref lrLedger,
-        uint256 const& uRootIndex, std::uint64_t& uNodePrevious,
-                                   std::uint64_t& uNodeNext) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -217,9 +179,6 @@ public:
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
 
-    virtual void takePosition (int seq,
-                               std::shared_ptr<SHAMap> const& position) = 0;
-
     virtual void mapComplete (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map) = 0;
 
@@ -241,20 +200,16 @@ public:
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
 
-    virtual void newLCL (
-        int proposers, int convergeTime, uint256 const& ledgerHash) = 0;
     // VFALCO TODO rename to setNeedNetworkLedger
     virtual void needNetworkLedger () = 0;
     virtual void clearNeedNetworkLedger () = 0;
     virtual bool isNeedNetworkLedger () = 0;
     virtual bool isFull () = 0;
-    virtual void setProposing (bool isProposing, bool isValidating) = 0;
-    virtual bool isProposing () = 0;
-    virtual bool isValidating () = 0;
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
-    virtual std::uint32_t getLastCloseTime () = 0;
+
+    // FIXME(NIKB): Remove the need for this function
     virtual void setLastCloseTime (std::uint32_t t) = 0;
 
     virtual Json::Value getConsensusInfo () = 0;
@@ -270,25 +225,12 @@ public:
     */
     virtual std::uint32_t acceptLedger () = 0;
 
-    using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;
-    virtual Proposals& peekStoredProposals () = 0;
-
-    virtual void storeProposal (LedgerProposal::ref proposal,
-        RippleAddress const& peerPublic) = 0;
-
     virtual uint256 getConsensusLCL () = 0;
 
     virtual void reportFeeChange () = 0;
 
     virtual void updateLocalTx (Ledger::ref newValidLedger) = 0;
-    virtual void addLocalTx (Ledger::ref openLedger, STTx::ref txn) = 0;
     virtual std::size_t getLocalTxCount () = 0;
-
-    //Helper function to generate SQL query to get transactions
-    virtual std::string transactionsSQL (std::string selection,
-        RippleAddress const& account, std::int32_t minLedger, std::int32_t maxLedger,
-        bool descending, std::uint32_t offset, int limit, bool binary,
-            bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
     using AccountTx  = std::pair<Transaction::pointer, TransactionMetaSet::pointer>;
@@ -314,9 +256,6 @@ public:
     virtual MetaTxsList getTxsAccountB (RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
-
-    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (
-        std::uint32_t ledgerSeq) = 0;
 
     //--------------------------------------------------------------------------
     //

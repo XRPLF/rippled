@@ -120,7 +120,6 @@ public:
     virtual void addHeldTransaction (Transaction::ref trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
-    virtual bool haveLedgerRange (std::uint32_t from, std::uint32_t to) = 0;
     virtual bool haveLedger (std::uint32_t seq) = 0;
     virtual void clearLedger (std::uint32_t seq) = 0;
     virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
