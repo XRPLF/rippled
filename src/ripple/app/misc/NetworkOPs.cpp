@@ -276,7 +276,7 @@ public:
      *
      * @param Lock that protects the transaction batching
      */
-    void apply (std::unique_lock<std::mutex>& lock);
+    void apply (std::unique_lock<std::mutex>& batchLock);
 
     /**
      * Apply each transaction to open ledger.
@@ -1096,7 +1096,7 @@ void NetworkOPsImp::transactionBatch()
     }
 }
 
-void NetworkOPsImp::apply (std::unique_lock<std::mutex>& lock)
+void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
     std::vector<TransactionStatus> transactions;
     mTransactions.swap (transactions);
@@ -1105,7 +1105,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& lock)
     assert (mDispatchState != DispatchState::running);
     mDispatchState = DispatchState::running;
 
-    lock.unlock();
+    batchLock.unlock();
 
     Ledger::pointer ledger;
     TransactionEngine engine;
@@ -1210,7 +1210,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& lock)
         }
     }
 
-    lock.lock();
+    batchLock.lock();
 
     for (TransactionStatus& e : transactions)
         e.transaction->clearApplying();
