@@ -537,6 +537,17 @@ PeerImp::onTimer (error_code const& ec)
         send (std::make_shared<Message> (
             message, protocol::mtPING));
     }
+    else
+    {
+        // We have an outstanding ping, raise latency        
+        auto minLatency = std::chrono::duration_cast <std::chrono::milliseconds>
+            (clock_type::now() - lastPingTime_);
+
+        std::lock_guard<std::mutex> sl(recentLock_);
+
+        if (latency_ < minLatency)
+            latency_ = minLatency;
+    }
 
     setTimer();
 }
