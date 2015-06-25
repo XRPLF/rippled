@@ -23,7 +23,7 @@
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
-#include <ripple/rpc/impl/RipplePathFind.h>
+#include <ripple/rpc/RipplePathFind.h>
 #include <ripple/json/json_writer.h>
 
 namespace ripple {

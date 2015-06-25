@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/RipplePathFind.h>
+#include <ripple/rpc/RipplePathFind.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -31,6 +31,24 @@
 #include <ripple/server/Role.h>
 
 namespace ripple {
+
+static
+Json::Value
+buildSrcCurrencies(AccountID const& account,
+    RippleLineCache::pointer const& cache)
+{
+    auto currencies = accountSourceCurrencies(account, cache, true);
+    auto jvSrcCurrencies = Json::Value(Json::arrayValue);
+
+    for (auto const& uCurrency : currencies)
+    {
+        Json::Value jvCurrency(Json::objectValue);
+        jvCurrency[jss::currency] = to_string(uCurrency);
+        jvSrcCurrencies.append(jvCurrency);
+    }
+
+    return jvSrcCurrencies;
+}
 
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
@@ -194,22 +212,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
                            % jvResult);
 
     return jvResult;
-}
-
-Json::Value
-buildSrcCurrencies(AccountID const& account, RippleLineCache::pointer const& cache)
-{
-    auto currencies = accountSourceCurrencies(account, cache, true);
-    auto jvSrcCurrencies = Json::Value(Json::arrayValue);
-
-    for (auto const& uCurrency : currencies)
-    {
-        Json::Value jvCurrency(Json::objectValue);
-        jvCurrency[jss::currency] = to_string(uCurrency);
-        jvSrcCurrencies.append(jvCurrency);
-    }
-
-    return jvSrcCurrencies;
 }
 
 std::pair<bool, Json::Value>
