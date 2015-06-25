@@ -47,7 +47,9 @@ Json::Value doLedgerRequest (RPC::Context& context)
         auto const& jsonHash = context.params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
             return RPC::invalid_field_message (jss::ledger_hash);
-    } else {
+    }
+    else
+    {
         auto const& jsonIndex = context.params[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
             return RPC::invalid_field_message (jss::ledger_index);
@@ -63,12 +65,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
         if (ledgerIndex >= ledger->getLedgerSeq())
             return RPC::make_param_error("Ledger index too large");
 
-        auto const j =
-            deprecatedLogs().journal("RPCHandler");
+        auto const j = deprecatedLogs().journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated ledger
-        auto ledgerHash = hashOfSeq(*ledger, ledgerIndex,
+        auto neededHash = hashOfSeq(*ledger, ledgerIndex,
             getApp().getSLECache(), j);
-        if (! ledgerHash)
+        if (! neededHash)
         {
             // Find a ledger more likely to have the hash of the desired ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
@@ -98,12 +99,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 return Json::Value();
             }
 
-            ledgerHash = hashOfSeq(*ledger, ledgerIndex,
+            neededHash = hashOfSeq(*ledger, ledgerIndex,
                 getApp().getSLECache(), j);
-            assert (ledgerHash);
-            if (! ledgerHash)
-                ledgerHash = zero; // kludge
         }
+        assert (neededHash);
+        ledgerHash = neededHash ? *neededHash : zero; // kludge
     }
 
     auto ledger = ledgerMaster.getLedgerByHash (ledgerHash);
