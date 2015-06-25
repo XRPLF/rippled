@@ -236,12 +236,17 @@ public:
         return *this;
     }
 
+    // be32toh and htobe32 are macros that somehow cause shadowing
+    // warnings in this header file, so we hide them...
+    static uint32_t bigendToHost (uint32_t x) { return be32toh(x); }
+    static uint32_t hostToBigend (uint32_t x) { return htobe32(x); }
+
     base_uint& operator++ ()
     {
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            pn[i] = htobe32 (be32toh (pn[i]) + 1);
+            pn[i] = hostToBigend (bigendToHost (pn[i]) + 1);
 
             if (pn[i] != 0)
                 break;
@@ -264,7 +269,7 @@ public:
         for (int i = WIDTH - 1; i >= 0; --i)
         {
             std::uint32_t prev = pn[i];
-            pn[i] = htobe32 (be32toh (pn[i]) - 1);
+            pn[i] = hostToBigend (bigendToHost (pn[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -288,9 +293,10 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
+            std::uint64_t n = carry + bigendToHost (pn[i]) +
+                    bigendToHost (b.pn[i]);
 
-            pn[i] = htobe32 (n & 0xffffffff);
+            pn[i] = hostToBigend (n & 0xffffffff);
             carry = n >> 32;
         }
 

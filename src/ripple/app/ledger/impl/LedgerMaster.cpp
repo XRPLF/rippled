@@ -1024,8 +1024,9 @@ public:
                                     setFullLedger(ledger, false, false);
                                     mHistLedger = ledger;
                                     if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
-                                    { // Previous ledger is in DB
-                                        ScopedLockType sl(m_mutex);
+                                    {
+                                        // Previous ledger is in DB
+                                        ScopedLockType lock (m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
                                             &LedgerMasterImp::tryFill, this,
