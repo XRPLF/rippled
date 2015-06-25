@@ -71,7 +71,7 @@ void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
                 "INSERT INTO DbState VALUES (1, '', '', 0);";
     }
 
-    
+
     {
         boost::optional<std::int64_t> countO;
         session_ <<
@@ -277,18 +277,19 @@ SHAMapStoreImp::run()
         healthy_ = true;
         validatedLedger_.reset();
 
-        std::unique_lock <std::mutex> lock (mutex_);
-        if (stop_)
         {
-            stopped();
-            return;
+            std::unique_lock <std::mutex> lock (mutex_);
+            if (stop_)
+            {
+                stopped();
+                return;
+            }
+            cond_.wait (lock);
+            if (newLedger_)
+                validatedLedger_ = std::move (newLedger_);
+            else
+                continue;
         }
-        cond_.wait (lock);
-        if (newLedger_)
-            validatedLedger_ = std::move (newLedger_);
-        else
-            continue;
-        lock.unlock();
 
         LedgerIndex validatedSeq = validatedLedger_->getLedgerSeq();
         if (!lastRotated)
