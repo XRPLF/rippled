@@ -63,8 +63,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
         case userHomeDirectory:
         {
             const char* homeDir = getenv ("HOME");
-
-            if (const char* homeDir = getenv ("HOME"))
+            if (homeDir)
                 return File (CharPointer_UTF8 (homeDir));
 
             if (struct passwd* const pw = getpwuid (getuid()))
@@ -166,8 +165,8 @@ private:
     DIR* dir;
 };
 
-DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCard)
-    : pimpl (new DirectoryIterator::NativeIterator::Pimpl (directory, wildCard))
+DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCard_)
+    : pimpl (new DirectoryIterator::NativeIterator::Pimpl (directory, wildCard_))
 {
 }
 
