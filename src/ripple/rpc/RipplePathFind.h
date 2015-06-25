@@ -25,11 +25,6 @@
 
 namespace ripple {
 
-class RippleAddress;
-
-Json::Value
-buildSrcCurrencies(AccountID const& raSrc, RippleLineCache::pointer const& cache);
-
 std::pair<bool, Json::Value>
 ripplePathFind (RippleLineCache::pointer const& cache,
     AccountID const& raSrc, AccountID const& raDst,

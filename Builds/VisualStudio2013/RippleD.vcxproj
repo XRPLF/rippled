@@ -3210,8 +3210,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\ParseAccountIds.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\RipplePathFind.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3241,6 +3239,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
     </ClInclude>
