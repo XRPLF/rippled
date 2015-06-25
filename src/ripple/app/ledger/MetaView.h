@@ -21,7 +21,6 @@
 #define RIPPLE_LEDGER_METAVIEW_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/ledger/DeferredCredits.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/ledger/ViewAPIBasics.h>
 #include <ripple/protocol/Keylet.h>
@@ -65,9 +64,6 @@ enum TransactionEngineParams
 class MetaView : public View
 {
 private:
-    using Mods =
-        hash_map<uint256, SLE::pointer>;
-
     enum Action
     {
         taaCACHED,  // Unmodified.
@@ -76,29 +72,18 @@ private:
         taaCREATE,  // Newly created.
     };
 
-    class Item
-    {
-    public:
-        int mSeq;
-        Action mAction;
-        std::shared_ptr<SLE> mEntry;
+    using Item = std::pair<Action,
+        std::shared_ptr<SLE>>;
 
-        Item (SLE::ref e, Action a, int s)
-            : mSeq (s)
-            , mAction (a)
-            , mEntry (e)
-        {
-        }
-    };
+    using Mods = hash_map<uint256,
+        std::shared_ptr<SLE>>;
 
     using list_type = std::map<uint256, Item>;
 
     BasicView* parent_;
     list_type items_;
-    boost::optional<DeferredCredits> mDeferredCredits;
     TransactionMetaSet mSet;
     TransactionEngineParams mParams = tapNONE;
-    int mSeq = 0;
 
 public:
     MetaView& operator= (MetaView const&) = delete;
@@ -115,13 +100,7 @@ public:
     MetaView (Ledger::ref ledger,
         TransactionEngineParams tep);
 
-    /** Construct a copy.
-        Effects:
-            The copy is identical except that
-            the sequence number is one higher.
-    */
-    // DEPRECATED
-    MetaView (MetaView const&);
+    MetaView (MetaView& parent);
 
     //--------------------------------------------------------------------------
     //
@@ -156,11 +135,6 @@ public:
     {
         return parent_;
     }
-
-    STAmount
-    deprecatedBalance (AccountID const& account,
-        AccountID const& issuer,
-            STAmount const& amount) const override;
  
     //---------------------------------------------
 
@@ -179,39 +153,11 @@ public:
     bool
     openLedger() const override;
 
-    void
-    deprecatedCreditHint (AccountID const& from,
-        AccountID const& to, STAmount const& amount) override;
-
     //--------------------------------------------------------------------------
 
     /** Apply changes to the parent View */
     void
     apply();
-
-    // Swap the contents of two sets
-    void swapWith (MetaView&);
-
-    // VFALCO Only called from RippleCalc.cpp
-    void deprecatedInvalidate()
-    {
-        parent_ = nullptr;
-        mDeferredCredits.reset ();
-    }
-
-    bool isValid () const
-    {
-        return parent_ != nullptr;
-    }
-
-    void bumpSeq ()
-    {
-        ++mSeq;
-    }
-
-    void enableDeferredCredits (bool enable=true);
-
-    bool areCreditsDeferred () const;
 
     // For diagnostics
     Json::Value getJson (int) const;
@@ -224,9 +170,6 @@ public:
     }
 
 private:
-    std::shared_ptr<SLE> const&
-    copyOnRead (list_type::iterator iter);
-
     std::shared_ptr<SLE>
     getForMod (uint256 const& key,
         Mods& mods);
@@ -242,29 +185,6 @@ private:
     bool
     threadOwners (std::shared_ptr<
         SLE const> const& sle, Mods& mods);
-};
-
-// DEPRECATED Temporary measure, remove ASAP
-template <class... Args>
-inline
-void
-reconstruct (MetaView& v, Args&&... args) noexcept
-{
-    v.~MetaView();
-    new(&v) MetaView(
-        std::forward<Args>(args)...);
-}
-
-//------------------------------------------------------------------------------
-
-class ScopedDeferCredits
-{
-private:
-    MetaView& les_;
-    bool enabled_;
-public:
-    ScopedDeferCredits(MetaView& l);
-    ~ScopedDeferCredits ();
 };
 
 } // ripple

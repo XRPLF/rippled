@@ -50,7 +50,7 @@ public:
     {
     }
 
-    void nextIncrement(MetaView const& checkpoint) const;
+    void nextIncrement() const;
 
 private:
     PathCursor(PathCursor const&) = default;
@@ -60,7 +60,7 @@ private:
         return {rippleCalc_, pathState_, multiQuality_, nodeIndex_ + delta};
     }
 
-    TER liquidity(MetaView const& lesCheckpoint) const;
+    TER liquidity() const;
     TER reverseLiquidity () const;
     TER forwardLiquidity () const;
 
@@ -92,10 +92,10 @@ private:
         STAmount& saInFees) const;
 
     // VFALCO TODO Rename this to view()
-    MetaView& ledger() const
+    PaymentView&
+    view() const
     {
-        // VFALCO Rename metaView to view
-        return rippleCalc_.metaView;
+        return pathState_.view();
     }
 
     NodeIndex nodeSize() const

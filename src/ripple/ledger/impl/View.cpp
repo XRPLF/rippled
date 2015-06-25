@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/ledger/ViewAPI.h>
+#include <ripple/ledger/View.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Quality.h>
@@ -146,16 +146,14 @@ accountHolds (BasicView const& view,
         {
             amount.clear (IssueRef (currency, issuer));
         }
-        else if (account > issuer)
-        {
-            // Put balance in account terms.
-            amount = sle->getFieldAmount (sfBalance);
-            amount.negate();
-            amount.setIssuer (issuer);
-        }
         else
         {
             amount = sle->getFieldAmount (sfBalance);
+            if (account > issuer)
+            {
+                // Put balance in account terms.
+                amount.negate();
+            }
             amount.setIssuer (issuer);
         }
         WriteLog (lsTRACE, View) << "accountHolds:" <<
@@ -163,7 +161,8 @@ accountHolds (BasicView const& view,
             " amount=" << amount.getFullText ();
     }
 
-    return view.deprecatedBalance(account, issuer, amount);
+    return view.balanceHook(
+        account, issuer, amount);
 }
 
 STAmount
@@ -773,8 +772,8 @@ trustCreate (View& view,
                                         // Issuer should be noAccount()
     STAmount const& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut)
+    std::uint32_t uQualityIn,
+    std::uint32_t uQualityOut)
 {
     WriteLog (lsTRACE, View)
         << "trustCreate: " << to_string (uSrcAccountID) << ", "
@@ -868,7 +867,8 @@ trustCreate (View& view,
         // ONLY: Create ripple balance.
         sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);
 
-        view.deprecatedCreditHint (uSrcAccountID, uDstAccountID, saBalance);
+        view.creditHook (uSrcAccountID,
+            uDstAccountID, saBalance);
     }
 
     return terResult;
@@ -1003,11 +1003,14 @@ rippleCredit (View& view,
             noRipple,
             false,
             saBalance,
-            saReceiverLimit);
+            saReceiverLimit,
+            0,
+            0);
     }
     else
     {
-        view.deprecatedCreditHint(uSenderID, uReceiverID, saAmount);
+        view.creditHook (uSenderID,
+            uReceiverID, saAmount);
 
         STAmount saBalance   = sleRippleState->getFieldAmount (sfBalance);
 
@@ -1133,6 +1136,7 @@ rippleSend (View& view,
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
+        // VFALCO Why do we need this bCheckIssuer?
         // Direct send: redeeming IOUs and/or sending own IOUs.
         terResult   = rippleCredit (view, uSenderID, uReceiverID, saAmount, false);
         saActual    = saAmount;
@@ -1156,10 +1160,10 @@ rippleSend (View& view,
             " fee=" << saTransitFee.getFullText () <<
             " cost=" << saActual.getFullText ();
 
-        terResult   = rippleCredit (view, issuer, uReceiverID, saAmount);
+        terResult   = rippleCredit (view, issuer, uReceiverID, saAmount, true);
 
         if (tesSUCCESS == terResult)
-            terResult   = rippleCredit (view, uSenderID, issuer, saActual);
+            terResult   = rippleCredit (view, uSenderID, issuer, saActual, true);
     }
 
     return terResult;
@@ -1189,7 +1193,8 @@ accountSend (View& view,
         return rippleSend (view, uSenderID, uReceiverID, saAmount, saActual);
     }
 
-    view.deprecatedCreditHint (uSenderID, uReceiverID, saAmount);
+    view.creditHook (uSenderID,
+        uReceiverID, saAmount);
 
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
@@ -1359,7 +1364,7 @@ issueIOU (View& view,
         bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
         return trustCreate (view, bSenderHigh, issue.account, account, index,
-            receiverAccount, false, noRipple, false, final_balance, limit);
+            receiverAccount, false, noRipple, false, final_balance, limit, 0, 0);
     }
 
     STAmount final_balance = state->getFieldAmount (sfBalance);
@@ -1377,7 +1382,8 @@ issueIOU (View& view,
     if (bSenderHigh)
         final_balance.negate ();
 
-    view.deprecatedCreditHint (issue.account, account, amount);
+    view.creditHook (issue.account,
+        account, amount);
 
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time
@@ -1443,7 +1449,8 @@ redeemIOU (View& view,
     if (bSenderHigh)
         final_balance.negate ();
 
-    view.deprecatedCreditHint (account, issue.account, amount);
+    view.creditHook (account,
+        issue.account, amount);
 
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time

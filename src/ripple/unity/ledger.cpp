@@ -19,6 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/ledger/impl/DeferredCredits.cpp>
 #include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/ViewAPI.cpp>
+#include <ripple/ledger/impl/DeferredCredits.cpp>
+#include <ripple/ledger/impl/View.cpp>

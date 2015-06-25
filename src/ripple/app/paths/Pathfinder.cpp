@@ -23,6 +23,7 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/RippleLineCache.h>
+#include <ripple/app/paths/impl/PaymentView.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
@@ -377,7 +378,7 @@ TER Pathfinder::getPathLiquidity (
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
 
-    MetaView sandbox (mLedger, tapNONE);
+    PaymentView sandbox (mLedger, tapNONE);
 
     try
     {
@@ -442,7 +443,7 @@ void Pathfinder::computePathRanks (int maxPaths)
     // Must subtract liquidity in default path from remaining amount.
     try
     {
-        MetaView sandbox (mLedger, tapNONE);
+        PaymentView sandbox (mLedger, tapNONE);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;

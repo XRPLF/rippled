@@ -21,7 +21,6 @@
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>

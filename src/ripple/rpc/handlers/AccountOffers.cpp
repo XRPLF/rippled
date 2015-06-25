@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/ledger/ViewAPI.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/rpc/impl/Tuning.h>
 
