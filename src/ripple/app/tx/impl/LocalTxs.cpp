@@ -124,7 +124,7 @@ public:
     {
         if (txn.isExpired (ledger->getLedgerSeq ()))
             return true;
-        if (hasTransaction (*ledger, txn.getID ()))
+        if (ledger->txExists(txn.getID()))
             return true;
         auto const sle = cachedRead(*ledger,
             keylet::account(txn.getAccount()).key,

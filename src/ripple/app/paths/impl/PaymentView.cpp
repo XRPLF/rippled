@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/impl/PaymentView.h>
+#include <cassert>
 
 namespace ripple {
 
@@ -40,11 +41,18 @@ PaymentView::creditHook (AccountID const& from,
 }
 
 void
-PaymentView::apply()
+PaymentView::apply (BasicView& to)
 {
-    view_.apply();
-    if (pv_)
-        pv_->tab_.apply(tab_);
+    assert(! pv_);
+    view_.apply(to);
+}
+
+void
+PaymentView::apply (PaymentView& to)
+{
+    assert(pv_ == &to);
+    view_.apply(to);
+    tab_.apply(to.tab_);
 }
 
 }  // ripple

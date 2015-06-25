@@ -39,7 +39,7 @@ class Payment
 public:
     Payment (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -218,7 +218,7 @@ public:
                 // transaction would succeed.
                 return telNO_DST_PARTIAL;
             }
-            else if (saDstAmount < STAmount (mEngine->getLedger ()->getReserve (0)))
+            else if (saDstAmount < STAmount (mEngine->view().fees().accountReserve(0)))
             {
                 // getReserve() is the minimum amount that an account can have.
                 // Reserve is not scaled by load.
@@ -294,7 +294,7 @@ public:
                 {
                     path::RippleCalc::Output rc;
                     {
-                        PaymentView view (mEngine->view());
+                        PaymentView view (&mEngine->view());
                         rc = path::RippleCalc::rippleCalculate (
                             view,
                             maxSourceAmount,
@@ -306,7 +306,7 @@ public:
                         // VFALCO NOTE We might not need to apply, depending
                         //             on the TER. But always applying *should*
                         //             be safe.
-                        view.apply();
+                        view.apply(mEngine->view());
                     }
 
                     // TODO: is this right?  If the amount is the correct amount, was
@@ -339,8 +339,8 @@ public:
             auto const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
 
             // This is the total reserve in drops.
-            std::uint64_t const uReserve =
-                mEngine->getLedger ()->getReserve (uOwnerCount);
+            auto const uReserve =
+                mEngine->view().fees().accountReserve(uOwnerCount);
 
             // mPriorBalance is the balance on the sending account BEFORE the
             // fees were charged. We want to make sure we have enough reserve
@@ -396,7 +396,7 @@ public:
 TER
 transact_Payment (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return Payment(txn, params, engine).apply ();

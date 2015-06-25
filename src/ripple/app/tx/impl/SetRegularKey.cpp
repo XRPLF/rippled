@@ -44,7 +44,7 @@ class SetRegularKey
 public:
     SetRegularKey (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -94,7 +94,7 @@ public:
 TER
 transact_SetRegularKey (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return SetRegularKey(txn, params, engine).apply ();

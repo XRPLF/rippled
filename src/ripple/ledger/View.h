@@ -20,15 +20,50 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
-#include <ripple/ledger/ViewAPIBasics.h>
-#include <functional>
 #include <boost/optional.hpp>
+#include <functional>
+#include <memory>
+#include <utility>
+
+#include <vector>
 
 namespace ripple {
+
+/** Reflects the fee settings for a particular ledger.
+
+    The fees are always the same for any transactions applied
+    to a ledger. Changes to fees occur in between ledgers.
+*/
+struct Fees
+{
+    std::uint64_t base = 0;         // Reference tx cost (drops)
+    std::uint32_t units = 0;        // Reference fee units
+    std::uint32_t reserve = 0;      // Reserve base (drops)
+    std::uint32_t increment = 0;    // Reserve increment (drops)
+
+    Fees() = default;
+    Fees (Fees const&) = default;
+    Fees& operator= (Fees const&) = default;
+
+    /** Returns the account reserve given the owner count, in drops.
+
+        The reserve is calculated as the reserve base plus
+        the reserve increment times the number of increments.
+    */
+    std::uint64_t
+    accountReserve (std::size_t ownerCount) const
+    {
+        return reserve + ownerCount * increment;
+    }
+};
+
+//------------------------------------------------------------------------------
 
 /** A view into a ledger's state items.
 
@@ -43,10 +78,25 @@ public:
     using mapped_type =
         std::shared_ptr<SLE const>;
 
-    BasicView() = default;
-    BasicView(BasicView const&) = delete;
-    BasicView& operator=(BasicView const&) = delete;
     virtual ~BasicView() = default;
+
+    /** Returns the fees for the base ledger. */
+    virtual
+    Fees const&
+    fees() const = 0;
+
+    /** Returns the sequence number of the base ledger. */
+    virtual
+    LedgerIndex
+    seq() const = 0;
+
+    /** Return the last known close time.
+
+        The epoch is based on the Ripple network clock.
+    */
+    virtual
+    std::uint32_t
+    time() const = 0;
 
     /** Determine if a state item exists.
 
@@ -146,16 +196,34 @@ public:
     void
     unchecked_replace (std::shared_ptr<SLE>&& sle) = 0;
 
-    /** Return the parent view or nullptr.
-        @note Changing views with children breaks invariants.
+    /** Destroy XRP.
+
+        This is used to pay for transaction fees.
     */
-    // VFALCO This is a bit of a hack used to walk the parent
-    //        list to gain access to the underlying ledger.
-    //        Its an alternative to exposing things like the
-    //        previous ledger close time.
     virtual
-    BasicView const*
-    parent() const = 0;
+    void
+    destroyCoins (std::uint64_t feeDrops) = 0;
+
+    /** Returns `true` if a tx exists in the tx map. */
+    virtual
+    bool
+    txExists (uint256 const& key) const = 0;
+
+    /** Add a transaction to the tx map.
+
+        @param metaData Optional metadata (may be nullptr)
+    */
+    virtual
+    bool
+    txInsert (uint256 const& key,
+        std::shared_ptr<Serializer const> const& txn,
+            std::shared_ptr<Serializer const> const& metaData) = 0;
+
+    // DEBUG ROUTINE
+    // Return a list of transaction keys in the tx map.
+    virtual
+    std::vector<uint256>
+    txList() const = 0;
 
     //--------------------------------------------------------------------------
 
@@ -174,6 +242,32 @@ public:
 
 //------------------------------------------------------------------------------
 
+enum ViewFlags
+{
+    tapNONE             = 0x00,
+
+    // Signature already checked
+    tapNO_CHECK_SIGN    = 0x01,
+
+    // Enable supressed features for testing.
+    // This lets unit tests exercise code that
+    // is not turned on for production.
+    //
+    tapENABLE_TESTING   = 0x02,
+
+    // Transaction is running against an open ledger
+    // true = failures are not forwarded, check transaction fee
+    // false = debit ledger for consumed funds
+    tapOPEN_LEDGER      = 0x10,
+
+    // This is not the transaction's last pass
+    // Transaction can be retried, soft failures allowed
+    tapRETRY            = 0x20,
+
+    // Transaction came from a privileged source
+    tapADMIN            = 0x400,
+};
+
 /** A contextual view into a ledger's state items.
 
     This refinement of BasicView provides an interface where
@@ -183,6 +277,8 @@ public:
     to calculate the results of transaction processing,
     including the metadata if the view is later applied to
     the parent (using an interface in the derived class).
+    The context info also includes values from the base
+    ledger such as sequence number and the network time.
 
     This allows the MetaView implementation to journal
     changes made to the state items in a ledger, with the
@@ -214,10 +310,19 @@ public:
 class View : public BasicView
 {
 public:
-    View() = default;
-    View(BasicView const&) = delete;
-    View& operator=(BasicView const&) = delete;
     virtual ~View() = default;
+
+    /** Returns the contextual tx processing flags.
+
+        Transactions may process differently depending on
+        information in the context. For example, transactions
+        applied to an open ledger generate "local" failures,
+        while transactions applied to the consensus ledger
+        produce hard failures (and claim a fee).
+    */
+    virtual
+    ViewFlags
+    flags() const = 0;
 
     /** Prepare to modify the SLE associated with key.
 
@@ -287,17 +392,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Returns `true` if the context is an open ledger.
-
-        Open ledgers have different rules for what TER
-        codes are returned when a transaction fails.
-    */
-    virtual
-    bool
-    openLedger() const = 0;
-
-    //--------------------------------------------------------------------------
-
     // Called when a credit is made to an account
     // This is required to support PaymentView
     virtual
@@ -310,35 +404,278 @@ public:
 };
 
 //------------------------------------------------------------------------------
+
+// Wrapper to facilitate subclasses,
+// forwards all non-overriden virtuals.
+//
+template <class Member>
+class BasicViewWrapper : public BasicView
+{
+protected:
+    Member view_;
+
+public:
+    template <class... Args>
+    explicit
+    BasicViewWrapper (Args&&... args)
+        : view_(std::forward<Args>(args)...)
+    {
+    }
+
+    Fees const&
+    fees() const override
+    {
+        return view_.fees();
+    }
+
+    LedgerIndex
+    seq() const override
+    {
+        return view_.seq();
+    }
+
+    std::uint32_t
+    time() const override
+    {
+        return view_.time();
+    }
+
+    bool
+    exists (Keylet const& k) const override
+    {
+        return view_.exists(k);
+    }
+
+    boost::optional<uint256>
+    succ (uint256 const& key, boost::optional<
+        uint256> last = boost::none) const override
+    {
+        return view_.succ(key, last);
+    }
+
+    std::shared_ptr<SLE const>
+    read (Keylet const& k) const override
+    {
+        return view_.read(k);
+    }
+
+    bool
+    unchecked_erase(
+        uint256 const& key) override
+    {
+        return view_.unchecked_erase(key);
+    }
+
+    void
+    unchecked_insert(
+        std::shared_ptr<SLE>&& sle) override
+    {
+        return view_.unchecked_insert(
+            std::move(sle));
+    }
+
+    void
+    unchecked_replace(
+        std::shared_ptr<SLE>&& sle) override
+    {
+        return view_.unchecked_replace(
+            std::move(sle));
+    }
+
+    void
+    destroyCoins (std::uint64_t feeDrops) override
+    {
+        return view_.destroyCoins(feeDrops);
+    }
+
+    bool
+    txExists (uint256 const& key) const override
+    {
+        return view_.txExists(key);
+    }
+
+    bool
+    txInsert (uint256 const& key,
+        std::shared_ptr<Serializer const
+            > const& txn, std::shared_ptr<
+                Serializer const> const& metaData) override
+    {
+        return view_.txInsert(
+            key, txn, metaData);
+    }
+
+    std::vector<uint256>
+    txList() const override
+    {
+        return view_.txList();
+    }
+};
+
+// Wrapper to facilitate subclasses,
+// forwards all non-overriden virtuals.
+//
+template <class Member>
+class ViewWrapper : public View
+{
+protected:
+    Member view_;
+
+public:
+    template <class... Args>
+    explicit
+    ViewWrapper (Args&&... args)
+        : view_(std::forward<Args>(args)...)
+    {
+    }
+
+    Fees const&
+    fees() const override
+    {
+        return view_.fees();
+    }
+
+    LedgerIndex
+    seq() const override
+    {
+        return view_.seq();
+    }
+
+    std::uint32_t
+    time() const override
+    {
+        return view_.time();
+    }
+
+    bool
+    exists (Keylet const& k) const override
+    {
+        return view_.exists(k);
+    }
+
+    boost::optional<uint256>
+    succ (uint256 const& key, boost::optional<
+        uint256> last = boost::none) const override
+    {
+        return view_.succ(key, last);
+    }
+
+    std::shared_ptr<SLE const>
+    read (Keylet const& k) const override
+    {
+        return view_.read(k);
+    }
+
+    bool
+    unchecked_erase(
+        uint256 const& key) override
+    {
+        return view_.unchecked_erase(key);
+    }
+
+    void
+    unchecked_insert(
+        std::shared_ptr<SLE>&& sle) override
+    {
+        return view_.unchecked_insert(
+            std::move(sle));
+    }
+
+    void
+    unchecked_replace(
+        std::shared_ptr<SLE>&& sle) override
+    {
+        return view_.unchecked_replace(
+            std::move(sle));
+    }
+
+    void
+    destroyCoins (std::uint64_t feeDrops) override
+    {
+        return view_.destroyCoins(feeDrops);
+    }
+
+    bool
+    txExists (uint256 const& key) const override
+    {
+        return view_.txExists(key);
+    }
+
+    bool
+    txInsert (uint256 const& key,
+        std::shared_ptr<Serializer const
+            > const& txn, std::shared_ptr<
+                Serializer const> const& metaData) override
+    {
+        return view_.txInsert(
+            key, txn, metaData);
+    }
+
+    std::vector<uint256>
+    txList() const override
+    {
+        return view_.txList();
+    }
+
+    //-----
+
+    ViewFlags
+    flags() const override
+    {
+        return view_.flags();
+    }
+
+    std::shared_ptr<SLE>
+    peek (Keylet const& k) override
+    {
+        return view_.peek(k);
+    }
+
+    void
+    erase (std::shared_ptr<
+        SLE> const& sle) override
+    {
+        return view_.erase(sle);
+    }
+
+    void
+    insert (std::shared_ptr<
+        SLE> const& sle)  override
+    {
+        return view_.insert(sle);
+    }
+
+    void
+    update (std::shared_ptr<
+        SLE> const& sle) override
+    {
+        return view_.update(sle);
+    }
+
+    void
+    creditHook (AccountID const& from,
+        AccountID const& to,
+            STAmount const& amount) override
+    {
+        return view_.creditHook (from, to, amount);
+    }
+};
+
+//------------------------------------------------------------------------------
 //
 // Observers
 //
 //------------------------------------------------------------------------------
 
-/** Reflects the fee settings for a particular ledger. */
-class Fees
+/** Controls the treatment of frozen account balances */
+enum FreezeHandling
 {
-private:
-    std::uint64_t base_;        // Reference tx cost (drops)
-    std::uint32_t units_;       // Reference fee units
-    std::uint32_t reserve_;     // Reserve base (drops)
-    std::uint32_t increment_;   // Reserve increment (drops)
-
-public:
-    Fees (BasicView const& view,
-        Config const& config);
-
-    /** Returns the account reserve given the owner count, in drops.
-
-        The reserve is calculated as the reserve base plus
-        the reserve increment times the number of increments.
-    */
-    std::uint64_t
-    reserve (std::size_t ownerCount) const
-    {
-        return reserve_ + ownerCount * increment_;
-    }
+    fhIGNORE_FREEZE,
+    fhZERO_IF_FROZEN
 };
+
+Fees
+getFees (BasicView const& view,
+    Config const& config);
 
 bool
 isGlobalFrozen (BasicView const& view,

@@ -48,7 +48,7 @@ private:
 public:
     SetSignerList (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -224,8 +224,9 @@ SetSignerList::replaceSignerList (uint256 const& index)
     std::uint32_t const oldOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
     std::uint32_t const addedOwnerCount = ownerCountDelta (signers_.size ());
 
-    std::uint64_t const newReserve =
-        mEngine->getLedger ()->getReserve (oldOwnerCount + addedOwnerCount);
+    auto const newReserve =
+        mEngine->view().fees().accountReserve(
+            oldOwnerCount + addedOwnerCount);
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -359,11 +360,13 @@ SetSignerList::ownerCountDelta (std::size_t entryCount)
 TER
 transact_SetSignerList (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
-    if (! engine->enableMultiSign())
+#if ! RIPPLE_ENABLE_MULTI_SIGN
+    if (! (engine->view().flags() & tapENABLE_TESTING))
         return temDISABLED;
+#endif
     return SetSignerList (txn, params, engine).apply ();
 }
 

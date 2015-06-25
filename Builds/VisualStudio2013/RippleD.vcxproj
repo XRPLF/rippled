@@ -1397,10 +1397,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerFees.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1424,8 +1420,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerFees.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerHistory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -2286,8 +2280,6 @@
     <ClInclude Include="..\..\src\ripple\ledger\SLECache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\ViewAPIBasics.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
     </ClInclude>

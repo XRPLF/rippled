@@ -71,8 +71,8 @@ public:
         std::uint32_t mSeq;
     };
 
-    using iterator = std::map <Key, STTx::pointer>::iterator;
-    using const_iterator = std::map <Key, STTx::pointer>::const_iterator;
+    using iterator = std::map <Key, std::shared_ptr<STTx const>>::iterator;
+    using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
     explicit CanonicalTXSet (LedgerHash const& lastClosedLedgerHash)
@@ -80,7 +80,7 @@ public:
     {
     }
 
-    void push_back (STTx::ref txn);
+    void push_back (std::shared_ptr<STTx const> const& txn);
 
     // VFALCO TODO remove this function
     void reset (LedgerHash const& newLastClosedLedgerHash)
@@ -121,7 +121,7 @@ private:
     // Used to salt the accounts so people can't mine for low account numbers
     uint256 mSetHash;
 
-    std::map <Key, STTx::pointer> mMap;
+    std::map <Key, std::shared_ptr<STTx const>> mMap;
 };
 
 } // ripple

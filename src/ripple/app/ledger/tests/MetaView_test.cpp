@@ -21,6 +21,7 @@
 #include <ripple/test/jtx.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/MetaView.h>
+#include <ripple/app/paths/impl/PaymentView.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
@@ -151,7 +152,7 @@ class MetaView_test
         using namespace jtx;
         Env env(*this);
         wipe(*env.ledger);
-        MetaView v(*env.ledger, false);
+        MetaView v(env.ledger.get(), tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
         expect(v.exists(k(1)));
@@ -188,7 +189,7 @@ class MetaView_test
         v0.unchecked_insert(sle(4));
         v0.unchecked_insert(sle(7));
         {
-            MetaView v1(v0, false);
+            MetaView v1(&v0, tapNONE);
             v1.insert(sle(3));
             v1.insert(sle(5));
             v1.insert(sle(6));
@@ -224,7 +225,7 @@ class MetaView_test
             // v0: 12----7
             // v1: --3-5--
 
-            v1.apply();
+            v1.apply(v0);
         }
 
         // v0: 123-5-7
@@ -251,7 +252,7 @@ class MetaView_test
         v0.unchecked_insert(sle(4, 4));
 
         {
-            MetaView v1(v0, true);
+            MetaView v1(&v0, tapNONE);
             v1.erase(v1.peek(k(2)));
             v1.insert(sle(3, 3));
             auto s = v1.peek(k(4));
@@ -262,7 +263,7 @@ class MetaView_test
             expect(seq(v1.read(k(3))) == 3);
             expect(seq(v1.read(k(4))) == 5);
             {
-                MetaView v2(v1, true);
+                MetaView v2(&v1);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -279,7 +280,7 @@ class MetaView_test
             expect(seq(v1.read(k(4))) == 5);
 
             {
-                MetaView v2(v1, true);
+                MetaView v2(&v1);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -288,13 +289,13 @@ class MetaView_test
                 expect(! v2.exists(k(2)));
                 expect(seq(v2.read(k(3))) == 6);
                 expect(! v2.exists(k(4)));
-                v2.apply();
+                v2.apply(v1);
             }
             expect(seq(v1.read(k(1))) == 1);
             expect(! v1.exists(k(2)));
             expect(seq(v1.read(k(3))) == 6);
             expect(! v1.exists(k(4)));
-            v1.apply();
+            v1.apply(v0);
         }
         expect(seq(v0.read(k(1))) == 1);
         expect(! v0.exists(k(2)));
@@ -302,25 +303,70 @@ class MetaView_test
         expect(! v0.exists(k(4)));
     }
 
-    // Regression test:
-    //  Create a ledger with 1 item, put a
-    //  MetaView on that, then another MetaView,
-    //  erase the item, apply.
+    // Verify contextual information
     void
-    testStackRegress()
+    testContext()
     {
         using namespace jtx;
-        Env env(*this);
-        wipe(*env.ledger);
-        BasicView& v0 = *env.ledger;
-        v0.unchecked_insert(sle(1));
-        MetaView v1(v0, true);
         {
-            MetaView v2(v1, true);
-            v2.erase(v2.peek(k(1)));
-            v2.apply();
+            Env env(*this);
+            wipe(*env.ledger);
+            MetaView v0(env.ledger.get(), tapNONE);
+            expect(v0.seq() != 98);
+            expect(v0.seq() == env.ledger->seq());
+            expect(v0.time() != 99);
+            expect(v0.time() == env.ledger->time());
+            expect(v0.flags() == tapNONE);
+            {
+                // Shallow copy
+                MetaView v1(v0);
+                expect (v1.seq() == v0.seq());
+                expect (v1.time() == v1.time());
+                expect (v1.flags() == tapNONE);
+
+                MetaView v2(&v1, tapNO_CHECK_SIGN);
+                expect(v2.time() == v1.time());
+                expect(v2.seq() == v1.seq());
+                expect(v2.flags() == tapNO_CHECK_SIGN); 
+                MetaView v3(&v2);
+                expect(v3.seq() == v2.seq());
+                expect(v3.time() == v2.time());
+                expect(v3.flags() == v2.flags());
+            }
+            {
+                PaymentView v1(&v0, tapNO_CHECK_SIGN);
+                expect(v1.seq() == v0.seq());
+                expect(v1.time() == v0.time());
+                expect(v1.flags() == tapNO_CHECK_SIGN); 
+                PaymentView v2(&v1);
+                expect(v2.seq() == v1.seq());
+                expect(v2.time() == v1.time());
+                expect(v2.flags() == v1.flags());
+            }
         }
-        expect(! v1.exists(k(1)));
+    }
+
+    void
+    testRegressions()
+    {
+        using namespace jtx;
+
+        // Create a ledger with 1 item, put a
+        // MetaView on that, then another MetaView,
+        // erase the item, apply.
+        {
+            Env env(*this);
+            wipe(*env.ledger);
+            BasicView& v0 = *env.ledger;
+            v0.unchecked_insert(sle(1));
+            MetaView v1(&v0, tapNONE);
+            {
+                MetaView v2(&v1);
+                v2.erase(v2.peek(k(1)));
+                v2.apply(v1);
+            }
+            expect(! v1.exists(k(1)));
+        }
     }
 
     void run()
@@ -332,7 +378,9 @@ class MetaView_test
         testMeta();
         testMetaSucc();
         testStacked();
-        testStackRegress();
+        testContext();
+
+        testRegressions();
     }
 };
 

@@ -329,7 +329,7 @@ TER RippleCalc::rippleCalculate ()
                 pathState->unfundedOffers().end ());
 
             // Apply best pass' view
-            pathState->view().apply();
+            pathState->view().apply(view);
 
             actualAmountIn_ += pathState->inPass();
             actualAmountOut_ += pathState->outPass();

@@ -58,15 +58,11 @@ public:
                  AccountID const& receiver,
                  STAmount const& amount);
 
-    void apply (DeferredCredits const& child);
+    void apply (DeferredCredits& to);
 
     // VFALCO Is this needed?
     // DEPRECATED
     void clear ();
-    // DEPRECATED
-    std::map<Key, Value>::iterator begin() { return map_.begin(); }
-    std::map<Key, Value>::iterator end() { return map_.end(); }
-    void merge (std::pair <Key, Value> const& p);
 };
 
 } // ripple

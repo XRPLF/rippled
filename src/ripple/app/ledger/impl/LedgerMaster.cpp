@@ -350,7 +350,9 @@ public:
         ScopedLockType sl (m_mutex);
 
         // Start with a mutable snapshot of the open ledger
-        TransactionEngine engine (mCurrentLedger.getMutable ());
+        auto const ledger =
+            mCurrentLedger.getMutable();
+        TransactionEngine engine (ledger);
 
         int recovers = 0;
 
@@ -358,10 +360,10 @@ public:
         {
             try
             {
-                TransactionEngineParams tepFlags = tapOPEN_LEDGER;
+                ViewFlags tepFlags = tapOPEN_LEDGER;
 
                 if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
-                    tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
+                    tepFlags = static_cast<ViewFlags> (tepFlags | tapNO_CHECK_SIGN);
 
                 auto ret = engine.applyTransaction (*it.second, tepFlags);
 
@@ -382,8 +384,8 @@ public:
         CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
 
         // VFALCO TODO recreate the CanonicalTxSet object instead of resetting it
-        mHeldTransactions.reset (engine.getLedger()->getHash ());
-        mCurrentLedger.set (engine.getLedger ());
+        mHeldTransactions.reset (ledger->getHash ());
+        mCurrentLedger.set (ledger);
     }
 
     LedgerIndex getBuildingLedger ()

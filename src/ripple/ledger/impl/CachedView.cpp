@@ -29,7 +29,7 @@ CachedView::read (Keylet const& k) const
     uint256 hash;
     // get hash since SLECache needs to know
     auto const item =
-        ledger_.stateMap().peekItem(k.key, hash);
+        view_.stateMap().peekItem(k.key, hash);
     if (! item)
         return nullptr;
     if (auto sle = cache_.fetch(hash))

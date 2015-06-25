@@ -32,7 +32,7 @@ class SetTrust
 public:
     SetTrust (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -123,7 +123,7 @@ public:
 
         STAmount const reserveCreate ((uOwnerCount < 2)
             ? 0
-            : mEngine->getLedger ()->getReserve (uOwnerCount + 1));
+            : mEngine->view().fees().accountReserve(uOwnerCount + 1));
 
         std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
         std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
@@ -451,7 +451,7 @@ public:
 TER
 transact_SetTrust (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return SetTrust (txn, params, engine).apply ();

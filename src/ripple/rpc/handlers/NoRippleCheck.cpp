@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/TxFlags.h>
@@ -35,8 +34,10 @@ static void fillTransaction (
 {
     txArray["Sequence"] = Json::UInt (sequence++);
     txArray["Account"] = getApp().accountIDCache().toBase58 (accountID);
-    txArray["Fee"] = Json::UInt (scaleFeeLoad (
-        getApp().getFeeTrack(), *ledger, 10, false));
+    // VFALCO Needs audit
+    // Why are we hard-coding 10?
+    txArray["Fee"] = Json::UInt (getApp().getFeeTrack().scaleFeeLoad(
+        10, ledger->fees().base, ledger->fees().units, false));
 }
 
 // {

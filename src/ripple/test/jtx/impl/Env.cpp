@@ -197,11 +197,12 @@ Env::submit (JTx const& jt)
     bool didApply;
     if (stx)
     {
-        TransactionEngine txe (ledger,
-            tx_enable_test);
-        std::tie(ter, didApply) = txe.applyTransaction(
-            *stx, tapOPEN_LEDGER |
-                (true ? tapNONE : tapNO_CHECK_SIGN));
+        ViewFlags flags = tapNONE;
+        flags = flags | tapOPEN_LEDGER;
+        flags = flags | tapENABLE_TESTING;
+        TransactionEngine txe (ledger);
+        std::tie(ter, didApply) =
+            txe.applyTransaction(*stx, flags);
     }
     else
     {

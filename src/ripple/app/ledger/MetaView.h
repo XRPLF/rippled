@@ -20,38 +20,20 @@
 #ifndef RIPPLE_LEDGER_METAVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_METAVIEW_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/ledger/View.h>
 #include <ripple/basics/CountedObject.h>
-#include <ripple/ledger/ViewAPIBasics.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/Keylet.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
+#include <list>
+#include <tuple>
 #include <utility>
 
 namespace ripple {
-
-// VFALCO Does this belong here?  Is it correctly named?
-
-enum TransactionEngineParams
-{
-    tapNONE             = 0x00,
-
-    // Signature already checked
-    tapNO_CHECK_SIGN    = 0x01,
-
-    // Transaction is running against an open ledger
-    // true = failures are not forwarded, check transaction fee
-    // false = debit ledger for consumed funds
-    tapOPEN_LEDGER      = 0x10,
-
-    // This is not the transaction's last pass
-    // Transaction can be retried, soft failures allowed
-    tapRETRY            = 0x20,
-
-    // Transaction came from a privileged source
-    tapADMIN            = 0x400,
-};
 
 /** A MetaView can produce tx metadata and is attached to a parent.
 
@@ -78,35 +60,133 @@ private:
     using Mods = hash_map<uint256,
         std::shared_ptr<SLE>>;
 
-    using list_type = std::map<uint256, Item>;
+    // The SLEs and Serializers in here are
+    // shared between copy-constructed instances
+    using item_list = std::map<uint256, Item>;
+    using tx_list = hardened_hash_map<
+        uint256, std::pair<std::shared_ptr<
+            Serializer const>, std::shared_ptr<
+                Serializer const>>>;
 
-    BasicView* parent_;
-    list_type items_;
-    TransactionMetaSet mSet;
-    TransactionEngineParams mParams = tapNONE;
+    // Note that this class needs to be
+    // somewhat light-weight copy constructible.
+    BasicView const* parent_;
+    ViewFlags flags_ = tapNONE;
+    LedgerIndex seq_;
+    std::uint32_t time_; // should be Clock::time_point
+    tx_list txs_;
+    item_list items_;
+    TransactionMetaSet meta_;
+    std::uint32_t destroyedCoins_ = 0;
 
 public:
+    MetaView() = delete;
     MetaView& operator= (MetaView const&) = delete;
 
-    MetaView (Ledger::ref ledger,
-        uint256 const& transactionID,
-            std::uint32_t ledgerID,
-                TransactionEngineParams params);
+    /** Create a shallow copy of a MetaView.
 
-    MetaView (BasicView& parent, 
-        bool openLedger);
+        The SLEs and Serializers in the created copy
+        are shared with the other view.
 
-    // DEPRECATED
-    MetaView (Ledger::ref ledger,
-        TransactionEngineParams tep);
+        It is only safe to use the BasicView modification
+        functions. Using View modification functions will
+        break invariants.
 
-    MetaView (MetaView& parent);
+        The seq, time, and flags are copied from `other`.
+
+        @note This is used to apply new transactions to
+              the open MetaView.
+    */
+    // VFALCO Refactor to disallow at compile time,
+    //        breaking invariants on a shallow copy.
+    //
+    MetaView (MetaView const& other) = default;
+
+    /** Create a MetaView with a BasicView as its parent.
+
+        Effects:
+            The sequence number and time are set
+            from the passed parameters.
+
+        It is only safe to use the BasicView modification
+        functions. Using View modification functions will
+        break invariants.
+
+        @note This is for converting a closed ledger
+              into an open ledger.
+
+        @note A pointer is used to prevent confusion
+              with copy construction.
+    */
+    // VFALCO Refactor to disallow at compile time,
+    //        breaking invariants on a shallow copy.
+    //
+    MetaView (BasicView const* parent,
+        LedgerIndex seq, std::uint32_t time,
+            ViewFlags flags);
+
+    /** Create a MetaView with a BasicView as its parent.
+
+        Effects:
+            The sequence number and time are inherited
+            from the parent.
+
+            The MetaSet is prepared to produce metadata
+            for a transaction with the specified key.
+
+        @note This is for applying a particular transaction
+              and computing its metadata, or for applying
+              a transaction without extracting metadata. For
+              example, to calculate changes in a sandbox
+              and then throw the sandbox away.
+
+        @note A pointer is used to prevent confusion
+              with copy construction.
+    */
+    MetaView (BasicView const* parent,
+        ViewFlags flags,
+            boost::optional<uint256
+                > const& key = boost::none);
+
+    /** Create a MetaView with a View as its parent.
+
+        Effects:
+            The sequence number, time, and flags
+            are inherited from the parent.
+
+        @note This is for stacking view for the purpose of
+              performing calculations or applying to an
+              underlying MetaView associated with a particular
+              transation.
+
+        @note A pointer is used to prevent confusion
+              with copy construction.
+    */
+    MetaView (View const* parent);
 
     //--------------------------------------------------------------------------
     //
-    // View
+    // BasicView
     //
     //--------------------------------------------------------------------------
+
+    Fees const&
+    fees() const override
+    {
+        return parent_->fees();
+    }
+
+    LedgerIndex
+    seq() const override
+    {
+        return seq_;
+    }
+
+    std::uint32_t
+    time() const override
+    {
+        return time_;
+    }
 
     bool
     exists (Keylet const& k) const override;
@@ -130,13 +210,32 @@ public:
     unchecked_replace(
         std::shared_ptr<SLE>&& sle) override;
 
-    BasicView const*
-    parent() const override
+    void
+    destroyCoins (std::uint64_t feeDrops) override;
+
+    bool
+    txExists (uint256 const& key) const override;
+
+    bool
+    txInsert (uint256 const& key,
+        std::shared_ptr<Serializer const
+            > const& txn, std::shared_ptr<
+                Serializer const> const& metaData) override;
+
+    std::vector<uint256>
+    txList() const override;
+
+    //--------------------------------------------------------------------------
+    //
+    // view
+    //
+    //--------------------------------------------------------------------------
+
+    ViewFlags
+    flags() const override
     {
-        return parent_;
+        return flags_;
     }
- 
-    //---------------------------------------------
 
     std::shared_ptr<SLE>
     peek (Keylet const& k) override;
@@ -150,14 +249,19 @@ public:
     void
     update (std::shared_ptr<SLE> const& sle) override;
 
-    bool
-    openLedger() const override;
-
     //--------------------------------------------------------------------------
 
-    /** Apply changes to the parent View */
+    /** Apply changes to the parent View.
+
+        `to` must contain contents identical to the parent
+        view passed upon construction, else undefined
+        behavior will result.
+
+        After a call to apply(), the only valid operation that
+        may be performed on this is a call to the destructor.
+    */
     void
-    apply();
+    apply (BasicView& to);
 
     // For diagnostics
     Json::Value getJson (int) const;
@@ -166,7 +270,7 @@ public:
 
     void setDeliveredAmount (STAmount const& amt)
     {
-        mSet.setDeliveredAmount (amt);
+        meta_.setDeliveredAmount (amt);
     }
 
 private:

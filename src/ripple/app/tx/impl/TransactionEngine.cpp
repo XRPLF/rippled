@@ -34,7 +34,7 @@ namespace ripple {
 std::pair<TER, bool>
 TransactionEngine::applyTransaction (
     STTx const& txn,
-    TransactionEngineParams params)
+    ViewFlags flags)
 {
     assert (mLedger);
 
@@ -49,8 +49,7 @@ TransactionEngine::applyTransaction (
         return std::make_pair(temINVALID_FLAG, false);
     }
 
-    mNodes.emplace(mLedger, txID,
-        mLedger->getLedgerSeq(), params);
+    mNodes.emplace(mLedger.get(), flags, txID);
 
 #ifdef BEAST_DEBUG
     if (1)
@@ -71,7 +70,7 @@ TransactionEngine::applyTransaction (
     }
 #endif
 
-    TER terResult = Transactor::transact (txn, params, this);
+    TER terResult = Transactor::transact (txn, flags, this);
 
     if (terResult == temUNKNOWN)
     {
@@ -95,13 +94,12 @@ TransactionEngine::applyTransaction (
 
     bool didApply = isTesSuccess (terResult);
 
-    if (isTecClaim (terResult) && !(params & tapRETRY))
+    if (isTecClaim (terResult) && !(flags & tapRETRY))
     {
         // only claim the transaction fee
         WriteLog (lsDEBUG, TransactionEngine) <<
             "Reprocessing tx " << txID << " to only claim fee";
-        mNodes.emplace(mLedger, txID,
-            mLedger->getLedgerSeq(), params);
+        mNodes.emplace(mLedger.get(), flags, txID);
 
         SLE::pointer txnAcct = view().peek(
             keylet::account(txn.getAccountID(sfAccount)));
@@ -126,7 +124,7 @@ TransactionEngine::applyTransaction (
                 // balance is zero or we're applying against an open
                 // ledger and the balance is less than the fee
                 if ((balance == zero) ||
-                    ((params & tapOPEN_LEDGER) && (balance < fee)))
+                    ((flags & tapOPEN_LEDGER) && (balance < fee)))
                 {
                     // Account has no funds or ledger is open
                     terResult = terINSUF_FEE_B;
@@ -148,7 +146,7 @@ TransactionEngine::applyTransaction (
         WriteLog (lsDEBUG, TransactionEngine) << "Not applying transaction " << txID;
     }
 
-    if (didApply && !checkInvariants (terResult, txn, params))
+    if (didApply && !checkInvariants (terResult, txn, flags))
     {
         WriteLog (lsFATAL, TransactionEngine) <<
             "Transaction violates invariants";
@@ -169,14 +167,17 @@ TransactionEngine::applyTransaction (
         Serializer m;
         mNodes->calcRawMeta (m, terResult, mTxnSeq++);
 
-        mNodes->apply();
+        mNodes->apply(*mLedger);
 
         Serializer s;
         txn.add (s);
 
-        if (params & tapOPEN_LEDGER)
+        if (flags & tapOPEN_LEDGER)
         {
-            if (! addTransaction (*mLedger, txID, s))
+            if (! mLedger->txInsert(txID,
+                std::make_shared<
+                    Serializer const>(std::move(s)),
+                        nullptr))
             {
                 WriteLog (lsFATAL, TransactionEngine) <<
                     "Duplicate transaction applied";
@@ -186,7 +187,9 @@ TransactionEngine::applyTransaction (
         }
         else
         {
-            if (! addTransaction (*mLedger, txID, s, m))
+            if (! mLedger->txInsert(txID,
+                std::make_shared<Serializer const>(std::move(s)),
+                    std::make_shared<Serializer const>(std::move(m))))
             {
                 WriteLog (lsFATAL, TransactionEngine) <<
                     "Duplicate transaction applied to closed ledger";
@@ -210,7 +213,7 @@ TransactionEngine::applyTransaction (
 
     mNodes = boost::none;
 
-    if (!(params & tapOPEN_LEDGER) && isTemMalformed (terResult))
+    if (!(flags & tapOPEN_LEDGER) && isTemMalformed (terResult))
     {
         // XXX Malformed or failed transaction in closed ledger must bow out.
     }
@@ -222,7 +225,7 @@ bool
 TransactionEngine::checkInvariants (
     TER result,
     STTx const& txn,
-    TransactionEngineParams params)
+    ViewFlags flags)
 {
     // VFALCO I deleted a bunch of code that was wrapped in #if 0.
     //        If you need it, check the commit log.

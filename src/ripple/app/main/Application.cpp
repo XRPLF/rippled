@@ -1337,7 +1337,9 @@ bool ApplicationImp::loadOldLedger (
                     txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                if (! addTransaction(*cur, item->getTag(), s))
+                if (! cur->txInsert(item->getTag(),
+                    std::make_shared<Serializer const>(std::move(s)),
+                        nullptr))
                     if (m_journal.warning) m_journal.warning <<
                         "Unable to add transaction " << item->getTag();
                 getApp().getHashRouter().setFlag (item->getTag(), SF_SIGGOOD);

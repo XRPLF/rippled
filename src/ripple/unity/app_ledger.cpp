@@ -36,7 +36,6 @@
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>
 #include <ripple/app/ledger/impl/LedgerCleaner.cpp>
 #include <ripple/app/ledger/impl/LedgerConsensusImp.cpp>
-#include <ripple/app/ledger/impl/LedgerFees.cpp>
 #include <ripple/app/ledger/impl/LedgerMaster.cpp>
 #include <ripple/app/ledger/impl/LedgerTiming.cpp>
 #include <ripple/app/ledger/impl/MetaView.cpp>

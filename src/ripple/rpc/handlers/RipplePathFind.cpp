@@ -304,7 +304,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             saMaxAmount.negate();
 
             boost::optional<PaymentView> sandbox;
-            sandbox.emplace(lpLedger, tapNONE);
+            sandbox.emplace(lpLedger.get(), tapOPEN_LEDGER);
 
             auto rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
@@ -329,7 +329,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                sandbox.emplace(lpLedger, tapNONE);
+                sandbox.emplace(lpLedger.get(), tapOPEN_LEDGER);
                 rc = path::RippleCalc::rippleCalculate(
                     *sandbox,
                     saMaxAmount,            // --> Amount to send is unlimited

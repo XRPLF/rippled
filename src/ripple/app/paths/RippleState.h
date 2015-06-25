@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/MetaView.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>

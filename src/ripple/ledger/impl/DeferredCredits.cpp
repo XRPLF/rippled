@@ -143,12 +143,12 @@ STAmount DeferredCredits::adjustedBalance (AccountID const& main,
 }
 
 void DeferredCredits::apply(
-    DeferredCredits const& child)
+    DeferredCredits& to)
 {
-    for (auto& p : child.map_)
+    for (auto& p : map_)
     {
         auto r =
-            map_.emplace(p);
+            to.map_.emplace(p);
         if (! r.second)
         {
             using std::get;
@@ -161,17 +161,6 @@ void DeferredCredits::apply(
 void DeferredCredits::clear ()
 {
     map_.clear ();
-}
-
-void DeferredCredits::merge (std::pair <Key, Value> const& p)
-{
-    using std::get;
-    auto r = map_.emplace(p);
-    if (!r.second)
-    {
-        get<0>(r.first->second) += get<0>(p.second);
-        get<1>(r.first->second) += get<1>(p.second);
-    }
 }
 
 } // ripple

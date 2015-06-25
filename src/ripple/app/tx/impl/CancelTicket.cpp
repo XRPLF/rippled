@@ -30,7 +30,7 @@ class CancelTicket
 public:
     CancelTicket (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -69,7 +69,7 @@ public:
         {
             std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
 
-            if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
+            if (mEngine->view().time() >= expiration)
                 authorized = true;
         }
 
@@ -92,11 +92,13 @@ public:
 TER
 transact_CancelTicket (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
-    if (! engine->enableTickets())
+#if ! RIPPLE_ENABLE_TICKETS
+    if (! (engine->view().flags() & tapENABLE_TESTING))
         return temDISABLED;
+#endif
     return CancelTicket (txn, params, engine).apply();
 }
 

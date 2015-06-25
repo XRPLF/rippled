@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/basics/hardened_hash.h>
 #include <cstddef>

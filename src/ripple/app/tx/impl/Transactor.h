@@ -31,7 +31,7 @@ public:
     TER
     transact (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine);
 
     TER
@@ -40,7 +40,7 @@ public:
 protected:
     STTx const&    mTxn;
     TransactionEngine*              mEngine;
-    TransactionEngineParams         mParams;
+    ViewFlags const mParams;
 
     AccountID                         mTxnAccountID;
     STAmount                        mFeeDue;
@@ -72,7 +72,7 @@ protected:
 
     Transactor (
         const STTx& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine,
         beast::Journal journal = beast::Journal ());
 

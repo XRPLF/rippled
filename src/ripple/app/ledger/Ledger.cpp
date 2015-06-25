@@ -91,6 +91,8 @@ Ledger::Ledger (RippleAddress const& masterPublicKey,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
+    // VFALCO Needs audit
+    , fees_(getFees(*this, getConfig()))
 {
     auto sle = makeGenesisAccount(
         calcAccountID(masterPublicKey),
@@ -126,6 +128,8 @@ Ledger::Ledger (uint256 const& parentHash,
                 deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
+    // VFALCO Needs audit
+    , fees_(getFees(*this, getConfig()))
 {
     updateHash ();
     loaded = true;
@@ -164,6 +168,8 @@ Ledger::Ledger (Ledger const& ledger,
     , mImmutable (!isMutable)
     , txMap_ (ledger.txMap_->snapShot (isMutable))
     , stateMap_ (ledger.stateMap_->snapShot (isMutable))
+    // VFALCO Needs audit
+    , fees_(getFees(*this, getConfig()))
 {
     updateHash ();
 }
@@ -180,6 +186,8 @@ Ledger::Ledger (bool /* dummy */,
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
+    // VFALCO Needs audit
+    , fees_(getFees(*this, getConfig()))
 {
     prevLedger.updateHash ();
 
@@ -207,6 +215,7 @@ Ledger::Ledger (void const* data,
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix);
+    fees_ = getFees(*this, getConfig());
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
@@ -223,6 +232,8 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
     , stateMap_ (std::make_shared <SHAMap> (
           SHAMapType::STATE, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
+    // VFALCO Needs audit
+    , fees_(getFees(*this, getConfig()))
 {
 }
 
@@ -339,48 +350,6 @@ bool Ledger::addSLE (SLE const& sle)
 {
     SHAMapItem item (sle.getIndex(), sle.getSerializer());
     return stateMap_->addItem(item, false, false);
-}
-
-bool
-addTransaction (Ledger& ledger,
-    uint256 const& txID, const Serializer& txn)
-{
-    // low-level - just add to table
-    auto item = std::make_shared<
-        SHAMapItem const> (txID, txn.peekData ());
-
-    if (! ledger.txMap().addGiveItem (std::move(item), true, false))
-    {
-        WriteLog (lsWARNING, Ledger)
-                << "Attempt to add transaction to ledger that already had it";
-        return false;
-    }
-
-    // VFALCO TODO We could touch only the txMap
-    ledger.touch();
-    return true;
-}
-
-bool addTransaction (Ledger& ledger,
-    uint256 const& txID, const Serializer& txn, const Serializer& md)
-{
-    // low-level - just add to table
-    Serializer s (txn.getDataLength () + md.getDataLength () + 16);
-    s.addVL (txn.peekData ());
-    s.addVL (md.peekData ());
-    auto item = std::make_shared<
-        SHAMapItem const> (txID, std::move(s));
-
-    if (! ledger.txMap().addGiveItem (std::move(item), true, true))
-    {
-        WriteLog (lsFATAL, Ledger)
-                << "Attempt to add transaction+MD to ledger that already had it";
-        return false;
-    }
-
-    // VFALCO TODO We could touch only the txMap
-    ledger.touch();
-    return true;
 }
 
 Transaction::pointer
@@ -1000,6 +969,68 @@ Ledger::unchecked_replace(
     auto const ours = std::move(sle);
 }
 
+bool
+Ledger::txExists (uint256 const& key) const
+{
+    return txMap().hasItem (key);
+}
+
+bool
+Ledger::txInsert (uint256 const& key,
+    std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData)
+{
+    if (metaData)
+    {
+        // low-level - just add to table
+        Serializer s (txn->getDataLength () + metaData->getDataLength () + 16);
+        s.addVL (txn->peekData ());
+        s.addVL (metaData->peekData ());
+        auto item = std::make_shared<
+            SHAMapItem const> (key, std::move(s));
+
+        // VFALCO Should just terminate the app
+        //        with a fatal error here.
+
+        if (! txMap().addGiveItem (std::move(item), true, true))
+        {
+            WriteLog (lsFATAL, Ledger)
+                    << "Attempt to add transaction+MD to ledger that already had it";
+            return false;
+        }
+
+        auto const temp = std::move(*metaData);
+    }
+    else
+    {
+        // low-level - just add to table
+        auto item = std::make_shared<
+            SHAMapItem const> (key, txn->peekData ());
+
+        if (! txMap().addGiveItem (std::move(item), true, false))
+        {
+            WriteLog (lsWARNING, Ledger)
+                    << "Attempt to add transaction to ledger that already had it";
+            return false;
+        }
+    }
+
+    // VFALCO TODO We could touch only the txMap
+    touch();
+    return true;
+}
+
+std::vector<uint256>
+Ledger::txList() const
+{
+    std::vector<uint256> list;
+    for (auto const& item : *txMap_)
+    {
+        list.push_back(item->key());
+    }
+    return list;
+}
+
 std::shared_ptr<SLE>
 Ledger::peek (Keylet const& k) const
 {
@@ -1484,33 +1515,6 @@ getMetaHex (Ledger const& ledger,
     it.getVL (); // skip transaction
     hex = strHex (it.getVL ());
     return true;
-}
-
-static
-Ledger const*
-ledgerFromView(BasicView const* view)
-{
-    do
-    {
-        auto const ledger =
-            dynamic_cast<Ledger const*>(view);
-        if (ledger)
-            return ledger;
-        view = view->parent();
-    }
-    while (view != nullptr);
-    return nullptr;
-}
-
-// This hack traverses the View chain until
-// it finds the underlying ledger then extracts
-// the parent close time.
-//
-std::uint32_t
-getParentCloseTimeNC (BasicView const& view)
-{
-    auto const& ledger = *ledgerFromView(&view);
-    return ledger.getParentCloseTimeNC();
 }
 
 } // ripple

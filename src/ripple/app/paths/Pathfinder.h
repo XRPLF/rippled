@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/STAmount.h>

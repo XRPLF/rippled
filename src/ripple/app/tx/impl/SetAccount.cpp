@@ -36,7 +36,7 @@ class SetAccount
 public:
     SetAccount (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -387,7 +387,7 @@ public:
 TER
 transact_SetAccount (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return SetAccount(txn, params, engine).apply ();
