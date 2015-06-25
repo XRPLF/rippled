@@ -49,6 +49,12 @@ public:
         const std::shared_ptr<Ledger>& ledger,
         Json::Value const& request);
 
+    Json::Value makeLegacyPathRequest (
+        PathRequest::pointer& req,
+        std::function <void (void)> completion,
+        const std::shared_ptr<Ledger>& inLedger,
+        Json::Value const& request);
+
     void reportFast (int milliseconds)
     {
         mFast.notify (static_cast < beast::insight::Event::value_type> (milliseconds));
@@ -60,6 +66,8 @@ public:
     }
 
 private:
+    void insertPathRequest (PathRequest::pointer const&);
+
     beast::Journal                   mJournal;
 
     beast::insight::Event            mFast;

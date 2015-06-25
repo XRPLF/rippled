@@ -58,6 +58,27 @@ PathRequest::PathRequest (
     ptCreated = boost::posix_time::microsec_clock::universal_time ();
 }
 
+PathRequest::PathRequest (
+    std::function <void(void)> const& completion,
+    int id,
+    PathRequests& owner,
+    beast::Journal journal)
+        : m_journal (journal)
+        , mOwner (owner)
+        , fCompletion (completion)
+        , jvStatus (Json::objectValue)
+        , bValid (false)
+        , mLastIndex (0)
+        , mInProgress (false)
+        , iLastLevel (0)
+        , bLastSuccess (false)
+        , iIdentifier (id)
+{
+    if (m_journal.debug)
+        m_journal.debug << iIdentifier << " created";
+    ptCreated = boost::posix_time::microsec_clock::universal_time ();
+}
+
 static std::string const get_milli_diff (
     boost::posix_time::ptime const& after,
     boost::posix_time::ptime
@@ -132,12 +153,23 @@ bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
     return true;
 }
 
+bool PathRequest::hasCompletion ()
+{
+    return bool (fCompletion);
+}
+
 void PathRequest::updateComplete ()
 {
     ScopedLockType sl (mIndexLock);
 
     assert (mInProgress);
     mInProgress = false;
+
+    if (fCompletion)
+    {
+        fCompletion();
+        fCompletion = std::function<void (void)>();
+    }
 }
 
 bool PathRequest::isValid (RippleLineCache::ref crCache)
@@ -404,6 +436,15 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         }
     }
 
+    if (hasCompletion ())
+    {
+        // Old ripple_path_find API gives destination_currencies
+        auto& destCurrencies = (jvStatus[jss::destination_currencies] = Json::arrayValue);
+        auto usCurrencies = accountDestCurrencies (raDstAccount, cache, true);
+        for (auto const& c : usCurrencies)
+            destCurrencies.append (to_string (c));
+    }
+
     jvStatus[jss::source_account] = raSrcAccount.humanAccountID ();
     jvStatus[jss::destination_account] = raDstAccount.humanAccountID ();
     jvStatus[jss::destination_amount] = saDstAmount.getJson (0);
@@ -531,6 +572,13 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
                 jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
                 jvEntry[jss::paths_computed] = spsPaths.getJson (0);
+
+                if (hasCompletion ())
+                {
+                    // Old ripple_path_find API requires this
+                    jvEntry[jss::paths_canonical] = Json::arrayValue;
+                }
+
                 found  = true;
                 jvArray.append (jvEntry);
             }

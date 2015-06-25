@@ -60,7 +60,6 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     : ServerHandler (parent)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
-    , m_jobQueue (jobQueue)
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))
@@ -181,24 +180,12 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     auto detach = session.detach();
 
-    if (setup_.yieldStrategy.useCoroutines ==
-        RPC::YieldStrategy::UseCoroutines::yes)
-    {
-        RPC::SuspendCallback suspend (
-            [this, detach] (RPC::Suspend const& suspend) {
-                processSession (detach, suspend);
-            });
-        RPC::Coroutine coroutine (suspend);
-        coroutine.run();
-    }
-    else
-    {
-        m_jobQueue.addJob (
-            jtCLIENT, "RPC-Client",
-            [=] (Job&) {
-                processSession (detach, RPC::Suspend());
-            });
-    }
+    RPC::SuspendCallback suspend (
+        [this, detach] (RPC::Suspend const& suspend) {
+            processSession (detach, suspend);
+        });
+    RPC::Coroutine coroutine (suspend);
+    coroutine.run();
 }
 
 void

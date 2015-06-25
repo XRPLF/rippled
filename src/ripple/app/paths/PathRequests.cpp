@@ -105,6 +105,13 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                             ++processed;
                         }
                     }
+                    else if (pRequest->hasCompletion ())
+                    {
+                        // One-shot request with completion function
+                        pRequest->doUpdate (cache, false);
+                        pRequest->updateComplete();
+                        ++processed;
+                    }
                 }
             }
 
@@ -168,6 +175,25 @@ void PathRequests::updateAll (Ledger::ref inLedger,
         removed << " removed";
 }
 
+void PathRequests::insertPathRequest (PathRequest::pointer const& req)
+{
+    ScopedLockType sl (mLock);
+
+    // Insert after any older unserviced requests but before any serviced requests
+    std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
+    while (it != mRequests.end ())
+    {
+        PathRequest::pointer req = it->lock ();
+        if (req && !req->isNew ())
+            break; // This request has been handled, we come before it
+
+        // This is a newer request, we come after it
+        ++it;
+    }
+    mRequests.insert (it, PathRequest::wptr (req));
+}
+
+// Make a new-style path_find request
 Json::Value PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
     const std::shared_ptr<Ledger>& inLedger,
@@ -189,26 +215,46 @@ Json::Value PathRequests::makePathRequest(
 
     if (valid)
     {
-        {
-            ScopedLockType sl (mLock);
-
-            // Insert after any older unserviced requests but before any serviced requests
-            std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
-            while (it != mRequests.end ())
-            {
-                PathRequest::pointer req = it->lock ();
-                if (req && !req->isNew ())
-                    break; // This request has been handled, we come before it
-
-                // This is a newer request, we come after it
-                ++it;
-            }
-            mRequests.insert (it, PathRequest::wptr (req));
-
-        }
         subscriber->setPathRequest (req);
+        insertPathRequest (req);
         getApp().getLedgerMaster().newPathRequest();
     }
+    return result;
+}
+
+// Make an old-style ripple_path_find request
+Json::Value PathRequests::makeLegacyPathRequest(
+    PathRequest::pointer& req,
+    std::function <void (void)> completion,
+    const std::shared_ptr<Ledger>& inLedger,
+    Json::Value const& request)
+{
+    // This assignment must take place before the
+    // completion function is called
+    req = std::make_shared<PathRequest> (
+        completion, ++mLastIdentifier, *this, mJournal);
+
+    auto ledger = inLedger;
+    RippleLineCache::pointer cache;
+
+    {
+        ScopedLockType sl (mLock);
+        cache = getLineCache (ledger, false);
+    }
+
+    bool valid = false;
+    Json::Value result = req->doCreate (ledger, cache, request, valid);
+
+    if (!valid)
+    {
+        req.reset();
+    }
+    else
+    {
+        insertPathRequest (req);
+        getApp().getLedgerMaster().newPathRequest();
+    }
+
     return result;
 }
 
