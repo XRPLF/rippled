@@ -30,7 +30,7 @@ class CreateTicket
 public:
     CreateTicket (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -61,7 +61,7 @@ public:
     STAmount
     getAccountReserve (SLE::pointer account)
     {
-        return STAmount (mEngine->getLedger ()->getReserve (
+        return STAmount (mEngine->view().fees().accountReserve(
             account->getFieldU32 (sfOwnerCount) + 1));
     }
 
@@ -81,7 +81,7 @@ public:
         {
             expiration = mTxn.getFieldU32 (sfExpiration);
 
-            if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
+            if (mEngine->view().time() >= expiration)
                 return tesSUCCESS;
         }
 
@@ -141,11 +141,13 @@ public:
 TER
 transact_CreateTicket (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
-    if (! engine->enableTickets())
+#if ! RIPPLE_ENABLE_TICKETS
+    if (! (engine->view().flags() & tapENABLE_TESTING))
         return temDISABLED;
+#endif
     return CreateTicket (txn, params, engine).apply ();
 }
 

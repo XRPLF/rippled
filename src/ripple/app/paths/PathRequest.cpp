@@ -525,7 +525,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         if (valid)
         {
             boost::optional<PaymentView> sandbox;
-            sandbox.emplace(cache->getLedger(), tapNONE);
+            sandbox.emplace(cache->getLedger().get(),
+                tapOPEN_LEDGER);
 
             auto& sourceAccount = !isXRP (currIssuer.account)
                     ? currIssuer.account
@@ -551,7 +552,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.push_back (fullLiquidityPath);
-                sandbox.emplace(cache->getLedger (), tapNONE);
+                sandbox.emplace(cache->getLedger().get(),
+                    tapOPEN_LEDGER);
                 rc = path::RippleCalc::rippleCalculate (
                     *sandbox,
                     saMaxAmount,

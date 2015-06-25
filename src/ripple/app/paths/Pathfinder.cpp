@@ -378,7 +378,7 @@ TER Pathfinder::getPathLiquidity (
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
 
-    PaymentView sandbox (mLedger, tapNONE);
+    PaymentView sandbox (mLedger.get(), tapOPEN_LEDGER);
 
     try
     {
@@ -443,7 +443,7 @@ void Pathfinder::computePathRanks (int maxPaths)
     // Must subtract liquidity in default path from remaining amount.
     try
     {
-        PaymentView sandbox (mLedger, tapNONE);
+        PaymentView sandbox (mLedger.get(), tapOPEN_LEDGER);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;

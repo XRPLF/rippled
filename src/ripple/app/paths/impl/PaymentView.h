@@ -23,8 +23,8 @@
 #include <ripple/core/Config.h>
 #include <ripple/app/ledger/MetaView.h>
 #include <ripple/ledger/View.h>
-#include <ripple/ledger/ViewAPIBasics.h>
 #include <ripple/ledger/DeferredCredits.h>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace ripple {
@@ -39,12 +39,11 @@ namespace ripple {
     will change via the balanceHook and creditHook overrides
     of PaymentView.
 */
-class PaymentView : public View
+class PaymentView : public ViewWrapper<MetaView>
 {
 private:
-    MetaView view_;
     DeferredCredits tab_;
-    PaymentView* pv_ = nullptr;
+    PaymentView const* pv_ = nullptr;
 
 public:
     PaymentView (PaymentView const&) = delete;
@@ -54,7 +53,7 @@ public:
     template <class... Args>
     explicit
     PaymentView (Args&&... args)
-        : view_ (std::forward<Args>(args)...)
+        : ViewWrapper (std::forward<Args>(args)...)
     {
     }
 
@@ -68,95 +67,24 @@ public:
         @note A pointer is used to prevent confusion
               with copy construction.
     */
+    // VFALCO If we are constructing on top of a PaymentView,
+    //        or a PaymentView-derived class, we MUST go through
+    //        one of these constructors or invariants will be broken.
+    /** @{ */
     explicit
-    PaymentView (PaymentView* parent)
-        : view_ (*parent,
-            parent->openLedger())
+    PaymentView (PaymentView const* parent)
+        : ViewWrapper (parent)
         , pv_ (parent)
     {
     }
 
-    bool
-    exists (Keylet const& k) const override
+    explicit
+    PaymentView (PaymentView* parent)
+        : ViewWrapper (parent)
+        , pv_ (parent)
     {
-        return view_.exists(k);
     }
-
-    boost::optional<uint256>
-    succ (uint256 const& key,
-        boost::optional<uint256> last =
-            boost::none) const override
-    {
-        return view_.succ(key, last);
-    }
-
-    std::shared_ptr<SLE const>
-    read (Keylet const& k) const override
-    {
-        return view_.read(k);
-    }
-
-    bool
-    unchecked_erase (uint256 const& key) override
-    {
-        return view_.unchecked_erase(key);
-    }
-
-    void
-    unchecked_insert(
-        std::shared_ptr<SLE>&& sle) override
-    {
-        view_.unchecked_insert(
-            std::move(sle));
-    }
-
-    void
-    unchecked_replace (
-        std::shared_ptr<SLE>&& sle) override
-    {
-        view_.unchecked_replace(
-            std::move(sle));
-    }
-
-    BasicView const*
-    parent() const override
-    {
-        return &view_;
-    }
-
-    //---------------------------------------------
-
-    std::shared_ptr<SLE>
-    peek (Keylet const& k) override
-    {
-        return view_.peek(k);
-    }
-
-    void
-    erase (std::shared_ptr<SLE> const& sle) override
-    {
-        return view_.erase(sle);
-    }
-
-    void
-    insert (std::shared_ptr<SLE> const& sle) override
-    {
-        return view_.insert(sle);
-    }
-
-    void
-    update (std::shared_ptr<SLE> const& sle) override
-    {
-        return view_.update(sle);
-    }
-
-    bool
-    openLedger() const override
-    {
-        return view_.openLedger();
-    }
-
-    //--------------------------------------------------------------------------
+    /** @} */
 
     STAmount
     balanceHook (AccountID const& account,
@@ -168,8 +96,22 @@ public:
         AccountID const& to,
             STAmount const& amount) override;
 
+    /** Apply changes to the parent View.
+
+        `to` must contain contents identical to the parent
+        view passed upon construction, else undefined
+        behavior will result.
+
+        After a call to apply(), the only valid operation that
+        may be performed on this is a call to the destructor.
+    */
+    /** @{ */
     void
-    apply();
+    apply (BasicView& to);
+
+    void
+    apply (PaymentView& to);
+    /** @} */
 };
 
 }  // ripple

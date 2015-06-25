@@ -27,31 +27,12 @@
 
 namespace ripple {
 
-// A TransactionEngine applies serialized transactions to a ledger
-// It can also, verify signatures, verify fees, and give rejection reasons
-
-struct tx_enable_test_t { tx_enable_test_t() { } };
-static tx_enable_test_t const tx_enable_test;
+// tx_enable_test
 
 // One instance per ledger.
 // Only one transaction applied at a time.
 class TransactionEngine
 {
-private:
-    bool enableMultiSign_ =
-#if RIPPLE_ENABLE_MULTI_SIGN
-        true;
-#else
-        false;
-#endif
-
-    bool enableTickets_ =
-#if RIPPLE_ENABLE_TICKETS
-        true;
-#else
-        false;
-#endif
-
     boost::optional<MetaView> mNodes;
 
     void txnWrite();
@@ -70,36 +51,14 @@ public:
         assert (mLedger);
     }
 
-    TransactionEngine (Ledger::ref ledger,
-            tx_enable_test_t)
-        : enableMultiSign_(true)
-        , enableTickets_(true)
-        , mLedger (ledger)
-    {
-        assert (mLedger);
-    }
-
-    bool
-    enableMultiSign() const
-    {
-        return enableMultiSign_;
-    }
-
-    bool
-    enableTickets() const
-    {
-        return enableTickets_;
-    }
-
-    // VFALCO TODO Change to return `View&`
-    MetaView&
+    View&
     view ()
     {
         return *mNodes;
     }
 
     Ledger::ref
-    getLedger ()
+    getLedger()
     {
         return mLedger;
     }
@@ -119,20 +78,20 @@ public:
     }
 
     std::pair<TER, bool>
-    applyTransaction (STTx const&, TransactionEngineParams);
+    applyTransaction (STTx const&, ViewFlags);
 
     bool
-    checkInvariants (TER result, STTx const& txn, TransactionEngineParams params);
+    checkInvariants (TER result, STTx const& txn, ViewFlags params);
 };
 
-inline TransactionEngineParams operator| (const TransactionEngineParams& l1, const TransactionEngineParams& l2)
+inline ViewFlags operator| (const ViewFlags& l1, const ViewFlags& l2)
 {
-    return static_cast<TransactionEngineParams> (static_cast<int> (l1) | static_cast<int> (l2));
+    return static_cast<ViewFlags> (static_cast<int> (l1) | static_cast<int> (l2));
 }
 
-inline TransactionEngineParams operator& (const TransactionEngineParams& l1, const TransactionEngineParams& l2)
+inline ViewFlags operator& (const ViewFlags& l1, const ViewFlags& l2)
 {
-    return static_cast<TransactionEngineParams> (static_cast<int> (l1) & static_cast<int> (l2));
+    return static_cast<ViewFlags> (static_cast<int> (l1) & static_cast<int> (l2));
 }
 
 } // ripple

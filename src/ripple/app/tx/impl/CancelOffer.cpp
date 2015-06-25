@@ -31,7 +31,7 @@ class CancelOffer
 public:
     CancelOffer (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -95,7 +95,7 @@ public:
 TER
 transact_CancelOffer (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return CancelOffer (txn, params, engine).apply ();

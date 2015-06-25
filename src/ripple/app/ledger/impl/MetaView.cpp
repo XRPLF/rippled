@@ -42,34 +42,34 @@ namespace ripple {
 #define DIR_NODE_MAX  32
 #endif
 
-MetaView::MetaView(Ledger::ref ledger,
-    uint256 const& transactionID,
-        std::uint32_t ledgerID,
-            TransactionEngineParams params)
-    : parent_(&*ledger)
-    , mParams(params)
-{
-    mSet.init (transactionID, ledgerID);
-}
-
-MetaView::MetaView (BasicView& parent,
-        bool openLedger)
-    : parent_ (&parent)
-    , mParams (openLedger
-        ? tapOPEN_LEDGER : tapNONE)
+MetaView::MetaView (BasicView const* parent,
+    LedgerIndex seq, std::uint32_t time,
+        ViewFlags flags)
+    : parent_ (parent)
+    , flags_ (flags)
+    , seq_ (parent->seq())
+    , time_ (parent->time())
 {
 }
 
-MetaView::MetaView (Ledger::ref ledger,
-    TransactionEngineParams tep)
-    : parent_(&*ledger)
-    , mParams (tep)
+MetaView::MetaView (BasicView const* parent,
+    ViewFlags flags, boost::optional<
+        uint256> const& key)
+    : parent_ (parent)
+    , flags_ (flags)
+    , seq_ (parent->seq())
+    , time_ (parent->time())
 {
+    // VFALCO This needs to be refactored
+    if (key)
+        meta_.init (*key, seq_);
 }
 
-MetaView::MetaView (MetaView& parent)
-    : parent_(&parent)
-    , mParams(parent.mParams)
+MetaView::MetaView (View const* parent)
+    : parent_ (parent)
+    , flags_ (parent->flags())
+    , seq_ (parent->seq())
+    , time_ (parent->time())
 {
 }
 
@@ -98,7 +98,7 @@ MetaView::succ (uint256 const& key,
     boost::optional<uint256> last) const
 {
     boost::optional<uint256> next = key;
-    list_type::const_iterator iter;
+    item_list::const_iterator iter;
     // Find parent successor that is
     // not also deleted in our list
     do
@@ -249,6 +249,47 @@ MetaView::unchecked_replace (std::shared_ptr<SLE>&& sle)
     iter->second.second = std::move(sle);
 }
 
+void
+MetaView::destroyCoins (std::uint64_t feeDrops)
+{
+    destroyedCoins_ += feeDrops;
+}
+
+bool
+MetaView::txExists (uint256 const& key) const
+{
+    if (txs_.count(key) > 0)
+        return true;
+    return parent_->txExists(key);
+}
+
+bool
+MetaView::txInsert (uint256 const& key,
+    std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData)
+{
+    bool already = txs_.count(key);
+    if (! already)
+        already = parent_->txExists(key);
+    if (already)
+        return false;
+    txs_.emplace(std::piecewise_construct,
+        std::forward_as_tuple(key),
+            std::forward_as_tuple(
+                txn, metaData));
+    return true;
+}
+
+std::vector<uint256>
+MetaView::txList() const
+{
+    std::vector<uint256> list;
+    list.reserve(txs_.size());
+    for (auto const& e : txs_)
+        list.push_back(e.first);
+    return list;
+}
+
 std::shared_ptr<SLE>
 MetaView::peek (Keylet const& k)
 {
@@ -361,17 +402,11 @@ MetaView::update (std::shared_ptr<SLE> const& sle)
         iter->second.first = taaMODIFY;
 }
 
-bool
-MetaView::openLedger() const
-{
-    return mParams & tapOPEN_LEDGER;
-}
-
 //------------------------------------------------------------------------------
 
-void MetaView::apply()
+void MetaView::apply (BasicView& to)
 {
-
+    assert(&to == parent_);
     // Write back the account states
     for (auto& item : items_)
     {
@@ -382,7 +417,7 @@ void MetaView::apply()
         switch (item.second.first)
         {
         case taaCACHED:
-            assert(parent_->exists(
+            assert(to.exists(
                 Keylet(sle->getType(), item.first)));
             break;
 
@@ -390,28 +425,32 @@ void MetaView::apply()
             // VFALCO Is this logging necessary anymore?
             WriteLog (lsDEBUG, View) <<
                 "applyTransaction: taaCREATE: " << sle->getText ();
-            parent_->unchecked_insert(std::move(sle));
+            to.unchecked_insert(std::move(sle));
             break;
 
         case taaMODIFY:
         {
             WriteLog (lsDEBUG, View) <<
                 "applyTransaction: taaMODIFY: " << sle->getText ();
-            parent_->unchecked_replace(std::move(sle));
+            to.unchecked_replace(std::move(sle));
             break;
         }
 
         case taaDELETE:
             WriteLog (lsDEBUG, View) <<
                 "applyTransaction: taaDELETE: " << sle->getText ();
-            parent_->unchecked_erase(sle->key());
+            to.unchecked_erase(sle->key());
             break;
         }
     }
 
-    // Safety precaution since we moved the
-    // entries out, apply() cannot be called twice.
-    items_.clear();
+    // Write the transactions
+    for (auto& tx : txs_)
+        to.txInsert(tx.first,
+            tx.second.first,
+                tx.second.second);
+
+    to.destroyCoins(destroyedCoins_);
 }
 
 Json::Value MetaView::getJson (int) const
@@ -482,7 +521,7 @@ Json::Value MetaView::getJson (int) const
 
     ret[jss::nodes] = nodes;
 
-    ret[jss::metaData] = mSet.getJson (0);
+    ret[jss::metaData] = meta_.getJson (0);
 
     return ret;
 }
@@ -555,12 +594,12 @@ MetaView::threadTx(
 {
     uint256 prevTxID;
     std::uint32_t prevLgrID;
-    if (! to->thread(mSet.getTxID(),
-            mSet.getLgrSeq(), prevTxID, prevLgrID))
+    if (! to->thread(meta_.getTxID(),
+            meta_.getLgrSeq(), prevTxID, prevLgrID))
         return false;
     if (prevTxID.isZero () ||
         TransactionMetaSet::thread(
-            mSet.getAffectedNode(to,
+            meta_.getAffectedNode(to,
                 sfModifiedNode), prevTxID,
                     prevLgrID))
         return true;
@@ -650,7 +689,7 @@ MetaView::calcRawMeta (Serializer& s,
             ? curNode->getFieldU16 (sfLedgerEntryType)
             : origNode->getFieldU16 (sfLedgerEntryType);
 
-        mSet.setAffectedNode (it.first, *type, nodeType);
+        meta_.setAffectedNode (it.first, *type, nodeType);
 
         if (type == &sfDeletedNode)
         {
@@ -666,7 +705,7 @@ MetaView::calcRawMeta (Serializer& s,
             }
 
             if (!prevs.empty ())
-                mSet.getAffectedNode (it.first).emplace_back (std::move(prevs));
+                meta_.getAffectedNode (it.first).emplace_back (std::move(prevs));
 
             STObject finals (sfFinalFields);
             for (auto const& obj : *curNode)
@@ -677,7 +716,7 @@ MetaView::calcRawMeta (Serializer& s,
             }
 
             if (!finals.empty ())
-                mSet.getAffectedNode (it.first).emplace_back (std::move(finals));
+                meta_.getAffectedNode (it.first).emplace_back (std::move(finals));
         }
         else if (type == &sfModifiedNode)
         {
@@ -695,7 +734,7 @@ MetaView::calcRawMeta (Serializer& s,
             }
 
             if (!prevs.empty ())
-                mSet.getAffectedNode (it.first).emplace_back (std::move(prevs));
+                meta_.getAffectedNode (it.first).emplace_back (std::move(prevs));
 
             STObject finals (sfFinalFields);
             for (auto const& obj : *curNode)
@@ -706,7 +745,7 @@ MetaView::calcRawMeta (Serializer& s,
             }
 
             if (!finals.empty ())
-                mSet.getAffectedNode (it.first).emplace_back (std::move(finals));
+                meta_.getAffectedNode (it.first).emplace_back (std::move(finals));
         }
         else if (type == &sfCreatedNode) // if created, thread to owner(s)
         {
@@ -725,7 +764,7 @@ MetaView::calcRawMeta (Serializer& s,
             }
 
             if (!news.empty ())
-                mSet.getAffectedNode (it.first).emplace_back (std::move(news));
+                meta_.getAffectedNode (it.first).emplace_back (std::move(news));
         }
         else assert (false);
     }
@@ -734,8 +773,8 @@ MetaView::calcRawMeta (Serializer& s,
     for (auto& it : newMod)
         update (it.second);
 
-    mSet.addRaw (s, result, index);
-    WriteLog (lsTRACE, View) << "Metadata:" << mSet.getJson (0);
+    meta_.addRaw (s, result, index);
+    WriteLog (lsTRACE, View) << "Metadata:" << meta_.getJson (0);
 }
 
 } // ripple

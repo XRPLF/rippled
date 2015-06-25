@@ -107,7 +107,7 @@ std::pair<TER, bool> TestLedger::applyTransaction (STTx const& tx, bool check)
 
     // Check for the transaction in the closed ledger.
     bool const foundTx =
-        hasTransaction(*lastClosedLedger, tx.getTransactionID());
+        lastClosedLedger->txExists(tx.getTransactionID());
     suite_.expect (r.second == foundTx);
 
     return {r.first, r.second && foundTx};

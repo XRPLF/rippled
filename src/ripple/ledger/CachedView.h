@@ -26,10 +26,9 @@
 namespace ripple {
 
 /** Cache-aware view to a ledger */
-class CachedView : public BasicView
+class CachedView : public BasicViewWrapper<Ledger&>
 {
 private:
-    Ledger& ledger_;
     SLECache& cache_;
 
 public:
@@ -39,56 +38,15 @@ public:
     /** Wrap a ledger with a cache.
         @note Only ledgers may be wrapped with a cache.
     */
-    CachedView(Ledger& ledger,
+    CachedView (Ledger& ledger,
             SLECache& cache)
-        : ledger_(ledger)
+        : BasicViewWrapper(ledger)
         , cache_(cache)
     {
     }
 
-    bool
-    exists (Keylet const& k) const override
-    {
-        return ledger_.exists(k);
-    }
-
-    boost::optional<uint256>
-    succ (uint256 const& key, boost::optional<
-        uint256> last = boost::none) const override
-    {
-        return ledger_.succ(key, last);
-    }
-
-    BasicView const*
-    parent() const override
-    {
-        return &ledger_;
-    }
-
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
-
-    bool
-    unchecked_erase (uint256 const& key) override
-    {
-        return ledger_.unchecked_erase(key);
-    }
-
-    void
-    unchecked_insert(
-        std::shared_ptr<SLE>&& sle) override
-    {
-        ledger_.unchecked_insert(
-            std::move(sle));
-    }
-
-    void
-    unchecked_replace (
-        std::shared_ptr<SLE>&& sle) override
-    {
-        ledger_.unchecked_replace(
-            std::move(sle));
-    }
 };
 
 } // ripple

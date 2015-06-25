@@ -391,8 +391,8 @@ private:
         View& cancel_view,
         Amounts const& taker_amount)
     {
-        Clock::time_point const when (
-            mEngine->getLedger ()->getParentCloseTimeNC ());
+        Clock::time_point const when =
+            mEngine->view().time();
 
         beast::WrappedSink takerSink (m_journal, "Taker ");
 
@@ -432,7 +432,7 @@ public:
     CreateOffer (
             CrossType cross_type,
             STTx const& txn,
-            TransactionEngineParams params,
+            ViewFlags params,
             TransactionEngine* engine)
         : Transactor (
             txn,
@@ -448,7 +448,7 @@ public:
     STAmount
     getAccountReserve (SLE::pointer account)
     {
-        return STAmount (mEngine->getLedger ()->getReserve (
+        return STAmount (mEngine->view().fees().accountReserve(
             account->getFieldU32 (sfOwnerCount) + 1));
     }
 
@@ -641,7 +641,7 @@ public:
         // because we definitively know the time that it closed but we do not
         // know the closing time of the ledger that is under construction.
         if (bHaveExpiration &&
-            (mEngine->getLedger ()->getParentCloseTimeNC () >= uExpiration))
+            (mEngine->view().time() >= uExpiration))
         {
             return { tesSUCCESS, true };
         }
@@ -835,18 +835,17 @@ public:
     TER
     doApply() override
     {
-        bool const openLedger = mParams & tapOPEN_LEDGER;
         // This is the ledger view that we work against. Transactions are applied
         // as we go on processing transactions.
-        MetaView view (mEngine->view(), openLedger);
+        MetaView view (&mEngine->view());
         // This is a checkpoint with just the fees paid. If something goes wrong
         // with this transaction, we roll back to this ledger.
-        MetaView viewCancel (mEngine->view(), openLedger);
+        MetaView viewCancel (&mEngine->view());
         auto const result = applyGuts(view, viewCancel);
         if (result.second)
-            view.apply();
+            view.apply(mEngine->view());
         else
-            viewCancel.apply();
+            viewCancel.apply(mEngine->view());
         return result.first;
     }
 };
@@ -854,7 +853,7 @@ public:
 TER
 transact_CreateOffer (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     CrossType cross_type = CrossType::IouToIou;

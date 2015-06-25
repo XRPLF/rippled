@@ -118,6 +118,24 @@ public:
     //
     //--------------------------------------------------------------------------
 
+    Fees const&
+    fees() const override
+    {
+        return fees_;
+    }
+
+    LedgerIndex
+    seq() const override
+    {
+        return seq_;
+    }
+
+    std::uint32_t
+    time() const override
+    {
+        return mParentCloseTime;
+    }
+
     bool
     exists (Keylet const& k) const override;
 
@@ -137,11 +155,23 @@ public:
     void
     unchecked_replace (std::shared_ptr<SLE>&& sle) override;
 
-    BasicView const*
-    parent() const override
+    void
+    destroyCoins (std::uint64_t feeDrops) override
     {
-        return nullptr;
+        mTotCoins -= feeDrops;
     }
+
+    bool
+    txExists (uint256 const& key) const override;
+
+    bool
+    txInsert (uint256 const& key,
+        std::shared_ptr<Serializer const
+            > const& txn, std::shared_ptr<
+                Serializer const> const& metaData) override;
+
+    std::vector<uint256>
+    txList() const override;
 
     //--------------------------------------------------------------------------
 
@@ -231,11 +261,6 @@ public:
         return mTotCoins;
     }
 
-    void destroyCoins (std::uint64_t fee)
-    {
-        mTotCoins -= fee;
-    }
-
     void setTotalCoins (std::uint64_t totCoins)
     {
         mTotCoins = totCoins;
@@ -249,12 +274,6 @@ public:
     std::uint32_t getParentCloseTimeNC () const
     {
         return mParentCloseTime;
-    }
-
-    LedgerIndex
-    seq() const
-    {
-        return seq_;
     }
 
     // DEPRECATED
@@ -450,6 +469,8 @@ private:
     // Protects fee variables
     std::mutex mutable mutex_;
 
+    Fees fees_;
+
     // Ripple cost of the reference transaction
     std::uint64_t mutable mBaseFee = 0;
 
@@ -531,20 +552,6 @@ injectSLE (Json::Value& jv,
 
 //------------------------------------------------------------------------------
 
-// VFALCO Should this take Slice? Should id be called key or hash? Or txhash?
-bool addTransaction (Ledger& ledger,
-        uint256 const& id, Serializer const& txn);
-
-bool addTransaction (Ledger& ledger,
-    uint256 const& id, Serializer const& txn, Serializer const& metaData);
-
-inline
-bool hasTransaction (Ledger const& ledger,
-    uint256 const& TransID)
-{
-    return ledger.txMap().hasItem (TransID);
-}
-
 // VFALCO NOTE This is called from only one place
 Transaction::pointer
 getTransaction (Ledger const& ledger,
@@ -577,11 +584,6 @@ qualityDirDescriber (
     Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
     Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
     const std::uint64_t & uRate);
-
-//------------------------------------------------------------------------------
-
-std::uint32_t
-getParentCloseTimeNC (BasicView const& view);
 
 } // ripple
 

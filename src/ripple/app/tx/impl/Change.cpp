@@ -33,7 +33,7 @@ class Change
 public:
     Change (
         STTx const& txn,
-        TransactionEngineParams params,
+        ViewFlags params,
         TransactionEngine* engine)
         : Transactor (
             txn,
@@ -192,7 +192,7 @@ private:
 TER
 transact_Change (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     return Change (txn, params, engine).apply ();

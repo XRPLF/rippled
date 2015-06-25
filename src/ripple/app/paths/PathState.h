@@ -36,7 +36,7 @@ class PathState : public CountedObject <PathState>
     using Ptr = std::shared_ptr<PathState>;
     using List = std::vector<Ptr>;
 
-    PathState (PaymentView& parent,
+    PathState (PaymentView const& parent,
             STAmount const& saSend,
                 STAmount const& saSendMax)
         : mIndex (0)
@@ -110,7 +110,7 @@ class PathState : public CountedObject <PathState>
         return *view_;
     }
 
-    void resetView (PaymentView& view)
+    void resetView (PaymentView const& view)
     {
         view_.emplace(&view);
     }

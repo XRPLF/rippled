@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -176,8 +175,9 @@ std::uint64_t TxnSignApiFacade::scaleFeeBase (std::uint64_t fee) const
     if (!ledger_) // Unit testing.
         return fee;
 
-    return ripple::scaleFeeBase(
-        getApp().getFeeTrack(), *ledger_, fee);
+    // VFALCO Audit
+    return getApp().getFeeTrack().scaleFeeBase(
+        fee, ledger_->fees().base, ledger_->fees().units);
 }
 
 std::uint64_t
@@ -186,9 +186,10 @@ TxnSignApiFacade::scaleFeeLoad (std::uint64_t fee, bool bAdmin) const
     if (!ledger_) // Unit testing.
         return fee;
 
-    return ripple::scaleFeeLoad (
-        getApp().getFeeTrack(),
-            *ledger_, fee, bAdmin);
+    // VFALCO Audit
+    return getApp().getFeeTrack().scaleFeeLoad(
+        fee, ledger_->fees().base, ledger_->fees().units,
+            bAdmin);
 }
 
 bool TxnSignApiFacade::hasAccountRoot () const

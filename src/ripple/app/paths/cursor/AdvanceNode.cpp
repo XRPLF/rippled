@@ -212,7 +212,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
                 if (node().sleOffer->isFieldPresent (sfExpiration) &&
                         (node().sleOffer->getFieldU32 (sfExpiration) <=
-                            getParentCloseTimeNC(view())))
+                            view().time()))
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)

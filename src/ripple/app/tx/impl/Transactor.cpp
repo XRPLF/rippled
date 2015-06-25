@@ -18,31 +18,31 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerFees.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
 
 namespace ripple {
 
-TER transact_Payment (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetAccount (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetRegularKey (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetTrust (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CreateOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CancelOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_Change (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CreateTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CancelTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetSignerList (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_Payment (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_SetAccount (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_SetRegularKey (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_SetTrust (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_CreateOffer (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_CancelOffer (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_Change (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_CreateTicket (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_CancelTicket (STTx const& txn, ViewFlags params, TransactionEngine* engine);
+TER transact_SetSignerList (STTx const& txn, ViewFlags params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine)
 {
     switch (txn.getTxnType ())
@@ -85,22 +85,24 @@ Transactor::transact (
 
 Transactor::Transactor (
     STTx const& txn,
-    TransactionEngineParams params,
+    ViewFlags params,
     TransactionEngine* engine,
     beast::Journal journal)
     : mTxn (txn)
     , mEngine (engine)
-    , mParams (params)
+    , mParams (mEngine->view().flags())
     , mHasAuthKey (false)
     , mSigMaster (false)
     , m_journal (journal)
 {
+    assert(mEngine->view().flags() == params);
 }
 
 void Transactor::calculateFee ()
 {
-    mFeeDue = STAmount (scaleFeeLoad (getApp().getFeeTrack(),
-        *mEngine->getLedger(), calculateBaseFee (), mParams & tapADMIN));
+    mFeeDue = STAmount (getApp().getFeeTrack().scaleFeeLoad(
+        calculateBaseFee(), mEngine->view().fees().base,
+            mEngine->view().fees().units, mParams & tapADMIN));
 }
 
 std::uint64_t Transactor::calculateBaseFee ()
@@ -172,7 +174,7 @@ TER Transactor::checkSeq ()
             return terPRE_SEQ;
         }
 
-        if (hasTransaction (*mEngine->getLedger (), mTxn.getTransactionID ()))
+        if (mEngine->view().txExists(mTxn.getTransactionID ()))
             return tefALREADY;
 
         m_journal.trace << "applyTransaction: has past sequence number " <<
@@ -233,7 +235,14 @@ TER Transactor::preCheckSigningKey ()
     if (!mTxn.isKnownGood ())
     {
         if (mTxn.isKnownBad () ||
-            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign(mEngine->enableMultiSign())))
+            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign(
+                (
+#if RIPPLE_ENABLE_MULTI_SIGN
+                    true
+#else
+                    mEngine->view().flags() & tapENABLE_TESTING
+#endif
+                ))))
         {
             mTxn.setBad ();
             m_journal.debug << "apply: Invalid transaction (bad signature)";
@@ -303,7 +312,10 @@ TER Transactor::apply ()
 
 TER Transactor::checkSign ()
 {
-    if(mEngine->enableMultiSign())
+#if RIPPLE_ENABLE_MULTI_SIGN
+#else
+    if(mEngine->view().flags() & tapENABLE_TESTING)
+#endif
     {
         // If the mSigningPubKey is empty, then we must be multi-signing.
         if (mSigningPubKey.getAccountPublic ().empty ())

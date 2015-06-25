@@ -39,28 +39,34 @@ namespace ripple {
 //
 //------------------------------------------------------------------------------
 
-Fees::Fees (BasicView const& view, Config const& config)
-    : base_(config.FEE_DEFAULT)
-    , units_(config.TRANSACTION_FEE_BASE)
-    , reserve_(config.FEE_ACCOUNT_RESERVE)
-    , increment_(config.FEE_OWNER_RESERVE)
+Fees
+getFees (BasicView const& view,
+    Config const& config)
 {
-    auto const sle = view.read(keylet::fees());
+    Fees f;
+    f.base = config.FEE_DEFAULT;
+    f.units = config.TRANSACTION_FEE_BASE;
+    f.reserve = config.FEE_ACCOUNT_RESERVE;
+    f.increment = config.FEE_OWNER_RESERVE;
+    auto const sle =
+        view.read(keylet::fees());
     if (sle)
     {
         // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
+
         if (sle->getFieldIndex (sfBaseFee) != -1)
-            base_ = sle->getFieldU64 (sfBaseFee);
+            f.base = sle->getFieldU64 (sfBaseFee);
 
         if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-            units_ = sle->getFieldU32 (sfReferenceFeeUnits);
+            f.units = sle->getFieldU32 (sfReferenceFeeUnits);
 
         if (sle->getFieldIndex (sfReserveBase) != -1)
-            reserve_ = sle->getFieldU32 (sfReserveBase);
+            f.reserve = sle->getFieldU32 (sfReserveBase);
 
         if (sle->getFieldIndex (sfReserveIncrement) != -1)
-            increment_ = sle->getFieldU32 (sfReserveIncrement);
+            f.increment = sle->getFieldU32 (sfReserveIncrement);
     }
+    return f;
 }
 
 //------------------------------------------------------------------------------
@@ -114,12 +120,12 @@ accountHolds (BasicView const& view,
     STAmount amount;
     if (isXRP(currency))
     {
-        Fees const fees{view, config};
         // XRP: return balance minus reserve
         auto const sle = view.read(
             keylet::account(account));
-        auto const reserve = STAmount{fees.reserve(
-            sle->getFieldU32(sfOwnerCount))};
+        auto const reserve =
+            STAmount{view.fees().accountReserve(
+                sle->getFieldU32(sfOwnerCount))};
         auto const balance =
             sle->getFieldAmount(sfBalance);
         if (balance < reserve)
@@ -1234,7 +1240,7 @@ accountSend (View& view,
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
-            terResult = view.openLedger()
+            terResult = (view.flags() & tapOPEN_LEDGER)
                 ? telFAILED_PROCESSING
                 : tecFAILED_PROCESSING;
         }
@@ -1491,7 +1497,7 @@ transferXRP (View& view,
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
         // FIXME: this logic should be moved to callers maybe?
-        return view.openLedger()
+        return (view.flags() & tapOPEN_LEDGER)
             ? telFAILED_PROCESSING
             : tecFAILED_PROCESSING;
     }

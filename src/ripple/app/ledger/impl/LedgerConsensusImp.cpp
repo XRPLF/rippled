@@ -1375,7 +1375,7 @@ void LedgerConsensusImp::takeInitialPosition (Ledger& initialLedger)
 
     for (auto& it : mDisputes)
     {
-        it.second->setOurVote (hasTransaction (initialLedger, it.first));
+        it.second->setOurVote (initialLedger.txExists(it.first));
     }
 
     // if any peers have taken a contrary position, process disputes
@@ -1722,22 +1722,22 @@ make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
 static
 int applyTransaction (
     TransactionEngine& engine,
-    STTx::ref txn,
+    std::shared_ptr<STTx const> const& txn,
     bool openLedger,
     bool retryAssured)
 {
     // Returns false if the transaction has need not be retried.
-    TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
+    ViewFlags parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 
     if (retryAssured)
     {
-        parms = static_cast<TransactionEngineParams> (parms | tapRETRY);
+        parms = static_cast<ViewFlags> (parms | tapRETRY);
     }
 
     if ((getApp().getHashRouter ().getFlags (txn->getTransactionID ())
         & SF_SIGGOOD) == SF_SIGGOOD)
     {
-        parms = static_cast<TransactionEngineParams>
+        parms = static_cast<ViewFlags>
             (parms | tapNO_CHECK_SIGN);
     }
     WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
@@ -1790,7 +1790,7 @@ void applyTransactions (
     {
         for (auto const item : *set)
         {
-            if (hasTransaction (*checkLedger, item->getTag ()))
+            if (checkLedger->txExists (item->key()))
                 continue;
 
             // The transaction isn't in the check ledger, try to apply it
