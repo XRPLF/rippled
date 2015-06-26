@@ -30,34 +30,6 @@ const Int Value::minInt = Int ( ~ (UInt (-1) / 2) );
 const Int Value::maxInt = Int ( UInt (-1) / 2 );
 const UInt Value::maxUInt = UInt (-1);
 
-// A "safe" implementation of strdup. Allow null pointer to be passed.
-// Also avoid warning on msvc80.
-//
-//inline char *safeStringDup( const char *czstring )
-//{
-//   if ( czstring )
-//   {
-//      const size_t length = (unsigned int)( strlen(czstring) + 1 );
-//      char *newString = static_cast<char *>( malloc( length ) );
-//      memcpy( newString, czstring, length );
-//      return newString;
-//   }
-//   return 0;
-//}
-//
-//inline char *safeStringDup( std::string const&str )
-//{
-//   if ( !str.empty() )
-//   {
-//      const size_t length = str.length();
-//      char *newString = static_cast<char *>( malloc( length + 1 ) );
-//      memcpy( newString, str.c_str(), length );
-//      newString[length] = 0;
-//      return newString;
-//   }
-//   return 0;
-//}
-
 ValueAllocator::~ValueAllocator ()
 {
 }
@@ -115,18 +87,6 @@ static struct DummyValueAllocatorInitializer
         valueAllocator ();     // ensure valueAllocator() statics are initialized before main().
     }
 } dummyValueAllocatorInitializer;
-
-
-
-// //////////////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////////////
-// ValueInternals...
-// //////////////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////////////
-# include <ripple/json/impl/json_valueiterator.inl>
-
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////

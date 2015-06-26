@@ -18,8 +18,10 @@
 //==============================================================================
 
 // included by json_value.cpp
-// everything is within Json namespace
 
+#include <ripple/json/json_value.h>
+
+namespace Json {
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -206,3 +208,5 @@ ValueIterator::operator = ( const SelfType& other )
     copy ( other );
     return *this;
 }
+
+} // Json

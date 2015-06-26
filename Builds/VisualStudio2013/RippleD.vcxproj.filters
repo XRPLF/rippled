@@ -2913,9 +2913,9 @@
     <ClCompile Include="..\..\src\ripple\json\impl\json_value.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_valueiterator.inl">
+    <ClCompile Include="..\..\src\ripple\json\impl\json_valueiterator.cpp">
       <Filter>ripple\json\impl</Filter>
-    </ClInclude>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\json_writer.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
