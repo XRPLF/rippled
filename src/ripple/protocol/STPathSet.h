@@ -312,6 +312,12 @@ public:
         value.push_back (e);
     }
 
+    template <typename... Args>
+    void emplace_back (Args&&... args)
+    {
+        value.emplace_back (std::forward<Args> (args)...);
+    }
+
 private:
     std::vector<STPath> value;
 };

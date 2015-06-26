@@ -2601,6 +2601,9 @@
     <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\tests\PathSet.h">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>

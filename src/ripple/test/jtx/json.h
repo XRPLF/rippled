@@ -37,6 +37,12 @@ public:
     explicit
     json (std::string const&);
 
+    explicit
+    json (char const*);
+
+    explicit
+    json (Json::Value);
+
     template <class T>
     json (Json::StaticString const& key, T const& value)
     {

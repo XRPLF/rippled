@@ -33,6 +33,14 @@ json::json(std::string const& s)
 
 }
 
+json::json (char const* s)
+    : json(std::string(s)){}
+
+json::json (Json::Value jv)
+    : jv_ (std::move (jv))
+{
+}
+
 void
 json::operator()(Env const&, JTx& jt) const
 {

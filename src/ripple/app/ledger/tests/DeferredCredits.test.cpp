@@ -18,11 +18,12 @@
 //==============================================================================
 
 #include <ripple/app/ledger/tests/common_ledger.h>
+#include <ripple/app/ledger/MetaView.h>
+#include <ripple/app/paths/impl/PaymentView.h>
+#include <ripple/app/tx/tests/PathSet.h>
 
 namespace ripple {
 namespace test {
-
-#if 0
 
 class DeferredCredits_test : public beast::unit_test::suite
 {
@@ -55,228 +56,198 @@ class DeferredCredits_test : public beast::unit_test::suite
     {
         testcase ("selfFunding");
 
-        auto const keyType = KeyType::ed25519;
-        std::uint64_t const xrp = std::mega::num;
+        using namespace jtx;
+        Env env (*this);
+        Account const gw1 ("gw1");
+        Account const gw2 ("gw2");
+        Account const snd ("snd");
+        Account const rcv ("rcv");
 
-        auto master = createAccount ("masterpassphrase", keyType);
+        env.fund (XRP (10000), snd, rcv, gw1, gw2);
 
-        std::shared_ptr<Ledger const> LCL;
-        Ledger::pointer ledger;
-        std::tie (LCL, ledger) = createGenesisLedger (100000 * xrp, master);
+        auto const USD_gw1 = gw1["USD"];
+        auto const USD_gw2 = gw2["USD"];
 
-        auto accounts =
-            createAndFundAccountsWithFlags (master,
-                                            {"snd", "rcv", "gw1", "gw2"},
-                                            keyType,
-                                            10000 * xrp,
-                                            ledger,
-                                            LCL,
-                                            asfDefaultRipple);
-        auto& gw1 = accounts["gw1"];
-        auto& gw2 = accounts["gw2"];
-        auto& snd = accounts["snd"];
-        auto& rcv = accounts["rcv"];
+        env.trust (USD_gw1 (10), snd);
+        env.trust (USD_gw2 (10), snd);
+        env.trust (USD_gw1 (100), rcv);
+        env.trust (USD_gw2 (100), rcv);
 
-        close_and_advance (ledger, LCL);
+        env (pay (gw1, snd, USD_gw1 (2)));
+        env (pay (gw2, snd, USD_gw2 (4)));
 
-        trust (snd, gw1, "USD", 10, ledger);
-        trust (snd, gw2, "USD", 10, ledger);
-        trust (rcv, gw1, "USD", 100, ledger);
-        trust (rcv, gw2, "USD", 100, ledger);
+        env (offer (snd, USD_gw1 (2), USD_gw2 (2)),
+             txflags (tfPassive));
+        env (offer (snd, USD_gw2 (2), USD_gw1 (2)),
+             txflags (tfPassive));
 
-        pay (gw1, snd, "USD", "2", ledger);
-        pay (gw2, snd, "USD", "4", ledger);
+        PathSet paths (
+            Path (gw1, USD_gw2, gw2),
+            Path (gw2, USD_gw1, gw1));
 
-        verifyBalance (ledger, snd, Amount (2, "USD", gw1));
-        verifyBalance (ledger, snd, Amount (4, "USD", gw2));
+        env (pay (snd, rcv, any (USD_gw1 (4))),
+            json (paths.json ()),
+            txflags (tfNoRippleDirect | tfPartialPayment));
 
-        close_and_advance (ledger, LCL);
-
-        createOfferWithFlags (snd,
-                              Amount (2, "USD", gw1),
-                              Amount (2, "USD", gw2),
-                              ledger,
-                              tfPassive);
-        createOfferWithFlags (snd,
-                              Amount (2, "USD", gw2),
-                              Amount (2, "USD", gw1),
-                              ledger,
-                              tfPassive);
-
-        close_and_advance (ledger, LCL);
-
-        Json::Value path;
-        path.append (createPath (gw1, OfferPathNode ("USD", gw2), gw2));
-        path.append (createPath (gw2, OfferPathNode ("USD", gw1), gw1));
-
-        payWithPath (snd, rcv, "USD", "4", ledger, path,
-                     tfNoRippleDirect | tfPartialPayment);
-
-        verifyBalance (ledger, rcv, Amount (0, "USD", gw1));
-        verifyBalance (ledger, rcv, Amount (2, "USD", gw2));
-
-        pass ();
+        require (balance ("rcv", USD_gw1 (0)));
+        require (balance ("rcv", USD_gw2 (2)));
     }
 
     void testSubtractCredits ()
     {
         testcase ("subtractCredits");
 
-        auto const keyType = KeyType::ed25519;
-        std::uint64_t const xrp = std::mega::num;
+        using namespace jtx;
+        Env env (*this);
+        Account const gw1 ("gw1");
+        Account const gw2 ("gw2");
+        Account const alice ("alice");
 
-        auto master = createAccount ("masterpassphrase", keyType);
+        env.fund (XRP (10000), alice, gw1, gw2);
 
-        std::shared_ptr<Ledger const> LCL;
-        Ledger::pointer ledger;
-        std::tie (LCL, ledger) = createGenesisLedger (100000 * xrp, master);
+        auto const USD_gw1 = gw1["USD"];
+        auto const USD_gw2 = gw2["USD"];
 
-        auto accounts =
-                createAndFundAccountsWithFlags (master,
-                                                {"alice", "gw1", "gw2"},
-                                                keyType,
-                                                10000 * xrp,
-                                                ledger,
-                                                LCL,
-                                                asfDefaultRipple);
-        auto& gw1 = accounts["gw1"];
-        auto& gw2 = accounts["gw2"];
-        auto& alice = accounts["alice"];
+        env.trust (USD_gw1 (100), alice);
+        env.trust (USD_gw2 (100), alice);
 
-        close_and_advance (ledger, LCL);
+        env (pay (gw1, alice, USD_gw1 (50)));
+        env (pay (gw2, alice, USD_gw2 (50)));
 
-        trust (alice, gw1, "USD", 100, ledger);
-        trust (alice, gw2, "USD", 100, ledger);
-
-        pay (gw1, alice, "USD", "50", ledger);
-        pay (gw2, alice, "USD", "50", ledger);
-
-        verifyBalance (ledger, alice, Amount (50, "USD", gw1));
-        verifyBalance (ledger, alice, Amount (50, "USD", gw2));
-
-        AccountID const gw1Acc = calcAccountID(gw1.pk);
-        AccountID const aliceAcc = calcAccountID(alice.pk);
-        ripple::Currency const usd (to_currency ("USD"));
-        ripple::Issue const issue (usd, gw1Acc);
-        STAmount const toCredit (issue, 30);
-        STAmount const toDebit (issue, 20);
+        STAmount const toCredit (USD_gw1 (30));
+        STAmount const toDebit (USD_gw1 (20));
         {
-            // accountSend, no FT
-            MetaView les (ledger, tapNONE);
+            // accountSend, no deferredCredits
+            MetaView les (*env.ledger, tapNONE);
 
-            expect (!les.areCreditsDeferred ());
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                les, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
-
-            accountSend (les, gw1Acc, aliceAcc, toCredit, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            accountSend (les, gw1, alice, toCredit);
+            expect (accountHolds (les, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit);
 
-            accountSend (les, aliceAcc, gw1Acc, toDebit, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            accountSend (les, alice, gw1, toDebit);
+            expect (accountHolds (les, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
-            // rippleCredit, no FT
-            MetaView les (ledger, tapNONE);
+            // rippleCredit, no deferredCredits
+            MetaView les (*env.ledger, tapNONE);
 
-            expect (!les.areCreditsDeferred ());
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                les, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
-
-            rippleCredit (les, gw1Acc, aliceAcc, toCredit, true, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            rippleCredit (les, gw1, alice, toCredit, true);
+            expect (accountHolds (les, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit);
 
-            rippleCredit (les, aliceAcc, gw1Acc, toDebit, true, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            rippleCredit (les, alice, gw1, toDebit, true);
+            expect (accountHolds (les, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
-            // accountSend, w/ FT
-            MetaView les (ledger, tapNONE);
-            les.enableDeferredCredits ();
-            expect (les.areCreditsDeferred ());
+            // accountSend, w/ deferredCredits
+            MetaView les (*env.ledger, tapNONE);
+            PaymentView pv (les, tapNONE);
 
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            accountSend (les, gw1Acc, aliceAcc, toCredit, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            accountSend (pv, gw1, alice, toCredit);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount);
 
-            accountSend (les, aliceAcc, gw1Acc, toDebit, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            accountSend (pv, alice, gw1, toDebit);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount - toDebit);
         }
 
         {
-            // rippleCredit, w/ FT
-            MetaView les (ledger, tapNONE);
-            les.enableDeferredCredits ();
-            expect (les.areCreditsDeferred ());
+            // rippleCredit, w/ deferredCredits
+            MetaView les (*env.ledger, tapNONE);
+            PaymentView pv (les, tapNONE);
 
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            rippleCredit (les, gw1Acc, aliceAcc, toCredit, true, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            rippleCredit (pv, gw1, alice, toCredit, true);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount);
+        }
 
-            rippleCredit (les, aliceAcc, gw1Acc, toDebit, true, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+        {
+            // redeemIOU, w/ deferredCredits
+            MetaView les (*env.ledger, tapNONE);
+            PaymentView pv (les, tapNONE);
+
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+
+            redeemIOU (pv, alice, toDebit, iss);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount - toDebit);
         }
 
         {
-            // rippleCredit, w/ FT & ScopedDeferCredits
-            MetaView les (ledger, tapNONE);
+            // issueIOU, w/ deferredCredits
+            MetaView les (*env.ledger, tapNONE);
+            PaymentView pv (les, tapNONE);
 
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+
+            issueIOU (pv, alice, toCredit, iss);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
+                    startingAmount);
+        }
+
+        {
+            // accountSend, w/ deferredCredits and stacked views
+            MetaView les (*env.ledger, tapNONE);
+            PaymentView pv (les, tapNONE);
+
+            auto const iss = USD_gw1.issue ();
+            auto const startingAmount = accountHolds (
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+
+            accountSend (pv, gw1, alice, toCredit);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
+                    startingAmount);
+
             {
-                ScopedDeferCredits g (les);
-                rippleCredit (les, gw1Acc, aliceAcc, toCredit, true, {});
-                expect (
-                    accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
-                    startingAmount);
+                PaymentView pv2(&pv);
+                expect (accountHolds (pv2, alice, iss.currency, iss.account,
+                            fhIGNORE_FREEZE, getConfig ()) ==
+                        startingAmount);
+                accountSend (pv2, gw1, alice, toCredit);
+                expect (accountHolds (pv2, alice, iss.currency, iss.account,
+                            fhIGNORE_FREEZE, getConfig ()) ==
+                        startingAmount);
             }
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
-                    startingAmount + toCredit);
-        }
 
-        {
-            // issueIOU
-            MetaView les (ledger, tapNONE);
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
-            les.enableDeferredCredits ();
-            expect (les.areCreditsDeferred ());
-
-            redeemIOU (les, aliceAcc, toDebit, issue, {});
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
+            accountSend (pv, alice, gw1, toDebit);
+            expect (accountHolds (pv, alice, iss.currency, iss.account,
+                        fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount - toDebit);
-        }
-        {
-            // redeemIOU
-            MetaView les (ledger, tapNONE);
-            STAmount const startingAmount =
-                accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig());
-            {
-                ScopedDeferCredits g (les);
-                expect (les.areCreditsDeferred ());
-
-                issueIOU (les, aliceAcc, toCredit, issue, {});
-                expect (
-                    accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
-                    startingAmount);
-            }
-            expect (accountHolds (les, aliceAcc, usd, gw1Acc, fhIGNORE_FREEZE, getConfig()) ==
-                    startingAmount + toCredit);
         }
     }
 
@@ -289,8 +260,6 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE (DeferredCredits, ledger, ripple);
-
-#endif
 
 }  // test
 }  // ripple
