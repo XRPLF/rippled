@@ -32,6 +32,7 @@
 
 namespace ripple {
 
+static
 Json::Value
 buildSrcCurrencies(AccountID const& account,
     RippleLineCache::pointer const& cache)
