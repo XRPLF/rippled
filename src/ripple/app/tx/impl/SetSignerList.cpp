@@ -80,7 +80,7 @@ private:
     TER replaceSignerList (uint256 const& index);
     TER destroySignerList (uint256 const& index);
 
-    void writeSignersToLedger (SLE::pointer ledgerEntry);
+    void addSignersToSLE (SLE::pointer ledgerEntry);
 
     static std::size_t ownerCountDelta (std::size_t entryCount);
 };
@@ -236,7 +236,7 @@ SetSignerList::replaceSignerList (uint256 const& index)
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
     auto signerList = std::make_shared<SLE>(ltSIGNER_LIST, index);
     mEngine->view().insert (signerList);
-    writeSignersToLedger (signerList);
+    addSignersToSLE (signerList);
 
     // Lambda for call to dirAdd.
     auto describer = [&] (SLE::ref sle, bool dummy)
@@ -278,7 +278,7 @@ SetSignerList::destroySignerList (uint256 const& index)
 
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    std::uint32_t removeFromOwnerCount = 0;
+    std::int32_t removeFromOwnerCount = 0;
     auto const k = keylet::signers(mTxnAccountID);
     SLE::pointer accountSignersList =
         mEngine->view().peek (k);
@@ -286,7 +286,7 @@ SetSignerList::destroySignerList (uint256 const& index)
     {
         STArray const& actualList =
             accountSignersList->getFieldArray (sfSignerEntries);
-        removeFromOwnerCount = ownerCountDelta (actualList.size ());
+        removeFromOwnerCount = ownerCountDelta (actualList.size ()) * -1;
     }
 
     // Remove the node from the account directory.
@@ -304,11 +304,8 @@ SetSignerList::destroySignerList (uint256 const& index)
     return result;
 }
 
-// VFALCO NOTE This name is misleading, the signers
-//             are not written to the ledger they are
-//             added to the SLE.
 void
-SetSignerList::writeSignersToLedger (SLE::pointer ledgerEntry)
+SetSignerList::addSignersToSLE (SLE::pointer ledgerEntry)
 {
     // Assign the quorum.
     ledgerEntry->setFieldU32 (sfSignerQuorum, quorum_);

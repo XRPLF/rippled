@@ -2313,6 +2313,9 @@
     <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
       <Filter>ripple\app\misc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\tests\CanonicalTXSet.test.cpp">
+      <Filter>ripple\app\misc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2463,6 +2466,12 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Change.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CheckAndConsumeTicket.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CheckAndConsumeTicket.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateOffer.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2554,6 +2563,9 @@
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\Ticket.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\Transaction.h">

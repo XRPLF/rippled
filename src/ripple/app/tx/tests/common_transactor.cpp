@@ -93,7 +93,7 @@ TestLedger::TestLedger (
 std::pair<TER, bool> TestLedger::applyTransaction (STTx const& tx, bool check)
 {
     // Apply the transaction to the open ledger.
-    TransactionEngine engine(openLedger_);
+    TransactionEngine engine(openLedger_, tx_enable_test);
     auto r = engine.applyTransaction (
         tx, tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN));
 
@@ -330,10 +330,14 @@ STTx getCreateTicketTx (UserAccount& acct, UserAccount const& target)
 }
 
 // Return a transaction that cancels a ticket.
-STTx getCancelTicketTx (UserAccount& acct, uint256 const& ticketID)
+STTx getCancelTicketTx (
+    UserAccount& acct, UserAccount& ticketOwner, std::uint32_t ticketSeq)
 {
     STTx tx = getSeqTx (acct, ttTICKET_CANCEL);
-    tx.setFieldH256 (sfTicketID, ticketID);
+    STObject ticketID (sfTicketID);
+    ticketID.setAccountID (sfAccount, ticketOwner.getID());
+    ticketID.setFieldU32 (sfSequence, ticketSeq);
+    tx.setFieldObject (sfTicketID, ticketID);
     return tx;
 }
 
@@ -412,17 +416,17 @@ getOffersOnAccount (TestLedger& ledger, UserAccount const& acct)
 std::vector <std::shared_ptr<SLE const>>
 getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct)
 {
-    std::vector <std::shared_ptr<SLE const>> offers;
+    std::vector <std::shared_ptr<SLE const>> tickets;
 
     forEachItem(*ledger.openLedger(), acct.getID(),
-        [&offers, &acct](
+        [&tickets, &acct](
             std::shared_ptr<SLE const> const& sleCur)
         {
             // If sleCur is an ltTICKET save it.
             if (sleCur && sleCur->getType () == ltTICKET)
-                offers.emplace_back (sleCur);
+                tickets.emplace_back (sleCur);
         });
-    return offers;
+    return tickets;
 }
 
 } // test

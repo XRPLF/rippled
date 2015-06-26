@@ -114,8 +114,10 @@ enum TER    // aka TransactionEngineResult
     tefMAX_LEDGER,
     tefBAD_SIGNATURE,
     tefBAD_QUORUM,
+    tefNO_ENTRY,
     tefNOT_MULTI_SIGNING,
     tefBAD_AUTH_MASTER,
+    tefNO_PERMISSION,
 
     // -99 .. -1: R Retry
     //   sequence too high, no funds for txn fee, originating -account
@@ -142,6 +144,7 @@ enum TER    // aka TransactionEngineResult
                          // burden network.
     terLAST,             // Process after all other transactions
     terNO_RIPPLE,        // Rippling not allowed
+    terPRE_TICKET,       // Ticket might be from the future.
 
     // 0: S Success (success)
     // Causes:
@@ -158,7 +161,7 @@ enum TER    // aka TransactionEngineResult
     // Causes:
     // - Success, but does not achieve optimal result.
     // - Invalid transaction or no effect, but claim fee to use the sequence
-    //   number.
+    //   number or ticket.
     //
     // Implications:
     // - Applied
@@ -198,6 +201,7 @@ enum TER    // aka TransactionEngineResult
     tecNEED_MASTER_KEY          = 142,
     tecDST_TAG_NEEDED           = 143,
     tecINTERNAL                 = 144,
+    tecEXPIRED_TICKET           = 145
 };
 
 inline bool isTelLocal(TER x)

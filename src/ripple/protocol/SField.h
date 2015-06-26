@@ -363,7 +363,6 @@ extern SField const sfBookDirectory;
 extern SField const sfInvoiceID;
 extern SField const sfNickname;
 extern SField const sfAmendment;
-extern SField const sfTicketID;
 
 // 160-bit (common)
 extern SField const sfTakerPaysCurrency;
@@ -435,6 +434,7 @@ extern SField const sfMemo;
 extern SField const sfSignerEntry;
 extern SField const sfSigningAccount;
 extern SField const sfSigningFor;
+extern SField const sfTicketID;
 
 // array of objects
 // ARRAY/1 is reserved for end of array

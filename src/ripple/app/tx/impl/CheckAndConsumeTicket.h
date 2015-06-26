@@ -17,19 +17,25 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_TX_CHECKANDCONSUMETICKET_H_INCLUDED
+#define RIPPLE_TX_CHECKANDCONSUMETICKET_H_INCLUDED
 
-#include <ripple/app/misc/AmendmentTableImpl.cpp>
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/UniqueNodeList.cpp>
-#include <ripple/app/misc/Validations.cpp>
+#include <ripple/protocol/TER.h>
+#include <ripple/protocol/UintTypes.h>                    // Account
 
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
+namespace ripple
+{
+// Forward declarations
+class STTx;
+class TransactionEngine;
 
-#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>
-#include <ripple/app/misc/tests/AmendmentTable.test.cpp>
-#include <ripple/app/misc/tests/CanonicalTXSet.test.cpp>
+// Function that checks and consumes a ticket used as a transaction sequence.
+TER checkAndConsumeSeqTicket (STTx const& txn,
+    AccountID const& txnAccountID, TransactionEngine* const txnEngine);
+
+// Function that checks and consumes a Ticket for a TICKET_CANCEL transaction.
+TER checkAndConsumeCancelTicket (STTx const& txn,
+    AccountID const& txnAccountID, TransactionEngine* const txnEngine);
+}
+
+#endif // RIPPLE_TX_CHECKANDCONSUMETICKET_H_INCLUDED

@@ -341,7 +341,7 @@ cdirFirst (BasicView const& view,
     return cdirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
-bool 
+bool
 cdirNext (BasicView const& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
@@ -393,9 +393,13 @@ adjustOwnerCount (View& view,
         int amount)
 {
     assert(amount != 0);
-    auto const current =
+    std::uint32_t const current =
         sle->getFieldU32 (sfOwnerCount);
-    auto adjusted = current + amount;
+    std::uint32_t adjusted = current + amount;
+
+    // The following tests rely on "current" and "adjusted" being unsigned.
+    static_assert (std::is_unsigned<decltype(current)>::value, "");
+    static_assert (std::is_unsigned<decltype(adjusted)>::value, "");
     if (amount > 0)
     {
         // Overflow is well defined on unsigned
@@ -437,7 +441,7 @@ dirFirst (View& view,
     return dirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
-bool 
+bool
 dirNext (View& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE>& sleNode,      // <-> current node

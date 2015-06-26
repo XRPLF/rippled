@@ -22,56 +22,38 @@
 
 namespace ripple {
 
-bool CanonicalTXSet::Key::operator< (Key const& rhs) const
+bool operator< (CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
 {
-    if (mAccount < rhs.mAccount) return true;
+    if (lhs.account_ < rhs.account_) return true;
 
-    if (mAccount > rhs.mAccount) return false;
+    if (lhs.account_ > rhs.account_) return false;
 
-    if (mSeq < rhs.mSeq) return true;
+    // We want to sort transactions without Tickets in front of transactions
+    // with Tickets.  This encourages transactions that create and cancel
+    // Tickets to precede transactions that consume Tickets.  Therefore we
+    // decrement the sequence numbers (so zero -> max<std::uint32_t>) before
+    // comparing.  Underflow is well defined since seq is unsigned.
+    {
+        std::uint32_t const lhsSeq = lhs.seq_ - 1;
+        std::uint32_t const rhsSeq = rhs.seq_ - 1;
 
-    if (mSeq > rhs.mSeq) return false;
+        if (lhsSeq < rhsSeq) return true;
 
-    return mTXid < rhs.mTXid;
-}
+        if (lhsSeq > rhsSeq) return false;
+    }
 
-bool CanonicalTXSet::Key::operator> (Key const& rhs) const
-{
-    if (mAccount > rhs.mAccount) return true;
+    // Comparisons to make if both Keys are Tickets (inferred by seq == 0).
+    if ((lhs.seq_ | rhs.seq_) == 0)
+    {
+        if (lhs.ticketOwner_ < rhs.ticketOwner_) return true;
 
-    if (mAccount < rhs.mAccount) return false;
+        if (lhs.ticketOwner_ > rhs.ticketOwner_) return false;
 
-    if (mSeq > rhs.mSeq) return true;
+        if (lhs.ticketSeq_ < rhs.ticketSeq_) return true;
 
-    if (mSeq < rhs.mSeq) return false;
-
-    return mTXid > rhs.mTXid;
-}
-
-bool CanonicalTXSet::Key::operator<= (Key const& rhs) const
-{
-    if (mAccount < rhs.mAccount) return true;
-
-    if (mAccount > rhs.mAccount) return false;
-
-    if (mSeq < rhs.mSeq) return true;
-
-    if (mSeq > rhs.mSeq) return false;
-
-    return mTXid <= rhs.mTXid;
-}
-
-bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
-{
-    if (mAccount > rhs.mAccount) return true;
-
-    if (mAccount < rhs.mAccount) return false;
-
-    if (mSeq > rhs.mSeq) return true;
-
-    if (mSeq < rhs.mSeq) return false;
-
-    return mTXid >= rhs.mTXid;
+        if (lhs.ticketSeq_ > rhs.ticketSeq_) return false;
+    }
+    return lhs.txId_ < rhs.txId_;
 }
 
 void CanonicalTXSet::push_back (STTx::ref txn)
@@ -80,9 +62,21 @@ void CanonicalTXSet::push_back (STTx::ref txn)
 
     effectiveAccount ^= to256 (txn->getAccountID(sfAccount));
 
-    mMap.insert (std::make_pair (
-                     Key (effectiveAccount, txn->getSequence (), txn->getTransactionID ()),
-                     txn));
+    // See if we have a TicketID to deal with.
+    AccountID ticketOwner {0};
+    std::uint32_t ticketSeq = 0;
+    std::uint32_t const seq = txn->getSequence ();
+    if ((seq == 0) && (txn->isFieldPresent (sfTicketID)))
+    {
+        auto const& ticketID = txn->getFieldObject (sfTicketID);
+        ticketOwner = ticketID.getAccountID (sfAccount);
+        ticketSeq = ticketID.getFieldU32 (sfSequence);
+    }
+
+    mMap.emplace (std::piecewise_construct,
+        std::make_tuple (effectiveAccount, seq,
+            ticketOwner, ticketSeq, txn->getTransactionID ()),
+        std::make_tuple (txn));
 }
 
 CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)

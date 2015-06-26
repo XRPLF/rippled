@@ -127,7 +127,7 @@ parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign)
 void
 applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 {
-    TransactionEngine engine(ledger);
+    TransactionEngine engine(ledger, tx_enable_test);
     auto r = engine.applyTransaction(tx,
         tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN));
     if (r.first != tesSUCCESS)
@@ -435,28 +435,61 @@ trust(TestAccount& from, TestAccount const& issuer,
 void
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 {
+    // This version of close_and_advance uses wall time.
+    using namespace std::chrono;
+    auto const epoch_offset = days(10957);  // 2000-01-01
+    auto const closeTime = time_point_cast<seconds>  // now
+        (system_clock::now() - epoch_offset).
+        time_since_epoch().count();
+
+    // Pass the time delta to the other close_and_advance.
+    close_and_advance (
+        ledger, LCL, closeTime - ledger->getParentCloseTimeNC());
+}
+
+void
+close_and_advance(Ledger::pointer& ledger,
+    std::shared_ptr<Ledger const>& LCL, std::uint32_t advSeconds)
+{
+    // An empty container of transactions to retry.
+    auto retries = LocalTxs::New();
+
+    // Let the most complicated version of close_and_advance do the lifting.
+    close_and_advance (ledger, LCL, advSeconds, retries);
+}
+
+void
+close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL,
+    std::uint32_t advSeconds, std::unique_ptr<LocalTxs>& retries)
+{
     auto const& set = ledger->txMap();
     CanonicalTXSet retriableTransactions(set.getHash());
     // Make a non-const copy of LCL. This won't be necessary once
     // that other Ledger constructor can take a const Ledger.
     Ledger oldLCL(*LCL, false);
     Ledger::pointer newLCL = std::make_shared<Ledger>(false, oldLCL);
+
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
-    applyTransactions(&set, newLCL, newLCL, retriableTransactions, false);
+    {
+        TransactionEngine engine (newLCL, tx_enable_test);
+        applyTransactions(&set, engine, newLCL, retriableTransactions, false);
+    }
     newLCL->updateSkipList();
     newLCL->setClosed();
     newLCL->stateMap().flushDirty(
         hotACCOUNT_NODE, newLCL->getLedgerSeq());
     newLCL->txMap().flushDirty(
         hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+
+    // Don't retry any transactions that made it into the closed ledger.
+    retries->sweep(newLCL);
+
+    auto closeTime = ledger->getParentCloseTimeNC() + advSeconds;
+
     using namespace std::chrono;
-    auto const epoch_offset = days(10957);  // 2000-01-01
-    std::uint32_t closeTime = time_point_cast<seconds>  // now
-        (system_clock::now() - epoch_offset).
-        time_since_epoch().count();
-    int closeResolution = seconds(ledgerDefaultTimeResolution).count();
-    bool closeTimeCorrect = true;
+    auto closeResolution = seconds(ledger->getCloseResolution()).count();
+    auto closeTimeCorrect = true;
     newLCL->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     if (!newLCL->assertSane())
@@ -465,6 +498,12 @@ close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
 
     LCL = newLCL;
     ledger = std::make_shared<Ledger>(false, *newLCL);
+
+    // Attempt to apply any local transactions that failed before.
+    {
+        TransactionEngine engine(ledger, tx_enable_test);
+        retries->apply (engine);
+    }
 }
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,

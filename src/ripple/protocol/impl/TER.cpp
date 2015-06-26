@@ -68,6 +68,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tecNEED_MASTER_KEY,       "tecNEED_MASTER_KEY",       "The operation requires the use of the Master Key."             },
         { tecDST_TAG_NEEDED,        "tecDST_TAG_NEEDED",        "A destination tag is required."                                },
         { tecINTERNAL,              "tecINTERNAL",              "An internal error has occurred during processing."             },
+        { tecEXPIRED_TICKET,        "tecEXPIRED_TICKET",        "Ticket is expired."                                            },
 
         { tefALREADY,               "tefALREADY",               "The exact transaction was already in this ledger."             },
         { tefBAD_ADD_AUTH,          "tefBAD_ADD_AUTH",          "Not authorized to add account."                                },
@@ -82,6 +83,8 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tefMASTER_DISABLED,       "tefMASTER_DISABLED",       "Master key is disabled."                                       },
         { tefMAX_LEDGER,            "tefMAX_LEDGER",            "Ledger sequence too high."                                     },
         { tefNO_AUTH_REQUIRED,      "tefNO_AUTH_REQUIRED",      "Auth is not required."                                         },
+        { tefNO_ENTRY,              "tefNO_ENTRY",              "No matching entry found."                                      },
+        { tefNO_PERMISSION,         "tefNO_PERMISSION",         "No permission to perform requested operation."                 },
         { tefNOT_MULTI_SIGNING,     "tefNOT_MULTI_SIGNING",     "Account has no appropriate list of multi-signers."             },
         { tefPAST_SEQ,              "tefPAST_SEQ",              "This sequence number has already past."                        },
         { tefWRONG_PRIOR,           "tefWRONG_PRIOR",           "This previous transaction does not match."                     },
@@ -136,6 +139,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { terNO_LINE,               "terNO_LINE",               "No such line."                                                 },
         { terPRE_SEQ,               "terPRE_SEQ",               "Missing/inapplicable prior transaction."                       },
         { terOWNERS,                "terOWNERS",                "Non-zero owner count."                                         },
+        { terPRE_TICKET,            "terPRE_TICKET",            "Ticket does not exist yet."                                    },
 
         { tesSUCCESS,               "tesSUCCESS",               "The transaction was applied. Only final in a validated ledger." },
     };

@@ -23,6 +23,7 @@
 #include <ripple/app/tx/impl/CancelOffer.cpp>
 #include <ripple/app/tx/impl/CancelTicket.cpp>
 #include <ripple/app/tx/impl/Change.cpp>
+#include <ripple/app/tx/impl/CheckAndConsumeTicket.cpp>
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
 #include <ripple/app/tx/impl/InboundTransactions.cpp>
@@ -47,3 +48,4 @@
 #include <ripple/app/tx/tests/OfferStream.test.cpp>
 #include <ripple/app/tx/tests/Offer.test.cpp>
 #include <ripple/app/tx/tests/Taker.test.cpp>
+#include <ripple/app/tx/tests/Ticket.test.cpp>

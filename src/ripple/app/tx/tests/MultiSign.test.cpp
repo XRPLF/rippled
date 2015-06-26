@@ -1542,11 +1542,9 @@ class MultiSign_test : public beast::unit_test::suite
                 aliceBalanceCheck (stdFee);
             }
         }
-#if RIPPLE_ENABLE_TICKETS
-#if 0
         // Multi-sign a ttTICKET_CREATE and cancel it using ttTICKET_CANCEL.
         {
-            uint256 ticketIndex {7}; // Any non-zero value so we see it change.
+            std::uint32_t ticketSeq {0};
             // Multi-sign to give alice an un-targeted ticket
             {
                 STTx tx = getCreateTicketTx (alice);
@@ -1560,21 +1558,18 @@ class MultiSign_test : public beast::unit_test::suite
             }
             // Make sure Alice has the ticket.
             {
-                auto
+                auto tickets =
                     getTicketsOnAccount (ledger, alice);
                 expect (tickets.size() == 1);
                 if (! tickets.empty())
                 {
-                    SLE::pointer const& ticket = tickets[0];
-                    std::uint32_t const ticketSeq =
-                        ticket->getFieldU32(sfSequence);
-                    // getTicketIndex() hashes the account and seq for the ID.
-                    ticketIndex = getTicketIndex (alice.getID(), ticketSeq);
+                    auto& ticket = tickets[0];
+                    ticketSeq = ticket->getFieldU32(sfSequence);
                 }
             }
             // Multi-sign to cancel alice's ticket.
             {
-                STTx tx = getCancelTicketTx (alice, ticketIndex);
+                STTx tx = getCancelTicketTx (alice, alice, ticketSeq);
                 std::vector<MultiSig> multiSigs {
                     {alice, bogie, tx},
                     {becky, ghost, tx}
@@ -1590,8 +1585,6 @@ class MultiSign_test : public beast::unit_test::suite
                 expect (tickets.size() == 0);
             }
         }
-#endif
-#endif // RIPPLE_ENABLE_TICKETS
     }
 
 public:
@@ -1600,8 +1593,6 @@ public:
         for (auto kType : {KeyType::secp256k1, KeyType::ed25519})
         {
             test_singleSig (kType);
-#if RIPPLE_ENABLE_MULTI_SIGN
-            test_noReserve(kType);
             test_noReserve(kType);
             test_signerListSet (kType);
             test_phantomSigners (kType);
@@ -1610,7 +1601,6 @@ public:
             test_heterogeneousSigners (kType);
             test_twoLevel (kType);
             test_txTypes (kType);
-#endif // RIPPLE_ENABLE_MULTI_SIGN
         }
     }
 };

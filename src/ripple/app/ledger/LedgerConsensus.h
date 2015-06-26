@@ -26,6 +26,7 @@
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
+#include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/RippleLedgerHash.h>
@@ -73,10 +74,25 @@ make_LedgerConsensus (
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);
 
+/** Apply a set of transactions to a ledger
+
+  @param set         The set of transactions to apply
+  @param applyLedger The ledger to which the transactions should be applied.
+  @param checkLedger A reference ledger for determining error messages (
+                       typically new last closed ledger).
+  @param retriables  Collect failed transactions in this set.
+  @param openLgr     True if applyLedger is open, else false.
+*/
 void
 applyTransactions(SHAMap const* set, Ledger::ref applyLedger,
                   Ledger::ref checkLedger,
-                  CanonicalTXSet& retriableTransactions, bool openLgr);
+                  CanonicalTXSet& retriables, bool openLgr);
+
+// A version of applyTransactions() that can be used for unit tests.
+void
+applyTransactions(SHAMap const* set, TransactionEngine& engine,
+                  Ledger::ref checkLedger,
+                  CanonicalTXSet& retriables, bool openLgr);
 
 } // ripple
 
