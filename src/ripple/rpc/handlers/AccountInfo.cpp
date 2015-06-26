@@ -26,7 +26,6 @@ namespace ripple {
 
 // {
 //   account: <indent>,
-//   account_index : <index> // optional
 //   strict: <bool>
 //           if true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
@@ -49,16 +48,12 @@ Json::Value doAccountInfo (RPC::Context& context)
 
     std::string strIdent = params.isMember (jss::account)
             ? params[jss::account].asString () : params[jss::ident].asString ();
-    bool bIndex;
-    int iIndex = params.isMember (jss::account_index)
-            ? params[jss::account_index].asUInt () : 0;
     bool bStrict = params.isMember (jss::strict) && params[jss::strict].asBool ();
     AccountID accountID;
 
     // Get info on account.
 
-    auto jvAccepted = RPC::accountFromString (
-        accountID, bIndex, strIdent, iIndex, bStrict);
+    auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict);
 
     if (jvAccepted)
         return jvAccepted;

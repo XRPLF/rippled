@@ -26,7 +26,6 @@ namespace ripple {
 
 // {
 //   account: <account>|<account_public_key>
-//   account_index: <number>        // optional, defaults to 0.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
@@ -44,15 +43,11 @@ Json::Value doAccountOffers (RPC::Context& context)
         return result;
 
     std::string strIdent (params[jss::account].asString ());
-    bool bIndex (params.isMember (jss::account_index));
-    int const iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
     AccountID accountID;
 
-    Json::Value const jv = RPC::accountFromString (
-        accountID, bIndex, strIdent, iIndex, false);
-    if (jv)
+    if (auto jv = RPC::accountFromString (accountID, strIdent))
     {
-        for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
+        for (auto it = jv.begin (); it != jv.end (); ++it)
             result[it.memberName ()] = it.key ();
 
         return result;
@@ -60,9 +55,6 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     // Get info on account.
     result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
-
-    if (bIndex)
-        result[jss::account_index] = iIndex;
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);

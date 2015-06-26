@@ -63,24 +63,12 @@ Json::Value doGatewayBalances (RPC::Context& context)
         ? params[jss::account].asString ()
         : params[jss::ident].asString ());
 
-    int iIndex = 0;
-
-    if (params.isMember (jss::account_index))
-    {
-        auto const& accountIndex = params[jss::account_index];
-        if (!accountIndex.isUInt() && !accountIndex.isInt ())
-            return RPC::invalid_field_message (jss::account_index);
-        iIndex = accountIndex.asUInt ();
-    }
-
     bool const bStrict = params.isMember (jss::strict) &&
             params[jss::strict].asBool ();
 
     // Get info on account.
-    bool bIndex; // out param
     AccountID accountID;
-    Json::Value jvAccepted = RPC::accountFromString (
-        accountID, bIndex, strIdent, iIndex, bStrict);
+    auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict);
 
     if (jvAccepted)
         return jvAccepted;

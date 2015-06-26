@@ -23,7 +23,6 @@ namespace ripple {
 
 // {
 //   'ident' : <indent>,
-//   'account_index' : <index> // optional
 // }
 Json::Value doOwnerInfo (RPC::Context& context)
 {
@@ -36,32 +35,19 @@ Json::Value doOwnerInfo (RPC::Context& context)
     std::string strIdent = context.params.isMember (jss::account)
             ? context.params[jss::account].asString ()
             : context.params[jss::ident].asString ();
-    bool bIndex;
-    int iIndex = context.params.isMember (jss::account_index)
-            ? context.params[jss::account_index].asUInt () : 0;
     Json::Value ret;
 
     // Get info on account.
 
     auto const& closedLedger = context.netOps.getClosedLedger ();
     AccountID accountID;
-    Json::Value jAccepted = RPC::accountFromString (
-        accountID,
-        bIndex,
-        strIdent,
-        iIndex,
-        false);
+    auto jAccepted = RPC::accountFromString (accountID, strIdent);
 
     ret[jss::accepted] = ! jAccepted ?
             context.netOps.getOwnerInfo (closedLedger, accountID) : jAccepted;
 
     auto const& currentLedger = context.netOps.getCurrentLedger ();
-    Json::Value jCurrent = RPC::accountFromString (
-        accountID,
-        bIndex,
-        strIdent,
-        iIndex,
-        false);
+    auto jCurrent = RPC::accountFromString (accountID, strIdent);
 
     ret[jss::current] = ! jCurrent ?
             context.netOps.getOwnerInfo (currentLedger, accountID) : jCurrent;
