@@ -569,9 +569,6 @@ private:
         if (bPeer && iCursor >= 2)
             strPeer = jvParams[iCursor].asString ();
 
-        int             iIndex      = 0;
-        //  int             iIndex      = jvParams.size() >= 2 ? beast::lexicalCast <int>(jvParams[1u].asString()) : 0;
-
         RippleAddress   raAddress;
 
         if (! raAddress.setAccountPublic (strIdent) &&
@@ -586,9 +583,6 @@ private:
 
         if (bStrict)
             jvRequest[jss::strict]     = 1;
-
-        if (iIndex)
-            jvRequest[jss::account_index]  = iIndex;
 
         if (!strPeer.empty ())
         {

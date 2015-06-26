@@ -23,37 +23,30 @@
 namespace ripple {
 namespace RPC {
 
-Json::Value accountFromString (
-    AccountID& result,
-    bool& bIndex,
-    std::string const& strIdent,
-    int const iIndex,
-    bool const bStrict)
+boost::optional <AccountID> accountFromStringStrict (std::string const& account)
 {
-    // VFALCO Use AnyPublicKey
-    // Try public key
+    boost::optional <AccountID> result;
     RippleAddress naAccount;
-    if (naAccount.setAccountPublic(strIdent))
-    {
-        result = calcAccountID(naAccount);
-        bIndex = false;
-        return Json::objectValue;
-    }
+    if (naAccount.setAccountPublic (account))
+        result = calcAccountID (naAccount);
+    else
+        result = parseBase58<AccountID> (account);
+    return result;
+}
 
-    // Try AccountID
-    auto accountID =
-        parseBase58<AccountID>(strIdent);
-    if (accountID)
+Json::Value accountFromString (
+    AccountID& result, std::string const& strIdent, bool bStrict)
+{
+    if (auto accountID = accountFromStringStrict (strIdent))
     {
         result = *accountID;
-        bIndex = false;
         return Json::objectValue;
     }
 
     if (bStrict)
     {
-        accountID = deprecatedParseBitcoinAccountID(strIdent);
-        return rpcError (accountID ? rpcACT_BITCOIN : rpcACT_MALFORMED);
+        auto id = deprecatedParseBitcoinAccountID (strIdent);
+        return rpcError (id ? rpcACT_BITCOIN : rpcACT_MALFORMED);
     }
 
     RippleAddress   naSeed;
@@ -70,10 +63,9 @@ Json::Value accountFromString (
     // Generator maps don't exist.  Assume it is a master
     // generator.
 
-    bIndex  = !iIndex;
-    naAccount.setAccountPublic (naGenerator, iIndex);
-
-    result = calcAccountID(naAccount);
+    RippleAddress naAccount;
+    naAccount.setAccountPublic (naGenerator, 0);
+    result = calcAccountID (naAccount);
     return Json::objectValue;
 }
 

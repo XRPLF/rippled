@@ -32,7 +32,6 @@ namespace ripple {
 /** General RPC command that can retrieve objects in the account root.
     {
       account: <account>|<account_public_key>
-      account_index: <integer> // optional, defaults to 0
       ledger_hash: <string> // optional
       ledger_index: <string | unsigned integer> // optional
       type: <string> // optional, defaults to all account objects types
@@ -54,13 +53,8 @@ Json::Value doAccountObjects (RPC::Context& context)
 
     AccountID accountID;
     {
-        bool bIndex;
         auto const strIdent = params[jss::account].asString ();
-        auto iIndex = context.params.isMember (jss::account_index)
-            ? context.params[jss::account_index].asUInt () : 0;
-        auto jv = RPC::accountFromString (
-            accountID, bIndex, strIdent, iIndex, false);
-        if (jv)
+        if (auto jv = RPC::accountFromString (accountID, strIdent))
         {
             for (auto it = jv.begin (); it != jv.end (); ++it)
                 result[it.memberName ()] = it.key ();

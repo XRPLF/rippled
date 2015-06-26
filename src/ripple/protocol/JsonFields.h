@@ -65,10 +65,6 @@ JSS ( accountTreeHash );            // out: ledger/Ledger.cpp
 JSS ( account_data );               // out: AccountInfo
 JSS ( account_hash );               // out: LedgerToJson
 JSS ( account_id );                 // out: WalletPropose
-JSS ( account_index );              // in: AccountCurrencies, AccountOffers,
-                                    //     AccountInfo, AccountLines,
-                                    //     AccountObjects, OwnerInfo
-                                    // out: AccountOffers
 JSS ( account_objects );            // out: AccountObjects
 JSS ( account_root );               // in: LedgerEntry
 JSS ( accounts );                   // in: LedgerEntry, Subscribe,
@@ -275,7 +271,6 @@ JSS ( paths_computed );             // out: PathRequest, RipplePathFind
 JSS ( peer );                       // in: AccountLines
 JSS ( peer_authorized );            // out: AccountLines
 JSS ( peer_id );                    // out: LedgerProposal
-JSS ( peer_index );                 // in/out: AccountLines
 JSS ( peers );                      // out: InboundLedger, handlers/Peers
 JSS ( port );                       // in: Connect
 JSS ( previous_ledger );            // out: LedgerPropose
