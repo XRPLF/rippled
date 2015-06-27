@@ -1240,7 +1240,7 @@ accountSend (View& view,
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
-            terResult = (view.flags() & tapOPEN_LEDGER)
+            terResult = view.open()
                 ? telFAILED_PROCESSING
                 : tecFAILED_PROCESSING;
         }
@@ -1497,7 +1497,7 @@ transferXRP (View& view,
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
         // FIXME: this logic should be moved to callers maybe?
-        return (view.flags() & tapOPEN_LEDGER)
+        return view.open()
             ? telFAILED_PROCESSING
             : tecFAILED_PROCESSING;
     }

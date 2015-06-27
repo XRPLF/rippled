@@ -83,7 +83,7 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            TransactionMetaSet::pointer txMeta;
+            TxMeta::pointer txMeta;
 
             if (getTransactionMeta (*lgr, txn->getID (), txMeta))
             {

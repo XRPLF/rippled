@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/tests/common_ledger.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/TxFlags.h>
@@ -90,12 +91,13 @@ TestLedger::TestLedger (
         createGenesisLedger(startAmountDrops, masterAcct);
 }
 
-std::pair<TER, bool> TestLedger::applyTransaction (STTx const& tx, bool check)
+std::pair<TER, bool>
+TestLedger::applyTransaction (STTx const& tx, bool check)
 {
     // Apply the transaction to the open ledger.
-    TransactionEngine engine(openLedger_);
-    auto r = engine.applyTransaction (
-        tx, tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN));
+    auto const r = apply(
+        *openLedger_, tx, check ? tapNONE : tapNO_CHECK_SIGN,
+            getConfig(), beast::Journal{});
 
     // Close the open ledger to see if the transaction was real committed.
     //

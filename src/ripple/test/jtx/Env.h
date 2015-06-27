@@ -27,6 +27,7 @@
 #include <ripple/test/jtx/tags.h>
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
@@ -117,6 +118,10 @@ class Env
 public:
     beast::unit_test::suite& test;
 
+    /** Configuration used. */
+    // VFALCO NOTE Some code still calls getConfig()
+    Config const config;
+
     /** The master account. */
     Account const master;
 
@@ -125,7 +130,7 @@ public:
 
 public:
     Env (beast::unit_test::suite& test_);
-    
+   
     /** Turn on JSON tracing.
         With no arguments, trace all
     */

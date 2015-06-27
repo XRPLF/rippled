@@ -35,7 +35,7 @@ namespace ripple {
 // VFALCO TODO rename to SortedTxSet
 class CanonicalTXSet
 {
-public:
+private:
     class Key
     {
     public:
@@ -71,6 +71,7 @@ public:
         std::uint32_t mSeq;
     };
 
+public:
     using iterator = std::map <Key, std::shared_ptr<STTx const>>::iterator;
     using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
 

@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
@@ -30,62 +31,6 @@
 #include <algorithm>
 
 namespace ripple {
-
-/**
-See the README.md for an overview of the SetSignerList transaction that
-this class implements.
-*/
-class SetSignerList final
-    : public Transactor
-{
-private:
-    // Values determined during preCheck for use later.
-    enum Operation {unknown, set, destroy};
-    Operation do_ {unknown};
-    std::uint32_t quorum_ {0};
-    std::vector<SignerEntries::SignerEntry> signers_;
-
-public:
-    SetSignerList (
-        STTx const& txn,
-        ViewFlags params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("SetSignerList"))
-    {
-
-    }
-
-    /**
-    Applies the transaction if it is well formed and the ledger state permits.
-    */
-    TER doApply () override;
-
-protected:
-    /**
-    Check anything that can be checked without the ledger.
-    */
-    TER preCheck () override;
-
-private:
-    // signers are not const because method (intentionally) sorts vector.
-    TER validateQuorumAndSignerEntries (
-        std::uint32_t quorum,
-        std::vector<SignerEntries::SignerEntry>& signers) const;
-
-    // Methods called by doApply()
-    TER replaceSignerList (uint256 const& index);
-    TER destroySignerList (uint256 const& index);
-
-    void writeSignersToLedger (SLE::pointer ledgerEntry);
-
-    static std::size_t ownerCountDelta (std::size_t entryCount);
-};
-
-//------------------------------------------------------------------------------
 
 TER
 SetSignerList::doApply ()
@@ -116,6 +61,11 @@ SetSignerList::doApply ()
 TER
 SetSignerList::preCheck()
 {
+#if ! RIPPLE_ENABLE_MULTI_SIGN
+    if (! (view().flags() & tapENABLE_TESTING))
+        return temDISABLED;
+#endif
+
     // We need the account ID later, so do this check first.
     preCheckAccount ();
 
@@ -127,7 +77,7 @@ SetSignerList::preCheck()
     if (quorum_ && hasSignerEntries)
     {
         SignerEntries::Decoded signers (
-            SignerEntries::deserialize (mTxn, m_journal, "transaction"));
+            SignerEntries::deserialize (mTxn, j_, "transaction"));
 
         if (signers.ter != tesSUCCESS)
             return signers.ter;
@@ -150,7 +100,7 @@ SetSignerList::preCheck()
     else
     {
         // Neither a set nor a destroy.  Malformed.
-        if (m_journal.trace) m_journal.trace <<
+        if (j_.trace) j_.trace <<
             "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
@@ -169,7 +119,7 @@ SetSignerList::validateQuorumAndSignerEntries (
         if ((signerCount < SignerEntries::minEntries)
             || (signerCount > SignerEntries::maxEntries))
         {
-            if (m_journal.trace) m_journal.trace <<
+            if (j_.trace) j_.trace <<
                 "Too many or too few signers in signer list.";
             return temMALFORMED;
         }
@@ -180,7 +130,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     if (std::adjacent_find (
         signers.begin (), signers.end ()) != signers.end ())
     {
-        if (m_journal.trace) m_journal.trace <<
+        if (j_.trace) j_.trace <<
             "Duplicate signers in signer list";
         return temBAD_SIGNER;
     }
@@ -194,7 +144,7 @@ SetSignerList::validateQuorumAndSignerEntries (
 
         if (signer.account == mTxnAccountID)
         {
-            if (m_journal.trace) m_journal.trace <<
+            if (j_.trace) j_.trace <<
                 "A signer may not self reference account.";
             return temBAD_SIGNER;
         }
@@ -204,7 +154,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     }
     if ((quorum <= 0) || (allSignersWeight < quorum))
     {
-        if (m_journal.trace) m_journal.trace <<
+        if (j_.trace) j_.trace <<
             "Quorum is unreachable";
         return temBAD_QUORUM;
     }
@@ -225,7 +175,7 @@ SetSignerList::replaceSignerList (uint256 const& index)
     std::uint32_t const addedOwnerCount = ownerCountDelta (signers_.size ());
 
     auto const newReserve =
-        mEngine->view().fees().accountReserve(
+        view().fees().accountReserve(
             oldOwnerCount + addedOwnerCount);
 
     // We check the reserve against the starting balance because we want to
@@ -236,7 +186,7 @@ SetSignerList::replaceSignerList (uint256 const& index)
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
     auto signerList = std::make_shared<SLE>(ltSIGNER_LIST, index);
-    mEngine->view().insert (signerList);
+    view().insert (signerList);
     writeSignersToLedger (signerList);
 
     // Lambda for call to dirAdd.
@@ -247,10 +197,10 @@ SetSignerList::replaceSignerList (uint256 const& index)
 
     // Add the signer list to the account's directory.
     std::uint64_t hint;
-    TER result = dirAdd(mEngine->view (),
+    TER result = dirAdd(ctx_.view (),
         hint, getOwnerDirIndex (mTxnAccountID), index, describer);
 
-    if (m_journal.trace) m_journal.trace <<
+    if (j_.trace) j_.trace <<
         "Create signer list for account " <<
         mTxnAccountID << ": " << transHuman (result);
 
@@ -260,7 +210,7 @@ SetSignerList::replaceSignerList (uint256 const& index)
     signerList->setFieldU64 (sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(mEngine->view(),
+    adjustOwnerCount(view(),
         mTxnAccount, addedOwnerCount);
 
     return result;
@@ -271,7 +221,7 @@ SetSignerList::destroySignerList (uint256 const& index)
 {
     // See if there's an ltSIGNER_LIST for this account.
     SLE::pointer signerList =
-        mEngine->view().peek (keylet::signers(index));
+        view().peek (keylet::signers(index));
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signerList)
@@ -282,7 +232,7 @@ SetSignerList::destroySignerList (uint256 const& index)
     std::uint32_t removeFromOwnerCount = 0;
     auto const k = keylet::signers(mTxnAccountID);
     SLE::pointer accountSignersList =
-        mEngine->view().peek (k);
+        view().peek (k);
     if (accountSignersList)
     {
         STArray const& actualList =
@@ -293,14 +243,14 @@ SetSignerList::destroySignerList (uint256 const& index)
     // Remove the node from the account directory.
     std::uint64_t const hint (signerList->getFieldU64 (sfOwnerNode));
 
-    TER const result  = dirDelete(mEngine->view (), false, hint,
+    TER const result  = dirDelete(ctx_.view (), false, hint,
         getOwnerDirIndex (mTxnAccountID), index, false, (hint == 0));
 
     if (result == tesSUCCESS)
-        adjustOwnerCount(mEngine->view(),
+        adjustOwnerCount(view(),
             mTxnAccount, removeFromOwnerCount);
 
-    mEngine->view ().erase (signerList);
+    ctx_.view ().erase (signerList);
 
     return result;
 }
@@ -355,19 +305,6 @@ SetSignerList::ownerCountDelta (std::size_t entryCount)
     // wild it will be very difficult to change.  So think hard about what
     // we want for the long term.
     return 2 + entryCount;
-}
-
-TER
-transact_SetSignerList (
-    STTx const& txn,
-    ViewFlags params,
-    TransactionEngine* engine)
-{
-#if ! RIPPLE_ENABLE_MULTI_SIGN
-    if (! (engine->view().flags() & tapENABLE_TESTING))
-        return temDISABLED;
-#endif
-    return SetSignerList (txn, params, engine).apply ();
 }
 
 } // namespace ripple

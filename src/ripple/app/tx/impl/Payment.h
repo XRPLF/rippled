@@ -17,20 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
+#define RIPPLE_TX_PAYMENT_H_INCLUDED
+
+#include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+// See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-} // RPC
+class Payment
+    : public Transactor
+{
+    /* The largest number of paths we allow */
+    static std::size_t const MaxPathSize = 6;
+
+    /* The longest path we allow */
+    static std::size_t const MaxPathLength = 8;
+
+public:
+    template <class... Args>
+    Payment (Args&&... args)
+        : Transactor(std::forward<
+            Args>(args)...)
+    {
+    }
+
+    TER preCheck () override;
+    TER doApply () override;
+};
+
 } // ripple
 
 #endif

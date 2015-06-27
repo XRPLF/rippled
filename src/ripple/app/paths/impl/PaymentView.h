@@ -73,14 +73,14 @@ public:
     /** @{ */
     explicit
     PaymentView (PaymentView const* parent)
-        : ViewWrapper (parent)
+        : ViewWrapper (*parent, parent->flags())
         , pv_ (parent)
     {
     }
 
     explicit
     PaymentView (PaymentView* parent)
-        : ViewWrapper (parent)
+        : ViewWrapper (*parent, parent->flags())
         , pv_ (parent)
     {
     }

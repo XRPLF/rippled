@@ -17,20 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#ifndef RIPPLE_TX_APPLY_H_INCLUDED
+#define RIPPLE_TX_APPLY_H_INCLUDED
+
+#include <ripple/core/Config.h>
+#include <ripple/ledger/View.h>
+#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/TER.h>
+#include <beast/utility/Journal.h>
+#include <memory>
+#include <utility>
 
 namespace ripple {
-namespace RPC {
 
-void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+/** Apply a transaction to a BasicView.
 
-} // RPC
+    Throws:
+        
+        Exceptions are thrown on broken invariants. Callers
+        should catch these exceptions to protect the ledger
+        and the running process.
+
+        std::logic_error
+        (any)
+
+    @return A pair with the TER and a bool indicating
+            whether or not the transaction was applied.
+*/
+// VFALCO Some call sites use try/catch some don't.
+std::pair<TER, bool>
+apply (BasicView& view,
+    STTx const& tx, ViewFlags flags,
+        Config const& config,
+            beast::Journal journal);
+
 } // ripple
 
 #endif

@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
@@ -127,9 +128,9 @@ parseTransaction(TestAccount& account, Json::Value const& tx_json, bool sign)
 void
 applyTransaction(Ledger::pointer const& ledger, STTx const& tx, bool check)
 {
-    TransactionEngine engine(ledger);
-    auto r = engine.applyTransaction(tx,
-        tapOPEN_LEDGER | (check ? tapNONE : tapNO_CHECK_SIGN));
+    auto const r = apply (*ledger, tx,
+        check ? tapNONE : tapNO_CHECK_SIGN, getConfig(),
+            beast::Journal{});
     if (r.first != tesSUCCESS)
         throw std::runtime_error("r != tesSUCCESS");
     if (!r.second)
@@ -441,9 +442,11 @@ close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
     // that other Ledger constructor can take a const Ledger.
     Ledger oldLCL(*LCL, false);
     Ledger::pointer newLCL = std::make_shared<Ledger>(false, oldLCL);
+    MetaView accum(*newLCL, tapNONE);
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
-    applyTransactions(&set, newLCL, newLCL, retriableTransactions, false);
+    applyTransactions(&set, accum, newLCL, retriableTransactions);
+    accum.apply(*newLCL, {});
     newLCL->updateSkipList();
     newLCL->setClosed();
     newLCL->stateMap().flushDirty(

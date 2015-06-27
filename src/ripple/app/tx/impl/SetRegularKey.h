@@ -17,63 +17,34 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/tx/impl/SetRegularKey.h>
+#ifndef RIPPLE_TX_SETREGULARKEY_H_INCLUDED
+#define RIPPLE_TX_SETREGULARKEY_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/types.h>
 
 namespace ripple {
 
-std::uint64_t
-SetRegularKey::calculateBaseFee ()
+class SetRegularKey
+    : public Transactor
 {
-    if ( mTxnAccount
-            && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
-            && (calcAccountID(mSigningPubKey) == mTxnAccountID))
+    std::uint64_t calculateBaseFee () override;
+
+public:
+    template <class... Args>
+    SetRegularKey (Args&&... args)
+        : Transactor(std::forward<
+            Args>(args)...)
     {
-        // flag is armed and they signed with the right account
-        return 0;
     }
 
-    return Transactor::calculateBaseFee ();
-}
+    TER preCheck () override;
+    TER doApply () override;
+};
 
-TER
-SetRegularKey::preCheck ()
-{
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+} // ripple
 
-    if (uTxFlags & tfUniversalMask)
-    {
-        if (j_.trace) j_.trace <<
-            "Malformed transaction: Invalid flags set.";
+#endif
 
-        return temINVALID_FLAG;
-    }
-
-    return Transactor::preCheck ();
-}
-
-TER
-SetRegularKey::doApply ()
-{
-    if (mFeeDue == zero)
-        mTxnAccount->setFlag (lsfPasswordSpent);
-
-    if (mTxn.isFieldPresent (sfRegularKey))
-    {
-        mTxnAccount->setAccountID (sfRegularKey,
-            mTxn.getAccountID (sfRegularKey));
-    }
-    else
-    {
-        if (mTxnAccount->isFlag (lsfDisableMaster))
-            return tecMASTER_DISABLED;
-        mTxnAccount->makeFieldAbsent (sfRegularKey);
-    }
-
-    return tesSUCCESS;
-}
-
-}

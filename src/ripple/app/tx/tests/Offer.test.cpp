@@ -55,7 +55,7 @@ public:
     void testCanceledOffer ()
     {
         using namespace jtx;
-        Env env = *this;
+        Env env (*this);
         auto const gw = Account ("gateway");
         auto const USD = gw["USD"];
 

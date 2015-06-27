@@ -21,6 +21,7 @@
 #define RIPPLE_APP_BOOK_TAKER_H_INCLUDED
 
 #include <ripple/app/tx/impl/Offer.h>
+#include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/TER.h>
@@ -239,48 +240,14 @@ public:
 class Taker
     : public BasicTaker
 {
-private:
-    static
-    std::uint32_t
-    calculateRate (View const& view,
-        AccountID const& issuer,
-            AccountID const& account);
-
-    // The underlying ledger entry we are dealing with
-    View& view_;
-
-    // The amount of XRP that flowed if we were autobridging
-    STAmount xrp_flow_;
-
-    // The number direct crossings that we performed
-    std::uint32_t direct_crossings_;
-
-    // The number autobridged crossings that we performed
-    std::uint32_t bridge_crossings_;
-
-    TER
-    fill (BasicTaker::Flow const& flow, Offer const& offer);
-
-    TER
-    fill (
-        BasicTaker::Flow const& flow1, Offer const& leg1,
-        BasicTaker::Flow const& flow2, Offer const& leg2);
-
-    TER
-    transferXRP (AccountID const& from, AccountID const& to, STAmount const& amount);
-
-    TER
-    redeemIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
-
-    TER
-    issueIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
-
 public:
     Taker () = delete;
     Taker (Taker const&) = delete;
 
-    Taker (CrossType cross_type, View& view, AccountID const& account,
-        Amounts const& offer, std::uint32_t flags, beast::Journal journal);
+    Taker (CrossType cross_type, View& view,
+        AccountID const& account, Amounts const& offer,
+            std::uint32_t flags, Config const& config,
+                beast::Journal journal);
     ~Taker () = default;
 
     void
@@ -318,6 +285,45 @@ public:
     TER
     cross (Offer const& leg1, Offer const& leg2);
     /** @} */
+
+private:
+    static
+    std::uint32_t
+    calculateRate (View const& view,
+        AccountID const& issuer,
+            AccountID const& account);
+
+    TER
+    fill (BasicTaker::Flow const& flow, Offer const& offer);
+
+    TER
+    fill (
+        BasicTaker::Flow const& flow1, Offer const& leg1,
+        BasicTaker::Flow const& flow2, Offer const& leg2);
+
+    TER
+    transferXRP (AccountID const& from, AccountID const& to, STAmount const& amount);
+
+    TER
+    redeemIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
+
+    TER
+    issueIOU (AccountID const& account, STAmount const& amount, Issue const& issue);
+
+private:
+    // The underlying ledger entry we are dealing with
+    View& view_;
+
+    Config const& config_;
+
+    // The amount of XRP that flowed if we were autobridging
+    STAmount xrp_flow_;
+
+    // The number direct crossings that we performed
+    std::uint32_t direct_crossings_;
+
+    // The number autobridged crossings that we performed
+    std::uint32_t bridge_crossings_;
 };
 
 }

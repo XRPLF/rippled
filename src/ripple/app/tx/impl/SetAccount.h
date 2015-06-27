@@ -17,20 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
+#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+class SetAccount
+    : public Transactor
+{
+    static std::size_t const DOMAIN_BYTES_MAX = 256;
+    static std::size_t const PUBLIC_BYTES_MAX = 33;
 
-} // RPC
+public:
+    template <class... Args>
+    SetAccount (Args&&... args)
+        : Transactor(std::forward<
+            Args>(args)...)
+    {
+    }
+
+    TER preCheck () override;
+    TER doApply () override;
+};
+
 } // ripple
 
 #endif

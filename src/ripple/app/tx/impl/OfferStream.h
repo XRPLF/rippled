@@ -50,20 +50,23 @@ namespace ripple {
 class OfferStream
 {
 private:
-    beast::Journal m_journal;
+    beast::Journal j_;
     std::reference_wrapper <View> m_view;
     std::reference_wrapper <View> m_view_cancel;
     Book m_book;
     Clock::time_point m_when;
     BookTip m_tip;
     Offer m_offer;
+    Config const& config_;
 
     void
     erase (View& view);
 
 public:
-    OfferStream (View& view, View& view_cancel, BookRef book,
-        Clock::time_point when, beast::Journal journal);
+    OfferStream (View& view, View& view_cancel,
+        BookRef book, Clock::time_point when,
+            Config const& config,
+                beast::Journal journal);
 
     View&
     view () noexcept

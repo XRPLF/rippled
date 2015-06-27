@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -31,7 +32,6 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/tx/TransactionEngine.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -352,20 +352,20 @@ public:
         // Start with a mutable snapshot of the open ledger
         auto const ledger =
             mCurrentLedger.getMutable();
-        TransactionEngine engine (ledger);
-
         int recovers = 0;
 
         for (auto const& it : mHeldTransactions)
         {
             try
             {
-                ViewFlags tepFlags = tapOPEN_LEDGER;
+                ViewFlags tepFlags = tapNONE;
 
                 if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
                     tepFlags = static_cast<ViewFlags> (tepFlags | tapNO_CHECK_SIGN);
 
-                auto ret = engine.applyTransaction (*it.second, tepFlags);
+                auto const ret = apply(
+                    *ledger, *it.second, tepFlags, getConfig(),
+                        deprecatedLogs().journal("LedgerMaster"));
 
                 if (ret.second)
                     ++recovers;

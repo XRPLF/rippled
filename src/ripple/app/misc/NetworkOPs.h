@@ -233,7 +233,7 @@ public:
     virtual std::size_t getLocalTxCount () = 0;
 
     // client information retrieval functions
-    using AccountTx  = std::pair<Transaction::pointer, TransactionMetaSet::pointer>;
+    using AccountTx  = std::pair<Transaction::pointer, TxMeta::pointer>;
     using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs getAccountTxs (

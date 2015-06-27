@@ -20,16 +20,16 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/app/tx/Transaction.h>
-#include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/app/ledger/TxMeta.h>
 #include <ripple/ledger/SLECache.h>
 #include <ripple/ledger/View.h>
+#include <ripple/app/tx/Transaction.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/Book.h>
+#include <ripple/shamap/SHAMap.h>
 #include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <mutex>
@@ -118,22 +118,16 @@ public:
     //
     //--------------------------------------------------------------------------
 
+    ViewInfo const&
+    info() const
+    {
+        return info_;
+    }
+
     Fees const&
     fees() const override
     {
         return fees_;
-    }
-
-    LedgerIndex
-    seq() const override
-    {
-        return seq_;
-    }
-
-    std::uint32_t
-    time() const override
-    {
-        return mParentCloseTime;
     }
 
     bool
@@ -161,10 +155,13 @@ public:
         mTotCoins -= feeDrops;
     }
 
+    std::size_t
+    txCount() const override;
+
     bool
     txExists (uint256 const& key) const override;
 
-    bool
+    void
     txInsert (uint256 const& key,
         std::shared_ptr<Serializer const
             > const& txn, std::shared_ptr<
@@ -187,9 +184,9 @@ public:
         mValidHash = false;
     }
 
-    void setClosed ()
+    void setClosed()
     {
-        mClosed = true;
+        info_.open = false;
     }
 
     void setValidated()
@@ -204,10 +201,10 @@ public:
 
     void setImmutable ();
 
-    // VFALCO Rename to closed
+    // DEPRECATED use closed()
     bool isClosed () const
     {
-        return mClosed;
+        return closed();
     }
 
     bool isAccepted () const
@@ -224,11 +221,14 @@ public:
     {
         return mImmutable;
     }
-
+    
+    // Indicates that all ledger entries
+    // are available locally. For example,
+    // all in the NodeStore and memory.
     void setFull ()
     {
-        txMap_->setLedgerSeq (seq_);
-        stateMap_->setLedgerSeq (seq_);
+        txMap_->setLedgerSeq (info_.seq);
+        stateMap_->setLedgerSeq (info_.seq);
     }
 
     // ledger signature operations
@@ -266,20 +266,22 @@ public:
         mTotCoins = totCoins;
     }
 
+    // DEPRECATED
     std::uint32_t getCloseTimeNC () const
     {
-        return mCloseTime;
+        return info_.closeTime;
     }
 
+    // DEPRECATED Use parentCloseTime()
     std::uint32_t getParentCloseTimeNC () const
     {
-        return mParentCloseTime;
+        return info_.parentCloseTime;
     }
 
-    // DEPRECATED
+    // DEPRECATED Use seq()
     std::uint32_t getLedgerSeq () const
     {
-        return seq_;
+        return info_.seq;
     }
 
     int getCloseResolution () const
@@ -293,10 +295,10 @@ public:
     }
 
     // close time functions
-    void setCloseTime (std::uint32_t ct)
+    void setCloseTime (std::uint32_t when)
     {
         assert (!mImmutable);
-        mCloseTime = ct;
+        info_.closeTime = when;
     }
 
     void setCloseTime (boost::posix_time::ptime);
@@ -383,6 +385,7 @@ public:
         return mBaseFee;
     }
 
+    // DEPRECATED use fees()
     std::uint64_t getReserve (int increments) const
     {
         // Returns the required reserve in drops
@@ -391,6 +394,7 @@ public:
             + mReserveBase;
     }
 
+    // DEPRECATED use fees()
     std::uint64_t getReserveInc () const
     {
         deprecatedUpdateCachedFees ();
@@ -444,20 +448,12 @@ private:
     uint256 mTransHash;
     uint256 mAccountHash;
     std::uint64_t mTotCoins;
-    std::uint32_t seq_;
-
-    // when this ledger closed
-    std::uint32_t mCloseTime;
-
-    // when the previous ledger closed
-    std::uint32_t mParentCloseTime;
 
     // the resolution for this ledger close time (2-120 seconds)
     int           mCloseResolution;
 
     // flags indicating how this ledger close took place
     std::uint32_t mCloseFlags;
-    bool mClosed = false;
     bool mValidated = false;
     bool mValidHash = false;
     bool mAccepted = false;
@@ -470,6 +466,7 @@ private:
     std::mutex mutable mutex_;
 
     Fees fees_;
+    ViewInfo info_;
 
     // Ripple cost of the reference transaction
     std::uint64_t mutable mBaseFee = 0;
@@ -561,13 +558,13 @@ getTransaction (Ledger const& ledger,
 bool
 getTransaction (Ledger const& ledger,
     uint256 const& transID, Transaction::pointer & txn,
-        TransactionMetaSet::pointer & txMeta,
+        TxMeta::pointer & txMeta,
             TransactionMaster& cache);
 
 bool
 getTransactionMeta (Ledger const&,
     uint256 const& transID,
-        TransactionMetaSet::pointer & txMeta);
+        TxMeta::pointer & txMeta);
 
 // VFALCO NOTE This is called from only one place
 bool

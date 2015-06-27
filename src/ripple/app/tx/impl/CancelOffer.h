@@ -17,20 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#ifndef RIPPLE_TX_CANCELOFFER_H_INCLUDED
+#define RIPPLE_TX_CANCELOFFER_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+class CancelOffer
+    : public Transactor
+{
+public:
+    template <class... Args>
+    CancelOffer (Args&&... args)
+        : Transactor(std::forward<
+            Args>(args)...)
+    {
+    }
 
-} // RPC
-} // ripple
+    TER preCheck () override;
+
+    TER doApply () override;
+};
+
+}
 
 #endif

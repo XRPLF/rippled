@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/app/tx/impl/apply.cpp>
 #include <ripple/app/tx/impl/BookTip.cpp>
 #include <ripple/app/tx/impl/CancelOffer.cpp>
 #include <ripple/app/tx/impl/CancelTicket.cpp>
@@ -37,8 +38,7 @@
 #include <ripple/app/tx/impl/Taker.cpp>
 #include <ripple/app/tx/impl/TransactionMaster.cpp>
 #include <ripple/app/tx/impl/Transaction.cpp>
-#include <ripple/app/tx/impl/TransactionEngine.cpp>
-#include <ripple/app/tx/impl/TransactionMeta.cpp>
+#include <ripple/app/tx/impl/ApplyContext.cpp>
 #include <ripple/app/tx/impl/TransactionAcquire.cpp>
 #include <ripple/app/tx/impl/Transactor.cpp>
 

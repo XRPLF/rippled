@@ -2145,6 +2145,9 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\MetaView.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\TxMeta.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2215,6 +2218,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\TxMeta.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
@@ -2454,6 +2460,18 @@
     <ClCompile Include="..\..\src\ripple\app\tests\Regression_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
+      <Filter>ripple\app\tx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\apply.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\ApplyContext.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\ApplyContext.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2463,18 +2481,33 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelOffer.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CancelOffer.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelTicket.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CancelTicket.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Change.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\Change.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateOffer.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CreateOffer.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateTicket.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CreateTicket.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\InboundTransactions.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2493,18 +2526,33 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Payment.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\Payment.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetAccount.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\SetAccount.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetRegularKey.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\SetRegularKey.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetSignerList.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\SetSignerList.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SetTrust.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\SetTrust.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\SignerEntries.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2523,13 +2571,7 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionAcquire.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionEngine.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMaster.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMeta.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Transactor.cpp">
@@ -2568,13 +2610,7 @@
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionAcquire.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\TransactionEngine.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMaster.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\TransactionMeta.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
@@ -2596,6 +2632,9 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\contract.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CountedObject.h">

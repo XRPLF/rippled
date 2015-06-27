@@ -28,26 +28,27 @@
 
 namespace ripple {
 
-class TransactionMetaSet
+// VFALCO Move to ripple/app/ledger/detail, rename to TxMeta
+class TxMeta
 {
 public:
-    using pointer = std::shared_ptr<TransactionMetaSet>;
+    using pointer = std::shared_ptr<TxMeta>;
     using ref = const pointer&;
 
 private:
     struct CtorHelper{};
     template<class T>
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, T const& data,
+    TxMeta (uint256 const& txID, std::uint32_t ledger, T const& data,
                         CtorHelper);
 public:
-    TransactionMetaSet ()
+    TxMeta ()
         : mLedger (0)
         , mIndex (static_cast<std::uint32_t> (-1))
         , mResult (255)
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, std::uint32_t index)
+    TxMeta (uint256 const& txID, std::uint32_t ledger, std::uint32_t index)
         : mTransactionID (txID)
         , mLedger (ledger)
         , mIndex (static_cast<std::uint32_t> (-1))
@@ -55,15 +56,15 @@ public:
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, Blob const&);
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, std::string const&);
+    TxMeta (uint256 const& txID, std::uint32_t ledger, Blob const&);
+    TxMeta (uint256 const& txID, std::uint32_t ledger, std::string const&);
 
     void init (uint256 const& transactionID, std::uint32_t ledger);
     void clear ()
     {
         mNodes.clear ();
     }
-    void swap (TransactionMetaSet&) noexcept;
+    void swap (TxMeta&) noexcept;
 
     uint256 const& getTxID ()
     {

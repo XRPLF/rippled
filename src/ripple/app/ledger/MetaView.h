@@ -20,13 +20,14 @@
 #ifndef RIPPLE_LEDGER_METAVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_METAVIEW_H_INCLUDED
 
-#include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/ledger/View.h>
+#include <ripple/app/ledger/TxMeta.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/STTx.h>
 #include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
 #include <list>
@@ -34,6 +35,25 @@
 #include <utility>
 
 namespace ripple {
+
+/** Shallow-copy construction tag.
+
+    When a MetaView is shallow-copied, the SLEs and
+    Serializers are shared between instances. It is
+    only safe to use BasicView interfaces, using
+    View members results in undefined behavior.
+*/
+struct shallow_copy_t {};
+extern shallow_copy_t const shallow_copy;
+
+/** Open ledger construction tag.
+
+    Views constructed with this tag will have the
+    rules of open ledgers applied during transaction
+    processing.
+*/
+struct open_ledger_t {};
+extern open_ledger_t const open_ledger;
 
 /** A MetaView can produce tx metadata and is attached to a parent.
 
@@ -70,99 +90,71 @@ private:
 
     // Note that this class needs to be
     // somewhat light-weight copy constructible.
-    BasicView const* parent_;
+    BasicView const& base_;
     ViewFlags flags_ = tapNONE;
-    LedgerIndex seq_;
-    std::uint32_t time_; // should be Clock::time_point
+    ViewInfo info_;
     tx_list txs_;
     item_list items_;
-    TransactionMetaSet meta_;
     std::uint32_t destroyedCoins_ = 0;
+    boost::optional<STAmount> deliverAmount_;
 
 public:
     MetaView() = delete;
+    MetaView(MetaView const&) = delete;
     MetaView& operator= (MetaView const&) = delete;
 
     /** Create a shallow copy of a MetaView.
 
-        The SLEs and Serializers in the created copy
-        are shared with the other view.
+        Effects:
+            Duplicates the information in the
+            passed MetaView.
+
+            The SLEs and Serializers in the copy
+            are shared with the other view.
+            The copy has the same Info values.
+        
+        It is only safe to use the BasicView modification
+        functions. Using View modification functions will
+        break invariants.
+    */
+    // VFALCO Refactor to disallow at compile time,
+    //        breaking invariants on a shallow copy.
+    //
+    MetaView (shallow_copy_t,
+        MetaView const& other);
+
+    /** Create a MetaView representing an open ledger.
+
+        Preconditions:
+            
+            `prev` cannot represent an open ledger.
+
+        Effects:
+
+            The sequence number is set to the
+            sequence number of parent plus one.
+
+            The parentCloseTime is set to the
+            closeTime of parent.
 
         It is only safe to use the BasicView modification
         functions. Using View modification functions will
         break invariants.
 
-        The seq, time, and flags are copied from `other`.
-
-        @note This is used to apply new transactions to
-              the open MetaView.
+        @param parent A view representing the previous
+                      ledger that this open ledger follows.
     */
-    // VFALCO Refactor to disallow at compile time,
-    //        breaking invariants on a shallow copy.
-    //
-    MetaView (MetaView const& other) = default;
+    MetaView (open_ledger_t,
+        BasicView const& parent);
 
-    /** Create a MetaView with a BasicView as its parent.
+    /** Create a nested MetaView.
 
         Effects:
-            The sequence number and time are set
-            from the passed parameters.
 
-        It is only safe to use the BasicView modification
-        functions. Using View modification functions will
-        break invariants.
-
-        @note This is for converting a closed ledger
-              into an open ledger.
-
-        @note A pointer is used to prevent confusion
-              with copy construction.
+            The ViewInfo is copied from the base.
     */
-    // VFALCO Refactor to disallow at compile time,
-    //        breaking invariants on a shallow copy.
-    //
-    MetaView (BasicView const* parent,
-        LedgerIndex seq, std::uint32_t time,
-            ViewFlags flags);
-
-    /** Create a MetaView with a BasicView as its parent.
-
-        Effects:
-            The sequence number and time are inherited
-            from the parent.
-
-            The MetaSet is prepared to produce metadata
-            for a transaction with the specified key.
-
-        @note This is for applying a particular transaction
-              and computing its metadata, or for applying
-              a transaction without extracting metadata. For
-              example, to calculate changes in a sandbox
-              and then throw the sandbox away.
-
-        @note A pointer is used to prevent confusion
-              with copy construction.
-    */
-    MetaView (BasicView const* parent,
-        ViewFlags flags,
-            boost::optional<uint256
-                > const& key = boost::none);
-
-    /** Create a MetaView with a View as its parent.
-
-        Effects:
-            The sequence number, time, and flags
-            are inherited from the parent.
-
-        @note This is for stacking view for the purpose of
-              performing calculations or applying to an
-              underlying MetaView associated with a particular
-              transation.
-
-        @note A pointer is used to prevent confusion
-              with copy construction.
-    */
-    MetaView (View const* parent);
+    MetaView (BasicView const& base,
+        ViewFlags flags);
 
     //--------------------------------------------------------------------------
     //
@@ -170,22 +162,16 @@ public:
     //
     //--------------------------------------------------------------------------
 
+    ViewInfo const&
+    info() const
+    {
+        return info_;
+    }
+
     Fees const&
     fees() const override
     {
-        return parent_->fees();
-    }
-
-    LedgerIndex
-    seq() const override
-    {
-        return seq_;
-    }
-
-    std::uint32_t
-    time() const override
-    {
-        return time_;
+        return base_.fees();
     }
 
     bool
@@ -213,10 +199,13 @@ public:
     void
     destroyCoins (std::uint64_t feeDrops) override;
 
+    std::size_t
+    txCount() const override;
+
     bool
     txExists (uint256 const& key) const override;
 
-    bool
+    void
     txInsert (uint256 const& key,
         std::shared_ptr<Serializer const
             > const& txn, std::shared_ptr<
@@ -251,44 +240,77 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Apply changes to the parent View.
+    /** Apply changes to the base View.
 
-        `to` must contain contents identical to the parent
-        view passed upon construction, else undefined
-        behavior will result.
+        `to` must contain contents identical to the
+        parent view passed upon construction, else
+        undefined behavior will result.
 
-        After a call to apply(), the only valid operation that
-        may be performed on this is a call to the destructor.
+        After a call to apply(), the only valid operation
+        on the object is a call to the destructor.
     */
     void
-    apply (BasicView& to);
+    apply (BasicView& to,
+        beast::Journal j = {});
+
+    /** Apply the results of a transaction to the base view.
+    
+        `to` must contain contents identical to the
+        parent view passed upon construction, else
+        undefined behavior will result.
+
+        After a call to apply(), the only valid operation
+        on the object is a call to the destructor.
+
+        Effects:
+
+            The transaction is inserted to the tx map.
+
+            If the base view represents a closed ledger,
+            the transaction metadata is computed and
+            inserted with the transaction.
+
+        The metadata is computed by recording the
+        differences between the base view and the
+        modifications in this view.
+
+        @param view The view to apply to.
+        @param tx The transaction that was processed.
+        @param ter The result of applying the transaction.
+        @param j Where to log.
+    */
+    void
+    apply (BasicView& to, STTx const& tx,
+        TER result, beast::Journal j);
 
     // For diagnostics
     Json::Value getJson (int) const;
 
-    void calcRawMeta (Serializer&, TER result, std::uint32_t index);
-
     void setDeliveredAmount (STAmount const& amt)
     {
-        meta_.setDeliveredAmount (amt);
+        deliverAmount_ = amt;
     }
 
 private:
+    static
+    bool
+    threadTx (TxMeta& meta,
+        std::shared_ptr<SLE> const& to,
+            Mods& mods);
+
     std::shared_ptr<SLE>
     getForMod (uint256 const& key,
-        Mods& mods);
+        Mods& mods, beast::Journal j);
 
     bool
-    threadTx (AccountID const& to,
-        Mods& mods);
+    threadTx (TxMeta& meta,
+        AccountID const& to, Mods& mods,
+            beast::Journal j);
 
     bool
-    threadTx (std::shared_ptr<SLE> const& to,
-    Mods& mods);
-
-    bool
-    threadOwners (std::shared_ptr<
-        SLE const> const& sle, Mods& mods);
+    threadOwners (TxMeta& meta, std::shared_ptr<
+        SLE const> const& sle, Mods& mods,
+            beast::Journal j);
 };
 
 } // ripple

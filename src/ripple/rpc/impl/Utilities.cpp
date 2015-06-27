@@ -27,7 +27,7 @@ addPaymentDeliveredAmount (
     Json::Value& meta,
     RPC::Context& context,
     Transaction::pointer transaction,
-    TransactionMetaSet::pointer transactionMeta)
+    TxMeta::pointer transactionMeta)
 {
     // We only want to add a "delivered_amount" field if the transaction
     // succeeded - otherwise nothing could have been delivered.

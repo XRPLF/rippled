@@ -39,6 +39,7 @@
 #include <ripple/app/ledger/impl/LedgerMaster.cpp>
 #include <ripple/app/ledger/impl/LedgerTiming.cpp>
 #include <ripple/app/ledger/impl/MetaView.cpp>
+#include <ripple/app/ledger/impl/TxMeta.cpp>
 
 #include <ripple/app/ledger/tests/common_ledger.cpp>
 #include <ripple/app/ledger/tests/DeferredCredits.test.cpp>

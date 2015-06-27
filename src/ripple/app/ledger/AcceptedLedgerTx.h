@@ -53,14 +53,14 @@ public:
 public:
     AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit);
     AcceptedLedgerTx (Ledger::ref ledger, STTx::ref,
-        TransactionMetaSet::ref);
+        TxMeta::ref);
     AcceptedLedgerTx (Ledger::ref ledger, STTx::ref, TER result);
 
     STTx::ref getTxn () const
     {
         return mTxn;
     }
-    TransactionMetaSet::ref getMeta () const
+    TxMeta::ref getMeta () const
     {
         return mMeta;
     }
@@ -105,7 +105,7 @@ public:
 private:
     Ledger::pointer                 mLedger;
     STTx::pointer  mTxn;
-    TransactionMetaSet::pointer     mMeta;
+    TxMeta::pointer     mMeta;
     TER                             mResult;
     boost::container::flat_set<AccountID> mAffected;
     Blob        mRawMeta;

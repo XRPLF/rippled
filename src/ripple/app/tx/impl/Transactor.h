@@ -20,66 +20,73 @@
 #ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
-#include <ripple/app/tx/TransactionEngine.h>
+#include <ripple/app/tx/impl/ApplyContext.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 
 class Transactor
 {
-public:
-    static
-    TER
-    transact (
-        STTx const& txn,
-        ViewFlags params,
-        TransactionEngine* engine);
+protected:
+    STTx const& mTxn;
+    ApplyContext& ctx_;
+    beast::Journal j_;
 
-    TER
-    apply ();
+    AccountID     mTxnAccountID;
+    STAmount      mFeeDue;
+    STAmount      mPriorBalance;  // Balance before fees.
+    STAmount      mSourceBalance; // Balance after fees.
+    SLE::pointer  mTxnAccount;
+    bool          mHasAuthKey;
+    bool          mSigMaster;
+    RippleAddress mSigningPubKey;
+
+public:
+    /** Process the transaction. */
+    std::pair<TER, bool>
+    operator()();
+
+    View&
+    view()
+    {
+        return ctx_.view();
+    }
+
+    View const&
+    view() const
+    {
+        return ctx_.view();
+    }
 
 protected:
-    STTx const&    mTxn;
-    TransactionEngine*              mEngine;
-    ViewFlags const mParams;
+    TER
+    apply();
 
-    AccountID                         mTxnAccountID;
-    STAmount                        mFeeDue;
-    STAmount                        mPriorBalance;  // Balance before fees.
-    STAmount                        mSourceBalance; // Balance after fees.
-    SLE::pointer                    mTxnAccount;
-    bool                            mHasAuthKey;
-    bool                            mSigMaster;
-    RippleAddress                   mSigningPubKey;
+    explicit
+    Transactor (ApplyContext& ctx);
 
-    beast::Journal m_journal;
-
-    virtual TER preCheck ();
-
-    // Non-virtual components of preCheck()
     TER preCheckAccount ();
     TER preCheckSigningKey ();
-
-    virtual TER checkSeq ();
-    virtual TER payFee ();
-
     void calculateFee ();
+
+    // VFALCO This is the equivalent of dynamic_cast
+    //        to discover the type of the derived class,
+    //        and therefore bad.
+    virtual
+    bool
+    mustHaveValidAccount()
+    {
+        return true;
+    }
 
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
     virtual std::uint64_t calculateBaseFee ();
 
+    virtual TER preCheck ();
+    virtual TER checkSeq ();
+    virtual TER payFee ();
     virtual TER checkSign ();
     virtual TER doApply () = 0;
-
-    Transactor (
-        const STTx& txn,
-        ViewFlags params,
-        TransactionEngine* engine,
-        beast::Journal journal = beast::Journal ());
-
-    virtual bool mustHaveValidAccount ()
-    {
-        return true;
-    }
 
 private:
     TER checkSingleSign ();

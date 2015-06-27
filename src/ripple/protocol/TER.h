@@ -25,10 +25,11 @@
 namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_errors
-
-// VFALCO TODO consider renaming TER to TxErr or TxResult for clarity.
 //
-enum TER    // aka TransactionEngineResult
+// "Transaction Engine Result"
+// or Transaction ERror.
+//
+enum TER
 {
     // Note: Range is stable.  Exact numbers are currently unstable.  Use tokens.
 

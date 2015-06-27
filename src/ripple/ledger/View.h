@@ -26,6 +26,7 @@
 #include <ripple/protocol/TER.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
+#include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <functional>
 #include <memory>
@@ -65,11 +66,40 @@ struct Fees
 
 //------------------------------------------------------------------------------
 
-/** A view into a ledger's state items.
+/** Information about the notional ledger backing the view. */
+struct ViewInfo
+{
+    // Fields for all ledgers
+    bool open = true;
+    LedgerIndex seq = 0;
+    std::uint32_t parentCloseTime = 0;
 
-    The interface provides raw access for state item
-    modification operations. There is no checkpointing
+    // Fields for closed ledgers
+    // Closed means "tx set already determined"
+    //uint256 hash;
+    //uint256 txHash;
+    //uint256 stateHash;
+    //uint256 parentHash;
+    //std::uint64_t coins = 0;
+    //bool validated = false;
+    //int closeTimeRes = 0;
+
+    // For closed ledgers, the time the ledger
+    // closed. For open ledgers, the time the ledger
+    // will close if there's no transactions.
+    //
+    std::uint32_t closeTime = 0;
+};
+
+//------------------------------------------------------------------------------
+
+/** A view into a ledger.
+
+    This interface provides read access to state
+    and transaction items. There is no checkpointing
     or calculation of metadata.
+
+    A raw interace is provided for mutable ledgers.
 */
 class BasicView
 {
@@ -80,23 +110,43 @@ public:
 
     virtual ~BasicView() = default;
 
+    /** Returns information about the ledger. */
+    virtual
+    ViewInfo const&
+    info() const = 0;
+
+    /** Returns true if this reflects an open ledger. */
+    bool
+    open() const
+    {
+        return info().open;
+    }
+
+    /** Returns true if this reflects a closed ledger. */
+    bool
+    closed() const
+    {
+        return ! info().open;
+    }
+
+    /** Returns the close time of the previous ledger. */
+    std::uint32_t
+    parentCloseTime() const
+    {
+        return info().parentCloseTime;
+    }
+
+    /** Returns the sequence number of the base ledger. */
+    LedgerIndex
+    seq() const
+    {
+        return info().seq;
+    }
+
     /** Returns the fees for the base ledger. */
     virtual
     Fees const&
     fees() const = 0;
-
-    /** Returns the sequence number of the base ledger. */
-    virtual
-    LedgerIndex
-    seq() const = 0;
-
-    /** Return the last known close time.
-
-        The epoch is based on the Ripple network clock.
-    */
-    virtual
-    std::uint32_t
-    time() const = 0;
 
     /** Determine if a state item exists.
 
@@ -204,6 +254,18 @@ public:
     void
     destroyCoins (std::uint64_t feeDrops) = 0;
 
+    /** Returns the number of newly inserted transactions.
+
+        This will always be zero for closed ledgers, there
+        is no efficient way to count the number of tx in
+        the map. For views representing open ledgers this
+        starts out as one and gets incremented for each
+        transaction that is applied.
+    */
+    virtual
+    std::size_t
+    txCount() const = 0;
+
     /** Returns `true` if a tx exists in the tx map. */
     virtual
     bool
@@ -214,10 +276,11 @@ public:
         @param metaData Optional metadata (may be nullptr)
     */
     virtual
-    bool
+    void
     txInsert (uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-            std::shared_ptr<Serializer const> const& metaData) = 0;
+        std::shared_ptr<Serializer const
+            > const& txn, std::shared_ptr<
+                Serializer const> const& metaData) = 0;
 
     // DEBUG ROUTINE
     // Return a list of transaction keys in the tx map.
@@ -255,11 +318,6 @@ enum ViewFlags
     //
     tapENABLE_TESTING   = 0x02,
 
-    // Transaction is running against an open ledger
-    // true = failures are not forwarded, check transaction fee
-    // false = debit ledger for consumed funds
-    tapOPEN_LEDGER      = 0x10,
-
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
     tapRETRY            = 0x20,
@@ -267,6 +325,27 @@ enum ViewFlags
     // Transaction came from a privileged source
     tapADMIN            = 0x400,
 };
+
+inline
+ViewFlags operator|(
+    ViewFlags const& lhs,
+        ViewFlags const& rhs)
+{
+    return static_cast<ViewFlags>(
+        static_cast<int>(lhs) |
+            static_cast<int>(rhs));
+}
+
+inline
+ViewFlags
+operator&(
+    ViewFlags const& lhs,
+        ViewFlags const& rhs)
+{
+    return static_cast<ViewFlags>(
+        static_cast<int>(lhs) &
+            static_cast<int>(rhs));
+}
 
 /** A contextual view into a ledger's state items.
 
@@ -422,22 +501,16 @@ public:
     {
     }
 
+    ViewInfo const&
+    info() const
+    {
+        return view_.info();
+    }
+
     Fees const&
     fees() const override
     {
         return view_.fees();
-    }
-
-    LedgerIndex
-    seq() const override
-    {
-        return view_.seq();
-    }
-
-    std::uint32_t
-    time() const override
-    {
-        return view_.time();
     }
 
     bool
@@ -488,20 +561,25 @@ public:
         return view_.destroyCoins(feeDrops);
     }
 
+    std::size_t
+    txCount() const override
+    {
+        return view_.txCount();
+    }
+
     bool
     txExists (uint256 const& key) const override
     {
         return view_.txExists(key);
     }
 
-    bool
+    void
     txInsert (uint256 const& key,
         std::shared_ptr<Serializer const
             > const& txn, std::shared_ptr<
                 Serializer const> const& metaData) override
     {
-        return view_.txInsert(
-            key, txn, metaData);
+        view_.txInsert(key, txn, metaData);
     }
 
     std::vector<uint256>
@@ -528,22 +606,16 @@ public:
     {
     }
 
+    ViewInfo const&
+    info() const
+    {
+        return view_.info();
+    }
+
     Fees const&
     fees() const override
     {
         return view_.fees();
-    }
-
-    LedgerIndex
-    seq() const override
-    {
-        return view_.seq();
-    }
-
-    std::uint32_t
-    time() const override
-    {
-        return view_.time();
     }
 
     bool
@@ -594,20 +666,25 @@ public:
         return view_.destroyCoins(feeDrops);
     }
 
+    std::size_t
+    txCount() const override
+    {
+        return view_.txCount();
+    }
+
     bool
     txExists (uint256 const& key) const override
     {
         return view_.txExists(key);
     }
 
-    bool
+    void
     txInsert (uint256 const& key,
         std::shared_ptr<Serializer const
             > const& txn, std::shared_ptr<
                 Serializer const> const& metaData) override
     {
-        return view_.txInsert(
-            key, txn, metaData);
+        view_.txInsert(key, txn, metaData);
     }
 
     std::vector<uint256>

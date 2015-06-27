@@ -23,13 +23,15 @@
 namespace ripple {
 
 OfferStream::OfferStream (View& view, View& view_cancel,
-    BookRef book, Clock::time_point when, beast::Journal journal)
-    : m_journal (journal)
+    BookRef book, Clock::time_point when,
+        Config const& config, beast::Journal journal)
+    : j_ (journal)
     , m_view (view)
     , m_view_cancel (view_cancel)
     , m_book (book)
     , m_when (when)
     , m_tip (view, book)
+    , config_ (config)
 {
 }
 
@@ -46,7 +48,7 @@ OfferStream::erase (View& view)
 
     if (p == nullptr)
     {
-        if (m_journal.error) m_journal.error <<
+        if (j_.error) j_.error <<
             "Missing directory " << m_tip.dir() <<
             " for offer " << m_tip.index();
         return;
@@ -57,7 +59,7 @@ OfferStream::erase (View& view)
 
     if (it == v.end())
     {
-        if (m_journal.error) m_journal.error <<
+        if (j_.error) j_.error <<
             "Missing offer " << m_tip.index() <<
             " for directory " << m_tip.dir();
         return;
@@ -67,7 +69,7 @@ OfferStream::erase (View& view)
     p->setFieldV256 (sfIndexes, v);
     view.update (p);
 
-    if (m_journal.trace) m_journal.trace <<
+    if (j_.trace) j_.trace <<
         "Missing offer " << m_tip.index() <<
         " removed from directory " << m_tip.dir();
 }
@@ -99,7 +101,7 @@ OfferStream::step ()
         if (entry->isFieldPresent (sfExpiration) &&
             entry->getFieldU32 (sfExpiration) <= m_when)
         {
-            if (m_journal.trace) m_journal.trace <<
+            if (j_.trace) j_.trace <<
                 "Removing expired offer " << entry->getIndex();
             offerDelete (view_cancel(),
                 view_cancel().peek(
@@ -114,7 +116,7 @@ OfferStream::step ()
         // Remove if either amount is zero
         if (amount.empty())
         {
-            if (m_journal.warning) m_journal.warning <<
+            if (j_.warning) j_.warning <<
                 "Removing bad offer " << entry->getIndex();
             offerDelete (view_cancel(),
                 view_cancel().peek(
@@ -128,7 +130,7 @@ OfferStream::step ()
         //           looking up the funds twice?
         auto const owner_funds = accountFunds(view(),
             m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
-                getConfig());
+                config_);
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -138,18 +140,18 @@ OfferStream::step ()
             // offer is "found unfunded" versus "became unfunded"
             auto const original_funds = accountFunds(view_cancel(),
                 m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
-                    getConfig());
+                    config_);
 
             if (original_funds == owner_funds)
             {
                 offerDelete (view_cancel(), view_cancel().peek(
                     keylet::offer(entry->key())));
-                if (m_journal.trace) m_journal.trace <<
+                if (j_.trace) j_.trace <<
                     "Removing unfunded offer " << entry->getIndex();
             }
             else
             {
-                if (m_journal.trace) m_journal.trace <<
+                if (j_.trace) j_.trace <<
                     "Removing became unfunded offer " << entry->getIndex();
             }
             m_offer = Offer{};

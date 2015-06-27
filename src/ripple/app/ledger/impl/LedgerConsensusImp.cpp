@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/ledger/impl/LedgerConsensusImp.h>
 #include <ripple/app/main/Application.h>
@@ -31,7 +32,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/TransactionAcquire.h>
-#include <ripple/app/tx/TransactionEngine.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -979,15 +980,27 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     // Build the new last closed ledger
     auto newLCL = std::make_shared<Ledger> (false, *mPreviousLedger);
+    newLCL->setClosed (); // so applyTransactions sees a closed ledger
 
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
     WriteLog (lsDEBUG, LedgerConsensus)
         << "Applying consensus set transactions to the"
         << " last closed ledger";
-    applyTransactions (set.get(), newLCL, newLCL, retriableTransactions, false);
+    {
+        MetaView accum(*newLCL, tapNONE);
+        assert(accum.closed());
+        applyTransactions (set.get(), accum,
+            newLCL, retriableTransactions);
+        accum.apply(*newLCL,
+            deprecatedLogs().journal("LedgerConsensus"));
+    }
+
+    // retriableTransactions will include any transactions that
+    // made it into the consensus set but failed during application
+    // to the ledger.
+
     newLCL->updateSkipList ();
-    newLCL->setClosed ();
 
     int asf = newLCL->stateMap().flushDirty (
         hotACCOUNT_NODE, newLCL->getLedgerSeq());
@@ -1057,8 +1070,20 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     // Build new open ledger
     auto newOL = std::make_shared<Ledger> (true, *newLCL);
+    MetaView accum(*newOL, tapNONE);
+    assert(accum.open());
 
     // Apply disputed transactions that didn't get in
+    //
+    // The first crack of transactions to get into the new
+    // open ledger goes to transactions proposed by a validator
+    // we trust but not included in the consensus set.
+    //
+    // These are done first because they are the most likely
+    // to receive agreement during consensus. They are also
+    // ordered logically "sooner" than transactions not mentioned
+    // in the previous consensus round.
+    //
     bool anyDisputes = false;
     for (auto& it : mDisputes)
     {
@@ -1075,6 +1100,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 auto txn = std::make_shared<STTx>(sit);
 
                 retriableTransactions.push_back (txn);
+
                 anyDisputes = true;
             }
             catch (...)
@@ -1087,7 +1113,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     if (anyDisputes)
     {
-        applyTransactions (nullptr, newOL, newLCL, retriableTransactions, true);
+        applyTransactions (nullptr,
+            accum, newLCL, retriableTransactions);
     }
 
     {
@@ -1102,17 +1129,16 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying transactions from current open ledger";
             applyTransactions (&oldOL->txMap(),
-                newOL, newLCL, retriableTransactions, true);
+                accum, newLCL, retriableTransactions);
         }
 
         // Apply local transactions
-        TransactionEngine engine (newOL);
-
         for (auto it : m_localTX.getTxSet ())
         {
             try
             {
-                engine.applyTransaction (*it.second, tapOPEN_LEDGER);
+                apply (accum, *it.second, tapNONE, getConfig(),
+                    deprecatedLogs().journal("LedgerConsensus"));
             }
             catch (...)
             {
@@ -1122,6 +1148,9 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 // during transaction processing.
             }
         }
+
+        accum.apply(*newOL,
+            deprecatedLogs().journal("LedgerConsensus"));
 
         // We have a new Last Closed Ledger and new Open Ledger
         ledgerMaster_.pushLedger (newLCL, newOL);
@@ -1715,20 +1744,18 @@ make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
 
   @param engine       The transaction engine containing the ledger.
   @param txn          The transaction to be applied to ledger.
-  @param openLedger   true if ledger is open
   @param retryAssured true if the transaction should be retried on failure.
   @return             One of resultSuccess, resultFail or resultRetry.
 */
 static
-int applyTransaction (
-    TransactionEngine& engine,
-    std::shared_ptr<STTx const> const& txn,
-    bool openLedger,
-    bool retryAssured,
-    bool enableTesting)
+int
+applyTransaction (BasicView& view,
+    STTx const& txn,
+        bool retryAssured,
+            bool enableTesting)
 {
     // Returns false if the transaction has need not be retried.
-    ViewFlags parms = openLedger ? tapOPEN_LEDGER : tapNONE;
+    ViewFlags parms = tapNONE;
 
     if (enableTesting)
         parms = parms | tapENABLE_TESTING;
@@ -1738,21 +1765,22 @@ int applyTransaction (
         parms = static_cast<ViewFlags> (parms | tapRETRY);
     }
 
-    if ((getApp().getHashRouter ().getFlags (txn->getTransactionID ())
+    if ((getApp().getHashRouter ().getFlags (txn.getTransactionID ())
         & SF_SIGGOOD) == SF_SIGGOOD)
     {
         parms = static_cast<ViewFlags>
             (parms | tapNO_CHECK_SIGN);
     }
     WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
-        << txn->getTransactionID ()
-        << (openLedger ? " open" : " closed")
+        << txn.getTransactionID ()
+        //<< (engine.view().open() ? " open" : " closed") // because of the optional in engine
         << (retryAssured ? "/retry" : "/final");
-    WriteLog (lsTRACE, LedgerConsensus) << txn->getJson (0);
+    WriteLog (lsTRACE, LedgerConsensus) << txn.getJson (0);
 
     try
     {
-        auto result = engine.applyTransaction (*txn, parms);
+        auto const result = apply(view, txn, parms, getConfig(),
+            deprecatedLogs().journal("LedgerConsensus"));
 
         if (result.second)
         {
@@ -1783,14 +1811,11 @@ int applyTransaction (
 
 void applyTransactions (
     SHAMap const* set,
-    Ledger::ref applyLedger,
+    BasicView& applyView,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
-    bool openLgr,
     bool enableTesting)
 {
-    TransactionEngine engine (applyLedger);
-
     if (set)
     {
         for (auto const item : *set)
@@ -1805,9 +1830,11 @@ void applyTransactions (
             try
             {
                 SerialIter sit (item->slice());
-                auto txn = std::make_shared<STTx>(sit);
+                auto const txn =
+                    std::make_shared<STTx const>(sit);
 
-                if (applyTransaction (engine, txn, openLgr, true, enableTesting) == LedgerConsensusImp::resultRetry)
+                if (applyTransaction(applyView, *txn, true, enableTesting) ==
+                    LedgerConsensusImp::resultRetry)
                 {
                     // On failure, stash the failed transaction for
                     // later retry.
@@ -1836,8 +1863,8 @@ void applyTransactions (
         {
             try
             {
-                switch (applyTransaction (engine, it->second,
-                        openLgr, certainRetry, enableTesting))
+                switch (applyTransaction (applyView,
+                    *it->second, certainRetry, enableTesting))
                 {
                 case LedgerConsensusImp::resultSuccess:
                     it = retriableTransactions.erase (it);

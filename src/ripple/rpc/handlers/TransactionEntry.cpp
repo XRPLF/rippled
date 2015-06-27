@@ -65,7 +65,7 @@ Json::Value doTransactionEntry (RPC::Context& context)
         else
         {
             Transaction::pointer        tpTrans;
-            TransactionMetaSet::pointer tmTrans;
+            TxMeta::pointer tmTrans;
 
             if (!getTransaction (*lpLedger, uTransID, tpTrans, tmTrans,
                     getApp().getMasterTransaction()))

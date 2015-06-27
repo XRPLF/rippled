@@ -18,184 +18,157 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-class Change
-    : public Transactor
+TER
+Change::doApply()
 {
-public:
-    Change (
-        STTx const& txn,
-        ViewFlags params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("Change"))
-    {
-    }
+    if (mTxn.getTxnType () == ttAMENDMENT)
+        return applyAmendment ();
 
-    TER doApply () override
-    {
-        if (mTxn.getTxnType () == ttAMENDMENT)
-            return applyAmendment ();
+    if (mTxn.getTxnType () == ttFEE)
+        return applyFee ();
 
-        if (mTxn.getTxnType () == ttFEE)
-            return applyFee ();
-
-        return temUNKNOWN;
-    }
-
-    TER checkSign () override
-    {
-        if (mTxn.getAccountID (sfAccount).isNonZero ())
-        {
-            m_journal.warning << "Bad source account";
-            return temBAD_SRC_ACCOUNT;
-        }
-
-        if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
-        {
-            m_journal.warning << "Bad signature";
-            return temBAD_SIGNATURE;
-        }
-
-        return tesSUCCESS;
-    }
-
-    TER checkSeq () override
-    {
-        if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
-        {
-            m_journal.warning << "Bad sequence";
-            return temBAD_SEQUENCE;
-        }
-
-        return tesSUCCESS;
-    }
-
-    TER payFee () override
-    {
-        if (mTxn.getTransactionFee () != STAmount ())
-        {
-            m_journal.warning << "Non-zero fee";
-            return temBAD_FEE;
-        }
-
-        return tesSUCCESS;
-    }
-
-    TER preCheck () override
-    {
-        mTxnAccountID = mTxn.getAccountID(sfAccount);
-
-        if (mTxnAccountID.isNonZero ())
-        {
-            m_journal.warning << "Bad source id";
-            return temBAD_SRC_ACCOUNT;
-        }
-
-        if (mParams & tapOPEN_LEDGER)
-        {
-            m_journal.warning << "Change transaction against open ledger";
-            return temINVALID;
-        }
-
-        return tesSUCCESS;
-    }
-
-private:
-    TER applyAmendment ()
-    {
-        uint256 amendment (mTxn.getFieldH256 (sfAmendment));
-
-        auto const k = keylet::amendments();
-
-        SLE::pointer amendmentObject =
-            mEngine->view().peek (k);
-
-        if (!amendmentObject)
-        {
-            amendmentObject = std::make_shared<SLE>(k);
-            mEngine->view().insert(amendmentObject);
-        }
-
-        STVector256 amendments =
-            amendmentObject->getFieldV256(sfAmendments);
-
-        if (std::find (amendments.begin(), amendments.end(),
-                amendment) != amendments.end ())
-            return tefALREADY;
-
-        amendments.push_back (amendment);
-        amendmentObject->setFieldV256 (sfAmendments, amendments);
-        mEngine->view().update (amendmentObject);
-
-        getApp().getAmendmentTable ().enable (amendment);
-
-        if (!getApp().getAmendmentTable ().isSupported (amendment))
-            getApp().getOPs ().setAmendmentBlocked ();
-
-        return tesSUCCESS;
-    }
-
-    TER applyFee ()
-    {
-        auto const k = keylet::fees();
-
-        SLE::pointer feeObject = mEngine->view().peek (k);
-
-        if (!feeObject)
-        {
-            feeObject = std::make_shared<SLE>(k);
-            mEngine->view().insert(feeObject);
-        }
-
-        // VFALCO-FIXME this generates errors
-        // m_journal.trace <<
-        //     "Previous fee object: " << feeObject->getJson (0);
-
-        feeObject->setFieldU64 (
-            sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
-        feeObject->setFieldU32 (
-            sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
-        feeObject->setFieldU32 (
-            sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
-        feeObject->setFieldU32 (
-            sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
-
-        mEngine->view().update (feeObject);
-
-        // VFALCO-FIXME this generates errors
-        // m_journal.trace <<
-        //     "New fee object: " << feeObject->getJson (0);
-        m_journal.warning << "Fees have been changed";
-        return tesSUCCESS;
-    }
-
-    // VFALCO TODO Can this be removed?
-    bool mustHaveValidAccount () override
-    {
-        return false;
-    }
-};
-
+    return temUNKNOWN;
+}
 
 TER
-transact_Change (
-    STTx const& txn,
-    ViewFlags params,
-    TransactionEngine* engine)
+Change::checkSign()
 {
-    return Change (txn, params, engine).apply ();
+    if (mTxn.getAccountID (sfAccount).isNonZero ())
+    {
+        j_.warning << "Bad source account";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
+    {
+        j_.warning << "Bad signature";
+        return temBAD_SIGNATURE;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+Change::checkSeq()
+{
+    if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
+    {
+        j_.warning << "Bad sequence";
+        return temBAD_SEQUENCE;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+Change::payFee()
+{
+    if (mTxn.getTransactionFee () != STAmount ())
+    {
+        j_.warning << "Non-zero fee";
+        return temBAD_FEE;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+Change::preCheck()
+{
+    mTxnAccountID = mTxn.getAccountID(sfAccount);
+
+    if (mTxnAccountID.isNonZero ())
+    {
+        j_.warning << "Bad source id";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    if (view().open())
+    {
+        j_.warning << "Change transaction against open ledger";
+        return temINVALID;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+Change::applyAmendment()
+{
+    uint256 amendment (mTxn.getFieldH256 (sfAmendment));
+
+    auto const k = keylet::amendments();
+
+    SLE::pointer amendmentObject =
+        view().peek (k);
+
+    if (!amendmentObject)
+    {
+        amendmentObject = std::make_shared<SLE>(k);
+        view().insert(amendmentObject);
+    }
+
+    STVector256 amendments =
+        amendmentObject->getFieldV256(sfAmendments);
+
+    if (std::find (amendments.begin(), amendments.end(),
+            amendment) != amendments.end ())
+        return tefALREADY;
+
+    amendments.push_back (amendment);
+    amendmentObject->setFieldV256 (sfAmendments, amendments);
+    view().update (amendmentObject);
+
+    getApp().getAmendmentTable ().enable (amendment);
+
+    if (!getApp().getAmendmentTable ().isSupported (amendment))
+        getApp().getOPs ().setAmendmentBlocked ();
+
+    return tesSUCCESS;
+}
+
+TER
+Change::applyFee()
+{
+    auto const k = keylet::fees();
+
+    SLE::pointer feeObject = view().peek (k);
+
+    if (!feeObject)
+    {
+        feeObject = std::make_shared<SLE>(k);
+        view().insert(feeObject);
+    }
+
+    // VFALCO-FIXME this generates errors
+    // j_.trace <<
+    //     "Previous fee object: " << feeObject->getJson (0);
+
+    feeObject->setFieldU64 (
+        sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
+    feeObject->setFieldU32 (
+        sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
+    feeObject->setFieldU32 (
+        sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
+    feeObject->setFieldU32 (
+        sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
+
+    view().update (feeObject);
+
+    // VFALCO-FIXME this generates errors
+    // j_.trace <<
+    //     "New fee object: " << feeObject->getJson (0);
+    j_.warning << "Fees have been changed";
+    return tesSUCCESS;
 }
 
 }

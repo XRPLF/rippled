@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/app/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>
@@ -29,7 +29,7 @@ namespace ripple {
 // VFALCO TODO rename class to TransactionMeta
 
 template<class T>
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+TxMeta::TxMeta (uint256 const& txid,
     std::uint32_t ledger, T const& data, CtorHelper)
     : mTransactionID (txid)
     , mLedger (ledger)
@@ -46,21 +46,21 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
         setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
 }
 
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+TxMeta::TxMeta (uint256 const& txid,
                                         std::uint32_t ledger,
                                         Blob const& vec)
-    : TransactionMetaSet (txid, ledger, vec, CtorHelper ())
+    : TxMeta (txid, ledger, vec, CtorHelper ())
 {
 }
 
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid,
+TxMeta::TxMeta (uint256 const& txid,
                                         std::uint32_t ledger,
                                         std::string const& data)
-    : TransactionMetaSet (txid, ledger, data, CtorHelper ())
+    : TxMeta (txid, ledger, data, CtorHelper ())
 {
 }
 
-bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
+bool TxMeta::isNodeAffected (uint256 const& node) const
 {
     for (auto const& n : mNodes)
     {
@@ -71,7 +71,7 @@ bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
     return false;
 }
 
-void TransactionMetaSet::setAffectedNode (uint256 const& node, SField const& type,
+void TxMeta::setAffectedNode (uint256 const& node, SField const& type,
                                           std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
@@ -94,7 +94,7 @@ void TransactionMetaSet::setAffectedNode (uint256 const& node, SField const& typ
 }
 
 boost::container::flat_set<AccountID>
-TransactionMetaSet::getAffectedAccounts() const
+TxMeta::getAffectedAccounts() const
 {
     boost::container::flat_set<AccountID> list;
     list.reserve (10);
@@ -137,7 +137,7 @@ TransactionMetaSet::getAffectedAccounts() const
                         }
                         else
                         {
-                            WriteLog (lsFATAL, TransactionMetaSet) << "limit is not amount " << field.getJson (0);
+                            WriteLog (lsFATAL, TxMeta) << "limit is not amount " << field.getJson (0);
                         }
                     }
                 }
@@ -148,7 +148,7 @@ TransactionMetaSet::getAffectedAccounts() const
     return list;
 }
 
-STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField const& type)
+STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
 {
     assert (&type);
     uint256 index = node->getIndex ();
@@ -167,7 +167,7 @@ STObject& TransactionMetaSet::getAffectedNode (SLE::ref node, SField const& type
     return obj;
 }
 
-STObject& TransactionMetaSet::getAffectedNode (uint256 const& node)
+STObject& TxMeta::getAffectedNode (uint256 const& node)
 {
     for (auto& n : mNodes)
     {
@@ -178,7 +178,7 @@ STObject& TransactionMetaSet::getAffectedNode (uint256 const& node)
     throw std::runtime_error ("Affected node not found");
 }
 
-const STObject& TransactionMetaSet::peekAffectedNode (uint256 const& node) const
+const STObject& TxMeta::peekAffectedNode (uint256 const& node) const
 {
     for (auto const& n : mNodes)
     {
@@ -189,7 +189,7 @@ const STObject& TransactionMetaSet::peekAffectedNode (uint256 const& node) const
     throw std::runtime_error ("Affected node not found");
 }
 
-void TransactionMetaSet::init (uint256 const& id, std::uint32_t ledger)
+void TxMeta::init (uint256 const& id, std::uint32_t ledger)
 {
     mTransactionID = id;
     mLedger = ledger;
@@ -197,13 +197,13 @@ void TransactionMetaSet::init (uint256 const& id, std::uint32_t ledger)
     mDelivered = boost::optional <STAmount> ();
 }
 
-void TransactionMetaSet::swap (TransactionMetaSet& s) noexcept
+void TxMeta::swap (TxMeta& s) noexcept
 {
     assert ((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
     mNodes.swap (s.mNodes);
 }
 
-bool TransactionMetaSet::thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
+bool TxMeta::thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
 {
     if (node.getFieldIndex (sfPreviousTxnID) == -1)
     {
@@ -223,7 +223,7 @@ static bool compare (const STObject& o1, const STObject& o2)
     return o1.getFieldH256 (sfLedgerIndex) < o2.getFieldH256 (sfLedgerIndex);
 }
 
-STObject TransactionMetaSet::getAsObject () const
+STObject TxMeta::getAsObject () const
 {
     STObject metaData (sfTransactionMetaData);
     assert (mResult != 255);
@@ -235,7 +235,7 @@ STObject TransactionMetaSet::getAsObject () const
     return metaData;
 }
 
-void TransactionMetaSet::addRaw (Serializer& s, TER result, std::uint32_t index)
+void TxMeta::addRaw (Serializer& s, TER result, std::uint32_t index)
 {
     mResult = static_cast<int> (result);
     mIndex = index;

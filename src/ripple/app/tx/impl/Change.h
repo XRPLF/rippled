@@ -17,20 +17,47 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#ifndef RIPPLE_TX_CHANGE_H_INCLUDED
+#define RIPPLE_TX_CHANGE_H_INCLUDED
+
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
-namespace RPC {
 
-void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+class Change
+    : public Transactor
+{
+public:
+    template <class... Args>
+    Change (Args&&... args)
+        : Transactor(std::forward<
+            Args>(args)...)
+    {
+    }
 
-} // RPC
-} // ripple
+    TER doApply () override;
+    TER checkSign () override;
+    TER checkSeq () override;
+    TER payFee () override;
+    TER preCheck () override;
+
+private:
+    TER applyAmendment ();
+
+    TER applyFee ();
+
+    // VFALCO TODO Can this be removed?
+    bool mustHaveValidAccount () override
+    {
+        return false;
+    }
+};
+
+}
 
 #endif

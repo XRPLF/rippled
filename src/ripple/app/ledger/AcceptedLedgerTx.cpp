@@ -36,7 +36,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit)
 
     mTxn =      std::make_shared<STTx> (std::ref (txnIt));
     mRawMeta =  sit.getVL ();
-    mMeta =     std::make_shared<TransactionMetaSet> (mTxn->getTransactionID (),
+    mMeta =     std::make_shared<TxMeta> (mTxn->getTransactionID (),
         ledger->getLedgerSeq (), mRawMeta);
     mAffected = mMeta->getAffectedAccounts ();
     mResult =   mMeta->getResultTER ();
@@ -44,7 +44,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit)
 }
 
 AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
-    STTx::ref txn, TransactionMetaSet::ref met)
+    STTx::ref txn, TxMeta::ref met)
     : mLedger (ledger)
     , mTxn (txn)
     , mMeta (met)

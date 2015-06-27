@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
+#include <ripple/app/ledger/MetaView.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -38,7 +39,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/misc/UniqueNodeList.h>
-#include <ripple/app/tx/TransactionEngine.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
@@ -250,19 +251,6 @@ public:
      * @param Lock that protects the transaction batching
      */
     void apply (std::unique_lock<std::mutex>& batchLock);
-
-    /**
-     * Apply each transaction to open ledger.
-     *
-     * @param ledger Open ledger.
-     * @param engine Engine that applies transactions to open ledger.
-     * @param transactions Batch of transactions to apply.
-     * @return Whether any transactions in batch succeeded.
-     */
-    bool batchApply (
-         Ledger::pointer& ledger,
-         TransactionEngine& engine,
-         std::vector<TransactionStatus>& transactions);
 
     //
     // Owner functions.
@@ -987,14 +975,35 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
     batchLock.unlock();
 
-    Ledger::pointer ledger;
-    TransactionEngine engine;
-
     {
+        Ledger::pointer ledger;
+        bool applied = false;
+        boost::optional<MetaView> accum;
         auto lock = beast::make_lock(getApp().getMasterMutex());
-
-        if (batchApply (ledger, engine, transactions))
         {
+            std::lock_guard <std::recursive_mutex> lock (
+                m_ledgerMaster.peekMutex());
+            ledger = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
+            accum.emplace(*ledger, tapNONE);
+            for (TransactionStatus& e : transactions)
+            {
+                ViewFlags flags = tapNONE;
+                flags = flags | tapNO_CHECK_SIGN;
+                if (e.admin)
+                    flags = flags | tapADMIN;
+                std::tie (e.result, e.applied) =
+                    ripple::apply (*accum,
+                        *e.transaction->getSTransaction(), flags,
+                            getConfig(), deprecatedLogs().journal(
+                                "NetworkOPs"));
+                applied |= e.applied;
+            }
+        }
+
+        if (applied)
+        {
+            accum->apply(*ledger,
+                deprecatedLogs().journal("NetworkOPs"));
             ledger->setImmutable();
             m_ledgerMaster.getCurrentLedgerHolder().set (ledger);
         }
@@ -1099,28 +1108,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     mCond.notify_all();
 
     mDispatchState = DispatchState::none;
-}
-
-bool NetworkOPsImp::batchApply (Ledger::pointer& ledger,
-        TransactionEngine& engine,
-        std::vector<TransactionStatus>& transactions)
-{
-    bool applied = false;
-    std::lock_guard <std::recursive_mutex> lock (m_ledgerMaster.peekMutex());
-
-    ledger = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
-    engine.setLedger (ledger);
-
-    for (TransactionStatus& e : transactions)
-    {
-        std::tie (e.result, e.applied) = engine.applyTransaction (
-            *e.transaction->getSTransaction(),
-            e.admin ? (tapOPEN_LEDGER | tapNO_CHECK_SIGN | tapADMIN) : (
-            tapOPEN_LEDGER | tapNO_CHECK_SIGN));
-        applied |= e.applied;
-    }
-
-    return applied;
 }
 
 //
@@ -1793,7 +1780,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                     ledger->pendSaveValidated(false, false);
             }
 
-            ret.emplace_back (txn, std::make_shared<TransactionMetaSet> (
+            ret.emplace_back (txn, std::make_shared<TxMeta> (
                 txn->getID (), txn->getLedger (), txnMeta));
         }
     }

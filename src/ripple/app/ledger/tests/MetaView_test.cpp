@@ -152,7 +152,7 @@ class MetaView_test
         using namespace jtx;
         Env env(*this);
         wipe(*env.ledger);
-        MetaView v(env.ledger.get(), tapNONE);
+        MetaView v(*env.ledger, tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
         expect(v.exists(k(1)));
@@ -189,7 +189,7 @@ class MetaView_test
         v0.unchecked_insert(sle(4));
         v0.unchecked_insert(sle(7));
         {
-            MetaView v1(&v0, tapNONE);
+            MetaView v1(v0, tapNONE);
             v1.insert(sle(3));
             v1.insert(sle(5));
             v1.insert(sle(6));
@@ -252,7 +252,7 @@ class MetaView_test
         v0.unchecked_insert(sle(4, 4));
 
         {
-            MetaView v1(&v0, tapNONE);
+            MetaView v1(v0, tapNONE);
             v1.erase(v1.peek(k(2)));
             v1.insert(sle(3, 3));
             auto s = v1.peek(k(4));
@@ -263,7 +263,7 @@ class MetaView_test
             expect(seq(v1.read(k(3))) == 3);
             expect(seq(v1.read(k(4))) == 5);
             {
-                MetaView v2(&v1);
+                MetaView v2(v1, tapNONE);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -280,7 +280,7 @@ class MetaView_test
             expect(seq(v1.read(k(4))) == 5);
 
             {
-                MetaView v2(&v1);
+                MetaView v2(v1, tapNONE);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -311,36 +311,41 @@ class MetaView_test
         {
             Env env(*this);
             wipe(*env.ledger);
-            MetaView v0(env.ledger.get(), tapNONE);
+            MetaView v0(*env.ledger, tapNONE);
             expect(v0.seq() != 98);
             expect(v0.seq() == env.ledger->seq());
-            expect(v0.time() != 99);
-            expect(v0.time() == env.ledger->time());
+            expect(v0.parentCloseTime() != 99);
+            expect(v0.parentCloseTime() ==
+                env.ledger->parentCloseTime());
             expect(v0.flags() == tapNONE);
             {
-                // Shallow copy
-                MetaView v1(v0);
+                MetaView v1(shallow_copy, v0);
                 expect (v1.seq() == v0.seq());
-                expect (v1.time() == v1.time());
+                expect (v1.parentCloseTime() ==
+                    v1.parentCloseTime());
                 expect (v1.flags() == tapNONE);
 
-                MetaView v2(&v1, tapNO_CHECK_SIGN);
-                expect(v2.time() == v1.time());
+                MetaView v2(v1, tapNO_CHECK_SIGN);
+                expect(v2.parentCloseTime() ==
+                    v1.parentCloseTime());
                 expect(v2.seq() == v1.seq());
                 expect(v2.flags() == tapNO_CHECK_SIGN); 
-                MetaView v3(&v2);
+                MetaView v3(v2, tapNONE);
                 expect(v3.seq() == v2.seq());
-                expect(v3.time() == v2.time());
-                expect(v3.flags() == v2.flags());
+                expect(v3.parentCloseTime() ==
+                    v2.parentCloseTime());
+                expect(v3.flags() == tapNONE);
             }
             {
-                PaymentView v1(&v0, tapNO_CHECK_SIGN);
+                PaymentView v1(v0, tapNO_CHECK_SIGN);
                 expect(v1.seq() == v0.seq());
-                expect(v1.time() == v0.time());
+                expect(v1.parentCloseTime() ==
+                    v0.parentCloseTime());
                 expect(v1.flags() == tapNO_CHECK_SIGN); 
                 PaymentView v2(&v1);
                 expect(v2.seq() == v1.seq());
-                expect(v2.time() == v1.time());
+                expect(v2.parentCloseTime() ==
+                    v1.parentCloseTime());
                 expect(v2.flags() == v1.flags());
             }
         }
@@ -359,9 +364,9 @@ class MetaView_test
             wipe(*env.ledger);
             BasicView& v0 = *env.ledger;
             v0.unchecked_insert(sle(1));
-            MetaView v1(&v0, tapNONE);
+            MetaView v1(v0, tapNONE);
             {
-                MetaView v2(&v1);
+                MetaView v2(v1, tapNONE);
                 v2.erase(v2.peek(k(1)));
                 v2.apply(v1);
             }

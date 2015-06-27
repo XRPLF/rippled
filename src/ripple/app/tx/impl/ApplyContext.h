@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_TRANSACTIONENGINE_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTIONENGINE_H_INCLUDED
+#ifndef RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
+#define RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/MetaView.h>
+#include <ripple/core/Config.h>
+#include <ripple/protocol/STTx.h>
+#include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <utility>
 
@@ -29,70 +31,53 @@ namespace ripple {
 
 // tx_enable_test
 
-// One instance per ledger.
-// Only one transaction applied at a time.
-class TransactionEngine
+/** State information when applying a tx. */
+class ApplyContext
 {
-    boost::optional<MetaView> mNodes;
-
-    void txnWrite();
-
-protected:
-    Ledger::pointer mLedger;
-    int mTxnSeq = 0;
-
 public:
-    TransactionEngine() = default;
-
     explicit
-    TransactionEngine (Ledger::ref ledger)
-        : mLedger (ledger)
-    {
-        assert (mLedger);
-    }
+    ApplyContext (BasicView& base,
+        STTx const& tx, ViewFlags flags,
+            Config const& config,
+                beast::Journal = {});
+
+    STTx const& tx;
+    Config const& config;
+    beast::Journal const journal;
 
     View&
-    view ()
+    view()
     {
-        return *mNodes;
+        return *view_;
     }
 
-    Ledger::ref
-    getLedger()
+    View const&
+    view() const
     {
-        return mLedger;
-    }
-
-    void
-    setLedger (Ledger::ref ledger)
-    {
-        assert (ledger);
-        mLedger = ledger;
+        return *view_;
     }
 
     /** Sets the DeliveredAmount field in the metadata */
     void
     deliverAmount (STAmount const& delivered)
     {
-        mNodes->setDeliveredAmount(delivered);
+        view_->setDeliveredAmount(delivered);
     }
 
-    std::pair<TER, bool>
-    applyTransaction (STTx const&, ViewFlags);
+    /** Discard changes and start fresh. */
+    void
+    discard();
 
-    bool
-    checkInvariants (TER result, STTx const& txn, ViewFlags params);
+    /** Apply the transaction result to the base. */
+    void
+    apply (TER);
+
+private:
+    BasicView& base_;
+    ViewFlags flags_;
+    beast::Journal j_;
+    boost::optional<MetaView> view_;
 };
-
-inline ViewFlags operator| (const ViewFlags& l1, const ViewFlags& l2)
-{
-    return static_cast<ViewFlags> (static_cast<int> (l1) | static_cast<int> (l2));
-}
-
-inline ViewFlags operator& (const ViewFlags& l1, const ViewFlags& l2)
-{
-    return static_cast<ViewFlags> (static_cast<int> (l1) & static_cast<int> (l2));
-}
 
 } // ripple
 

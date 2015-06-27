@@ -17,20 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
-#define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
+#include <BeastConfig.h>
+#include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/json/to_string.h>
+#include <ripple/protocol/Indexes.h>
+#include <cassert>
 
 namespace ripple {
-namespace RPC {
+
+ApplyContext::ApplyContext(
+    BasicView& base, STTx const& tx_,
+        ViewFlags flags, Config const& config_,
+            beast::Journal journal_)
+    : tx (tx_)
+    , config (config_)
+    , journal(journal_)
+    , base_ (base)
+    , flags_(flags)
+{
+    view_.emplace(base_, flags_);
+}
 
 void
-addPaymentDeliveredAmount (
-    Json::Value&,
-    RPC::Context&,
-    Transaction::pointer,
-    TxMeta::pointer);
+ApplyContext::discard()
+{
+    view_.emplace(base_, flags_);
+}
 
-} // RPC
+void
+ApplyContext::apply(TER ter)
+{
+    view_->apply(base_, tx, ter, journal);
+}
+
 } // ripple
-
-#endif

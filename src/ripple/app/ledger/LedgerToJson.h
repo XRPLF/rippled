@@ -166,7 +166,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                         SerialIter tsit (make_Slice(vl));
                         STTx txn (tsit);
 
-                        TransactionMetaSet meta (
+                        TxMeta meta (
                             item->getTag (), ledger.getLedgerSeq(), sit.getVL ());
 
                         auto&& txJson = appendObject (txns);

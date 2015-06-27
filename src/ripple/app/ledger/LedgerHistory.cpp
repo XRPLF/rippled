@@ -133,7 +133,7 @@ static
 void
 log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 {
-    TransactionMetaSet::pointer metaData;
+    TxMeta::pointer metaData;
     getTransactionMeta(*ledger, tx, metaData);
 
     if (metaData != nullptr)
@@ -154,9 +154,9 @@ void
 log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger,
                         uint256 const& tx)
 {
-    TransactionMetaSet::pointer validMetaData;
+    TxMeta::pointer validMetaData;
     getTransactionMeta(*validLedger, tx, validMetaData);
-    TransactionMetaSet::pointer builtMetaData;
+    TxMeta::pointer builtMetaData;
     getTransactionMeta(*builtLedger, tx, builtMetaData);
     assert(validMetaData != nullptr || builtMetaData != nullptr);
 

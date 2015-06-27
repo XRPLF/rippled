@@ -67,9 +67,9 @@
 #include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <beast/asio/io_latency_probe.h>
+#include <boost/asio/signal_set.hpp>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
-#include <boost/asio/signal_set.hpp>
 #include <fstream>
 
 namespace ripple {
@@ -1337,11 +1337,9 @@ bool ApplicationImp::loadOldLedger (
                     txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                if (! cur->txInsert(item->getTag(),
-                    std::make_shared<Serializer const>(std::move(s)),
-                        nullptr))
-                    if (m_journal.warning) m_journal.warning <<
-                        "Unable to add transaction " << item->getTag();
+                cur->txInsert(item->getTag(),
+                    std::make_shared<Serializer const>(
+                        std::move(s)), nullptr);
                 getApp().getHashRouter().setFlag (item->getTag(), SF_SIGGOOD);
             }
 
@@ -1485,7 +1483,7 @@ static void addTxnSeqField ()
         }
         else
         {
-            TransactionMetaSet m (transID, 0, txnMeta);
+            TxMeta m (transID, 0, txnMeta);
             txIDs.push_back (std::make_pair (transID, m.getIndex ()));
         }
 

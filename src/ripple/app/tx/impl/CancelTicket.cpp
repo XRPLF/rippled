@@ -18,89 +18,68 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/app/tx/impl/CancelTicket.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-class CancelTicket
-    : public Transactor
-{
-public:
-    CancelTicket (
-        STTx const& txn,
-        ViewFlags params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("CancelTicket"))
-    {
-
-    }
-
-    TER doApply () override
-    {
-        assert (mTxnAccount);
-
-        uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
-
-        // VFALCO This is highly suspicious, we're requiring that the
-        //        transaction provide the return value of getTicketIndex?
-        SLE::pointer sleTicket = mEngine->view().peek (keylet::ticket(ticketId));
-
-        if (!sleTicket)
-            return tecNO_ENTRY;
-
-        auto const ticket_owner =
-            sleTicket->getAccountID (sfAccount);
-
-        bool authorized =
-            mTxnAccountID == ticket_owner;
-
-        // The target can also always remove a ticket
-        if (!authorized && sleTicket->isFieldPresent (sfTarget))
-            authorized = (mTxnAccountID == sleTicket->getAccountID (sfTarget));
-
-        // And finally, anyone can remove an expired ticket
-        if (!authorized && sleTicket->isFieldPresent (sfExpiration))
-        {
-            std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
-
-            if (mEngine->view().time() >= expiration)
-                authorized = true;
-        }
-
-        if (!authorized)
-            return tecNO_PERMISSION;
-
-        std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
-
-        TER const result = dirDelete (mEngine->view (), false, hint,
-            getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
-
-        adjustOwnerCount(mEngine->view(), mEngine->view().peek(
-            keylet::account(ticket_owner)), -1);
-        mEngine->view ().erase (sleTicket);
-
-        return result;
-    }
-};
-
 TER
-transact_CancelTicket (
-    STTx const& txn,
-    ViewFlags params,
-    TransactionEngine* engine)
+CancelTicket::preCheck()
 {
 #if ! RIPPLE_ENABLE_TICKETS
-    if (! (engine->view().flags() & tapENABLE_TESTING))
+    if (! (view().flags() & tapENABLE_TESTING))
         return temDISABLED;
 #endif
-    return CancelTicket (txn, params, engine).apply();
+    return Transactor::preCheck ();
 }
 
+TER
+CancelTicket::doApply ()
+{
+    assert (mTxnAccount);
+
+    uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
+
+    // VFALCO This is highly suspicious, we're requiring that the
+    //        transaction provide the return value of getTicketIndex?
+    SLE::pointer sleTicket = view().peek (keylet::ticket(ticketId));
+
+    if (!sleTicket)
+        return tecNO_ENTRY;
+
+    auto const ticket_owner =
+        sleTicket->getAccountID (sfAccount);
+
+    bool authorized =
+        mTxnAccountID == ticket_owner;
+
+    // The target can also always remove a ticket
+    if (!authorized && sleTicket->isFieldPresent (sfTarget))
+        authorized = (mTxnAccountID == sleTicket->getAccountID (sfTarget));
+
+    // And finally, anyone can remove an expired ticket
+    if (!authorized && sleTicket->isFieldPresent (sfExpiration))
+    {
+        std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
+
+        if (view().parentCloseTime() >= expiration)
+            authorized = true;
+    }
+
+    if (!authorized)
+        return tecNO_PERMISSION;
+
+    std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
+
+    TER const result = dirDelete (ctx_.view (), false, hint,
+        getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
+
+    adjustOwnerCount(view(), view().peek(
+        keylet::account(ticket_owner)), -1);
+    ctx_.view ().erase (sleTicket);
+
+    return result;
+}
 
 }

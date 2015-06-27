@@ -21,94 +21,36 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
+#include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
 
 namespace ripple {
 
-TER transact_Payment (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_SetAccount (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_SetRegularKey (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_SetTrust (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_CreateOffer (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_CancelOffer (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_Change (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_CreateTicket (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_CancelTicket (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-TER transact_SetSignerList (STTx const& txn, ViewFlags params, TransactionEngine* engine);
-
-TER
-Transactor::transact (
-    STTx const& txn,
-    ViewFlags params,
-    TransactionEngine* engine)
-{
-    switch (txn.getTxnType ())
-    {
-    case ttPAYMENT:
-        return transact_Payment (txn, params, engine);
-
-    case ttACCOUNT_SET:
-        return transact_SetAccount (txn, params, engine);
-
-    case ttREGULAR_KEY_SET:
-        return transact_SetRegularKey (txn, params, engine);
-
-    case ttTRUST_SET:
-        return transact_SetTrust (txn, params, engine);
-
-    case ttOFFER_CREATE:
-        return transact_CreateOffer (txn, params, engine);
-
-    case ttOFFER_CANCEL:
-        return transact_CancelOffer (txn, params, engine);
-
-    case ttAMENDMENT:
-    case ttFEE:
-        return transact_Change (txn, params, engine);
-
-    case ttTICKET_CREATE:
-        return transact_CreateTicket (txn, params, engine);
-
-    case ttTICKET_CANCEL:
-        return transact_CancelTicket (txn, params, engine);
-
-    case ttSIGNER_LIST_SET:
-        return transact_SetSignerList (txn, params, engine);
-
-    default:
-        return temUNKNOWN;
-    }
-}
-
-Transactor::Transactor (
-    STTx const& txn,
-    ViewFlags params,
-    TransactionEngine* engine,
-    beast::Journal journal)
-    : mTxn (txn)
-    , mEngine (engine)
-    , mParams (mEngine->view().flags())
+Transactor::Transactor(
+    ApplyContext& ctx)
+    : mTxn (ctx.tx)
+    , ctx_ (ctx)
+    , j_ (ctx.journal)
     , mHasAuthKey (false)
     , mSigMaster (false)
-    , m_journal (journal)
 {
-    assert(mEngine->view().flags() == params);
 }
 
 void Transactor::calculateFee ()
 {
     mFeeDue = STAmount (getApp().getFeeTrack().scaleFeeLoad(
-        calculateBaseFee(), mEngine->view().fees().base,
-            mEngine->view().fees().units, mParams & tapADMIN));
+        calculateBaseFee(), view().fees().base,
+            view().fees().units, view().flags() & tapADMIN));
 }
 
 std::uint64_t Transactor::calculateBaseFee ()
 {
     // Returns the fee in fee units
-    return getConfig ().TRANSACTION_FEE_BASE;
+    return ctx_.config.TRANSACTION_FEE_BASE;
 }
 
 TER Transactor::payFee ()
@@ -119,9 +61,9 @@ TER Transactor::payFee ()
         return temBAD_AMOUNT;
 
     // Only check fee is sufficient when the ledger is open.
-    if ((mParams & tapOPEN_LEDGER) && saPaid < mFeeDue)
+    if (view().open() && saPaid < mFeeDue)
     {
-        m_journal.trace << "Insufficient fee paid: " <<
+        j_.trace << "Insufficient fee paid: " <<
             saPaid.getText () << "/" << mFeeDue.getText ();
 
         return telINSUF_FEE_P;
@@ -135,11 +77,11 @@ TER Transactor::payFee ()
 
     if (mSourceBalance < saPaid)
     {
-        m_journal.trace << "Insufficient balance:" <<
+        j_.trace << "Insufficient balance:" <<
             " balance=" << mSourceBalance.getText () <<
             " paid=" << saPaid.getText ();
 
-        if ((mSourceBalance > zero) && (!(mParams & tapOPEN_LEDGER)))
+        if ((mSourceBalance > zero) && ! view().open())
         {
             // Closed ledger, non-zero balance, less than fee
             mSourceBalance.clear ();
@@ -156,6 +98,8 @@ TER Transactor::payFee ()
     mSourceBalance -= saPaid;
     mTxnAccount->setFieldAmount (sfBalance, mSourceBalance);
 
+    // VFALCO Should we call view().destroyCoins() here as well?
+
     return tesSUCCESS;
 }
 
@@ -168,16 +112,16 @@ TER Transactor::checkSeq ()
     {
         if (a_seq < t_seq)
         {
-            m_journal.trace <<
+            j_.trace <<
                 "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;
             return terPRE_SEQ;
         }
 
-        if (mEngine->view().txExists(mTxn.getTransactionID ()))
+        if (view().txExists(mTxn.getTransactionID ()))
             return tefALREADY;
 
-        m_journal.trace << "applyTransaction: has past sequence number " <<
+        j_.trace << "applyTransaction: has past sequence number " <<
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
@@ -187,7 +131,7 @@ TER Transactor::checkSeq ()
         return tefWRONG_PRIOR;
 
     if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
-            (mEngine->getLedger()->getLedgerSeq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
+            (view().seq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
     mTxnAccount->setFieldU32 (sfSequence, t_seq + 1);
@@ -214,7 +158,7 @@ TER Transactor::preCheckAccount ()
 
     if (!mTxnAccountID)
     {
-        m_journal.warning << "applyTransaction: bad transaction source id";
+        j_.warning << "applyTransaction: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
     }
     return tesSUCCESS;
@@ -235,17 +179,17 @@ TER Transactor::preCheckSigningKey ()
     if (!mTxn.isKnownGood ())
     {
         if (mTxn.isKnownBad () ||
-            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign(
+            (!(view().flags() & tapNO_CHECK_SIGN) && !mTxn.checkSign(
                 (
 #if RIPPLE_ENABLE_MULTI_SIGN
                     true
 #else
-                    mEngine->view().flags() & tapENABLE_TESTING
+                    view().flags() & tapENABLE_TESTING
 #endif
                 ))))
         {
             mTxn.setBad ();
-            m_journal.debug << "apply: Invalid transaction (bad signature)";
+            j_.debug << "apply: Invalid transaction (bad signature)";
             return temINVALID;
         }
 
@@ -269,7 +213,7 @@ TER Transactor::apply ()
         return terResult;
 
     // Find source account
-    mTxnAccount = mEngine->view().peek (keylet::account(mTxnAccountID));
+    mTxnAccount = view().peek (keylet::account(mTxnAccountID));
 
     calculateFee ();
 
@@ -279,7 +223,7 @@ TER Transactor::apply ()
     {
         if (mustHaveValidAccount ())
         {
-            m_journal.trace <<
+            j_.trace <<
                 "applyTransaction: delay: source account does not exist " <<
                 toBase58(mTxn.getAccountID(sfAccount));
             return terNO_ACCOUNT;
@@ -305,7 +249,7 @@ TER Transactor::apply ()
     if (terResult != tesSUCCESS) return (terResult);
 
     if (mTxnAccount)
-        mEngine->view().update (mTxnAccount);
+        view().update (mTxnAccount);
 
     return doApply ();
 }
@@ -314,7 +258,7 @@ TER Transactor::checkSign ()
 {
 #if RIPPLE_ENABLE_MULTI_SIGN
 #else
-    if(mEngine->view().flags() & tapENABLE_TESTING)
+    if(view().flags() & tapENABLE_TESTING)
 #endif
     {
         // If the mSigningPubKey is empty, then we must be multi-signing.
@@ -347,13 +291,13 @@ TER Transactor::checkSingleSign ()
     }
     else if (mHasAuthKey)
     {
-        m_journal.trace <<
+        j_.trace <<
             "applyTransaction: Delay: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
-        m_journal.trace <<
+        j_.trace <<
             "applyTransaction: Invalid: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
     }
@@ -372,15 +316,16 @@ struct GetSignerListResult
 };
 
 // We need the SignerList for every SigningFor while multi-signing.
+static
 GetSignerListResult
-getSignerList (
-    AccountID signingForAcctID, TransactionEngine* engine, beast::Journal journal)
+getSignerList (AccountID signingForAcctID,
+    BasicView const& view, beast::Journal journal)
 {
     GetSignerListResult ret;
 
     auto const k = keylet::signers(signingForAcctID);
-    SLE::pointer accountSignersList =
-        engine->view().peek (k);
+    auto const accountSignersList =
+        view.read (k);
 
     // If the signer list doesn't exist the account is not multi-signing.
     if (!accountSignersList)
@@ -414,7 +359,7 @@ CheckSigningAccountsResult
 checkSigningAccounts (
     std::vector<SignerEntries::SignerEntry> signerEntries,
     STArray const& signingAccounts,
-    TransactionEngine* engine,
+    ApplyContext& ctx,
     beast::Journal journal)
 {
     CheckSigningAccountsResult ret;
@@ -489,8 +434,8 @@ checkSigningAccounts (
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        SLE::pointer signersAccountRoot =
-            engine->view().peek (keylet::account(signingAcctID));
+        auto signersAccountRoot =
+            ctx.view().read (keylet::account(signingAcctID));
 
         if (signingAcctIDFromPubKey == signingAcctID)
         {
@@ -553,7 +498,7 @@ TER Transactor::checkMultiSign ()
     // Get mTxnAccountID's SignerList and Quorum.
     using namespace TransactorDetail;
     GetSignerListResult const outer =
-        getSignerList (mTxnAccountID, mEngine, m_journal);
+        getSignerList (mTxnAccountID, view(), j_);
 
     if (outer.ter != tesSUCCESS)
         return outer.ter;
@@ -587,7 +532,7 @@ TER Transactor::checkMultiSign ()
             // from these signers directly effect the quorum.
             CheckSigningAccountsResult const outerSigningAccountsResult =
                 checkSigningAccounts (
-                    outer.signerEntries, signingAccounts, mEngine, m_journal);
+                    outer.signerEntries, signingAccounts, ctx_, j_);
 
             if (outerSigningAccountsResult.ter != tesSUCCESS)
                 return outerSigningAccountsResult.ter;
@@ -602,7 +547,7 @@ TER Transactor::checkMultiSign ()
             {
                 if (++signerEntriesItr == outer.signerEntries.end ())
                 {
-                    m_journal.trace <<
+                    j_.trace <<
                         "applyTransaction: Invalid SigningFor.Account.";
                     return tefBAD_SIGNATURE;
                 }
@@ -610,21 +555,21 @@ TER Transactor::checkMultiSign ()
             if (signerEntriesItr->account != signingForID)
             {
                 // The signingForID is not in the SignerEntries.
-                m_journal.trace <<
+                j_.trace <<
                     "applyTransaction: Invalid SigningFor.Account.";
                 return tefBAD_SIGNATURE;
             }
             if (signerEntriesItr->weight <= 0)
             {
                 // The SigningFor entry needs a weight greater than zero.
-                m_journal.trace <<
+                j_.trace <<
                     "applyTransaction: SigningFor.Account needs weight > 0.";
                 return tefBAD_SIGNATURE;
             }
 
             // See if the signingForID has a SignerList.
             GetSignerListResult const inner =
-                getSignerList (signingForID, mEngine, m_journal);
+                getSignerList (signingForID, view(), j_);
 
             if (inner.ter != tesSUCCESS)
                 return inner.ter;
@@ -632,7 +577,7 @@ TER Transactor::checkMultiSign ()
             // Results from these signers indirectly effect the quorum.
             CheckSigningAccountsResult const innerSigningAccountsResult =
                 checkSigningAccounts (
-                    inner.signerEntries, signingAccounts, mEngine, m_journal);
+                    inner.signerEntries, signingAccounts, ctx_, j_);
 
             if (innerSigningAccountsResult.ter != tesSUCCESS)
                 return innerSigningAccountsResult.ter;
@@ -652,7 +597,7 @@ TER Transactor::checkMultiSign ()
             // -- January 2015
             if (innerSigningAccountsResult.weightSum < inner.quorum)
             {
-                m_journal.trace <<
+                j_.trace <<
                     "applyTransaction: Level-2 SigningFor did not make quorum.";
                 return tefBAD_QUORUM;
             }
@@ -664,13 +609,182 @@ TER Transactor::checkMultiSign ()
     // Cannot perform transaction if quorum is not met.
     if (weightSum < outer.quorum)
     {
-        m_journal.trace <<
+        j_.trace <<
             "applyTransaction: MultiSignature failed to meet quorum.";
         return tefBAD_QUORUM;
     }
 
     // Met the quorum.  Continue.
     return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+
+static
+void
+log (std::pair<
+    TER, bool> const& result,
+        beast::Journal j)
+{
+    if(j.trace) j.trace <<
+        "apply: { " << transToken(result.first) <<
+        ", " << (result.second ? "true" : "false") << " }";
+}
+
+std::pair<TER, bool>
+Transactor::operator()()
+{
+    JLOG(j_.trace) <<
+        "applyTransaction>";
+
+    uint256 const& txID = mTxn.getTransactionID ();
+
+    if (!txID)
+    {
+        JLOG(j_.warning) <<
+            "applyTransaction: transaction id may not be zero";
+        auto const result =
+            std::make_pair(temINVALID_FLAG, false);
+        log(result, j_);
+        return result;
+    }
+
+#ifdef BEAST_DEBUG
+    {
+        Serializer ser;
+        mTxn.add (ser);
+        SerialIter sit(ser.slice());
+        STTx s2 (sit);
+
+        if (! s2.isEquivalent(mTxn))
+        {
+            JLOG(j_.fatal) <<
+                "Transaction serdes mismatch";
+            JLOG(j_.info) << to_string(mTxn.getJson (0));
+            JLOG(j_.fatal) << s2.getJson (0);
+            assert (false);
+        }
+    }
+#endif
+
+    TER terResult = apply();
+
+    if (terResult == temUNKNOWN)
+    {
+        JLOG(j_.warning) <<
+            "applyTransaction: Invalid transaction: unknown transaction type";
+        auto const result =
+            std::make_pair(temUNKNOWN, false);
+        log(result, j_);
+        return result;
+    }
+
+    if (j_.debug)
+    {
+        std::string strToken;
+        std::string strHuman;
+
+        transResultInfo (terResult, strToken, strHuman);
+
+        j_.debug <<
+            "applyTransaction: terResult=" << strToken <<
+            " : " << terResult <<
+            " : " << strHuman;
+    }
+
+    bool didApply = isTesSuccess (terResult);
+
+    if (isTecClaim (terResult) && !(view().flags() & tapRETRY))
+    {
+        // only claim the transaction fee
+        JLOG(j_.debug) <<
+            "Reprocessing tx " << txID << " to only claim fee";
+        
+        ctx_.discard();
+
+        auto const txnAcct = view().peek(
+            keylet::account(mTxn.getAccountID(sfAccount)));
+
+        if (txnAcct)
+        {
+            std::uint32_t t_seq = mTxn.getSequence ();
+            std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
+
+            if (a_seq < t_seq)
+                terResult = terPRE_SEQ;
+            else if (a_seq > t_seq)
+                terResult = tefPAST_SEQ;
+            else
+            {
+                STAmount fee        = mTxn.getTransactionFee ();
+                STAmount balance    = txnAcct->getFieldAmount (sfBalance);
+
+                // We retry/reject the transaction if the account
+                // balance is zero or we're applying against an open
+                // ledger and the balance is less than the fee
+                if ((balance == zero) ||
+                    (view().open() && (balance < fee)))
+                {
+                    // Account has no funds or ledger is open
+                    terResult = terINSUF_FEE_B;
+                }
+                else
+                {
+                    if (fee > balance)
+                        fee = balance;
+                    txnAcct->setFieldAmount (sfBalance, balance - fee);
+                    txnAcct->setFieldU32 (sfSequence, t_seq + 1);
+                    view().update (txnAcct);
+                    didApply = true;
+                }
+            }
+        }
+        else
+        {
+            terResult = terNO_ACCOUNT;
+        }
+    }
+    else if (!didApply)
+    {
+        JLOG(j_.debug) << "Not applying transaction " << txID;
+    }
+
+    if (didApply)
+    {
+        // Transaction succeeded fully or (retries are
+        // not allowed and the transaction could claim a fee)
+
+        if(view().closed())
+        {
+            // VFALCO Fix this nonsense with Amount
+            // Charge whatever fee they specified. We break the
+            // encapsulation of STAmount here and use "special
+            // knowledge" - namely that a native amount is
+            // stored fully in the mantissa:
+            auto const fee = mTxn.getTransactionFee ();
+
+            // The transactor guarantees these will never trigger
+            if (!fee.native () || fee.negative ())
+            {
+                // VFALCO Log to journal here
+                // JLOG(journal.fatal) << "invalid fee";
+                throw std::logic_error(
+                    "amount is negative!");
+            }
+
+            if (fee != zero)
+                view().destroyCoins (fee.mantissa ());
+        }
+
+        ctx_.apply(terResult);
+        // VFALCO NOTE since we called apply(), it is not
+        //             okay to look at view() past this point.
+    }
+
+    auto const result =
+        std::make_pair(terResult, didApply);
+    log(result, j_);
+    return result;
 }
 
 }

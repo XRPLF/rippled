@@ -515,23 +515,15 @@ BasicTaker::do_cross (
 
 //==============================================================================
 
-std::uint32_t
-Taker::calculateRate (
-    View const& view,
-        AccountID const& issuer,
-            AccountID const& account)
-{
-    return isXRP (issuer) || (account == issuer)
-        ? QUALITY_ONE
-        : rippleTransferRate (view, issuer);
-}
-
-Taker::Taker (CrossType cross_type, View& view, AccountID const& account,
-        Amounts const& offer, std::uint32_t flags, beast::Journal journal)
+Taker::Taker (CrossType cross_type, View& view,
+    AccountID const& account, Amounts const& offer,
+        std::uint32_t flags, Config const& config,
+            beast::Journal journal)
     : BasicTaker (cross_type, account, offer, Quality(offer), flags,
         calculateRate(view, offer.in.getIssuer(), account),
         calculateRate(view, offer.out.getIssuer(), account), journal)
     , view_ (view)
+    , config_ (config)
     , xrp_flow_ (0)
     , direct_crossings_ (0)
     , bridge_crossings_ (0)
@@ -587,7 +579,7 @@ STAmount
 Taker::get_funds (AccountID const& account, STAmount const& amount) const
 {
     return accountFunds(view_, account, amount, fhZERO_IF_FROZEN,
-        getConfig());
+        config_);
 }
 
 TER Taker::transferXRP (
@@ -779,4 +771,16 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
     return fill (ret.first, leg1, ret.second, leg2);
 }
 
+std::uint32_t
+Taker::calculateRate (
+    View const& view,
+        AccountID const& issuer,
+            AccountID const& account)
+{
+    return isXRP (issuer) || (account == issuer)
+        ? QUALITY_ONE
+        : rippleTransferRate (view, issuer);
 }
+
+} // ripple
+

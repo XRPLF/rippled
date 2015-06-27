@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/MetaView.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/app/ledger/MetaView.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -42,34 +43,39 @@ namespace ripple {
 #define DIR_NODE_MAX  32
 #endif
 
-MetaView::MetaView (BasicView const* parent,
-    LedgerIndex seq, std::uint32_t time,
+shallow_copy_t const shallow_copy {};
+open_ledger_t const open_ledger {};
+
+MetaView::MetaView (shallow_copy_t,
+        MetaView const& other)
+    : base_ (other.base_)
+    , flags_ (other.flags_)
+    , info_ (other.info_)
+    , txs_ (other.txs_)
+    , items_ (other.items_)
+    , destroyedCoins_(
+        other.destroyedCoins_)
+{
+}
+
+MetaView::MetaView (open_ledger_t,
+        BasicView const& parent)
+    : base_ (parent)
+    , flags_ (tapNONE)
+    , info_ (parent.info())
+{
+    assert(! parent.open());
+    info_.open = true;
+    info_.seq = parent.info().seq + 1;
+    info_.parentCloseTime =
+        parent.info().closeTime;
+}
+
+MetaView::MetaView (BasicView const& base,
         ViewFlags flags)
-    : parent_ (parent)
+    : base_ (base)
     , flags_ (flags)
-    , seq_ (parent->seq())
-    , time_ (parent->time())
-{
-}
-
-MetaView::MetaView (BasicView const* parent,
-    ViewFlags flags, boost::optional<
-        uint256> const& key)
-    : parent_ (parent)
-    , flags_ (flags)
-    , seq_ (parent->seq())
-    , time_ (parent->time())
-{
-    // VFALCO This needs to be refactored
-    if (key)
-        meta_.init (*key, seq_);
-}
-
-MetaView::MetaView (View const* parent)
-    : parent_ (parent)
-    , flags_ (parent->flags())
-    , seq_ (parent->seq())
-    , time_ (parent->time())
+    , info_ (base.info())
 {
 }
 
@@ -81,7 +87,7 @@ MetaView::exists (Keylet const& k) const
     assert(k.key.isNonZero());
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
-        return parent_->exists(k);
+        return base_.exists(k);
     if (iter->second.first == taaDELETE)
         return false;
     if (! k.check(*iter->second.second))
@@ -99,11 +105,11 @@ MetaView::succ (uint256 const& key,
 {
     boost::optional<uint256> next = key;
     item_list::const_iterator iter;
-    // Find parent successor that is
+    // Find base successor that is
     // not also deleted in our list
     do
     {
-        next = parent_->succ(*next, last);
+        next = base_.succ(*next, last);
         if (! next)
             break;
         iter = items_.find(*next);
@@ -141,7 +147,7 @@ MetaView::read (Keylet const& k) const
     if (iter == items_.end())
     {
         auto const sle =
-            parent_->read(k);
+            base_.read(k);
         if (! sle)
             return nullptr;
         return sle;
@@ -163,13 +169,13 @@ MetaView::unchecked_erase (uint256 const& key)
     if (iter == items_.end() ||
         iter->first != key)
     {
-        assert(parent_->exists(
+        assert(base_.exists(
             keylet::unchecked(key)));
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
             forward_as_tuple(key), forward_as_tuple(
                 taaDELETE, make_shared<SLE>(
-                    *parent_->read(keylet::unchecked(key)))));
+                    *base_.read(keylet::unchecked(key)))));
         return true;
     }
     if (iter->second.first == taaCREATE)
@@ -192,7 +198,7 @@ MetaView::unchecked_insert(
         iter->first != sle->key())
     {
         // VFALCO return Keylet from SLE
-        assert(! parent_->exists(Keylet{
+        assert(! base_.exists(Keylet{
             sle->getType(), sle->key()}));
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
@@ -217,7 +223,7 @@ MetaView::unchecked_insert(
         break;
     };
     // VFALCO return Keylet from SLE
-    assert(parent_->exists(
+    assert(base_.exists(
         Keylet{sle->getType(), sle->key()}));
     iter->second.first = taaMODIFY;
     iter->second.second = std::move(sle);
@@ -232,7 +238,7 @@ MetaView::unchecked_replace (std::shared_ptr<SLE>&& sle)
         iter->first != sle->key())
     {
         // VFALCO return Keylet from SLE
-        assert(parent_->exists(Keylet{
+        assert(base_.exists(Keylet{
             sle->getType(), sle->key()}));
         using namespace std;
         items_.emplace_hint(iter, piecewise_construct,
@@ -255,29 +261,33 @@ MetaView::destroyCoins (std::uint64_t feeDrops)
     destroyedCoins_ += feeDrops;
 }
 
+std::size_t
+MetaView::txCount() const
+{
+    return base_.txCount() + txs_.size();
+}
+
 bool
 MetaView::txExists (uint256 const& key) const
 {
     if (txs_.count(key) > 0)
         return true;
-    return parent_->txExists(key);
+    return base_.txExists(key);
 }
 
-bool
+void
 MetaView::txInsert (uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData)
+    std::shared_ptr<Serializer const
+        > const& txn, std::shared_ptr<
+            Serializer const> const& metaData)
 {
-    bool already = txs_.count(key);
-    if (! already)
-        already = parent_->txExists(key);
-    if (already)
-        return false;
+    if (txs_.count(key) ||
+            base_.txExists(key))
+        LogicError("duplicate_tx: " + to_string(key));
     txs_.emplace(std::piecewise_construct,
         std::forward_as_tuple(key),
             std::forward_as_tuple(
                 txn, metaData));
-    return true;
 }
 
 std::vector<uint256>
@@ -301,7 +311,7 @@ MetaView::peek (Keylet const& k)
         iter->first != k.key)
     {
         auto const sle =
-            parent_->read(k);
+            base_.read(k);
         if (! sle)
             return nullptr;
         // Make our own copy
@@ -349,7 +359,7 @@ MetaView::insert (std::shared_ptr<SLE> const& sle)
         iter->first != sle->key())
     {
         // VFALCO return Keylet from SLE
-        assert(! parent_->exists(
+        assert(! base_.exists(
             Keylet{sle->getType(), sle->key()}));
         items_.emplace_hint(iter, std::piecewise_construct,
             std::forward_as_tuple(sle->getIndex()),
@@ -372,7 +382,7 @@ MetaView::insert (std::shared_ptr<SLE> const& sle)
         break;
     }
     // Existed in parent, deleted here
-    assert(parent_->exists(
+    assert(base_.exists(
         Keylet{sle->getType(), sle->key()}));
     iter->second.first = taaMODIFY;
     iter->second.second = sle;
@@ -386,7 +396,7 @@ MetaView::update (std::shared_ptr<SLE> const& sle)
         iter->first != sle->key())
     {
         // VFALCO return Keylet from SLE
-        assert(parent_->exists(
+        assert(base_.exists(
             Keylet{sle->getType(), sle->key()}));
         items_.emplace_hint(iter, std::piecewise_construct,
             std::forward_as_tuple(sle->key()),
@@ -404,9 +414,11 @@ MetaView::update (std::shared_ptr<SLE> const& sle)
 
 //------------------------------------------------------------------------------
 
-void MetaView::apply (BasicView& to)
+void MetaView::apply(
+    BasicView& to, beast::Journal j)
 {
-    assert(&to == parent_);
+    assert(&to == &base_);
+    assert(to.info().open == info_.open);
     // Write back the account states
     for (auto& item : items_)
     {
@@ -521,23 +533,212 @@ Json::Value MetaView::getJson (int) const
 
     ret[jss::nodes] = nodes;
 
-    ret[jss::metaData] = meta_.getJson (0);
+    // VFALCO The meta only exists during apply() now
+    //ret[jss::metaData] = meta.getJson (0);
 
     return ret;
 }
 
 //------------------------------------------------------------------------------
 
+void
+MetaView::apply (BasicView& to,
+    STTx const& tx, TER ter, beast::Journal j)
+{
+    auto const sTx =
+        std::make_shared<Serializer>();
+    tx.add(*sTx);
+
+    std::shared_ptr<Serializer> sMeta;
+
+    if (closed())
+    {
+        TxMeta meta;
+        // VFALCO Shouldn't TxMeta ctor do this?
+        meta.init (tx.getTransactionID(), seq());
+        if (deliverAmount_)
+            meta.setDeliveredAmount(
+                *deliverAmount_);
+
+        Mods newMod;
+        for (auto& it : items_)
+        {
+            auto type = &sfGeneric;
+            switch (it.second.first)
+            {
+            case taaMODIFY:
+            #ifdef META_DEBUG
+                JLOG(j.trace) << "modify " << it.first;
+            #endif
+                type = &sfModifiedNode;
+                break;
+
+            case taaDELETE:
+            #ifdef META_DEBUG
+                JLOG(j.trace) << "delete " << it.first;
+            #endif
+                type = &sfDeletedNode;
+                break;
+
+            case taaCREATE:
+            #ifdef META_DEBUG
+                JLOG(j.trace) << "insert " << it.first;
+            #endif
+                type = &sfCreatedNode;
+                break;
+
+            default: // ignore these
+                break;
+            }
+            if (type == &sfGeneric)
+                continue;
+            auto const origNode =
+                base_.read(keylet::unchecked(it.first));
+            auto curNode = it.second.second;
+            if ((type == &sfModifiedNode) && (*curNode == *origNode))
+                continue;
+            std::uint16_t nodeType = curNode
+                ? curNode->getFieldU16 (sfLedgerEntryType)
+                : origNode->getFieldU16 (sfLedgerEntryType);
+            meta.setAffectedNode (it.first, *type, nodeType);
+            if (type == &sfDeletedNode)
+            {
+                assert (origNode && curNode);
+                threadOwners (meta, origNode, newMod, j);
+
+                STObject prevs (sfPreviousFields);
+                for (auto const& obj : *origNode)
+                {
+                    // go through the original node for
+                    // modified  fields saved on modification
+                    if (obj.getFName().shouldMeta(
+                            SField::sMD_ChangeOrig) &&
+                                ! curNode->hasMatchingEntry (obj))
+                        prevs.emplace_back (obj);
+                }
+
+                if (!prevs.empty ())
+                    meta.getAffectedNode(it.first).emplace_back(std::move(prevs));
+
+                STObject finals (sfFinalFields);
+                for (auto const& obj : *curNode)
+                {
+                    // go through the final node for final fields
+                    if (obj.getFName().shouldMeta(
+                            SField::sMD_Always | SField::sMD_DeleteFinal))
+                        finals.emplace_back (obj);
+                }
+
+                if (!finals.empty ())
+                    meta.getAffectedNode (it.first).emplace_back (std::move(finals));
+            }
+            else if (type == &sfModifiedNode)
+            {
+                assert (curNode && origNode);
+
+                if (curNode->isThreadedType ()) // thread transaction to node it modified
+                    threadTx (meta, curNode, newMod);
+
+                STObject prevs (sfPreviousFields);
+                for (auto const& obj : *origNode)
+                {
+                    // search the original node for values saved on modify
+                    if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
+                        prevs.emplace_back (obj);
+                }
+
+                if (!prevs.empty ())
+                    meta.getAffectedNode (it.first).emplace_back (std::move(prevs));
+
+                STObject finals (sfFinalFields);
+                for (auto const& obj : *curNode)
+                {
+                    // search the final node for values saved always
+                    if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_ChangeNew))
+                        finals.emplace_back (obj);
+                }
+
+                if (!finals.empty ())
+                    meta.getAffectedNode (it.first).emplace_back (std::move(finals));
+            }
+            else if (type == &sfCreatedNode) // if created, thread to owner(s)
+            {
+                assert (curNode && !origNode);
+                threadOwners (meta, curNode, newMod, j);
+
+                if (curNode->isThreadedType ()) // always thread to self
+                    threadTx (meta, curNode, newMod);
+
+                STObject news (sfNewFields);
+                for (auto const& obj : *curNode)
+                {
+                    // save non-default values
+                    if (!obj.isDefault () &&
+                            obj.getFName().shouldMeta(
+                                SField::sMD_Create | SField::sMD_Always))
+                        news.emplace_back (obj);
+                }
+
+                if (!news.empty ())
+                    meta.getAffectedNode (it.first).emplace_back (std::move(news));
+            }
+            else
+            {
+                assert (false);
+            }
+        }
+
+        // add any new modified nodes to the modification set
+        for (auto& it : newMod)
+            update (it.second);
+
+        sMeta = std::make_shared<Serializer>();
+        meta.addRaw (*sMeta, ter, txCount());
+
+        // VFALCO For diagnostics do we want to show
+        //        metadata even when the base view is open?
+        JLOG(j.trace) <<
+            "metadata " << meta.getJson (0);
+    }
+
+    txInsert (tx.getTransactionID(),
+        sTx, sMeta);
+
+    apply(to);
+}
+
+//------------------------------------------------------------------------------
+
+bool
+MetaView::threadTx (TxMeta& meta,
+    std::shared_ptr<SLE> const& to,
+        Mods& mods)
+{
+    uint256 prevTxID;
+    std::uint32_t prevLgrID;
+    if (! to->thread(meta.getTxID(),
+            meta.getLgrSeq(), prevTxID, prevLgrID))
+        return false;
+    if (prevTxID.isZero () ||
+        TxMeta::thread(
+            meta.getAffectedNode(to,
+                sfModifiedNode), prevTxID,
+                    prevLgrID))
+        return true;
+    assert (false);
+    return false;
+}
+
 std::shared_ptr<SLE>
 MetaView::getForMod (uint256 const& key,
-    Mods& mods)
+    Mods& mods, beast::Journal j)
 {
     auto iter = items_.find (key);
     if (iter != items_.end ())
     {
         if (iter->second.first == taaDELETE)
         {
-            WriteLog (lsFATAL, View) <<
+            JLOG(j.fatal) <<
                 "Trying to thread to deleted node";
             return nullptr;
         }
@@ -554,7 +755,7 @@ MetaView::getForMod (uint256 const& key,
         }
     }
     // VFALCO NOTE Should this be read() or peek()?
-    auto const csle = parent_->read(
+    auto const csle = base_.read(
         keylet::unchecked(key));
     if (! csle)
         return nullptr;
@@ -566,50 +767,33 @@ MetaView::getForMod (uint256 const& key,
 }
 
 bool
-MetaView::threadTx (AccountID const& to,
-    Mods& mods)
+MetaView::threadTx (TxMeta& meta,
+    AccountID const& to, Mods& mods,
+        beast::Journal j)
 {
     auto const sle = getForMod(
-        keylet::account(to).key, mods);
+        keylet::account(to).key, mods, j);
 #ifdef META_DEBUG
-    WriteLog (lsTRACE, View) <<
+    JLOG(j.trace) <<
         "Thread to " << toBase58(to);
 #endif
     assert(sle);
     if (! sle)
     {
-        WriteLog (lsFATAL, View) <<
+        JLOG(j.fatal) <<
             "Threading to non-existent account: " <<
                 toBase58(to);
         return false;
     }
 
-    return threadTx (sle, mods);
+    return threadTx (meta, sle, mods);
 }
 
 bool
-MetaView::threadTx(
-    std::shared_ptr<SLE> const& to,
-        Mods& mods)
-{
-    uint256 prevTxID;
-    std::uint32_t prevLgrID;
-    if (! to->thread(meta_.getTxID(),
-            meta_.getLgrSeq(), prevTxID, prevLgrID))
-        return false;
-    if (prevTxID.isZero () ||
-        TransactionMetaSet::thread(
-            meta_.getAffectedNode(to,
-                sfModifiedNode), prevTxID,
-                    prevLgrID))
-        return true;
-    assert (false);
-    return false;
-}
-
-bool
-MetaView::threadOwners(std::shared_ptr<
-    SLE const> const& sle, Mods& mods)
+MetaView::threadOwners (TxMeta& meta,
+    std::shared_ptr<
+        SLE const> const& sle, Mods& mods,
+            beast::Journal j)
 {
     // thread new or modified sle to owner or owners
     // VFALCO Why not isFieldPresent?
@@ -618,163 +802,24 @@ MetaView::threadOwners(std::shared_ptr<
     {
         // thread to owner's account
     #ifdef META_DEBUG
-        WriteLog (lsTRACE, View) << "Thread to single owner";
+        JLOG(j.trace) << "Thread to single owner";
     #endif
-        return threadTx (sle->getAccountID(sfAccount), mods);
+        return threadTx (meta, sle->getAccountID(
+            sfAccount), mods, j);
     }
     else if (sle->getType() == ltRIPPLE_STATE)
     {
         // thread to owner's accounts
     #ifdef META_DEBUG
-        WriteLog (lsTRACE, View) << "Thread to two owners";
+        JLOG(j.trace) << "Thread to two owners";
     #endif
         return
-            threadTx(sle->getFieldAmount(sfLowLimit).getIssuer(), mods) &&
-            threadTx(sle->getFieldAmount(sfHighLimit).getIssuer(), mods);
+            threadTx (meta, sle->getFieldAmount(
+                sfLowLimit).getIssuer(), mods, j) &&
+            threadTx (meta, sle->getFieldAmount(
+                sfHighLimit).getIssuer(), mods, j);
     }
     return false;
-}
-
-void
-MetaView::calcRawMeta (Serializer& s,
-    TER result, std::uint32_t index)
-{
-    // calculate the raw meta data and return it. This must be called before the set is committed
-
-    // Entries modified only as a result of building the transaction metadata
-    Mods newMod;
-
-    for (auto& it : items_)
-    {
-        auto type = &sfGeneric;
-
-        switch (it.second.first)
-        {
-        case taaMODIFY:
-#ifdef META_DEBUG
-            WriteLog (lsTRACE, View) << "Modified Node " << it.first;
-#endif
-            type = &sfModifiedNode;
-            break;
-
-        case taaDELETE:
-#ifdef META_DEBUG
-            WriteLog (lsTRACE, View) << "Deleted Node " << it.first;
-#endif
-            type = &sfDeletedNode;
-            break;
-
-        case taaCREATE:
-#ifdef META_DEBUG
-            WriteLog (lsTRACE, View) << "Created Node " << it.first;
-#endif
-            type = &sfCreatedNode;
-            break;
-
-        default: // ignore these
-            break;
-        }
-
-        if (type == &sfGeneric)
-            continue;
-
-        auto const origNode =
-            parent_->read(keylet::unchecked(it.first));
-        auto curNode = it.second.second;
-
-        if ((type == &sfModifiedNode) && (*curNode == *origNode))
-            continue;
-
-        std::uint16_t nodeType = curNode
-            ? curNode->getFieldU16 (sfLedgerEntryType)
-            : origNode->getFieldU16 (sfLedgerEntryType);
-
-        meta_.setAffectedNode (it.first, *type, nodeType);
-
-        if (type == &sfDeletedNode)
-        {
-            assert (origNode && curNode);
-            threadOwners (origNode, newMod); // thread transaction to owners
-
-            STObject prevs (sfPreviousFields);
-            for (auto const& obj : *origNode)
-            {
-                // go through the original node for modified fields saved on modification
-                if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
-                    prevs.emplace_back (obj);
-            }
-
-            if (!prevs.empty ())
-                meta_.getAffectedNode (it.first).emplace_back (std::move(prevs));
-
-            STObject finals (sfFinalFields);
-            for (auto const& obj : *curNode)
-            {
-                // go through the final node for final fields
-                if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_DeleteFinal))
-                    finals.emplace_back (obj);
-            }
-
-            if (!finals.empty ())
-                meta_.getAffectedNode (it.first).emplace_back (std::move(finals));
-        }
-        else if (type == &sfModifiedNode)
-        {
-            assert (curNode && origNode);
-
-            if (curNode->isThreadedType ()) // thread transaction to node it modified
-                threadTx (curNode, newMod);
-
-            STObject prevs (sfPreviousFields);
-            for (auto const& obj : *origNode)
-            {
-                // search the original node for values saved on modify
-                if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
-                    prevs.emplace_back (obj);
-            }
-
-            if (!prevs.empty ())
-                meta_.getAffectedNode (it.first).emplace_back (std::move(prevs));
-
-            STObject finals (sfFinalFields);
-            for (auto const& obj : *curNode)
-            {
-                // search the final node for values saved always
-                if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_ChangeNew))
-                    finals.emplace_back (obj);
-            }
-
-            if (!finals.empty ())
-                meta_.getAffectedNode (it.first).emplace_back (std::move(finals));
-        }
-        else if (type == &sfCreatedNode) // if created, thread to owner(s)
-        {
-            assert (curNode && !origNode);
-            threadOwners (curNode, newMod);
-
-            if (curNode->isThreadedType ()) // always thread to self
-                threadTx (curNode, newMod);
-
-            STObject news (sfNewFields);
-            for (auto const& obj : *curNode)
-            {
-                // save non-default values
-                if (!obj.isDefault () && obj.getFName ().shouldMeta (SField::sMD_Create | SField::sMD_Always))
-                    news.emplace_back (obj);
-            }
-
-            if (!news.empty ())
-                meta_.getAffectedNode (it.first).emplace_back (std::move(news));
-        }
-        else assert (false);
-    }
-
-    // add any new modified nodes to the modification set
-    for (auto& it : newMod)
-        update (it.second);
-
-    meta_.addRaw (s, result, index);
-    WriteLog (lsTRACE, View) << "Metadata:" << meta_.getJson (0);
 }
 
 } // ripple
