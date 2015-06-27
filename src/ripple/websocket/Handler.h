@@ -105,11 +105,6 @@ public:
         return desc_.port;
     }
 
-    bool getPublic()
-    {
-        return ! port ().admin_ip.empty ();
-    };
-
     void send (connection_ptr const& cpClient, message_ptr const& mpMessage)
     {
         try

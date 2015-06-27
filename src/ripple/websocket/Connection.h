@@ -103,7 +103,6 @@ private:
     HTTP::Port const& m_port;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
-    bool const m_isPublic;
     beast::IP::Endpoint const m_remoteAddress;
     std::mutex m_receiveQueueMutex;
     std::deque <message_ptr> m_receiveQueue;
@@ -131,7 +130,6 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
                    resourceManager.newInboundEndpoint (remoteAddress))
         , m_port (handler.port ())
         , m_resourceManager (resourceManager)
-        , m_isPublic (handler.getPublic ())
         , m_remoteAddress (remoteAddress)
         , m_netOPs (getApp ().getOPs ())
         , m_io_service (io_service)
