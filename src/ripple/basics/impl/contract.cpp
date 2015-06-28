@@ -18,30 +18,35 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
-#include <ripple/basics/impl/contract.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/make_SSLContext.cpp>
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/strHex.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/TestSuite.test.cpp>
-#include <ripple/basics/impl/ThreadName.cpp>
-#include <ripple/basics/impl/Time.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
+namespace ripple {
 
-#include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
-#include <ripple/basics/tests/hardened_hash_test.cpp>
-#include <ripple/basics/tests/KeyCache.test.cpp>
-#include <ripple/basics/tests/RangeSet.test.cpp>
-#include <ripple/basics/tests/StringUtilities.test.cpp>
-#include <ripple/basics/tests/TaggedCache.test.cpp>
+namespace detail {
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
-#endif
+void
+accessViolation()
+{
+    // dereference memory
+    // location zero
+    int* j = 0;
+    *j++;
+}
+
+// This hook lets you do pre or post
+// processing on exceptions to suit needs.
+void
+throwException (std::exception_ptr ep)
+{
+    std::rethrow_exception(ep);
+}
+
+} // detail
+
+void
+LogicError (std::string const&)
+{
+    detail::accessViolation();
+}
+
+} // ripple

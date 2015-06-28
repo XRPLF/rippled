@@ -2616,6 +2616,9 @@
     <ClInclude Include="..\..\src\ripple\basics\impl\CheckLibraryVersionsImpl.h">
       <Filter>ripple\basics\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\impl\contract.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\CountedObject.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
