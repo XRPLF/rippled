@@ -28,6 +28,9 @@ PaymentView::balanceHook (AccountID const& account,
     AccountID const& issuer,
         STAmount const& amount) const
 {
+    if (pv_)
+        return tab_.adjustedBalance (
+            account, issuer, pv_->balanceHook (account, issuer, amount));
     return tab_.adjustedBalance(
         account, issuer, amount);
 }
