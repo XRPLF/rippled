@@ -3096,6 +3096,9 @@
     <ClCompile Include="..\..\src\ripple\ledger\tests\PaymentSandbox_test.cpp">
       <Filter>ripple\ledger\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\tests\SkipList_test.cpp">
+      <Filter>ripple\ledger\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\tests\View_test.cpp">
       <Filter>ripple\ledger\tests</Filter>
     </ClCompile>
