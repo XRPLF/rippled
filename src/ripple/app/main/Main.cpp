@@ -116,14 +116,18 @@ void printHelp (const po::options_description& desc)
         << systemName () << "d [options] <command> <params>\n"
         << desc << std::endl
         << "Commands: \n"
+           "     account_currencies <account> [<ledger>] [strict]\n"
            "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]\n"
            "     account_lines <account> <account>|\"\" [<ledger>]\n"
+           "     account_objects <account> [<ledger>] [strict]\n"
            "     account_offers <account>|<account_public_key> [<ledger>]\n"
            "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]\n"
            "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
+           "     fetch_info [clear]\n"
+           "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet> ]]\n"
            "     get_counts\n"
            "     json <method> <json>\n"
            "     ledger [<id>|current|closed|validated] [full]\n"
@@ -131,34 +135,28 @@ void printHelp (const po::options_description& desc)
            "     ledger_closed\n"
            "     ledger_current\n"
            "     ledger_request <ledger>\n"
-           "     ledger_header <ledger>\n"
+           "     log_level [[<partition>] <severity>]\n"
            "     logrotate \n"
            "     peers\n"
+           "     ping\n"
            "     random\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
            "     version\n"
            "     server_info\n"
-           "     sign\n"
+           "     sign <private_key> <json> [offline]\n"
 #if RIPPLE_ENABLE_MULTI_SIGN
            "     sign_for\n"
 #endif // RIPPLE_ENABLE_MULTI_SIGN
            "     stop\n"
-           "     submit\n"
+           "     submit <tx_blob>|[<private_key> <json>]\n"
 #if RIPPLE_ENABLE_MULTI_SIGN
            "     submit_multisigned\n"
 #endif // RIPPLE_ENABLE_MULTI_SIGN
            "     tx <id>\n"
-           "     unl_add <domain>|<public> [<comment>]\n"
-           "     unl_delete <domain>|<public_key>\n"
-           "     unl_list\n"
-           "     unl_load\n"
-           "     unl_network\n"
-           "     unl_reset\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
            "     validation_seed [<seed>|<pass_phrase>|<key>]\n"
-           "     wallet_propose [<passphrase>]\n"
-           "     wallet_seed [<seed>|<passphrase>|<passkey>]\n";
+           "     wallet_propose [<passphrase>]\n";
 }
 
 //------------------------------------------------------------------------------
