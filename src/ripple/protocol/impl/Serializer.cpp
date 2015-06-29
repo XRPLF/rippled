@@ -575,6 +575,19 @@ int SerialIter::getVLDataLength ()
     return datLen;
 }
 
+Slice
+SerialIter::getSlice (std::size_t bytes)
+{
+    if (bytes > remain_)
+        throw std::runtime_error(
+            "invalid SerialIter getSlice");
+    Slice s(p_, bytes);
+    p_ += bytes;
+    used_ += bytes;
+    remain_ -= bytes;
+    return s;
+}
+
 // VFALCO DEPRECATED Returns a copy
 Blob
 SerialIter::getVL()

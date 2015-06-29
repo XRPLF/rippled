@@ -353,6 +353,15 @@ public:
     void
     getFieldID (int& type, int& name);
 
+    // Returns the size of the VL if the
+    // next object is a VL. Advances the iterator
+    // to the beginning of the VL.
+    int
+    getVLDataLength ();
+
+    Slice
+    getSlice (std::size_t bytes);
+
     // VFALCO DEPRECATED Returns a copy
     Blob
     getRaw (int size);
@@ -363,9 +372,6 @@ public:
 
     Buffer
     getVLBuffer();
-
-private:
-    int getVLDataLength ();
 
     template<class T>
     T getRawHelper (int size);
