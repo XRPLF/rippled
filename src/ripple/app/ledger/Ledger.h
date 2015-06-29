@@ -141,6 +141,15 @@ public:
     read (Keylet const& k) const override;
 
     bool
+    txEmpty() const override;
+
+    std::unique_ptr<iterator_impl>
+    txBegin() const override;
+
+    std::unique_ptr<iterator_impl>
+    txEnd() const override;
+
+    bool
     unchecked_erase (uint256 const& key) override;
 
     void
@@ -418,14 +427,15 @@ public:
     static std::map< std::uint32_t, std::pair<uint256, uint256> >
                   getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
 
-protected:
+private:
+    class tx_iterator_impl;
+
     void saveValidatedLedgerAsync(Job&, bool current)
     {
         saveValidatedLedger(current);
     }
     bool saveValidatedLedger (bool current);
 
-private:
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
 
@@ -484,6 +494,29 @@ private:
 // API
 //
 //------------------------------------------------------------------------------
+
+/** Deserialize a SHAMapItem containing a single STTx
+
+    Throw:
+
+        May throw on deserializaton error
+*/
+std::shared_ptr<STTx const>
+deserializeTx (SHAMapItem const& item);
+
+/** Deserialize a SHAMapItem containing STTx + STObject metadata
+
+    The SHAMap must contain two variable length
+    serialization objects.
+
+    Throw:
+
+        May throw on deserializaton error
+*/
+std::pair<std::shared_ptr<
+    STTx const>, std::shared_ptr<
+        STObject const>>
+deserializeTxPlusMeta (SHAMapItem const& item);
 
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
