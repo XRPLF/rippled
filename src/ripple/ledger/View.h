@@ -23,6 +23,8 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
@@ -99,14 +101,26 @@ struct ViewInfo
     and transaction items. There is no checkpointing
     or calculation of metadata.
 
-    A raw interace is provided for mutable ledgers.
+    A raw interace is provided for mutable ledgers,
+    this is used internally by implementations and
+    should not be called directly.
 */
+// VFALCO Rename unchecked functions to raw
 class BasicView
 {
+protected:
+    class iterator_impl;
+
 public:
     using key_type = uint256;
+
     using mapped_type =
         std::shared_ptr<SLE const>;
+
+    BasicView()
+        : txs(*this)
+    {
+    }
 
     virtual ~BasicView() = default;
 
@@ -191,6 +205,21 @@ public:
     std::shared_ptr<SLE const>
     read (Keylet const& k) const = 0;
 
+    // used by the implementation
+    virtual
+    bool
+    txEmpty() const = 0;
+
+    // used by the implementation
+    virtual
+    std::unique_ptr<iterator_impl>
+    txBegin() const = 0;
+
+    // used by the implementation
+    virtual
+    std::unique_ptr<iterator_impl>
+    txEnd() const = 0;
+
     /** Unconditionally erase a state item.
 
         Requirements:
@@ -266,7 +295,11 @@ public:
     std::size_t
     txCount() const = 0;
 
-    /** Returns `true` if a tx exists in the tx map. */
+    /** Returns `true` if a tx exists in the tx map.
+
+        A tx exists in the map if it is part of the
+        base ledger, or if it is a newly inserted tx.
+    */
     virtual
     bool
     txExists (uint256 const& key) const = 0;
@@ -290,9 +323,62 @@ public:
 
     //--------------------------------------------------------------------------
 
+    // A Forward Range container
+    // representing the list of transactions
+    //
+    class txs_type
+    {
+    private:
+        friend class BasicView;
+
+        BasicView& view_;
+
+        explicit
+        txs_type (BasicView& view)
+            : view_ (view)
+        {
+        }
+
+    public:
+        /** ForwardIterator to access transactions */
+        class iterator;
+        using const_iterator = iterator;
+
+        /** Transaction followed by optional metadata. */
+        using value_type = std::pair<
+            std::shared_ptr<STTx const>,
+                std::shared_ptr<STObject const>>;
+
+        txs_type() = delete;
+        txs_type (txs_type const&) = delete;
+        txs_type& operator= (txs_type const&) = delete;
+
+        bool
+        empty() const;
+
+        /** Return iterator to the beginning of the tx list.
+        
+            Meets the requirements of `ForwardIterator`
+        */
+        iterator
+        begin() const;
+
+        /** Return iterator to one past the end of the tx list.
+
+            Meets the requirements of `ForwardIterator`
+        */
+        iterator
+        end() const;
+    };
+
+    // Memberspace
+    // The list of transactions.
+    txs_type const txs;
+
+    //--------------------------------------------------------------------------
+
     // Called to adjust returned balances
     // This is required to support PaymentView
-
     virtual
     STAmount
     balanceHook (AccountID const& account,
@@ -302,6 +388,175 @@ public:
         return amount;
     }
 };
+
+//------------------------------------------------------------------------------
+
+class BasicView::iterator_impl
+{
+public:
+    iterator_impl() = default;
+    iterator_impl(iterator_impl const&) = delete;
+    iterator_impl& operator=(iterator_impl const&) = delete;
+
+    virtual
+    ~iterator_impl() = default;
+
+    virtual
+    std::unique_ptr<iterator_impl>
+    copy() const = 0;
+
+    virtual
+    bool
+    equal (iterator_impl const& impl) const = 0;
+
+    virtual
+    void
+    increment() = 0;
+
+    virtual
+    txs_type::value_type
+    dereference() const = 0;
+};
+
+//------------------------------------------------------------------------------
+
+class BasicView::txs_type::iterator
+{
+public:
+    using value_type =
+        BasicView::txs_type::value_type;
+
+    using pointer = value_type const*;
+
+    using reference = value_type const&;
+
+    using difference_type =
+        std::ptrdiff_t;
+
+    using iterator_category =
+        std::forward_iterator_tag;
+
+    iterator() = default;
+
+    iterator (iterator const& other)
+        : view_ (other.view_)
+        , impl_ (other.impl_->copy())
+        , cache_ (other.cache_)
+    {
+    }
+
+    iterator (iterator&& other)
+        : view_ (other.view_)
+        , impl_ (std::move(other.impl_))
+        , cache_ (std::move(other.cache_))
+    {
+    }
+
+    // Used by the implementation
+    explicit
+    iterator (BasicView const& view,
+            std::unique_ptr<
+                iterator_impl> impl)
+        : view_ (&view)
+        , impl_ (std::move(impl))
+    {
+    }
+
+    iterator&
+    operator= (iterator const& other)
+    {
+        if (this == &other)
+            return *this;
+        view_ = other.view_;
+        impl_ = other.impl_->copy();
+        cache_ = other.cache_;
+        return *this;
+    }
+
+    iterator&
+    operator= (iterator&& other)
+    {
+        view_ = other.view_;
+        impl_ = std::move(other.impl_);
+        cache_ = std::move(other.cache_);
+        return *this;
+    }
+
+    bool
+    operator== (iterator const& other) const
+    {
+        assert(view_ == other.view_);
+        return impl_->equal(*other.impl_);
+    }
+
+    bool
+    operator!= (iterator const& other) const
+    {
+        return ! (*this == other);
+    }
+
+    // Can throw
+    reference
+    operator*() const
+    {
+        if (! cache_)
+            cache_ = impl_->dereference();
+        return *cache_;
+    }
+
+    // Can throw
+    pointer
+    operator->() const
+    {
+        return &**this;
+    }
+
+    iterator&
+    operator++()
+    {
+        impl_->increment();
+        cache_ = boost::none;
+        return *this;
+    }
+
+    iterator
+    operator++(int)
+    {
+        iterator prev(*view_,
+            impl_->copy());
+        prev.cache_ = std::move(cache_);
+        ++(*this);
+        return prev;
+    }
+
+private:
+    BasicView const* view_ = nullptr;
+    std::unique_ptr<iterator_impl> impl_;
+    boost::optional<value_type> mutable cache_;
+};
+
+inline
+bool
+BasicView::txs_type::empty() const
+{
+    return view_.txEmpty();
+}
+
+inline
+auto
+BasicView::txs_type::begin() const ->
+    iterator
+{
+    return iterator(view_, view_.txBegin());
+}
+
+inline
+auto
+BasicView::txs_type::end() const ->
+    iterator
+{
+    return iterator(view_, view_.txEnd());
+}
 
 //------------------------------------------------------------------------------
 
@@ -327,9 +582,9 @@ enum ViewFlags
 };
 
 inline
-ViewFlags operator|(
-    ViewFlags const& lhs,
-        ViewFlags const& rhs)
+ViewFlags
+operator|(ViewFlags const& lhs,
+    ViewFlags const& rhs)
 {
     return static_cast<ViewFlags>(
         static_cast<int>(lhs) |
@@ -338,9 +593,8 @@ ViewFlags operator|(
 
 inline
 ViewFlags
-operator&(
-    ViewFlags const& lhs,
-        ViewFlags const& rhs)
+operator&(ViewFlags const& lhs,
+    ViewFlags const& rhs)
 {
     return static_cast<ViewFlags>(
         static_cast<int>(lhs) &
@@ -533,6 +787,24 @@ public:
     }
 
     bool
+    txEmpty() const override
+    {
+        return view_.txEmpty();
+    }
+
+    std::unique_ptr<iterator_impl>
+    txBegin() const override
+    {
+        return view_.txBegin();
+    }
+
+    std::unique_ptr<iterator_impl>
+    txEnd() const override
+    {
+        return view_.txEnd();
+    }
+
+    bool
     unchecked_erase(
         uint256 const& key) override
     {
@@ -635,6 +907,24 @@ public:
     read (Keylet const& k) const override
     {
         return view_.read(k);
+    }
+
+    bool
+    txEmpty() const override
+    {
+        return view_.txEmpty();
+    }
+
+    std::unique_ptr<iterator_impl>
+    txBegin() const override
+    {
+        return view_.txBegin();
+    }
+
+    std::unique_ptr<iterator_impl>
+    txEnd() const override
+    {
+        return view_.txEnd();
     }
 
     bool

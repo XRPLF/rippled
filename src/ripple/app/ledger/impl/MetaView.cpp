@@ -170,6 +170,93 @@ MetaView::read (Keylet const& k) const
     return sle;
 }
 
+//------------------------------------------------------------------------------
+
+class MetaView::tx_iterator_impl
+    : public BasicView::iterator_impl
+{
+private:
+    bool metadata_;
+    tx_map::const_iterator iter_;
+
+public:
+    explicit
+    tx_iterator_impl (bool metadata,
+            tx_map::const_iterator iter)
+        : metadata_(metadata)
+        , iter_(iter)
+    {
+    }
+
+    std::unique_ptr<iterator_impl>
+    copy() const override
+    {
+        return std::make_unique<
+            tx_iterator_impl>(
+                metadata_, iter_);
+    }
+
+    bool
+    equal (iterator_impl const& impl) const override
+    {
+        auto const& other = dynamic_cast<
+            tx_iterator_impl const&>(impl);
+        return iter_ == other.iter_;
+    }
+
+    void
+    increment() override
+    {
+        ++iter_;
+    }
+
+    txs_type::value_type
+    dereference() const override
+    {
+        txs_type::value_type result;
+        {
+            SerialIter sit(
+                iter_->second.first->slice());
+            result.first = std::make_shared<
+                STTx const>(sit);
+        }
+        if (metadata_)
+        {
+            SerialIter sit(
+                iter_->second.second->slice());
+            result.second = std::make_shared<
+                STObject const>(sit, sfMetadata);
+        }
+        return result;
+    }
+};
+
+bool
+MetaView::txEmpty() const
+{
+    return txs_.empty();
+}
+
+auto
+MetaView::txBegin() const ->
+    std::unique_ptr<iterator_impl>
+{
+    return std::make_unique<
+        tx_iterator_impl>(
+            closed(), txs_.cbegin());
+}
+
+auto
+MetaView::txEnd() const ->
+    std::unique_ptr<iterator_impl>
+{
+    return std::make_unique<
+        tx_iterator_impl>(
+            closed(), txs_.cend());
+}
+
+//------------------------------------------------------------------------------
+
 bool
 MetaView::unchecked_erase (uint256 const& key)
 {
@@ -293,10 +380,8 @@ MetaView::txInsert (uint256 const& key,
     if (txs_.count(key) ||
             base_.txExists(key))
         LogicError("duplicate_tx: " + to_string(key));
-    txs_.emplace(std::piecewise_construct,
-        std::forward_as_tuple(key),
-            std::forward_as_tuple(
-                txn, metaData));
+    txs_.emplace(key, std::make_pair(
+        txn, metaData));
 }
 
 std::vector<uint256>

@@ -84,8 +84,9 @@ private:
     // The SLEs and Serializers in here are
     // shared between copy-constructed instances
     using item_list = std::map<uint256, Item>;
-    using tx_list = hardened_hash_map<
-        uint256, std::pair<std::shared_ptr<
+    // List of tx, key order
+    using tx_map = std::map<uint256,
+        std::pair<std::shared_ptr<
             Serializer const>, std::shared_ptr<
                 Serializer const>>>;
 
@@ -94,7 +95,7 @@ private:
     BasicView const& base_;
     ViewFlags flags_ = tapNONE;
     ViewInfo info_;
-    tx_list txs_;
+    tx_map txs_;
     item_list items_;
     std::uint32_t destroyedCoins_ = 0;
     boost::optional<STAmount> deliverAmount_;
@@ -192,6 +193,16 @@ public:
 
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
+
+    virtual
+    bool
+    txEmpty() const override;
+
+    std::unique_ptr<iterator_impl>
+    txBegin() const override;
+
+    std::unique_ptr<iterator_impl>
+    txEnd() const override;
 
     bool
     unchecked_erase(
@@ -301,6 +312,8 @@ public:
     }
 
 private:
+    class tx_iterator_impl;
+
     static
     bool
     threadTx (TxMeta& meta,

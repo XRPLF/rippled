@@ -632,6 +632,39 @@ bool Ledger::saveValidatedLedger (bool current)
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+std::shared_ptr<STTx const>
+deserializeTx (SHAMapItem const& item)
+{
+    SerialIter sit(item.slice());
+    return std::make_shared<STTx const>(sit);
+}
+
+std::pair<std::shared_ptr<
+    STTx const>, std::shared_ptr<
+        STObject const>>
+deserializeTxPlusMeta (SHAMapItem const& item)
+{
+    std::pair<std::shared_ptr<
+        STTx const>, std::shared_ptr<
+            STObject const>> result;
+    SerialIter sit(item.slice());
+    {
+        SerialIter s(sit.getSlice(
+            sit.getVLDataLength()));
+        result.first = std::make_shared<
+            STTx const>(s);
+    }
+    {
+        SerialIter s(sit.getSlice(
+            sit.getVLDataLength()));
+        result.second = std::make_shared<
+            STObject const>(s, sfMetadata);
+    }
+    return result;
+}
+
 /*
  * Load a ledger from the database.
  *
@@ -922,6 +955,80 @@ Ledger::read (Keylet const& k) const
     // because return type is different
     return std::move(sle);
 }
+
+//------------------------------------------------------------------------------
+
+class Ledger::tx_iterator_impl
+    : public BasicView::iterator_impl
+{
+private:
+    SHAMap::iterator iter_;
+
+public:
+    explicit
+    tx_iterator_impl (SHAMap::iterator iter)
+        : iter_(iter)
+    {
+    }
+
+    std::unique_ptr<iterator_impl>
+    copy() const override
+    {
+        return std::make_unique<
+            tx_iterator_impl>(
+                iter_);
+    }
+
+    bool
+    equal (iterator_impl const& impl) const override
+    {
+        auto const& other = dynamic_cast<
+            tx_iterator_impl const&>(impl);
+        return iter_ == other.iter_;
+    }
+
+    void
+    increment() override
+    {
+        ++iter_;
+    }
+
+    txs_type::value_type
+    dereference() const override
+    {
+        return deserializeTxPlusMeta(**iter_);
+    }
+};
+
+bool
+Ledger::txEmpty() const
+{
+    return txMap_->getHash().isZero();
+}
+
+auto
+Ledger::txBegin() const ->
+    std::unique_ptr<iterator_impl>
+{
+    // Can't iterate open Ledger objects
+    // because they don't have the metadata!
+    assert(closed());
+    return std::make_unique<
+        tx_iterator_impl>(txMap_->begin());
+}
+
+auto
+Ledger::txEnd() const ->
+    std::unique_ptr<iterator_impl>
+{
+    // Can't iterate open Ledger objects
+    // because they don't have the metadata!
+    assert(closed());
+    return std::make_unique<
+        tx_iterator_impl>(txMap_->end());
+}
+
+//------------------------------------------------------------------------------
 
 bool
 Ledger::unchecked_erase(
