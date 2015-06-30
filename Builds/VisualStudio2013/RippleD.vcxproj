@@ -2301,6 +2301,8 @@
     </ClInclude>
     <None Include="..\..\src\ripple\ledger\detail\ReadViewFwdRange.ipp">
     </None>
+    <ClInclude Include="..\..\src\ripple\ledger\Directory.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyStateTable.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2318,6 +2320,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\CachingReadView.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\Directory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2347,6 +2353,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\Sandbox.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\ledger\tests\Directory_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\ledger\tests\PathSet.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\ledger\tests\PaymentSandbox_test.cpp">

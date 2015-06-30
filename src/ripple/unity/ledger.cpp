@@ -24,6 +24,7 @@
 #include <ripple/ledger/impl/ApplyViewImpl.cpp>
 #include <ripple/ledger/impl/CachedSLEs.cpp>
 #include <ripple/ledger/impl/CachingReadView.cpp>
+#include <ripple/ledger/impl/Directory.cpp>
 #include <ripple/ledger/impl/OpenView.cpp>
 #include <ripple/ledger/impl/PaymentSandbox.cpp>
 #include <ripple/ledger/impl/RawStateTable.cpp>
@@ -31,3 +32,4 @@
 
 #include <ripple/ledger/tests/PaymentSandbox_test.cpp>
 #include <ripple/ledger/tests/View_test.cpp>
+#include <ripple/ledger/tests/Directory_test.cpp>
