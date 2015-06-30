@@ -78,13 +78,13 @@ public:
   @param retriableTransactions collect failed transactions in this set
   @param openLgr               true if applyLedger is open, else false.
 */
-void
-applyTransactions(
+void applyTransactions (
     SHAMap const* set,
     Ledger::ref applyLedger,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
-    bool openLgr);
+    bool openLgr,
+    bool enableTesting = false);
 
 } // ripple
 

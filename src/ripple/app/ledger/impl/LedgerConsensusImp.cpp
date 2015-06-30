@@ -1724,10 +1724,14 @@ int applyTransaction (
     TransactionEngine& engine,
     std::shared_ptr<STTx const> const& txn,
     bool openLedger,
-    bool retryAssured)
+    bool retryAssured,
+    bool enableTesting)
 {
     // Returns false if the transaction has need not be retried.
     ViewFlags parms = openLedger ? tapOPEN_LEDGER : tapNONE;
+
+    if (enableTesting)
+        parms = parms | tapENABLE_TESTING;
 
     if (retryAssured)
     {
@@ -1782,7 +1786,8 @@ void applyTransactions (
     Ledger::ref applyLedger,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
-    bool openLgr)
+    bool openLgr,
+    bool enableTesting)
 {
     TransactionEngine engine (applyLedger);
 
@@ -1802,7 +1807,7 @@ void applyTransactions (
                 SerialIter sit (item->slice());
                 auto txn = std::make_shared<STTx>(sit);
 
-                if (applyTransaction (engine, txn, openLgr, true) == LedgerConsensusImp::resultRetry)
+                if (applyTransaction (engine, txn, openLgr, true, enableTesting) == LedgerConsensusImp::resultRetry)
                 {
                     // On failure, stash the failed transaction for
                     // later retry.
@@ -1832,7 +1837,7 @@ void applyTransactions (
             try
             {
                 switch (applyTransaction (engine, it->second,
-                        openLgr, certainRetry))
+                        openLgr, certainRetry, enableTesting))
                 {
                 case LedgerConsensusImp::resultSuccess:
                     it = retriableTransactions.erase (it);

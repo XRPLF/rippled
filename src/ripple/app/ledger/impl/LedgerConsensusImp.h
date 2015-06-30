@@ -340,6 +340,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
     int previousConvergeTime, InboundTransactions& inboundTransactions,
