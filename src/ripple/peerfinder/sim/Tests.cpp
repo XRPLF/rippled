@@ -65,7 +65,7 @@ private:
     Params m_params;
     Journal m_journal;
     int m_next_node_id;
-    manual_clock <std::chrono::seconds> m_clock;
+    TestClock m_clock;
     Peers m_nodes;
     Table m_table;
     FunctionQueue m_queue;

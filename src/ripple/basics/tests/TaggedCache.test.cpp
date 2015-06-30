@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/TaggedCache.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
@@ -41,7 +42,7 @@ public:
     {
         beast::Journal const j;
 
-        beast::manual_clock <std::chrono::steady_clock> clock;
+        TestClock clock;
         clock.set (0);
 
         using Key = int;

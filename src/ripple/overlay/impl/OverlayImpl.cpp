@@ -139,7 +139,7 @@ OverlayImpl::OverlayImpl (
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        get_seconds_clock(), deprecatedLogs().journal("PeerFinder"), config))
+        stopwatch(), deprecatedLogs().journal("PeerFinder"), config))
     , m_resolver (resolver)
     , next_id_(1)
     , timer_count_(0)

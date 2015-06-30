@@ -26,7 +26,7 @@
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/peerfinder/Manager.h>
 #include <ripple/resource/Manager.h>

@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/shamap/Family.h>
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
@@ -38,8 +39,7 @@ namespace tests {
 class TestFamily : public shamap::Family
 {
 private:
-    beast::manual_clock <
-        std::chrono::steady_clock> clock_;
+    TestClock clock_;
     NodeStore::DummyScheduler scheduler_;
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;

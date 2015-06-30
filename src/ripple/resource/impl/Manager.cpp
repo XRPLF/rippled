@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/resource/Manager.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
@@ -38,7 +38,7 @@ public:
         beast::Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (collector, get_seconds_clock (), journal)
+        , m_logic (collector, stopwatch(), journal)
     {
         startThread ();
     }

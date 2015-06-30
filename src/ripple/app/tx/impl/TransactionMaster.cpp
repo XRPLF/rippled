@@ -21,12 +21,12 @@
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 
 namespace ripple {
 
 TransactionMaster::TransactionMaster ()
-    : mCache ("TransactionCache", 65536, 1800, get_seconds_clock (),
+    : mCache ("TransactionCache", 65536, 1800, stopwatch(),
         deprecatedLogs().journal("TaggedCache"))
 {
 }

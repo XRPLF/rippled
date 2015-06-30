@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 
 namespace ripple {
 
@@ -28,7 +28,7 @@ namespace ripple {
 //             Use a dependency injection to give AcceptedLedger access.
 //
 TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
-    "AcceptedLedger", 4, 60, get_seconds_clock (),
+    "AcceptedLedger", 4, 60, stopwatch(),
         deprecatedLogs().journal("TaggedCache"));
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)

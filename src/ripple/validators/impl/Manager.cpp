@@ -237,7 +237,7 @@ public:
     newConnection (int id) override
     {
         return std::make_unique<ConnectionImp>(
-            id, logic_, get_seconds_clock());
+            id, logic_, stopwatch());
     }
 
     void

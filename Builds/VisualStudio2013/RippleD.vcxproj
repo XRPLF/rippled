@@ -1897,6 +1897,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\chrono.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\contract.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CountedObject.h">
@@ -1980,8 +1982,6 @@
     <ClInclude Include="..\..\src\ripple\basics\Resolver.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ResolverAsio.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\seconds_clock.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\SHA512Half.h">
     </ClInclude>
