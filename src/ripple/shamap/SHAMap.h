@@ -33,12 +33,12 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <beast/utility/Journal.h>
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <cassert>
 #include <stack>
+#include <vector>
 
 namespace ripple {
 
@@ -80,6 +80,8 @@ class SHAMap
 {
 private:
     using Family = shamap::Family;
+    using NodeStack = std::stack<std::pair<SHAMapAbstractNode*, SHAMapNodeID>,
+                    std::vector<std::pair<SHAMapAbstractNode*, SHAMapNodeID>>>;
 
     Family&                         f_;
     beast::Journal                  journal_;
@@ -119,10 +121,10 @@ public:
         This is always a const iterator.
         Meets the requirements of ForwardRange.
     */
-    class iterator;
+    class const_iterator;
 
-    iterator begin() const;
-    iterator end() const;
+    const_iterator begin() const;
+    const_iterator end() const;
 
     //--------------------------------------------------------------------------
 
@@ -166,10 +168,12 @@ public:
     std::shared_ptr<SHAMapItem const> const& peekFirstItem () const;
     std::shared_ptr<SHAMapItem const> const&
         peekFirstItem (SHAMapTreeNode::TNType & type) const;
+    SHAMapItem const* peekFirstItem(NodeStack& stack) const;
     std::shared_ptr<SHAMapItem const> const& peekLastItem () const;
     std::shared_ptr<SHAMapItem const> const& peekNextItem (uint256 const& ) const;
     std::shared_ptr<SHAMapItem const> const&
         peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type) const;
+    SHAMapItem const* peekNextItem(uint256 const& id, NodeStack& stack) const;
     std::shared_ptr<SHAMapItem const> const& peekPrevItem (uint256 const& ) const;
 
     void visitNodes (std::function<bool (SHAMapAbstractNode&)> const&) const;
@@ -272,6 +276,7 @@ private:
                   std::shared_ptr<SHAMapAbstractNode> node) const;
 
     SHAMapTreeNode* firstBelow (SHAMapAbstractNode*) const;
+    SHAMapTreeNode* firstBelow (SHAMapAbstractNode*, NodeStack& stack) const;
     SHAMapTreeNode* lastBelow (SHAMapAbstractNode*) const;
 
     // Simple descent
@@ -358,66 +363,109 @@ SHAMap::setUnbacked ()
 
 //------------------------------------------------------------------------------
 
-class SHAMap::iterator
-    : public boost::iterator_facade<
-        SHAMap::iterator,
-            std::shared_ptr<SHAMapItem const> const,
-                std::forward_iterator_tag>
+class SHAMap::const_iterator
 {
-private:
-    friend class boost::iterator_core_access;
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type   = std::ptrdiff_t;
+    using value_type        = SHAMapItem;
+    using reference         = value_type const&;
+    using pointer           = value_type const*;
 
-    SHAMap const* map_ = nullptr;
-    std::shared_ptr<
-        SHAMapItem const> item_;
+private:
+    NodeStack     stack_;
+    SHAMap const* map_  = nullptr;
+    pointer       item_ = nullptr;
 
 public:
-    iterator() = default;
-    iterator (iterator const&) = default;
-    iterator& operator= (iterator const&) = default;
+    const_iterator() = default;
 
-    iterator (SHAMap const& map,
-        std::shared_ptr<SHAMapItem const> const& item)
-        : map_(&map)
-        , item_(item)
-    {
-    }
+    reference operator*()  const;
+    pointer   operator->() const;
+
+    const_iterator& operator++();
+    const_iterator  operator++(int);
 
 private:
-    void
-    increment()
-    {
-        item_ = map_->peekNextItem(
-            item_->key());
-    }
+    explicit const_iterator(SHAMap const* map);
+    const_iterator(SHAMap const* map, pointer item);
 
-    bool
-    equal (iterator const& other) const
-    {
-        assert(map_ == other.map_);
-        return item_ == other.item_;
-    }
-
-    std::shared_ptr<
-        SHAMapItem const> const&
-    dereference() const
-    {
-        return item_;
-    }
+    friend bool operator==(const_iterator const& x, const_iterator const& y);
+    friend class SHAMap;
 };
 
 inline
-SHAMap::iterator
-SHAMap::begin() const
+SHAMap::const_iterator::const_iterator(SHAMap const* map)
+    : map_(map)
+    , item_(map_->peekFirstItem(stack_))
 {
-    return iterator(*this, peekFirstItem());
 }
 
 inline
-SHAMap::iterator
+SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item)
+    : map_(map)
+    , item_(item)
+{
+}
+
+inline
+SHAMap::const_iterator::reference
+SHAMap::const_iterator::operator*() const
+{
+    return *item_;
+}
+
+inline
+SHAMap::const_iterator::pointer
+SHAMap::const_iterator::operator->() const
+{
+    return item_;
+}
+
+inline
+SHAMap::const_iterator&
+SHAMap::const_iterator::operator++()
+{
+    item_ = map_->peekNextItem(item_->key(), stack_);
+    return *this;
+}
+
+inline
+SHAMap::const_iterator
+SHAMap::const_iterator::operator++(int)
+{
+    auto tmp = *this;
+    ++(*this);
+    return tmp;
+}
+
+inline
+bool
+operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
+{
+    assert(x.map_ == y.map_);
+    return x.item_ == y.item_;
+}
+
+inline
+bool
+operator!=(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
+{
+    return !(x == y);
+}
+
+inline
+SHAMap::const_iterator
+SHAMap::begin() const
+{
+    return const_iterator(this);
+}
+
+inline
+SHAMap::const_iterator
 SHAMap::end() const
 {
-    return iterator(*this, nullptr);
+    return const_iterator(this, nullptr);
 }
 
 }

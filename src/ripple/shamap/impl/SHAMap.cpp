@@ -446,6 +446,33 @@ SHAMap::firstBelow (SHAMapAbstractNode* node) const
 }
 
 SHAMapTreeNode*
+SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
+{
+    // Return the first item below this node
+    while (true)
+    {
+        assert(node != nullptr);
+        if (node->isLeaf())
+            return static_cast<SHAMapTreeNode*>(node);
+        bool foundNode = false;
+        auto inner = static_cast<SHAMapInnerNode*>(node);
+        for (int i = 0; i < 16; ++i)
+        {
+            if (!inner->isEmptyBranch(i))
+            {
+                node = descendThrow(inner, i);
+                assert(!stack.empty());
+                stack.push({node, stack.top().second.getChildNodeID(i)});
+                foundNode = true;
+                break;
+            }
+        }
+        if (!foundNode)
+            return nullptr;
+    }
+}
+
+SHAMapTreeNode*
 SHAMap::lastBelow (SHAMapAbstractNode* node) const
 {
     do
@@ -534,6 +561,17 @@ SHAMap::peekFirstItem () const
     return node->peekItem ();
 }
 
+SHAMapItem const*
+SHAMap::peekFirstItem(NodeStack& stack) const
+{
+    assert(stack.empty());
+    stack.push({root_.get(), SHAMapNodeID{}});
+    SHAMapTreeNode* node = firstBelow(root_.get(), stack);
+    if (!node)
+        return nullptr;
+    return node->peekItem().get();
+}
+
 std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type) const
 {
@@ -597,7 +635,7 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
                     auto leaf = firstBelow (node);
 
                     if (!leaf)
-                        throw (std::runtime_error ("missing/corrupt node"));
+                        throw SHAMapMissingNode(type_, id);
 
                     type = leaf->getType ();
                     return leaf->peekItem ();
@@ -607,6 +645,38 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 
     // must be last item
     return no_item;
+}
+
+SHAMapItem const*
+SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
+{
+    assert(!stack.empty());
+    assert(stack.top().first->isLeaf());
+    stack.pop();
+    while (!stack.empty())
+    {
+        auto node = stack.top().first;
+        auto nodeID = stack.top().second;
+        assert(!node->isLeaf());
+        auto inner = static_cast<SHAMapInnerNode*>(node);
+        for (auto i = nodeID.selectBranch(id) + 1; i < 16; ++i)
+        {
+            if (!inner->isEmptyBranch(i))
+            {
+                node = descendThrow(inner, i);
+                nodeID = nodeID.getChildNodeID(i);
+                stack.push({node, nodeID});
+                auto leaf = firstBelow(node, stack);
+                if (!leaf)
+                    throw SHAMapMissingNode(type_, id);
+                assert(leaf->isLeaf());
+                return leaf->peekItem().get();
+            }
+        }
+        stack.pop();
+    }
+    // must be last item
+    return nullptr;
 }
 
 // Get a pointer to the previous item in the tree after a given item - item need not be in tree
@@ -697,7 +767,7 @@ bool SHAMap::delItem (uint256 const& id)
     auto stack = getStack (id, true);
 
     if (stack.empty ())
-        throw (std::runtime_error ("missing node"));
+        throw SHAMapMissingNode(type_, id);
 
     auto leaf = std::dynamic_pointer_cast<SHAMapTreeNode>(stack.top ().first);
     stack.pop ();
@@ -785,7 +855,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     auto stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw (std::runtime_error ("missing node"));
+        throw SHAMapMissingNode(type_, tag);
 
     auto node = stack.top ().first;
     auto nodeID = stack.top ().second;
@@ -875,7 +945,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     auto stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw (std::runtime_error ("missing node"));
+        throw SHAMapMissingNode(type_, tag);
 
     auto node = std::dynamic_pointer_cast<SHAMapTreeNode>(stack.top().first);
     auto nodeID = stack.top ().second;
