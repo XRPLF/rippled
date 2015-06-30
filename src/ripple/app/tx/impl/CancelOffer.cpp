@@ -54,14 +54,16 @@ CancelOffer::doApply ()
 {
     std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
 
-    if (mTxnAccount->getFieldU32 (sfSequence) - 1 <= uOfferSequence)
+    auto const sle = view().read(
+        keylet::account(account_));
+    if (sle->getFieldU32 (sfSequence) - 1 <= uOfferSequence)
     {
         j_.trace << "Malformed transaction: " <<
             "Sequence " << uOfferSequence << " is invalid.";
         return temBAD_SEQUENCE;
     }
 
-    uint256 const offerIndex (getOfferIndex (mTxnAccountID, uOfferSequence));
+    uint256 const offerIndex (getOfferIndex (account_, uOfferSequence));
 
     auto sleOffer = view().peek (
         keylet::offer(offerIndex));

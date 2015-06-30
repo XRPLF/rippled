@@ -56,12 +56,11 @@ CreateTicket::getAccountReserve (SLE::pointer account)
 TER
 CreateTicket::doApply ()
 {
-    assert (mTxnAccount);
-
     // A ticket counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    if (mPriorBalance < getAccountReserve (mTxnAccount))
+    if (mPriorBalance < STAmount(view().fees().accountReserve(
+            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount) + 1)))
         return tecINSUFFICIENT_RESERVE;
 
     std::uint32_t expiration (0);
@@ -75,8 +74,8 @@ CreateTicket::doApply ()
     }
 
     SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
-        getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
-    sleTicket->setAccountID (sfAccount, mTxnAccountID);
+        getTicketIndex (account_, mTxn.getSequence ()));
+    sleTicket->setAccountID (sfAccount, account_);
     sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
     if (expiration != 0)
         sleTicket->setFieldU32 (sfExpiration, expiration);
@@ -94,7 +93,7 @@ CreateTicket::doApply ()
 
         // The issuing account is the default account to which the ticket
         // applies so don't bother saving it if that's what's specified.
-        if (target_account != mTxnAccountID)
+        if (target_account != account_)
             sleTicket->setAccountID (sfTarget, target_account);
     }
 
@@ -102,12 +101,12 @@ CreateTicket::doApply ()
 
     auto describer = [&](SLE::pointer p, bool b)
     {
-        ownerDirDescriber(p, b, mTxnAccountID);
+        ownerDirDescriber(p, b, account_);
     };
 
     TER result = dirAdd(view(),
         hint,
-        getOwnerDirIndex (mTxnAccountID),
+        getOwnerDirIndex (account_),
         sleTicket->getIndex (),
         describer);
 
@@ -121,7 +120,8 @@ CreateTicket::doApply ()
     sleTicket->setFieldU64(sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts agains the creator's reserve.
-    adjustOwnerCount(view(), mTxnAccount, 1);
+    adjustOwnerCount(view(), view().peek(
+        keylet::account(account_)), 1);
 
     return result;
 }

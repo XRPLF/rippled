@@ -28,9 +28,11 @@ namespace ripple {
 std::uint64_t
 SetRegularKey::calculateBaseFee ()
 {
-    if ( mTxnAccount
-            && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
-            && (calcAccountID(mSigningPubKey) == mTxnAccountID))
+    auto const sle = view().peek(
+        keylet::account(account_));
+    if ( sle
+            && (! (sle->getFlags () & lsfPasswordSpent))
+            && (calcAccountID(mSigningPubKey) == account_))
     {
         // flag is armed and they signed with the right account
         return 0;
@@ -58,19 +60,22 @@ SetRegularKey::preCheck ()
 TER
 SetRegularKey::doApply ()
 {
+    auto const sle = view().peek(
+        keylet::account(account_));
+
     if (mFeeDue == zero)
-        mTxnAccount->setFlag (lsfPasswordSpent);
+        sle->setFlag (lsfPasswordSpent);
 
     if (mTxn.isFieldPresent (sfRegularKey))
     {
-        mTxnAccount->setAccountID (sfRegularKey,
+        sle->setAccountID (sfRegularKey,
             mTxn.getAccountID (sfRegularKey));
     }
     else
     {
-        if (mTxnAccount->isFlag (lsfDisableMaster))
+        if (sle->isFlag (lsfDisableMaster))
             return tecMASTER_DISABLED;
-        mTxnAccount->makeFieldAbsent (sfRegularKey);
+        sle->makeFieldAbsent (sfRegularKey);
     }
 
     return tesSUCCESS;

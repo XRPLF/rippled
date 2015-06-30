@@ -84,9 +84,9 @@ Change::payFee()
 TER
 Change::preCheck()
 {
-    mTxnAccountID = mTxn.getAccountID(sfAccount);
+    account_ = mTxn.getAccountID(sfAccount);
 
-    if (mTxnAccountID.isNonZero ())
+    if (account_.isNonZero ())
     {
         j_.warning << "Bad source id";
         return temBAD_SRC_ACCOUNT;
