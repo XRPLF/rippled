@@ -494,7 +494,7 @@ Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
 
     auto result = ripplePathFind(cache, calcAccountID(src.pk),
         calcAccountID(dest.pk), saDstAmount,
-            ledger, jvSrcCurrencies, contextPaths, level);
+            jvSrcCurrencies, contextPaths, level);
     if(!result.first)
         throw std::runtime_error(
         "ripplePathFind find failed");

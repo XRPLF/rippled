@@ -199,7 +199,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
         auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, 
-            lpLedger, jvSrcCurrencies, contextPaths, level);
+            jvSrcCurrencies, contextPaths, level);
         if (!pathFindResult.first)
             return pathFindResult.second;
 
@@ -217,8 +217,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 std::pair<bool, Json::Value>
 ripplePathFind (RippleLineCache::pointer const& cache, 
   AccountID const& raSrc, AccountID const& raDst,
-    STAmount const& saDstAmount, Ledger::pointer const& lpLedger, 
-      Json::Value const& jvSrcCurrencies, 
+    STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies, 
         boost::optional<Json::Value> const& contextPaths, int const& level)
 {
     FindPaths fp(
@@ -304,7 +303,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             saMaxAmount.negate();
 
             boost::optional<PaymentView> sandbox;
-            sandbox.emplace(*lpLedger, tapNONE);
+            sandbox.emplace(*cache->getLedger(), tapNONE);
             assert(sandbox->open());
 
             auto rc = path::RippleCalc::rippleCalculate(
@@ -330,7 +329,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                sandbox.emplace(*lpLedger, tapNONE);
+                sandbox.emplace(*cache->getLedger(), tapNONE);
                 assert(sandbox->open());
                 rc = path::RippleCalc::rippleCalculate(
                     *sandbox,

@@ -30,29 +30,26 @@ namespace ripple {
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
 */
-RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bool authoritative)
+RippleLineCache::pointer PathRequests::getLineCache (
+    std::shared_ptr <BasicView const> const& ledger, bool authoritative)
 {
+
     ScopedLockType sl (mLock);
 
-    std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
-    std::uint32_t lgrSeq = ledger->getLedgerSeq();
+    std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->seq() : 0;
+    std::uint32_t lgrSeq = ledger->seq();
 
     if ( (lineSeq == 0) ||                                 // no ledger
          (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger
          (authoritative && ((lgrSeq + 8)  < lineSeq)) ||   // we jumped way back for some reason
          (lgrSeq > (lineSeq + 8)))                         // we jumped way forward for some reason
     {
-        ledger = std::make_shared<Ledger>(*ledger, false); // Take a snapshot of the ledger
         mLineCache = std::make_shared<RippleLineCache> (ledger);
-    }
-    else
-    {
-        ledger = mLineCache->getLedger();
     }
     return mLineCache;
 }
 
-void PathRequests::updateAll (Ledger::ref inLedger,
+void PathRequests::updateAll (std::shared_ptr <BasicView const> const& inLedger,
                               Job::CancelCallback shouldCancel)
 {
     std::vector<PathRequest::wptr> requests;
@@ -60,18 +57,17 @@ void PathRequests::updateAll (Ledger::ref inLedger,
     LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
 
     // Get the ledger and cache we should be using
-    Ledger::pointer ledger = inLedger;
     RippleLineCache::pointer cache;
     {
         ScopedLockType sl (mLock);
         requests = mRequests;
-        cache = getLineCache (ledger, true);
+        cache = getLineCache (inLedger, true);
     }
 
     bool newRequests = getApp().getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    mJournal.trace << "updateAll seq=" << ledger->getLedgerSeq() << ", " <<
+    mJournal.trace << "updateAll seq=" << cache->getLedger()->seq() << ", " <<
         requests.size() << " requests";
     int processed = 0, removed = 0;
 
@@ -87,7 +83,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 
             if (pRequest)
             {
-                if (!pRequest->needsUpdate (newRequests, ledger->getLedgerSeq ()))
+                if (!pRequest->needsUpdate (newRequests, cache->getLedger()->seq()))
                     remove = false;
                 else
                 {
@@ -165,7 +161,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                 break;
             requests = mRequests;
 
-            cache = getLineCache (ledger, false);
+            cache = getLineCache (cache->getLedger(), false);
         }
 
     }
@@ -196,22 +192,21 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
 // Make a new-style path_find request
 Json::Value PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
-    const std::shared_ptr<Ledger>& inLedger,
+    std::shared_ptr<BasicView const> const& inLedger,
     Json::Value const& requestJson)
 {
     PathRequest::pointer req = std::make_shared<PathRequest> (
         subscriber, ++mLastIdentifier, *this, mJournal);
 
-    Ledger::pointer ledger = inLedger;
     RippleLineCache::pointer cache;
 
     {
         ScopedLockType sl (mLock);
-        cache = getLineCache (ledger, false);
+        cache = getLineCache (inLedger, false);
     }
 
     bool valid = false;
-    Json::Value result = req->doCreate (ledger, cache, requestJson, valid);
+    Json::Value result = req->doCreate (cache, requestJson, valid);
 
     if (valid)
     {
@@ -226,7 +221,7 @@ Json::Value PathRequests::makePathRequest(
 Json::Value PathRequests::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function <void (void)> completion,
-    const std::shared_ptr<Ledger>& inLedger,
+    std::shared_ptr<BasicView const> const& inLedger,
     Json::Value const& request)
 {
     // This assignment must take place before the
@@ -234,16 +229,15 @@ Json::Value PathRequests::makeLegacyPathRequest(
     req = std::make_shared<PathRequest> (
         completion, ++mLastIdentifier, *this, mJournal);
 
-    auto ledger = inLedger;
     RippleLineCache::pointer cache;
 
     {
         ScopedLockType sl (mLock);
-        cache = getLineCache (ledger, false);
+        cache = getLineCache (inLedger, false);
     }
 
     bool valid = false;
-    Json::Value result = req->doCreate (ledger, cache, request, valid);
+    Json::Value result = req->doCreate (cache, request, valid);
 
     if (!valid)
     {

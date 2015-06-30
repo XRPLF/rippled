@@ -37,9 +37,9 @@ public:
     using pointer = std::shared_ptr <RippleLineCache>;
     using ref = pointer const&;
 
-    explicit RippleLineCache (Ledger::ref l);
+    explicit RippleLineCache (std::shared_ptr <BasicView const> const& l);
 
-    Ledger::ref getLedger () // VFALCO TODO const?
+    std::shared_ptr <BasicView const> const& getLedger () // VFALCO TODO const?
     {
         return mLedger;
     }
@@ -53,7 +53,7 @@ private:
     LockType mLock;
 
     ripple::hardened_hash<> hasher_;
-    Ledger::pointer mLedger;
+    std::shared_ptr <BasicView const> mLedger;
 
     struct AccountKey
     {

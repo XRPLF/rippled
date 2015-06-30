@@ -298,7 +298,7 @@ bool Pathfinder::findPaths (int searchLevel)
             return false;
         }
 
-        auto const reserve = STAmount (mLedger->getReserve (0));
+        auto const reserve = STAmount (mLedger->fees().accountReserve (0));
         if (mDstAmount < reserve)
         {
             WriteLog (lsDEBUG, Pathfinder)
@@ -704,8 +704,7 @@ int Pathfinder::getPathsOut (
     if (!it.second)
         return it.first->second;
 
-    auto sleAccount = cachedRead(*mLedger, getAccountRootIndex (account),
-        getApp().getSLECache());
+    auto sleAccount = mLedger->read(keylet::account (account));
 
     if (!sleAccount)
         return 0;
@@ -841,9 +840,8 @@ bool Pathfinder::isNoRipple (
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = cachedRead (*mLedger,
-        getRippleStateIndex (toAccount, fromAccount, currency),
-            getApp().getSLECache());
+    auto sleRipple = mLedger->read(keylet::line(
+        toAccount, fromAccount, currency));
 
     auto const flag ((toAccount > fromAccount)
                      ? lsfHighNoRipple : lsfLowNoRipple);
@@ -921,9 +919,7 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto const sleEnd = cachedRead(
-                *mLedger, getAccountRootIndex (uEndAccount),
-                    getApp().getSLECache());
+            auto const sleEnd = mLedger->read(keylet::account(uEndAccount));
 
             if (sleEnd)
             {
@@ -1024,7 +1020,7 @@ void Pathfinder::addLink (
                 {
                     std::sort (candidates.begin (), candidates.end (),
                         std::bind(compareAccountCandidate,
-                                  mLedger->getLedgerSeq (),
+                                  mLedger->seq(),
                                   std::placeholders::_1,
                                   std::placeholders::_2));
 

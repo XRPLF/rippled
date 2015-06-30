@@ -50,7 +50,7 @@ public:
         auto result = ripplePathFind(
             std::make_shared<RippleLineCache>(
                 ledger), src.id(), dest.id(), saDstAmount,
-            ledger, jvSrcCurrencies, boost::none, level);
+            jvSrcCurrencies, boost::none, level);
         if(!result.first)
             throw std::runtime_error(
             "Path_test::findPath: ripplePathFind find failed");

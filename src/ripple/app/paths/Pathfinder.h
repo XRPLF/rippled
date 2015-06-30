@@ -185,7 +185,7 @@ private:
         been removed. */
     STAmount mRemainingAmount;
 
-    Ledger::pointer mLedger;
+    std::shared_ptr <BasicView const> mLedger;
     LoadEvent::pointer m_loadEvent;
     RippleLineCache::pointer mRLCache;
 
