@@ -38,21 +38,21 @@ public:
         mFull = collector->make_event ("pathfind_full");
     }
 
-    void updateAll (const std::shared_ptr<Ledger>& ledger,
+    void updateAll (std::shared_ptr<BasicView const> const& ledger,
                     Job::CancelCallback shouldCancel);
 
     RippleLineCache::pointer getLineCache (
-        Ledger::pointer& ledger, bool authoritative);
+        std::shared_ptr <BasicView const> const& ledger, bool authoritative);
 
     Json::Value makePathRequest (
         std::shared_ptr <InfoSub> const& subscriber,
-        const std::shared_ptr<Ledger>& ledger,
+        std::shared_ptr<BasicView const> const& ledger,
         Json::Value const& request);
 
     Json::Value makeLegacyPathRequest (
         PathRequest::pointer& req,
         std::function <void (void)> completion,
-        const std::shared_ptr<Ledger>& inLedger,
+        std::shared_ptr<BasicView const> const& inLedger,
         Json::Value const& request);
 
     void reportFast (int milliseconds)

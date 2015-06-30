@@ -177,7 +177,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
     ScopedLockType sl (mLock);
     bValid = raSrcAccount && raDstAccount &&
             saDstAmount > zero;
-    Ledger::pointer lrLedger = crCache->getLedger ();
+    auto const& lrLedger = crCache->getLedger ();
 
     if (bValid)
     {
@@ -192,9 +192,8 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        auto const sleDest = cachedRead(*crCache->getLedger(),
-            keylet::account(*raDstAccount).key,
-                getApp().getSLECache(), ltACCOUNT_ROOT);
+        auto const sleDest = crCache->getLedger()->read(
+            keylet::account(*raDstAccount));
 
         Json::Value& jvDestCur =
                 (jvStatus[jss::destination_currencies] = Json::arrayValue);
@@ -210,7 +209,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                 bValid = false;
                 jvStatus = rpcError (rpcACT_NOT_FOUND);
             }
-            else if (saDstAmount < STAmount (lrLedger->getReserve (0)))
+            else if (saDstAmount < STAmount (lrLedger->fees().accountReserve (0)))
             {
                 // payment must meet reserve
                 bValid = false;
@@ -236,14 +235,13 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        jvStatus[jss::ledger_hash] = to_string (lrLedger->getHash ());
-        jvStatus[jss::ledger_index] = lrLedger->getLedgerSeq ();
+        jvStatus[jss::ledger_hash] = to_string (lrLedger->info().hash);
+        jvStatus[jss::ledger_index] = lrLedger->seq();
     }
     return bValid;
 }
 
 Json::Value PathRequest::doCreate (
-    Ledger::ref lrLedger,
     RippleLineCache::ref& cache,
     Json::Value const& value,
     bool& valid)

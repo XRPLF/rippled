@@ -77,7 +77,6 @@ public:
     Json::Value getStatus ();
 
     Json::Value doCreate (
-        const std::shared_ptr<Ledger>&,
         const RippleLineCache::pointer&,
         Json::Value const&,
         bool&);

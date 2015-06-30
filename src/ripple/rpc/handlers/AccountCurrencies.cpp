@@ -65,7 +65,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
         return jvAccepted;
 
     std::set<Currency> send, receive;
-    for (auto const& item : getRippleStateItems (accountID, ledger))
+    for (auto const& item : getRippleStateItems (accountID, *ledger))
     {
         auto const rspEntry = item.get();
 

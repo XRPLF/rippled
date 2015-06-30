@@ -72,12 +72,9 @@ Json::Value RippleState::getJson (int)
 }
 
 std::vector <RippleState::pointer>
-getRippleStateItems (
-    AccountID const& accountID,
-    Ledger::ref ledger)
+getRippleStateItems (AccountID const& accountID,
+    BasicView const& view)
 {
-    CachedView const view(
-        *ledger, getApp().getSLECache());
     std::vector <RippleState::pointer> items;
     forEachItem(view, accountID,
         [&items,&accountID](
