@@ -1812,20 +1812,19 @@ void applyTransactions (
 {
     if (set)
     {
-        for (auto const item : *set)
+        for (auto const& item : *set)
         {
-            if (checkLedger->txExists (item->key()))
+            if (checkLedger->txExists (item.key()))
                 continue;
 
             // The transaction isn't in the check ledger, try to apply it
             WriteLog (lsDEBUG, LedgerConsensus) <<
-                "Processing candidate transaction: " << item->key();
+                "Processing candidate transaction: " << item.key();
             
             std::shared_ptr<STTx const> txn;
             try
             {
-                SerialIter sit (item->slice());
-                txn = std::make_shared<STTx const>(sit);
+                txn = std::make_shared<STTx const>(SerialIter{item.slice()});
             }
             catch (...)
             {

@@ -59,7 +59,7 @@ class Ledger::txs_iter_impl
 private:
     bool metadata_;
     ReadView const* view_;
-    SHAMap::iterator iter_;
+    SHAMap::const_iterator iter_;
 
 public:
     txs_iter_impl() = delete;
@@ -68,7 +68,7 @@ public:
     txs_iter_impl (txs_iter_impl const&) = default;
 
     txs_iter_impl (bool metadata,
-        SHAMap::iterator iter,
+        SHAMap::const_iterator iter,
             ReadView const& view)
         : metadata_ (metadata)
         , view_ (&view)
@@ -102,8 +102,8 @@ public:
     {
         auto const item = *iter_;
         if (metadata_)
-            return deserializeTxPlusMeta(*item);
-        return { deserializeTx(*item), nullptr };
+            return deserializeTxPlusMeta(item);
+        return { deserializeTx(item), nullptr };
     }
 };
 

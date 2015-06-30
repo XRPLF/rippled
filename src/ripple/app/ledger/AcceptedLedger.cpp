@@ -35,7 +35,7 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {
     for (auto const& item : ledger->txMap())
     {
-        SerialIter sit (item->slice());
+        SerialIter sit (item.slice());
         insert (std::make_shared<AcceptedLedgerTx>(
             ledger, std::ref (sit)));
     }
