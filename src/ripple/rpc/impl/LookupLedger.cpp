@@ -34,14 +34,14 @@ bool isValidatedOld ()
         Tuning::maxValidatedLedgerAge;
 }
 
-Status ledgerFromRequest (
-    Json::Value const& params,
-    Ledger::pointer& ledger,
-    NetworkOPs& netOps)
+Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
 {
     static auto const minSequenceGap = 10;
 
     ledger.reset();
+
+    auto& params = context.params;
+    auto& netOps = context.netOps;
 
     auto indexValue = params[jss::ledger_index];
     auto hashValue = params[jss::ledger_hash];
@@ -182,37 +182,31 @@ bool isValidated (Ledger& ledger)
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
 Status lookupLedger (
-    Json::Value const& params,
-    Ledger::pointer& ledger,
-    NetworkOPs& netOps,
-    Json::Value& jsonResult)
+    Ledger::pointer& ledger, Context& context, Json::Value& result)
 {
-    if (auto status = ledgerFromRequest (params, ledger, netOps))
+    if (auto status = ledgerFromRequest (ledger, context))
         return status;
 
     if (ledger->isClosed ())
     {
-        jsonResult[jss::ledger_hash] = to_string (ledger->getHash());
-        jsonResult[jss::ledger_index] = ledger->getLedgerSeq();
+        result[jss::ledger_hash] = to_string (ledger->getHash());
+        result[jss::ledger_index] = ledger->getLedgerSeq();
     }
     else
     {
-        jsonResult[jss::ledger_current_index] = ledger->getLedgerSeq();
+        result[jss::ledger_current_index] = ledger->getLedgerSeq();
     }
-    jsonResult[jss::validated] = isValidated (*ledger);
+    result[jss::validated] = isValidated (*ledger);
     return Status::OK;
 }
 
-Json::Value lookupLedger (
-    Json::Value const& params,
-    Ledger::pointer& ledger,
-    NetworkOPs& netOps)
+Json::Value lookupLedger (Ledger::pointer& ledger, Context& context)
 {
-    Json::Value value (Json::objectValue);
-    if (auto status = lookupLedger (params, ledger, netOps, value))
-        status.inject (value);
+    Json::Value result;
+    if (auto status = lookupLedger (ledger, context, result))
+        status.inject (result);
 
-    return value;
+    return result;
 }
 
 } // RPC

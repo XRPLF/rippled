@@ -81,7 +81,7 @@ Json::Value doAccountLines (RPC::Context& context)
         return RPC::missing_field_error (jss::account);
 
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
+    auto result = RPC::lookupLedger (ledger, context);
     if (! ledger)
         return result;
 

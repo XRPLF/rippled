@@ -25,24 +25,21 @@
 namespace ripple {
 namespace RPC {
 
+class Context;
+
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.
 
     If there is no error in the return value, then the ledger pointer will have
     been filled.
 */
-Json::Value lookupLedger (
-    Json::Value const& request, Ledger::pointer&, NetworkOPs&);
+Json::Value lookupLedger (Ledger::pointer&, Context&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
     representing a ledger.
 
     If the returned Status is OK, the ledger pointer will have been filled. */
-Status lookupLedger (
-    Json::Value const& request,
-    Ledger::pointer&,
-    NetworkOPs&,
-    Json::Value& result);
+Status lookupLedger (Ledger::pointer&, Context&, Json::Value& result);
 
 } // RPC
 } // ripple

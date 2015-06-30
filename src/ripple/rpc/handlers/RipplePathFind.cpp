@@ -72,8 +72,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         context.params.isMember(jss::ledger_hash))
     {
         // The caller specified a ledger
-        jvResult = RPC::lookupLedger (
-            context.params, lpLedger, context.netOps);
+        jvResult = RPC::lookupLedger (lpLedger, context);
         if (!lpLedger)
             return jvResult;
     }
@@ -83,7 +82,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         lpLedger = context.netOps.getClosedLedger();
 
         PathRequest::pointer request;
-        context.suspend ([&request, &context, &jvResult, &lpLedger](RPC::Callback const& c)
+        context.suspend ([&request, &context, &jvResult, &lpLedger]
+                         (RPC::Callback const& c)
         {
             jvResult = getApp().getPathRequests().makeLegacyPathRequest (
                 request, c, lpLedger, context.params);
@@ -198,7 +198,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         auto contextPaths = context.params.isMember(jss::paths) ?
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
-        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, 
+        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount,
             jvSrcCurrencies, contextPaths, level);
         if (!pathFindResult.first)
             return pathFindResult.second;
@@ -215,9 +215,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
 }
 
 std::pair<bool, Json::Value>
-ripplePathFind (RippleLineCache::pointer const& cache, 
+ripplePathFind (RippleLineCache::pointer const& cache,
   AccountID const& raSrc, AccountID const& raDst,
-    STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies, 
+    STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
         boost::optional<Json::Value> const& contextPaths, int const& level)
 {
     FindPaths fp(

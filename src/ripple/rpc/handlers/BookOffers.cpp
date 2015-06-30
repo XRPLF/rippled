@@ -31,8 +31,7 @@ Json::Value doBookOffers (RPC::Context& context)
         return rpcError (rpcTOO_BUSY);
 
     Ledger::pointer lpLedger;
-    Json::Value jvResult (
-        RPC::lookupLedger (context.params, lpLedger, context.netOps));
+    auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
