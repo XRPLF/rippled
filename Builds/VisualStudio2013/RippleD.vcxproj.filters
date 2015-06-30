@@ -3036,6 +3036,9 @@
     <None Include="..\..\src\ripple\ledger\detail\ReadViewFwdRange.ipp">
       <Filter>ripple\ledger\detail</Filter>
     </None>
+    <ClInclude Include="..\..\src\ripple\ledger\Directory.h">
+      <Filter>ripple\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyStateTable.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
@@ -3049,6 +3052,9 @@
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\CachingReadView.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\Directory.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\OpenView.cpp">
@@ -3081,6 +3087,9 @@
     <ClInclude Include="..\..\src\ripple\ledger\Sandbox.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\ledger\tests\Directory_test.cpp">
+      <Filter>ripple\ledger\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\ledger\tests\PathSet.h">
       <Filter>ripple\ledger\tests</Filter>
     </ClInclude>
