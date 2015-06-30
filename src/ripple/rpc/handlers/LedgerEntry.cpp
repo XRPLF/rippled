@@ -31,8 +31,7 @@ namespace ripple {
 Json::Value doLedgerEntry (RPC::Context& context)
 {
     Ledger::pointer lpLedger;
-    Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.ledgerMaster);
+    auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
