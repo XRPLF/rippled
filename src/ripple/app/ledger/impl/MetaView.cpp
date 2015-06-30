@@ -55,14 +55,18 @@ MetaView::MetaView (shallow_copy_t,
     , items_ (other.items_)
     , destroyedCoins_(
         other.destroyedCoins_)
+    , hold_(other.hold_)
 {
 }
 
 MetaView::MetaView (open_ledger_t,
-        BasicView const& parent)
+    BasicView const& parent,
+        std::shared_ptr<
+            void const> hold)
     : base_ (parent)
     , flags_ (tapNONE)
     , info_ (parent.info())
+    , hold_(std::move(hold))
 {
     assert(! parent.open());
     info_.open = true;
@@ -72,10 +76,12 @@ MetaView::MetaView (open_ledger_t,
 }
 
 MetaView::MetaView (BasicView const& base,
-        ViewFlags flags)
+        ViewFlags flags, std::shared_ptr<
+            void const> hold)
     : base_ (base)
     , flags_ (flags)
     , info_ (base.info())
+    , hold_(std::move(hold))
 {
 }
 

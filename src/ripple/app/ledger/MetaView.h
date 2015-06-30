@@ -30,6 +30,7 @@
 #include <ripple/protocol/STTx.h>
 #include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
+#include <functional>
 #include <list>
 #include <tuple>
 #include <utility>
@@ -97,6 +98,7 @@ private:
     item_list items_;
     std::uint32_t destroyedCoins_ = 0;
     boost::optional<STAmount> deliverAmount_;
+    std::shared_ptr<void const> hold_;
 
 public:
     MetaView() = delete;
@@ -112,7 +114,7 @@ public:
             The SLEs and Serializers in the copy
             are shared with the other view.
             The copy has the same Info values.
-        
+
         It is only safe to use the BasicView modification
         functions. Using View modification functions will
         break invariants.
@@ -137,6 +139,10 @@ public:
             The parentCloseTime is set to the
             closeTime of parent.
 
+            If `hold` is not nullptr, retains
+            ownership of a copy of `hold` until
+            the MetaView is destroyed.
+
         It is only safe to use the BasicView modification
         functions. Using View modification functions will
         break invariants.
@@ -145,7 +151,9 @@ public:
                       ledger that this open ledger follows.
     */
     MetaView (open_ledger_t,
-        BasicView const& parent);
+        BasicView const& parent,
+            std::shared_ptr<
+                void const> hold = nullptr);
 
     /** Create a nested MetaView.
 
@@ -154,7 +162,8 @@ public:
             The ViewInfo is copied from the base.
     */
     MetaView (BasicView const& base,
-        ViewFlags flags);
+        ViewFlags flags, std::shared_ptr<
+            void const> hold = nullptr);
 
     //--------------------------------------------------------------------------
     //
