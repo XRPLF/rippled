@@ -103,7 +103,10 @@ SetAccount::doApply ()
 {
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 
-    std::uint32_t const uFlagsIn = mTxnAccount->getFieldU32 (sfFlags);
+    auto const sle = view().peek(
+        keylet::account(account_));
+
+    std::uint32_t const uFlagsIn = sle->getFieldU32 (sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
     std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
@@ -123,7 +126,7 @@ SetAccount::doApply ()
     if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
     {
         if (! dirIsEmpty (view(),
-            keylet::ownerDir(mTxnAccountID)))
+            keylet::ownerDir(account_)))
         {
             j_.trace << "Retry: Owner directory not empty.";
             return (view().flags() & tapRETRY) ? terOWNERS : tecOWNERS;
@@ -180,7 +183,7 @@ SetAccount::doApply ()
             return tecNEED_MASTER_KEY;
         }
 
-        if (!mTxnAccount->isFieldPresent (sfRegularKey))
+        if (!sle->isFieldPresent (sfRegularKey))
             return tecNO_REGULAR_KEY;
 
         j_.trace << "Set lsfDisableMaster.";
@@ -240,16 +243,16 @@ SetAccount::doApply ()
     //
     // Track transaction IDs signed by this account in its root
     //
-    if ((uSetFlag == asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
+    if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent (sfAccountTxnID))
     {
         j_.trace << "Set AccountTxnID";
-        mTxnAccount->makeFieldPresent (sfAccountTxnID);
+        sle->makeFieldPresent (sfAccountTxnID);
         }
 
-    if ((uClearFlag == asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
+    if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent (sfAccountTxnID))
     {
         j_.trace << "Clear AccountTxnID";
-        mTxnAccount->makeFieldAbsent (sfAccountTxnID);
+        sle->makeFieldAbsent (sfAccountTxnID);
     }
 
     //
@@ -262,12 +265,12 @@ SetAccount::doApply ()
         if (!uHash)
         {
             j_.trace << "unset email hash";
-            mTxnAccount->makeFieldAbsent (sfEmailHash);
+            sle->makeFieldAbsent (sfEmailHash);
         }
         else
         {
             j_.trace << "set email hash";
-            mTxnAccount->setFieldH128 (sfEmailHash, uHash);
+            sle->setFieldH128 (sfEmailHash, uHash);
         }
     }
 
@@ -281,12 +284,12 @@ SetAccount::doApply ()
         if (!uHash)
         {
             j_.trace << "unset wallet locator";
-            mTxnAccount->makeFieldAbsent (sfWalletLocator);
+            sle->makeFieldAbsent (sfWalletLocator);
         }
         else
         {
             j_.trace << "set wallet locator";
-            mTxnAccount->setFieldH256 (sfWalletLocator, uHash);
+            sle->setFieldH256 (sfWalletLocator, uHash);
         }
     }
 
@@ -306,12 +309,12 @@ SetAccount::doApply ()
         if (messageKey.empty ())
         {
             j_.debug << "set message key";
-            mTxnAccount->makeFieldAbsent (sfMessageKey);
+            sle->makeFieldAbsent (sfMessageKey);
         }
         else
         {
             j_.debug << "set message key";
-            mTxnAccount->setFieldVL (sfMessageKey, messageKey);
+            sle->setFieldVL (sfMessageKey, messageKey);
         }
     }
 
@@ -331,12 +334,12 @@ SetAccount::doApply ()
         if (domain.empty ())
         {
             j_.trace << "unset domain";
-            mTxnAccount->makeFieldAbsent (sfDomain);
+            sle->makeFieldAbsent (sfDomain);
         }
         else
         {
             j_.trace << "set domain";
-            mTxnAccount->setFieldVL (sfDomain, domain);
+            sle->setFieldVL (sfDomain, domain);
         }
     }
 
@@ -350,17 +353,17 @@ SetAccount::doApply ()
         if (uRate == 0 || uRate == QUALITY_ONE)
         {
             j_.trace << "unset transfer rate";
-            mTxnAccount->makeFieldAbsent (sfTransferRate);
+            sle->makeFieldAbsent (sfTransferRate);
         }
         else if (uRate > QUALITY_ONE)
         {
             j_.trace << "set transfer rate";
-            mTxnAccount->setFieldU32 (sfTransferRate, uRate);
+            sle->setFieldU32 (sfTransferRate, uRate);
         }
     }
 
     if (uFlagsIn != uFlagsOut)
-        mTxnAccount->setFieldU32 (sfFlags, uFlagsOut);
+        sle->setFieldU32 (sfFlags, uFlagsOut);
 
     return tesSUCCESS;
 }

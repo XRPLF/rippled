@@ -55,7 +55,7 @@ Payment::preCheck ()
         maxSourceAmount = saDstAmount;
     else
         maxSourceAmount = STAmount (
-            { saDstAmount.getCurrency (), mTxnAccountID },
+            { saDstAmount.getCurrency (), account_ },
             saDstAmount.mantissa(), saDstAmount.exponent (),
             saDstAmount < zero);
 
@@ -94,12 +94,12 @@ Payment::preCheck ()
             "Bad currency.";
         return temBAD_CURRENCY;
     }
-    if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
+    if (account_ == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
         // You're signing yourself a payment.
         // If bPaths is true, you might be trying some arbitrage.
         j_.trace << "Malformed transaction: " <<
-            "Redundant payment from " << to_string (mTxnAccountID) <<
+            "Redundant payment from " << to_string (account_) <<
             " to self without path for " << to_string (uDstCurrency);
         return temREDUNDANT;
     }
@@ -161,7 +161,7 @@ Payment::doApply ()
         maxSourceAmount = saDstAmount;
     else
         maxSourceAmount = STAmount (
-            {saDstAmount.getCurrency (), mTxnAccountID},
+            {saDstAmount.getCurrency (), account_},
             saDstAmount.mantissa(), saDstAmount.exponent (),
             saDstAmount < zero);
 
@@ -280,7 +280,7 @@ Payment::doApply ()
                         maxSourceAmount,
                         saDstAmount,
                         uDstAccountID,
-                        mTxnAccountID,
+                        account_,
                         spsPaths,
                         &rcInput);
                     // VFALCO NOTE We might not need to apply, depending
@@ -316,7 +316,8 @@ Payment::doApply ()
 
         // uOwnerCount is the number of entries in this legder for this
         // account that require a reserve.
-        auto const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
+        auto const uOwnerCount = view().read(
+            keylet::account(account_))->getFieldU32 (sfOwnerCount);
 
         // This is the total reserve in drops.
         auto const uReserve =
@@ -343,7 +344,7 @@ Payment::doApply ()
         {
             // The source account does have enough money, so do the
             // arithmetic for the transfer and make the ledger change.
-            mTxnAccount->setFieldAmount (sfBalance,
+            view().peek(keylet::account(account_))->setFieldAmount (sfBalance,
                 mSourceBalance - saDstAmount);
             sleDst->setFieldAmount (sfBalance,
                 sleDst->getFieldAmount (sfBalance) + saDstAmount);

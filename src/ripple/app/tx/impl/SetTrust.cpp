@@ -91,9 +91,12 @@ SetTrust::doApply ()
     AccountID uDstAccountID (saLimitAmount.getIssuer ());
 
     // true, iff current is high account.
-    bool const bHigh = mTxnAccountID > uDstAccountID;
+    bool const bHigh = account_ > uDstAccountID;
 
-    std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+    auto const sle = view().peek(
+        keylet::account(account_));
+
+    std::uint32_t const uOwnerCount = sle->getFieldU32 (sfOwnerCount);
 
     // The reserve required to create the line. Note that we allow up to
     // two trust lines without requiring a reserve because being able to
@@ -125,21 +128,21 @@ SetTrust::doApply ()
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
-    if (bSetAuth && !(mTxnAccount->getFieldU32 (sfFlags) & lsfRequireAuth))
+    if (bSetAuth && !(sle->getFieldU32 (sfFlags) & lsfRequireAuth))
     {
         j_.trace <<
             "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
     }
 
-    if (mTxnAccountID == uDstAccountID)
+    if (account_ == uDstAccountID)
     {
         // The only purpose here is to allow a mistakenly created
         // trust line to oneself to be deleted. If no such trust
         // lines exist now, why not remove this code and simply
         // return an error?
         SLE::pointer sleDelete = view().peek (
-            keylet::line(mTxnAccountID, uDstAccountID, currency));
+            keylet::line(account_, uDstAccountID, currency));
 
         if (sleDelete)
         {
@@ -147,7 +150,7 @@ SetTrust::doApply ()
                 "Clearing redundant line.";
 
             return trustDelete (view(),
-                sleDelete, mTxnAccountID, uDstAccountID);
+                sleDelete, account_, uDstAccountID);
         }
         else
         {
@@ -168,10 +171,10 @@ SetTrust::doApply ()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer (mTxnAccountID);
+    saLimitAllow.setIssuer (account_);
 
     SLE::pointer sleRippleState = view().peek (
-        keylet::line(mTxnAccountID, uDstAccountID, currency));
+        keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -183,10 +186,10 @@ SetTrust::doApply ()
         std::uint32_t   uLowQualityOut;
         std::uint32_t   uHighQualityIn;
         std::uint32_t   uHighQualityOut;
-        auto const& uLowAccountID   = !bHigh ? mTxnAccountID : uDstAccountID;
-        auto const& uHighAccountID  =  bHigh ? mTxnAccountID : uDstAccountID;
-        SLE::ref        sleLowAccount   = !bHigh ? mTxnAccount : sleDst;
-        SLE::ref        sleHighAccount  =  bHigh ? mTxnAccount : sleDst;
+        auto const& uLowAccountID   = !bHigh ? account_ : uDstAccountID;
+        auto const& uHighAccountID  =  bHigh ? account_ : uDstAccountID;
+        SLE::ref        sleLowAccount   = !bHigh ? sle : sleDst;
+        SLE::ref        sleHighAccount  =  bHigh ? sle : sleDst;
 
         //
         // Balances
@@ -280,7 +283,7 @@ SetTrust::doApply ()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        if (bSetFreeze && !bClearFreeze && !mTxnAccount->isFlag  (lsfNoFreeze))
+        if (bSetFreeze && !bClearFreeze && !sle->isFlag  (lsfNoFreeze))
         {
             uFlagsOut           |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
         }
@@ -408,7 +411,7 @@ SetTrust::doApply ()
         STAmount saBalance ({currency, noAccount()});
 
         uint256 index (getRippleStateIndex (
-            mTxnAccountID, uDstAccountID, currency));
+            account_, uDstAccountID, currency));
 
         j_.trace <<
             "doTrustSet: Creating ripple line: " <<
@@ -417,10 +420,10 @@ SetTrust::doApply ()
         // Create a new ripple line.
         terResult = trustCreate (view(),
             bHigh,
-            mTxnAccountID,
+            account_,
             uDstAccountID,
             index,
-            mTxnAccount,
+            sle,
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

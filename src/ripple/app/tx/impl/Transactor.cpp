@@ -75,6 +75,9 @@ TER Transactor::payFee ()
     if (!saPaid)
         return tesSUCCESS;
 
+    auto const sle = view().peek(
+        keylet::account(account_));
+
     if (mSourceBalance < saPaid)
     {
         j_.trace << "Insufficient balance:" <<
@@ -85,7 +88,7 @@ TER Transactor::payFee ()
         {
             // Closed ledger, non-zero balance, less than fee
             mSourceBalance.clear ();
-            mTxnAccount->setFieldAmount (sfBalance, mSourceBalance);
+            sle->setFieldAmount (sfBalance, mSourceBalance);
             return tecINSUFF_FEE;
         }
 
@@ -96,7 +99,7 @@ TER Transactor::payFee ()
     // Will only write the account back, if the transaction succeeds.
 
     mSourceBalance -= saPaid;
-    mTxnAccount->setFieldAmount (sfBalance, mSourceBalance);
+    sle->setFieldAmount (sfBalance, mSourceBalance);
 
     // VFALCO Should we call view().destroyCoins() here as well?
 
@@ -105,8 +108,11 @@ TER Transactor::payFee ()
 
 TER Transactor::checkSeq ()
 {
+    auto const sle = view().peek(
+        keylet::account(account_));
+
     std::uint32_t const t_seq = mTxn.getSequence ();
-    std::uint32_t const a_seq = mTxnAccount->getFieldU32 (sfSequence);
+    std::uint32_t const a_seq = sle->getFieldU32 (sfSequence);
 
     if (t_seq != a_seq)
     {
@@ -127,17 +133,17 @@ TER Transactor::checkSeq ()
     }
 
     if (mTxn.isFieldPresent (sfAccountTxnID) &&
-            (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
+            (sle->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
         return tefWRONG_PRIOR;
 
     if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
             (view().seq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
-    mTxnAccount->setFieldU32 (sfSequence, t_seq + 1);
+    sle->setFieldU32 (sfSequence, t_seq + 1);
 
-    if (mTxnAccount->isFieldPresent (sfAccountTxnID))
-        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
+    if (sle->isFieldPresent (sfAccountTxnID))
+        sle->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
 
     return tesSUCCESS;
 }
@@ -154,9 +160,9 @@ TER Transactor::preCheck ()
 
 TER Transactor::preCheckAccount ()
 {
-    mTxnAccountID = mTxn.getAccountID(sfAccount);
+    account_ = mTxn.getAccountID(sfAccount);
 
-    if (!mTxnAccountID)
+    if (!account_)
     {
         j_.warning << "applyTransaction: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
@@ -213,13 +219,13 @@ TER Transactor::apply ()
         return terResult;
 
     // Find source account
-    mTxnAccount = view().peek (keylet::account(mTxnAccountID));
+    auto const sle = view().peek (keylet::account(account_));
 
     calculateFee ();
 
     // If are only forwarding, due to resource limitations, we might verifying
     // only some transactions, this would be probabilistic.
-    if (!mTxnAccount)
+    if (!sle)
     {
         if (mustHaveValidAccount ())
         {
@@ -231,9 +237,9 @@ TER Transactor::apply ()
     }
     else
     {
-        mPriorBalance   = mTxnAccount->getFieldAmount (sfBalance);
+        mPriorBalance   = sle->getFieldAmount (sfBalance);
         mSourceBalance  = mPriorBalance;
-        mHasAuthKey     = mTxnAccount->isFieldPresent (sfRegularKey);
+        mHasAuthKey     = sle->isFieldPresent (sfRegularKey);
     }
 
     terResult = checkSeq ();
@@ -248,8 +254,8 @@ TER Transactor::apply ()
 
     if (terResult != tesSUCCESS) return (terResult);
 
-    if (mTxnAccount)
-        view().update (mTxnAccount);
+    if (sle)
+        view().update (sle);
 
     return doApply ();
 }
@@ -274,18 +280,22 @@ TER Transactor::checkSingleSign ()
     // VFALCO NOTE This is needlessly calculating the
     //             AccountID multiple times.
 
+    // VFALCO What if sle is nullptr?
+    auto const sle = view().peek(
+        keylet::account(account_));
+
     // Consistency: Check signature
     // Verify the transaction's signing public key is authorized for signing.
-    if (calcAccountID(mSigningPubKey) == mTxnAccountID)
+    if (calcAccountID(mSigningPubKey) == account_)
     {
         // Authorized to continue.
         mSigMaster = true;
-        if (mTxnAccount->isFlag(lsfDisableMaster))
+        if (sle->isFlag(lsfDisableMaster))
             return tefMASTER_DISABLED;
     }
     else if (mHasAuthKey &&
         (calcAccountID(mSigningPubKey) ==
-            mTxnAccount->getAccountID (sfRegularKey)))
+            sle->getAccountID (sfRegularKey)))
     {
         // Authorized to continue.
     }
@@ -495,10 +505,10 @@ checkSigningAccounts (
 
 TER Transactor::checkMultiSign ()
 {
-    // Get mTxnAccountID's SignerList and Quorum.
+    // Get account_'s SignerList and Quorum.
     using namespace TransactorDetail;
     GetSignerListResult const outer =
-        getSignerList (mTxnAccountID, view(), j_);
+        getSignerList (account_, view(), j_);
 
     if (outer.ter != tesSUCCESS)
         return outer.ter;
@@ -526,7 +536,7 @@ TER Transactor::checkMultiSign ()
         //  o The signers are direct multi-signers for this account.
         //  o The signers are signing for a multi-signer on this account.
         // Handle those two cases separately.
-        if (signingForID == mTxnAccountID)
+        if (signingForID == account_)
         {
             // The signers are direct multi-signers for this account.  Results
             // from these signers directly effect the quorum.

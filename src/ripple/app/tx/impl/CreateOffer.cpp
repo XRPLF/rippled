@@ -55,7 +55,7 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
     if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
     {
         auto const trustLine = ctx_.view().read(
-            keylet::line(mTxnAccountID, issue.account, issue.currency));
+            keylet::line(account_, issue.account, issue.currency));
 
         if (!trustLine)
         {
@@ -67,7 +67,7 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
         // Entries have a canonical representation, determined by a
         // lexicographical "greater than" comparison employing strict weak
         // ordering. Determine which entry we need to access.
-        bool const canonical_gt (mTxnAccountID > issue.account);
+        bool const canonical_gt (account_ > issue.account);
 
         bool const is_authorized (trustLine->getFieldU32 (sfFlags) &
             (canonical_gt ? lsfLowAuth : lsfHighAuth));
@@ -386,7 +386,7 @@ CreateOffer::cross (
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
-    Taker taker (cross_type_, view, mTxnAccountID, taker_amount,
+    Taker taker (cross_type_, view, account_, taker_amount,
         mTxn.getFlags(), ctx_.config, beast::Journal (takerSink));
 
     try
@@ -555,7 +555,10 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
     //       sequence to determine the transaction. Why is the offer sequence
     //       number insufficient?
 
-    std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+    auto const sleCreator = view.peek (
+        keylet::account(account_));
+
+    std::uint32_t const uAccountSequenceNext = sleCreator->getFieldU32 (sfSequence);
     std::uint32_t const uSequence = mTxn.getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
@@ -568,9 +571,6 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
 
-    auto const sleCreator = view.peek (
-        keylet::account(mTxnAccountID));
-
     if (isGlobalFrozen (view, uPaysIssuerID) || isGlobalFrozen (view, uGetsIssuerID))
     {
         if (j_.warning) j_.warning <<
@@ -578,7 +578,7 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
 
         result = tecFROZEN;
     }
-    else if (accountFunds(view, mTxnAccountID, saTakerGets,
+    else if (accountFunds(view, account_, saTakerGets,
         fhZERO_IF_FROZEN, ctx_.config) <= zero)
     {
         if (j_.debug) j_.debug <<
@@ -607,7 +607,7 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
     if (bHaveCancel)
     {
         auto const sleCancel = view.peek(
-            keylet::offer(mTxnAccountID, uCancelSequence));
+            keylet::offer(account_, uCancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -753,7 +753,7 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = getOfferIndex (mTxnAccountID, uSequence);
+    auto const offer_index = getOfferIndex (account_, uSequence);
 
     std::uint64_t uOwnerNode;
     std::uint64_t uBookNode;
@@ -761,10 +761,10 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
 
     // Add offer to owner's directory.
     result = dirAdd(view, uOwnerNode,
-        getOwnerDirIndex (mTxnAccountID), offer_index,
+        getOwnerDirIndex (account_), offer_index,
         std::bind (
             &ownerDirDescriber, std::placeholders::_1,
-            std::placeholders::_2, mTxnAccountID));
+            std::placeholders::_2, account_));
 
     if (result == tesSUCCESS)
     {
@@ -793,7 +793,7 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
     if (result == tesSUCCESS)
     {
         auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
-        sleOffer->setAccountID (sfAccount, mTxnAccountID);
+        sleOffer->setAccountID (sfAccount, account_);
         sleOffer->setFieldU32 (sfSequence, uSequence);
         sleOffer->setFieldH256 (sfBookDirectory, uDirectory);
         sleOffer->setFieldAmount (sfTakerPays, saTakerPays);

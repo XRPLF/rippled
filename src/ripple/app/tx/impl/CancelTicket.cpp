@@ -37,8 +37,6 @@ CancelTicket::preCheck()
 TER
 CancelTicket::doApply ()
 {
-    assert (mTxnAccount);
-
     uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
 
     // VFALCO This is highly suspicious, we're requiring that the
@@ -52,11 +50,11 @@ CancelTicket::doApply ()
         sleTicket->getAccountID (sfAccount);
 
     bool authorized =
-        mTxnAccountID == ticket_owner;
+        account_ == ticket_owner;
 
     // The target can also always remove a ticket
     if (!authorized && sleTicket->isFieldPresent (sfTarget))
-        authorized = (mTxnAccountID == sleTicket->getAccountID (sfTarget));
+        authorized = (account_ == sleTicket->getAccountID (sfTarget));
 
     // And finally, anyone can remove an expired ticket
     if (!authorized && sleTicket->isFieldPresent (sfExpiration))

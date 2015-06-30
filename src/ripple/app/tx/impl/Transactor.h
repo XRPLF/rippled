@@ -32,7 +32,7 @@ protected:
     ApplyContext& ctx_;
     beast::Journal j_;
 
-    AccountID     mTxnAccountID;
+    AccountID     account_;
     STAmount      mFeeDue;
     STAmount      mPriorBalance;  // Balance before fees.
     STAmount      mSourceBalance; // Balance after fees.

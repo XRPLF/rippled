@@ -35,11 +35,9 @@ namespace ripple {
 TER
 SetSignerList::doApply ()
 {
-    assert (mTxnAccount);
-
     // All operations require our ledger index.  Compute that once and pass it
     // to our handlers.
-    uint256 const index = getSignerListIndex (mTxnAccountID);
+    uint256 const index = getSignerListIndex (account_);
 
     // Perform the operation preCheck() decided on.
     switch (do_)
@@ -142,7 +140,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     {
         allSignersWeight += signer.weight;
 
-        if (signer.account == mTxnAccountID)
+        if (signer.account == account_)
         {
             if (j_.trace) j_.trace <<
                 "A signer may not self reference account.";
@@ -170,8 +168,11 @@ SetSignerList::replaceSignerList (uint256 const& index)
     if (TER const ter = destroySignerList (index))
         return ter;
 
+    auto const sle = view().peek(
+        keylet::account(account_));
+
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
+    std::uint32_t const oldOwnerCount = sle->getFieldU32 (sfOwnerCount);
     std::uint32_t const addedOwnerCount = ownerCountDelta (signers_.size ());
 
     auto const newReserve =
@@ -192,17 +193,17 @@ SetSignerList::replaceSignerList (uint256 const& index)
     // Lambda for call to dirAdd.
     auto describer = [&] (SLE::ref sle, bool dummy)
         {
-            ownerDirDescriber (sle, dummy, mTxnAccountID);
+            ownerDirDescriber (sle, dummy, account_);
         };
 
     // Add the signer list to the account's directory.
     std::uint64_t hint;
     TER result = dirAdd(ctx_.view (),
-        hint, getOwnerDirIndex (mTxnAccountID), index, describer);
+        hint, getOwnerDirIndex (account_), index, describer);
 
     if (j_.trace) j_.trace <<
         "Create signer list for account " <<
-        mTxnAccountID << ": " << transHuman (result);
+        account_ << ": " << transHuman (result);
 
     if (result != tesSUCCESS)
         return result;
@@ -211,7 +212,7 @@ SetSignerList::replaceSignerList (uint256 const& index)
 
     // If we succeeded, the new entry counts against the creator's reserve.
     adjustOwnerCount(view(),
-        mTxnAccount, addedOwnerCount);
+        sle, addedOwnerCount);
 
     return result;
 }
@@ -230,7 +231,7 @@ SetSignerList::destroySignerList (uint256 const& index)
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
     std::uint32_t removeFromOwnerCount = 0;
-    auto const k = keylet::signers(mTxnAccountID);
+    auto const k = keylet::signers(account_);
     SLE::pointer accountSignersList =
         view().peek (k);
     if (accountSignersList)
@@ -244,11 +245,12 @@ SetSignerList::destroySignerList (uint256 const& index)
     std::uint64_t const hint (signerList->getFieldU64 (sfOwnerNode));
 
     TER const result  = dirDelete(ctx_.view (), false, hint,
-        getOwnerDirIndex (mTxnAccountID), index, false, (hint == 0));
+        getOwnerDirIndex (account_), index, false, (hint == 0));
 
     if (result == tesSUCCESS)
         adjustOwnerCount(view(),
-            mTxnAccount, removeFromOwnerCount);
+            view().peek(keylet::account(account_)),
+                removeFromOwnerCount);
 
     ctx_.view ().erase (signerList);
 
