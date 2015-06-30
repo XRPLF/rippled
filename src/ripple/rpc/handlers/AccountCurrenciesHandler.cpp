@@ -30,8 +30,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
 
     // Get the current ledger
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.ledgerMaster));
-
+    auto result = RPC::lookupLedger (ledger, context);
     if (!ledger)
         return result;
 

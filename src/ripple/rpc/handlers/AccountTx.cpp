@@ -83,13 +83,13 @@ Json::Value doAccountTx (RPC::Context& context)
     }
     else
     {
-        Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (params, l, context.ledgerMaster);
+        Ledger::pointer ledger;
+        auto ret = RPC::lookupLedger (ledger, context);
 
-        if (!l)
+        if (! ledger)
             return ret;
 
-        uLedgerMin = uLedgerMax = l->getLedgerSeq ();
+        uLedgerMin = uLedgerMax = ledger->getLedgerSeq ();
     }
 
     Json::Value resumeToken;

@@ -41,7 +41,7 @@ Status LedgerHandler::check ()
     if (!needsLedger)
         return Status::OK;
 
-    if (auto s = RPC::lookupLedger (params, ledger_, context_.ledgerMaster, result_))
+    if (auto s = RPC::lookupLedger (ledger_, context_, result_))
         return s;
 
     bool bFull = params[jss::full].asBool();

@@ -47,7 +47,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         return RPC::missing_field_error (jss::account);
 
     Ledger::pointer ledger;
-    auto result = RPC::lookupLedger (params, ledger, context.ledgerMaster);
+    auto result = RPC::lookupLedger (ledger, context);
     if (ledger == nullptr)
         return result;
 
