@@ -74,6 +74,8 @@ template <>
 void ConnectionImpl <WebSocket02>::setPingTimer ()
 {
     auto freq = getConfig ().WEBSOCKET_PING_FREQ;
+    // VFALCO Disabled since it might cause hangs
+    freq = 0;
     if (freq <= 0)
         return;
     connection_ptr ptr = m_connection.lock ();
