@@ -46,7 +46,7 @@ static void fillTransaction (
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
 //   role: gateway|user             // account role to assume
-//   transactions: true             // optional, reccommend transactions
+//   transactions: true             // optional, recommend transactions
 // }
 Json::Value doNoRippleCheck (RPC::Context& context)
 {
@@ -75,8 +75,8 @@ Json::Value doNoRippleCheck (RPC::Context& context)
             std::max (0, jvLimit.asInt ());
         if (context.role != Role::ADMIN)
         {
-            limit = std::max (RPC::Tuning::minLinesPerRequest,
-                std::min (limit, RPC::Tuning::maxLinesPerRequest));
+            limit = std::min (limit, std::max (RPC::Tuning::minLinesPerRequest,
+                              RPC::Tuning::maxLinesPerRequest));
         }
     }
 
