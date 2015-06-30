@@ -36,184 +36,202 @@ TransactionEngine::applyTransaction (
     STTx const& txn,
     TransactionEngineParams params)
 {
-    assert (mLedger);
+    TER terResult;
+    bool didApply = false;
 
-    WriteLog (lsTRACE, TransactionEngine) << "applyTransaction>";
-
-    uint256 const& txID = txn.getTransactionID ();
-
-    if (!txID)
+    try
     {
-        WriteLog (lsWARNING, TransactionEngine) <<
-            "applyTransaction: invalid transaction id";
-        return std::make_pair(temINVALID_FLAG, false);
-    }
+        assert (mLedger);
 
-    mNodes.emplace(mLedger, txID,
-        mLedger->getLedgerSeq(), params);
+        WriteLog (lsTRACE, TransactionEngine) << "applyTransaction>";
 
-#ifdef BEAST_DEBUG
-    if (1)
-    {
-        Serializer ser;
-        txn.add (ser);
-        SerialIter sit(ser.slice());
-        STTx s2 (sit);
+        uint256 const& txID = txn.getTransactionID ();
 
-        if (!s2.isEquivalent (txn))
+        if (!txID)
         {
-            WriteLog (lsFATAL, TransactionEngine) <<
-                "Transaction serdes mismatch";
-            WriteLog (lsINFO, TransactionEngine) << txn.getJson (0);
-            WriteLog (lsFATAL, TransactionEngine) << s2.getJson (0);
-            assert (false);
+            WriteLog (lsWARNING, TransactionEngine) <<
+                "applyTransaction: invalid transaction id";
+            return std::make_pair(temINVALID_FLAG, false);
         }
-    }
-#endif
 
-    TER terResult = Transactor::transact (txn, params, this);
-
-    if (terResult == temUNKNOWN)
-    {
-        WriteLog (lsWARNING, TransactionEngine) <<
-            "applyTransaction: Invalid transaction: unknown transaction type";
-        return std::make_pair(temUNKNOWN, false);
-    }
-
-    if (ShouldLog (lsDEBUG, TransactionEngine))
-    {
-        std::string strToken;
-        std::string strHuman;
-
-        transResultInfo (terResult, strToken, strHuman);
-
-        WriteLog (lsDEBUG, TransactionEngine) <<
-            "applyTransaction: terResult=" << strToken <<
-            " : " << terResult <<
-            " : " << strHuman;
-    }
-
-    bool didApply = isTesSuccess (terResult);
-
-    if (isTecClaim (terResult) && !(params & tapRETRY))
-    {
-        // only claim the transaction fee
-        WriteLog (lsDEBUG, TransactionEngine) <<
-            "Reprocessing tx " << txID << " to only claim fee";
         mNodes.emplace(mLedger, txID,
             mLedger->getLedgerSeq(), params);
 
-        SLE::pointer txnAcct = mNodes->entryCache (ltACCOUNT_ROOT,
-            getAccountRootIndex (txn.getSourceAccount ()));
-
-        if (!txnAcct)
-            terResult = terNO_ACCOUNT;
-        else
+    #ifdef BEAST_DEBUG
+        if (1)
         {
-            std::uint32_t t_seq = txn.getSequence ();
-            std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
+            Serializer ser;
+            txn.add (ser);
+            SerialIter sit(ser.slice());
+            STTx s2 (sit);
 
-            if (a_seq < t_seq)
-                terResult = terPRE_SEQ;
-            else if (a_seq > t_seq)
-                terResult = tefPAST_SEQ;
+            if (!s2.isEquivalent (txn))
+            {
+                WriteLog (lsFATAL, TransactionEngine) <<
+                    "Transaction serdes mismatch";
+                WriteLog (lsINFO, TransactionEngine) << txn.getJson (0);
+                WriteLog (lsFATAL, TransactionEngine) << s2.getJson (0);
+                assert (false);
+            }
+        }
+    #endif
+
+        terResult = Transactor::transact (txn, params, this);
+
+        if (terResult == temUNKNOWN)
+        {
+            WriteLog (lsWARNING, TransactionEngine) <<
+                "applyTransaction: Invalid transaction: unknown transaction type";
+            return std::make_pair(temUNKNOWN, false);
+        }
+
+        if (ShouldLog (lsDEBUG, TransactionEngine))
+        {
+            std::string strToken;
+            std::string strHuman;
+
+            transResultInfo (terResult, strToken, strHuman);
+
+            WriteLog (lsDEBUG, TransactionEngine) <<
+                "applyTransaction: terResult=" << strToken <<
+                " : " << terResult <<
+                " : " << strHuman;
+        }
+
+        didApply = isTesSuccess (terResult);
+
+        if (isTecClaim (terResult) && !(params & tapRETRY))
+        {
+            // only claim the transaction fee
+            WriteLog (lsDEBUG, TransactionEngine) <<
+                "Reprocessing tx " << txID << " to only claim fee";
+            mNodes.emplace(mLedger, txID,
+                mLedger->getLedgerSeq(), params);
+
+            SLE::pointer txnAcct = mNodes->entryCache (ltACCOUNT_ROOT,
+                getAccountRootIndex (txn.getSourceAccount ()));
+
+            if (!txnAcct)
+                terResult = terNO_ACCOUNT;
             else
             {
-                STAmount fee        = txn.getTransactionFee ();
-                STAmount balance    = txnAcct->getFieldAmount (sfBalance);
+                std::uint32_t t_seq = txn.getSequence ();
+                std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
 
-                // We retry/reject the transaction if the account
-                // balance is zero or we're applying against an open
-                // ledger and the balance is less than the fee
-                if ((balance == zero) ||
-                    ((params & tapOPEN_LEDGER) && (balance < fee)))
-                {
-                    // Account has no funds or ledger is open
-                    terResult = terINSUF_FEE_B;
-                }
+                if (a_seq < t_seq)
+                    terResult = terPRE_SEQ;
+                else if (a_seq > t_seq)
+                    terResult = tefPAST_SEQ;
                 else
                 {
-                    if (fee > balance)
-                        fee = balance;
-                    txnAcct->setFieldAmount (sfBalance, balance - fee);
-                    txnAcct->setFieldU32 (sfSequence, t_seq + 1);
-                    mNodes->entryModify (txnAcct);
-                    didApply = true;
+                    STAmount fee        = txn.getTransactionFee ();
+                    STAmount balance    = txnAcct->getFieldAmount (sfBalance);
+
+                    // We retry/reject the transaction if the account
+                    // balance is zero or we're applying against an open
+                    // ledger and the balance is less than the fee
+                    if ((balance == zero) ||
+                        ((params & tapOPEN_LEDGER) && (balance < fee)))
+                    {
+                        // Account has no funds or ledger is open
+                        terResult = terINSUF_FEE_B;
+                    }
+                    else
+                    {
+                        if (fee > balance)
+                            fee = balance;
+                        txnAcct->setFieldAmount (sfBalance, balance - fee);
+                        txnAcct->setFieldU32 (sfSequence, t_seq + 1);
+                        mNodes->entryModify (txnAcct);
+                        didApply = true;
+                    }
                 }
             }
         }
-    }
-    else if (!didApply)
-    {
-        WriteLog (lsDEBUG, TransactionEngine) << "Not applying transaction " << txID;
-    }
-
-    if (didApply && !checkInvariants (terResult, txn, params))
-    {
-        WriteLog (lsFATAL, TransactionEngine) <<
-            "Transaction violates invariants";
-        WriteLog (lsFATAL, TransactionEngine) <<
-            txn.getJson (0);
-        WriteLog (lsFATAL, TransactionEngine) <<
-            transToken (terResult) << ": " << transHuman (terResult);
-        WriteLog (lsFATAL, TransactionEngine) <<
-            mNodes->getJson (0);
-        didApply = false;
-        terResult = tefINTERNAL;
-    }
-
-    if (didApply)
-    {
-        // Transaction succeeded fully or (retries are not allowed and the
-        // transaction could claim a fee)
-        Serializer m;
-        mNodes->calcRawMeta (m, terResult, mTxnSeq++);
-
-        assert(mLedger == mNodes->getLedger());
-        mNodes->apply();
-
-        Serializer s;
-        txn.add (s);
-
-        if (params & tapOPEN_LEDGER)
+        else if (!didApply)
         {
-            if (!mLedger->addTransaction (txID, s))
+            WriteLog (lsDEBUG, TransactionEngine) << "Not applying transaction " << txID;
+        }
+
+        if (didApply && !checkInvariants (terResult, txn, params))
+        {
+            WriteLog (lsFATAL, TransactionEngine) <<
+                "Transaction violates invariants";
+            WriteLog (lsFATAL, TransactionEngine) <<
+                txn.getJson (0);
+            WriteLog (lsFATAL, TransactionEngine) <<
+                transToken (terResult) << ": " << transHuman (terResult);
+            WriteLog (lsFATAL, TransactionEngine) <<
+                mNodes->getJson (0);
+            didApply = false;
+            terResult = tefINTERNAL;
+        }
+
+        if (didApply)
+        {
+            // Transaction succeeded fully or (retries are not allowed and the
+            // transaction could claim a fee)
+            Serializer m;
+            mNodes->calcRawMeta (m, terResult, mTxnSeq++);
+
+            assert(mLedger == mNodes->getLedger());
+            mNodes->apply();
+
+            Serializer s;
+            txn.add (s);
+
+            if (params & tapOPEN_LEDGER)
             {
-                WriteLog (lsFATAL, TransactionEngine) <<
-                    "Duplicate transaction applied";
-                assert (false);
-                throw std::runtime_error ("Duplicate transaction applied");
+                if (!mLedger->addTransaction (txID, s))
+                {
+                    WriteLog (lsFATAL, TransactionEngine) <<
+                        "Duplicate transaction applied";
+                    assert (false);
+                    throw std::runtime_error ("Duplicate transaction applied");
+                }
+            }
+            else
+            {
+                if (!mLedger->addTransaction (txID, s, m))
+                {
+                    WriteLog (lsFATAL, TransactionEngine) <<
+                        "Duplicate transaction applied to closed ledger";
+                    assert (false);
+                    throw std::runtime_error ("Duplicate transaction applied to closed ledger");
+                }
+
+                // Charge whatever fee they specified. We break the encapsulation of
+                // STAmount here and use "special knowledge" - namely that a native
+                // amount is stored fully in the mantissa:
+                auto const fee = txn.getTransactionFee ();
+
+                // The transactor guarantees these will never trigger
+                if (!fee.native () || fee.negative ())
+                    throw std::runtime_error ("amount is negative!");
+
+                if (fee != zero)
+                    mLedger->destroyCoins (fee.mantissa ());
             }
         }
-        else
+
+        mNodes = boost::none;
+
+        if (!(params & tapOPEN_LEDGER) && isTemMalformed (terResult))
         {
-            if (!mLedger->addTransaction (txID, s, m))
-            {
-                WriteLog (lsFATAL, TransactionEngine) <<
-                    "Duplicate transaction applied to closed ledger";
-                assert (false);
-                throw std::runtime_error ("Duplicate transaction applied to closed ledger");
-            }
-
-            // Charge whatever fee they specified. We break the encapsulation of
-            // STAmount here and use "special knowledge" - namely that a native
-            // amount is stored fully in the mantissa:
-            auto const fee = txn.getTransactionFee ();
-
-            // The transactor guarantees these will never trigger
-            if (!fee.native () || fee.negative ())
-                throw std::runtime_error ("amount is negative!");
-
-            if (fee != zero)
-                mLedger->destroyCoins (fee.mantissa ());
+            // XXX Malformed or failed transaction in closed ledger must bow out.
         }
     }
-
-    mNodes = boost::none;
-
-    if (!(params & tapOPEN_LEDGER) && isTemMalformed (terResult))
+    catch(std::exception const& e)
     {
-        // XXX Malformed or failed transaction in closed ledger must bow out.
+        WriteLog (lsFATAL, TransactionEngine) <<
+            "Caught exception: " << e.what();
+        return { tefEXCEPTION, false };
+    }
+    catch(...)
+    {
+        WriteLog (lsFATAL, TransactionEngine) <<
+            "Caught unknown exception";
+        return { tefEXCEPTION, false };
     }
 
     return { terResult, didApply };
