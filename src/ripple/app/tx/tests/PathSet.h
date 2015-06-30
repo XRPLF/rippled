@@ -38,7 +38,7 @@ isOffer (jtx::Env const& env,
     STAmount const& takerGets)
 {
     bool exists = false;
-    forEachItem (*env.ledger, account,
+    forEachItem (*env.open(), account,
         [&](std::shared_ptr<SLE const> const& sle)
         {
             if (sle->getType () == ltOFFER &&

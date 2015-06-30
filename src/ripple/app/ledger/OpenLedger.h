@@ -100,7 +100,7 @@ private:
     std::mutex mutable modify_mutex_;
     std::mutex mutable current_mutex_;
     std::shared_ptr<MetaView const> current_;
-
+   
 public:
     OpenLedger() = delete;
     OpenLedger (OpenLedger const&) = delete;

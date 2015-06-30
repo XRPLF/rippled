@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/test/jtx/impl/Account.cpp>
-#include <ripple/test/jtx/impl/advance.cpp>
 #include <ripple/test/jtx/impl/amount.cpp>
 #include <ripple/test/jtx/impl/balance.cpp>
 #include <ripple/test/jtx/impl/delivermin.cpp>

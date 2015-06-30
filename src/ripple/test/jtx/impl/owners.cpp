@@ -27,12 +27,12 @@ namespace jtx {
 namespace detail {
 
 std::uint32_t
-owned_count_of(Ledger const& ledger,
+owned_count_of(BasicView const& view,
     AccountID const& id,
         LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(ledger, id,
+    forEachItem (view, id,
         [&count, type](std::shared_ptr<SLE const> const& sle)
         {
             if (sle->getType() == type)
@@ -48,7 +48,7 @@ owned_count_helper(Env const& env,
             std::uint32_t value)
 {
     env.test.expect(owned_count_of(
-        *env.ledger, id, type) == value);
+        *env.open(), id, type) == value);
 }
 
 } // detail

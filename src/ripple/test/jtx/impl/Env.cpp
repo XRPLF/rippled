@@ -29,6 +29,7 @@
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/to_string.h>
@@ -50,16 +51,85 @@ namespace test {
 
 namespace jtx {
 
+std::shared_ptr<Ledger>
+Env::genesis()
+{
+    Account master("master", generateKeysFromSeed(
+        KeyType::secp256k1, RippleAddress::createSeedGeneric(
+            "masterpassphrase")));
+    auto const ledger =
+        std::make_shared<Ledger>(master.pk(),
+            SYSTEM_CURRENCY_START);
+    ledger->setClosed();
+    return ledger;
+}
+
+// VFALCO Could wrap the log in a Journal here
 Env::Env (beast::unit_test::suite& test_)
     : test(test_)
     , master("master", generateKeysFromSeed(
         KeyType::secp256k1, RippleAddress::createSeedGeneric(
             "masterpassphrase")))
+    , closed_ (genesis())
+    , openLedger (closed_, config, clock, journal)
 {
     memoize(master);
     initializePathfinding();
-    ledger = std::make_shared<Ledger>(
-        master.pk(), SYSTEM_CURRENCY_START);
+}
+
+std::shared_ptr<BasicView const>
+Env::open() const
+{
+    return openLedger.current();
+}
+
+std::shared_ptr<BasicView const>
+Env::closed() const
+{
+    return closed_;
+}
+
+void
+Env::close(
+    TestClock::time_point const& closeTime)
+{
+    clock.set(closeTime);
+    auto next = std::make_shared<Ledger>(
+        false, *closed_);
+    next->setClosed();
+#if 0
+    // Build a SHAMap, put all the transactions
+    // in it, and calculate the hash of the SHAMap
+    // to construct the OrderedTxs
+    SHAMap sm;
+    OrderedTxs txs(sm.getRootHash());
+    ...
+#else
+    std::vector<std::shared_ptr<
+        STTx const>> txs;
+#endif
+    auto cur = openLedger.current();
+    for (auto iter = cur->txs.begin();
+            iter != cur->txs.end(); ++iter)
+        txs.push_back(iter->first);
+    std::unique_ptr<IHashRouter> router(
+        IHashRouter::New(60));
+    OrderedTxs retries(uint256{});
+    {
+        MetaView accum(*next, tapNONE);
+        OpenLedger::apply(accum, *closed_,
+            txs, retries, *router, config,
+                journal);
+        accum.apply(*next);
+    }
+    next->setAccepted(
+        closeTime.time_since_epoch().count(),
+            ledgerPossibleTimeResolutions[0],
+                true);
+    OrderedTxs locals({});
+    openLedger.accept(next, locals,
+        false, retries, *router);
+    closed_ = next;
 }
 
 void
@@ -138,7 +208,7 @@ Env::le (Account const& account) const
 std::shared_ptr<SLE const>
 Env::le (Keylet const& k) const
 {
-    return ledger->read(k);
+    return open()->read(k);
 }
 
 void
@@ -151,7 +221,7 @@ Env::fund (bool setDefaultRipple,
     {
         // VFALCO NOTE Is the fee formula correct?
         apply(pay(master, account, amount +
-            drops(ledger->getBaseFee())),
+            drops(open()->fees().base)),
                 jtx::seq(jtx::autofill),
                     fee(jtx::autofill),
                         sig(jtx::autofill));
@@ -182,7 +252,7 @@ Env::trust (STAmount const& amount,
             fee(jtx::autofill),
                 sig(jtx::autofill));
     apply(pay(master, account,
-        drops(ledger->getBaseFee())),
+        drops(open()->fees().base)),
             jtx::seq(jtx::autofill),
                 fee(jtx::autofill),
                     sig(jtx::autofill));
@@ -192,18 +262,21 @@ Env::trust (STAmount const& amount,
 void
 Env::submit (JTx const& jt)
 {
-    auto const stx = st(jt);
+    auto stx = st(jt);
     TER ter;
     bool didApply;
     if (stx)
     {
-        ViewFlags flags = tapNONE;
-        flags = flags | tapENABLE_TESTING;
-        // VFALCO Could wrap the log in a Journal here
-        std::tie(ter, didApply) =
-            ripple::apply(
-                *ledger, *stx, flags, config,
-                    beast::Journal{});
+        openLedger.modify(
+            [&](View& view, beast::Journal j)
+            {
+                ViewFlags flags = tapNONE;
+                flags = flags | tapENABLE_TESTING;
+                std::tie(ter, didApply) = ripple::apply(
+                    view, *stx, flags, config,
+                        beast::Journal{});
+                return didApply;
+            });
     }
     else
     {
@@ -229,6 +302,9 @@ Env::submit (JTx const& jt)
     }
     for (auto const& f : jt.requires)
         f(*this);
+    //if (isTerRetry(ter))
+    //if (! isTesSuccess(ter))
+    //    held.insert(stx);
 }
 
 void
@@ -255,9 +331,9 @@ Env::autofill (JTx& jt)
 {
     auto& jv = jt.jv;
     if(jt.fill_fee)
-        jtx::fill_fee(jv, *ledger);
+        jtx::fill_fee(jv, *open());
     if(jt.fill_seq)
-        jtx::fill_seq(jv, *ledger);
+        jtx::fill_seq(jv, *open());
     // Must come last
     try
     {

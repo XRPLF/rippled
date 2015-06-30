@@ -28,17 +28,14 @@
 namespace ripple {
 namespace test {
 
-/** An offer exists
- */
+// An offer exists
 bool isOffer (jtx::Env const& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)
 {
     bool exists = false;
-    CachedView view(*env.ledger,
-        getApp().getSLECache());
-    forEachItem (view, account.id (),
+    forEachItem (*env.open(), account,
         [&](std::shared_ptr<SLE const> const& sle)
         {
             if (sle->getType () == ltOFFER &&

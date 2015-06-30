@@ -118,7 +118,7 @@ class DeferredCredits_test : public beast::unit_test::suite
         STAmount const toDebit (USD_gw1 (20));
         {
             // accountSend, no deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -137,7 +137,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // rippleCredit, no deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -156,7 +156,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // accountSend, w/ deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
             PaymentView pv (les, tapNONE);
 
             auto const iss = USD_gw1.issue ();
@@ -176,7 +176,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // rippleCredit, w/ deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
             PaymentView pv (les, tapNONE);
 
             auto const iss = USD_gw1.issue ();
@@ -191,7 +191,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // redeemIOU, w/ deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
             PaymentView pv (les, tapNONE);
 
             auto const iss = USD_gw1.issue ();
@@ -206,7 +206,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // issueIOU, w/ deferredCredits
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
             PaymentView pv (les, tapNONE);
 
             auto const iss = USD_gw1.issue ();
@@ -221,7 +221,7 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // accountSend, w/ deferredCredits and stacked views
-            MetaView les (*env.ledger, tapNONE);
+            MetaView les (*env.open(), tapNONE);
             PaymentView pv (les, tapNONE);
 
             auto const iss = USD_gw1.issue ();

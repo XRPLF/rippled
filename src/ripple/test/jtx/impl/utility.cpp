@@ -58,17 +58,17 @@ sign (Json::Value& jv,
 
 void
 fill_fee (Json::Value& jv,
-    Ledger const& ledger)
+    BasicView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
     jv[jss::Fee] = std::to_string(
-        ledger.getBaseFee());
+        view.fees().base);
 }
 
 void
 fill_seq (Json::Value& jv,
-    Ledger const& ledger)
+    BasicView const& view)
 {
     if (jv.isMember(jss::Sequence))
         return;
@@ -78,10 +78,11 @@ fill_seq (Json::Value& jv,
     if (! account)
         throw parse_error(
             "unexpected invalid Account");
-    auto const ar = ledger.read(
+    auto const ar = view.read(
         keylet::account(*account));
-    if (!ar)
-        return;
+    if (! ar)
+        throw parse_error(
+            "unexpected missing account root");
     jv[jss::Sequence] =
         ar->getFieldU32(sfSequence);
 }

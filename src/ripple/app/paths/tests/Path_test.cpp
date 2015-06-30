@@ -35,9 +35,10 @@ class Path_test : public beast::unit_test::suite
 {
 public:
     Json::Value
-    findPath (Ledger::ref ledger, Account const& src,
-        Account const& dest, std::vector<Issue> const& srcIssues,
-            STAmount const& saDstAmount)
+    findPath (std::shared_ptr<BasicView const> const& view,
+        Account const& src, Account const& dest,
+            std::vector<Issue> const& srcIssues,
+                STAmount const& saDstAmount)
     {
         auto jvSrcCurrencies = Json::Value(Json::arrayValue);
         for (auto const& i : srcIssues)
@@ -48,9 +49,9 @@ public:
 
         int const level = 8;
         auto result = ripplePathFind(
-            std::make_shared<RippleLineCache>(
-                ledger), src.id(), dest.id(), saDstAmount,
-            jvSrcCurrencies, boost::none, level);
+            std::make_shared<RippleLineCache>(view),
+                src.id(), dest.id(), saDstAmount,
+                    jvSrcCurrencies, boost::none, level);
         if(!result.first)
             throw std::runtime_error(
             "Path_test::findPath: ripplePathFind find failed");
@@ -65,7 +66,7 @@ public:
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {Account("alice")["USD"]}, Account("bob")["USD"](5));
         expect(alternatives.size() == 0);
     }
@@ -78,7 +79,7 @@ public:
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("alice")["USD"](700), "bob");
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {Account("alice")["USD"]}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
@@ -125,7 +126,7 @@ public:
         env(pay(gw, "alice", USD(70)));
         env(pay(gw, "bob", USD(50)));
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {USD}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
@@ -152,7 +153,7 @@ public:
         env.trust(Account("alice")["USD"](600), gw);
         env.trust(USD(700), "bob");
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {USD}, Account("bob")["USD"](1));
         Json::Value jv;
         Json::Reader().parse(R"([{
@@ -275,7 +276,7 @@ public:
         env(pay("carol", "alice", Account("carol")["USD"](100)));
         env(pay(gw, "alice", USD(100)));
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {USD}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
@@ -304,14 +305,14 @@ public:
         env.require(balance("bob", Account("carol")["USD"](-75)));
         env.require(balance("carol", Account("bob")["USD"](75)));
 
-        auto alternatives = findPath(env.ledger, "alice", "bob",
+        auto alternatives = findPath(env.open(), "alice", "bob",
             {Account("alice")["USD"]}, Account("bob")["USD"](25));
         expect(alternatives.size() == 0);
 
         env(pay("alice", "bob", Account("alice")["USD"](25)),
             ter(tecPATH_DRY));
 
-        alternatives = findPath(env.ledger, "alice", "bob",
+        alternatives = findPath(env.open(), "alice", "bob",
             {Account("alice")["USD"]}, Account("alice")["USD"](25));
         expect(alternatives.size() == 0);
 
@@ -391,7 +392,7 @@ public:
         env.require(balance("bob", AUD(10)));
         env.require(balance("carol", AUD(39)));
 
-        auto const alternatives = findPath(env.ledger, "alice", "bob",
+        auto const alternatives = findPath(env.open(), "alice", "bob",
             {Account("alice")["USD"]}, Account("bob")["USD"](25));
         expect(alternatives.size() == 0);
     }
@@ -405,7 +406,7 @@ public:
         env.trust(Account("alice")["USD"](1000), "bob");
         env.trust(Account("bob")["USD"](1000), "carol");
 
-        auto const alternatives = findPath(env.ledger, "alice", "carol",
+        auto const alternatives = findPath(env.open(), "alice", "carol",
             {Account("alice")["USD"]}, Account("carol")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{

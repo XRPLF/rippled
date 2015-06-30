@@ -40,7 +40,7 @@ paths::operator()(Env const& env, JTx& jt) const
     STPathSet ps;
     auto const found = findPathsForOneIssuer(
         std::make_shared<RippleLineCache>(
-            env.ledger), from, to,
+            env.open()), from, to,
                 in_, amount,
                     depth_, limit_, ps, fp);
     // VFALCO TODO API to allow caller to examine the STPathSet

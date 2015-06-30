@@ -72,17 +72,39 @@ class MetaView_test
     // Erase all state items
     static
     void
-    wipe (BasicView& v)
+    wipe (OpenLedger& openLedger)
+    {
+        openLedger.modify(
+            [](View& view, beast::Journal)
+        {
+            // HACK!
+            boost::optional<uint256> next;
+            next.emplace(0);
+            for(;;)
+            {
+                next = view.succ(*next);
+                if (! next)
+                    break;
+                view.erase(view.peek(
+                    keylet::unchecked(*next)));
+            }
+            return true;
+        });
+    }
+
+    static
+    void
+    wipe (Ledger& ledger)
     {
         // HACK!
         boost::optional<uint256> next;
         next.emplace(0);
         for(;;)
         {
-            next = v.succ(*next);
+            next = ledger.succ(*next);
             if (! next)
                 break;
-            v.unchecked_erase(*next);
+            ledger.unchecked_erase(*next);
         }
     }
 
@@ -122,9 +144,12 @@ class MetaView_test
     testLedger()
     {
         using namespace jtx;
-        Env env(*this);
-        wipe(*env.ledger);
-        BasicView& v = *env.ledger;
+        Account const master("master");
+        auto const ledger =
+            std::make_shared<Ledger>(
+                master.pk(), 1000000000);
+        wipe(*ledger);
+        BasicView& v = *ledger;
         succ(v, 0, boost::none);
         v.unchecked_insert(sle(1, 1));
         expect(v.exists(k(1)));
@@ -151,8 +176,9 @@ class MetaView_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(*env.ledger);
-        MetaView v(*env.ledger, tapNONE);
+        wipe(env.openLedger);
+        auto const open = env.open();
+        MetaView v(*open, tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
         expect(v.exists(k(1)));
@@ -181,9 +207,9 @@ class MetaView_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(*env.ledger);
-        BasicView& v0 = *env.ledger;
-
+        wipe(env.openLedger);
+        auto const open = env.open();
+        MetaView v0(*open, tapNONE);
         v0.unchecked_insert(sle(1));
         v0.unchecked_insert(sle(2));
         v0.unchecked_insert(sle(4));
@@ -245,8 +271,9 @@ class MetaView_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(*env.ledger);
-        BasicView& v0 = *env.ledger;
+        wipe(env.openLedger);
+        auto const open = env.open();
+        MetaView v0 (*open, tapNONE);
         v0.unchecked_insert(sle(1, 1));
         v0.unchecked_insert(sle(2, 2));
         v0.unchecked_insert(sle(4, 4));
@@ -310,13 +337,14 @@ class MetaView_test
         using namespace jtx;
         {
             Env env(*this);
-            wipe(*env.ledger);
-            MetaView v0(*env.ledger, tapNONE);
+            wipe(env.openLedger);
+            auto const open = env.open();
+            MetaView v0(*open, tapNONE);
             expect(v0.seq() != 98);
-            expect(v0.seq() == env.ledger->seq());
+            expect(v0.seq() == open->seq());
             expect(v0.parentCloseTime() != 99);
             expect(v0.parentCloseTime() ==
-                env.ledger->parentCloseTime());
+                open->parentCloseTime());
             expect(v0.flags() == tapNONE);
             {
                 MetaView v1(shallow_copy, v0);
@@ -360,9 +388,12 @@ class MetaView_test
         // MetaView on that, then another MetaView,
         // erase the item, apply.
         {
-            Env env(*this);
-            wipe(*env.ledger);
-            BasicView& v0 = *env.ledger;
+            Account const master("master");
+            auto const ledger =
+                std::make_shared<Ledger>(
+                    master.pk(), 1000000000);
+            wipe(*ledger);
+            BasicView& v0 = *ledger;
             v0.unchecked_insert(sle(1));
             MetaView v1(v0, tapNONE);
             {

@@ -420,8 +420,13 @@ public:
         Env env(*this);
     }
 
+    struct UDT
+    {
+    };
+
     void testJTxProperties()
     {
+        struct T { };
         using namespace jtx;
         JTx jt1;
         // Test a straightforward
@@ -476,12 +481,9 @@ public:
         expect(!*jt3.get<bool>());
     }
 
-    struct UDT
-    {
-    };
-
     void testJTxCopy()
     {
+        struct T { };
         using namespace jtx;
         JTx jt1;
         jt1.set<int>(7);
@@ -501,6 +503,7 @@ public:
 
     void testJTxMove()
     {
+        struct T { };
         using namespace jtx;
         JTx jt1;
         jt1.set<int>(7);
@@ -542,31 +545,32 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        // Create the LCL as a copy of the Env's
-        // ledger. This will have the side effect
-        // of skipping one seq in Env.ledger the
-        // first time it is advanced. This can be
-        // worked around if desired by assigning
-        // an advanced ledger back to Env before
-        // starting, but it won't matter to most
-        // tests.
-        std::shared_ptr<Ledger const> lastClosedLedger = 
-            std::make_shared<Ledger>(
-                *env.ledger, false);
+        auto seq = env.open()->seq();
+        expect(seq == env.closed()->seq() + 1);
+        env.close();
+        expect(env.closed()->seq() == seq);
+        expect(env.open()->seq() == seq + 1);
+        env.close();
+        expect(env.closed()->seq() == seq + 1);
+        expect(env.open()->seq() == seq + 2);
+    }
 
-        auto firstSeq = env.ledger->seq();
-
-        expect(lastClosedLedger->seq() == firstSeq);
-
-        advance(env, lastClosedLedger);
-
-        expect(lastClosedLedger->seq() == firstSeq + 1);
-        expect(env.ledger->seq() == firstSeq + 2);
-
-        advance(env, lastClosedLedger);
-
-        expect(lastClosedLedger->seq() == firstSeq + 2);
-        expect(env.ledger->seq() == firstSeq + 3);
+    void
+    testClose()
+    {
+        using namespace jtx;
+        Env env(*this);
+        env.close();
+        env.close();
+        env.fund(XRP(100000), "alice", "bob");
+        auto const epoch =
+            Env::clock_type::time_point{};
+        env.close();
+        env(pay("alice", "bob", XRP(100)));
+        env.close();
+        env(noop("alice"));
+        env.close();
+        env(noop("bob"));
     }
 
     void
@@ -591,6 +595,7 @@ public:
         testJTxMove();
         testMemo();
         testAdvance();
+        testClose();
     }
 };
 

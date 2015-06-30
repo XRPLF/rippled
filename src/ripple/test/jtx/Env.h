@@ -27,6 +27,8 @@
 #include <ripple/test/jtx/tags.h>
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -116,7 +118,13 @@ noripple (Account const& account,
 class Env
 {
 public:
+    using clock_type = TestClock;
+
+    clock_type clock;
+
     beast::unit_test::suite& test;
+
+    beast::Journal const journal;
 
     /** Configuration used. */
     // VFALCO NOTE Some code still calls getConfig()
@@ -125,12 +133,89 @@ public:
     /** The master account. */
     Account const master;
 
-    /** The open ledger. */
-    std::shared_ptr<Ledger> ledger;
+private:
+    std::shared_ptr<Ledger> closed_;
+public:
+
+    // Careful with this
+    OpenLedger openLedger;
 
 public:
+    Env() = delete;
+    Env (Env const&) = delete;
+    Env& operator= (Env const&) = delete;
+
     Env (beast::unit_test::suite& test_);
-   
+
+    /** Creates a genesis ledger.
+
+        This is called by the implementation but provided
+        as a public member for interested callers.
+    */
+    static
+    std::shared_ptr<Ledger>
+    genesis();
+
+    /** Returns the open ledger.
+
+        This is a non-modifiable snapshot of the
+        open ledger at the moment of the call.
+        Transactions applied after the call to open()
+        will not be visible.
+        
+    */
+    std::shared_ptr<BasicView const>
+    open() const;
+
+    /** Returns the last closed ledger.
+
+        The open ledger is built on top of the
+        last closed ledger. When the open ledger
+        is closed, it becomes the new closed ledger
+        and a new open ledger takes its place.
+    */
+    std::shared_ptr<BasicView const>
+    closed() const;
+
+    /** Close and advance the ledger.
+
+        Effects:
+
+            Creates a new closed ledger from the last
+            closed ledger.
+
+            All transactions that made it into the open
+            ledger are applied to the closed ledger.
+
+            The Env clock is set to the new time.
+    */
+    void
+    close (TestClock::time_point const& closeTime);
+
+    /** Close and advance the ledger.
+
+        The time is calculated as the duration from
+        the previous ledger closing time.
+    */
+    template <class Rep, class Period>
+    void
+    close (std::chrono::duration<
+        Rep, Period> const& elapsed)
+    {
+        close (clock.now() + elapsed);
+    }
+
+    /** Close and advance the ledger.
+
+        The time is calculated as five seconds from
+        the previous ledger closing time.
+    */
+    void
+    close()
+    {
+        close (std::chrono::seconds(5));
+    }
+
     /** Turn on JSON tracing.
         With no arguments, trace all
     */

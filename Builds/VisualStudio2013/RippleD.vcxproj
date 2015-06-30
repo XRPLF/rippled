@@ -3437,8 +3437,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\advance.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\amount.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\balance.h">
@@ -3454,10 +3452,6 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\flags.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\Account.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\advance.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

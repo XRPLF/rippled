@@ -21,7 +21,7 @@
 #define RIPPLE_TEST_JTX_OWNERS_H_INCLUDED
 
 #include <ripple/test/jtx/Env.h>
-#include <ripple/app/ledger/Ledger.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/UintTypes.h>
 #include <cstdint>
@@ -33,7 +33,7 @@ namespace jtx {
 namespace detail {
 
 std::uint32_t
-owned_count_of (Ledger const& ledger,
+owned_count_of (BasicView const& view,
     AccountID const& id,
         LedgerEntryType type);
 
