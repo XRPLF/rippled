@@ -21,6 +21,7 @@
 #define BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
 
 #include <beast/chrono/abstract_clock.h>
+#include <cassert>
 
 namespace beast {
 
