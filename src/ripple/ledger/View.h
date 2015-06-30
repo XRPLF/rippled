@@ -76,7 +76,7 @@ struct ViewInfo
 
     // Fields for closed ledgers
     // Closed means "tx set already determined"
-    //uint256 hash;
+    uint256 hash = zero;
     //uint256 txHash;
     //uint256 stateHash;
     //uint256 parentHash;

@@ -443,7 +443,6 @@ private:
     void deprecatedUpdateCachedFees() const;
 
     // The basic Ledger structure, can be opened, closed, or synching
-    uint256 mHash; // VFALCO This could be boost::optional<uint256>
     uint256 mParentHash;
     uint256 mTransHash;
     uint256 mAccountHash;

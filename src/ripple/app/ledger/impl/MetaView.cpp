@@ -73,6 +73,9 @@ MetaView::MetaView (open_ledger_t,
     info_.seq = parent.info().seq + 1;
     info_.parentCloseTime =
         parent.info().closeTime;
+    // Give clients a unique but
+    // meaningless hash for open ledgers.
+    info_.hash = parent.info().hash + uint256(1);
 }
 
 MetaView::MetaView (BasicView const& base,

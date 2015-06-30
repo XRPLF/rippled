@@ -189,6 +189,7 @@ Ledger::Ledger (bool /* dummy */,
     info_.seq = prevLedger.info_.seq + 1;
     info_.parentCloseTime =
         prevLedger.info_.closeTime;
+    info_.hash = prevLedger.info().hash + uint256(1);
     prevLedger.updateHash ();
 
     mParentHash = prevLedger.getHash ();
@@ -274,7 +275,7 @@ void Ledger::updateHash()
     }
 
     // VFALCO This has to match addRaw
-    mHash = sha512Half(
+    info_.hash = sha512Half(
         HashPrefix::ledgerMaster,
         std::uint32_t(info_.seq),
         std::uint64_t(mTotCoins),
@@ -464,7 +465,7 @@ Ledger::getHash()
 {
     if (! mValidHash)
         updateHash();
-    return mHash;
+    return info_.hash;
 }
 
 bool Ledger::saveValidatedLedger (bool current)
@@ -516,7 +517,7 @@ bool Ledger::saveValidatedLedger (bool current)
         s.add32 (HashPrefix::ledgerMaster);
         addRaw (s);
         getApp().getNodeStore ().store (
-            hotLEDGER, std::move (s.modData ()), mHash);
+            hotLEDGER, std::move (s.modData ()), info_.hash);
     }
 
     AcceptedLedger::pointer aLedger;
@@ -527,7 +528,7 @@ bool Ledger::saveValidatedLedger (bool current)
     catch (...)
     {
         WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
-        getApp().getLedgerMaster().failedSave(info_.seq, mHash);
+        getApp().getLedgerMaster().failedSave(info_.seq, info_.hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
         getApp().pendingSaves().erase(getLedgerSeq());
@@ -1065,10 +1066,10 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
     }
     catch (SHAMapMissingNode&)
     {
-        if (mHash.isNonZero ())
+        if (info_.hash.isNonZero ())
         {
             getApp().getInboundLedgers().acquire(
-                mHash, info_.seq, InboundLedger::fcGENERIC);
+                info_.hash, info_.seq, InboundLedger::fcGENERIC);
         }
         throw;
     }
@@ -1132,7 +1133,7 @@ bool Ledger::walkLedger () const
 
 bool Ledger::assertSane ()
 {
-    if (mHash.isNonZero () &&
+    if (info_.hash.isNonZero () &&
             mAccountHash.isNonZero () &&
             stateMap_ &&
             txMap_ &&
