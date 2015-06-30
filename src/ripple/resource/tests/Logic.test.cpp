@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/chrono_io.h>
-#include <beast/chrono/manual_clock.h>
 #include <beast/module/core/maths/Random.h>
 #include <boost/utility/base_from_member.hpp>
 
@@ -31,14 +31,13 @@ class Manager_test : public beast::unit_test::suite
 {
 public:
     class TestLogic
-        : private boost::base_from_member <
-            beast::manual_clock <std::chrono::steady_clock>>
+        : private boost::base_from_member<manual_clock_type>
         , public Logic
 
     {
     private:
-        using clock_type = boost::base_from_member <
-            beast::manual_clock <std::chrono::steady_clock>>;
+        using clock_type =
+            boost::base_from_member<manual_clock_type>;
 
     public:
         explicit TestLogic (beast::Journal journal)
@@ -51,7 +50,7 @@ public:
             ++member;
         }
 
-        beast::manual_clock <std::chrono::steady_clock>& clock ()
+        manual_clock_type& clock ()
         {
             return member;
         }

@@ -22,11 +22,10 @@
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/basics/hardened_hash.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/validators/impl/Store.h>
 #include <ripple/validators/impl/Tuning.h>
-#include <beast/chrono/manual_clock.h>
 #include <beast/container/aged_container_utility.h>
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_unordered_set.h>
@@ -43,9 +42,6 @@ class ConnectionImp;
 
 class Logic
 {
-public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
-
 private:
     struct LedgerMeta
     {

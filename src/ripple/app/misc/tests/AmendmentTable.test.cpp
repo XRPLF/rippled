@@ -21,7 +21,7 @@
 
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/core/ConfigSections.h>
 #include <beast/unit_test/suite.h>
 

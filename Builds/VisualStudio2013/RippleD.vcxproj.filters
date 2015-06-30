@@ -2637,6 +2637,9 @@
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\chrono.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\contract.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -2716,9 +2719,6 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ResolverAsio.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\seconds_clock.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\SHA512Half.h">

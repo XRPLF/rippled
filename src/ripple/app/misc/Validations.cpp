@@ -27,7 +27,7 @@
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
@@ -70,7 +70,7 @@ private:
 
 public:
     ValidationsImp ()
-        : mValidations ("Validations", 128, 600, get_seconds_clock (),
+        : mValidations ("Validations", 128, 600, get_wall_clock (),
             deprecatedLogs().journal("TaggedCache"))
         , mWriting (false)
     {

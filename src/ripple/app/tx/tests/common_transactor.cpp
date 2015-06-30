@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/TxFlags.h>
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/KeyCache.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
@@ -29,7 +30,7 @@ class KeyCache_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        beast::manual_clock <std::chrono::steady_clock> clock;
+        manual_clock_type clock;
         clock.set (0);
 
         using Key = std::string;

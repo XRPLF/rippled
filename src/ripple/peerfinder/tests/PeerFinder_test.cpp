@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <beast/unit_test/suite.h>
-#include <beast/chrono/manual_clock.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -71,7 +71,7 @@ public:
         testcase("backoff 1");
         TestStore store;
         TestChecker checker;
-        beast::manual_clock <std::chrono::steady_clock> clock;
+        manual_clock_type clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
@@ -109,7 +109,7 @@ public:
         testcase("backoff 2");
         TestStore store;
         TestChecker checker;
-        beast::manual_clock <std::chrono::steady_clock> clock;
+        manual_clock_type clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));

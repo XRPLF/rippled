@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 #define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
 #include <beast/intrusive/List.h>

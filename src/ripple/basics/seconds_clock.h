@@ -36,7 +36,7 @@ using weeks = std::chrono::duration
 /** Returns an abstract_clock optimized for counting seconds. */
 inline
 beast::abstract_clock<std::chrono::steady_clock>&
-get_seconds_clock()
+get_wall_clock()
 {
     return beast::get_abstract_clock<std::chrono::steady_clock,
         beast::basic_seconds_clock<std::chrono::steady_clock>>();

@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/json/to_string.h>
 
 namespace ripple {
@@ -42,9 +42,9 @@ LedgerHistory::LedgerHistory (
     : collector_ (collector)
     , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
     , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
-        get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
+        get_wall_clock (), deprecatedLogs().journal("TaggedCache"))
     , m_consensus_validated ("ConsensusValidated", 64, 300,
-        get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
+        get_wall_clock (), deprecatedLogs().journal("TaggedCache"))
 {
 }
 

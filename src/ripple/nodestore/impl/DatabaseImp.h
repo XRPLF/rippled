@@ -25,7 +25,7 @@
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/SHA512Half.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
@@ -72,8 +72,8 @@ public:
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
-            get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
-        , m_negCache ("NodeStore", get_seconds_clock (),
+            get_wall_clock (), deprecatedLogs().journal("TaggedCache"))
+        , m_negCache ("NodeStore", get_wall_clock (),
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)
         , m_readGen (0)
