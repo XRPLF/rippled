@@ -27,6 +27,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/main/CollectorManager.h>
@@ -67,9 +68,10 @@
 #include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <beast/asio/io_latency_probe.h>
-#include <boost/asio/signal_set.hpp>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
+#include <boost/asio/signal_set.hpp>
+#include <boost/optional.hpp>
 #include <fstream>
 
 namespace ripple {
@@ -261,6 +263,7 @@ public:
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     PendingSaves pendingSaves_;
     AccountIDCache accountIDCache_;
+    boost::optional<OpenLedger> openLedger_;
 
     // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
@@ -606,6 +609,12 @@ public:
     accountIDCache() const override
     {
         return accountIDCache_;
+    }
+
+    OpenLedger&
+    openLedger() override
+    {
+        return *openLedger_;
     }
 
     Overlay& overlay ()
@@ -1067,6 +1076,9 @@ void ApplicationImp::startNewLedger ()
         assert (secondLedger->exists(keylet::account(
             calcAccountID(rootAddress))));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
+
+        openLedger_.emplace(secondLedger, getConfig(),
+            stopwatch(), deprecatedLogs().journal("OpenLedger"));
     }
 }
 

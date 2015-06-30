@@ -117,6 +117,9 @@ public:
     using mapped_type =
         std::shared_ptr<SLE const>;
 
+    BasicView (BasicView const&) = delete;
+    BasicView& operator= (BasicView const&) = delete;
+
     BasicView()
         : txs(*this)
     {
@@ -643,6 +646,10 @@ operator&(ViewFlags const& lhs,
 class View : public BasicView
 {
 public:
+    View() = default;
+    View (View const&) = delete;
+    View& operator= (View const&) = delete;
+
     virtual ~View() = default;
 
     /** Returns the contextual tx processing flags.

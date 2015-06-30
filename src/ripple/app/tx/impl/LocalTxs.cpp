@@ -147,7 +147,7 @@ public:
             std::lock_guard <std::mutex> lock (m_lock);
 
             for (auto const& it : m_txns)
-                tset.push_back (it.getTX());
+                tset.insert (it.getTX());
         }
 
         return tset;

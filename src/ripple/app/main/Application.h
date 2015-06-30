@@ -54,6 +54,7 @@ class InboundTransactions;
 class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
+class OpenLedger;
 class OrderBookDB;
 class Overlay;
 class PathRequests;
@@ -118,6 +119,7 @@ public:
     virtual SHAMapStore&            getSHAMapStore () = 0;
     virtual PendingSaves&           pendingSaves() = 0;
     virtual AccountIDCache const&   accountIDCache() const = 0;
+    virtual OpenLedger&             openLedger() = 0;
     virtual DatabaseCon& getTxnDB () = 0;
     virtual DatabaseCon& getLedgerDB () = 0;
 

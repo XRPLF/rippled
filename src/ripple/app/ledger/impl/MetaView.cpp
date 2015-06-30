@@ -377,11 +377,10 @@ MetaView::txInsert (uint256 const& key,
         > const& txn, std::shared_ptr<
             Serializer const> const& metaData)
 {
-    if (txs_.count(key) ||
-            base_.txExists(key))
+    if (base_.txExists(key) ||
+        ! txs_.emplace(key,
+            std::make_pair(txn, metaData)).second)
         LogicError("duplicate_tx: " + to_string(key));
-    txs_.emplace(key, std::make_pair(
-        txn, metaData));
 }
 
 std::vector<uint256>

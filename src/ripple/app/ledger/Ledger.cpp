@@ -1094,6 +1094,8 @@ Ledger::txInsert (uint256 const& key,
         > const& txn, std::shared_ptr<
             Serializer const> const& metaData)
 {
+    assert (static_cast<bool>(metaData) != info_.open);
+
     if (metaData)
     {
         // low-level - just add to table

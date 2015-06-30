@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerHistory.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
@@ -250,7 +251,7 @@ public:
     {
         // returns true if transaction was added
         ScopedLockType ml (m_mutex);
-        mHeldTransactions.push_back (transaction->getSTransaction ());
+        mHeldTransactions.insert (transaction->getSTransaction ());
     }
 
     void pushLedger (Ledger::pointer newLedger)
@@ -353,6 +354,31 @@ public:
         auto const ledger =
             mCurrentLedger.getMutable();
         int recovers = 0;
+
+    #if RIPPLE_OPEN_LEDGER
+        bool const openLedger = true;
+    #else
+        bool const openLedger = false;
+    #endif
+        if (openLedger)
+        {
+            getApp().openLedger().modify(
+                [&](View& view, beast::Journal j)
+                {
+                    bool any = false;
+                    for (auto const& it : mHeldTransactions)
+                    {
+                        ViewFlags flags = tapNONE;
+                        if (getApp().getHashRouter().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
+                            flags = flags | tapNO_CHECK_SIGN;
+                        auto const result = apply(view,
+                            *it.second, flags, getConfig(), j);
+                        if (result.second)
+                            any = true;
+                    }
+                    return any;
+                });
+        }
 
         for (auto const& it : mHeldTransactions)
         {

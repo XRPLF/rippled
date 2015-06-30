@@ -2145,6 +2145,9 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\MetaView.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\OpenLedger.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\TxMeta.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -2188,6 +2191,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\MetaView.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\OpenLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\OrderBookDB.cpp">

@@ -631,14 +631,17 @@ TER Transactor::checkMultiSign ()
 //------------------------------------------------------------------------------
 
 static
+inline
 void
 log (std::pair<
     TER, bool> const& result,
         beast::Journal j)
 {
-    if(j.trace) j.trace <<
+#if 0
+    JLOG(j.error) <<
         "apply: { " << transToken(result.first) <<
         ", " << (result.second ? "true" : "false") << " }";
+#endif
 }
 
 std::pair<TER, bool>

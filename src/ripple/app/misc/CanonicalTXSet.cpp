@@ -74,7 +74,7 @@ bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
     return mTXid >= rhs.mTXid;
 }
 
-void CanonicalTXSet::push_back (std::shared_ptr<STTx const> const& txn)
+void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
 {
     uint256 effectiveAccount = mSetHash;
 

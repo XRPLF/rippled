@@ -81,7 +81,7 @@ public:
     {
     }
 
-    void push_back (std::shared_ptr<STTx const> const& txn);
+    void insert (std::shared_ptr<STTx const> const& txn);
 
     // VFALCO TODO remove this function
     void reset (LedgerHash const& newLastClosedLedgerHash)

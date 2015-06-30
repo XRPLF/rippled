@@ -740,6 +740,11 @@ CreateOffer::applyGuts (View& view, View& view_cancel)
 
     if (mPriorBalance < getAccountReserve (sleCreator))
     {
+    #if RIPPLE_OPEN_LEDGER
+        deprecatedLogs().journal("OpenLedger").error <<
+            "mPriorBalance < getAccountReserve(sleCreator)";
+    #endif
+
         // If we are here, the signing account had an insufficient reserve
         // *prior* to our processing. If something actually crossed, then
         // we allow this; otherwise, we just claim a fee.

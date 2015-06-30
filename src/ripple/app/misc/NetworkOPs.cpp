@@ -31,6 +31,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
@@ -967,6 +968,25 @@ void NetworkOPsImp::transactionBatch()
     }
 }
 
+#if RIPPLE_OPEN_LEDGER
+static
+void
+mismatch (std::shared_ptr<SLE const> const& sle1, TER ter1,
+    std::shared_ptr<SLE const> const& sle2, TER ter2,
+        std::shared_ptr<STTx const> tx,
+            beast::Journal j)
+{
+    JLOG(j.error) <<
+    "TER " << (ter1 == ter2 ? "        " : "MISMATCH ") <<
+        transToken(ter1) << " vs " <<
+            transToken(ter2);
+    JLOG(j.error) <<
+        tx->getJson(0) << '\n' <<
+        (sle1 ? sle1->getJson(0) : "MISSING ACCOUNTROOT1") << '\n' <<
+        (sle2 ? sle2->getJson(0) : "MISSING ACCOUNTROOT2") << '\n';
+}
+#endif
+
 void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
     std::vector<TransactionStatus> transactions;
@@ -986,6 +1006,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
         {
             std::lock_guard <std::recursive_mutex> lock (
                 m_ledgerMaster.peekMutex());
+        #if RIPPLE_OPEN_LEDGER
+            auto const oldOL = m_ledgerMaster.getCurrentLedgerHolder().get();
+            getApp().openLedger().verify(*oldOL, "apply before");
+        #endif
             ledger = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
             accum.emplace(*ledger, tapNONE);
             for (TransactionStatus& e : transactions)
@@ -994,12 +1018,34 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 flags = flags | tapNO_CHECK_SIGN;
                 if (e.admin)
                     flags = flags | tapADMIN;
+
+            #if RIPPLE_OPEN_LEDGER
+                auto const sle1 = accum->read(
+                    keylet::account(e.transaction->getSTransaction()->getAccountID(sfAccount)));
+            #endif
+
                 std::tie (e.result, e.applied) =
                     ripple::apply (*accum,
                         *e.transaction->getSTransaction(), flags,
                             getConfig(), deprecatedLogs().journal(
                                 "NetworkOPs"));
                 applied |= e.applied;
+
+            #if RIPPLE_OPEN_LEDGER
+                auto const sle2 = getApp().openLedger().current()->read(keylet::account(e.transaction->getSTransaction()->getAccountID(sfAccount)));
+                // VFALCO Should do the loop inside modify()
+                getApp().openLedger().modify(
+                    [&](View& view, beast::Journal j)
+                    {
+                        auto const result = ripple::apply(
+                            view, *e.transaction->getSTransaction(),
+                                flags, getConfig(), j);
+                        if (result.first != e.result)
+                            mismatch(sle1,  e.result, sle2, result.first,
+                                    e.transaction->getSTransaction(), j);
+                        return result.second;
+                    });
+            #endif
             }
         }
 
@@ -1007,6 +1053,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
         {
             accum->apply(*ledger,
                 deprecatedLogs().journal("NetworkOPs"));
+        #if RIPPLE_OPEN_LEDGER
+            getApp().openLedger().verify(*ledger, "apply after");
+        #endif
             ledger->setImmutable();
             m_ledgerMaster.getCurrentLedgerHolder().set (ledger);
         }
@@ -1404,7 +1453,12 @@ void NetworkOPsImp::switchLastClosedLedger (
     // set the newLCL as our last closed ledger -- this is abnormal code
 
     auto msg = duringConsensus ? "JUMPdc" : "JUMP";
-    m_journal.error << msg << " last closed ledger to " << newLCL->getHash ();
+#if RIPPLE_OPEN_LEDGER
+    m_journal.fatal
+#else
+    m_journal.error
+#endif
+        << msg << " last closed ledger to " << newLCL->getHash ();
 
     clearNeedNetworkLedger ();
     newLCL->setClosed ();
@@ -1412,16 +1466,32 @@ void NetworkOPsImp::switchLastClosedLedger (
         Ledger>(false, std::ref (*newLCL));
     // Caller must own master lock
     {
-        // Apply tx in old open ledger to new
-        // open ledger, then apply local tx.
         auto const oldOL =
             m_ledgerMaster.getCurrentLedger();
+    #if RIPPLE_OPEN_LEDGER
+        getApp().openLedger().verify(
+            *oldOL, "jump before");
+    #endif
+        // Apply tx in old open ledger to new
+        // open ledger. Then apply local tx.
         MetaView accum(*newOL, tapNONE);
         assert(accum.open());
-        auto retries = m_localTX->getTxSet();
-        applyTransactions (&oldOL->txMap(),
-            accum, newLCL, retries);
+        auto const localTx = m_localTX->getTxSet();
+        {
+            auto retries = localTx;
+            applyTransactions (&oldOL->txMap(),
+                accum, newLCL, retries);
+        }
         accum.apply(*newOL, m_journal);
+
+    #if RIPPLE_OPEN_LEDGER
+        auto retries = localTx;
+        getApp().openLedger().accept(
+            newLCL, OrderedTxs({}), false, retries,
+                getApp().getHashRouter(), "jump");
+        getApp().openLedger().verify(
+            *newOL, "jump after");
+    #endif
     }
 
     m_ledgerMaster.switchLedgers (newLCL, newOL);
