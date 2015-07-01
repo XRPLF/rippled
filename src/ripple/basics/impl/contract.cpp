@@ -29,8 +29,8 @@ accessViolation()
 {
     // dereference memory
     // location zero
-    int* j = 0;
-    *j++;
+    int volatile* j = 0;
+    (void)*j;
 }
 
 // This hook lets you do pre or post
