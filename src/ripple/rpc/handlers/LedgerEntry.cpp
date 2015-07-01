@@ -32,7 +32,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 {
     Ledger::pointer lpLedger;
     Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.netOps);
+        context.params, lpLedger, context.ledgerMaster);
 
     if (!lpLedger)
         return jvResult;

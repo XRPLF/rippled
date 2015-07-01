@@ -129,9 +129,6 @@ public:
         , mConsensus (make_Consensus ())
         , m_ledgerMaster (ledgerMaster)
         , mCloseTimeOffset (0)
-        , mFetchPack ("FetchPack", 65536, 45, clock,
-            deprecatedLogs().journal("TaggedCache"))
-        , mFetchSeq (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
         , m_job_queue (job_queue)
@@ -151,59 +148,17 @@ public:
 private:
     std::uint32_t getCloseTimeNC (int& offset) const;
 
-    bool isValidated (std::uint32_t seq, uint256 const& hash);
-
 public:
     void closeTimeOffset (int) override;
 
     /** On return the offset param holds the System time offset in seconds.
     */
     boost::posix_time::ptime getNetworkTimePT(int& offset) const;
-    std::uint32_t getLedgerID (uint256 const& hash) override;
-    std::uint32_t getCurrentLedgerID () override;
     OperatingMode getOperatingMode () const override
     {
         return mMode;
     }
     std::string strOperatingMode () const override;
-
-    Ledger::pointer getClosedLedger () override
-    {
-        return m_ledgerMaster.getClosedLedger ();
-    }
-    Ledger::pointer getValidatedLedger () override
-    {
-        return m_ledgerMaster.getValidatedLedger ();
-    }
-    Ledger::pointer getCurrentLedger () override
-    {
-        return m_ledgerMaster.getCurrentLedger ();
-    }
-    Ledger::pointer getLedgerByHash (uint256 const& hash) override
-    {
-        return m_ledgerMaster.getLedgerByHash (hash);
-    }
-    Ledger::pointer getLedgerBySeq (const std::uint32_t seq) override;
-    void missingNodeInLedger (const std::uint32_t seq) override;
-
-    uint256 getClosedLedgerHash () override
-    {
-        return m_ledgerMaster.getClosedLedger ()->getHash ();
-    }
-
-    // Do we have this inclusive range of ledgers in our database
-    bool haveLedger (std::uint32_t seq) override;
-    std::uint32_t getValidatedSeq () override;
-
-    bool isValidated (Ledger::ref l) override
-    {
-        return isValidated (l->getLedgerSeq (), l->getHash ());
-    }
-    bool getValidatedRange (
-        std::uint32_t& minVal, std::uint32_t& maxVal) override
-    {
-        return m_ledgerMaster.getValidatedRange (minVal, maxVal);
-    }
 
     //
     // Transaction operations.
@@ -281,18 +236,6 @@ public:
         protocol::TxSetStatus status);
 
     void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map) override;
-    void makeFetchPack (
-        Job&, std::weak_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMGetObjectByHash> request,
-        uint256 haveLedger, std::uint32_t uUptime) override;
-
-    bool shouldFetchPack (std::uint32_t seq) override;
-    void gotFetchPack (bool progress, std::uint32_t seq) override;
-    void addFetchPack (
-        uint256 const& hash, std::shared_ptr< Blob >& data) override;
-    bool getFetchPack (uint256 const& hash, Blob& data) override;
-    int getFetchSize () override;
-    void sweepFetchPack () override;
 
     // Network state machine.
 
@@ -524,9 +467,6 @@ private:
     SubMapType mSubTransactions;      // All accepted transactions.
     SubMapType mSubRTTransactions;    // All proposed and accepted transactions.
 
-    TaggedCache<uint256, Blob>  mFetchPack;
-    std::uint32_t mFetchSeq;
-
     std::uint32_t mLastLoadBase;
     std::uint32_t mLastLoadFactor;
 
@@ -753,44 +693,6 @@ void NetworkOPsImp::closeTimeOffset (int offset)
         if (std::abs (mCloseTimeOffset) >= 60)
             m_journal.warning << "Large close time offset (" << mCloseTimeOffset << ").";
     }
-}
-
-std::uint32_t NetworkOPsImp::getLedgerID (uint256 const& hash)
-{
-    Ledger::pointer  lrLedger   = m_ledgerMaster.getLedgerByHash (hash);
-
-    return lrLedger ? lrLedger->getLedgerSeq () : 0;
-}
-
-Ledger::pointer NetworkOPsImp::getLedgerBySeq (const std::uint32_t seq)
-{
-    return m_ledgerMaster.getLedgerBySeq (seq);
-}
-
-std::uint32_t NetworkOPsImp::getCurrentLedgerID ()
-{
-    return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
-}
-
-bool NetworkOPsImp::haveLedger (std::uint32_t seq)
-{
-    return m_ledgerMaster.haveLedger (seq);
-}
-
-std::uint32_t NetworkOPsImp::getValidatedSeq ()
-{
-    return m_ledgerMaster.getValidLedgerIndex ();
-}
-
-bool NetworkOPsImp::isValidated (std::uint32_t seq, uint256 const& hash)
-{
-    if (!haveLedger (seq))
-        return false;
-
-    if (seq > m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ())
-        return false;
-
-    return m_ledgerMaster.getHashBySeq (seq) == hash;
 }
 
 void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
@@ -1853,7 +1755,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                     ledgerSeq.value_or (0));
                 m_journal.warning << "Recovering ledger " << seq
                                   << ", txn " << txn->getID();
-                Ledger::pointer ledger = getLedgerBySeq(seq);
+                Ledger::pointer ledger = m_ledgerMaster.getLedgerBySeq(seq);
                 if (ledger)
                     ledger->pendSaveValidated(false, false);
             }
@@ -1982,7 +1884,6 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
     return info;
 }
 
-
 Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 {
     Json::Value info = Json::objectValue;
@@ -2026,7 +1927,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (m_amendmentBlocked)
         info[jss::amendment_blocked] = true;
 
-    size_t fp = mFetchPack.getCacheSize ();
+    auto const fp = m_ledgerMaster.getFetchPackCacheSize ();
 
     if (fp != 0)
         info[jss::fetch_pack] = Json::UInt (fp);
@@ -2084,12 +1985,12 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     }
 
     bool valid = false;
-    Ledger::pointer lpClosed    = getValidatedLedger ();
+    Ledger::pointer lpClosed    = m_ledgerMaster.getValidatedLedger ();
 
     if (lpClosed)
         valid = true;
     else
-        lpClosed                = getClosedLedger ();
+        lpClosed                = m_ledgerMaster.getClosedLedger ();
 
     if (lpClosed)
     {
@@ -2563,7 +2464,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
 {
-    Ledger::pointer lpClosed    = getValidatedLedger ();
+    Ledger::pointer lpClosed    = m_ledgerMaster.getValidatedLedger ();
 
     if (lpClosed)
     {
@@ -3050,212 +2951,6 @@ void NetworkOPsImp::getBookPage (
 }
 
 #endif
-
-static void fpAppender (
-    protocol::TMGetObjectByHash* reply, std::uint32_t ledgerSeq,
-    uint256 const& hash, const Blob& blob)
-{
-    protocol::TMIndexedObject& newObj = * (reply->add_objects ());
-    newObj.set_ledgerseq (ledgerSeq);
-    newObj.set_hash (hash.begin (), 256 / 8);
-    newObj.set_data (&blob[0], blob.size ());
-}
-
-void NetworkOPsImp::makeFetchPack (
-    Job&, std::weak_ptr<Peer> wPeer,
-    std::shared_ptr<protocol::TMGetObjectByHash> request,
-    uint256 haveLedgerHash, std::uint32_t uUptime)
-{
-    if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
-    {
-        m_journal.info << "Fetch pack request got stale";
-        return;
-    }
-
-    if (getApp().getFeeTrack ().isLoadedLocal () ||
-        (m_ledgerMaster.getValidatedLedgerAge() > 40))
-    {
-        m_journal.info << "Too busy to make fetch pack";
-        return;
-    }
-
-    Peer::ptr peer = wPeer.lock ();
-
-    if (!peer)
-        return;
-
-    Ledger::pointer haveLedger = getLedgerByHash (haveLedgerHash);
-
-    if (!haveLedger)
-    {
-        m_journal.info
-            << "Peer requests fetch pack for ledger we don't have: "
-            << haveLedger;
-        peer->charge (Resource::feeRequestNoReply);
-        return;
-    }
-
-    if (!haveLedger->isClosed ())
-    {
-        m_journal.warning
-            << "Peer requests fetch pack from open ledger: "
-            << haveLedger;
-        peer->charge (Resource::feeInvalidRequest);
-        return;
-    }
-
-    if (haveLedger->getLedgerSeq() < m_ledgerMaster.getEarliestFetch())
-    {
-        m_journal.debug << "Peer requests fetch pack that is too early";
-        peer->charge (Resource::feeInvalidRequest);
-        return;
-    }
-
-    Ledger::pointer wantLedger = getLedgerByHash (haveLedger->getParentHash ());
-
-    if (!wantLedger)
-    {
-        m_journal.info
-            << "Peer requests fetch pack for ledger whose predecessor we "
-            << "don't have: " << haveLedger;
-        peer->charge (Resource::feeRequestNoReply);
-        return;
-    }
-
-    try
-    {
-        protocol::TMGetObjectByHash reply;
-        reply.set_query (false);
-
-        if (request->has_seq ())
-            reply.set_seq (request->seq ());
-
-        reply.set_ledgerhash (request->ledgerhash ());
-        reply.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
-
-        // Building a fetch pack:
-        //  1. Add the header for the requested ledger.
-        //  2. Add the nodes for the AccountStateMap of that ledger.
-        //  3. If there are transactions, add the nodes for the
-        //     transactions of the ledger.
-        //  4. If the FetchPack now contains greater than or equal to
-        //     256 entries then stop.
-        //  5. If not very much time has elapsed, then loop back and repeat
-        //     the same process adding the previous ledger to the FetchPack.
-        do
-        {
-            std::uint32_t lSeq = wantLedger->getLedgerSeq ();
-
-            protocol::TMIndexedObject& newObj = *reply.add_objects ();
-            newObj.set_hash (wantLedger->getHash ().begin (), 256 / 8);
-            Serializer s (256);
-            s.add32 (HashPrefix::ledgerMaster);
-            wantLedger->addRaw (s);
-            newObj.set_data (s.getDataPtr (), s.getLength ());
-            newObj.set_ledgerseq (lSeq);
-
-            wantLedger->stateMap().getFetchPack
-                (&haveLedger->stateMap(), true, 16384,
-                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
-                               std::placeholders::_2));
-
-            if (wantLedger->getTransHash ().isNonZero ())
-                wantLedger->txMap().getFetchPack (
-                    nullptr, true, 512,
-                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
-                               std::placeholders::_2));
-
-            if (reply.objects ().size () >= 512)
-                break;
-
-            // move may save a ref/unref
-            haveLedger = std::move (wantLedger);
-            wantLedger = getLedgerByHash (haveLedger->getParentHash ());
-        }
-        while (wantLedger &&
-               UptimeTimer::getInstance ().getElapsedSeconds () <= uUptime + 1);
-
-        m_journal.info
-            << "Built fetch pack with " << reply.objects ().size () << " nodes";
-        auto msg = std::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
-        peer->send (msg);
-    }
-    catch (...)
-    {
-        m_journal.warning << "Exception building fetch pach";
-    }
-}
-
-void NetworkOPsImp::sweepFetchPack ()
-{
-    mFetchPack.sweep ();
-}
-
-void NetworkOPsImp::addFetchPack (
-    uint256 const& hash, std::shared_ptr< Blob >& data)
-{
-    mFetchPack.canonicalize (hash, data);
-}
-
-bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
-{
-    bool ret = mFetchPack.retrieve (hash, data);
-
-    if (!ret)
-        return false;
-
-    mFetchPack.del (hash, false);
-
-    if (hash != sha512Half(makeSlice(data)))
-    {
-        m_journal.warning << "Bad entry in fetch pack";
-        return false;
-    }
-
-    return true;
-}
-
-bool NetworkOPsImp::shouldFetchPack (std::uint32_t seq)
-{
-    if (mFetchSeq == seq)
-        return false;
-    mFetchSeq = seq;
-    return true;
-}
-
-int NetworkOPsImp::getFetchSize ()
-{
-    return mFetchPack.getCacheSize ();
-}
-
-void NetworkOPsImp::gotFetchPack (bool progress, std::uint32_t seq)
-{
-
-    // FIXME: Calling this function more than once will result in
-    // InboundLedgers::gotFetchPack being called more than once
-    // which is expensive. A flag should track whether we've already dispatched
-
-    m_job_queue.addJob (
-        jtLEDGER_DATA, "gotFetchPack",
-        std::bind (&InboundLedgers::gotFetchPack,
-                   &getApp().getInboundLedgers (), std::placeholders::_1));
-}
-
-void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)
-{
-    uint256 hash = getApp().getLedgerMaster ().getHashBySeq (seq);
-    if (hash.isZero())
-    {
-        m_journal.warning
-            << "Missing a node in ledger " << seq << " cannot fetch";
-    }
-    else
-    {
-        m_journal.warning << "Missing a node in ledger " << seq << " fetching";
-        getApp().getInboundLedgers ().acquire (
-            hash, seq, InboundLedger::fcGENERIC);
-    }
-}
 
 //------------------------------------------------------------------------------
 

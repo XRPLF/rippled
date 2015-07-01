@@ -40,7 +40,7 @@ Json::Value doLedgerData (RPC::Context& context)
     Ledger::pointer lpLedger;
     auto const& params = context.params;
 
-    Json::Value jvResult = RPC::lookupLedger (params, lpLedger, context.netOps);
+    Json::Value jvResult = RPC::lookupLedger (params, lpLedger, context.ledgerMaster);
     if (!lpLedger)
         return jvResult;
 

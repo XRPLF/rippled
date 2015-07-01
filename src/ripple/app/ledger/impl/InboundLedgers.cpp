@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/DecayingSample.h>
@@ -253,7 +254,7 @@ public:
 
                 auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
-                getApp().getOPs().addFetchPack (newNode->getNodeHash(), blob);
+                getApp().getLedgerMaster().addFetchPack (newNode->getNodeHash(), blob);
             }
         }
         catch (...)

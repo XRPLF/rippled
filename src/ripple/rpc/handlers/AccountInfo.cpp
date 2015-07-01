@@ -38,7 +38,7 @@ Json::Value doAccountInfo (RPC::Context& context)
     auto& params = context.params;
 
     Ledger::pointer ledger;
-    Json::Value result = RPC::lookupLedger (params, ledger, context.netOps);
+    Json::Value result = RPC::lookupLedger (params, ledger, context.ledgerMaster);
 
     if (!ledger)
         return result;

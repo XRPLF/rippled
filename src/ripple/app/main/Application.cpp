@@ -170,9 +170,12 @@ public:
     }
 
     void
-    missing_node (std::uint32_t refNum) override
+    missing_node (std::uint32_t seq) override
     {
-        getApp().getOPs().missingNodeInLedger (refNum);
+        uint256 const hash = getApp().getLedgerMaster ().getHashBySeq (seq);
+        if (hash.isZero())
+            getApp().getInboundLedgers ().acquire (
+                hash, seq, InboundLedger::fcGENERIC);
     }
 };
 
@@ -369,8 +372,9 @@ public:
         , m_pathRequests (new PathRequests (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
-        , m_ledgerMaster (make_LedgerMaster (getConfig (), *m_jobQueue,
-            m_collectorManager->collector (), m_logs.journal("LedgerMaster")))
+        , m_ledgerMaster (make_LedgerMaster (getConfig (), stopwatch (),
+            *m_jobQueue, m_collectorManager->collector (),
+            m_logs.journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
@@ -1018,8 +1022,8 @@ public:
         getInboundLedgers().sweep();
         AcceptedLedger::sweep();
         family().treecache().sweep();
-        getOPs().sweepFetchPack();
         cachedSLEs_.expire();
+
         // VFALCO NOTE does the call to sweep() happen on another thread?
         m_sweepTimer.setExpiration (getConfig ().getSize (siSweepInterval));
     }
@@ -1094,7 +1098,7 @@ ApplicationImp::getLastFullLedger()
 
         ledger->setClosed ();
 
-        if (getApp().getOPs ().haveLedger (ledgerSeq))
+        if (getApp().getLedgerMaster ().haveLedger (ledgerSeq))
         {
             ledger->setAccepted ();
             ledger->setValidated ();

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionStateSF.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -26,10 +27,6 @@
 #include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
-
-TransactionStateSF::TransactionStateSF()
-{
-}
 
 // VFALCO This might be better as Blob&&
 void TransactionStateSF::gotNode (bool fromFilter,
@@ -52,7 +49,7 @@ bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
                                    uint256 const& nodeHash,
                                    Blob& nodeData)
 {
-    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
+    return getApp().getLedgerMaster ().getFetchPack (nodeHash, nodeData);
 }
 
 } // ripple

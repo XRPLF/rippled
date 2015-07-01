@@ -802,7 +802,7 @@ void finishLoadByIndexOrHash(Ledger::pointer& ledger)
     ledger->setClosed ();
     ledger->setImmutable ();
 
-    if (getApp ().getOPs ().haveLedger (ledger->getLedgerSeq ()))
+    if (getApp ().getLedgerMaster ().haveLedger (ledger->getLedgerSeq ()))
         ledger->setAccepted ();
 
     WriteLog (lsTRACE, Ledger)

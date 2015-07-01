@@ -32,7 +32,9 @@ namespace RPC {
     been filled.
 */
 Json::Value lookupLedger (
-    Json::Value const& request, Ledger::pointer&, NetworkOPs&);
+    Json::Value const& request,
+    Ledger::pointer&,
+    LedgerMaster&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
     representing a ledger.
@@ -41,7 +43,7 @@ Json::Value lookupLedger (
 Status lookupLedger (
     Json::Value const& request,
     Ledger::pointer&,
-    NetworkOPs&,
+    LedgerMaster&,
     Json::Value& result);
 
 } // RPC

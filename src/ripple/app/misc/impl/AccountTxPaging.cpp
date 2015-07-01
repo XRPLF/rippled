@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/tx/Transaction.h>
@@ -55,7 +56,7 @@ convertBlobsToTxResult (
 void
 saveLedgerAsync (std::uint32_t seq)
 {
-    Ledger::pointer ledger = getApp().getOPs().getLedgerBySeq(seq);
+    Ledger::pointer ledger = getApp().getLedgerMaster().getLedgerBySeq(seq);
     if (ledger)
         ledger->pendSaveValidated(false, false);
 }
