@@ -396,7 +396,8 @@ void Ledger::setAccepted (
 void Ledger::setAccepted ()
 {
     // used when we acquired the ledger
-    // FIXME assert(closed() && (info_.closeTime != 0) && (mCloseResolution != 0));
+    // TODO: re-enable a test like the following:
+    // assert(closed() && (info_.closeTime != 0) && (mCloseResolution != 0));
     if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
         info_.closeTime = roundCloseTime(
             info_.closeTime, mCloseResolution);
@@ -428,7 +429,9 @@ getTransaction (Ledger const& ledger,
         return txn;
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+    {
         txn = Transaction::sharedTransaction (item->peekData (), Validate::YES);
+    }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         auto sit = SerialIter{item->data(), item->size()};
@@ -441,7 +444,10 @@ getTransaction (Ledger const& ledger,
     }
 
     if (txn->getStatus () == NEW)
-        txn->setStatus (ledger.isClosed() ? COMMITTED : INCLUDED, ledger.getLedgerSeq());
+    {
+        txn->setStatus (
+            ledger.isClosed() ? COMMITTED : INCLUDED, ledger.getLedgerSeq());
+    }
 
     cache.canonicalize (&txn);
     return txn;
@@ -621,8 +627,9 @@ bool Ledger::saveValidatedLedger (bool current)
 
             if (!accts.empty ())
             {
-                std::string sql ("INSERT INTO AccountTransactions "
-                                 "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
+                std::string sql (
+                    "INSERT INTO AccountTransactions "
+                    "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
 
                 // Try to make an educated guess on how much space we'll need
                 // for our arguments. In argument order we have:
@@ -674,11 +681,12 @@ bool Ledger::saveValidatedLedger (bool current)
         auto db (getApp().getLedgerDB ().checkoutDb ());
 
         // TODO(tom): ARG!
-        *db << boost::str (addLedger %
-                           to_string (getHash ()) % info_.seq % to_string (mParentHash) %
-                           beast::lexicalCastThrow <std::string> (mTotCoins) % info_.closeTime %
-                           info_.parentCloseTime % mCloseResolution % mCloseFlags %
-                           to_string (mAccountHash) % to_string (mTransHash));
+        *db << boost::str (
+            addLedger %
+            to_string (getHash ()) % info_.seq % to_string (mParentHash) %
+            beast::lexicalCastThrow <std::string> (mTotCoins) % info_.closeTime %
+            info_.parentCloseTime % mCloseResolution % mCloseFlags %
+            to_string (mAccountHash) % to_string (mTransHash));
     }
 
     // Clients can now trust the database for
