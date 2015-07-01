@@ -77,10 +77,25 @@ std::pair<TER, bool>
 apply (BasicView& view,
     STTx const& tx, ViewFlags flags,
         Config const& config,
-            beast::Journal journal)
+            beast::Journal j)
 {
-    return invoke (tx.getTxnType(),
-        view, tx, flags, config, journal);
+    try
+    {
+        return invoke (tx.getTxnType(),
+            view, tx, flags, config, j);
+    }
+    catch(std::exception const& e)
+    {
+        JLOG(j.fatal) <<
+            "Caught exception: " << e.what();
+        return { tefEXCEPTION, false };
+    }
+    catch(...)
+    {
+        JLOG(j.fatal) <<
+            "Caught unknown exception";
+        return { tefEXCEPTION, false };
+    }
 }
 
 } // ripple
