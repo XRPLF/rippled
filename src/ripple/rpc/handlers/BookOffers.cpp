@@ -32,7 +32,7 @@ Json::Value doBookOffers (RPC::Context& context)
 
     Ledger::pointer lpLedger;
     Json::Value jvResult (
-        RPC::lookupLedger (context.params, lpLedger, context.netOps));
+        RPC::lookupLedger (context.params, lpLedger, context.ledgerMaster));
 
     if (!lpLedger)
         return jvResult;

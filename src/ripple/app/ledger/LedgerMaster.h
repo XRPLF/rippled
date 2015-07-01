@@ -22,15 +22,21 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerHolder.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/core/Config.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
 #include <beast/utility/PropertyStream.h>
 
+#include "ripple.pb.h"
+
 namespace ripple {
+
+class Peer;
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -53,7 +59,7 @@ public:
     using ScopedLockType = std::unique_lock <LockType>;
     using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
 
-    virtual ~LedgerMaster () = 0;
+    virtual ~LedgerMaster () = default;
 
     virtual LedgerIndex getCurrentLedgerIndex () = 0;
     virtual LedgerIndex getValidLedgerIndex () = 0;
@@ -128,7 +134,6 @@ public:
     virtual void tune (int size, int age) = 0;
     virtual void sweep () = 0;
     virtual float getCacheHitRate () = 0;
-    virtual void addValidateCallback (callback& c) = 0;
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
     virtual void checkAccept (uint256 const& hash, std::uint32_t seq) = 0;
@@ -147,18 +152,44 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (std::uint32_t currentLedgerID,
-        std::uint32_t ledgerHistory, std::uint32_t ledgerHistoryIndex,
-        std::uint32_t targetLedger);
-
     virtual void clearPriorLedgers (LedgerIndex seq) = 0;
 
     virtual void clearLedgerCachePrior (LedgerIndex seq) = 0;
+
+    // Fetch Packs
+    virtual
+    void gotFetchPack (
+        bool progress,
+        std::uint32_t seq) = 0;
+
+    virtual
+    void addFetchPack (
+        uint256 const& hash,
+        std::shared_ptr<Blob>& data) = 0;
+
+    virtual
+    bool getFetchPack (
+        uint256 const& hash,
+        Blob& data) = 0;
+
+    virtual
+    void makeFetchPack (
+        Job&, std::weak_ptr<Peer> const& wPeer,
+        std::shared_ptr<protocol::TMGetObjectByHash> const& request,
+        uint256 haveLedgerHash,
+        std::uint32_t uUptime) = 0;
+
+    virtual
+    std::size_t getFetchPackCacheSize () const = 0;
 };
 
 std::unique_ptr <LedgerMaster>
-make_LedgerMaster (Config const& config, beast::Stoppable& parent,
-    beast::insight::Collector::ptr const& collector, beast::Journal journal);
+make_LedgerMaster (
+    Config const& config,
+    Stopwatch& stopwatch,
+    beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector,
+    beast::Journal journal);
 
 } // ripple
 

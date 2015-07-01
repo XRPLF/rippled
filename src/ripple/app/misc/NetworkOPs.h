@@ -106,25 +106,9 @@ public:
     // Our best estimate of current ledger close time
     virtual std::uint32_t getCloseTimeNC () const = 0;
     virtual void closeTimeOffset (int) = 0;
-    virtual std::uint32_t getLedgerID (uint256 const& hash) = 0;
-    virtual std::uint32_t getCurrentLedgerID () = 0;
 
     virtual OperatingMode getOperatingMode () const = 0;
     virtual std::string strOperatingMode () const = 0;
-    virtual Ledger::pointer getClosedLedger () = 0;
-    virtual Ledger::pointer getValidatedLedger () = 0;
-    virtual Ledger::pointer getCurrentLedger () = 0;
-    virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
-    virtual Ledger::pointer getLedgerBySeq (const std::uint32_t seq) = 0;
-    virtual void            missingNodeInLedger (const std::uint32_t seq) = 0;
-
-    virtual uint256         getClosedLedgerHash () = 0;
-
-    // Do we have this inclusive range of ledgers in our database
-    virtual bool haveLedger (std::uint32_t seq) = 0;
-    virtual std::uint32_t getValidatedSeq () = 0;
-    virtual bool isValidated (Ledger::ref l) = 0;
-    virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -181,19 +165,6 @@ public:
 
     virtual void mapComplete (uint256 const& hash,
                               std::shared_ptr<SHAMap> const& map) = 0;
-
-    // Fetch packs
-    virtual void makeFetchPack (Job&, std::weak_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMGetObjectByHash> request,
-        uint256 wantLedger, std::uint32_t uUptime) = 0;
-
-    virtual bool shouldFetchPack (std::uint32_t seq) = 0;
-    virtual void gotFetchPack (bool progress, std::uint32_t seq) = 0;
-    virtual void addFetchPack (
-        uint256 const& hash, std::shared_ptr< Blob >& data) = 0;
-    virtual bool getFetchPack (uint256 const& hash, Blob& data) = 0;
-    virtual int getFetchSize () = 0;
-    virtual void sweepFetchPack () = 0;
 
     // network state machine
     virtual void endConsensus (bool correctLCL) = 0;

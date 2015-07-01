@@ -46,7 +46,7 @@ Json::Value doAccountTx (RPC::Context& context)
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
     std::uint32_t   uValidatedMax;
-    bool bValidated = context.netOps.getValidatedRange (
+    bool bValidated = context.ledgerMaster.getValidatedRange (
         uValidatedMin, uValidatedMax);
 
     if (!bValidated)
@@ -84,7 +84,7 @@ Json::Value doAccountTx (RPC::Context& context)
     else
     {
         Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (params, l, context.netOps);
+        Json::Value ret = RPC::lookupLedger (params, l, context.ledgerMaster);
 
         if (!l)
             return ret;

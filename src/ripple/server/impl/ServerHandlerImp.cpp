@@ -353,8 +353,8 @@ ServerHandlerImp::processRequest (
 
     auto const start (std::chrono::high_resolution_clock::now ());
     RPC::Context context {
-        params, loadType, m_networkOPs, role, nullptr,
-                std::move (suspend), std::move (yield)};
+        params, loadType, m_networkOPs, getApp().getLedgerMaster(), role,
+        nullptr, std::move (suspend), std::move (yield)};
     std::string response;
 
     if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)

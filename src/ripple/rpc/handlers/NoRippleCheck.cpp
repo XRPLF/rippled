@@ -84,7 +84,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         transactions = params["transactions"].asBool();
 
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
+    Json::Value result (RPC::lookupLedger (params, ledger, context.ledgerMaster));
     if (! ledger)
         return result;
 

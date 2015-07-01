@@ -268,7 +268,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (Json::Value& jvRequest)
     else
     {
         RPC::Context context {
-            jvRequest, loadType, m_netOPs, role,
+            jvRequest, loadType, m_netOPs, getApp().getLedgerMaster(), role,
             std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ())};
         RPC::doCommand (context, jvResult[jss::result]);
     }

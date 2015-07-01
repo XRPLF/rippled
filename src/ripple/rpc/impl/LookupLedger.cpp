@@ -25,19 +25,19 @@ namespace RPC {
 
 namespace {
 
-bool isValidatedOld ()
+bool isValidatedOld (LedgerMaster& ledgerMaster)
 {
     if (getConfig ().RUN_STANDALONE)
         return false;
 
-    return getApp ().getLedgerMaster ().getValidatedLedgerAge () >
+    return ledgerMaster.getValidatedLedgerAge () >
         Tuning::maxValidatedLedgerAge;
 }
 
 Status ledgerFromRequest (
     Json::Value const& params,
     Ledger::pointer& ledger,
-    NetworkOPs& netOps)
+    LedgerMaster& ledgerMaster)
 {
     static auto const minSequenceGap = 10;
 
@@ -65,18 +65,18 @@ Status ledgerFromRequest (
         if (! ledgerHash.SetHex (hashValue.asString ()))
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
 
-        ledger = netOps.getLedgerByHash (ledgerHash);
+        ledger = ledgerMaster.getLedgerByHash (ledgerHash);
         if (ledger == nullptr)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
     }
     else if (indexValue.isNumeric())
     {
-        ledger = netOps.getLedgerBySeq (indexValue.asInt ());
+        ledger = ledgerMaster.getLedgerBySeq (indexValue.asInt ());
         if (ledger == nullptr)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
-        if (ledger->getLedgerSeq () > netOps.getValidatedSeq () &&
-            isValidatedOld ())
+        if (ledger->getLedgerSeq () > ledgerMaster.getValidLedgerIndex () &&
+            isValidatedOld (ledgerMaster))
         {
             ledger.reset();
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -84,13 +84,13 @@ Status ledgerFromRequest (
     }
     else
     {
-        if (isValidatedOld ())
+        if (isValidatedOld (ledgerMaster))
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
         auto const index = indexValue.asString ();
         if (index == "validated")
         {
-            ledger = netOps.getValidatedLedger ();
+            ledger = ledgerMaster.getValidatedLedger ();
             if (ledger == nullptr)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
@@ -100,12 +100,12 @@ Status ledgerFromRequest (
         {
             if (index.empty () || index == "current")
             {
-                ledger = netOps.getCurrentLedger ();
+                ledger = ledgerMaster.getCurrentLedger ();
                 assert (! ledger->isClosed ());
             }
             else if (index == "closed")
             {
-                ledger = netOps.getClosedLedger ();
+                ledger = ledgerMaster.getClosedLedger ();
                 assert (ledger->isClosed ());
             }
             else
@@ -117,7 +117,7 @@ Status ledgerFromRequest (
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
             if (ledger->getLedgerSeq () + minSequenceGap <
-                netOps.getValidatedSeq ())
+                ledgerMaster.getValidLedgerIndex ())
             {
                 ledger.reset ();
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -130,7 +130,7 @@ Status ledgerFromRequest (
     return Status::OK;
 }
 
-bool isValidated (Ledger& ledger)
+bool isValidated (LedgerMaster& ledgerMaster, Ledger& ledger)
 {
     if (ledger.isValidated ())
         return true;
@@ -144,7 +144,7 @@ bool isValidated (Ledger& ledger)
         // Use the skip list in the last validated ledger to see if ledger
         // comes before the last validated ledger (and thus has been
         // validated).
-        auto hash = getApp().getLedgerMaster ().walkHashBySeq (seq);
+        auto hash = ledgerMaster.walkHashBySeq (seq);
         if (ledger.getHash() != hash)
             return false;
     }
@@ -184,10 +184,10 @@ bool isValidated (Ledger& ledger)
 Status lookupLedger (
     Json::Value const& params,
     Ledger::pointer& ledger,
-    NetworkOPs& netOps,
+    LedgerMaster& ledgerMaster,
     Json::Value& jsonResult)
 {
-    if (auto status = ledgerFromRequest (params, ledger, netOps))
+    if (auto status = ledgerFromRequest (params, ledger, ledgerMaster))
         return status;
 
     if (ledger->isClosed ())
@@ -199,19 +199,18 @@ Status lookupLedger (
     {
         jsonResult[jss::ledger_current_index] = ledger->getLedgerSeq();
     }
-    jsonResult[jss::validated] = isValidated (*ledger);
+    jsonResult[jss::validated] = isValidated (ledgerMaster, *ledger);
     return Status::OK;
 }
 
 Json::Value lookupLedger (
     Json::Value const& params,
     Ledger::pointer& ledger,
-    NetworkOPs& netOps)
+    LedgerMaster& ledgerMaster)
 {
     Json::Value value (Json::objectValue);
-    if (auto status = lookupLedger (params, ledger, netOps, value))
+    if (auto status = lookupLedger (params, ledger, ledgerMaster, value))
         status.inject (value);
-
     return value;
 }
 

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/AccountStateSF.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
@@ -26,10 +27,6 @@
 #include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
-
-AccountStateSF::AccountStateSF()
-{
-}
 
 void AccountStateSF::gotNode (bool fromFilter,
                               SHAMapNodeID const& id,
@@ -48,7 +45,7 @@ bool AccountStateSF::haveNode (SHAMapNodeID const& id,
                                uint256 const& nodeHash,
                                Blob& nodeData)
 {
-    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
+    return getApp().getLedgerMaster ().getFetchPack (nodeHash, nodeData);
 }
 
 } // ripple

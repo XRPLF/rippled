@@ -29,6 +29,7 @@
 namespace ripple {
 
 class NetworkOPs;
+class LedgerMaster;
 
 namespace RPC {
 
@@ -38,6 +39,7 @@ struct Context
     Json::Value params;
     Resource::Charge& loadType;
     NetworkOPs& netOps;
+    LedgerMaster& ledgerMaster;
     Role role;
     InfoSub::pointer infoSub;
     Suspend suspend;
