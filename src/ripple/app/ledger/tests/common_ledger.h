@@ -180,6 +180,10 @@ freezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign = t
 void
 unfreezeAccount(TestAccount& account, Ledger::pointer const& ledger, bool sign = true);
 
+Json::Value
+getPaymentJson(TestAccount& from, TestAccount const& to,
+    std::uint64_t amountDrops, std::uint64_t feeDrops);
+
 STTx
 getPaymentTx(TestAccount& from, TestAccount const& to,
             std::uint64_t amountDrops,
@@ -236,7 +240,8 @@ trust(TestAccount& from, TestAccount const& issuer,
                 std::string const& currency, double amount,
                 Ledger::pointer const& ledger, bool sign = true);
 
-void
+// Returns the set of transactions applied to the ledger
+TxSet
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL);
 
 Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
@@ -286,7 +291,12 @@ get_ledger_entry_ripple_state(Ledger::pointer ledger,
     Currency currency);
 
 void
-verifyBalance(Ledger::pointer ledger, TestAccount const& account, Amount const& amount);
+verifyBalance(Ledger::pointer ledger, TestAccount const& account,
+    std::uint64_t amountDrops);
+
+void
+verifyBalance(Ledger::pointer ledger, TestAccount const& account,
+    Amount const& amount);
 
 } // test
 } // ripple

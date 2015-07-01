@@ -30,10 +30,10 @@ namespace ripple {
 TER
 Change::doApply()
 {
-    if (mTxn.getTxnType () == ttAMENDMENT)
+    if (mTxn->getTxnType () == ttAMENDMENT)
         return applyAmendment ();
 
-    if (mTxn.getTxnType () == ttFEE)
+    if (mTxn->getTxnType () == ttFEE)
         return applyFee ();
 
     return temUNKNOWN;
@@ -42,13 +42,14 @@ Change::doApply()
 TER
 Change::checkSign()
 {
-    if (mTxn.getAccountID (sfAccount).isNonZero ())
+    if (mTxn->getAccountID (sfAccount).isNonZero ())
     {
         j_.warning << "Bad source account";
         return temBAD_SRC_ACCOUNT;
     }
 
-    if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
+    if (!mTxn->getSigningPubKey ().empty ()
+        || !mTxn->getSignature ().empty ())
     {
         j_.warning << "Bad signature";
         return temBAD_SIGNATURE;
@@ -60,7 +61,8 @@ Change::checkSign()
 TER
 Change::checkSeq()
 {
-    if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
+    if ((mTxn->getSequence () != 0) ||
+        mTxn->isFieldPresent (sfPreviousTxnID))
     {
         j_.warning << "Bad sequence";
         return temBAD_SEQUENCE;
@@ -72,7 +74,7 @@ Change::checkSeq()
 TER
 Change::payFee()
 {
-    if (mTxn.getTransactionFee () != STAmount ())
+    if (mTxn->getTransactionFee () != STAmount ())
     {
         j_.warning << "Non-zero fee";
         return temBAD_FEE;
@@ -84,7 +86,7 @@ Change::payFee()
 TER
 Change::preCheck()
 {
-    mTxnAccountID = mTxn.getAccountID(sfAccount);
+    mTxnAccountID = mTxn->getAccountID(sfAccount);
 
     if (mTxnAccountID.isNonZero ())
     {
@@ -104,7 +106,7 @@ Change::preCheck()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment (mTxn.getFieldH256 (sfAmendment));
+    uint256 amendment (mTxn->getFieldH256 (sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -154,13 +156,13 @@ Change::applyFee()
     //     "Previous fee object: " << feeObject->getJson (0);
 
     feeObject->setFieldU64 (
-        sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
+        sfBaseFee, mTxn->getFieldU64 (sfBaseFee));
     feeObject->setFieldU32 (
-        sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
+        sfReferenceFeeUnits, mTxn->getFieldU32 (sfReferenceFeeUnits));
     feeObject->setFieldU32 (
-        sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
+        sfReserveBase, mTxn->getFieldU32 (sfReserveBase));
     feeObject->setFieldU32 (
-        sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
+        sfReserveIncrement, mTxn->getFieldU32 (sfReserveIncrement));
 
     view().update (feeObject);
 

@@ -29,7 +29,7 @@ namespace ripple {
 TER
 SetTrust::preCheck ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     if (uTxFlags & tfTrustSetMask)
     {
@@ -38,7 +38,7 @@ SetTrust::preCheck ()
         return temINVALID_FLAG;
     }
 
-    STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
+    STAmount const saLimitAmount (mTxn->getFieldAmount (sfLimitAmount));
 
     if (!isLegalNet (saLimitAmount))
         return temBAD_AMOUNT;
@@ -83,9 +83,9 @@ SetTrust::doApply ()
 {
     TER terResult = tesSUCCESS;
 
-    STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
-    bool const bQualityIn (mTxn.isFieldPresent (sfQualityIn));
-    bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
+    STAmount const saLimitAmount (mTxn->getFieldAmount (sfLimitAmount));
+    bool const bQualityIn (mTxn->isFieldPresent (sfQualityIn));
+    bool const bQualityOut (mTxn->isFieldPresent (sfQualityOut));
 
     Currency const currency (saLimitAmount.getCurrency ());
     AccountID uDstAccountID (saLimitAmount.getIssuer ());
@@ -111,13 +111,13 @@ SetTrust::doApply ()
         ? 0
         : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
-    std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
+    std::uint32_t uQualityIn (bQualityIn ? mTxn->getFieldU32 (sfQualityIn) : 0);
+    std::uint32_t uQualityOut (bQualityOut ? mTxn->getFieldU32 (sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn->getFlags ();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
     bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);

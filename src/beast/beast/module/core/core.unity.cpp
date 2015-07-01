@@ -136,6 +136,7 @@
 #include <beast/module/core/files/FileOutputStream.cpp>
 
 #include <beast/module/core/maths/Random.cpp>
+#include <beast/module/core/maths/Muldiv.cpp>
 
 #include <beast/module/core/memory/MemoryBlock.cpp>
 

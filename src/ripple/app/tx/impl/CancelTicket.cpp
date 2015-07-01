@@ -39,7 +39,7 @@ CancelTicket::doApply ()
 {
     assert (mTxnAccount);
 
-    uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
+    uint256 const ticketId = mTxn->getFieldH256 (sfTicketID);
 
     // VFALCO This is highly suspicious, we're requiring that the
     //        transaction provide the return value of getTicketIndex?

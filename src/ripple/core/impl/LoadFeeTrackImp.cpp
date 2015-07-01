@@ -17,15 +17,23 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/impl/LoadFeeTrackImp.h>
 #include <ripple/core/Config.h>
 
 namespace ripple {
 
+// Scale from fee units to drops
+std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
+    std::uint32_t referenceFeeUnits)
+{
+    return beast::mulDiv (fee, baseFee, referenceFeeUnits);
+}
+
 LoadFeeTrack* LoadFeeTrack::New (beast::Journal journal)
 {
     return new LoadFeeTrackImp (journal);
 }
+
+//------------------------------------------------------------------------------
 
 } // ripple

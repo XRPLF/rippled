@@ -45,32 +45,33 @@ public:
 
     virtual ~LoadFeeTrack () { }
 
-    // Scale from fee units to millionths of a ripple
-    virtual std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
-                                        std::uint32_t referenceFeeUnits) = 0;
-
     // Scale using load as well as base rate
     virtual std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
                                         std::uint32_t referenceFeeUnits,
-                                        bool bAdmin) = 0;
+                                        bool bAdmin) const = 0;
 
-    virtual void setRemoteFee (std::uint32_t) = 0;
+    virtual void setRemoteLevel (std::uint32_t) = 0;
 
-    virtual std::uint32_t getRemoteFee () = 0;
-    virtual std::uint32_t getLocalFee () = 0;
-    virtual std::uint32_t getClusterFee () = 0;
+    virtual std::uint32_t getRemoteLevel () = 0;
+    virtual std::uint32_t getLocalLevel () = 0;
+    virtual std::uint32_t getClusterLevel () = 0;
 
-    virtual std::uint32_t getLoadBase () = 0;
+    virtual std::uint32_t getLoadBase () const = 0;
     virtual std::uint32_t getLoadFactor () = 0;
 
     virtual Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) = 0;
 
-    virtual void setClusterFee (std::uint32_t) = 0;
-    virtual bool raiseLocalFee () = 0;
-    virtual bool lowerLocalFee () = 0;
+    virtual void setClusterLevel (std::uint32_t) = 0;
+    virtual bool raiseLocalLevel () = 0;
+    virtual bool lowerLocalLevel () = 0;
     virtual bool isLoadedLocal () = 0;
     virtual bool isLoadedCluster () = 0;
 };
+
+// Scale from fee units to drops
+std::uint64_t scaleFeeBase(std::uint64_t fee, std::uint64_t baseFee,
+    std::uint32_t referenceFeeUnits);
+
 
 } // ripple
 

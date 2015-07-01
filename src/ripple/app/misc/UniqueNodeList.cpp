@@ -258,51 +258,54 @@ public:
 
     // This is called when the application is started.
     // Get update times and start fetching and scoring as needed.
-    void start();
+    void start() override;
 
     void insertEphemeralKey (AnyPublicKey pk, std::string comment);
     void deleteEphemeralKey (AnyPublicKey const& pk);
 
     // Add a trusted node.  Called by RPC or other source.
-    void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment);
+    void nodeAddPublic (RippleAddress const& naNodePublic,
+        ValidatorSource vsWhy, std::string const& strComment) override;
 
     // Queue a domain for a single attempt fetch a ripple.txt.
     // --> strComment: only used on vsManual
     // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, std::string const& strComment);
+    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy,
+        std::string const& strComment) override;
 
-    void nodeRemovePublic (RippleAddress const& naNodePublic);
+    void nodeRemovePublic (RippleAddress const& naNodePublic) override;
 
-    void nodeRemoveDomain (std::string strDomain);
+    void nodeRemoveDomain (std::string strDomain) override;
 
-    void nodeReset();
+    void nodeReset() override;
 
     // For debugging, schedule forced scoring.
-    void nodeScore();
+    void nodeScore() override;
 
-    bool nodeInUNL (RippleAddress const& naNodePublic);
+    bool nodeInUNL (RippleAddress const& naNodePublic) override;
 
-    bool nodeInCluster (RippleAddress const& naNodePublic);
+    bool nodeInCluster (RippleAddress const& naNodePublic) override;
     bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name);
 
-    bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus);
+    bool nodeUpdate (RippleAddress const& naNodePublic,
+        ClusterNodeStatus const& cnsStatus) override;
 
-    std::map<RippleAddress, ClusterNodeStatus> getClusterStatus();
+    std::map<RippleAddress, ClusterNodeStatus> getClusterStatus() override;
 
-    std::uint32_t getClusterFee();
+    std::uint32_t getClusterLevel() override;
 
-    void addClusterStatus (Json::Value& obj);
+    void addClusterStatus (Json::Value& obj) override;
 
-    void nodeBootstrap();
+    void nodeBootstrap() override;
 
-    bool nodeLoad (boost::filesystem::path pConfig);
+    bool nodeLoad (boost::filesystem::path pConfig) override;
 
-    void nodeNetwork();
+    void nodeNetwork() override;
 
-    Json::Value getUnlJson();
+    Json::Value getUnlJson() override;
 
     // For each kind of source, have a starting number of points to be distributed.
-    int iSourceScore (ValidatorSource vsWhy);
+    int iSourceScore (ValidatorSource vsWhy) override;
 
     //--------------------------------------------------------------------------
 private:
@@ -705,11 +708,11 @@ UniqueNodeListImp::getClusterStatus()
 
 //--------------------------------------------------------------------------
 
-std::uint32_t UniqueNodeListImp::getClusterFee()
+std::uint32_t UniqueNodeListImp::getClusterLevel()
 {
     int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
 
-    std::vector<std::uint32_t> fees;
+    std::vector<std::uint32_t> levels;
     {
         ScopedUNLLockType sl (mUNLLock);
         {
@@ -717,15 +720,15 @@ std::uint32_t UniqueNodeListImp::getClusterFee()
                 end = m_clusterNodes.end(); it != end; ++it)
             {
                 if (it->second.getReportTime() >= thresh)
-                    fees.push_back(it->second.getLoadFee());
+                    levels.push_back(it->second.getLoadLevel());
             }
         }
     }
 
-    if (fees.empty())
+    if (levels.empty())
         return 0;
-    std::sort (fees.begin(), fees.end());
-    return fees[fees.size() / 2];
+    std::sort (levels.begin(), levels.end());
+    return levels[levels.size() / 2];
 }
 
 //--------------------------------------------------------------------------
@@ -749,8 +752,10 @@ void UniqueNodeListImp::addClusterStatus (Json::Value& obj)
                 if (!it->second.getName().empty())
                     node["tag"] = it->second.getName();
 
-                if ((it->second.getLoadFee() != ref) && (it->second.getLoadFee() != 0))
-                    node["fee"] = static_cast<double>(it->second.getLoadFee()) / ref;
+                if ((it->second.getLoadLevel() != ref) &&
+                        (it->second.getLoadLevel() != 0))
+                    node["level"] = static_cast<double>(
+                        it->second.getLoadLevel()) / ref;
 
                 if (it->second.getReportTime() != 0)
                     node["age"] = (it->second.getReportTime() >= now) ? 0 : (now - it->second.getReportTime());

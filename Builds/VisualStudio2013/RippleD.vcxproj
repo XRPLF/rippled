@@ -673,6 +673,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\module\core\maths\Muldiv.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Muldiv.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

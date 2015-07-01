@@ -75,11 +75,12 @@ invoke (TxType type,
 
 std::pair<TER, bool>
 apply (BasicView& view,
-    STTx const& tx, ViewFlags flags,
-        Config const& config,
-            beast::Journal journal)
+    std::shared_ptr<STTx const> const& tx,
+        ViewFlags flags,
+            Config const& config,
+                beast::Journal journal)
 {
-    return invoke (tx.getTxnType(),
+    return invoke (tx->getTxnType(),
         view, tx, flags, config, journal);
 }
 

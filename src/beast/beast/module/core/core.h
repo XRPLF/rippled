@@ -132,6 +132,7 @@ class FileOutputStream;
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/logging/Logger.h>
 #include <beast/module/core/maths/Random.h>
+#include <beast/module/core/maths/Muldiv.h>
 #include <beast/module/core/text/StringPairArray.h>
 #include <beast/module/core/files/DirectoryIterator.h>
 #include <beast/module/core/streams/InputStream.h>

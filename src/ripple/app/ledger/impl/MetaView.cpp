@@ -543,11 +543,12 @@ Json::Value MetaView::getJson (int) const
 
 void
 MetaView::apply (BasicView& to,
-    STTx const& tx, TER ter, beast::Journal j)
+    std::shared_ptr<STTx const> const& tx,
+        TER ter, beast::Journal j)
 {
     auto const sTx =
         std::make_shared<Serializer>();
-    tx.add(*sTx);
+    tx->add(*sTx);
 
     std::shared_ptr<Serializer> sMeta;
 
@@ -555,7 +556,7 @@ MetaView::apply (BasicView& to,
     {
         TxMeta meta;
         // VFALCO Shouldn't TxMeta ctor do this?
-        meta.init (tx.getTransactionID(), seq());
+        meta.init (tx->getTransactionID(), seq());
         if (deliverAmount_)
             meta.setDeliveredAmount(
                 *deliverAmount_);
@@ -701,7 +702,7 @@ MetaView::apply (BasicView& to,
             "metadata " << meta.getJson (0);
     }
 
-    txInsert (tx.getTransactionID(),
+    txInsert (tx->getTransactionID(),
         sTx, sMeta);
 
     apply(to);

@@ -280,8 +280,9 @@ public:
         @param j Where to log.
     */
     void
-    apply (BasicView& to, STTx const& tx,
-        TER result, beast::Journal j);
+    apply (BasicView& to, 
+        std::shared_ptr<STTx const> const& tx,
+            TER result, beast::Journal j);
 
     // For diagnostics
     Json::Value getJson (int) const;

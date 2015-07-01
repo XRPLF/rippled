@@ -47,9 +47,10 @@ namespace ripple {
 // VFALCO Some call sites use try/catch some don't.
 std::pair<TER, bool>
 apply (BasicView& view,
-    STTx const& tx, ViewFlags flags,
-        Config const& config,
-            beast::Journal journal);
+    std::shared_ptr<STTx const> const& tx,
+        ViewFlags flags,
+            Config const& config,
+                beast::Journal journal);
 
 } // ripple
 

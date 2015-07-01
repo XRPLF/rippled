@@ -37,11 +37,12 @@ class ApplyContext
 public:
     explicit
     ApplyContext (BasicView& base,
-        STTx const& tx, ViewFlags flags,
-            Config const& config,
-                beast::Journal = {});
+        std::shared_ptr<STTx const> const& tx,
+            ViewFlags flags,
+                Config const& config,
+                    beast::Journal = {});
 
-    STTx const& tx;
+    std::shared_ptr<STTx const> const& tx;
     Config const& config;
     beast::Journal const journal;
 

@@ -67,7 +67,14 @@ public:
 };
 
 //------------------------------------------------------------------------------
-/** Apply a set of transactions to a ledger
+using TxSet = std::vector <std::pair <uint256, STTx::pointer>>;
+
+TxSet buildTxSet(SHAMap const& set);
+
+/** Apply a set of transactions to a ledger that have already been
+    applied to a prior version of the open ledger.
+
+    Only public so it can be used by tests.
 
   @param set                   The set of transactions to apply
   @param applyLedger           The ledger to which the transactions should
@@ -78,12 +85,15 @@ public:
   @param retriableTransactions collect failed transactions in this set
   @param openLgr               true if applyLedger is open, else false.
 */
-void applyTransactions (
-    SHAMap const* set,
+void
+lowLevelApply(
+    TxSet const& set,
     BasicView& applyView,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
     bool enableTesting = false);
+
+std::size_t countTx(std::shared_ptr<Ledger const> const& ledger);
 
 } // ripple
 

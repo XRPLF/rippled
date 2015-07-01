@@ -71,13 +71,13 @@ SetSignerList::preCheck()
 
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
-    quorum_ = (mTxn.getFieldU32 (sfSignerQuorum));
+    quorum_ = (mTxn->getFieldU32 (sfSignerQuorum));
 
-    bool const hasSignerEntries (mTxn.isFieldPresent (sfSignerEntries));
+    bool const hasSignerEntries (mTxn->isFieldPresent (sfSignerEntries));
     if (quorum_ && hasSignerEntries)
     {
         SignerEntries::Decoded signers (
-            SignerEntries::deserialize (mTxn, j_, "transaction"));
+            SignerEntries::deserialize (*mTxn, j_, "transaction"));
 
         if (signers.ter != tesSUCCESS)
             return signers.ter;

@@ -1,7 +1,11 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+
+    Portions of this file are from JUCE.
+    Copyright (c) 2013 - Raw Material Software Ltd.
+    Please visit http://www.juce.com
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,21 +21,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_ADVANCE_H_INCLUDED
-#define RIPPLE_TEST_JTX_ADVANCE_H_INCLUDED
+#ifndef BEAST_MODULE_CORE_MATHS_MULDIV_H_INCLUDED
+#define BEAST_MODULE_CORE_MATHS_MULDIV_H_INCLUDED
 
-#include <ripple/test/jtx/Env.h>
-#include <ripple/app/ledger/LedgerConsensus.h>
+namespace beast {
 
-namespace ripple {
-namespace test {
-namespace jtx {
+//==============================================================================
+/**
+    A utility function to compute (value)*(mul)/(div) while avoiding
+    overflow but keeping precision.
+*/
+std::uint64_t mulDiv(std::uint64_t value, std::uint32_t mul, std::uint64_t div);
 
-TxSet
-advance(Env& env, std::shared_ptr<Ledger const>& last);
-
-} // jtx
-} // test
-} // ripple
+}
 
 #endif

@@ -31,6 +31,7 @@
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <beast/module/core/maths/Muldiv.h>
 #include <boost/format.hpp>
 #include <array>
 
@@ -485,6 +486,51 @@ STTx::checkMultiSign () const
     // All signatures verified.
     return true;
 }
+
+//------------------------------------------------------------------------------
+
+std::uint64_t getRequiredFeeUnits(TxType txType)
+{
+    if ((txType == ttAMENDMENT) || (txType == ttFEE))
+        return 0;
+
+    // For now, all valid non-pseudo transactions cost 256 fee units
+    // This code can be changed to support variable transaction fees
+    return 256;
+}
+
+std::uint64_t STTx::getRequiredFeeUnits () const
+{
+    return ripple::getRequiredFeeUnits(tx_type_);
+}
+
+// TODO: Unneeded?
+std::uint64_t STTx::getRequiredFeeDrops (std::uint64_t refTxnCost) const
+{
+    // TODO: ttREFERENCE?
+    return getRequiredFeeUnits() * refTxnCost /
+        ripple::getRequiredFeeUnits(ttPAYMENT);
+}
+
+std::uint64_t STTx::getFeeLevelPaid (
+    std::uint64_t baseRef,
+    std::uint64_t refTxnCostDrops) const
+{
+    // Compute the minimum XRP fee the transaction could pay
+    std::uint64_t required_fee_units = getRequiredFeeUnits();
+
+    if (required_fee_units == 0)
+        return 0;
+
+    // TODO: getRequiredFeeUnits(ttREFERENCE)?
+    std::uint64_t reference_fee_units =
+        ripple::getRequiredFeeUnits(ttPAYMENT);
+    return beast::mulDiv(getTransactionFee().mantissa(),
+        baseRef * reference_fee_units,
+            refTxnCostDrops * required_fee_units);
+}
+
+
 
 //------------------------------------------------------------------------------
 

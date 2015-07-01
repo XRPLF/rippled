@@ -55,7 +55,7 @@ std::uint64_t Transactor::calculateBaseFee ()
 
 TER Transactor::payFee ()
 {
-    STAmount saPaid = mTxn.getTransactionFee ();
+    STAmount saPaid = mTxn->getTransactionFee ();
 
     if (!isLegalNet (saPaid))
         return temBAD_AMOUNT;
@@ -105,7 +105,7 @@ TER Transactor::payFee ()
 
 TER Transactor::checkSeq ()
 {
-    std::uint32_t const t_seq = mTxn.getSequence ();
+    std::uint32_t const t_seq = mTxn->getSequence ();
     std::uint32_t const a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     if (t_seq != a_seq)
@@ -118,7 +118,7 @@ TER Transactor::checkSeq ()
             return terPRE_SEQ;
         }
 
-        if (view().txExists(mTxn.getTransactionID ()))
+        if (view().txExists(mTxn->getTransactionID ()))
             return tefALREADY;
 
         j_.trace << "applyTransaction: has past sequence number " <<
@@ -126,18 +126,19 @@ TER Transactor::checkSeq ()
         return tefPAST_SEQ;
     }
 
-    if (mTxn.isFieldPresent (sfAccountTxnID) &&
-            (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
+    if (mTxn->isFieldPresent (sfAccountTxnID) &&
+            (mTxnAccount->getFieldH256 (sfAccountTxnID)
+                != mTxn->getFieldH256 (sfAccountTxnID)))
         return tefWRONG_PRIOR;
 
-    if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
-            (view().seq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
+    if (mTxn->isFieldPresent (sfLastLedgerSequence) &&
+            (view().seq() > mTxn->getFieldU32 (sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
     mTxnAccount->setFieldU32 (sfSequence, t_seq + 1);
 
     if (mTxnAccount->isFieldPresent (sfAccountTxnID))
-        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
+        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn->getTransactionID ());
 
     return tesSUCCESS;
 }
@@ -154,7 +155,7 @@ TER Transactor::preCheck ()
 
 TER Transactor::preCheckAccount ()
 {
-    mTxnAccountID = mTxn.getAccountID(sfAccount);
+    mTxnAccountID = mTxn->getAccountID(sfAccount);
 
     if (!mTxnAccountID)
     {
@@ -173,13 +174,13 @@ TER Transactor::preCheckSigningKey ()
     // that the signing key is associated with the account.
     // XXX This could be a lot cleaner to prevent unnecessary copying.
     mSigningPubKey =
-        RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
+        RippleAddress::createAccountPublic (mTxn->getSigningPubKey ());
 
     // Consistency: really signed.
-    if (!mTxn.isKnownGood ())
+    if (!mTxn->isKnownGood ())
     {
-        if (mTxn.isKnownBad () ||
-            (!(view().flags() & tapNO_CHECK_SIGN) && !mTxn.checkSign(
+        if (mTxn->isKnownBad () ||
+            (!(view().flags() & tapNO_CHECK_SIGN) && !mTxn->checkSign(
                 (
 #if RIPPLE_ENABLE_MULTI_SIGN
                     true
@@ -188,12 +189,12 @@ TER Transactor::preCheckSigningKey ()
 #endif
                 ))))
         {
-            mTxn.setBad ();
+            mTxn->setBad ();
             j_.debug << "apply: Invalid transaction (bad signature)";
             return temINVALID;
         }
 
-        mTxn.setGood ();
+        mTxn->setGood ();
     }
 
     return tesSUCCESS;
@@ -202,7 +203,7 @@ TER Transactor::preCheckSigningKey ()
 TER Transactor::apply ()
 {
     // No point in going any further if the transaction fee is malformed.
-    STAmount const saTxnFee = mTxn.getTransactionFee ();
+    STAmount const saTxnFee = mTxn->getTransactionFee ();
 
     if (!saTxnFee.native () || saTxnFee.negative () || !isLegalNet (saTxnFee))
         return temBAD_FEE;
@@ -225,7 +226,7 @@ TER Transactor::apply ()
         {
             j_.trace <<
                 "applyTransaction: delay: source account does not exist " <<
-                toBase58(mTxn.getAccountID(sfAccount));
+                toBase58(mTxn->getAccountID(sfAccount));
             return terNO_ACCOUNT;
         }
     }
@@ -504,7 +505,7 @@ TER Transactor::checkMultiSign ()
         return outer.ter;
 
     // Get the actual array of transaction signers.
-    STArray const& multiSigners (mTxn.getFieldArray (sfMultiSigners));
+    STArray const& multiSigners (mTxn->getFieldArray (sfMultiSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.
@@ -637,7 +638,7 @@ Transactor::operator()()
     JLOG(j_.trace) <<
         "applyTransaction>";
 
-    uint256 const& txID = mTxn.getTransactionID ();
+    uint256 const& txID = mTxn->getTransactionID ();
 
     if (!txID)
     {
@@ -652,15 +653,15 @@ Transactor::operator()()
 #ifdef BEAST_DEBUG
     {
         Serializer ser;
-        mTxn.add (ser);
+        mTxn->add (ser);
         SerialIter sit(ser.slice());
         STTx s2 (sit);
 
-        if (! s2.isEquivalent(mTxn))
+        if (! s2.isEquivalent(*mTxn))
         {
             JLOG(j_.fatal) <<
                 "Transaction serdes mismatch";
-            JLOG(j_.info) << to_string(mTxn.getJson (0));
+            JLOG(j_.info) << to_string(mTxn->getJson (0));
             JLOG(j_.fatal) << s2.getJson (0);
             assert (false);
         }
@@ -703,11 +704,11 @@ Transactor::operator()()
         ctx_.discard();
 
         auto const txnAcct = view().peek(
-            keylet::account(mTxn.getAccountID(sfAccount)));
+            keylet::account(mTxn->getAccountID(sfAccount)));
 
         if (txnAcct)
         {
-            std::uint32_t t_seq = mTxn.getSequence ();
+            std::uint32_t t_seq = mTxn->getSequence ();
             std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
 
             if (a_seq < t_seq)
@@ -716,7 +717,7 @@ Transactor::operator()()
                 terResult = tefPAST_SEQ;
             else
             {
-                STAmount fee        = mTxn.getTransactionFee ();
+                STAmount fee        = mTxn->getTransactionFee ();
                 STAmount balance    = txnAcct->getFieldAmount (sfBalance);
 
                 // We retry/reject the transaction if the account
@@ -761,7 +762,7 @@ Transactor::operator()()
             // encapsulation of STAmount here and use "special
             // knowledge" - namely that a native amount is
             // stored fully in the mantissa:
-            auto const fee = mTxn.getTransactionFee ();
+            auto const fee = mTxn->getTransactionFee ();
 
             // The transactor guarantees these will never trigger
             if (!fee.native () || fee.negative ())
