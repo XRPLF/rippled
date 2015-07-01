@@ -890,6 +890,9 @@ void NetworkOPsImp::processTransaction (Transaction::pointer transaction,
 
     getApp().getHashRouter ().setFlag (transaction->getID (), SF_SIGGOOD);
 
+    // canonicalize can change our pointer
+    getApp().getMasterTransaction ().canonicalize (&transaction);
+
     if (bLocal)
         doTransactionSync (transaction, bAdmin, failType);
     else
@@ -1038,9 +1041,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             {
                 m_journal.debug << "Transaction is now included in open ledger";
                 e.transaction->setStatus (INCLUDED);
-
-                // VFALCO NOTE The value of trans can be changed here!
-                getApp().getMasterTransaction ().canonicalize (&e.transaction);
             }
             else if (e.result == tefPAST_SEQ)
             {
