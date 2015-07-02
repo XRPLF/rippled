@@ -1415,15 +1415,10 @@ void NetworkOPsImp::switchLastClosedLedger (
         // open ledger. Then apply local tx.
         auto const oldOL =
             m_ledgerMaster.getCurrentLedger();
-        // VFALCO What do we use for the hash?
-        CanonicalTXSet retries({});
         MetaView accum(*newLCL, tapNONE);
+        auto retries = m_localTX->getTxSet();
         applyTransactions (&oldOL->txMap(),
             accum, newLCL, retries);
-        auto const localTx = m_localTX->getTxSet();
-        for (auto const& item : localTx)
-            ripple::apply (accum, *item.second,
-            tapNONE, getConfig(), m_journal);
         accum.apply(*newOL, m_journal);
     }
 
