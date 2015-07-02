@@ -68,7 +68,7 @@ public:
             to `retries`.
 
             retries are reapplied in canonical ordering
-            until the execution policy terminates application.
+            until the execution policy stops applying.
             Any transactions which were not successfully
             applied remain in `retries`.
 
