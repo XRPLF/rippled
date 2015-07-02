@@ -1172,7 +1172,6 @@ LedgerConsensusImp::applyOpenAndLocalTxs (View& accum,
     std::shared_ptr<Ledger> const& newLCL,
         CanonicalTXSet& retries)
 {
-    // Apply transactions from the old open ledger
     auto const oldOL = ledgerMaster_.getCurrentLedger();
     if (oldOL->txMap().getHash().isNonZero ())
     {
@@ -1181,23 +1180,9 @@ LedgerConsensusImp::applyOpenAndLocalTxs (View& accum,
         applyTransactions (&oldOL->txMap(),
             accum, newLCL, retries);
     }
-
-    // Apply local transactions
     for (auto const& item : m_localTX.getTxSet ())
-    {
-        try
-        {
-            apply (accum, *item.second, tapNONE, getConfig(),
-                deprecatedLogs().journal("LedgerConsensus"));
-        }
-        catch (...)
-        {
-            // Nothing special we need to do.
-            // It's possible a cleverly malformed transaction or
-            // corrupt back end database could cause an exception
-            // during transaction processing.
-        }
-    }
+        apply (accum, *item.second, tapNONE, getConfig(),
+            deprecatedLogs().journal("LedgerConsensus"));
 }
 
 void LedgerConsensusImp::createDisputes (
