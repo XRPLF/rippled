@@ -1409,6 +1409,16 @@ void NetworkOPsImp::switchLastClosedLedger (
     clearNeedNetworkLedger ();
     newLedger->setClosed ();
     auto openLedger = std::make_shared<Ledger> (false, std::ref (*newLedger));
+    // Apply transactions from the current open ledger to
+    // this new one, including locally held transactions.
+    {
+        // VFALCO Which hash do we use?
+        CanonicalTXSet retries({});
+        MetaView accum(*newLedger, tapNONE);
+        mLedgerConsensus->applyOpenAndLocalTxs(
+            accum, newLedger, retries);
+        accum.apply(*openLedger, m_journal);
+    }
     m_ledgerMaster.switchLedgers (newLedger, openLedger);
 
     protocol::TMStatusChange s;

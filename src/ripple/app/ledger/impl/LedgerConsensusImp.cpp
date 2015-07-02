@@ -1122,32 +1122,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         LedgerMaster::ScopedLockType sl (ledgerMaster_.peekMutex (), std::defer_lock);
         std::lock(lock, sl);
 
-        // Apply transactions from the old open ledger
-        Ledger::pointer oldOL = ledgerMaster_.getCurrentLedger();
-        if (oldOL->txMap().getHash().isNonZero ())
-        {
-            WriteLog (lsDEBUG, LedgerConsensus)
-                << "Applying transactions from current open ledger";
-            applyTransactions (&oldOL->txMap(),
-                accum, newLCL, retriableTransactions);
-        }
-
-        // Apply local transactions
-        for (auto it : m_localTX.getTxSet ())
-        {
-            try
-            {
-                apply (accum, *it.second, tapNONE, getConfig(),
-                    deprecatedLogs().journal("LedgerConsensus"));
-            }
-            catch (...)
-            {
-                // Nothing special we need to do.
-                // It's possible a cleverly malformed transaction or
-                // corrupt back end database could cause an exception
-                // during transaction processing.
-            }
-        }
+        applyOpenAndLocalTxs (accum, newLCL, retriableTransactions);
 
         accum.apply(*newOL,
             deprecatedLogs().journal("LedgerConsensus"));
@@ -1190,6 +1165,24 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             << offset << " (" << closeCount << ")";
         getApp().getOPs ().closeTimeOffset (offset);
     }
+}
+
+void
+LedgerConsensusImp::applyOpenAndLocalTxs (View& accum,
+    std::shared_ptr<Ledger> const& newLCL,
+        CanonicalTXSet& retries)
+{
+    auto const oldOL = ledgerMaster_.getCurrentLedger();
+    if (oldOL->txMap().getHash().isNonZero ())
+    {
+        WriteLog (lsDEBUG, LedgerConsensus)
+            << "Applying transactions from current open ledger";
+        applyTransactions (&oldOL->txMap(),
+            accum, newLCL, retries);
+    }
+    for (auto const& item : m_localTX.getTxSet ())
+        apply (accum, *item.second, tapNONE, getConfig(),
+            deprecatedLogs().journal("LedgerConsensus"));
 }
 
 void LedgerConsensusImp::createDisputes (
