@@ -1399,25 +1399,43 @@ bool NetworkOPsImp::checkLastClosedLedger (
 }
 
 void NetworkOPsImp::switchLastClosedLedger (
-    Ledger::pointer newLedger, bool duringConsensus)
+    Ledger::pointer newLCL, bool duringConsensus)
 {
-    // set the newledger as our last closed ledger -- this is abnormal code
+    // set the newLCL as our last closed ledger -- this is abnormal code
 
     auto msg = duringConsensus ? "JUMPdc" : "JUMP";
-    m_journal.error << msg << " last closed ledger to " << newLedger->getHash ();
+    m_journal.error << msg << " last closed ledger to " << newLCL->getHash ();
 
     clearNeedNetworkLedger ();
-    newLedger->setClosed ();
-    auto openLedger = std::make_shared<Ledger> (false, std::ref (*newLedger));
-    m_ledgerMaster.switchLedgers (newLedger, openLedger);
+    newLCL->setClosed ();
+    auto newOL = std::make_shared<Ledger> (false, std::ref (*newLCL));
+    // Caller must own master lock
+    {
+        // Apply tx in old open ledger to new
+        // open ledger. Then apply local tx.
+        auto const oldOL =
+            m_ledgerMaster.getCurrentLedger();
+        // VFALCO What do we use for the hash?
+        CanonicalTXSet retries({});
+        MetaView accum(*newLCL, tapNONE);
+        applyTransactions (&oldOL->txMap(),
+            accum, newLCL, retries);
+        auto const localTx = m_localTX->getTxSet();
+        for (auto const& item : localTx)
+            ripple::apply (accum, *item.second,
+            tapNONE, getConfig(), m_journal);
+        accum.apply(*newOL, m_journal);
+    }
+
+    m_ledgerMaster.switchLedgers (newLCL, newOL);
 
     protocol::TMStatusChange s;
     s.set_newevent (protocol::neSWITCHED_LEDGER);
-    s.set_ledgerseq (newLedger->getLedgerSeq ());
+    s.set_ledgerseq (newLCL->getLedgerSeq ());
     s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
-    uint256 hash = newLedger->getParentHash ();
+    uint256 hash = newLCL->getParentHash ();
     s.set_ledgerhashprevious (hash.begin (), hash.size ());
-    hash = newLedger->getHash ();
+    hash = newLCL->getHash ();
     s.set_ledgerhash (hash.begin (), hash.size ());
 
     getApp ().overlay ().foreach (send_always (
