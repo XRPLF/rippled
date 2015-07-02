@@ -1859,6 +1859,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\tests\common_transactor.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\DeliverMin.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\MultiSign.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3435,6 +3439,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\basic_prop.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\delivermin.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\fee.h">
@@ -3454,6 +3460,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\balance.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\delivermin.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

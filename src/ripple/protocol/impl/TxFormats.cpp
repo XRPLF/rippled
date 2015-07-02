@@ -64,6 +64,7 @@ TxFormats::TxFormats ()
         << SOElement (sfPaths,               SOE_DEFAULT)
         << SOElement (sfInvoiceID,           SOE_OPTIONAL)
         << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        << SOElement (sfDeliverMin,          SOE_OPTIONAL)
         ;
 
     add ("EnableAmendment", ttAMENDMENT)

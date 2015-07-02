@@ -18,30 +18,19 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/test/jtx/delivermin.h>
+#include <ripple/protocol/JsonFields.h>
 
-#include <ripple/test/jtx/impl/Account.cpp>
-#include <ripple/test/jtx/impl/advance.cpp>
-#include <ripple/test/jtx/impl/amount.cpp>
-#include <ripple/test/jtx/impl/balance.cpp>
-#include <ripple/test/jtx/impl/delivermin.cpp>
-#include <ripple/test/jtx/impl/Env.cpp>
-#include <ripple/test/jtx/impl/fee.cpp>
-#include <ripple/test/jtx/impl/flags.cpp>
-#include <ripple/test/jtx/impl/json.cpp>
-#include <ripple/test/jtx/impl/memo.cpp>
-#include <ripple/test/jtx/impl/multisign.cpp>
-#include <ripple/test/jtx/impl/offer.cpp>
-#include <ripple/test/jtx/impl/owners.cpp>
-#include <ripple/test/jtx/impl/paths.cpp>
-#include <ripple/test/jtx/impl/pay.cpp>
-#include <ripple/test/jtx/impl/rate.cpp>
-#include <ripple/test/jtx/impl/regkey.cpp>
-#include <ripple/test/jtx/impl/sendmax.cpp>
-#include <ripple/test/jtx/impl/seq.cpp>
-#include <ripple/test/jtx/impl/sig.cpp>
-#include <ripple/test/jtx/impl/ticket.cpp>
-#include <ripple/test/jtx/impl/trust.cpp>
-#include <ripple/test/jtx/impl/txflags.cpp>
-#include <ripple/test/jtx/impl/utility.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
 
-#include <ripple/test/jtx/impl/Env_test.cpp>
+void
+delivermin::operator()(Env const& env, JTx& jt) const
+{
+    jt.jv[jss::DeliverMin] = amount_.getJson(0);
+}
+
+} // jtx
+} // test
+} // ripple

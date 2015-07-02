@@ -39,6 +39,7 @@ JSS ( Account );                    // in: TransactionSign; field.
 JSS ( Amount );                     // in: TransactionSign; field.
 JSS ( ClearFlag );                  // field.
 JSS ( Destination );                // in: TransactionSign; field.
+JSS ( DeliverMin );                 // in: TransactionSign
 JSS ( Fee );                        // in/out: TransactionSign; field.
 JSS ( Flags );                      // in/out: TransactionSign; field.
 JSS ( Invalid );                    //
