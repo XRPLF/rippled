@@ -1010,7 +1010,7 @@ public:
     }
 
     txs_type::value_type
-    dereference() const
+    dereference() const override
     {
         return deserializeTxPlusMeta(**iter_);
     }

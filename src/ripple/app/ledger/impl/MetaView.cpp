@@ -211,7 +211,7 @@ public:
     }
 
     txs_type::value_type
-    dereference() const
+    dereference() const override
     {
         txs_type::value_type result;
         {
@@ -387,7 +387,6 @@ MetaView::txInsert (uint256 const& key,
 std::vector<uint256>
 MetaView::txList() const
 {
-    using namespace std;
     std::vector<uint256> list;
     list.reserve(txs_.size());
     for (auto const& e : txs_)
