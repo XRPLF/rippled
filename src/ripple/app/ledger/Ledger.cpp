@@ -670,17 +670,6 @@ deserializeTxPlusMeta (SHAMapItem const& item)
     return result;
 }
 
-
-/** Deserialize a SHAMapItem containing STTx + STObject metadata
-
-    The SHAMap must contain two variable length
-    serialization objects.
-*/
-std::pair<std::shared_ptr<
-    STTx const>, std::shared_ptr<
-        STObject const>>
-deserializeTxPlusMeta (SHAMapItem const& item);
-
 /*
  * Load a ledger from the database.
  *
