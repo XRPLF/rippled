@@ -424,33 +424,34 @@ public:
         jt1.set<int>(7);
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
 
         // Test that the property is
         // replaced if it exists.
         jt1.set<int>(17);
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 17);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
 
         // Test that modifying the
         // returned prop is saved
         *jt1.get<int>() = 42;
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 42);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
 
         // Test get() const
         auto const& jt2 = jt1;
         expect(jt2.get<int>());
         expect(*jt2.get<int>() == 42);
-        expect(!jt2.get<Env>());
+        expect(!jt2.get<UDT>());
     }
 
     void testProp()
     {
         using namespace jtx;
         Env env(*this);
+        env.fund(XRP(100000), "alice");
         env.memoize("alice");
 
         auto jt1 = env.jt(noop("alice"));
@@ -473,6 +474,10 @@ public:
         expect(!*jt3.get<bool>());
     }
 
+    struct UDT
+    {
+    };
+
     void testJTxCopy()
     {
         using namespace jtx;
@@ -480,16 +485,16 @@ public:
         jt1.set<int>(7);
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
         JTx jt2(jt1);
         expect(jt2.get<int>());
         expect(*jt2.get<int>() == 7);
-        expect(!jt2.get<Env>());
+        expect(!jt2.get<UDT>());
         JTx jt3;
         jt3 = jt1;
         expect(jt3.get<int>());
         expect(*jt3.get<int>() == 7);
-        expect(!jt3.get<Env>());
+        expect(!jt3.get<UDT>());
     }
 
     void testJTxMove()
@@ -499,19 +504,19 @@ public:
         jt1.set<int>(7);
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
         expect(!jt1.get<int>());
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
         expect(jt2.get<int>());
         expect(*jt2.get<int>() == 7);
-        expect(!jt2.get<Env>());
+        expect(!jt2.get<UDT>());
         jt1 = std::move(jt2);
         expect(!jt2.get<int>());
-        expect(!jt2.get<Env>());
+        expect(!jt2.get<UDT>());
         expect(jt1.get<int>());
         expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<Env>());
+        expect(!jt1.get<UDT>());
     }
 
     void
