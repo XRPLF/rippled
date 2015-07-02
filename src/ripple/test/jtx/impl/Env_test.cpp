@@ -148,6 +148,12 @@ public:
         auto const USD = gw["USD"];
         auto const alice = Account("alice");
 
+        // unfunded
+        {
+            Env env(*this);
+            env(pay("alice", "bob", XRP(1000)), seq(1), fee(10), sig("alice"), ter(terNO_ACCOUNT));
+        }
+
         // fund
         {
             Env env(*this);
@@ -452,17 +458,13 @@ public:
         using namespace jtx;
         Env env(*this);
         env.fund(XRP(100000), "alice");
-        env.memoize("alice");
-
         auto jt1 = env.jt(noop("alice"));
         expect(!jt1.get<std::uint16_t>());
-
         auto jt2 = env.jt(noop("alice"),
             prop<std::uint16_t>(-1));
         expect(jt2.get<std::uint16_t>());
         expect(*jt2.get<std::uint16_t>() ==
             65535);
-
         auto jt3 = env.jt(noop("alice"),
             prop<std::string>(
                 "Hello, world!"),
