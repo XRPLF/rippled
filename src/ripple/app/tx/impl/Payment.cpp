@@ -28,6 +28,15 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
+// Mon Aug 3 11:00:00am PDT
+static std::uint32_t const deliverMinTime = 491940000;
+
+bool
+enableDeliverMin (BasicView const& view)
+{
+    return view.info().parentCloseTime > deliverMinTime;
+}
+
 TER
 Payment::preCheck ()
 {
@@ -45,12 +54,12 @@ Payment::preCheck ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    bool const deliverMin =
+    bool const deliverMin = mTxn.isFieldPresent(sfDeliverMin) &&
 #if RIPPLE_ENABLE_DELIVERMIN
+        enableDeliverMin(view());
 #else
-        (view().flags() & tapENABLE_TESTING) &&
+        (view().flags() & tapENABLE_TESTING);
 #endif
-        mTxn.isFieldPresent(sfDeliverMin);
 
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
 
@@ -147,6 +156,11 @@ Payment::preCheck ()
     }
     if (deliverMin)
     {
+    #if ! RIPPLE_ENABLE_DELIVERMIN
+        if (! (view().flags() & tapENABLE_TESTING))
+            return temMALFORMED;
+    #endif
+
         if (! partialPaymentAllowed)
         {
             j_.trace << "Malformed transaction: Partial payment not "
@@ -155,7 +169,7 @@ Payment::preCheck ()
         }
 
         auto const dMin = mTxn.getFieldAmount(sfDeliverMin);
-        if (!isLegalNet(dMin) || dMin <= zero)
+        if (! isLegalNet(dMin) || dMin <= zero)
         {
             j_.trace << "Malformed transaction: Invalid " <<
                 jss::DeliverMin.c_str() << " amount. " <<
@@ -193,12 +207,12 @@ Payment::doApply ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    bool const deliverMin =
+    bool const deliverMin = mTxn.isFieldPresent(sfDeliverMin) &&
 #if RIPPLE_ENABLE_DELIVERMIN
+        enableDeliverMin(view());
 #else
-        (view().flags() & tapENABLE_TESTING) &&
+        (view().flags() & tapENABLE_TESTING);
 #endif
-        mTxn.isFieldPresent(sfDeliverMin);
 
     AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
