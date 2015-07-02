@@ -36,7 +36,6 @@ protected:
     STAmount      mFeeDue;
     STAmount      mPriorBalance;  // Balance before fees.
     STAmount      mSourceBalance; // Balance after fees.
-    SLE::pointer  mTxnAccount;
     bool          mHasAuthKey;
     bool          mSigMaster;
     RippleAddress mSigningPubKey;
