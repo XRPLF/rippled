@@ -162,7 +162,7 @@ public:
         open ledger at the moment of the call.
         Transactions applied after the call to open()
         will not be visible.
-        
+
     */
     std::shared_ptr<ReadView const>
     open() const;
@@ -220,16 +220,23 @@ public:
         With no arguments, trace all
     */
     void
-    trace(int howMany = -1)
+    trace (int howMany = -1)
     {
         trace_ = howMany;
     }
 
     /** Turn off JSON tracing. */
     void
-    notrace()
+    notrace ()
     {
         trace_ = 0;
+    }
+
+    /** Turn off testing. */
+    void
+    disable_testing ()
+    {
+        testing_ = false;
     }
 
     /** Associate AccountID with account. */
@@ -305,7 +312,7 @@ public:
     }
 
     /** Check a set of requirements.
-        
+
         The requirements are formed
         from condition functors.
     */
@@ -444,6 +451,7 @@ public:
 
 protected:
     int trace_ = 0;
+    bool testing_ = true;
 
     void
     autofill_sig (JTx& jt);
