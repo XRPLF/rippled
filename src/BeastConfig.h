@@ -192,13 +192,6 @@
 #define RIPPLE_USE_OPENSSL 0
 #endif
 
-/** Config: RIPPLE_ENABLE_DELIVERMIN
-    Enables processing of delivermin in transactions
-*/
-#ifndef RIPPLE_ENABLE_DELIVERMIN
-#define RIPPLE_ENABLE_DELIVERMIN 0
-#endif
-
 // Enables the experimental OpenLedger
 #ifndef RIPPLE_OPEN_LEDGER
 #define RIPPLE_OPEN_LEDGER 0

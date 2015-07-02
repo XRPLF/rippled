@@ -49,23 +49,14 @@ public:
                 delivermin(Account("carol")["USD"](5)),
                 txflags(tfPartialPayment),                          ter(temBAD_AMOUNT));
             env(pay("alice", "bob", USD(10)), delivermin(USD(15)),
-                txflags(tfPartialPayment),                          ter(tecPATH_DRY));
-            env(pay("alice", "bob", USD(10)),
-                delivermin(USD(10)), txflags(tfPartialPayment),
-                sendmax(USD(9)),                                    ter(temBAD_AMOUNT));
+                txflags(tfPartialPayment),                          ter(temBAD_AMOUNT));
             env(pay(gw, "carol", USD(50)));
             env(offer("carol", XRP(5), USD(5)));
             env(pay("alice", "bob", USD(10)), paths(XRP),
                 delivermin(USD(7)), txflags(tfPartialPayment),
-                sendmax(XRP(20)),                                   ter(tecPATH_PARTIAL));
-            env.require(balance("alice", XRP(9999.99998)));
+                sendmax(XRP(5)),                                   ter(tecPATH_PARTIAL));
+            env.require(balance("alice", XRP(9999.99999)));
             env.require(balance("bob", XRP(10000)));
-
-            // DeliverMin greater than destination amount
-            env(pay("alice", "bob", USD(5)), paths(XRP),
-                delivermin(USD(50)), txflags(tfPartialPayment),
-                sendmax(XRP(5)));
-            env.require(balance("bob", USD(5)));
         }
 
         {

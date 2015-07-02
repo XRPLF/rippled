@@ -28,6 +28,16 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
+// Mon Aug 3 11:00:00am PDT
+static std::uint32_t const deliverMinTime = 491940000;
+
+bool
+allowDeliverMin (ApplyView const& view)
+{
+    return view.info().parentCloseTime > deliverMinTime ||
+        (view.flags() & tapENABLE_TESTING);
+}
+
 TER
 Payment::preCheck ()
 {
@@ -45,12 +55,6 @@ Payment::preCheck ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    bool const deliverMin =
-#if RIPPLE_ENABLE_DELIVERMIN
-#else
-        (view().flags() & tapENABLE_TESTING) &&
-#endif
-        mTxn.isFieldPresent(sfDeliverMin);
 
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
 
@@ -145,12 +149,11 @@ Payment::preCheck ()
             "No ripple direct specified for XRP to XRP.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
-    if (deliverMin)
+
+    if (mTxn.isFieldPresent(sfDeliverMin))
     {
-    #if ! RIPPLE_ENABLE_DELIVERMIN
-        if (! (view().flags() & tapENABLE_TESTING))
+        if (! allowDeliverMin(view()))
             return temMALFORMED;
-    #endif
 
         if (! partialPaymentAllowed)
         {
@@ -160,7 +163,7 @@ Payment::preCheck ()
         }
 
         auto const dMin = mTxn.getFieldAmount(sfDeliverMin);
-        if (!isLegalNet(dMin) || dMin <= zero)
+        if (! isLegalNet(dMin) || dMin <= zero)
         {
             j_.trace << "Malformed transaction: Invalid " <<
                 jss::DeliverMin.c_str() << " amount. " <<
@@ -174,11 +177,9 @@ Payment::preCheck ()
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
-        if (bMax &&
-            (dMin.getCurrency() == maxSourceAmount.getCurrency() &&
-                dMin > maxSourceAmount))
+        if (dMin > saDstAmount)
         {
-            j_.trace << "Malformed transaction: SendMax less than " <<
+            j_.trace << "Malformed transaction: Dst amount less than " <<
                 jss::DeliverMin.c_str() << ". " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
@@ -198,12 +199,8 @@ Payment::doApply ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    bool const deliverMin =
-#if RIPPLE_ENABLE_DELIVERMIN
-#else
-        (view().flags() & tapENABLE_TESTING) &&
-#endif
-        mTxn.isFieldPresent(sfDeliverMin);
+    bool const deliverMin = mTxn.isFieldPresent(sfDeliverMin) &&
+        allowDeliverMin(view());
 
     AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
     STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
