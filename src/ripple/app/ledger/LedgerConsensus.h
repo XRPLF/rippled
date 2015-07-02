@@ -54,6 +54,37 @@ public:
 
     virtual bool peerPosition (LedgerProposal::ref) = 0;
 
+    /** Apply open ledger transactions to a view.
+
+        Preconditions:
+
+            Caller must have ownership of the master mutex.
+
+        Effects:
+
+            Transactions in the open ledger, if any, are
+            applied to the view in key order. Any of
+            these transactions which fail are inserted
+            to `retries`.
+
+            Transactions in `retries` are reapplied in
+            canonical ordering until the execution policy
+            terminates application. Any transactions which
+            were not successfully applied remain in `retries`.
+
+            Finally, any locally held transactions are applied
+            individually in canonical ordering. The list of
+            locally held transactions is not modified.
+
+        @note The caller is responsible for applying the view to
+              the appropriate ledger.
+    */
+    virtual
+    void
+    applyOpenAndLocalTxs (View& accum,
+        std::shared_ptr<Ledger> const& newLCL,
+            CanonicalTXSet& retries) = 0;
+
     /** Simulate the consensus process without any network traffic.
 
         The end result, is that consensus begins and completes as if everyone

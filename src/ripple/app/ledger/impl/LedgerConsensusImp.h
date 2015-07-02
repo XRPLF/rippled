@@ -198,6 +198,11 @@ private:
     */
     void accept (std::shared_ptr<SHAMap> set);
 
+    void
+    applyOpenAndLocalTxs (View& accum,
+        std::shared_ptr<Ledger> const& newLCL,
+            CanonicalTXSet& retries) override;
+
     /**
       Compare two proposed transaction sets and create disputed
         transctions structures for any mismatches
