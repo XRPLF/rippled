@@ -113,6 +113,7 @@ protected:
 
 public:
     using key_type = uint256;
+
     using mapped_type =
         std::shared_ptr<SLE const>;
 
@@ -393,6 +394,10 @@ public:
 class BasicView::iterator_impl
 {
 public:
+    iterator_impl() = default;
+    iterator_impl(iterator_impl const&) = delete;
+    iterator_impl& operator=(iterator_impl const&) = delete;
+
     virtual
     ~iterator_impl() = default;
 
