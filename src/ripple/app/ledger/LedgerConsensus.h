@@ -67,14 +67,16 @@ public:
             these transactions which fail are inserted
             to `retries`.
 
-            Transactions in `retries` are reapplied in
-            canonical ordering until the execution policy
-            terminates application. Any transactions which
-            were not successfully applied remain in `retries`.
+            retries are reapplied in canonical ordering
+            until the execution policy terminates application.
+            Any transactions which were not successfully
+            applied remain in `retries`.
 
             Finally, any locally held transactions are applied
             individually in canonical ordering. The list of
-            locally held transactions is not modified.
+            locally held transactions is not modified. Locally
+            held transactions which fail are not added to
+            `retries`
 
         @note The caller is responsible for applying the view to
               the appropriate ledger.
