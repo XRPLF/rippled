@@ -1183,11 +1183,11 @@ LedgerConsensusImp::applyOpenAndLocalTxs (View& accum,
     }
 
     // Apply local transactions
-    for (auto it : m_localTX.getTxSet ())
+    for (auto const& item : m_localTX.getTxSet ())
     {
         try
         {
-            apply (accum, *it.second, tapNONE, getConfig(),
+            apply (accum, *item.second, tapNONE, getConfig(),
                 deprecatedLogs().journal("LedgerConsensus"));
         }
         catch (...)
