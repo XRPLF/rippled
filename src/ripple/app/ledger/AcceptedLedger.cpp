@@ -28,7 +28,7 @@ namespace ripple {
 //             Use a dependency injection to give AcceptedLedger access.
 //
 TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
-    "AcceptedLedger", 4, 60, get_wall_clock (),
+    "AcceptedLedger", 4, 60, stopwatch(),
         deprecatedLogs().journal("TaggedCache"));
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)

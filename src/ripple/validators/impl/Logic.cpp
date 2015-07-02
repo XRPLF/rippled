@@ -62,7 +62,7 @@ namespace Validators {
 Logic::Logic (Store& store, beast::Journal journal)
     : /*store_ (store)
     , */journal_ (journal)
-    , ledgers_(get_wall_clock())
+    , ledgers_(stopwatch())
 {
 }
 

@@ -39,7 +39,7 @@ namespace tests {
 class TestFamily : public shamap::Family
 {
 private:
-    manual_clock_type clock_;
+    TestClock clock_;
     NodeStore::DummyScheduler scheduler_;
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;

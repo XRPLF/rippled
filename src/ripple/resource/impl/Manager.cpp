@@ -38,7 +38,7 @@ public:
         beast::Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (collector, get_wall_clock (), journal)
+        , m_logic (collector, stopwatch(), journal)
     {
         startThread ();
     }

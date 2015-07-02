@@ -70,7 +70,7 @@ private:
 
 public:
     ValidationsImp ()
-        : mValidations ("Validations", 128, 600, get_wall_clock (),
+        : mValidations ("Validations", 128, 600, stopwatch(),
             deprecatedLogs().journal("TaggedCache"))
         , mWriting (false)
     {

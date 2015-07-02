@@ -43,14 +43,14 @@ using weeks = std::chrono::duration
 
     The epoch is unspecified.
 */
-using wall_clock_type =
+using Stopwatch =
     beast::abstract_clock<
         std::chrono::steady_clock>;
 
 /** A manual clock for unit tests. */
-using manual_clock_type =
+using TestClock =
     beast::manual_clock<
-        wall_clock_type::clock_type>;
+        Stopwatch::clock_type>;
 
 /** Clock for measuring Ripple Network Time.
   
@@ -62,17 +62,28 @@ using manual_clock_type =
 //
 // epoch_offset = days(10957);  // 2000-01-01
 //
-class net_clock_type // : public abstract_clock <std::chrono::seconds>
+class NetClock // : public abstract_clock <std::chrono::seconds>
 {
 public:
-    using time_point = std::uint32_t;
-    using duration = std::chrono::seconds;
+    // Unfortunately this is signed for legacy reasons
+    using rep = std::int32_t;
+
+    using period = std::ratio<1>;
+
+    using duration =
+        std::chrono::duration<rep, period>;
+
+    using time_point =
+        std::chrono::time_point<
+            NetClock, duration>;
+
+    // VFALCO now() intentionally omitted for the moment
 };
 
 /** Returns an instance of a wall clock. */
 inline
-wall_clock_type&
-get_wall_clock()
+Stopwatch&
+stopwatch()
 {
     return beast::get_abstract_clock<
         std::chrono::steady_clock,

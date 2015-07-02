@@ -26,7 +26,7 @@
 namespace ripple {
 
 TransactionMaster::TransactionMaster ()
-    : mCache ("TransactionCache", 65536, 1800, get_wall_clock (),
+    : mCache ("TransactionCache", 65536, 1800, stopwatch(),
         deprecatedLogs().journal("TaggedCache"))
 {
 }

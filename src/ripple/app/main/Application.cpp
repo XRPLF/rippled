@@ -121,9 +121,9 @@ public:
 
     AppFamily (NodeStore::Database& db,
             CollectorManager& collectorManager)
-        : treecache_ ("TreeNodeCache", 65536, 60, get_wall_clock(),
+        : treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
             deprecatedLogs().journal("TaggedCache"))
-        , fullbelow_ ("full_below", get_wall_clock(),
+        , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
                 fullBelowTargetSize, fullBelowExpirationSeconds)
         , db_ (db)
@@ -338,7 +338,7 @@ public:
 
         , accountIDCache_(128000)
 
-        , m_tempNodeCache ("NodeCache", 16384, 90, get_wall_clock (),
+        , m_tempNodeCache ("NodeCache", 16384, 90, stopwatch(),
             m_logs.journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
@@ -346,7 +346,7 @@ public:
 
         , family_ (*m_nodeStore, *m_collectorManager)
 
-        , m_sleCache ("LedgerEntryCache", 4096, 120, get_wall_clock (),
+        , m_sleCache ("LedgerEntryCache", 4096, 120, stopwatch(),
             m_logs.journal("TaggedCache"))
 
         , m_resourceManager (Resource::make_Manager (
@@ -375,11 +375,11 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , m_inboundLedgers (make_InboundLedgers (get_wall_clock (),
+        , m_inboundLedgers (make_InboundLedgers (stopwatch(),
             *m_jobQueue, m_collectorManager->collector ()))
 
         , m_inboundTransactions (make_InboundTransactions
-            ( get_wall_clock ()
+            ( stopwatch()
             , *m_jobQueue
             , m_collectorManager->collector ()
             , [this](uint256 const& setHash,
@@ -388,7 +388,7 @@ public:
                 gotTXSet (setHash, set);
             }))
 
-        , m_networkOPs (make_NetworkOPs (get_wall_clock (),
+        , m_networkOPs (make_NetworkOPs (stopwatch(),
             getConfig ().RUN_STANDALONE, getConfig ().NETWORK_QUORUM,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             m_logs.journal("NetworkOPs")))
@@ -1239,7 +1239,7 @@ bool ApplicationImp::loadOldLedger (
             {
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (hash, 0, InboundLedger::fcGENERIC,
-                    get_wall_clock ());
+                    stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
             }
@@ -1273,7 +1273,7 @@ bool ApplicationImp::loadOldLedger (
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
                     replayLedger->getParentHash(), 0, InboundLedger::fcGENERIC,
-                    get_wall_clock ());
+                    stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
 

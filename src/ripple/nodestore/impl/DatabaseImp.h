@@ -72,8 +72,8 @@ public:
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
-            get_wall_clock (), deprecatedLogs().journal("TaggedCache"))
-        , m_negCache ("NodeStore", get_wall_clock (),
+            stopwatch(), deprecatedLogs().journal("TaggedCache"))
+        , m_negCache ("NodeStore", stopwatch(),
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)
         , m_readGen (0)

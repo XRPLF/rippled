@@ -175,7 +175,7 @@ struct StaticData
     beast::aged_unordered_set <SSL const*> set;
 
     StaticData()
-        : set (ripple::get_wall_clock ())
+        : set (ripple::stopwatch())
         { }
 };
 

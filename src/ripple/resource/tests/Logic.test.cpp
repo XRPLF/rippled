@@ -31,13 +31,13 @@ class Manager_test : public beast::unit_test::suite
 {
 public:
     class TestLogic
-        : private boost::base_from_member<manual_clock_type>
+        : private boost::base_from_member<TestClock>
         , public Logic
 
     {
     private:
         using clock_type =
-            boost::base_from_member<manual_clock_type>;
+            boost::base_from_member<TestClock>;
 
     public:
         explicit TestLogic (beast::Journal journal)
@@ -50,7 +50,7 @@ public:
             ++member;
         }
 
-        manual_clock_type& clock ()
+        TestClock& clock ()
         {
             return member;
         }
