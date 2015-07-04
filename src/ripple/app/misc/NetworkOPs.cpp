@@ -1408,14 +1408,16 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     clearNeedNetworkLedger ();
     newLCL->setClosed ();
-    auto newOL = std::make_shared<Ledger> (false, std::ref (*newLCL));
+    auto const newOL = std::make_shared<
+        Ledger>(false, std::ref (*newLCL));
     // Caller must own master lock
     {
         // Apply tx in old open ledger to new
-        // open ledger. Then apply local tx.
+        // open ledger, then apply local tx.
         auto const oldOL =
             m_ledgerMaster.getCurrentLedger();
-        MetaView accum(*newLCL, tapNONE);
+        MetaView accum(*newOL, tapNONE);
+        assert(accum.open());
         auto retries = m_localTX->getTxSet();
         applyTransactions (&oldOL->txMap(),
             accum, newLCL, retries);
