@@ -22,7 +22,7 @@
 
 namespace ripple {
 
-OfferStream::OfferStream (View& view, View& view_cancel,
+OfferStream::OfferStream (ApplyView& view, ApplyView& view_cancel,
     BookRef book, Clock::time_point when,
         Config const& config, beast::Journal journal)
     : j_ (journal)
@@ -38,9 +38,9 @@ OfferStream::OfferStream (View& view, View& view_cancel,
 // Handle the case where a directory item with no corresponding ledger entry
 // is found. This shouldn't happen but if it does we clean it up.
 void
-OfferStream::erase (View& view)
+OfferStream::erase (ApplyView& view)
 {
-    // NIKB NOTE This should be using View::dirDelete, which would
+    // NIKB NOTE This should be using ApplyView::dirDelete, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 

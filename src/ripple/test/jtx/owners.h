@@ -33,7 +33,7 @@ namespace jtx {
 namespace detail {
 
 std::uint32_t
-owned_count_of (BasicView const& view,
+owned_count_of (ReadView const& view,
     AccountID const& id,
         LedgerEntryType type);
 

@@ -36,7 +36,7 @@ namespace ripple {
 class BookTip
 {
 private:
-    View& view_;
+    ApplyView& view_;
     bool m_valid;
     uint256 m_book;
     uint256 m_end;
@@ -47,7 +47,7 @@ private:
 
 public:
     /** Create the iterator. */
-    BookTip (View& view, BookRef book);
+    BookTip (ApplyView& view, BookRef book);
 
     uint256 const&
     dir() const noexcept

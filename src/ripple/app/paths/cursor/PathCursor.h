@@ -92,7 +92,7 @@ private:
         STAmount& saInFees) const;
 
     // VFALCO TODO Rename this to view()
-    PaymentView&
+    PaymentSandbox&
     view() const
     {
         return pathState_.view();

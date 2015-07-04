@@ -327,7 +327,7 @@ Payment::doApply ()
             {
                 path::RippleCalc::Output rc;
                 {
-                    PaymentView pv (view(), view().flags());
+                    PaymentSandbox pv(&view());
                     rc = path::RippleCalc::rippleCalculate (
                         pv,
                         maxSourceAmount,
@@ -339,7 +339,7 @@ Payment::doApply ()
                     // VFALCO NOTE We might not need to apply, depending
                     //             on the TER. But always applying *should*
                     //             be safe.
-                    pv.apply(view());
+                    pv.apply(ctx_.rawView());
                 }
 
                 // TODO: is this right?  If the amount is the correct amount, was
@@ -351,7 +351,7 @@ Payment::doApply ()
                         mTxn.getFieldAmount (sfDeliverMin))
                         rc.setResult (tecPATH_PARTIAL);
                     else
-                        ctx_.deliverAmount (rc.actualAmountOut);
+                        ctx_.deliver (rc.actualAmountOut);
                 }
 
                 terResult = rc.result ();

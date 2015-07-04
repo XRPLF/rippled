@@ -21,6 +21,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/ledger/CachedSLEs.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/nodestore/Database.h>
 
@@ -72,7 +73,7 @@ Json::Value doGetCounts (RPC::Context& context)
 
     ret[jss::historical_perminute] = static_cast<int>(
         app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.getSLECache ().getHitRate ();
+    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
     ret[jss::node_hit_rate] = app.getNodeStore ().getCacheHitRate ();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster ().getCacheHitRate ();
     ret[jss::AL_hit_rate] = AcceptedLedger::getCacheHitRate ();

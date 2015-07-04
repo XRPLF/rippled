@@ -156,7 +156,7 @@ private:
 
 std::vector <RippleState::pointer>
 getRippleStateItems (AccountID const& accountID,
-    BasicView const& view);
+    ReadView const& view);
 
 } // ripple
 

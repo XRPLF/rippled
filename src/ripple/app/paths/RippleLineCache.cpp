@@ -19,15 +19,16 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/app/ledger/MetaView.h>
+#include <ripple/ledger/OpenView.h>
 
 namespace ripple {
 
-RippleLineCache::RippleLineCache (std::shared_ptr <BasicView const> const& l)
+RippleLineCache::RippleLineCache(
+    std::shared_ptr <ReadView const> const& ledger)
 {
-    // We want the caching that MetaView provides
+    // We want the caching that OpenView provides
     // And we need to own a shared_ptr to the input view
-    mLedger = std::make_shared <MetaView> (*l, tapNONE, l);
+    mLedger = std::make_shared<OpenView>(&*ledger, ledger);
 }
 
 RippleLineCache::RippleStateVector const&

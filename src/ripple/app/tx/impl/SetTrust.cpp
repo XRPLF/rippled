@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 

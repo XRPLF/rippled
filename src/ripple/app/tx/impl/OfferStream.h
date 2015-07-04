@@ -32,7 +32,7 @@ namespace ripple {
 
 /** Presents and consumes the offers in an order book.
 
-    Two `View` objects accumulate changes to the ledger. `view`
+    Two `ApplyView` objects accumulate changes to the ledger. `view`
     is applied when the calling transaction succeeds. If the calling
     transaction fails, then `view_cancel` is applied.
 
@@ -51,8 +51,8 @@ class OfferStream
 {
 private:
     beast::Journal j_;
-    std::reference_wrapper <View> m_view;
-    std::reference_wrapper <View> m_view_cancel;
+    std::reference_wrapper <ApplyView> m_view;
+    std::reference_wrapper <ApplyView> m_view_cancel;
     Book m_book;
     Clock::time_point m_when;
     BookTip m_tip;
@@ -60,21 +60,21 @@ private:
     Config const& config_;
 
     void
-    erase (View& view);
+    erase (ApplyView& view);
 
 public:
-    OfferStream (View& view, View& view_cancel,
+    OfferStream (ApplyView& view, ApplyView& view_cancel,
         BookRef book, Clock::time_point when,
             Config const& config,
                 beast::Journal journal);
 
-    View&
+    ApplyView&
     view () noexcept
     {
         return m_view;
     }
 
-    View&
+    ApplyView&
     view_cancel () noexcept
     {
         return m_view_cancel;

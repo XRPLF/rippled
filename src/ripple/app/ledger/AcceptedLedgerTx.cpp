@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/types.h>
@@ -98,9 +97,7 @@ void AcceptedLedgerTx::buildJson ()
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue ().account)
         {
-            CachedView const view(
-                *mLedger, getApp().getSLECache());
-            auto const ownerFunds = accountFunds(view,
+            auto const ownerFunds = accountFunds(*mLedger,
                 account, amount, fhIGNORE_FREEZE, getConfig());
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }

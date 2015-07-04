@@ -22,6 +22,8 @@
 namespace ripple {
 namespace test {
 
+#if 0
+
 class Ledger_test : public beast::unit_test::suite
 {
     void test_genesisLedger (bool sign, KeyType keyType)
@@ -143,6 +145,8 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
+
+#endif
 
 } // test
 } // ripple

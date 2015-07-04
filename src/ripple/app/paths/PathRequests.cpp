@@ -31,7 +31,7 @@ namespace ripple {
     Get the correct ledger to use.
 */
 RippleLineCache::pointer PathRequests::getLineCache (
-    std::shared_ptr <BasicView const> const& ledger, bool authoritative)
+    std::shared_ptr <ReadView const> const& ledger, bool authoritative)
 {
 
     ScopedLockType sl (mLock);
@@ -49,7 +49,7 @@ RippleLineCache::pointer PathRequests::getLineCache (
     return mLineCache;
 }
 
-void PathRequests::updateAll (std::shared_ptr <BasicView const> const& inLedger,
+void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
                               Job::CancelCallback shouldCancel)
 {
     std::vector<PathRequest::wptr> requests;
@@ -192,7 +192,7 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
 // Make a new-style path_find request
 Json::Value PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
-    std::shared_ptr<BasicView const> const& inLedger,
+    std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
 {
     PathRequest::pointer req = std::make_shared<PathRequest> (
@@ -221,7 +221,7 @@ Json::Value PathRequests::makePathRequest(
 Json::Value PathRequests::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function <void (void)> completion,
-    std::shared_ptr<BasicView const> const& inLedger,
+    std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
     // This assignment must take place before the

@@ -20,8 +20,9 @@
 #ifndef RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
 #define RIPPLE_APP_PATHS_NODEDIRECTORY_H_INCLUDED
 
-#include <ripple/app/ledger/MetaView.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/ledger/ApplyView.h>
 
 namespace ripple {
 
@@ -53,7 +54,7 @@ public:
             restartNeeded  = true;   // Restart at same quality.
     }
 
-    bool initialize (Book const& book, View& view)
+    bool initialize (Book const& book, ApplyView& view)
     {
         if (current != zero)
             return false;
@@ -85,7 +86,7 @@ public:
     /** Advance to the next quality directory in the order book. */
     // VFALCO Consider renaming this to `nextQuality` or something
     Advance
-    advance (View& view)
+    advance (ApplyView& view)
     {
         if (!(advanceNeeded || restartNeeded))
             return NO_ADVANCE;

@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/View.h>
 #include <tuple>
 
 namespace ripple {

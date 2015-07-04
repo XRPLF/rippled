@@ -22,7 +22,6 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/ledger/MetaView.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/ledger/impl/LedgerConsensusImp.h>
@@ -990,12 +989,11 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << " last closed ledger";
 
     {
-        MetaView accum(*newLCL, tapNONE);
+        OpenView accum(&*newLCL);
         assert(accum.closed());
         applyTransactions (set.get(), accum,
-            newLCL, retriableTransactions);
-        accum.apply(*newLCL,
-            deprecatedLogs().journal("LedgerConsensus"));
+            newLCL, retriableTransactions, tapNONE);
+        accum.apply(*newLCL);
     }
 
     // retriableTransactions will include any transactions that
@@ -1078,7 +1076,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     // Build new open ledger
     auto newOL = std::make_shared<Ledger> (true, *newLCL);
-    MetaView accum(*newOL, tapNONE);
+    OpenView accum(&*newOL);
     assert(accum.open());
 
     // Apply disputed transactions that didn't get in
@@ -1126,8 +1124,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     if (anyDisputes)
     {
-        applyTransactions (nullptr,
-            accum, newLCL, retriableTransactions);
+        applyTransactions (nullptr, accum,
+            newLCL, retriableTransactions, tapNONE);
     }
 
     {
@@ -1145,20 +1143,19 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         {
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying transactions from current open ledger";
-            applyTransactions (&oldOL->txMap(),
-                accum, newLCL, retriableTransactions);
+            applyTransactions (&oldOL->txMap(), accum,
+                newLCL, retriableTransactions, tapNONE);
         }
         for (auto const& item : localTx)
             apply (accum, *item.second, tapNONE, getConfig(),
                 deprecatedLogs().journal("LedgerConsensus"));
-        accum.apply(*newOL,
-            deprecatedLogs().journal("LedgerConsensus"));
+        accum.apply(*newOL);
         // We have a new Last Closed Ledger and new Open Ledger
         ledgerMaster_.pushLedger (newLCL, newOL);
 
     #if RIPPLE_OPEN_LEDGER
         getApp().openLedger().accept(newLCL,
-            localTx, anyDisputes, retries,
+            localTx, anyDisputes, retries, tapNONE,
                 getApp().getHashRouter(), "consensus");
         getApp().openLedger().verify(*newOL, "consensus after");
     #endif
@@ -1757,28 +1754,18 @@ make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
 */
 static
 int
-applyTransaction (BasicView& view,
+applyTransaction (OpenView& view,
     std::shared_ptr<STTx const> const& txn,
-        bool retryAssured,
-            bool enableTesting)
+        bool retryAssured, ApplyFlags flags)
 {
     // Returns false if the transaction has need not be retried.
-    ViewFlags parms = tapNONE;
-
-    if (enableTesting)
-        parms = parms | tapENABLE_TESTING;
-
     if (retryAssured)
-    {
-        parms = static_cast<ViewFlags> (parms | tapRETRY);
-    }
+        flags = flags | tapRETRY;
 
     if ((getApp().getHashRouter ().getFlags (txn->getTransactionID ())
-        & SF_SIGGOOD) == SF_SIGGOOD)
-    {
-        parms = static_cast<ViewFlags>
-            (parms | tapNO_CHECK_SIGN);
-    }
+            & SF_SIGGOOD) == SF_SIGGOOD)
+        flags = flags | tapNO_CHECK_SIGN;
+
     WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
         << txn->getTransactionID ()
         //<< (engine.view().open() ? " open" : " closed") // because of the optional in engine
@@ -1787,7 +1774,7 @@ applyTransaction (BasicView& view,
 
     try
     {
-        auto const result = apply(view, *txn, parms, getConfig(),
+        auto const result = apply(view, *txn, flags, getConfig(),
             deprecatedLogs().journal("LedgerConsensus"));
         if (result.second)
         {
@@ -1818,10 +1805,10 @@ applyTransaction (BasicView& view,
 
 void applyTransactions (
     SHAMap const* set,
-    BasicView& applyView,
+    OpenView& view,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
-    bool enableTesting)
+    ApplyFlags flags)
 {
     if (set)
     {
@@ -1847,7 +1834,7 @@ void applyTransactions (
 
             if (txn)
             {
-                if (applyTransaction(applyView, txn, true, enableTesting) ==
+                if (applyTransaction(view, txn, true, flags) ==
                     LedgerConsensusImp::resultRetry)
                 {
                     // On failure, stash the failed transaction for
@@ -1873,8 +1860,8 @@ void applyTransactions (
         {
             try
             {
-                switch (applyTransaction (applyView,
-                    it->second, certainRetry, enableTesting))
+                switch (applyTransaction (view,
+                    it->second, certainRetry, flags))
                 {
                 case LedgerConsensusImp::resultSuccess:
                     it = retriableTransactions.erase (it);

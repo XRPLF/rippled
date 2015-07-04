@@ -20,120 +20,23 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/ledger/CachingReadView.h>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 
-namespace detail {
-
-auto
-CachedSLEs::find(
-    key_type const& key) ->
-        value_type
-{
-    auto const iter =
-        map_.find(key);
-    if (iter == map_.end())
-        return nullptr;
-    map_.touch(iter);
-    return iter->second;
-}
-
-auto
-CachedSLEs::insert(
-    key_type const& key,
-        value_type const& value) ->
-            std::pair<value_type, bool>
-{
-    beast::expire(map_, timeToLive_);
-    auto const result =
-        map_.emplace(key, value);
-    if (result.second)
-        return { value, true };
-    return { result.first->second, false };
-}
-
-} // detail
-
-//------------------------------------------------------------------------------
-
-class CachedSLEView
-    : public BasicViewWrapper<Ledger&>
-{
-private:
-    detail::CachedSLEs& cache_;
-    std::mutex mutable mutex_;
-    std::shared_ptr<Ledger> ledger_;
-
-public:
-    // Retains ownership of ledger
-    // for lifetime management.
-    CachedSLEView(
-        std::shared_ptr<Ledger> const& ledger,
-            detail::CachedSLEs& cache)
-        : BasicViewWrapper(*ledger)
-        , cache_ (cache)
-        , ledger_ (ledger)
-    {
-    }
-
-    std::shared_ptr<SLE const>
-    read (Keylet const& k) const override;
-};
-
-std::shared_ptr<SLE const>
-CachedSLEView::read (Keylet const& k) const
-{
-    key_type key;
-    auto const item =
-        view_.stateMap().peekItem(k.key, key);
-    if (! item)
-        return nullptr;
-    {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        if (auto sle = cache_.find(key))
-        {
-            if(! k.check(*sle))
-                return nullptr;
-            return sle;
-        }
-    }
-    SerialIter sit(item->slice());
-    // VFALCO This should be <SLE const>
-    auto sle = std::make_shared<
-        SLE>(sit, item->key());
-    if (! k.check(*sle))
-        return nullptr;
-    // VFALCO TODO Eliminate "immutable" runtime property
-    sle->setImmutable ();
-    std::lock_guard<
-        std::mutex> lock(mutex_);
-    auto const result =
-        cache_.insert(key, sle);
-    if (! result.second)
-        return result.first;
-    // Need std::move to avoid a copy
-    // because return type is different
-    return std::move(sle);
-}
-
-//------------------------------------------------------------------------------
-
-OpenLedger::OpenLedger(std::shared_ptr<
-    Ledger> const& ledger,
-        Config const& config,
-            Stopwatch& clock,
-                beast::Journal journal)
+OpenLedger::OpenLedger(
+    std::shared_ptr<Ledger const> const& ledger,
+        Config const& config, CachedSLEs& cache,
+            beast::Journal journal)
     : j_ (journal)
+    , cache_ (cache)
     , config_ (config)
-    , clock_ (clock)
-    , cache_ (std::chrono::minutes(1), clock)
     , current_ (create(ledger))
 {
 }
 
-std::shared_ptr<BasicView const>
+std::shared_ptr<ReadView const>
 OpenLedger::current() const
 {
     std::lock_guard<
@@ -144,12 +47,12 @@ OpenLedger::current() const
 
 bool
 OpenLedger::modify (std::function<
-    bool(View&, beast::Journal)> const& f)
+    bool(OpenView&, beast::Journal)> const& f)
 {
     std::lock_guard<
         std::mutex> lock1(modify_mutex_);
     auto next = std::make_shared<
-        MetaView>(shallow_copy, *current_);
+        OpenView>(*current_);
     auto const changed = f(*next, j_);
     if (changed)
     {
@@ -162,10 +65,11 @@ OpenLedger::modify (std::function<
 }
 
 void
-OpenLedger::accept (std::shared_ptr<Ledger> const& ledger,
-    OrderedTxs const& locals, bool retriesFirst,
-        OrderedTxs& retries, IHashRouter& router,
-            std::string const& suffix)
+OpenLedger::accept (std::shared_ptr<
+    Ledger const> const& ledger,
+        OrderedTxs const& locals, bool retriesFirst,
+            OrderedTxs& retries, ApplyFlags flags,
+                IHashRouter& router, std::string const& suffix)
 {
     JLOG(j_.error) <<
         "accept ledger " << ledger->seq() << " " << suffix;
@@ -177,7 +81,7 @@ OpenLedger::accept (std::shared_ptr<Ledger> const& ledger,
             std::vector<std::shared_ptr<
                 STTx const>>;
         apply (*next, *ledger, empty{},
-            retries, router, config_, j_);
+            retries, flags, router, config_, j_);
     }
     // Block calls to modify, otherwise
     // new tx going into the open ledger
@@ -195,11 +99,11 @@ OpenLedger::accept (std::shared_ptr<Ledger> const& ledger,
             {
                 return p.first;
             }),
-                retries, router, config_, j_);
+                retries, flags, router, config_, j_);
     // Apply local tx
     for (auto const& item : locals)
         ripple::apply(*next, *item.second,
-            tapNONE, config_, j_);
+            flags, config_, j_);
     // Switch to the new open view
     std::lock_guard<
         std::mutex> lock2(current_mutex_);
@@ -208,25 +112,23 @@ OpenLedger::accept (std::shared_ptr<Ledger> const& ledger,
 
 //------------------------------------------------------------------------------
 
-std::shared_ptr<MetaView>
+std::shared_ptr<OpenView>
 OpenLedger::create (std::shared_ptr<
-    Ledger> const& ledger)
+    Ledger const> const& ledger)
 {
-    auto cache = std::make_shared<
-        CachedSLEView>(ledger, cache_);
-    return std::make_shared<
-        MetaView>(open_ledger,
-            *cache, cache);
+    return std::make_shared<OpenView>(
+        open_ledger, std::make_shared<
+            CachingReadView const>(ledger,
+                cache_));
 }
 
 auto
-OpenLedger::apply_one (View& view,
+OpenLedger::apply_one (OpenView& view,
     std::shared_ptr<STTx const> const& tx,
-        bool retry, IHashRouter& router,
-            Config const& config, beast::Journal j) ->
-                Result
+        bool retry, ApplyFlags flags,
+            IHashRouter& router, Config const& config,
+                beast::Journal j) -> Result
 {
-    auto flags = view.flags();
     if (retry)
         flags = flags | tapRETRY;
     if ((router.getFlags(
@@ -246,16 +148,26 @@ OpenLedger::apply_one (View& view,
 
 //------------------------------------------------------------------------------
 
+static
+std::vector<uint256>
+txList (ReadView const& view)
+{
+    std::vector<uint256> v;
+    for (auto const& item : view.txs)
+        v.push_back(item.first->getTransactionID());
+    std::sort(v.begin(), v.end());
+    return v;
+}
+
 bool
 OpenLedger::verify (Ledger const& ledger,
     std::string const& suffix) const
 {
+#if 1
     std::lock_guard<
         std::mutex> lock(modify_mutex_);
-    auto list1 = ledger.txList();
-    auto list2 = current_->txList();
-    std::sort(list1.begin(), list1.end());
-    std::sort(list2.begin(), list2.end());
+    auto list1 = txList(ledger);
+    auto list2 = txList(*current_);
     if (list1 == list2)
         return true;
     JLOG(j_.error) <<
@@ -263,6 +175,9 @@ OpenLedger::verify (Ledger const& ledger,
         list1.size() << " / " << list2.size() << 
             " " << " MISMATCH " << suffix;
     return false;
+#else
+    return true;
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -306,7 +221,7 @@ debugTostr (SHAMap const& set)
 }
 
 std::string
-debugTostr (std::shared_ptr<BasicView const> const& view)
+debugTostr (std::shared_ptr<ReadView const> const& view)
 {
     std::stringstream ss;
     for(auto const& item : view->txs)

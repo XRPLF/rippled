@@ -244,7 +244,7 @@ public:
     Taker () = delete;
     Taker (Taker const&) = delete;
 
-    Taker (CrossType cross_type, View& view,
+    Taker (CrossType cross_type, ApplyView& view,
         AccountID const& account, Amounts const& offer,
             std::uint32_t flags, Config const& config,
                 beast::Journal journal);
@@ -289,7 +289,7 @@ public:
 private:
     static
     std::uint32_t
-    calculateRate (View const& view,
+    calculateRate (ApplyView const& view,
         AccountID const& issuer,
             AccountID const& account);
 
@@ -312,7 +312,7 @@ private:
 
 private:
     // The underlying ledger entry we are dealing with
-    View& view_;
+    ApplyView& view_;
 
     Config const& config_;
 

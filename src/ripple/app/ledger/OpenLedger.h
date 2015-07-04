@@ -21,10 +21,10 @@
 #define RIPPLE_APP_LEDGER_OPENLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/MetaView.h>
+#include <ripple/ledger/CachedSLEs.h>
+#include <ripple/ledger/OpenView.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/IHashRouter.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
@@ -45,48 +45,6 @@ namespace ripple {
 
 using OrderedTxs = CanonicalTXSet;
 
-namespace detail {
-
-class CachedSLEs
-{
-public:
-    using key_type = uint256;
-
-    using value_type =
-        std::shared_ptr<SLE const>;
-
-    CachedSLEs (CachedSLEs const&) = delete;
-    CachedSLEs& operator= (CachedSLEs const&) = delete;
-
-    template <class Rep, class Period>
-    CachedSLEs (std::chrono::duration<
-        Rep, Period> const& timeToLive,
-            Stopwatch& clock)
-        : clock_ (clock)
-        , timeToLive_ (timeToLive)
-        , map_ (clock)
-    {
-    }
-
-    value_type
-    find (key_type const& key);
-
-    // `false` if the insert failed
-    std::pair<value_type, bool>
-    insert (key_type const& key,
-        value_type const& value);
-
-private:
-    Stopwatch const& clock_;
-    Stopwatch::duration timeToLive_;
-    beast::aged_unordered_map<key_type,
-        value_type, Stopwatch::clock_type,
-            hardened_hash<strong_hash>
-                > map_;
-};
-
-} // detail
-
 //------------------------------------------------------------------------------
 
 /** Represents the open ledger. */
@@ -94,13 +52,12 @@ class OpenLedger
 {
 private:
     beast::Journal j_;
+    CachedSLEs& cache_;
     Config const& config_;
-    Stopwatch& clock_;
-    detail::CachedSLEs cache_;
     std::mutex mutable modify_mutex_;
     std::mutex mutable current_mutex_;
-    std::shared_ptr<MetaView const> current_;
-   
+    std::shared_ptr<OpenView const> current_;
+
 public:
     OpenLedger() = delete;
     OpenLedger (OpenLedger const&) = delete;
@@ -110,13 +67,11 @@ public:
 
         @param ledger A closed ledger
     */
-    // Although ledger is not const, we do not modify it.
     explicit
     OpenLedger (std::shared_ptr<
-        Ledger> const& ledger,
-            Config const& config,
-                Stopwatch& clock,
-                    beast::Journal journal);
+        Ledger const> const& ledger,
+            Config const& config, CachedSLEs& cache,
+                beast::Journal journal);
 
     /** Returns a view to the current open ledger.
 
@@ -128,7 +83,7 @@ public:
             non-modifiable snapshot of the open ledger
             at the time of the call.
     */
-    std::shared_ptr<BasicView const>
+    std::shared_ptr<ReadView const>
     current() const;
 
     /** Modify the open ledger
@@ -137,17 +92,16 @@ public:
             Can be called concurrently from any thread.
 
         `f` will be called as
-            bool(BasicView&)
+            bool(ReadView&)
 
         If `f` returns `true`, the changes made in the
-        View will be published to the open ledger.
+        OpenView will be published to the open ledger.
 
-        @return `true` if a the open ledger was changed
+        @return `true` if the open view was changed
     */
-    // VFALCO This should take a `BasicView`
     bool
     modify (std::function<
-        bool(View&, beast::Journal)> const& f);
+        bool(OpenView&, beast::Journal)> const& f);
 
     /** Accept a new ledger.
 
@@ -175,12 +129,12 @@ public:
 
         @param ledger A new closed ledger
     */
-    // Although ledger is not const, we do not modify it.
     void
-    accept(std::shared_ptr<Ledger> const& ledger,
+    accept(std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
-            OrderedTxs& retries, IHashRouter& router,
-                std::string const& suffix = "");
+            OrderedTxs& retries, ApplyFlags flags,
+                IHashRouter& router,
+                    std::string const& suffix = "");
 
     /** Algorithm for applying transactions.
 
@@ -190,10 +144,10 @@ public:
     template <class FwdRange>
     static
     void
-    apply (View& view, BasicView const& check,
+    apply (OpenView& view, ReadView const& check,
         FwdRange const& txs, OrderedTxs& retries,
-            IHashRouter& router, Config const& config,
-                beast::Journal j);
+            ApplyFlags flags, IHashRouter& router,
+                Config const& config, beast::Journal j);
 
 private:
     enum Result
@@ -203,16 +157,16 @@ private:
         retry
     };
 
-    std::shared_ptr<MetaView>
+    std::shared_ptr<OpenView>
     create (std::shared_ptr<
-        Ledger> const& ledger);
+        Ledger const> const& ledger);
 
     static
     Result
-    apply_one (View& view, std::shared_ptr<
+    apply_one (OpenView& view, std::shared_ptr<
         STTx const> const& tx, bool retry,
-            IHashRouter& router, Config const& config,
-                beast::Journal j);
+            ApplyFlags flags, IHashRouter& router,
+                Config const& config, beast::Journal j);
 
 public:    
     //--------------------------------------------------------------------------
@@ -230,10 +184,11 @@ public:
 
 template <class FwdRange>
 void
-OpenLedger::apply (View& view,
-    BasicView const& check, FwdRange const& txs,
-        OrderedTxs& retries, IHashRouter& router,
-            Config const& config, beast::Journal j)
+OpenLedger::apply (OpenView& view,
+    ReadView const& check, FwdRange const& txs,
+        OrderedTxs& retries, ApplyFlags flags,
+            IHashRouter& router, Config const& config,
+                beast::Journal j)
 {
     for (auto iter = txs.begin();
         iter != txs.end(); ++iter)
@@ -246,7 +201,7 @@ OpenLedger::apply (View& view,
             if (check.txExists(tx->getTransactionID()))
                 continue;
             auto const result = apply_one(view,
-                tx, true, router, config, j);
+                tx, true, flags, router, config, j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
@@ -266,7 +221,7 @@ OpenLedger::apply (View& view,
         while (iter != retries.end())
         {
             switch (apply_one(view,
-                iter->second, retry,
+                iter->second, retry, flags,
                     router, config, j))
             {
             case Result::success:
@@ -305,7 +260,7 @@ std::string
 debugTostr (SHAMap const& set);
 
 std::string
-debugTostr (std::shared_ptr<BasicView const> const& view);
+debugTostr (std::shared_ptr<ReadView const> const& view);
 
 } // ripple
 

@@ -59,12 +59,12 @@ sign (Json::Value& jv,
 /** Set the fee automatically. */
 void
 fill_fee (Json::Value& jv,
-    BasicView const& view);
+    ReadView const& view);
 
 /** Set the sequence number automatically. */
 void
 fill_seq (Json::Value& jv,
-    BasicView const& view);
+    ReadView const& view);
 
 } // jtx
 } // test

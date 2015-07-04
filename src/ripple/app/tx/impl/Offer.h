@@ -96,7 +96,7 @@ public:
 
     /** Adjusts the offer to indicate that we consumed some (or all) of it. */
     void
-    consume (View& view,
+    consume (ApplyView& view,
         Amounts const& consumed) const
     {
         if (consumed.in > m_amounts.in)

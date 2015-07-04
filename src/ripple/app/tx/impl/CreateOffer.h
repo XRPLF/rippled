@@ -55,7 +55,7 @@ public:
     preCheck () override;
 
     std::pair<TER, bool>
-    applyGuts (View& view, View& view_cancel);
+    applyGuts (ApplyView& view, ApplyView& view_cancel);
 
     TER
     doApply() override;
@@ -66,7 +66,7 @@ private:
     checkAcceptAsset(IssueRef issue) const;
 
     bool
-    dry_offer (View& view, Offer const& offer);
+    dry_offer (ApplyView& view, Offer const& offer);
 
     static
     std::pair<bool, Quality>
@@ -77,15 +77,15 @@ private:
     std::pair<TER, Amounts>
     bridged_cross (
         Taker& taker,
-        View& view,
-        View& view_cancel,
+        ApplyView& view,
+        ApplyView& view_cancel,
         Clock::time_point const when);
 
     std::pair<TER, Amounts>
     direct_cross (
         Taker& taker,
-        View& view,
-        View& view_cancel,
+        ApplyView& view,
+        ApplyView& view_cancel,
         Clock::time_point const when);
 
     // Step through the stream for as long as possible, skipping any offers
@@ -101,8 +101,8 @@ private:
     // Charges fees on top to taker.
     std::pair<TER, Amounts>
     cross (
-        View& view,
-        View& cancel_view,
+        ApplyView& view,
+        ApplyView& cancel_view,
         Amounts const& taker_amount);
 
     static

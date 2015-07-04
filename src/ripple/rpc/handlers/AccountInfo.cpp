@@ -59,8 +59,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         return jvAccepted;
 
     auto const sleAccepted = cachedRead(*ledger,
-        keylet::account(accountID).key,
-            getApp().getSLECache(), ltACCOUNT_ROOT);
+        keylet::account(accountID).key, ltACCOUNT_ROOT);
 
     if (sleAccepted)
     {
@@ -68,8 +67,7 @@ Json::Value doAccountInfo (RPC::Context& context)
 
         // See if there's a SignerEntries for this account.
         uint256 const signerListIndex = getSignerListIndex (accountID);
-        auto const signerList = cachedRead(*ledger, signerListIndex,
-            getApp().getSLECache());
+        auto const signerList = cachedRead(*ledger, signerListIndex);
 
         if (signerList)
         {

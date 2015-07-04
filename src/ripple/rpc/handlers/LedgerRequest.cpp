@@ -67,14 +67,12 @@ Json::Value doLedgerRequest (RPC::Context& context)
 
         auto const j = deprecatedLogs().journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated ledger
-        auto neededHash = hashOfSeq(*ledger, ledgerIndex,
-            getApp().getSLECache(), j);
+        auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         if (! neededHash)
         {
             // Find a ledger more likely to have the hash of the desired ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
-            auto refHash = hashOfSeq(*ledger, refIndex,
-                getApp().getSLECache(), j);
+            auto refHash = hashOfSeq(*ledger, refIndex, j);
             assert(refHash);
 
             ledger = ledgerMaster.getLedgerByHash (*refHash);
@@ -99,8 +97,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 return Json::Value();
             }
 
-            neededHash = hashOfSeq(*ledger, ledgerIndex,
-                getApp().getSLECache(), j);
+            neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         assert (neededHash);
         ledgerHash = neededHash ? *neededHash : zero; // kludge

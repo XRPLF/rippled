@@ -58,7 +58,7 @@ sign (Json::Value& jv,
 
 void
 fill_fee (Json::Value& jv,
-    BasicView const& view)
+    ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
@@ -68,7 +68,7 @@ fill_fee (Json::Value& jv,
 
 void
 fill_seq (Json::Value& jv,
-    BasicView const& view)
+    ReadView const& view)
 {
     if (jv.isMember(jss::Sequence))
         return;

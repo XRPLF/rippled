@@ -17,21 +17,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_SLECACHE_H_INCLUDED
-#define RIPPLE_LEDGER_SLECACHE_H_INCLUDED
-
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <BeastConfig.h>
+#include <ripple/ledger/ApplyViewImpl.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 
-/** STLedgerEntry cache.
-    This maps keys to the deserialized ledger entries,
-    to improve performance where the same item in
-    the ledger is accessed often.
-*/
-using SLECache = TaggedCache <uint256, STLedgerEntry>;
-
+ApplyViewImpl::ApplyViewImpl(
+    ReadView const* base,
+        ApplyFlags flags)
+    : ApplyViewBase (base, flags)
+{
 }
 
-#endif
+void
+ApplyViewImpl::apply (OpenView& to,
+    STTx const& tx, TER ter,
+        beast::Journal j)
+{
+    items_.apply(to, tx, ter, deliver_, j);
+}
+
+} // ripple

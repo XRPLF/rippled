@@ -25,6 +25,7 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
+#include <ripple/ledger/Sandbox.h>
 #include <beast/cxx14/memory.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/WrappedSink.h>
@@ -87,7 +88,7 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
 }
 
 bool
-CreateOffer::dry_offer (View& view, Offer const& offer)
+CreateOffer::dry_offer (ApplyView& view, Offer const& offer)
 {
     if (offer.fully_consumed ())
         return true;
@@ -129,8 +130,8 @@ CreateOffer::select_path (
 std::pair<TER, Amounts>
 CreateOffer::bridged_cross (
     Taker& taker,
-    View& view,
-    View& view_cancel,
+    ApplyView& view,
+    ApplyView& view_cancel,
     Clock::time_point const when)
 {
     auto const& taker_amount = taker.original_offer ();
@@ -277,8 +278,8 @@ CreateOffer::bridged_cross (
 std::pair<TER, Amounts>
 CreateOffer::direct_cross (
     Taker& taker,
-    View& view,
-    View& view_cancel,
+    ApplyView& view,
+    ApplyView& view_cancel,
     Clock::time_point const when)
 {
     OfferStream offers (
@@ -377,8 +378,8 @@ CreateOffer::step_account (OfferStream& stream, Taker const& taker)
 // Charges fees on top to taker.
 std::pair<TER, Amounts>
 CreateOffer::cross (
-    View& view,
-    View& cancel_view,
+    ApplyView& view,
+    ApplyView& cancel_view,
     Amounts const& taker_amount)
 {
     Clock::time_point const when =
@@ -525,7 +526,7 @@ CreateOffer::preCheck ()
 }
 
 std::pair<TER, bool>
-CreateOffer::applyGuts (View& view, View& view_cancel)
+CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 {
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 
@@ -825,15 +826,15 @@ CreateOffer::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
-    MetaView view (ctx_.view(), ctx_.view().flags());
+    Sandbox view (&ctx_.view());
     // This is a checkpoint with just the fees paid. If something goes wrong
     // with this transaction, we roll back to this ledger.
-    MetaView viewCancel (ctx_.view(), ctx_.view().flags());
+    Sandbox viewCancel (&ctx_.view());
     auto const result = applyGuts(view, viewCancel);
     if (result.second)
-        view.apply(ctx_.view());
+        view.apply(ctx_.rawView());
     else
-        viewCancel.apply(ctx_.view());
+        viewCancel.apply(ctx_.rawView());
     return result.first;
 }
 

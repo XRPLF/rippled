@@ -44,8 +44,7 @@ Json::Value accounts (
         pk.setAccountPublic (naMasterGenerator, uIndex++);
 
         auto const sle = cachedRead(*lrLedger,
-            keylet::account(calcAccountID(pk)).key,
-                getApp().getSLECache(), ltACCOUNT_ROOT);
+            keylet::account(calcAccountID(pk)).key, ltACCOUNT_ROOT);
 
         if (sle)
         {

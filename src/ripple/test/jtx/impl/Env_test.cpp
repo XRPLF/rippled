@@ -563,8 +563,6 @@ public:
         env.close();
         env.close();
         env.fund(XRP(100000), "alice", "bob");
-        auto const epoch =
-            Env::clock_type::time_point{};
         env.close();
         env(pay("alice", "bob", XRP(100)));
         env.close();

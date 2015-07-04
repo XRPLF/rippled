@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/ledger/DeferredCredits.h>
-#include <ripple/basics/Log.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <cassert>
 
 namespace ripple {
+
+namespace detail {
 
 auto
 DeferredCredits::makeKey (AccountID const& a1,
@@ -34,49 +36,11 @@ DeferredCredits::makeKey (AccountID const& a1,
         return std::make_tuple(a2, a1, c);
 }
 
-template <class TMap>
-void maybeLogCredit (AccountID const& sender,
-                     AccountID const& receiver,
-                     STAmount const& amount,
-                     TMap const& adjMap)
-{
-    using std::get;
-
-    if (!ShouldLog (lsTRACE, DeferredCredits))
-        return;
-
-    // write the balances to the log
-    std::stringstream str;
-    str << "assetXfer: " << sender << ", " << receiver << ", " << amount;
-    if (!adjMap.empty ())
-    {
-        str << " : ";
-    }
-    for (auto i = adjMap.begin (), e = adjMap.end ();
-         i != e; ++i)
-    {
-        if (i != adjMap.begin ())
-        {
-            str << ", ";
-        }
-        auto const& k(i->first);
-        auto const& v(i->second);
-        str << to_string (get<0> (k)) << " | " <<
-            to_string (get<1> (k)) << " | " <<
-            get<1> (v).getFullText () << " | " <<
-            get<0> (v).getFullText ();
-    }
-    WriteLog (lsTRACE, DeferredCredits) << str.str ();
-}
-
 void DeferredCredits::credit (AccountID const& sender,
                               AccountID const& receiver,
                               STAmount const& amount)
 {
     using std::get;
-
-    WriteLog (lsTRACE, DeferredCredits)
-            << "credit: " << sender << ", " << receiver << ", " << amount;
 
     assert (sender != receiver);
     assert (!amount.negative ());
@@ -108,7 +72,6 @@ void DeferredCredits::credit (AccountID const& sender,
         else
             get<0> (v) += amount;
     }
-    maybeLogCredit (sender, receiver, amount, map_);
 }
 
 // Get the adjusted balance of main for the
@@ -135,10 +98,6 @@ STAmount DeferredCredits::adjustedBalance (AccountID const& main,
         }
     }
 
-    WriteLog (lsTRACE, DeferredCredits)
-            << "adjustedBalance: " << main << ", " <<
-            other << ", " << curBalance << ", " << result;
-
     return result;
 }
 
@@ -163,5 +122,41 @@ void DeferredCredits::clear ()
     map_.clear ();
 }
 
-} // ripple
+} // detail
 
+STAmount
+PaymentSandbox::balanceHook (AccountID const& account,
+    AccountID const& issuer,
+        STAmount const& amount) const
+{
+    if (ps_)
+        return tab_.adjustedBalance (
+            account, issuer, ps_->balanceHook (account, issuer, amount));
+    return tab_.adjustedBalance(
+        account, issuer, amount);
+}
+
+void
+PaymentSandbox::creditHook (AccountID const& from,
+    AccountID const& to,
+        STAmount const& amount)
+{
+    tab_.credit(from, to, amount);
+}
+
+void
+PaymentSandbox::apply (RawView& to)
+{
+    assert(! ps_);
+    items_.apply(to);
+}
+
+void
+PaymentSandbox::apply (PaymentSandbox& to)
+{
+    assert(ps_ == &to);
+    items_.apply(to);
+    tab_.apply(to.tab_);
+}
+
+}  // ripple

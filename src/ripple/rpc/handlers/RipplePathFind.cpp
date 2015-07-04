@@ -23,7 +23,7 @@
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/impl/PaymentView.h>
+#include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
@@ -302,8 +302,8 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
             saMaxAmount.negate();
 
-            boost::optional<PaymentView> sandbox;
-            sandbox.emplace(*cache->getLedger(), tapNONE);
+            boost::optional<PaymentSandbox> sandbox;
+            sandbox.emplace(&*cache->getLedger(), tapNONE);
             assert(sandbox->open());
 
             auto rc = path::RippleCalc::rippleCalculate(
@@ -329,7 +329,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                     << "Trying with an extra path element";
 
                 spsComputed.push_back(fullLiquidityPath);
-                sandbox.emplace(*cache->getLedger(), tapNONE);
+                sandbox.emplace(&*cache->getLedger(), tapNONE);
                 assert(sandbox->open());
                 rc = path::RippleCalc::rippleCalculate(
                     *sandbox,

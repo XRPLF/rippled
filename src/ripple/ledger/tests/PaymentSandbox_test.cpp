@@ -18,14 +18,14 @@
 //==============================================================================
 
 #include <ripple/app/ledger/tests/common_ledger.h>
-#include <ripple/app/ledger/MetaView.h>
-#include <ripple/app/paths/impl/PaymentView.h>
-#include <ripple/app/tx/tests/PathSet.h>
+#include <ripple/ledger/ApplyViewImpl.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/ledger/tests/PathSet.h>
 
 namespace ripple {
 namespace test {
 
-class DeferredCredits_test : public beast::unit_test::suite
+class PaymentSandbox_test : public beast::unit_test::suite
 {
     /*
       Create paths so one path funds another path.
@@ -118,46 +118,46 @@ class DeferredCredits_test : public beast::unit_test::suite
         STAmount const toDebit (USD_gw1 (20));
         {
             // accountSend, no deferredCredits
-            MetaView les (*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                les, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            accountSend (les, gw1, alice, toCredit);
-            expect (accountHolds (les, alice, iss.currency, iss.account,
+            accountSend (av, gw1, alice, toCredit);
+            expect (accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit);
 
-            accountSend (les, alice, gw1, toDebit);
-            expect (accountHolds (les, alice, iss.currency, iss.account,
+            accountSend (av, alice, gw1, toDebit);
+            expect (accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
             // rippleCredit, no deferredCredits
-            MetaView les (*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                les, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
 
-            rippleCredit (les, gw1, alice, toCredit, true);
-            expect (accountHolds (les, alice, iss.currency, iss.account,
+            rippleCredit (av, gw1, alice, toCredit, true);
+            expect (accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit);
 
-            rippleCredit (les, alice, gw1, toDebit, true);
-            expect (accountHolds (les, alice, iss.currency, iss.account,
+            rippleCredit (av, alice, gw1, toDebit, true);
+            expect (accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, getConfig ()) ==
                     startingAmount + toCredit - toDebit);
         }
 
         {
             // accountSend, w/ deferredCredits
-            MetaView les (*env.open(), tapNONE);
-            PaymentView pv (les, tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
+            PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -176,8 +176,8 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // rippleCredit, w/ deferredCredits
-            MetaView les (*env.open(), tapNONE);
-            PaymentView pv (les, tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
+            PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -191,8 +191,8 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // redeemIOU, w/ deferredCredits
-            MetaView les (*env.open(), tapNONE);
-            PaymentView pv (les, tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
+            PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -206,8 +206,8 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // issueIOU, w/ deferredCredits
-            MetaView les (*env.open(), tapNONE);
-            PaymentView pv (les, tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
+            PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -221,8 +221,8 @@ class DeferredCredits_test : public beast::unit_test::suite
 
         {
             // accountSend, w/ deferredCredits and stacked views
-            MetaView les (*env.open(), tapNONE);
-            PaymentView pv (les, tapNONE);
+            ApplyViewImpl av (&*env.open(), tapNONE);
+            PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -234,7 +234,7 @@ class DeferredCredits_test : public beast::unit_test::suite
                     startingAmount);
 
             {
-                PaymentView pv2(&pv);
+                PaymentSandbox pv2(&pv);
                 expect (accountHolds (pv2, alice, iss.currency, iss.account,
                             fhIGNORE_FREEZE, getConfig ()) ==
                         startingAmount);
@@ -259,7 +259,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (DeferredCredits, ledger, ripple);
+BEAST_DEFINE_TESTSUITE (PaymentSandbox, ledger, ripple);
 
 }  // test
 }  // ripple

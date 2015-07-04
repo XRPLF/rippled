@@ -515,7 +515,7 @@ BasicTaker::do_cross (
 
 //==============================================================================
 
-Taker::Taker (CrossType cross_type, View& view,
+Taker::Taker (CrossType cross_type, ApplyView& view,
     AccountID const& account, Amounts const& offer,
         std::uint32_t flags, Config const& config,
             beast::Journal journal)
@@ -773,7 +773,7 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
 
 std::uint32_t
 Taker::calculateRate (
-    View const& view,
+    ApplyView const& view,
         AccountID const& issuer,
             AccountID const& account)
 {

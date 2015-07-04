@@ -25,13 +25,13 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
-
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
+#include <ripple/ledger/CachedSLEs.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -134,7 +134,8 @@ public:
     Account const master;
 
 private:
-    std::shared_ptr<Ledger> closed_;
+    std::shared_ptr<Ledger const> closed_;
+    CachedSLEs cachedSLEs_;
 public:
 
     // Careful with this
@@ -153,7 +154,7 @@ public:
         as a public member for interested callers.
     */
     static
-    std::shared_ptr<Ledger>
+    std::shared_ptr<Ledger const>
     genesis();
 
     /** Returns the open ledger.
@@ -164,7 +165,7 @@ public:
         will not be visible.
         
     */
-    std::shared_ptr<BasicView const>
+    std::shared_ptr<ReadView const>
     open() const;
 
     /** Returns the last closed ledger.
@@ -174,7 +175,7 @@ public:
         is closed, it becomes the new closed ledger
         and a new open ledger takes its place.
     */
-    std::shared_ptr<BasicView const>
+    std::shared_ptr<ReadView const>
     closed() const;
 
     /** Close and advance the ledger.
@@ -462,6 +463,9 @@ protected:
     // VFALCO NOTE This should be <STTx const>
     std::shared_ptr<STTx>
     st (JTx const& jt);
+
+    ApplyFlags
+    applyFlags() const;
 
     inline
     void

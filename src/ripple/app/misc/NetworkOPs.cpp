@@ -24,8 +24,6 @@
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/ledger/MetaView.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -999,9 +997,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        Ledger::pointer ledger;
+        std::shared_ptr<Ledger> newOL;
         bool applied = false;
-        boost::optional<MetaView> accum;
+        boost::optional<OpenView> accum;
         auto lock = beast::make_lock(getApp().getMasterMutex());
         {
             std::lock_guard <std::recursive_mutex> lock (
@@ -1010,11 +1008,11 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             auto const oldOL = m_ledgerMaster.getCurrentLedgerHolder().get();
             getApp().openLedger().verify(*oldOL, "apply before");
         #endif
-            ledger = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
-            accum.emplace(*ledger, tapNONE);
+            newOL = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
+            accum.emplace(&*newOL);
             for (TransactionStatus& e : transactions)
             {
-                ViewFlags flags = tapNONE;
+                ApplyFlags flags = tapNONE;
                 flags = flags | tapNO_CHECK_SIGN;
                 if (e.admin)
                     flags = flags | tapADMIN;
@@ -1035,7 +1033,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 auto const sle2 = getApp().openLedger().current()->read(keylet::account(e.transaction->getSTransaction()->getAccountID(sfAccount)));
                 // VFALCO Should do the loop inside modify()
                 getApp().openLedger().modify(
-                    [&](View& view, beast::Journal j)
+                    [&](OpenView& view, beast::Journal j)
                     {
                         auto const result = ripple::apply(
                             view, *e.transaction->getSTransaction(),
@@ -1051,20 +1049,19 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
         if (applied)
         {
-            accum->apply(*ledger,
-                deprecatedLogs().journal("NetworkOPs"));
+            accum->apply(*newOL);
         #if RIPPLE_OPEN_LEDGER
-            getApp().openLedger().verify(*ledger, "apply after");
+            getApp().openLedger().verify(*newOL, "apply after");
         #endif
-            ledger->setImmutable();
-            m_ledgerMaster.getCurrentLedgerHolder().set (ledger);
+            newOL->setImmutable();
+            m_ledgerMaster.getCurrentLedgerHolder().set (newOL);
         }
 
         for (TransactionStatus& e : transactions)
         {
             if (e.applied)
             {
-                pubProposedTransaction (ledger,
+                pubProposedTransaction (newOL,
                     e.transaction->getSTransaction(), e.result);
             }
 
@@ -1168,8 +1165,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 {
     Json::Value jvObjects (Json::objectValue);
     auto uRootIndex = getOwnerDirIndex (account);
-    auto sleNode = cachedRead(*lpLedger, uRootIndex,
-        getApp().getSLECache(), ltDIR_NODE);
+    auto sleNode = cachedRead(*lpLedger, uRootIndex, ltDIR_NODE);
     if (sleNode)
     {
         std::uint64_t  uNodeDir;
@@ -1178,8 +1174,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
         {
             for (auto const& uDirEntry : sleNode->getFieldV256 (sfIndexes))
             {
-                auto sleCur = cachedRead(*lpLedger, uDirEntry,
-                    getApp().getSLECache());
+                auto sleCur = cachedRead(*lpLedger, uDirEntry);
 
                 switch (sleCur->getType ())
                 {
@@ -1213,8 +1208,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
             if (uNodeDir)
             {
                 sleNode = cachedRead(*lpLedger, getDirNodeIndex(
-                    uRootIndex, uNodeDir), getApp().getSLECache(),
-                        ltDIR_NODE);
+                    uRootIndex, uNodeDir), ltDIR_NODE);
                 assert (sleNode);
             }
         }
@@ -1474,21 +1468,21 @@ void NetworkOPsImp::switchLastClosedLedger (
     #endif
         // Apply tx in old open ledger to new
         // open ledger. Then apply local tx.
-        MetaView accum(*newOL, tapNONE);
+        OpenView accum(&*newOL);
         assert(accum.open());
         auto const localTx = m_localTX->getTxSet();
         {
             auto retries = localTx;
             applyTransactions (&oldOL->txMap(),
-                accum, newLCL, retries);
+                accum, newLCL, retries, tapNONE);
         }
-        accum.apply(*newOL, m_journal);
+        accum.apply(*newOL);
 
     #if RIPPLE_OPEN_LEDGER
         auto retries = localTx;
         getApp().openLedger().accept(
             newLCL, OrderedTxs({}), false, retries,
-                getApp().getHashRouter(), "jump");
+                tapNONE, getApp().getHashRouter(), "jump");
         getApp().openLedger().verify(
             *newOL, "jump after");
     #endif
@@ -2313,9 +2307,7 @@ Json::Value NetworkOPsImp::transJson(
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue ().account)
         {
-            CachedView const view(
-                *lpCurrent, getApp().getSLECache());
-            auto const ownerFunds = accountFunds(view,
+            auto const ownerFunds = accountFunds(*lpCurrent,
                 account, amount, fhIGNORE_FREEZE, getConfig());
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
@@ -2719,8 +2711,7 @@ void NetworkOPsImp::getBookPage (
         m_journal.trace << "getBookPage: uTipIndex=" << uTipIndex;
     }
 
-    CachedView const view(
-        *lpLedger, getApp().getSLECache());
+    ReadView const& view = *lpLedger;
 
     bool const bGlobalFreeze =
         isGlobalFrozen(view, book.out.account) ||

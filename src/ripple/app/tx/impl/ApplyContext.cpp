@@ -28,8 +28,8 @@
 namespace ripple {
 
 ApplyContext::ApplyContext(
-    BasicView& base, STTx const& tx_,
-        ViewFlags flags, Config const& config_,
+    OpenView& base, STTx const& tx_,
+        ApplyFlags flags, Config const& config_,
             beast::Journal journal_)
     : tx (tx_)
     , config (config_)
@@ -37,13 +37,13 @@ ApplyContext::ApplyContext(
     , base_ (base)
     , flags_(flags)
 {
-    view_.emplace(base_, flags_);
+    view_.emplace(&base_, flags_);
 }
 
 void
 ApplyContext::discard()
 {
-    view_.emplace(base_, flags_);
+    view_.emplace(&base_, flags_);
 }
 
 void

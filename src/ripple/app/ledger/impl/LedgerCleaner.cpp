@@ -254,8 +254,7 @@ public:
         boost::optional<LedgerHash> hash;
         try
         {
-            hash = hashOfSeq(*ledger, index,
-                getApp().getSLECache(), m_journal);
+            hash = hashOfSeq(*ledger, index, m_journal);
         }
         catch (SHAMapMissingNode &)
         {

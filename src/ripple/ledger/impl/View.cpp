@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/ledger/View.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Quality.h>
@@ -40,7 +41,7 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 Fees
-getFees (BasicView const& view,
+getFees (ReadView const& view,
     Config const& config)
 {
     Fees f;
@@ -72,7 +73,7 @@ getFees (BasicView const& view,
 //------------------------------------------------------------------------------
 
 bool
-isGlobalFrozen (BasicView const& view,
+isGlobalFrozen (ReadView const& view,
     AccountID const& issuer)
 {
     // VFALCO Perhaps this should assert
@@ -89,7 +90,7 @@ isGlobalFrozen (BasicView const& view,
 // the specified issuer or does the freeze flag prohibit it?
 static
 bool
-isFrozen (BasicView const& view, AccountID const& account,
+isFrozen (ReadView const& view, AccountID const& account,
     Currency const& currency, AccountID const& issuer)
 {
     if (isXRP (currency))
@@ -112,7 +113,7 @@ isFrozen (BasicView const& view, AccountID const& account,
 }
 
 STAmount
-accountHolds (BasicView const& view,
+accountHolds (ReadView const& view,
     AccountID const& account, Currency const& currency,
         AccountID const& issuer, FreezeHandling zeroIfFrozen,
             Config const& config)
@@ -172,7 +173,7 @@ accountHolds (BasicView const& view,
 }
 
 STAmount
-accountFunds (BasicView const& view, AccountID const& id,
+accountFunds (ReadView const& view, AccountID const& id,
     STAmount const& saDefault, FreezeHandling freezeHandling,
         Config const& config)
 {
@@ -201,7 +202,7 @@ accountFunds (BasicView const& view, AccountID const& id,
 }
 
 void
-forEachItem (BasicView const& view, AccountID const& id,
+forEachItem (ReadView const& view, AccountID const& id,
     std::function<void(std::shared_ptr<SLE const> const&)> f)
 {
     auto const root = keylet::ownerDir(id);
@@ -223,7 +224,7 @@ forEachItem (BasicView const& view, AccountID const& id,
 }
 
 bool
-forEachItemAfter (BasicView const& view, AccountID const& id,
+forEachItemAfter (ReadView const& view, AccountID const& id,
     uint256 const& after, std::uint64_t const hint,
         unsigned int limit, std::function<
             bool (std::shared_ptr<SLE const> const&)> f)
@@ -295,7 +296,7 @@ forEachItemAfter (BasicView const& view, AccountID const& id,
 }
 
 std::uint32_t
-rippleTransferRate (BasicView const& view,
+rippleTransferRate (ReadView const& view,
     AccountID const& issuer)
 {
     auto const sle = view.read(keylet::account(issuer));
@@ -308,7 +309,7 @@ rippleTransferRate (BasicView const& view,
 }
 
 std::uint32_t
-rippleTransferRate (BasicView const& view,
+rippleTransferRate (ReadView const& view,
     AccountID const& uSenderID,
         AccountID const& uReceiverID,
             AccountID const& issuer)
@@ -322,7 +323,7 @@ rippleTransferRate (BasicView const& view,
 }
 
 bool
-dirIsEmpty (BasicView const& view,
+dirIsEmpty (ReadView const& view,
     Keylet const& k)
 {
     auto const sleNode = view.read(k);
@@ -335,7 +336,7 @@ dirIsEmpty (BasicView const& view,
 }
 
 bool
-cdirFirst (BasicView const& view,
+cdirFirst (ReadView const& view,
     uint256 const& uRootIndex,  // --> Root of directory.
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-- next entry
@@ -348,7 +349,7 @@ cdirFirst (BasicView const& view,
 }
 
 bool 
-cdirNext (BasicView const& view,
+cdirNext (ReadView const& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-> next entry
@@ -394,7 +395,7 @@ cdirNext (BasicView const& view,
 //------------------------------------------------------------------------------
 
 void
-adjustOwnerCount (View& view,
+adjustOwnerCount (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
         int amount)
 {
@@ -431,7 +432,7 @@ adjustOwnerCount (View& view,
 }
 
 bool
-dirFirst (View& view,
+dirFirst (ApplyView& view,
     uint256 const& uRootIndex,  // --> Root of directory.
     std::shared_ptr<SLE>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-- next entry
@@ -444,7 +445,7 @@ dirFirst (View& view,
 }
 
 bool 
-dirNext (View& view,
+dirNext (ApplyView& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-> next entry
@@ -484,7 +485,7 @@ dirNext (View& view,
 }
 
 TER
-dirAdd (View& view,
+dirAdd (ApplyView& view,
     std::uint64_t&                          uNodeDir,
     uint256 const&                          uRootIndex, // VFALCO Should be Keylet
     uint256 const&                          uLedgerIndex,
@@ -578,7 +579,7 @@ dirAdd (View& view,
 
 // Ledger must be in a state for this to work.
 TER
-dirDelete (View& view,
+dirDelete (ApplyView& view,
     const bool                      bKeepRoot,      // --> True, if we never completely clean up, after we overflow the root node.
     const std::uint64_t&            uNodeDir,       // --> Node containing entry.
     uint256 const&                  uRootIndex,     // --> The index of the base of the directory.  Nodes are based off of this.
@@ -765,7 +766,7 @@ dirDelete (View& view,
 }
 
 TER
-trustCreate (View& view,
+trustCreate (ApplyView& view,
     const bool      bSrcHigh,
     AccountID const&  uSrcAccountID,
     AccountID const&  uDstAccountID,
@@ -881,7 +882,7 @@ trustCreate (View& view,
 }
 
 TER
-trustDelete (View& view,
+trustDelete (ApplyView& view,
     std::shared_ptr<SLE> const& sleRippleState,
         AccountID const& uLowAccountID,
             AccountID const& uHighAccountID)
@@ -923,7 +924,7 @@ trustDelete (View& view,
 }
 
 TER
-offerDelete (View& view,
+offerDelete (ApplyView& view,
     std::shared_ptr<SLE> const& sle)
 {
     if (! sle)
@@ -957,7 +958,7 @@ offerDelete (View& view,
 // - Create trust line of needed.
 // --> bCheckIssuer : normally require issuer to be involved.
 TER
-rippleCredit (View& view,
+rippleCredit (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     STAmount const& saAmount, bool bCheckIssuer)
 {
@@ -1099,7 +1100,7 @@ rippleCredit (View& view,
 // Calculate the fee needed to transfer IOU assets between two parties.
 static
 STAmount
-rippleTransferFee (BasicView const& view,
+rippleTransferFee (ReadView const& view,
     AccountID const& from,
     AccountID const& to,
     AccountID const& issuer,
@@ -1130,7 +1131,7 @@ rippleTransferFee (BasicView const& view,
 // <-- saActual: Amount actually cost.  Sender pay's fees.
 static
 TER
-rippleSend (View& view,
+rippleSend (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     STAmount const& saAmount, STAmount& saActual)
 {
@@ -1176,7 +1177,7 @@ rippleSend (View& view,
 }
 
 TER
-accountSend (View& view,
+accountSend (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     STAmount const& saAmount)
 {
@@ -1284,7 +1285,7 @@ accountSend (View& view,
 static
 bool
 updateTrustLine (
-    View& view,
+    ApplyView& view,
     SLE::pointer state,
     bool bSenderHigh,
     AccountID const& sender,
@@ -1334,7 +1335,7 @@ updateTrustLine (
 }
 
 TER
-issueIOU (View& view,
+issueIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount, Issue const& issue)
 {
@@ -1406,7 +1407,7 @@ issueIOU (View& view,
 }
 
 TER
-redeemIOU (View& view,
+redeemIOU (ApplyView& view,
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue)
@@ -1475,7 +1476,7 @@ redeemIOU (View& view,
 }
 
 TER
-transferXRP (View& view,
+transferXRP (ApplyView& view,
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount)

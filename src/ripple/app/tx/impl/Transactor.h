@@ -45,13 +45,13 @@ public:
     std::pair<TER, bool>
     operator()();
 
-    View&
+    ApplyView&
     view()
     {
         return ctx_.view();
     }
 
-    View const&
+    ApplyView const&
     view() const
     {
         return ctx_.view();

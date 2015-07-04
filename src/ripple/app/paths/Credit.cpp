@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/MetaView.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -26,7 +26,7 @@ namespace ripple {
 
 STAmount
 creditLimit (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)
@@ -49,7 +49,7 @@ creditLimit (
 }
 
 STAmount creditBalance (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)

@@ -20,10 +20,9 @@
 #ifndef RIPPLE_APP_PATHS_PATHSTATE_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHSTATE_H_INCLUDED
 
-#include <ripple/app/ledger/MetaView.h>
 #include <ripple/app/paths/Node.h>
 #include <ripple/app/paths/Types.h>
-#include <ripple/app/paths/impl/PaymentView.h>
+#include <ripple/ledger/PaymentSandbox.h>
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -36,7 +35,7 @@ class PathState : public CountedObject <PathState>
     using Ptr = std::shared_ptr<PathState>;
     using List = std::vector<Ptr>;
 
-    PathState (PaymentView const& parent,
+    PathState (PaymentSandbox const& parent,
             STAmount const& saSend,
                 STAmount const& saSendMax)
         : mIndex (0)
@@ -104,13 +103,13 @@ class PathState : public CountedObject <PathState>
 
     static bool lessPriority (PathState const& lhs, PathState const& rhs);
 
-    PaymentView&
+    PaymentSandbox&
     view()
     {
         return *view_;
     }
 
-    void resetView (PaymentView const& view)
+    void resetView (PaymentSandbox const& view)
     {
         view_.emplace(&view);
     }
@@ -141,7 +140,7 @@ private:
     Json::Value getJson () const;
 
 private:
-    boost::optional<PaymentView> view_;
+    boost::optional<PaymentSandbox> view_;
 
     int                         mIndex;    // Index/rank amoung siblings.
     std::uint64_t               uQuality;  // 0 = no quality/liquity left.

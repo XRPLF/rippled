@@ -35,7 +35,7 @@ class Path_test : public beast::unit_test::suite
 {
 public:
     Json::Value
-    findPath (std::shared_ptr<BasicView const> const& view,
+    findPath (std::shared_ptr<ReadView const> const& view,
         Account const& src, Account const& dest,
             std::vector<Issue> const& srcIssues,
                 STAmount const& saDstAmount)

@@ -39,8 +39,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
         found = true;
     }
 
-    auto dir = cachedRead(ledger, dirIndex,
-        getApp().getSLECache(), ltDIR_NODE);
+    auto dir = cachedRead(ledger, dirIndex, ltDIR_NODE);
     if (! dir)
         return false;
 
@@ -62,8 +61,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
 
         for (; iter != entries.end (); ++iter)
         {
-            auto const sleNode = cachedRead(ledger, *iter,
-                getApp().getSLECache());
+            auto const sleNode = cachedRead(ledger, *iter );
             if (type == ltINVALID || sleNode->getType () == type)
             {
                 jvObjects.append (sleNode->getJson (0));
@@ -88,8 +86,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
             return true;
 
         dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);
-        dir = cachedRead(ledger, dirIndex,
-            getApp().getSLECache(), ltDIR_NODE);
+        dir = cachedRead(ledger, dirIndex, ltDIR_NODE);
         if (! dir)
             return true;
 

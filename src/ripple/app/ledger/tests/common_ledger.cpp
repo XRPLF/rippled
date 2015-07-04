@@ -27,6 +27,8 @@
 #include <ripple/rpc/RipplePathFind.h>
 #include <ripple/json/json_writer.h>
 
+#if 0
+
 namespace ripple {
 namespace test {
 
@@ -561,6 +563,7 @@ Json::Value pathNode (OfferPathNode const& offer)
     return result;
 }
 
+}
+}
 
-}
-}
+#endif

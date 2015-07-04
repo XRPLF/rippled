@@ -17,38 +17,46 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
-#define RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
-
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/ledger/SLECache.h>
+#include <BeastConfig.h>
+#include <ripple/ledger/CachedSLEs.h>
+#include <vector>
 
 namespace ripple {
 
-/** Cache-aware view to a ledger */
-class CachedView : public BasicViewWrapper<Ledger&>
+void
+CachedSLEs::expire()
 {
-private:
-    SLECache& cache_;
-
-public:
-    CachedView(CachedView const&) = delete;
-    CachedView& operator=(CachedView const&) = delete;
-
-    /** Wrap a ledger with a cache.
-        @note Only ledgers may be wrapped with a cache.
-    */
-    CachedView (Ledger& ledger,
-            SLECache& cache)
-        : BasicViewWrapper(ledger)
-        , cache_(cache)
+    std::vector<
+        std::shared_ptr<void const>> trash;
     {
+        auto const expireTime =
+            map_.clock().now() - timeToLive_;
+        std::lock_guard<
+            std::mutex> lock(mutex_);
+        for (auto iter = map_.chronological.begin();
+            iter != map_.chronological.end(); ++iter)
+        {
+            if (iter.when() > expireTime)
+                break;
+            if (iter->second.unique())
+            {
+                trash.emplace_back(
+                    std::move(iter->second));
+                iter = map_.erase(iter);
+            }
+        }
     }
+}
 
-    std::shared_ptr<SLE const>
-    read (Keylet const& k) const override;
-};
+double
+CachedSLEs::rate() const
+{
+    std::lock_guard<
+        std::mutex> lock(mutex_);
+    auto const tot = hit_ + miss_;
+    if (tot == 0)
+        return 0;
+    return double(hit_) / tot;
+}
 
 } // ripple
-
-#endif

@@ -20,14 +20,16 @@
 #include <BeastConfig.h>
 #include <ripple/test/jtx.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/MetaView.h>
-#include <ripple/app/paths/impl/PaymentView.h>
+#include <ripple/ledger/ApplyViewImpl.h>
+#include <ripple/ledger/OpenView.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/ledger/Sandbox.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 namespace test {
 
-class MetaView_test
+class View_test
     : public beast::unit_test::suite
 {
     // Convert a small integer to a key
@@ -75,7 +77,7 @@ class MetaView_test
     wipe (OpenLedger& openLedger)
     {
         openLedger.modify(
-            [](View& view, beast::Journal)
+            [](OpenView& view, beast::Journal)
         {
             // HACK!
             boost::optional<uint256> next;
@@ -85,8 +87,8 @@ class MetaView_test
                 next = view.succ(*next);
                 if (! next)
                     break;
-                view.erase(view.peek(
-                    keylet::unchecked(*next)));
+                view.rawErase(std::make_shared<SLE>(
+                    *view.read(keylet::unchecked(*next))));
             }
             return true;
         });
@@ -104,13 +106,14 @@ class MetaView_test
             next = ledger.succ(*next);
             if (! next)
                 break;
-            ledger.unchecked_erase(*next);
+            ledger.rawErase(std::make_shared<SLE>(
+                *ledger.read(keylet::unchecked(*next))));
         }
     }
 
     // Test succ correctness
     void
-    succ (BasicView const& v,
+    succ (ReadView const& v,
         std::uint32_t id,
             boost::optional<
                 std::uint32_t> answer)
@@ -139,7 +142,7 @@ class MetaView_test
             std::remove_const_t<T>>(*sp);
     }
 
-    // Exercise Ledger implementation of View
+    // Exercise Ledger implementation of ApplyView
     void
     testLedger()
     {
@@ -149,26 +152,25 @@ class MetaView_test
             std::make_shared<Ledger>(
                 master.pk(), 1000000000);
         wipe(*ledger);
-        BasicView& v = *ledger;
+        ReadView& v = *ledger;
         succ(v, 0, boost::none);
-        v.unchecked_insert(sle(1, 1));
+        ledger->rawInsert(sle(1, 1));
         expect(v.exists(k(1)));
         expect(seq(v.read(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, boost::none);
-        v.unchecked_insert(sle(2, 2));
+        ledger->rawInsert(sle(2, 2));
         expect(seq(v.read(k(2))) == 2);
-        v.unchecked_insert(sle(3, 3));
+        ledger->rawInsert(sle(3, 3));
         expect(seq(v.read(k(3))) == 3);
         auto s = copy(v.read(k(2)));
         seq(s, 4);
-        v.unchecked_replace(std::move(s));
+        ledger->rawReplace(std::move(s));
         expect(seq(v.read(k(2))) == 4);
-        expect(v.unchecked_erase(k(2).key));
+        ledger->rawErase(sle(2));
         expect(! v.exists(k(2)));
         expect(v.exists(k(1)));
         expect(v.exists(k(3)));
-        expect(! v.unchecked_erase(k(5).key));
     }
 
     void
@@ -178,7 +180,7 @@ class MetaView_test
         Env env(*this);
         wipe(env.openLedger);
         auto const open = env.open();
-        MetaView v(*open, tapNONE);
+        ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
         expect(v.exists(k(1)));
@@ -209,13 +211,13 @@ class MetaView_test
         Env env(*this);
         wipe(env.openLedger);
         auto const open = env.open();
-        MetaView v0(*open, tapNONE);
-        v0.unchecked_insert(sle(1));
-        v0.unchecked_insert(sle(2));
-        v0.unchecked_insert(sle(4));
-        v0.unchecked_insert(sle(7));
+        ApplyViewImpl v0(&*open, tapNONE);
+        v0.insert(sle(1));
+        v0.insert(sle(2));
+        v0.insert(sle(4));
+        v0.insert(sle(7));
         {
-            MetaView v1(v0, tapNONE);
+            Sandbox v1(&v0);
             v1.insert(sle(3));
             v1.insert(sle(5));
             v1.insert(sle(6));
@@ -273,13 +275,13 @@ class MetaView_test
         Env env(*this);
         wipe(env.openLedger);
         auto const open = env.open();
-        MetaView v0 (*open, tapNONE);
-        v0.unchecked_insert(sle(1, 1));
-        v0.unchecked_insert(sle(2, 2));
-        v0.unchecked_insert(sle(4, 4));
+        ApplyViewImpl v0 (&*open, tapNONE);
+        v0.rawInsert(sle(1, 1));
+        v0.rawInsert(sle(2, 2));
+        v0.rawInsert(sle(4, 4));
 
         {
-            MetaView v1(v0, tapNONE);
+            Sandbox v1(&v0);
             v1.erase(v1.peek(k(2)));
             v1.insert(sle(3, 3));
             auto s = v1.peek(k(4));
@@ -290,7 +292,7 @@ class MetaView_test
             expect(seq(v1.read(k(3))) == 3);
             expect(seq(v1.read(k(4))) == 5);
             {
-                MetaView v2(v1, tapNONE);
+                Sandbox v2(&v1);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -307,7 +309,7 @@ class MetaView_test
             expect(seq(v1.read(k(4))) == 5);
 
             {
-                MetaView v2(v1, tapNONE);
+                Sandbox v2(&v1);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
@@ -339,42 +341,43 @@ class MetaView_test
             Env env(*this);
             wipe(env.openLedger);
             auto const open = env.open();
-            MetaView v0(*open, tapNONE);
+            OpenView v0(open.get());
             expect(v0.seq() != 98);
             expect(v0.seq() == open->seq());
             expect(v0.parentCloseTime() != 99);
             expect(v0.parentCloseTime() ==
                 open->parentCloseTime());
-            expect(v0.flags() == tapNONE);
             {
-                MetaView v1(shallow_copy, v0);
+                // shallow copy
+                OpenView v1(v0);
                 expect (v1.seq() == v0.seq());
                 expect (v1.parentCloseTime() ==
                     v1.parentCloseTime());
-                expect (v1.flags() == tapNONE);
 
-                MetaView v2(v1, tapNO_CHECK_SIGN);
+                ApplyViewImpl v2(&v1, tapNO_CHECK_SIGN);
                 expect(v2.parentCloseTime() ==
                     v1.parentCloseTime());
                 expect(v2.seq() == v1.seq());
                 expect(v2.flags() == tapNO_CHECK_SIGN); 
-                MetaView v3(v2, tapNONE);
+
+                Sandbox v3(&v2);
                 expect(v3.seq() == v2.seq());
                 expect(v3.parentCloseTime() ==
                     v2.parentCloseTime());
-                expect(v3.flags() == tapNONE);
+                expect(v3.flags() == tapNO_CHECK_SIGN);
             }
             {
-                PaymentView v1(v0, tapNO_CHECK_SIGN);
-                expect(v1.seq() == v0.seq());
-                expect(v1.parentCloseTime() ==
-                    v0.parentCloseTime());
-                expect(v1.flags() == tapNO_CHECK_SIGN); 
-                PaymentView v2(&v1);
-                expect(v2.seq() == v1.seq());
+                ApplyViewImpl v1(&v0, tapNO_CHECK_SIGN);
+                PaymentSandbox v2(&v1);
+                expect(v2.seq() == v0.seq());
                 expect(v2.parentCloseTime() ==
-                    v1.parentCloseTime());
-                expect(v2.flags() == v1.flags());
+                    v0.parentCloseTime());
+                expect(v2.flags() == tapNO_CHECK_SIGN); 
+                PaymentSandbox v3(&v2);
+                expect(v3.seq() == v2.seq());
+                expect(v3.parentCloseTime() ==
+                    v2.parentCloseTime());
+                expect(v3.flags() == v2.flags());
             }
         }
     }
@@ -385,7 +388,7 @@ class MetaView_test
         using namespace jtx;
 
         // Create a ledger with 1 item, put a
-        // MetaView on that, then another MetaView,
+        // ApplyView on that, then another ApplyView,
         // erase the item, apply.
         {
             Account const master("master");
@@ -393,11 +396,11 @@ class MetaView_test
                 std::make_shared<Ledger>(
                     master.pk(), 1000000000);
             wipe(*ledger);
-            BasicView& v0 = *ledger;
-            v0.unchecked_insert(sle(1));
-            MetaView v1(v0, tapNONE);
+            ledger->rawInsert(sle(1));
+            ReadView& v0 = *ledger;
+            ApplyViewImpl v1(&v0, tapNONE);
             {
-                MetaView v2(v1, tapNONE);
+                Sandbox v2(&v1);
                 v2.erase(v2.peek(k(1)));
                 v2.apply(v1);
             }
@@ -420,7 +423,7 @@ class MetaView_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MetaView,app,ripple);
+BEAST_DEFINE_TESTSUITE(View,ledger,ripple);
 
 }  // test
 }  // ripple

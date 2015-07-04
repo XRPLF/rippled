@@ -52,6 +52,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/ledger/CachedSLEs.h>
 #include <ripple/net/SNTPClient.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -269,7 +270,7 @@ public:
     NodeCache m_tempNodeCache;
     std::unique_ptr <CollectorManager> m_collectorManager;
     detail::AppFamily family_;
-    SLECache m_sleCache;
+    CachedSLEs cachedSLEs_;
     LocalCredentials m_localCredentials;
 
     std::unique_ptr <Resource::Manager> m_resourceManager;
@@ -349,8 +350,7 @@ public:
 
         , family_ (*m_nodeStore, *m_collectorManager)
 
-        , m_sleCache ("LedgerEntryCache", 4096, 120, stopwatch(),
-            m_logs.journal("TaggedCache"))
+        , cachedSLEs_ (std::chrono::minutes(1), stopwatch())
 
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), m_logs.journal("Resource")))
@@ -560,9 +560,10 @@ public:
         return *m_pathRequests;
     }
 
-    SLECache& getSLECache ()
+    CachedSLEs&
+    cachedSLEs()
     {
-        return m_sleCache;
+        return cachedSLEs_;
     }
 
     Validators::Manager& getValidators ()
@@ -804,8 +805,6 @@ public:
         mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
         m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
         m_ledgerMaster->tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
-        m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
-        m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
         family().treecache().setTargetSize (getConfig ().getSize (siTreeCacheSize));
         family().treecache().setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
@@ -1025,11 +1024,10 @@ public:
         getTempNodeCache().sweep();
         getValidations().sweep();
         getInboundLedgers().sweep();
-        getSLECache().sweep();
         AcceptedLedger::sweep();
         family().treecache().sweep();
         getOPs().sweepFetchPack();
-
+        cachedSLEs_.expire();
         // VFALCO NOTE does the call to sweep() happen on another thread?
         m_sweepTimer.setExpiration (getConfig ().getSize (siSweepInterval));
     }
@@ -1072,13 +1070,13 @@ void ApplicationImp::startNewLedger ()
         Ledger::pointer secondLedger = std::make_shared<Ledger> (true, std::ref (*firstLedger));
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
+
+        m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
+        openLedger_.emplace(secondLedger, getConfig(),
+            cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
         assert (secondLedger->exists(keylet::account(
             calcAccountID(rootAddress))));
-        m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
-
-        openLedger_.emplace(secondLedger, getConfig(),
-            stopwatch(), deprecatedLogs().journal("OpenLedger"));
     }
 }
 
@@ -1329,6 +1327,8 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
+        openLedger_.emplace(loadLedger, getConfig(),
+            cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
 
         if (replay)
         {
@@ -1349,7 +1349,7 @@ bool ApplicationImp::loadOldLedger (
                     txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
-                cur->txInsert(item->key(),
+                cur->rawTxInsert(item->key(),
                     std::make_shared<Serializer const>(
                         std::move(s)), nullptr);
                 getApp().getHashRouter().setFlag (item->key(), SF_SIGGOOD);

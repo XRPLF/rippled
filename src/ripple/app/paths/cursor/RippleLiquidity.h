@@ -40,14 +40,14 @@ void rippleLiquidity (
 
 std::uint32_t
 quality_in (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& uToAccountID,
     AccountID const& uFromAccountID,
     Currency const& currency);
 
 std::uint32_t
 quality_out (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& uToAccountID,
     AccountID const& uFromAccountID,
     Currency const& currency);

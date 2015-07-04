@@ -33,7 +33,7 @@ namespace ripple {
     @return The maximum amount that can be held.
 */
 STAmount creditLimit (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);
@@ -45,7 +45,7 @@ STAmount creditLimit (
     @param currency the IOU to check.
 */
 STAmount creditBalance (
-    BasicView const& view,
+    ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);

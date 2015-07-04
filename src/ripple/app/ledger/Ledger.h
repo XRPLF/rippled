@@ -21,7 +21,6 @@
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/TxMeta.h>
-#include <ripple/ledger/SLECache.h>
 #include <ripple/ledger/View.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
@@ -49,10 +48,6 @@ class SqliteStatement;
     particular ledger. Most of the operations on a ledger are concerned
     with the state map.
 
-    A View provides a structured interface to manipulate the state map in
-    a reversible way, with facilities to automatically produce metadata
-    when applying changes.
-
     This can hold just the header, a partial set of data, or the entire set
     of data. It all depends on what is in the corresponding SHAMap entry.
     Various functions are provided to populate or depopulate the caches that
@@ -67,10 +62,13 @@ class SqliteStatement;
     for locks.
 
     3) Mutable ledgers cannot be shared.
+
+    @note Presented to clients as ReadView
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
-    , public BasicView
+    , public DigestAwareReadView
+    , public TxsRawView
     , public CountedObject <Ledger>
 {
 public:
@@ -112,13 +110,11 @@ public:
 
     ~Ledger();
 
-    //--------------------------------------------------------------------------
     //
-    // BasicView
+    // ReadView
     //
-    //--------------------------------------------------------------------------
 
-    ViewInfo const&
+    LedgerInfo const&
     info() const
     {
         return info_;
@@ -140,44 +136,56 @@ public:
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
 
-    bool
-    txEmpty() const override;
+    std::unique_ptr<txs_type::iter_base>
+    txsBegin() const override;
 
-    std::unique_ptr<iterator_impl>
-    txBegin() const override;
-
-    std::unique_ptr<iterator_impl>
-    txEnd() const override;
-
-    bool
-    unchecked_erase (uint256 const& key) override;
-
-    void
-    unchecked_insert (std::shared_ptr<SLE>&& sle) override;
-
-    void
-    unchecked_replace (std::shared_ptr<SLE>&& sle) override;
-
-    void
-    destroyCoins (std::uint64_t feeDrops) override
-    {
-        mTotCoins -= feeDrops;
-    }
-
-    std::size_t
-    txCount() const override;
+    std::unique_ptr<txs_type::iter_base>
+    txsEnd() const override;
 
     bool
     txExists (uint256 const& key) const override;
 
+    tx_type
+    txRead (key_type const& key) const override;
+
+    //
+    // DigestAwareReadView
+    //
+
+    boost::optional<digest_type>
+    digest (key_type const& key) const override;
+
+    //
+    // RawView
+    //
+
     void
-    txInsert (uint256 const& key,
+    rawErase (std::shared_ptr<
+        SLE> const& sle) override;
+
+    void
+    rawInsert (std::shared_ptr<
+        SLE> const& sle) override;
+
+    void
+    rawReplace (std::shared_ptr<
+        SLE> const& sle) override;
+
+    void
+    rawDestroyXRP (std::uint64_t feeDrops) override
+    {
+        mTotCoins -= feeDrops;
+    }
+
+    //
+    // TxsRawView
+    //
+
+    void
+    rawTxInsert (uint256 const& key,
         std::shared_ptr<Serializer const
             > const& txn, std::shared_ptr<
                 Serializer const> const& metaData) override;
-
-    std::vector<uint256>
-    txList() const override;
 
     //--------------------------------------------------------------------------
 
@@ -428,7 +436,7 @@ public:
                   getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
 
 private:
-    class tx_iterator_impl;
+    class txs_iter_impl;
 
     void saveValidatedLedgerAsync(Job&, bool current)
     {
@@ -475,7 +483,7 @@ private:
     std::mutex mutable mutex_;
 
     Fees fees_;
-    ViewInfo info_;
+    LedgerInfo info_;
 
     // Ripple cost of the reference transaction
     std::uint64_t mutable mBaseFee = 0;
@@ -521,19 +529,16 @@ deserializeTxPlusMeta (SHAMapItem const& item);
 std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix);
 
-/** SLE cache-aware deserialized state SLE fetch.
-    Effects:
-        If the key exists, the item is flattened
-            and added to the SLE cache.
-    The returned object may not be modified.
-    @param type An optional LedgerEntryType. If type is
-                engaged and the SLE's type does not match,
-                an empty shared_ptr is returned.
-    @return `empty` if the key is not present
-*/
+// DEPRECATED
+inline
 std::shared_ptr<SLE const>
-cachedRead (Ledger const& ledger, uint256 const& key, SLECache& cache,
-    boost::optional<LedgerEntryType> type = boost::none);
+cachedRead (ReadView const& ledger, uint256 const& key,
+    boost::optional<LedgerEntryType> type = boost::none)
+{
+    if (type)
+        return ledger.read(Keylet(*type, key));
+    return ledger.read(keylet::unchecked(key));
+}
 
 /** Return the hash of a ledger by sequence.
     The hash is retrieved by looking up the "skip list"
@@ -546,7 +551,7 @@ cachedRead (Ledger const& ledger, uint256 const& key, SLECache& cache,
 */
 boost::optional<uint256>
 hashOfSeq (Ledger& ledger, LedgerIndex seq,
-    SLECache& cache, beast::Journal journal);
+    beast::Journal journal);
 
 /** Find a ledger index from which we could easily get the requested ledger
 

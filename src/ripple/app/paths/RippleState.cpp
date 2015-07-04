@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/STAmount.h>
@@ -73,7 +72,7 @@ Json::Value RippleState::getJson (int)
 
 std::vector <RippleState::pointer>
 getRippleStateItems (AccountID const& accountID,
-    BasicView const& view)
+    ReadView const& view)
 {
     std::vector <RippleState::pointer> items;
     forEachItem(view, accountID,

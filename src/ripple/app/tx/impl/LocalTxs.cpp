@@ -127,8 +127,7 @@ public:
         if (ledger->txExists(txn.getID()))
             return true;
         auto const sle = cachedRead(*ledger,
-            keylet::account(txn.getAccount()).key,
-                getApp().getSLECache(), ltACCOUNT_ROOT);
+            keylet::account(txn.getAccount()).key, ltACCOUNT_ROOT);
         if (! sle)
             return false;
         if (sle->getFieldU32 (sfSequence) > txn.getSeq ())

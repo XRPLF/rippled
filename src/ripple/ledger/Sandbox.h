@@ -17,45 +17,56 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/paths/impl/PaymentView.h>
-#include <cassert>
+#ifndef RIPPLE_LEDGER_SANDBOX_H_INCLUDED
+#define RIPPLE_LEDGER_SANDBOX_H_INCLUDED
+
+#include <ripple/ledger/RawView.h>
+#include <ripple/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
 
-STAmount
-PaymentView::balanceHook (AccountID const& account,
-    AccountID const& issuer,
-        STAmount const& amount) const
-{
-    if (pv_)
-        return tab_.adjustedBalance (
-            account, issuer, pv_->balanceHook (account, issuer, amount));
-    return tab_.adjustedBalance(
-        account, issuer, amount);
-}
+/** Discardable, editable view to a ledger.
 
-void
-PaymentView::creditHook (AccountID const& from,
-    AccountID const& to,
-        STAmount const& amount)
-{
-    tab_.credit(from, to, amount);
-}
+    The sandbox inherits the flags of the base.
 
-void
-PaymentView::apply (BasicView& to)
+    @note Presented as ApplyView to clients.
+*/
+class Sandbox
+    : public detail::ApplyViewBase
 {
-    assert(! pv_);
-    view_.apply(to);
-}
+public:
+    Sandbox() = delete;
+    Sandbox (Sandbox const&) = delete;
+    Sandbox& operator= (Sandbox&&) = delete;
+    Sandbox& operator= (Sandbox const&) = delete;
 
-void
-PaymentView::apply (PaymentView& to)
-{
-    assert(pv_ == &to);
-    view_.apply(to);
-    tab_.apply(to.tab_);
-}
+#ifdef _MSC_VER
+    Sandbox (Sandbox&& other)
+        : ApplyViewBase (std::move(other))
+    {
+    }
+#else
+    Sandbox (Sandbox&&) = default;
+#endif
 
-}  // ripple
+    Sandbox (ReadView const* base,
+            ApplyFlags flags)
+        : ApplyViewBase (base, flags)
+    {
+    }
+
+    Sandbox (ApplyView const* base)
+        : Sandbox (base, base->flags())
+    {
+    }
+
+    void
+    apply (RawView& to)
+    {
+        items_.apply(to);
+    }
+};
+
+} // ripple
+
+#endif

@@ -99,6 +99,10 @@ public:
     STObject (const SOTemplate & type, SField const& name);
     STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
     STObject (SerialIter& sit, SField const& name);
+    STObject (SerialIter&& sit, SField const& name)
+        : STObject(sit, name)
+    {
+    }
     STObject& operator= (STObject const&) = default;
     STObject& operator= (STObject&& other);
 

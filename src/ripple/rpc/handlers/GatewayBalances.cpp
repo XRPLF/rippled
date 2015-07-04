@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/app/paths/RippleState.h>
@@ -137,9 +136,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
     // Traverse the cold wallet's trust lines
     {
-        CachedView const view(
-            *ledger, getApp().getSLECache());
-        forEachItem(view, accountID,
+        forEachItem(*ledger, accountID,
             [&](std::shared_ptr<SLE const> const& sle)
             {
                 auto rs = RippleState::makeItem (accountID, sle);

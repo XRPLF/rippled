@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -96,8 +95,7 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleOffer = cachedRead (*ledger, startAfter,
-            getApp().getSLECache());
+        auto const sleOffer = cachedRead (*ledger, startAfter);
 
         if (sleOffer == nullptr ||
             sleOffer->getType () != ltOFFER ||
@@ -125,8 +123,6 @@ Json::Value doAccountOffers (RPC::Context& context)
     }
 
     {
-        CachedView const view(
-            *ledger, getApp().getSLECache());
         if (! forEachItemAfter(*ledger, accountID,
                 startAfter, startHint, reserve,
             [&offers](std::shared_ptr<SLE const> const& offer)

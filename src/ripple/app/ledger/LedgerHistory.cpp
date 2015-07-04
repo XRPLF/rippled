@@ -275,8 +275,7 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
 
 // Return list of leaves sorted by key
 static
-std::vector<std::shared_ptr<
-    SHAMapItem const>>
+std::vector<std::shared_ptr<SHAMapItem const>>
 leaves (SHAMap const& sm)
 {
     std::vector<std::shared_ptr<

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
-#include <ripple/app/paths/impl/PaymentView.h>
+#include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/app/paths/PathState.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
@@ -75,7 +75,7 @@ public:
     static 
     Output
     rippleCalculate(
-        PaymentView& view,
+        PaymentSandbox& view,
 
         // Compute paths using this ledger entry set.  Up to caller to actually
         // apply to ledger.
@@ -101,7 +101,7 @@ public:
         Input const* const pInputs = nullptr);
 
     // The view we are currently working on
-    PaymentView& view;
+    PaymentSandbox& view;
 
     // If the transaction fails to meet some constraint, still need to delete
     // unfunded offers.
@@ -117,7 +117,7 @@ public:
 
 private:
     RippleCalc (
-        PaymentView& view_,
+        PaymentSandbox& view_,
         STAmount const& saMaxAmountReq,             // --> -1 = no limit.
         STAmount const& saDstAmountReq,
 

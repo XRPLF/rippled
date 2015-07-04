@@ -80,10 +80,10 @@ public:
 */
 void applyTransactions (
     SHAMap const* set,
-    BasicView& applyView,
+    OpenView& view,
     Ledger::ref checkLedger,
     CanonicalTXSet& retriableTransactions,
-    bool enableTesting = false);
+    ApplyFlags flags);
 
 } // ripple
 

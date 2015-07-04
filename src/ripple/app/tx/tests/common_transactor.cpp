@@ -25,6 +25,8 @@
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/TxFlags.h>
 
+#if 0
+
 namespace ripple {
 namespace test {
 
@@ -429,3 +431,5 @@ getTicketsOnAccount (TestLedger& ledger, UserAccount const& acct)
 
 } // test
 } // ripple
+
+#endif

@@ -21,7 +21,6 @@
 #include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/app/tx/impl/BookTip.h>
 #include <ripple/basics/Log.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/test/jtx.h>
 

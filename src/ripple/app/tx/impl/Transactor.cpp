@@ -101,7 +101,7 @@ TER Transactor::payFee ()
     mSourceBalance -= saPaid;
     sle->setFieldAmount (sfBalance, mSourceBalance);
 
-    // VFALCO Should we call view().destroyCoins() here as well?
+    // VFALCO Should we call view().rawDestroyXRP() here as well?
 
     return tesSUCCESS;
 }
@@ -329,7 +329,7 @@ struct GetSignerListResult
 static
 GetSignerListResult
 getSignerList (AccountID signingForAcctID,
-    BasicView const& view, beast::Journal journal)
+    ReadView const& view, beast::Journal journal)
 {
     GetSignerListResult ret;
 
@@ -786,7 +786,7 @@ Transactor::operator()()
             }
 
             if (fee != zero)
-                view().destroyCoins (fee.mantissa ());
+                ctx_.destroyXRP (fee.mantissa ());
         }
 
         ctx_.apply(terResult);

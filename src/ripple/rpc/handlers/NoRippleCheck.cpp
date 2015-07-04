@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -105,8 +104,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
     }
 
     auto const sle = cachedRead(*ledger,
-        keylet::account(accountID).key,
-            getApp().getSLECache(), ltACCOUNT_ROOT);
+        keylet::account(accountID).key, ltACCOUNT_ROOT);
     if (! sle)
         return rpcError (rpcACT_NOT_FOUND);
 
@@ -133,9 +131,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         }
     }
 
-    CachedView const view(
-        *ledger, getApp().getSLECache());
-    forEachItemAfter (view, accountID,
+    forEachItemAfter (*ledger, accountID,
             uint256(), 0, limit,
         [&](std::shared_ptr<SLE const> const& ownedItem)
         {

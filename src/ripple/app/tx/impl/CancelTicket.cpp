@@ -21,6 +21,7 @@
 #include <ripple/app/tx/impl/CancelTicket.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 

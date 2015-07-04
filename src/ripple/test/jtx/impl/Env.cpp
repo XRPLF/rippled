@@ -51,7 +51,7 @@ namespace test {
 
 namespace jtx {
 
-std::shared_ptr<Ledger>
+std::shared_ptr<Ledger const>
 Env::genesis()
 {
     Account master("master", generateKeysFromSeed(
@@ -71,19 +71,20 @@ Env::Env (beast::unit_test::suite& test_)
         KeyType::secp256k1, RippleAddress::createSeedGeneric(
             "masterpassphrase")))
     , closed_ (genesis())
-    , openLedger (closed_, config, clock, journal)
+    , cachedSLEs_ (std::chrono::seconds(5), clock)
+    , openLedger (closed_, config, cachedSLEs_, journal)
 {
     memoize(master);
     initializePathfinding();
 }
 
-std::shared_ptr<BasicView const>
+std::shared_ptr<ReadView const>
 Env::open() const
 {
     return openLedger.current();
 }
 
-std::shared_ptr<BasicView const>
+std::shared_ptr<ReadView const>
 Env::closed() const
 {
     return closed_;
@@ -94,8 +95,9 @@ Env::close(
     TestClock::time_point const& closeTime)
 {
     clock.set(closeTime);
+    // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        false, *closed_);
+        false, const_cast<Ledger&>(*closed_));
     next->setClosed();
 #if 0
     // Build a SHAMap, put all the transactions
@@ -116,10 +118,10 @@ Env::close(
         IHashRouter::New(60));
     OrderedTxs retries(uint256{});
     {
-        MetaView accum(*next, tapNONE);
+        OpenView accum(&*next);
         OpenLedger::apply(accum, *closed_,
-            txs, retries, *router, config,
-                journal);
+            txs, retries, applyFlags(), *router,
+                config, journal);
         accum.apply(*next);
     }
     next->setAccepted(
@@ -128,8 +130,9 @@ Env::close(
                 true);
     OrderedTxs locals({});
     openLedger.accept(next, locals,
-        false, retries, *router);
+        false, retries, applyFlags(), *router);
     closed_ = next;
+    cachedSLEs_.expire();
 }
 
 void
@@ -268,12 +271,10 @@ Env::submit (JTx const& jt)
     if (stx)
     {
         openLedger.modify(
-            [&](View& view, beast::Journal j)
+            [&](OpenView& view, beast::Journal j)
             {
-                ViewFlags flags = tapNONE;
-                flags = flags | tapENABLE_TESTING;
                 std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, flags, config,
+                    view, *stx, applyFlags(), config,
                         beast::Journal{});
                 return didApply;
             });
@@ -375,6 +376,12 @@ Env::st (JTx const& jt)
     {
     }
     return nullptr;
+}
+
+ApplyFlags
+Env::applyFlags() const
+{
+    return tapENABLE_TESTING;
 }
 
 } // jtx

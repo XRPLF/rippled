@@ -30,24 +30,19 @@
 
 namespace ripple {
 
-/** Apply a transaction to a BasicView.
+/** Apply a transaction to a ReadView.
 
     Throws:
         
-        Exceptions are thrown on broken invariants. Callers
-        should catch these exceptions to protect the ledger
-        and the running process.
-
-        std::logic_error
-        (any)
+        Does not throw. Exceptions generated during
+        tx application will return tefEXCEPTION.
 
     @return A pair with the TER and a bool indicating
             whether or not the transaction was applied.
 */
-// VFALCO Some call sites use try/catch some don't.
 std::pair<TER, bool>
-apply (BasicView& view,
-    STTx const& tx, ViewFlags flags,
+apply (OpenView& view,
+    STTx const& tx, ApplyFlags flags,
         Config const& config,
             beast::Journal journal);
 

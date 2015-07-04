@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 #define RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 
-#include <ripple/app/ledger/MetaView.h>
+#include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STTx.h>
 #include <beast/utility/Journal.h>
@@ -36,8 +36,8 @@ class ApplyContext
 {
 public:
     explicit
-    ApplyContext (BasicView& base,
-        STTx const& tx, ViewFlags flags,
+    ApplyContext (OpenView& base,
+        STTx const& tx, ApplyFlags flags,
             Config const& config,
                 beast::Journal = {});
 
@@ -45,23 +45,30 @@ public:
     Config const& config;
     beast::Journal const journal;
 
-    View&
+    ApplyView&
     view()
     {
         return *view_;
     }
 
-    View const&
+    ApplyView const&
     view() const
+    {
+        return *view_;
+    }
+
+    // VFALCO Unfortunately this is necessary
+    RawView&
+    rawView()
     {
         return *view_;
     }
 
     /** Sets the DeliveredAmount field in the metadata */
     void
-    deliverAmount (STAmount const& delivered)
+    deliver (STAmount const& amount)
     {
-        view_->setDeliveredAmount(delivered);
+        view_->deliver(amount);
     }
 
     /** Discard changes and start fresh. */
@@ -72,11 +79,17 @@ public:
     void
     apply (TER);
 
+    void
+    destroyXRP (std::uint64_t feeDrops)
+    {
+        view_->rawDestroyXRP(feeDrops);
+    }
+
 private:
-    BasicView& base_;
-    ViewFlags flags_;
+    OpenView& base_;
+    ApplyFlags flags_;
     beast::Journal j_;
-    boost::optional<MetaView> view_;
+    boost::optional<ApplyViewImpl> view_;
 };
 
 } // ripple

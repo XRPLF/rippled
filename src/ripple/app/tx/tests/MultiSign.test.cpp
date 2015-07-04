@@ -24,6 +24,8 @@
 namespace ripple {
 namespace test {
 
+#if 0
+
 class MultiSign_test : public beast::unit_test::suite
 {
     static std::uint64_t const xrp = std::mega::num;
@@ -1616,6 +1618,8 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(MultiSign,ripple_app,ripple);
+
+#endif
 
 } // test
 } // ripple

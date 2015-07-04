@@ -53,6 +53,62 @@
 
 namespace ripple {
 
+class Ledger::txs_iter_impl
+    : public txs_type::iter_base
+{
+private:
+    bool metadata_;
+    ReadView const* view_;
+    SHAMap::iterator iter_;
+
+public:
+    txs_iter_impl() = delete;
+    txs_iter_impl& operator= (txs_iter_impl const&) = delete;
+
+    txs_iter_impl (txs_iter_impl const&) = default;
+
+    txs_iter_impl (bool metadata,
+        SHAMap::iterator iter,
+            ReadView const& view)
+        : metadata_ (metadata)
+        , view_ (&view)
+        , iter_ (iter)
+    {
+    }
+
+    std::unique_ptr<base_type>
+    copy() const override
+    {
+        return std::make_unique<
+            txs_iter_impl>(*this);
+    }
+
+    bool
+    equal (base_type const& impl) const override
+    {
+        auto const& other = dynamic_cast<
+            txs_iter_impl const&>(impl);
+        return iter_ == other.iter_;
+    }
+
+    void
+    increment() override
+    {
+        ++iter_;
+    }
+
+    txs_type::value_type
+    dereference() const override
+    {
+        auto const item = *iter_;
+        if (metadata_)
+            return deserializeTxPlusMeta(*item);
+        return { deserializeTx(*item), nullptr };
+    }
+};
+
+//------------------------------------------------------------------------------
+
 /*  Create the "genesis" account root.
     The genesis account root contains all the XRP
     that will ever exist in the system.
@@ -94,12 +150,12 @@ Ledger::Ledger (RippleAddress const& masterPublicKey,
 {
     // first ledger
     info_.seq = 1;
-    auto sle = makeGenesisAccount(
+    auto const sle = makeGenesisAccount(
         calcAccountID(masterPublicKey),
             balanceInDrops);
     WriteLog (lsTRACE, Ledger)
             << "root account: " << sle->getJson(0);
-    unchecked_insert(std::move(sle));
+    rawInsert(sle);
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
 }
 
@@ -192,6 +248,7 @@ Ledger::Ledger (bool /* dummy */,
     info_.hash = prevLedger.info().hash + uint256(1);
     prevLedger.updateHash ();
 
+    // VFALCO TODO Require callers to update the hash
     mParentHash = prevLedger.getHash ();
 
     assert (mParentHash.isNonZero ());
@@ -247,14 +304,13 @@ Ledger::~Ledger ()
 
 void Ledger::setImmutable ()
 {
-    // Updates the hash and marks the ledger and its maps immutable
-
+    // Force update, since this is the only
+    // place the hash transitions to valid
     updateHash ();
-    mImmutable = true;
 
+    mImmutable = true;
     if (txMap_)
         txMap_->setImmutable ();
-
     if (stateMap_)
         stateMap_->setImmutable ();
 }
@@ -941,12 +997,18 @@ Ledger::succ (uint256 const& key,
 std::shared_ptr<SLE const>
 Ledger::read (Keylet const& k) const
 {
-    auto const& value =
+    if (k.key == zero)
+    {
+        assert(false);
+        return nullptr;
+    }
+    auto const& item =
         stateMap_->peekItem(k.key);
-    if (! value)
+    if (! item)
         return nullptr;
     auto sle = std::make_shared<SLE>(
-        SerialIter{value->data(), value->size()}, value->key());
+        SerialIter{item->data(),
+            item->size()}, item->key());
     if (! k.check(*sle))
         return nullptr;
     // VFALCO TODO Eliminate "immutable" runtime property
@@ -958,138 +1020,100 @@ Ledger::read (Keylet const& k) const
 
 //------------------------------------------------------------------------------
 
-class Ledger::tx_iterator_impl
-    : public BasicView::iterator_impl
+auto
+Ledger::txsBegin() const ->
+    std::unique_ptr<txs_type::iter_base>
 {
-private:
-    SHAMap::iterator iter_;
+    return std::make_unique<
+        txs_iter_impl>(closed(),
+            txMap_->begin(), *this);
+}
 
-public:
-    explicit
-    tx_iterator_impl (SHAMap::iterator iter)
-        : iter_(iter)
-    {
-    }
-
-    std::unique_ptr<iterator_impl>
-    copy() const override
-    {
-        return std::make_unique<
-            tx_iterator_impl>(
-                iter_);
-    }
-
-    bool
-    equal (iterator_impl const& impl) const override
-    {
-        auto const& other = dynamic_cast<
-            tx_iterator_impl const&>(impl);
-        return iter_ == other.iter_;
-    }
-
-    void
-    increment() override
-    {
-        ++iter_;
-    }
-
-    txs_type::value_type
-    dereference() const override
-    {
-        return deserializeTxPlusMeta(**iter_);
-    }
-};
+auto
+Ledger::txsEnd() const ->
+    std::unique_ptr<txs_type::iter_base>
+{
+    return std::make_unique<
+        txs_iter_impl>(closed(),
+            txMap_->end(), *this);
+}
 
 bool
-Ledger::txEmpty() const
+Ledger::txExists (uint256 const& key) const
 {
-    return txMap_->getHash().isZero();
+    return txMap_->hasItem (key);
 }
 
 auto
-Ledger::txBegin() const ->
-    std::unique_ptr<iterator_impl>
+Ledger::txRead(
+    key_type const& key) const ->
+        tx_type
 {
-    // Can't iterate open Ledger objects
-    // because they don't have the metadata!
-    assert(closed());
-    return std::make_unique<
-        tx_iterator_impl>(txMap_->begin());
+    auto const& item =
+        txMap_->peekItem(key);
+    if (! item)
+        return {};
+    if (closed())
+    {
+        auto result =
+            deserializeTxPlusMeta(*item);
+        return { std::move(result.first),
+            std::move(result.second) };
+    }
+    return { deserializeTx(*item), nullptr };
 }
 
 auto
-Ledger::txEnd() const ->
-    std::unique_ptr<iterator_impl>
+Ledger::digest (key_type const& key) const ->
+    boost::optional<digest_type>
 {
-    // Can't iterate open Ledger objects
-    // because they don't have the metadata!
-    assert(closed());
-    return std::make_unique<
-        tx_iterator_impl>(txMap_->end());
+    digest_type digest;
+    // VFALCO Unfortunately this loads the item
+    //        from the NodeStore needlessly.
+    if (! stateMap_->peekItem(key, digest))
+        return boost::none;
+    return digest;
 }
 
 //------------------------------------------------------------------------------
 
-bool
-Ledger::unchecked_erase(
-    uint256 const& key)
+void
+Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
-    return stateMap_->delItem(key);
+    if (! stateMap_->delItem(sle->key()))
+        LogicError("Ledger::rawErase: key not found");
 }
 
 void
-Ledger::unchecked_insert(
-    std::shared_ptr<SLE>&& sle)
+Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 {
-    assert(! stateMap_->hasItem(sle->getIndex()));
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<
         SHAMapItem const>(sle->key(),
             std::move(ss));
     // VFALCO NOTE addGiveItem should take ownership
-    auto const success =
-        stateMap_->addGiveItem(
-            std::move(item), false, false);
-    (void)success;
-    assert(success);
-    auto const ours = std::move(sle);
+    if (! stateMap_->addGiveItem(
+            std::move(item), false, false))
+        LogicError("Ledger::rawInsert: key already exists");
 }
 
 void
-Ledger::unchecked_replace(
-    std::shared_ptr<SLE>&& sle)
+Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 {
-    assert(stateMap_->hasItem(sle->getIndex()));
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<
         SHAMapItem const>(sle->key(),
             std::move(ss));
     // VFALCO NOTE updateGiveItem should take ownership
-    auto const success =
-        stateMap_->updateGiveItem(
-            std::move(item), false, false);
-    (void)success;
-    assert(success);
-    auto const ours = std::move(sle);
-}
-
-std::size_t
-Ledger::txCount() const
-{
-    // Always zero for closed ledgers.
-    return 0;
-}
-
-bool
-Ledger::txExists (uint256 const& key) const
-{
-    return txMap().hasItem (key);
+    if (! stateMap_->updateGiveItem(
+            std::move(item), false, false))
+        LogicError("Ledger::rawReplace: key not found");
 }
 
 void
-Ledger::txInsert (uint256 const& key,
+Ledger::rawTxInsert (uint256 const& key,
     std::shared_ptr<Serializer const
         > const& txn, std::shared_ptr<
             Serializer const> const& metaData)
@@ -1121,17 +1145,6 @@ Ledger::txInsert (uint256 const& key,
 
     // VFALCO TODO We could touch only the txMap
     touch();
-}
-
-std::vector<uint256>
-Ledger::txList() const
-{
-    std::vector<uint256> list;
-    for (auto const& item : *txMap_)
-    {
-        list.push_back(item->key());
-    }
-    return list;
 }
 
 std::shared_ptr<SLE>
@@ -1298,9 +1311,9 @@ void Ledger::updateSkipList ()
         sle->setFieldV256 (sfHashes, STVector256 (hashes));
         sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
         if (created)
-            unchecked_insert(std::move(sle));
+            rawInsert(sle);
         else
-            unchecked_replace(std::move(sle));
+            rawReplace(sle);
     }
 
     // update record of past 256 ledger
@@ -1326,9 +1339,9 @@ void Ledger::updateSkipList ()
     sle->setFieldV256 (sfHashes, STVector256 (hashes));
     sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
     if (created)
-        unchecked_insert(std::move(sle));
+        rawInsert(sle);
     else
-        unchecked_replace(std::move(sle));
+        rawReplace(sle);
 }
 
 /** Save, or arrange to save, a fully-validated ledger
@@ -1407,7 +1420,7 @@ void Ledger::deprecatedUpdateCachedFees() const
     std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
     std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
-    // VFALCO NOTE this doesn't go through the SLECache
+    // VFALCO NOTE this doesn't go through the CachedSLEs
     auto const sle = this->read(keylet::fees());
     if (sle)
     {
@@ -1476,34 +1489,9 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 //
 //------------------------------------------------------------------------------
 
-std::shared_ptr<SLE const>
-cachedRead (Ledger const& ledger, uint256 const& key,
-    SLECache& cache, boost::optional<LedgerEntryType> type)
-{
-    uint256 hash;
-    auto const& item =
-        ledger.stateMap().peekItem(key, hash);
-    if (! item)
-        return {};
-    if (auto const sle = cache.fetch(hash))
-    {
-        if (type && sle->getType() != type)
-            return {};
-        return sle;
-    }
-    SerialIter sit(make_Slice(item->peekData()));
-    auto sle = std::make_shared<SLE>(sit, item->key());
-    // VFALCO Should we still cache it if the type doesn't match?
-    if (type && sle->getType() != type)
-        return {};
-    sle->setImmutable ();
-    cache.canonicalize(hash, sle);
-    return sle;
-}
-
 boost::optional<uint256>
 hashOfSeq (Ledger& ledger, LedgerIndex seq,
-    SLECache& cache, beast::Journal journal)
+    beast::Journal journal)
 {
     // Easy cases...
     if (seq > ledger.seq())
@@ -1524,7 +1512,7 @@ hashOfSeq (Ledger& ledger, LedgerIndex seq,
         if (diff <= 256)
         {
             auto const hashIndex = cachedRead(
-                ledger, getLedgerHashIndex(), cache);
+                ledger, getLedgerHashIndex());
             if (hashIndex)
             {
                 assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
@@ -1555,7 +1543,7 @@ hashOfSeq (Ledger& ledger, LedgerIndex seq,
 
     // in skiplist
     auto const hashIndex = cachedRead(ledger,
-        getLedgerHashIndex(seq), cache);
+        getLedgerHashIndex(seq));
     if (hashIndex)
     {
         auto const lastSeq =

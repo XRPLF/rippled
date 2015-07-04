@@ -112,8 +112,7 @@ void TxnSignApiFacade::snapshotAccountState (AccountID const& accountID)
     ledger_ = netOPs_->getCurrentLedger ();
     accountID_ = accountID;
     sle_ = cachedRead(*ledger_,
-        keylet::account(accountID_).key,
-            getApp().getSLECache(), ltACCOUNT_ROOT);
+        keylet::account(accountID_).key, ltACCOUNT_ROOT);
 }
 
 bool TxnSignApiFacade::isValidAccount () const
@@ -256,8 +255,7 @@ error_code_i TxnSignApiFacade::multiAcctMatchesPubKey (
         // accountID.  It's okay if the account root is not available,
         // since they might be signing with a phantom (unfunded) account.
         accountState = cachedRead(*ledger_,
-            keylet::account(accountID).key,
-                getApp().getSLECache(), ltACCOUNT_ROOT);
+            keylet::account(accountID).key, ltACCOUNT_ROOT);
     }
 
     return acctMatchesPubKey (accountState, accountID, publicKey);

@@ -23,7 +23,6 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
-#include <ripple/ledger/SLECache.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
@@ -39,6 +38,7 @@ namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
+class CachedSLEs;
 class CollectorManager;
 namespace shamap {
 class Family;
@@ -97,7 +97,7 @@ public:
     virtual JobQueue&               getJobQueue () = 0;
     virtual RPC::Manager&           getRPCManager () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
-    virtual SLECache&               getSLECache () = 0;
+    virtual CachedSLEs&             cachedSLEs() = 0;
     virtual Validators::Manager&    getValidators () = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
     virtual IHashRouter&            getHashRouter () = 0;

@@ -22,6 +22,7 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 namespace path {
@@ -30,7 +31,7 @@ namespace {
 
 static
 TER
-deleteOffers (View& view,
+deleteOffers (ApplyView& view,
     OfferSet const& offers)
 {
     for (auto& e: offers)
@@ -43,7 +44,7 @@ deleteOffers (View& view,
 } // namespace
 
 RippleCalc::Output RippleCalc::rippleCalculate (
-    PaymentView& view,
+    PaymentSandbox& view,
 
     // Compute paths using this ledger entry set.  Up to caller to actually
     // apply to ledger.

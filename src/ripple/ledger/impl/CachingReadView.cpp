@@ -18,36 +18,61 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/ledger/CachedView.h>
+#include <ripple/ledger/CachingReadView.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/Serializer.h>
 
 namespace ripple {
 
-std::shared_ptr<SLE const>
-CachedView::read (Keylet const& k) const
+CachingReadView::CachingReadView(
+    DigestAwareReadView const* base,
+        CachedSLEs& cache,
+            std::shared_ptr<void const> hold)
+    : cache_ (cache)
+    , base_ (*base)
+    , hold_ (hold)
 {
-    uint256 hash;
-    // get hash since SLECache needs to know
-    auto const item =
-        view_.stateMap().peekItem(k.key, hash);
-    if (! item)
-        return nullptr;
-    if (auto sle = cache_.fetch(hash))
+}
+
+bool
+CachingReadView::exists (Keylet const& k) const
+{
+    return read(k) != nullptr;
+}
+
+std::shared_ptr<SLE const>
+CachingReadView::read (Keylet const& k) const
+{
     {
-        if(! k.check(*sle))
-            return nullptr;
+        std::lock_guard<
+            std::mutex> lock(mutex_);
+        auto const iter = map_.find(k.key);
+        if (iter != map_.end())
+        {
+            if (! k.check(*iter->second))
+                return nullptr;
+            return iter->second;
+        }
+    }
+    auto const digest =
+        base_.digest(k.key);
+    if (! digest)
+        return nullptr;
+    auto sle = cache_.fetch(*digest,
+        [&]() { return base_.read(k); });
+    std::lock_guard<
+        std::mutex> lock(mutex_);
+    auto const iter =
+        map_.find(k.key);
+    if (iter == map_.end())
+    {
+        map_.emplace(k.key, sle);
         return sle;
     }
-    SerialIter sit(make_Slice(item->peekData()));
-    auto sle = std::make_shared<SLE>(sit, item->key());
-    if (! k.check(*sle))
-        return nullptr;
-    // VFALCO TODO Eliminate "immutable" runtime property
-    sle->setImmutable ();
-    cache_.canonicalize(hash, sle);
-    // need move otherwise makes a copy
-    // because return type is different
-    return std::move(sle);
+    if (! k.check(*iter->second))
+        LogicError("CachingReadView::read: wrong type");
+    return iter->second;
+
 }
 
 } // ripple

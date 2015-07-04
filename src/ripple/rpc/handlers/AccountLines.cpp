@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/ledger/CachedView.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/paths/RippleState.h>
 
@@ -152,8 +151,7 @@ Json::Value doAccountLines (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleLine = cachedRead(*ledger, startAfter,
-            getApp().getSLECache());
+        auto const sleLine = cachedRead(*ledger, startAfter);
 
         if (sleLine == nullptr || sleLine->getType () != ltRIPPLE_STATE)
             return rpcError (rpcINVALID_PARAMS);
@@ -181,9 +179,8 @@ Json::Value doAccountLines (RPC::Context& context)
     }
 
     {
-        CachedView const view(
-            *ledger, getApp().getSLECache());
-        if (! forEachItemAfter(view, accountID,
+        // VFALCO Needs a caching view here
+        if (! forEachItemAfter(*ledger, accountID,
                 startAfter, startHint, reserve,
             [&visitData](std::shared_ptr<SLE const> const& sleCur)
             {

@@ -356,41 +356,35 @@ public:
         int recovers = 0;
 
     #if RIPPLE_OPEN_LEDGER
-        bool const openLedger = true;
-    #else
-        bool const openLedger = false;
-    #endif
-        if (openLedger)
-        {
-            getApp().openLedger().modify(
-                [&](View& view, beast::Journal j)
-                {
-                    bool any = false;
-                    for (auto const& it : mHeldTransactions)
-                    {
-                        ViewFlags flags = tapNONE;
-                        if (getApp().getHashRouter().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
-                            flags = flags | tapNO_CHECK_SIGN;
-                        auto const result = apply(view,
-                            *it.second, flags, getConfig(), j);
-                        if (result.second)
-                            any = true;
-                    }
-                    return any;
-                });
-        }
-
-        for (auto const& it : mHeldTransactions)
-        {
-            try
+        getApp().openLedger().modify(
+            [&](OpenView& view, beast::Journal j)
             {
-                ViewFlags tepFlags = tapNONE;
+                bool any = false;
+                for (auto const& it : mHeldTransactions)
+                {
+                    ApplyFlags flags = tapNONE;
+                    if (getApp().getHashRouter().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
+                        flags = flags | tapNO_CHECK_SIGN;
+                    auto const result = apply(view,
+                        *it.second, flags, getConfig(), j);
+                    if (result.second)
+                        any = true;
+                }
+                return any;
+            });
+    #endif
+
+        {
+            OpenView view(&*ledger); 
+            for (auto const& it : mHeldTransactions)
+            {
+                ApplyFlags tepFlags = tapNONE;
 
                 if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
-                    tepFlags = static_cast<ViewFlags> (tepFlags | tapNO_CHECK_SIGN);
+                    tepFlags = static_cast<ApplyFlags> (tepFlags | tapNO_CHECK_SIGN);
 
                 auto const ret = apply(
-                    *ledger, *it.second, tepFlags, getConfig(),
+                    view, *it.second, tepFlags, getConfig(),
                         deprecatedLogs().journal("LedgerMaster"));
 
                 if (ret.second)
@@ -399,12 +393,8 @@ public:
                 // If a transaction is recovered but hasn't been relayed,
                 // it will become disputed in the consensus process, which
                 // will cause it to be relayed.
-
             }
-            catch (...)
-            {
-                WriteLog (lsWARNING, LedgerMaster) << "Held transaction throws";
-            }
+            view.apply(*ledger);
         }
 
         CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
@@ -642,8 +632,7 @@ public:
             {
                 try
                 {
-                    hash = hashOfSeq(*ledger, lSeq,
-                        getApp().getSLECache(), m_journal);
+                    hash = hashOfSeq(*ledger, lSeq, m_journal);
                 }
                 catch (...)
                 {
@@ -973,8 +962,7 @@ public:
 
         if (mHistLedger && (mHistLedger->getLedgerSeq() >= index))
         {
-            ret = hashOfSeq(*mHistLedger, index,
-                getApp().getSLECache(), m_journal);
+            ret = hashOfSeq(*mHistLedger, index, m_journal);
             if (! ret)
                 ret = walkHashBySeq (index, mHistLedger);
         }
@@ -1164,8 +1152,7 @@ public:
 
                     Ledger::pointer ledger;
                     // This can throw
-                    auto hash = hashOfSeq(*valLedger, seq,
-                        getApp().getSLECache(), m_journal);
+                    auto hash = hashOfSeq(*valLedger, seq, m_journal);
                     // VFALCO TODO Restructure this code so that zero is not used
                     if (! hash)
                         hash = zero; // kludge
@@ -1229,8 +1216,7 @@ public:
     {
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
-        auto hash = hashOfSeq(*knownGoodLedger, desiredSeq,
-            getApp().getSLECache(), m_journal);
+        auto hash = hashOfSeq(*knownGoodLedger, desiredSeq, m_journal);
 
         // Not directly in the given ledger
         if (! hash)
@@ -1238,15 +1224,13 @@ public:
             std::uint32_t seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
-            hash = hashOfSeq(*knownGoodLedger,
-                seq, getApp().getSLECache(), m_journal);
+            hash = hashOfSeq(*knownGoodLedger, seq, m_journal);
             if (hash)
             {
                 auto l = getLedgerByHash(*hash);
                 if (l)
                 {
-                    hash = hashOfSeq(*l, desiredSeq,
-                        getApp().getSLECache(), m_journal);
+                    hash = hashOfSeq(*l, desiredSeq, m_journal);
                     assert (hash);
                 }
             }
@@ -1450,16 +1434,14 @@ public:
         }
 
         // See if the hash for the ledger we need is in the reference ledger
-        auto ledgerHash = hashOfSeq(*referenceLedger, index,
-            getApp().getSLECache(), m_journal);
+        auto ledgerHash = hashOfSeq(*referenceLedger, index, m_journal);
         if (ledgerHash)
             return *ledgerHash;
 
         // The hash is not in the reference ledger. Get another ledger which can
         // be located easily and should contain the hash.
         LedgerIndex refIndex = getCandidateLedger(index);
-        auto const refHash = hashOfSeq(*referenceLedger, refIndex,
-            getApp().getSLECache(), m_journal);
+        auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
         assert(refHash);
         if (refHash)
         {
@@ -1470,8 +1452,7 @@ public:
             {
                 try
                 {
-                    ledgerHash = hashOfSeq(*ledger, index,
-                        getApp().getSLECache(), m_journal);
+                    ledgerHash = hashOfSeq(*ledger, index, m_journal);
                 }
                 catch(SHAMapMissingNode&)
                 {
@@ -1486,8 +1467,7 @@ public:
                     *refHash, refIndex, InboundLedger::fcGENERIC);
                 if (ledger)
                 {
-                    ledgerHash = hashOfSeq(*ledger, index,
-                        getApp().getSLECache(), m_journal);
+                    ledgerHash = hashOfSeq(*ledger, index, m_journal);
                     assert (ledgerHash);
                 }
             }
@@ -1508,8 +1488,7 @@ public:
 
                 try
                 {
-                    auto const hash = hashOfSeq(*valid, index,
-                        getApp().getSLECache(), m_journal);
+                    auto const hash = hashOfSeq(*valid, index, m_journal);
                     if (hash)
                         return mLedgerHistory.getLedgerByHash (*hash);
                 }

@@ -74,8 +74,8 @@ invoke (TxType type,
 }
 
 std::pair<TER, bool>
-apply (BasicView& view,
-    STTx const& tx, ViewFlags flags,
+apply (OpenView& view,
+    STTx const& tx, ApplyFlags flags,
         Config const& config,
             beast::Journal j)
 {
