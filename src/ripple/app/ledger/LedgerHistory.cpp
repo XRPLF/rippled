@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerHistory.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/json/to_string.h>
@@ -270,6 +271,26 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
     }
 }
 
+//------------------------------------------------------------------------------
+
+// Return list of leaves sorted by key
+static
+std::vector<std::shared_ptr<
+    SHAMapItem const>>
+leaves (SHAMap const& sm)
+{
+    std::vector<std::shared_ptr<
+        SHAMapItem const>> v;
+    for (auto const& item : sm)
+        v.push_back(item);
+    std::sort(v.begin(), v.end(),
+        [](std::shared_ptr<SHAMapItem const> const& lhs,
+           std::shared_ptr<SHAMapItem const> const& rhs)
+                { return lhs->key() < rhs->key(); });
+    return v;
+}
+
+
 void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& valid)
 {
     assert (built != valid);
@@ -306,76 +327,51 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
     }
 
     // Find differences between built and valid ledgers
-    using SHAMapItemInfo = std::pair<uint256, Blob>;
-    std::vector <SHAMapItemInfo> builtTx, validTx;
-    // Get built ledger hashes and metadata
-    builtLedger->txMap().visitLeaves(
-        [&builtTx](std::shared_ptr<SHAMapItem const> const& item)
-        {
-            builtTx.push_back({item->key(), item->peekData()});
-        });
-    // Get valid ledger hashes and metadata
-    validLedger->txMap().visitLeaves(
-        [&validTx](std::shared_ptr<SHAMapItem const> const& item)
-        {
-            validTx.push_back({item->key(), item->peekData()});
-        });
-
-    // Sort both by hash
-    std::sort (builtTx.begin(), builtTx.end(),
-                    [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
-                        {return x.first < y.first;});
-    std::sort (validTx.begin(), validTx.end(),
-                    [](SHAMapItemInfo const& x, SHAMapItemInfo const& y)
-                        {return x.first < y.first;});
-
+    auto const builtTx = leaves(builtLedger->txMap());
+    auto const validTx = leaves(validLedger->txMap());
     if (builtTx == validTx)
-    {
         WriteLog (lsERROR, LedgerMaster) <<
             "MISMATCH with same " << builtTx.size() << " transactions";
-        return;
-    }
+    else
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH with " <<
+            builtTx.size() << " built and " <<
+            validTx.size() << " valid transactions.";
 
-    WriteLog (lsERROR, LedgerMaster) << "MISMATCH with " <<
-        builtTx.size() << " built and " <<
-        validTx.size() << " valid transactions.";
+    WriteLog(lsERROR, LedgerMaster) << "built\n" <<
+        getJson(*builtLedger);
+    WriteLog(lsERROR, LedgerMaster) << "valid\n" <<
+        getJson(*validLedger);
 
     // Log all differences between built and valid ledgers
-    auto b = builtTx.cbegin();
-    auto be = builtTx.cend();
-    auto v = validTx.cbegin();
-    auto ve = validTx.cend();
-    while (b != be && v != ve)
+    auto b = builtTx.begin();
+    auto v = validTx.begin();
+    while(b != builtTx.end() && v != validTx.end())
     {
-        if (b->first < v->first)
+        if ((*b)->key() < (*v)->key())
         {
-            // b->first in built but not in valid
-            log_one(builtLedger, b->first, "valid");
+            log_one (builtLedger, (*b)->key(), "valid");
             ++b;
         }
-        else if (v->first < b->first)
+        else if ((*b)->key() > (*v)->key())
         {
-            // v->first in valid but not in built
-            log_one(validLedger, v->first, "built");
+            log_one(validLedger, (*v)->key(), "built");
             ++v;
         }
-        else  // b->first == v->first, same transaction
+        else
         {
-            if (b->second != v->second)
+            if ((*b)->peekData() != (*v)->peekData())
             {
                 // Same transaction with different metadata
-                log_metadata_difference(builtLedger, validLedger, b->first);
+                log_metadata_difference(builtLedger, validLedger, (*b)->key());
             }
             ++b;
             ++v;
         }
     }
-    // all of these are in built but not in valid
-    for (; b != be; ++b)
-        log_one(builtLedger, b->first, "valid");
-    // all of these are in valid but not in built
-    for (; v != ve; ++v)
-        log_one(validLedger, v->first, "built");
+    for (; b != builtTx.end(); ++b)
+        log_one (builtLedger, (*b)->key(), "valid");
+    for (; v != validTx.end(); ++v)
+        log_one (validLedger, (*v)->key(), "built");
 }
 
 void LedgerHistory::builtLedger (Ledger::ref ledger)
