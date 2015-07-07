@@ -23,6 +23,19 @@
 
 namespace ripple {
 
+void appendOfferJson (std::shared_ptr<SLE const> const& offer,
+                      Json::Value& offers)
+{
+    STAmount dirRate = amountFromQuality (
+          getQuality (offer->getFieldH256 (sfBookDirectory)));
+    Json::Value& obj (offers.append (Json::objectValue));
+    offer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
+    offer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
+    obj[jss::seq] = offer->getFieldU32 (sfSequence);
+    obj[jss::flags] = offer->getFieldU32 (sfFlags);
+    obj[jss::quality] = dirRate.getText ();
+};
+
 // {
 //   account: <account>|<account_public_key>
 //   ledger_hash : <ledger>
@@ -105,14 +118,8 @@ Json::Value doAccountOffers (RPC::Context& context)
         }
 
         startHint = sleOffer->getFieldU64(sfOwnerNode);
-
         // Caller provided the first offer (startAfter), add it as first result
-        Json::Value& obj (jsonOffers.append (Json::objectValue));
-        sleOffer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
-        sleOffer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
-        obj[jss::seq] = sleOffer->getFieldU32 (sfSequence);
-        obj[jss::flags] = sleOffer->getFieldU32 (sfFlags);
-
+        appendOfferJson(sleOffer, jsonOffers);
         offers.reserve (reserve);
     }
     else
@@ -150,11 +157,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     for (auto const& offer : offers)
     {
-        Json::Value& obj (jsonOffers.append (Json::objectValue));
-        offer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
-        offer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
-        obj[jss::seq] = offer->getFieldU32 (sfSequence);
-        obj[jss::flags] = offer->getFieldU32 (sfFlags);
+        appendOfferJson(offer, jsonOffers);
     }
 
     context.loadType = Resource::feeMediumBurdenRPC;
