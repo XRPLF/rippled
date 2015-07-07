@@ -1202,7 +1202,7 @@ void LedgerConsensusImp::createDisputes (
     WriteLog (lsDEBUG, LedgerConsensus) << "createDisputes "
         << m1->getHash() << " to " << m2->getHash();
     SHAMap::Delta differences;
-    m1->compare (m2, differences, 16384);
+    m1->compare (*m2, differences, 16384);
 
     int dc = 0;
     // for each difference between the transactions

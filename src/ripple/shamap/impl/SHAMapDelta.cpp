@@ -113,7 +113,7 @@ bool SHAMap::walkBranch (SHAMapAbstractNode* node,
 }
 
 bool
-SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
+SHAMap::compare (SHAMap const& otherMap,
                  Delta& differences, int maxCount) const
 {
     // compare two hash trees, add up to maxCount differences to the difference table
@@ -121,15 +121,15 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
     // throws on corrupt tables or missing nodes
     // CAUTION: otherMap is not locked and must be immutable
 
-    assert (isValid () && otherMap && otherMap->isValid ());
+    assert (isValid () && otherMap.isValid ());
 
-    if (getHash () == otherMap->getHash ())
+    if (getHash () == otherMap.getHash ())
         return true;
 
     using StackEntry = std::pair <SHAMapAbstractNode*, SHAMapAbstractNode*>;
     std::stack <StackEntry, std::vector<StackEntry>> nodeStack; // track nodes we've pushed
 
-    nodeStack.push ({root_.get(), otherMap->root_.get()});
+    nodeStack.push ({root_.get(), otherMap.root_.get()});
     while (!nodeStack.empty ())
     {
         SHAMapAbstractNode* ourNode = nodeStack.top().first;
@@ -184,7 +184,7 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
         {
             auto ours = static_cast<SHAMapTreeNode*>(ourNode);
             auto other = static_cast<SHAMapInnerNode*>(otherNode);
-            if (!otherMap->walkBranch (other, ours->peekItem (),
+            if (!otherMap.walkBranch (other, ours->peekItem (),
                                        false, differences, maxCount))
                 return false;
         }
@@ -208,15 +208,15 @@ SHAMap::compare (std::shared_ptr<SHAMap> const& otherMap,
                     {
                         // The other tree has a branch, we do not
                         SHAMapAbstractNode* iNode =
-                            otherMap->descendThrow(other, i);
-                        if (!otherMap->walkBranch (iNode,
+                            otherMap.descendThrow(other, i);
+                        if (!otherMap.walkBranch (iNode,
                                                    std::shared_ptr<SHAMapItem const>(),
                                                    false, differences, maxCount))
                             return false;
                     }
                     else // The two trees have different non-empty branches
                         nodeStack.push ({descendThrow (ours, i),
-                                        otherMap->descendThrow (other, i)});
+                                        otherMap.descendThrow (other, i)});
                 }
         }
         else

@@ -204,7 +204,7 @@ public:
 
     // caution: otherMap must be accessed only by this function
     // return value: true=successfully completed, false=too different
-    bool compare (std::shared_ptr<SHAMap> const& otherMap,
+    bool compare (SHAMap const& otherMap,
                   Delta& differences, int maxCount) const;
 
     int flushDirty (NodeObjectType t, std::uint32_t seq);
