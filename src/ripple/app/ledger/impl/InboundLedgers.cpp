@@ -245,6 +245,9 @@ public:
                     Blob (node.nodedata().begin(), node.nodedata().end()),
                     0, snfWIRE, uZero, false);
 
+                if (!newNode)
+                    return;
+
                 s.erase();
                 newNode->addRaw(s, snfPREFIX);
 

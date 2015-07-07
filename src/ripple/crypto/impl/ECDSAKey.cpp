@@ -55,33 +55,34 @@ ec_key ECDSAPrivateKey (uint256 const& serialized)
     }
 
     EC_KEY* key = new_initialized_EC_KEY();
+    ec_key::pointer_t ptr = nullptr;
 
     const bool ok = EC_KEY_set_private_key (key, bn);
 
     BN_clear_free (bn);
 
-    if (! ok)
-    {
+    if (ok)
+        ptr = (ec_key::pointer_t) key;
+    else
         EC_KEY_free (key);
-    }
 
-    return ec_key::acquire ((ec_key::pointer_t) key);
+    return ec_key(ptr);
 }
 
 ec_key ECDSAPublicKey (std::uint8_t const* data, std::size_t size)
 {
     EC_KEY* key = new_initialized_EC_KEY();
+    ec_key::pointer_t ptr = nullptr;
 
     if (o2i_ECPublicKey (&key, &data, size) != nullptr)
     {
         EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
+        ptr = (ec_key::pointer_t) key;
     }
     else
-    {
         EC_KEY_free (key);
-    }
 
-    return ec_key::acquire ((ec_key::pointer_t) key);
+    return ec_key(ptr);
 }
 
 ec_key ECDSAPublicKey (Blob const& serialized)

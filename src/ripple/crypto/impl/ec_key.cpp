@@ -34,8 +34,6 @@ static inline EC_KEY* get_EC_KEY (const ec_key& that)
     return (EC_KEY*) that.get();
 }
 
-const ec_key ec_key::invalid = ec_key::acquire (nullptr);
-
 ec_key::ec_key (const ec_key& that)
 {
     if (that.ptr == nullptr)

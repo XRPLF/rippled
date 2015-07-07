@@ -133,7 +133,7 @@ static ec_key ec_key_new_secp256k1_compressed()
 
     EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
 
-    return ec_key::acquire ((ec_key::pointer_t) key);
+    return ec_key((ec_key::pointer_t) key);
 }
 
 void serialize_ec_point (ec_point const& point, std::uint8_t* ptr)

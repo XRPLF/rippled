@@ -2571,6 +2571,9 @@
     <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionAcquire.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionEngine.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMaster.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2607,6 +2610,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\tests\PathSet.h">
       <Filter>ripple\app\tx\tests</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\tests\Regression_test.cpp">
+      <Filter>ripple\app\tx\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
       <Filter>ripple\app\tx\tests</Filter>
     </ClCompile>

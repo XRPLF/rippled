@@ -152,7 +152,7 @@ public:
 private:
     std::uint32_t getCloseTimeNC (int& offset) const;
 
-    bool isValidated (std::uint32_t seq, uint256 const& hash) /*override*/;
+    bool isValidated (std::uint32_t seq, uint256 const& hash);
 
 public:
     void closeTimeOffset (int) override;
