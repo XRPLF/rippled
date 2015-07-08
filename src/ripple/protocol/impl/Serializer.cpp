@@ -230,7 +230,7 @@ Blob Serializer::getRaw (int offset, int length) const
 
 uint256 Serializer::getSHA512Half () const
 {
-    return sha512Half(make_Slice(mData));
+    return sha512Half(makeSlice(mData));
 }
 
 int Serializer::addVL (Blob const& vector)

@@ -46,12 +46,12 @@ sign (Json::Value& jv,
     Account const& account)
 {
     jv[jss::SigningPubKey] =
-        strHex(make_Slice(
+        strHex(makeSlice(
             account.pk().getAccountPublic()));
     Serializer ss;
     ss.add32 (HashPrefix::txSign);
     parse(jv).add(ss);
-    jv[jss::TxnSignature] = strHex(make_Slice(
+    jv[jss::TxnSignature] = strHex(makeSlice(
         account.sk().accountPrivateSign(
             ss.getData())));
 }

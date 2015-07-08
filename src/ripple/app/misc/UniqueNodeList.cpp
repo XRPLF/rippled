@@ -1599,7 +1599,7 @@ bool UniqueNodeListImp::responseFetch (std::string const& strDomain, const boost
             (void) bFound;
 
             uint256 iSha256 =
-                sha512Half(make_Slice(strSiteFile));
+                sha512Half(makeSlice(strSiteFile));
             bool bChangedB =
                 sdCurrent.iSha256 != iSha256;
 
