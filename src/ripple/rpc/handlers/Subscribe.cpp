@@ -292,8 +292,8 @@ Json::Value doSubscribe (RPC::Context& context)
             if (bSnapshot)
             {
                 context.loadType = Resource::feeMediumBurdenRPC;
-                auto lpLedger = getApp().getLedgerMaster ().
-                        getPublishedLedger ();
+                std::shared_ptr<ReadView const> lpLedger
+                        = getApp().getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
                     const Json::Value jvMarker = Json::Value (Json::nullValue);

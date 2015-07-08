@@ -28,16 +28,14 @@ namespace ripple {
 // }
 Json::Value doLedgerHeader (RPC::Context& context)
 {
-    Ledger::pointer lpLedger;
+    std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
 
     Serializer  s;
-
-    lpLedger->addRaw (s);
-
+    addRaw (lpLedger->info(), s);
     jvResult[jss::ledger_data] = strHex (s.peekData ());
 
     // This information isn't verified: they should only use it if they trust

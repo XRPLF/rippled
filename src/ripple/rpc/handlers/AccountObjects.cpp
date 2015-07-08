@@ -46,7 +46,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! params.isMember (jss::account))
         return RPC::missing_field_error (jss::account);
 
-    Ledger::pointer ledger;
+    std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger (ledger, context);
     if (ledger == nullptr)
         return result;

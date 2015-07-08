@@ -91,7 +91,7 @@ public:
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
             uint256 const& accountHash,
-            std::uint64_t totCoins, std::uint32_t closeTime,
+            std::uint64_t totDrops, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded);
 
@@ -242,7 +242,7 @@ public:
     uint256 const&
     getHash();
 
-    void setTotalCoins (std::uint64_t totDrops)
+    void setTotalDrops (std::uint64_t totDrops)
     {
         info_.drops = totDrops;
     }

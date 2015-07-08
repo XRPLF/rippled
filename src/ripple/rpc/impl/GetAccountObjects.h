@@ -35,7 +35,7 @@ namespace RPC {
     @param jvResult A JSON result that holds the request objects.
 */
 bool
-getAccountObjects (Ledger const& ledger, AccountID const& account,
+getAccountObjects (ReadView const& ledger, AccountID const& account,
     LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
     std::uint32_t const limit, Json::Value& jvResult);
 

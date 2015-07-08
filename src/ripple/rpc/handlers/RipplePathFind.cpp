@@ -73,7 +73,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         context.params.isMember(jss::ledger_hash))
     {
         // The caller specified a ledger
-        jvResult = RPC::lookupLedger (lpLedger, context);
+        jvResult = RPC::lookupLedgerDeprecated (lpLedger, context);
         if (!lpLedger)
             return jvResult;
     }

@@ -1264,6 +1264,36 @@ public:
         return mPubLedger;
     }
 
+    bool isValidLedger(LedgerInfo const& info) override
+    {
+        if (info.validated)
+            return true;
+
+        if (info.open)
+            return false;
+
+        auto seq = info.seq;
+        try
+        {
+            // Use the skip list in the last validated ledger to see if ledger
+            // comes before the last validated ledger (and thus has been
+            // validated).
+            auto hash = walkHashBySeq (seq);
+            if (info.hash != hash)
+                return false;
+        }
+        catch (SHAMapMissingNode const&)
+        {
+            WriteLog (lsWARNING, RPCHandler)
+                    << "Missing SHANode " << std::to_string (seq);
+            return false;
+        }
+
+        // Mark ledger as validated to save time if we see it again.
+        info.validated = true;
+        return true;
+    }
+
     int getMinValidations ()
     {
         return mMinValidations;

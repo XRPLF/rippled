@@ -64,7 +64,7 @@ public:
 
 private:
     Context& context_;
-    Ledger::pointer ledger_;
+    std::shared_ptr<ReadView const> ledger_;
     Json::Value result_;
     int options_ = 0;
 };

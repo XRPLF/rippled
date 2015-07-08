@@ -23,6 +23,9 @@
 #include <ripple/rpc/Status.h>
 
 namespace ripple {
+
+class ReadView;
+
 namespace RPC {
 
 class Context;
@@ -33,14 +36,15 @@ class Context;
     If there is no error in the return value, then the ledger pointer will have
     been filled.
 */
-Json::Value lookupLedger (Ledger::pointer&, Context&);
+Json::Value lookupLedgerDeprecated (Ledger::pointer&, Context&);
+Json::Value lookupLedger (std::shared_ptr<ReadView const>&, Context&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
     representing a ledger.
 
     If the returned Status is OK, the ledger pointer will have been filled. */
 Status lookupLedger (
-    Ledger::pointer&, Context&, Json::Value& result);
+    std::shared_ptr<ReadView const>&, Context&, Json::Value& result);
 
 } // RPC
 } // ripple

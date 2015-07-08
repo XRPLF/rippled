@@ -30,7 +30,7 @@ namespace ripple {
 // }
 Json::Value doLedgerEntry (RPC::Context& context)
 {
-    Ledger::pointer lpLedger;
+    std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
@@ -201,8 +201,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto const sleNode = cachedRead(*lpLedger, uNodeIndex);
-
+        auto const sleNode = lpLedger->read(keylet::unchecked(uNodeIndex));
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();
 

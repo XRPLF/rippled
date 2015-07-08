@@ -90,32 +90,29 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
 
     try
     {
-        using value_type = ReadView::txs_type::value_type;
-        forEachTx(fill.ledger, [&] (value_type const& i) {
+        for (auto& i: fill.ledger.txs)
+        {
             count.yield();
 
             if (! bExpanded)
             {
                 txns.append(to_string(i.first->getTransactionID()));
-                return true;
             }
-
-            auto&& txJson = appendObject (txns);
-
-            if (bBinary)
+            else if (bBinary)
             {
+                auto&& txJson = appendObject (txns);
                 txJson[jss::tx_blob] = serializeHex(*i.first);
                 if (i.second)
                     txJson[jss::meta] = serializeHex(*i.second);
             }
             else
             {
+                auto&& txJson = appendObject (txns);
                 copyFrom(txJson, i.first->getJson(0));
                 if (i.second)
                     txJson[jss::metaData] = i.second->getJson(0);
             }
-            return true;
-        });
+        }
     }
     catch (...)
     {
