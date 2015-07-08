@@ -31,7 +31,7 @@ namespace ripple {
 Json::Value doTransactionEntry (RPC::Context& context)
 {
     Ledger::pointer     lpLedger;
-    Json::Value jvResult = RPC::lookupLedger (lpLedger, context);
+    Json::Value jvResult = RPC::lookupLedgerDeprecated (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;

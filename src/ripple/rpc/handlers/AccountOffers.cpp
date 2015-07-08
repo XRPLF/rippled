@@ -36,7 +36,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (! params.isMember (jss::account))
         return RPC::missing_field_error (jss::account);
 
-    Ledger::pointer ledger;
+    std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger (ledger, context);
     if (! ledger)
         return result;
@@ -95,11 +95,9 @@ Json::Value doAccountOffers (RPC::Context& context)
             return RPC::expected_field_error (jss::marker, "string");
 
         startAfter.SetHex (marker.asString ());
-        auto const sleOffer = cachedRead (*ledger, startAfter);
+        auto const sleOffer = ledger->read({ltOFFER, startAfter});
 
-        if (sleOffer == nullptr ||
-            sleOffer->getType () != ltOFFER ||
-            accountID != sleOffer->getAccountID (sfAccount))
+        if (! sleOffer || accountID != sleOffer->getAccountID (sfAccount))
         {
             return rpcError (rpcINVALID_PARAMS);
         }

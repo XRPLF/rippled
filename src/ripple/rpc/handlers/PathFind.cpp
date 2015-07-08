@@ -24,7 +24,7 @@ namespace ripple {
 
 Json::Value doPathFind (RPC::Context& context)
 {
-    Ledger::pointer lpLedger = context.netOps.getClosedLedger();
+    auto lpLedger = context.netOps.getClosedLedger();
 
     if (!context.params.isMember (jss::subcommand) ||
         !context.params[jss::subcommand].isString ())
@@ -35,7 +35,7 @@ Json::Value doPathFind (RPC::Context& context)
     if (!context.infoSub)
         return rpcError (rpcNO_EVENTS);
 
-    std::string sSubCommand = context.params[jss::subcommand].asString ();
+    auto sSubCommand = context.params[jss::subcommand].asString ();
 
     if (sSubCommand == "create")
     {

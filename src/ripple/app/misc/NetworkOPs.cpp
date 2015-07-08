@@ -262,9 +262,11 @@ public:
     // Book functions.
     //
 
-    void getBookPage (bool bAdmin, Ledger::pointer lpLedger, Book const&,
-        AccountID const& uTakerID, const bool bProof, const unsigned int iLimit,
-            Json::Value const& jvMarker, Json::Value& jvResult) override;
+    void getBookPage (bool bAdmin, std::shared_ptr<ReadView const>& lpLedger,
+                      Book const&, AccountID const& uTakerID, const bool bProof,
+                      const unsigned int iLimit,
+                      Json::Value const& jvMarker, Json::Value& jvResult)
+            override;
 
     // Ledger proposal/close functions.
     void processTrustedProposal (
@@ -2687,7 +2689,7 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
     bool bAdmin,
-    Ledger::pointer lpLedger,
+    std::shared_ptr<ReadView const>& lpLedger,
     Book const& book,
     AccountID const& uTakerID,
     bool const bProof,
@@ -2911,7 +2913,7 @@ void NetworkOPsImp::getBookPage (
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
     bool bAdmin,
-    Ledger::pointer lpLedger,
+    std::shared_ptr<ReadView const> lpLedger,
     Book const& book,
     AccountID const& uTakerID,
     bool const bProof,

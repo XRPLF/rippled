@@ -49,7 +49,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     auto& params = context.params;
 
     // Get the current ledger
-    Ledger::pointer ledger;
+    std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger (ledger, context);
 
     if (!ledger)

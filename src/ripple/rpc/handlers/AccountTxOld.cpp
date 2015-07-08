@@ -103,7 +103,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
     }
     else
     {
-        Ledger::pointer ledger;
+        std::shared_ptr<ReadView const> ledger;
         auto ret = RPC::lookupLedger (ledger, context);
 
         if (!ledger)
