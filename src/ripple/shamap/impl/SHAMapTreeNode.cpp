@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -275,13 +275,6 @@ SHAMapInnerNode::updateHash()
         nh = sha512Half(HashPrefix::innerNode,
             Slice(reinterpret_cast<unsigned char const*>(mHashes),
                 sizeof (mHashes)));
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        SHA512HalfHasher h;
-        using beast::hash_append;
-        hash_append(h, HashPrefix::innerNode, mHashes);
-        assert (nh == sha512Half(
-            static_cast<uint256>(h)));
-#endif
     }
     if (nh == mHash)
         return false;
