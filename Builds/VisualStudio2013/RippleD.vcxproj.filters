@@ -2721,9 +2721,6 @@
     <ClInclude Include="..\..\src\ripple\basics\ResolverAsio.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\SHA512Half.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Slice.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>

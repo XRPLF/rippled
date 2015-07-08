@@ -1971,8 +1971,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ResolverAsio.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\SHA512Half.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Slice.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\strHex.h">

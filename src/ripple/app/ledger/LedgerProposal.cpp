@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerProposal.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/HashPrefix.h>
