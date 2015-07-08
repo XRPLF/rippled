@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 namespace RPC {
@@ -34,14 +35,14 @@ bool isValidatedOld (LedgerMaster& ledgerMaster)
         Tuning::maxValidatedLedgerAge;
 }
 
-Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
+template <class T>
+Status ledgerFromRequest (T& ledger, Context& context)
 {
     static auto const minSequenceGap = 10;
 
     ledger.reset();
 
     auto& params = context.params;
-    auto& netOps = context.netOps;
     auto& ledgerMaster = context.ledgerMaster;
 
     auto indexValue = params[jss::ledger_index];
@@ -124,14 +125,12 @@ Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
             }
         }
-
-        assert (ledger->isImmutable ());
     }
 
     return Status::OK;
 }
 
-bool isValidated (LedgerMaster& ledgerMaster, Ledger& ledger)
+bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
 {
     if (ledger.info().validated)
         return true;
@@ -146,7 +145,7 @@ bool isValidated (LedgerMaster& ledgerMaster, Ledger& ledger)
         // comes before the last validated ledger (and thus has been
         // validated).
         auto hash = ledgerMaster.walkHashBySeq (seq);
-        if (ledger.getHash() != hash)
+        if (ledger.info().hash != hash)
             return false;
     }
     catch (SHAMapMissingNode const&)
@@ -157,7 +156,7 @@ bool isValidated (LedgerMaster& ledgerMaster, Ledger& ledger)
     }
 
     // Mark ledger as validated to save time if we see it again.
-    ledger.setValidated();
+    ledger.info().validated = true;
     return true;
 }
 
@@ -182,27 +181,62 @@ bool isValidated (LedgerMaster& ledgerMaster, Ledger& ledger)
 // return value.  Otherwise, the object contains the field "validated" and
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
-Status lookupLedger (
+Status lookupLedgerDeprecated (
     Ledger::pointer& ledger, Context& context, Json::Value& result)
 {
     if (auto status = ledgerFromRequest (ledger, context))
         return status;
 
-    if (! ledger->info().open)
+    auto& info = ledger->info();
+
+    if (!info.open)
     {
-        result[jss::ledger_hash] = to_string (ledger->getHash());
-        result[jss::ledger_index] = ledger->info().seq;
+        result[jss::ledger_hash] = to_string (info.hash);
+        result[jss::ledger_index] = info.seq;
     }
     else
     {
-        result[jss::ledger_current_index] = ledger->info().seq;
+        result[jss::ledger_current_index] = info.seq;
+    }
+
+    result[jss::validated] = getApp().getLedgerMaster().isValidLedger(info);
+    return Status::OK;
+}
+
+Status lookupLedger (
+    std::shared_ptr<ReadView const>& ledger, Context& context,
+    Json::Value& result)
+{
+    if (auto status = ledgerFromRequest (ledger, context))
+        return status;
+
+    auto& info = ledger->info();
+
+    if (!info.open)
+    {
+        result[jss::ledger_hash] = to_string (info.hash);
+        result[jss::ledger_index] = info.seq;
+    }
+    else
+    {
+        result[jss::ledger_current_index] = info.seq;
     }
 
     result[jss::validated] = isValidated (context.ledgerMaster, *ledger);
     return Status::OK;
 }
 
-Json::Value lookupLedger (Ledger::pointer& ledger, Context& context)
+Json::Value lookupLedgerDeprecated (Ledger::pointer& ledger, Context& context)
+{
+    Json::Value result;
+    if (auto status = lookupLedgerDeprecated (ledger, context, result))
+        status.inject (result);
+
+    return result;
+}
+
+Json::Value lookupLedger (
+    std::shared_ptr<ReadView const>& ledger, Context& context)
 {
     Json::Value result;
     if (auto status = lookupLedger (ledger, context, result))

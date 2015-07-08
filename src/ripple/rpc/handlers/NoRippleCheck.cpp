@@ -29,14 +29,15 @@ static void fillTransaction (
     Json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
-    Ledger::ref ledger)
+    ReadView const& ledger)
 {
     txArray["Sequence"] = Json::UInt (sequence++);
     txArray["Account"] = getApp().accountIDCache().toBase58 (accountID);
     // VFALCO Needs audit
     // Why are we hard-coding 10?
+    auto& fees = ledger.fees();
     txArray["Fee"] = Json::UInt (getApp().getFeeTrack().scaleFeeLoad(
-        10, ledger->fees().base, ledger->fees().units, false));
+        10, fees.base, fees.units, false));
 }
 
 // {
@@ -83,7 +84,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
     if (params.isMember (jss::transactions))
         transactions = params["transactions"].asBool();
 
-    Ledger::pointer ledger;
+    std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger (ledger, context);
     if (! ledger)
         return result;
@@ -103,8 +104,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         return result;
     }
 
-    auto const sle = cachedRead(*ledger,
-        keylet::account(accountID).key, ltACCOUNT_ROOT);
+    auto const sle = ledger->read(keylet::account(accountID));
     if (! sle)
         return rpcError (rpcACT_NOT_FOUND);
 
@@ -127,7 +127,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
             Json::Value& tx = jvTransactions.append (Json::objectValue);
             tx["TransactionType"] = "AccountSet";
             tx["SetFlag"] = 8;
-            fillTransaction (tx, accountID, seq, ledger);
+            fillTransaction (tx, accountID, seq, *ledger);
         }
     }
 
@@ -171,7 +171,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                     tx["TransactionType"] = "TrustSet";
                     tx["LimitAmount"] = limitAmount.getJson (0);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
-                    fillTransaction(tx, accountID, seq, ledger);
+                    fillTransaction(tx, accountID, seq, *ledger);
 
                     return true;
                 }

@@ -322,17 +322,6 @@ void forEachSLE(ReadView const& view, Functor func, uint256 const& start = {})
                 break;
 }
 
-/** Run a functor on each transaction in a ReadView, as long as the functor
-    returns true. Might throw an exception if the ledger is corrupt. */
-template <class Functor>
-void forEachTx(ReadView const& view, Functor func)
-{
-    for (auto i = view.txs.begin(); i != view.txs.begin(); ++i)
-        if (i->first)
-            if (! func(*i))
-                break;
-}
-
 } // ripple
 
 #include <ripple/ledger/detail/ReadViewFwdRange.ipp>

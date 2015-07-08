@@ -73,8 +73,8 @@ Blob serializeBlob(Object const& o)
 }
 
 /** Serialize an object to a hex string. */
-template <class Object>
-std::string serializeHex(Object const& o)
+inline
+std::string serializeHex(STObject const& o)
 {
     return strHex(serializeBlob(o));
 }

@@ -30,7 +30,7 @@ Json::Value doBookOffers (RPC::Context& context)
     if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
         return rpcError (rpcTOO_BUSY);
 
-    Ledger::pointer lpLedger;
+    std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)

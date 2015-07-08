@@ -26,7 +26,7 @@ namespace ripple {
 namespace RPC {
 
 bool
-getAccountObjects (Ledger const& ledger, AccountID const& account,
+getAccountObjects (ReadView const& ledger, AccountID const& account,
     LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
     std::uint32_t const limit, Json::Value& jvResult)
 {
@@ -39,7 +39,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
         found = true;
     }
 
-    auto dir = cachedRead(ledger, dirIndex, ltDIR_NODE);
+    auto dir = ledger.read({ltDIR_NODE, dirIndex});
     if (! dir)
         return false;
 
@@ -55,17 +55,17 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
             iter = std::find (iter, entries.end (), entryIndex);
             if (iter == entries.end ())
                 return false;
-            
+
             found = true;
         }
 
         for (; iter != entries.end (); ++iter)
         {
-            auto const sleNode = cachedRead(ledger, *iter );
+            auto const sleNode = ledger.read(keylet::child(*iter));
             if (type == ltINVALID || sleNode->getType () == type)
             {
                 jvObjects.append (sleNode->getJson (0));
-            
+
                 if (++i == limit)
                 {
                     if (++iter != entries.end ())
@@ -86,7 +86,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
             return true;
 
         dirIndex = getDirNodeIndex (rootDirIndex, nodeIndex);
-        dir = cachedRead(ledger, dirIndex, ltDIR_NODE);
+        dir = ledger.read({ltDIR_NODE, dirIndex});
         if (! dir)
             return true;
 
@@ -99,7 +99,7 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
                 jvResult[jss::marker] = to_string (dirIndex) + ',' +
                     to_string (*e.begin ());
             }
-            
+
             return true;
         }
     }
@@ -107,4 +107,3 @@ getAccountObjects (Ledger const& ledger, AccountID const& account,
 
 } // RPC
 } // ripple
-

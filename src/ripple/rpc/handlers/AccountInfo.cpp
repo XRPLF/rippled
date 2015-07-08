@@ -37,7 +37,7 @@ Json::Value doAccountInfo (RPC::Context& context)
 {
     auto& params = context.params;
 
-    Ledger::pointer ledger;
+    std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger (ledger, context);
 
     if (!ledger)
@@ -58,16 +58,13 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (jvAccepted)
         return jvAccepted;
 
-    auto const sleAccepted = cachedRead(*ledger,
-        keylet::account(accountID).key, ltACCOUNT_ROOT);
-
+    auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
         injectSLE(jvAccepted, *sleAccepted);
 
         // See if there's a SignerEntries for this account.
-        uint256 const signerListIndex = getSignerListIndex (accountID);
-        auto const signerList = cachedRead(*ledger, signerListIndex);
+        auto const signerList = ledger->read (keylet::signers(accountID));
 
         if (signerList)
         {
