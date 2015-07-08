@@ -452,9 +452,9 @@ close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL)
     newLCL->updateSkipList();
     newLCL->setClosed();
     newLCL->stateMap().flushDirty(
-        hotACCOUNT_NODE, newLCL->getLedgerSeq());
+        hotACCOUNT_NODE, newLCL->info().seq);
     newLCL->txMap().flushDirty(
-        hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+        hotTRANSACTION_NODE, newLCL->info().seq);
     using namespace std::chrono;
     auto const epoch_offset = days(10957);  // 2000-01-01
     std::uint32_t closeTime = time_point_cast<seconds>  // now

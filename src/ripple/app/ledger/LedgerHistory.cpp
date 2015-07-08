@@ -58,7 +58,7 @@ bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 
     const bool alreadyHad = m_ledgers_by_hash.canonicalize (ledger->getHash(), ledger, true);
     if (validated)
-        mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
+        mLedgersByIndex[ledger->info().seq] = ledger->getHash();
 
     return alreadyHad;
 }
@@ -93,7 +93,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
     if (!ret)
         return ret;
 
-    assert (ret->getLedgerSeq () == index);
+    assert (ret->info().seq == index);
 
     {
         // Add this ledger to the local tracking by index
@@ -101,8 +101,8 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
 
         assert (ret->isImmutable ());
         m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
-        mLedgersByIndex[ret->getLedgerSeq ()] = ret->getHash ();
-        return (ret->getLedgerSeq () == index) ? ret : Ledger::pointer ();
+        mLedgersByIndex[ret->info().seq] = ret->getHash ();
+        return (ret->info().seq == index) ? ret : Ledger::pointer ();
     }
 }
 
@@ -304,19 +304,19 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
         return;
     }
 
-    assert (builtLedger->getLedgerSeq() == validLedger->getLedgerSeq());
+    assert (builtLedger->info().seq == validLedger->info().seq);
 
     // Determine the mismatch reason
     // Distinguish Byzantine failure from transaction processing difference
 
-    if (builtLedger->getParentHash() != validLedger->getParentHash())
+    if (builtLedger->info().parentHash != validLedger->info().parentHash)
     {
         // Disagreement over prior ledger indicates sync issue
         WriteLog (lsERROR, LedgerMaster) << "MISMATCH on prior ledger";
         return;
     }
 
-    if (builtLedger->getCloseTimeNC() != validLedger->getCloseTimeNC())
+    if (builtLedger->info().closeTime != validLedger->info().closeTime)
     {
         // Disagreement over close time indicates Byzantine failure
         WriteLog (lsERROR, LedgerMaster) << "MISMATCH on close time";
@@ -373,7 +373,7 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
 
 void LedgerHistory::builtLedger (Ledger::ref ledger)
 {
-    LedgerIndex index = ledger->getLedgerSeq();
+    LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();
     assert (!hash.isZero());
     ConsensusValidated::ScopedLockType sl (
@@ -397,7 +397,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
 
 void LedgerHistory::validatedLedger (Ledger::ref ledger)
 {
-    LedgerIndex index = ledger->getLedgerSeq();
+    LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();
     assert (!hash.isZero());
     ConsensusValidated::ScopedLockType sl (
@@ -445,7 +445,7 @@ void LedgerHistory::clearLedgerCachePrior (LedgerIndex seq)
 {
     for (LedgerHash it: m_ledgers_by_hash.getKeys())
     {
-        if (getLedgerByHash (it)->getLedgerSeq() < seq)
+        if (getLedgerByHash (it)->info().seq < seq)
             m_ledgers_by_hash.del (it, false);
     }
 }

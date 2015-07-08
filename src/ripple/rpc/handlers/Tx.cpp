@@ -50,7 +50,7 @@ isValidated (RPC::Context& context, std::uint32_t seq, uint256 const& hash)
     if (!context.ledgerMaster.haveLedger (seq))
         return false;
 
-    if (seq > context.ledgerMaster.getValidatedLedger ()->getLedgerSeq ())
+    if (seq > context.ledgerMaster.getValidatedLedger ()->info().seq)
         return false;
 
     return context.ledgerMaster.getHashBySeq (seq) == hash;
@@ -109,7 +109,7 @@ Json::Value doTx (RPC::Context& context)
 
         if (okay)
             ret[jss::validated] = isValidated (
-                context, lgr->getLedgerSeq (), lgr->getHash ());
+                context, lgr->info().seq, lgr->getHash ());
     }
 
     return ret;

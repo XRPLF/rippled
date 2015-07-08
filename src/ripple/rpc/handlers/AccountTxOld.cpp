@@ -109,7 +109,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
         if (!ledger)
             return ret;
 
-        uLedgerMin = uLedgerMax = ledger->getLedgerSeq ();
+        uLedgerMin = uLedgerMax = ledger->info().seq;
     }
 
     int count = 0;

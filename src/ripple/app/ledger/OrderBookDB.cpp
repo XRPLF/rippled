@@ -44,7 +44,7 @@ void OrderBookDB::setup (Ledger::ref ledger)
 {
     {
         ScopedLockType sl (mLock);
-        auto seq = ledger->getLedgerSeq ();
+        auto seq = ledger->info().seq;
 
         // Do a full update every 256 ledgers
         if (mSeq != 0)

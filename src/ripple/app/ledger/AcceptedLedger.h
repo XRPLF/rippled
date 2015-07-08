@@ -65,10 +65,6 @@ public:
         return mMap;
     }
 
-    int getLedgerSeq () const
-    {
-        return mLedger->getLedgerSeq ();
-    }
     int getTxnCount () const
     {
         return mMap.size ();
