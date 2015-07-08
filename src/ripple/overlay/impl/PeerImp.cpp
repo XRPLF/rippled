@@ -2028,9 +2028,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         {
             ledger = getApp().getLedgerMaster ().getClosedLedger ();
 
-            if (ledger && !ledger->isClosed ())
+            if (ledger && ledger->info().open)
                 ledger = getApp().getLedgerMaster ().getLedgerBySeq (
-                    ledger->getLedgerSeq () - 1);
+                    ledger->info().seq - 1);
         }
         else
         {
@@ -2041,7 +2041,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         }
 
         if ((!ledger) || (packet.has_ledgerseq () && (
-            packet.ledgerseq () != ledger->getLedgerSeq ())))
+            packet.ledgerseq () != ledger->info().seq)))
         {
             charge (Resource::feeInvalidRequest);
 
@@ -2052,7 +2052,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
         }
 
-        if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() <
+        if (!packet.has_ledgerseq() && (ledger->info().seq <
             getApp().getLedgerMaster().getEarliestFetch()))
         {
             if (p_journal_.debug) p_journal_.debug <<
@@ -2063,7 +2063,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         // Fill out the reply
         uint256 lHash = ledger->getHash ();
         reply.set_ledgerhash (lHash.begin (), lHash.size ());
-        reply.set_ledgerseq (ledger->getLedgerSeq ());
+        reply.set_ledgerseq (ledger->info().seq);
         reply.set_type (packet.itype ());
 
         if (packet.itype () == protocol::liBASE)
@@ -2076,31 +2076,28 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 
-            if (ledger->haveStateMap())
+            auto const& stateMap = ledger->stateMap ();
+            if (stateMap.getHash() != zero)
             {
-                auto const& stateMap = ledger->stateMap ();
-                if (stateMap.getHash() != zero)
+                // return account state root node if possible
+                Serializer rootNode (768);
+                if (stateMap.getRootNode(rootNode, snfWIRE))
                 {
-                    // return account state root node if possible
-                    Serializer rootNode (768);
-                    if (stateMap.getRootNode(rootNode, snfWIRE))
+                    reply.add_nodes ()->set_nodedata (
+                        rootNode.getDataPtr (), rootNode.getLength ());
+
+                    if (ledger->info().txHash != zero)
                     {
-                        reply.add_nodes ()->set_nodedata (
-                            rootNode.getDataPtr (), rootNode.getLength ());
+                        auto const& txMap = ledger->txMap ();
 
-                        if (ledger->getTransHash () != zero && ledger->haveTxMap ())
+                        if (txMap.getHash() != zero)
                         {
-                            auto const& txMap = ledger->txMap ();
+                            rootNode.erase ();
 
-                            if (txMap.getHash() != zero)
-                            {
-                                rootNode.erase ();
-
-                                if (txMap.getRootNode (rootNode, snfWIRE))
-                                    reply.add_nodes ()->set_nodedata (
-                                        rootNode.getDataPtr (),
-                                            rootNode.getLength ());
-                            }
+                            if (txMap.getRootNode (rootNode, snfWIRE))
+                                reply.add_nodes ()->set_nodedata (
+                                    rootNode.getDataPtr (),
+                                    rootNode.getLength ());
                         }
                     }
                 }
@@ -2114,14 +2111,12 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         if (packet.itype () == protocol::liTX_NODE)
         {
-            assert (ledger->haveTxMap ());
             map = &ledger->txMap ();
             logMe += " TX:";
             logMe += to_string (map->getHash ());
         }
         else if (packet.itype () == protocol::liAS_NODE)
         {
-            assert (ledger->haveStateMap ());
             map = &ledger->stateMap ();
             logMe += " AS:";
             logMe += to_string (map->getHash ());

@@ -1073,7 +1073,7 @@ void ApplicationImp::startNewLedger ()
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
 
-        m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
+        m_networkOPs->setLastCloseTime (secondLedger->info().closeTime);
         openLedger_.emplace(secondLedger, getConfig(),
             cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
         m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
@@ -1277,14 +1277,14 @@ bool ApplicationImp::loadOldLedger (
 
             m_journal.info << "Loading parent ledger";
 
-            loadLedger = Ledger::loadByHash (replayLedger->getParentHash ());
+            loadLedger = Ledger::loadByHash (replayLedger->info().parentHash);
             if (!loadLedger)
             {
                 m_journal.info << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
-                    replayLedger->getParentHash(), 0, InboundLedger::fcGENERIC,
+                    replayLedger->info().parentHash, 0, InboundLedger::fcGENERIC,
                     stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
@@ -1300,9 +1300,9 @@ bool ApplicationImp::loadOldLedger (
 
         loadLedger->setClosed ();
 
-        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->getLedgerSeq ();
+        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->info().seq;
 
-        if (loadLedger->getAccountHash ().isZero ())
+        if (loadLedger->info().accountHash.isZero ())
         {
             m_journal.fatal << "Ledger is empty.";
             assert (false);
@@ -1323,12 +1323,12 @@ bool ApplicationImp::loadOldLedger (
             return false;
         }
 
-        m_ledgerMaster->setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
+        m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
 
         Ledger::pointer openLedger = std::make_shared<Ledger> (false, std::ref (*loadLedger));
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
-        m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
+        m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, getConfig(),
             cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
 

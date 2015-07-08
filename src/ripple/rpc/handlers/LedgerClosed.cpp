@@ -27,7 +27,7 @@ Json::Value doLedgerClosed (RPC::Context& context)
     assert (ledger);
 
     Json::Value jvResult;
-    jvResult[jss::ledger_index] = ledger->getLedgerSeq ();
+    jvResult[jss::ledger_index] = ledger->info().seq;
     jvResult[jss::ledger_hash] = to_string (ledger->getHash ());
 
     return jvResult;

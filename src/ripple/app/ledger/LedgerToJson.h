@@ -33,7 +33,7 @@ namespace ripple {
 
 struct LedgerFill
 {
-    LedgerFill (Ledger& l,
+    LedgerFill (ReadView const& l,
                 int o = 0,
                 RPC::Callback const& y = {},
                 RPC::YieldStrategy const& ys = {})
@@ -47,18 +47,37 @@ struct LedgerFill
     enum Options {
         dumpTxrp = 1, dumpState = 2, expand = 4, full = 8, binary = 16};
 
-    Ledger& ledger;
+    ReadView const& ledger;
     int options;
     RPC::Callback yield;
     RPC::YieldStrategy yieldStrategy;
 };
 
-/** Add Json to an existing generic Object. */
-void addJson(Json::Object&, LedgerFill const&);
+/** Given a Ledger and options, fill a Json::Object or Json::Value with a
+    description of the ledger.
+ */
+
 void addJson(Json::Value&, LedgerFill const&);
+void addJson(Json::Object&, LedgerFill const&);
 
-Json::Value getJson(LedgerFill const&);
+/** Return a new Json::Value representing the ledger with given options.*/
+Json::Value getJson (LedgerFill const&);
 
+/** Serialize an object to a blob. */
+template <class Object>
+Blob serializeBlob(Object const& o)
+{
+    Serializer s;
+    o.add(s);
+    return s.peekData();
+}
+
+/** Serialize an object to a hex string. */
+template <class Object>
+std::string serializeHex(Object const& o)
+{
+    return strHex(serializeBlob(o));
+}
 } // ripple
 
 #endif

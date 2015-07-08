@@ -73,12 +73,24 @@ struct LedgerInfo
     // Fields for closed ledgers
     // Closed means "tx set already determined"
     uint256 hash = zero;
-    //uint256 txHash;
+    uint256 txHash = zero;
+    uint256 accountHash = zero;
+    uint256 parentHash = zero;
+
     //uint256 stateHash;
-    //uint256 parentHash;
-    //std::uint64_t coins = 0;
-    //bool validated = false;
-    //int closeTimeRes = 0;
+    std::uint64_t drops = 0;
+
+    // If validated is false, it means "not yet validated."
+    // Once validated is true, it will never be set false at a later time.
+    mutable
+    bool validated = false;
+    bool accepted = false;
+
+    // flags indicating how this ledger close took place
+    int closeFlags = 0;
+
+    // the resolution for this ledger close time (2-120 seconds)
+    int closeTimeResolution = 0;
 
     // For closed ledgers, the time the ledger
     // closed. For open ledgers, the time the ledger
@@ -86,6 +98,19 @@ struct LedgerInfo
     //
     std::uint32_t closeTime = 0;
 };
+
+// ledger close flags
+static
+std::uint32_t const sLCF_NoConsensusTime = 1;
+
+
+inline
+bool getCloseAgree (LedgerInfo const& info)
+{
+    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
+}
+
+void addRaw (LedgerInfo const&, Serializer&);
 
 //------------------------------------------------------------------------------
 
@@ -284,6 +309,29 @@ public:
     boost::optional<digest_type>
     digest (key_type const& key) const = 0;
 };
+
+/** Run a functor on each SLE in a ReadView starting from the key start,
+    as long as the functor returns true.
+ */
+template <class Functor>
+void forEachSLE(ReadView const& view, Functor func, uint256 const& start = {})
+{
+    for (auto k = view.succ(start); k; k = view.succ(*k))
+        if (auto sle = view.read(keylet::unchecked(*k)))
+            if (! func(*sle))
+                break;
+}
+
+/** Run a functor on each transaction in a ReadView, as long as the functor
+    returns true. Might throw an exception if the ledger is corrupt. */
+template <class Functor>
+void forEachTx(ReadView const& view, Functor func)
+{
+    for (auto i = view.txs.begin(); i != view.txs.begin(); ++i)
+        if (i->first)
+            if (! func(*i))
+                break;
+}
 
 } // ripple
 

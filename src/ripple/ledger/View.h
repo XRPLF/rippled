@@ -41,7 +41,6 @@
 #include <vector>
 
 namespace ripple {
-
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -255,7 +254,7 @@ accountSend (ApplyView& view,
         AccountID const& to,
             const STAmount & saAmount);
 
-TER 
+TER
 issueIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount,

@@ -18,182 +18,166 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/basics/base_uint.h>
 
 namespace ripple {
 
-template <typename Object>
-void fillJson (Object& json, LedgerFill const& fill)
+namespace {
+
+bool isFull(LedgerFill const& fill)
 {
-    using namespace ripple::RPC;
+    return fill.options & LedgerFill::full;
+}
 
-    auto& ledger = fill.ledger;
+bool isExpanded(LedgerFill const& fill)
+{
+    return isFull(fill) || (fill.options & LedgerFill::expand);
+}
 
-    bool const bFull (fill.options & LedgerFill::full);
-    bool const bExpand (fill.options & LedgerFill::expand);
-    bool const bBinary (fill.options & LedgerFill::binary);
+bool isBinary(LedgerFill const& fill)
+{
+    return fill.options & LedgerFill::binary;
+}
 
-    // DEPRECATED
-    json[jss::seqNum]       = to_string (ledger.getLedgerSeq());
-    json[jss::parent_hash]  = to_string (ledger.getParentHash());
-    json[jss::ledger_index] = to_string (ledger.getLedgerSeq());
+template <class Object>
+void fillJson(Object& json, LedgerInfo const& info, bool bFull)
+{
+    json[jss::parent_hash]  = to_string (info.parentHash);
+    json[jss::ledger_index] = to_string (info.seq);
+    json[jss::seqNum]       = to_string (info.seq);      // DEPRECATED
 
-    if (ledger.isClosed() || bFull)
+    if (! info.open)
     {
-        if (ledger.isClosed())
-            json[jss::closed] = true;
-
-        // DEPRECATED
-        json[jss::hash] = to_string (ledger.getHash());
-
-        // DEPRECATED
-        json[jss::totalCoins]        = to_string (ledger.getTotalCoins());
-        json[jss::ledger_hash]       = to_string (ledger.getHash());
-        json[jss::transaction_hash]  = to_string (ledger.getTransHash());
-        json[jss::account_hash]      = to_string (ledger.getAccountHash());
-        json[jss::accepted]          = ledger.isAccepted();
-        json[jss::total_coins]       = to_string (ledger.getTotalCoins());
-
-        auto closeTime = ledger.getCloseTimeNC();
-        if (closeTime != 0)
-        {
-            json[jss::close_time]            = closeTime;
-            json[jss::close_time_human]
-                    = boost::posix_time::to_simple_string (
-                        ptFromSeconds (closeTime));
-            json[jss::close_time_resolution] = ledger.getCloseResolution();
-
-            if (!ledger.getCloseAgree())
-                json[jss::close_time_estimated] = true;
-        }
+        json[jss::closed] = true;
     }
-    else
+    else if (!bFull)
     {
         json[jss::closed] = false;
+        return;
     }
 
-    if (ledger.haveTxMap() && (bFull || fill.options & LedgerFill::dumpTxrp))
+    json[jss::ledger_hash] = to_string (info.hash);
+    json[jss::transaction_hash] = to_string (info.txHash);
+    json[jss::account_hash] = to_string (info.accountHash);
+    json[jss::total_coins] = to_string (info.drops);
+
+    // These next three are DEPRECATED.
+    json[jss::hash] = to_string (info.hash);
+    json[jss::totalCoins] = to_string (info.drops);
+    json[jss::accepted] = ! info.open;
+
+    if (auto closeTime = info.closeTime)
     {
-        auto const& txMap = ledger.txMap();
-        auto&& txns = setArray (json, jss::transactions);
-        SHAMapTreeNode::TNType type;
+        json[jss::close_time] = closeTime;
+        json[jss::close_time_human] = boost::posix_time::to_simple_string (
+            ptFromSeconds (closeTime));
+        json[jss::close_time_resolution] = info.closeTimeResolution;
 
-        CountedYield count (
-            fill.yieldStrategy.transactionYieldCount, fill.yield);
-        for (auto item = txMap.peekFirstItem (type); item;
-             item = txMap.peekNextItem (item->key(), type))
-        {
-            count.yield();
-            if (bFull || bExpand)
-            {
-                if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-                {
-                    if (bBinary)
-                    {
-                        auto&& obj = appendObject (txns);
-                        obj[jss::tx_blob] = strHex (item->peekData ());
-                    }
-                    else
-                    {
-                        SerialIter sit (item->slice ());
-                        STTx txn (sit);
-                        txns.append (txn.getJson (0));
-                    }
-                }
-                else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
-                {
-                    if (bBinary)
-                    {
-                        SerialIter sit (item->slice ());
-
-                        auto&& obj = appendObject (txns);
-                        obj[jss::tx_blob] = strHex (sit.getVL ());
-                        obj[jss::meta] = strHex (sit.getVL ());
-                    }
-                    else
-                    {
-                        // VFALCO This is making a needless copy
-                        SerialIter sit (item->slice ());
-                        auto const vl = sit.getVL();
-                        SerialIter tsit (makeSlice(vl));
-                        STTx txn (tsit);
-
-                        TxMeta meta (
-                            item->key(), ledger.getLedgerSeq(), sit.getVL ());
-
-                        auto&& txJson = appendObject (txns);
-                        copyFrom(txJson, txn.getJson (0));
-                        txJson[jss::metaData] = meta.getJson (0);
-                    }
-                }
-                else
-                {
-                    auto&& error = appendObject (txns);
-                    error[to_string (item->key())] = (int) type;
-                }
-            }
-            else
-            {
-                txns.append (to_string (item->key()));
-            }
-        }
-    }
-
-    if (ledger.haveStateMap() && (bFull || fill.options & LedgerFill::dumpState))
-    {
-        auto const& stateMap = ledger.stateMap();
-        auto&& array = Json::setArray (json, jss::accountState);
-        RPC::CountedYield count (
-            fill.yieldStrategy.accountYieldCount, fill.yield);
-        if (bFull || bExpand)
-        {
-             if (bBinary)
-             {
-                 stateMap.visitLeaves (
-                     [&array] (std::shared_ptr<SHAMapItem const> const& smi)
-                     {
-                         auto&& obj = appendObject (array);
-                         obj[jss::hash] = to_string(smi->key());
-                         obj[jss::tx_blob] = strHex(smi->peekData ());
-                     });
-             }
-             else
-             {
-                 ledger.visitStateItems (
-                     [&array, &count] (SLE::ref sle)
-                     {
-                         count.yield();
-                         array.append (sle->getJson(0));
-                     });
-             }
-        }
-        else
-        {
-            stateMap.visitLeaves(
-                [&array, &count] (std::shared_ptr<SHAMapItem const> const& smi)
-                {
-                    count.yield();
-                    array.append (to_string(smi->key()));
-                });
-        }
+        if (! getCloseAgree(info))
+            json[jss::close_time_estimated] = true;
     }
 }
 
-/** Add Json to an existing generic Object. */
 template <class Object>
-void addJsonImpl (Object& json, LedgerFill const& fill)
+void fillJsonTx (Object& json, LedgerFill const& fill)
+{
+    auto&& txns = setArray (json, jss::transactions);
+    auto bBinary = isBinary(fill);
+    auto bExpanded = isExpanded(fill);
+
+    RPC::CountedYield count (
+        fill.yieldStrategy.transactionYieldCount, fill.yield);
+
+    try
+    {
+        using value_type = ReadView::txs_type::value_type;
+        forEachTx(fill.ledger, [&] (value_type const& i) {
+            count.yield();
+
+            if (! bExpanded)
+            {
+                txns.append(to_string(i.first->getTransactionID()));
+                return true;
+            }
+
+            auto&& txJson = appendObject (txns);
+
+            if (bBinary)
+            {
+                txJson[jss::tx_blob] = serializeHex(*i.first);
+                if (i.second)
+                    txJson[jss::meta] = serializeHex(*i.second);
+            }
+            else
+            {
+                copyFrom(txJson, i.first->getJson(0));
+                if (i.second)
+                    txJson[jss::metaData] = i.second->getJson(0);
+            }
+            return true;
+        });
+    }
+    catch (...)
+    {
+        // Nothing the user can do about this.
+    }
+}
+
+template <class Object>
+void fillJsonState(Object& json, LedgerFill const& fill)
+{
+    auto& ledger = fill.ledger;
+    auto&& array = Json::setArray (json, jss::accountState);
+    RPC::CountedYield count (
+        fill.yieldStrategy.accountYieldCount, fill.yield);
+
+    auto expanded = isExpanded(fill);
+    auto binary = isBinary(fill);
+
+    forEachSLE(ledger, [&] (SLE const& sle) {
+        count.yield();
+        if (binary)
+        {
+            auto&& obj = appendObject(array);
+            obj[jss::hash] = to_string(sle.key());
+            obj[jss::tx_blob] = serializeHex(sle);
+        }
+        else if (expanded)
+            array.append(sle.getJson(0));
+        else
+            array.append(to_string(sle.key()));
+        return true;
+    });
+}
+
+template <class Object>
+void fillJson (Object& json, LedgerFill const& fill)
+{
+    // TODO: what happens if bBinary and bExtracted are both set?
+    // Is there a way to report this back?
+    auto bFull = isFull(fill);
+    fillJson(json, fill.ledger.info(), bFull);
+
+    if (bFull || fill.options & LedgerFill::dumpTxrp)
+        fillJsonTx(json, fill);
+
+    if (bFull || fill.options & LedgerFill::dumpState)
+        fillJsonState(json, fill);
+}
+
+} // namespace
+
+void addJson (Json::Object& json, LedgerFill const& fill)
 {
     auto&& object = Json::addObject (json, jss::ledger);
     fillJson (object, fill);
 }
 
-void addJson(Json::Object& object, LedgerFill const& fill)
+void addJson (Json::Value& json, LedgerFill const& fill)
 {
-    addJsonImpl (object, fill);
-}
+    auto&& object = Json::addObject (json, jss::ledger);
+    fillJson (object, fill);
 
-void addJson(Json::Value& object, LedgerFill const& fill)
-{
-    addJsonImpl (object, fill);
 }
 
 Json::Value getJson (LedgerFill const& fill)

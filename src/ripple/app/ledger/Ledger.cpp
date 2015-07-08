@@ -137,10 +137,7 @@ makeGenesisAccount (AccountID const& id,
 //
 Ledger::Ledger (AccountID const& masterAccountID,
         std::uint64_t balanceInDrops)
-    : mTotCoins (balanceInDrops)
-    , mCloseResolution (ledgerDefaultTimeResolution)
-    , mCloseFlags (0)
-    , mImmutable (false)
+    : mImmutable (false)
     , txMap_  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
@@ -150,6 +147,8 @@ Ledger::Ledger (AccountID const& masterAccountID,
 {
     // first ledger
     info_.seq = 1;
+    info_.drops = balanceInDrops;
+    info_.closeTimeResolution = ledgerDefaultTimeResolution;
     auto const sle = makeGenesisAccount(
         masterAccountID, balanceInDrops);
     WriteLog (lsTRACE, Ledger)
@@ -161,20 +160,14 @@ Ledger::Ledger (AccountID const& masterAccountID,
 Ledger::Ledger (uint256 const& parentHash,
                 uint256 const& transHash,
                 uint256 const& accountHash,
-                std::uint64_t totCoins,
+                std::uint64_t totDrops,
                 std::uint32_t closeTime,
                 std::uint32_t parentCloseTime,
                 int closeFlags,
                 int closeResolution,
                 std::uint32_t ledgerSeq,
                 bool& loaded)
-    : mParentHash (parentHash)
-    , mTransHash (transHash)
-    , mAccountHash (accountHash)
-    , mTotCoins (totCoins)
-    , mCloseResolution (closeResolution)
-    , mCloseFlags (closeFlags)
-    , mImmutable (true)
+    : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
@@ -186,19 +179,23 @@ Ledger::Ledger (uint256 const& parentHash,
     info_.seq = ledgerSeq;
     info_.parentCloseTime = parentCloseTime;
     info_.closeTime = closeTime;
-
-    updateHash ();
+    info_.drops = totDrops;
+    info_.txHash = transHash;
+    info_.accountHash = accountHash;
+    info_.parentHash = parentHash;
+    info_.closeTimeResolution = closeResolution;
+    info_.closeFlags = closeFlags;
     loaded = true;
 
-    if (mTransHash.isNonZero () &&
-        !txMap_->fetchRoot (mTransHash, nullptr))
+    if (info_.txHash.isNonZero () &&
+        !txMap_->fetchRoot (info_.txHash, nullptr))
     {
         loaded = false;
         WriteLog (lsWARNING, Ledger) << "Don't have TX root for ledger";
     }
 
-    if (mAccountHash.isNonZero () &&
-        !stateMap_->fetchRoot (mAccountHash, nullptr))
+    if (info_.accountHash.isNonZero () &&
+        !stateMap_->fetchRoot (info_.accountHash, nullptr))
     {
         loaded = false;
         WriteLog (lsWARNING, Ledger) << "Don't have AS root for ledger";
@@ -211,13 +208,7 @@ Ledger::Ledger (uint256 const& parentHash,
 // Create a new ledger that's a snapshot of this one
 Ledger::Ledger (Ledger const& ledger,
                 bool isMutable)
-    : mParentHash (ledger.mParentHash)
-    , mTotCoins (ledger.mTotCoins)
-    , mCloseResolution (ledger.mCloseResolution)
-    , mCloseFlags (ledger.mCloseFlags)
-    , mValidated (ledger.mValidated)
-    , mAccepted (ledger.mAccepted)
-    , mImmutable (!isMutable)
+    : mImmutable (!isMutable)
     , txMap_ (ledger.txMap_->snapShot (isMutable))
     , stateMap_ (ledger.stateMap_->snapShot (isMutable))
     // VFALCO Needs audit
@@ -230,10 +221,7 @@ Ledger::Ledger (Ledger const& ledger,
 // Create a new open ledger that follows this one
 Ledger::Ledger (bool /* dummy */,
                 Ledger& prevLedger)
-    : mTotCoins (prevLedger.mTotCoins)
-    , mCloseResolution (prevLedger.mCloseResolution)
-    , mCloseFlags (0)
-    , mImmutable (false)
+    : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
@@ -245,31 +233,42 @@ Ledger::Ledger (bool /* dummy */,
     info_.parentCloseTime =
         prevLedger.info_.closeTime;
     info_.hash = prevLedger.info().hash + uint256(1);
+    info_.drops = prevLedger.info().drops;
+    info_.closeTimeResolution = prevLedger.info_.closeTimeResolution;
+
     prevLedger.updateHash ();
 
     // VFALCO TODO Require callers to update the hash
-    mParentHash = prevLedger.getHash ();
+    info_.parentHash = prevLedger.getHash ();
 
-    assert (mParentHash.isNonZero ());
+    assert (info_.parentHash.isNonZero ());
 
-    mCloseResolution = getNextLedgerTimeResolution (prevLedger.mCloseResolution,
-        prevLedger.getCloseAgree (), info_.seq);
+    info_.closeTimeResolution = getNextLedgerTimeResolution (
+        prevLedger.info_.closeTimeResolution,
+        getCloseAgree(prevLedger.info()), info_.seq);
 
     if (prevLedger.info_.closeTime == 0)
     {
         info_.closeTime = roundCloseTime (
-            getApp().getOPs ().getCloseTimeNC (), mCloseResolution);
+            getApp().getOPs ().getCloseTimeNC (), info_.closeTimeResolution);
     }
     else
     {
         info_.closeTime =
-            prevLedger.info_.closeTime + mCloseResolution;
+            prevLedger.info_.closeTime + info_.closeTimeResolution;
     }
 }
 
 Ledger::Ledger (void const* data,
         std::size_t size, bool hasPrefix)
+
     : mImmutable (true)
+    , txMap_ (std::make_shared <SHAMap> (
+          SHAMapType::TRANSACTION, getApp().family(),
+            deprecatedLogs().journal("SHAMap")))
+    , stateMap_ (std::make_shared <SHAMap> (
+          SHAMapType::STATE, getApp().family(),
+            deprecatedLogs().journal("SHAMap")))
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix);
@@ -277,10 +276,7 @@ Ledger::Ledger (void const* data,
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
-    : mTotCoins (0)
-    , mCloseResolution (ledgerDefaultTimeResolution)
-    , mCloseFlags (0)
-    , mImmutable (false)
+    : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
           SHAMapType::TRANSACTION, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
@@ -291,8 +287,8 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
     , fees_(getFees(*this, getConfig()))
 {
     info_.seq = ledgerSeq;
-    info_.parentCloseTime = 0;
     info_.closeTime = closeTime;
+    info_.closeTimeResolution = ledgerDefaultTimeResolution;
 }
 
 //------------------------------------------------------------------------------
@@ -319,28 +315,28 @@ void Ledger::updateHash()
     if (! mImmutable)
     {
         if (txMap_)
-            mTransHash = txMap_->getHash ();
+            info_.txHash = txMap_->getHash ();
         else
-            mTransHash.zero ();
+            info_.txHash.zero ();
 
         if (stateMap_)
-            mAccountHash = stateMap_->getHash ();
+            info_.accountHash = stateMap_->getHash ();
         else
-            mAccountHash.zero ();
+            info_.accountHash.zero ();
     }
 
-    // VFALCO This has to match addRaw
+    // VFALCO This has to match addRaw in View.h.
     info_.hash = sha512Half(
         HashPrefix::ledgerMaster,
         std::uint32_t(info_.seq),
-        std::uint64_t(mTotCoins),
-        mParentHash,
-        mTransHash,
-        mAccountHash,
+        std::uint64_t(info_.drops),
+        info_.parentHash,
+        info_.txHash,
+        info_.accountHash,
         std::uint32_t(info_.parentCloseTime),
         std::uint32_t(info_.closeTime),
-        std::uint8_t(mCloseResolution),
-        std::uint8_t(mCloseFlags));
+        std::uint8_t(info_.closeTimeResolution),
+        std::uint8_t(info_.closeFlags));
     mValidHash = true;
 }
 
@@ -349,33 +345,25 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix)
     if (hasPrefix)
         sit.get32 ();
 
-    info_.seq =         sit.get32 ();
-    mTotCoins =         sit.get64 ();
-    mParentHash =       sit.get256 ();
-    mTransHash =        sit.get256 ();
-    mAccountHash =      sit.get256 ();
-    info_.parentCloseTime =  sit.get32 ();
-    info_.closeTime =        sit.get32 ();
-    mCloseResolution =  sit.get8 ();
-    mCloseFlags =       sit.get8 ();
+    info_.seq = sit.get32 ();
+    info_.drops = sit.get64 ();
+    info_.parentHash = sit.get256 ();
+    info_.txHash = sit.get256 ();
+    info_.accountHash = sit.get256 ();
+    info_.parentCloseTime = sit.get32 ();
+    info_.closeTime = sit.get32 ();
+    info_.closeTimeResolution = sit.get8 ();
+    info_.closeFlags = sit.get8 ();
     updateHash ();
-    txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, mTransHash,
+    txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
         getApp().family(), deprecatedLogs().journal("SHAMap"));
-    stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, mAccountHash,
+    stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap"));
 }
 
 void Ledger::addRaw (Serializer& s) const
 {
-    s.add32 (info_.seq);
-    s.add64 (mTotCoins);
-    s.add256 (mParentHash);
-    s.add256 (mTransHash);
-    s.add256 (mAccountHash);
-    s.add32 (info_.parentCloseTime);
-    s.add32 (info_.closeTime);
-    s.add8 (mCloseResolution);
-    s.add8 (mCloseFlags);
+    ripple::addRaw(info_, s);
 }
 
 void Ledger::setAccepted (
@@ -383,13 +371,13 @@ void Ledger::setAccepted (
 {
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
-    assert (closed() && !mAccepted);
+    assert (closed() && !info_.accepted);
     info_.closeTime = correctCloseTime
         ? roundCloseTime (closeTime, closeResolution)
         : closeTime;
-    mCloseResolution = closeResolution;
-    mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    mAccepted = true;
+    info_.closeTimeResolution = closeResolution;
+    info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
+    info_.accepted = true;
     setImmutable ();
 }
 
@@ -397,12 +385,12 @@ void Ledger::setAccepted ()
 {
     // used when we acquired the ledger
     // TODO: re-enable a test like the following:
-    // assert(closed() && (info_.closeTime != 0) && (mCloseResolution != 0));
-    if ((mCloseFlags & sLCF_NoConsensusTime) == 0)
+    // assert(closed() && (info_.closeTime != 0) && (info_.closeTimeResolution != 0));
+    if ((info_.closeFlags & sLCF_NoConsensusTime) == 0)
         info_.closeTime = roundCloseTime(
-            info_.closeTime, mCloseResolution);
+            info_.closeTime, info_.closeTimeResolution);
 
-    mAccepted = true;
+    info_.accepted = true;
     setImmutable ();
 }
 
@@ -446,7 +434,7 @@ getTransaction (Ledger const& ledger,
     if (txn->getStatus () == NEW)
     {
         txn->setStatus (
-            ledger.isClosed() ? COMMITTED : INCLUDED, ledger.getLedgerSeq());
+            ledger.info().open ? INCLUDED : COMMITTED, ledger.info().seq);
     }
 
     cache.canonicalize (&txn);
@@ -495,7 +483,7 @@ getTransaction (Ledger const& ledger,
         return false;
 
     if (txn->getStatus () == NEW)
-        txn->setStatus (ledger.isClosed() ? COMMITTED : INCLUDED, ledger.seq());
+        txn->setStatus (ledger.info().open ? INCLUDED : COMMITTED, ledger.seq());
 
     cache.canonicalize (&txn);
     return true;
@@ -534,7 +522,7 @@ bool Ledger::saveValidatedLedger (bool current)
     // TODO(tom): Fix this hard-coded SQL!
     WriteLog (lsTRACE, Ledger)
         << "saveValidatedLedger "
-        << (current ? "" : "fromAcquire ") << getLedgerSeq ();
+        << (current ? "" : "fromAcquire ") << info().seq;
     static boost::format deleteLedger (
         "DELETE FROM Ledgers WHERE LedgerSeq = %u;");
     static boost::format deleteTrans1 (
@@ -554,23 +542,23 @@ bool Ledger::saveValidatedLedger (bool current)
         "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
         "('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
-    if (!getAccountHash ().isNonZero ())
+    if (!info().accountHash.isNonZero ())
     {
         WriteLog (lsFATAL, Ledger) << "AH is zero: "
                                    << getJson (*this);
         assert (false);
     }
 
-    if (getAccountHash () != stateMap_->getHash ())
+    if (info().accountHash != stateMap_->getHash ())
     {
-        WriteLog (lsFATAL, Ledger) << "sAL: " << getAccountHash ()
+        WriteLog (lsFATAL, Ledger) << "sAL: " << info().accountHash
                                    << " != " << stateMap_->getHash ();
         WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
                                    << info_.seq << ", current=" << current;
         assert (false);
     }
 
-    assert (getTransHash () == txMap_->getHash ());
+    assert (info().txHash == txMap_->getHash ());
 
     // Save the ledger header in the hashed object store
     {
@@ -592,7 +580,7 @@ bool Ledger::saveValidatedLedger (bool current)
         getApp().getLedgerMaster().failedSave(info_.seq, info_.hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        getApp().pendingSaves().erase(getLedgerSeq());
+        getApp().pendingSaves().erase(info().seq);
         return false;
     }
 
@@ -606,17 +594,17 @@ bool Ledger::saveValidatedLedger (bool current)
 
         soci::transaction tr(*db);
 
-        *db << boost::str (deleteTrans1 % getLedgerSeq ());
-        *db << boost::str (deleteTrans2 % getLedgerSeq ());
+        *db << boost::str (deleteTrans1 % info().seq);
+        *db << boost::str (deleteTrans2 % info().seq);
 
-        std::string const ledgerSeq (std::to_string (getLedgerSeq ()));
+        std::string const ledgerSeq (std::to_string (info().seq));
 
         for (auto const& vt : aLedger->getMap ())
         {
             uint256 transactionID = vt.second->getTransactionID ();
 
             getApp().getMasterTransaction ().inLedger (
-                transactionID, getLedgerSeq ());
+                transactionID, info().seq);
 
             std::string const txnId (to_string (transactionID));
             std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
@@ -671,7 +659,7 @@ bool Ledger::saveValidatedLedger (bool current)
             *db <<
                (STTx::getMetaSQLInsertReplaceHeader () +
                 vt.second->getTxn ()->getMetaSQL (
-                    getLedgerSeq (), vt.second->getEscMeta ()) + ";");
+                    info().seq, vt.second->getEscMeta ()) + ";");
         }
 
         tr.commit ();
@@ -683,15 +671,16 @@ bool Ledger::saveValidatedLedger (bool current)
         // TODO(tom): ARG!
         *db << boost::str (
             addLedger %
-            to_string (getHash ()) % info_.seq % to_string (mParentHash) %
-            beast::lexicalCastThrow <std::string> (mTotCoins) % info_.closeTime %
-            info_.parentCloseTime % mCloseResolution % mCloseFlags %
-            to_string (mAccountHash) % to_string (mTransHash));
+            to_string (getHash ()) % info_.seq % to_string (info_.parentHash) %
+            std::to_string (info_.drops) % info_.closeTime %
+            info_.parentCloseTime % info_.closeTimeResolution %
+            info_.closeFlags % to_string (info_.accountHash) %
+            to_string (info_.txHash));
     }
 
     // Clients can now trust the database for
     // information about this ledger sequence.
-    getApp().pendingSaves().erase(getLedgerSeq());
+    getApp().pendingSaves().erase(info().seq);
     return true;
 }
 
@@ -746,7 +735,7 @@ loadLedgerHelper(std::string const& sqlSuffix)
 
     boost::optional<std::string> sLedgerHash, sPrevHash, sAccountHash,
         sTransHash;
-    boost::optional<std::uint64_t> totCoins, closingTime, prevClosingTime,
+    boost::optional<std::uint64_t> totDrops, closingTime, prevClosingTime,
         closeResolution, closeFlags, ledgerSeq64;
 
     std::string const sql =
@@ -762,7 +751,7 @@ loadLedgerHelper(std::string const& sqlSuffix)
             soci::into(sPrevHash),
             soci::into(sAccountHash),
             soci::into(sTransHash),
-            soci::into(totCoins),
+            soci::into(totDrops),
             soci::into(closingTime),
             soci::into(prevClosingTime),
             soci::into(closeResolution),
@@ -788,7 +777,7 @@ loadLedgerHelper(std::string const& sqlSuffix)
     ledger = std::make_shared<Ledger>(prevHash,
                                       transHash,
                                       accountHash,
-                                      totCoins.value_or(0),
+                                      totDrops.value_or(0),
                                       closingTime.value_or(0),
                                       prevClosingTime.value_or(0),
                                       closeFlags.value_or(0),
@@ -810,7 +799,7 @@ void finishLoadByIndexOrHash(Ledger::pointer& ledger)
     ledger->setClosed ();
     ledger->setImmutable ();
 
-    if (getApp ().getLedgerMaster ().haveLedger (ledger->getLedgerSeq ()))
+    if (getApp ().getLedgerMaster ().haveLedger ((ledger->info().seq)))
         ledger->setAccepted ();
 
     WriteLog (lsTRACE, Ledger)
@@ -1220,10 +1209,10 @@ bool Ledger::walkLedger () const
     std::vector <SHAMapMissingNode> missingNodes2;
 
     if (stateMap_->getHash().isZero() &&
-        ! mAccountHash.isZero() &&
-        ! stateMap_->fetchRoot (mAccountHash, nullptr))
+        ! info_.accountHash.isZero() &&
+        ! stateMap_->fetchRoot (info_.accountHash, nullptr))
     {
-        missingNodes1.emplace_back (SHAMapType::STATE, mAccountHash);
+        missingNodes1.emplace_back (SHAMapType::STATE, info_.accountHash);
     }
     else
     {
@@ -1239,10 +1228,10 @@ bool Ledger::walkLedger () const
     }
 
     if (txMap_->getHash().isZero() &&
-        mTransHash.isNonZero() &&
-        ! txMap_->fetchRoot (mTransHash, nullptr))
+        info_.txHash.isNonZero() &&
+        ! txMap_->fetchRoot (info_.txHash, nullptr))
     {
-        missingNodes2.emplace_back (SHAMapType::TRANSACTION, mTransHash);
+        missingNodes2.emplace_back (SHAMapType::TRANSACTION, info_.txHash);
     }
     else
     {
@@ -1263,19 +1252,19 @@ bool Ledger::walkLedger () const
 bool Ledger::assertSane ()
 {
     if (info_.hash.isNonZero () &&
-            mAccountHash.isNonZero () &&
+            info_.accountHash.isNonZero () &&
             stateMap_ &&
             txMap_ &&
-            (mAccountHash == stateMap_->getHash ()) &&
-            (mTransHash == txMap_->getHash ()))
+            (info_.accountHash == stateMap_->getHash ()) &&
+            (info_.txHash == txMap_->getHash ()))
     {
         return true;
     }
 
     Json::Value j = getJson (*this);
 
-    j [jss::accountTreeHash] = to_string (mAccountHash);
-    j [jss::transTreeHash] = to_string (mTransHash);
+    j [jss::accountTreeHash] = to_string (info_.accountHash);
+    j [jss::transTreeHash] = to_string (info_.txHash);
 
     WriteLog (lsFATAL, Ledger) << "ledger is not sane" << j;
 
@@ -1314,7 +1303,7 @@ void Ledger::updateSkipList ()
         }
 
         assert (hashes.size () <= 256);
-        hashes.push_back (mParentHash);
+        hashes.push_back (info_.parentHash);
         sle->setFieldV256 (sfHashes, STVector256 (hashes));
         sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
         if (created)
@@ -1342,7 +1331,7 @@ void Ledger::updateSkipList ()
     assert (hashes.size () <= 256);
     if (hashes.size () == 256)
         hashes.erase (hashes.begin ());
-    hashes.push_back (mParentHash);
+    hashes.push_back (info_.parentHash);
     sle->setFieldV256 (sfHashes, STVector256 (hashes));
     sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
     if (created)
@@ -1358,16 +1347,16 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 {
     if (!getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
     {
-        WriteLog (lsDEBUG, Ledger) << "Double pend save for " << getLedgerSeq();
+        WriteLog (lsDEBUG, Ledger) << "Double pend save for " << info().seq;
         return true;
     }
 
     assert (isImmutable ());
 
-    if (!getApp().pendingSaves().insert(getLedgerSeq()))
+    if (!getApp().pendingSaves().insert(info().seq))
     {
         WriteLog (lsDEBUG, Ledger)
-            << "Pend save with seq in pending saves " << getLedgerSeq();
+            << "Pend save with seq in pending saves " << info().seq;
         return true;
     }
 
@@ -1463,10 +1452,10 @@ std::vector<uint256> Ledger::getNeededTransactionHashes (
 {
     std::vector<uint256> ret;
 
-    if (mTransHash.isNonZero ())
+    if (info_.txHash.isNonZero ())
     {
         if (txMap_->getHash ().isZero ())
-            ret.push_back (mTransHash);
+            ret.push_back (info_.txHash);
         else
             ret = txMap_->getNeededHashes (max, filter);
     }
@@ -1479,10 +1468,10 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 {
     std::vector<uint256> ret;
 
-    if (mAccountHash.isNonZero ())
+    if (info_.accountHash.isNonZero ())
     {
         if (stateMap_->getHash ().isZero ())
-            ret.push_back (mAccountHash);
+            ret.push_back (info_.accountHash);
         else
             ret = stateMap_->getNeededHashes (max, filter);
     }
@@ -1511,7 +1500,7 @@ hashOfSeq (Ledger& ledger, LedgerIndex seq,
     if (seq == ledger.seq())
         return ledger.getHash();
     if (seq == (ledger.seq() - 1))
-        return ledger.getParentHash();
+        return ledger.info().parentHash;
 
     // Within 256...
     {

@@ -150,7 +150,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
-    assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
+    assert ((lastClosedLedger->info().seq % 256) == 0);
 
     detail::VotableInteger<std::uint64_t> baseFeeVote (
         lastClosedLedger->getBaseFee (), target_.reference_fee);

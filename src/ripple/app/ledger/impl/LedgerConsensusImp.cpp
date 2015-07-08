@@ -236,13 +236,13 @@ LedgerConsensusImp::LedgerConsensusImp (
 
     assert (mPreviousMSeconds);
 
-    inboundTransactions_.newRound (mPreviousLedger->getLedgerSeq());
+    inboundTransactions_.newRound (mPreviousLedger->info().seq);
 
     // Adapt close time resolution to recent network conditions
     mCloseResolution = getNextLedgerTimeResolution (
-        mPreviousLedger->getCloseResolution (),
-        mPreviousLedger->getCloseAgree (),
-        mPreviousLedger->getLedgerSeq () + 1);
+        mPreviousLedger->info().closeTimeResolution,
+        getCloseAgree (mPreviousLedger->info()),
+        mPreviousLedger->info().seq + 1);
 
     if (mValPublic.isSet () && mValPrivate.isSet ()
         && !getApp().getOPs ().isNeedNetworkLedger ())
@@ -297,7 +297,7 @@ Json::Value LedgerConsensusImp::getJson (bool full)
     if (mHaveCorrectLCL)
     {
         ret["synched"] = true;
-        ret["ledger_seq"] = mPreviousLedger->getLedgerSeq () + 1;
+        ret["ledger_seq"] = mPreviousLedger->info().seq + 1;
         ret["close_granularity"] = mCloseResolution;
     }
     else
@@ -518,7 +518,7 @@ void LedgerConsensusImp::checkLCL ()
     uint256 priorLedger;
 
     if (mHaveCorrectLCL)
-        priorLedger = mPreviousLedger->getParentHash (); // don't jump back
+        priorLedger = mPreviousLedger->info().parentHash; // don't jump back
 
     // Get validators that are on our ledger, or  "close" to being on
     // our ledger.
@@ -642,7 +642,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
         return;
     }
 
-    assert (newLCL->isClosed () && newLCL->isImmutable ());
+    assert (!newLCL->info().open && newLCL->isImmutable ());
     assert (newLCL->getHash () == lclHash);
     mPreviousLedger = newLCL;
     mPrevLedgerHash = lclHash;
@@ -652,9 +652,9 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
     mHaveCorrectLCL = true;
 
     mCloseResolution = getNextLedgerTimeResolution (
-        mPreviousLedger->getCloseResolution (),
-        mPreviousLedger->getCloseAgree (),
-        mPreviousLedger->getLedgerSeq () + 1);
+        mPreviousLedger->info().closeTimeResolution,
+        getCloseAgree(mPreviousLedger->info()),
+        mPreviousLedger->info().seq + 1);
 }
 
 void LedgerConsensusImp::timerEntry ()
@@ -718,12 +718,12 @@ void LedgerConsensusImp::statePreClose ()
     int sinceClose;
     int idleInterval = 0;
 
-    if (mHaveCorrectLCL && mPreviousLedger->getCloseAgree ())
+    if (mHaveCorrectLCL && getCloseAgree(mPreviousLedger->info()))
     {
         // we can use consensus timing
         sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
-            - mPreviousLedger->getCloseTimeNC ());
-        idleInterval = 2 * mPreviousLedger->getCloseResolution ();
+            - mPreviousLedger->info().closeTime);
+        idleInterval = 2 * mPreviousLedger->info().closeTimeResolution;
 
         if (idleInterval < LEDGER_IDLE_INTERVAL)
             idleInterval = LEDGER_IDLE_INTERVAL;
@@ -737,7 +737,7 @@ void LedgerConsensusImp::statePreClose ()
     }
 
     idleInterval = std::max (idleInterval, LEDGER_IDLE_INTERVAL);
-    idleInterval = std::max (idleInterval, 2 * mPreviousLedger->getCloseResolution ());
+    idleInterval = std::max (idleInterval, 2 * mPreviousLedger->info().closeTimeResolution);
 
     // Decide if we should close the ledger
     if (shouldCloseLedger (anyTransactions
@@ -945,7 +945,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
         // put our set where others can get it later
         if (set->getHash ().isNonZero ())
-           consensus_.takePosition (mPreviousLedger->getLedgerSeq (), set);
+           consensus_.takePosition (mPreviousLedger->info().seq, set);
 
         assert (set->getHash () == mOurPosition->getCurrentHash ());
         // these are now obsolete
@@ -960,7 +960,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     {
         // we agreed to disagree
         closeTimeCorrect = false;
-        closeTime = mPreviousLedger->getCloseTimeNC () + 1;
+        closeTime = mPreviousLedger->info().closeTime + 1;
     }
 
     WriteLog (lsDEBUG, LedgerConsensus)
@@ -970,7 +970,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << " fail=" << (mConsensusFail ? "yes" : "no");
     WriteLog (lsDEBUG, LedgerConsensus)
         << "Report: Prev = " << mPrevLedgerHash
-        << ":" << mPreviousLedger->getLedgerSeq ();
+        << ":" << mPreviousLedger->info().seq;
     WriteLog (lsDEBUG, LedgerConsensus)
         << "Report: TxSt = " << set->getHash ()
         << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
@@ -1009,9 +1009,9 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     newLCL->updateSkipList ();
 
     int asf = newLCL->stateMap().flushDirty (
-        hotACCOUNT_NODE, newLCL->getLedgerSeq());
+        hotACCOUNT_NODE, newLCL->info().seq);
     int tmf = newLCL->txMap().flushDirty (
-        hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+        hotTRANSACTION_NODE, newLCL->info().seq);
     WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " accounts and " <<
         tmf << " transaction nodes";
 
@@ -1031,8 +1031,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     uint256 const newLCLHash = newLCL->getHash ();
     WriteLog (lsDEBUG, LedgerConsensus)
-        << "Report: NewL  = " << newLCLHash
-        << ":" << newLCL->getLedgerSeq ();
+        << "Report: NewL  = " << newLCL->getHash ()
+        << ":" << newLCL->info().seq;
     // Tell directly connected peers that we have a new LCL
     statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
 
@@ -1042,10 +1042,10 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         auto v = std::make_shared<STValidation> (newLCLHash,
             consensus_.validationTimestamp (getApp().getOPs ().getNetworkTimeNC ()),
             mValPublic, mProposing);
-        v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
+        v->setFieldU32 (sfLedgerSequence, newLCL->info().seq);
         addLoad(v);  // Our network load
 
-        if (((newLCL->getLedgerSeq () + 1) % 256) == 0)
+        if (((newLCL->info().seq + 1) % 256) == 0)
         // next ledger is flag ledger
         {
             // Suggest fee changes and new features
@@ -1352,10 +1352,10 @@ void LedgerConsensusImp::statusChange (protocol::NodeEvent event, Ledger& ledger
     else
         s.set_newevent (event);
 
-    s.set_ledgerseq (ledger.getLedgerSeq ());
+    s.set_ledgerseq (ledger.info().seq);
     s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
-    s.set_ledgerhashprevious(ledger.getParentHash ().begin (),
-        std::decay_t<decltype(ledger.getParentHash ())>::bytes);
+    s.set_ledgerhashprevious(ledger.info().parentHash.begin (),
+        std::decay_t<decltype(ledger.info().parentHash)>::bytes);
     s.set_ledgerhash (ledger.getHash ().begin (),
         std::decay_t<decltype(ledger.getHash ())>::bytes);
 
@@ -1385,13 +1385,13 @@ void LedgerConsensusImp::takeInitialPosition (Ledger& initialLedger)
     std::shared_ptr<SHAMap> initialSet;
 
     if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
-            && ((mPreviousLedger->getLedgerSeq () % 256) == 0))
+            && ((mPreviousLedger->info().seq % 256) == 0))
     {
         // previous ledger was flag ledger
         std::shared_ptr<SHAMap> preSet
             = initialLedger.txMap().snapShot (true);
         ValidationSet parentSet = getApp().getValidations().getValidations (
-            mPreviousLedger->getParentHash ());
+            mPreviousLedger->info().parentHash);
         m_feeVote.doVoting (mPreviousLedger, parentSet, preSet);
         getApp().getAmendmentTable ().doVoting (mPreviousLedger, parentSet, preSet);
         initialSet = preSet->snapShot (false);
@@ -1400,14 +1400,14 @@ void LedgerConsensusImp::takeInitialPosition (Ledger& initialLedger)
         initialSet = initialLedger.txMap().snapShot (false);
 
     // Tell the ledger master not to acquire the ledger we're probably building
-    ledgerMaster_.setBuildingLedger (mPreviousLedger->getLedgerSeq () + 1);
+    ledgerMaster_.setBuildingLedger (mPreviousLedger->info().seq + 1);
 
     uint256 txSet = initialSet->getHash ();
     WriteLog (lsINFO, LedgerConsensus) << "initial position " << txSet;
     mapCompleteInternal (txSet, initialSet, false);
 
     mOurPosition = std::make_shared<LedgerProposal>
-        (mValPublic, initialLedger.getParentHash (), txSet, mCloseTime);
+        (mValPublic, initialLedger.info().parentHash, txSet, mCloseTime);
 
     for (auto& it : mDisputes)
     {
@@ -1569,7 +1569,7 @@ void LedgerConsensusImp::updateOurPositions ()
             , end = closeTimes.end (); it != end; ++it)
         {
             WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq"
-                << mPreviousLedger->getLedgerSeq () + 1 << ": "
+                << mPreviousLedger->info().seq + 1 << ": "
                 << it->first << " has " << it->second << ", "
                 << threshVote << " required";
 
@@ -1671,7 +1671,7 @@ void LedgerConsensusImp::checkOurValidation ()
     if (lastValidation)
     {
         if (lastValidation->getFieldU32 (sfLedgerSequence)
-            == mPreviousLedger->getLedgerSeq ())
+            == mPreviousLedger->info().seq)
         {
             return;
         }
@@ -1822,7 +1822,6 @@ void applyTransactions (
             // The transaction isn't in the check ledger, try to apply it
             WriteLog (lsDEBUG, LedgerConsensus) <<
                 "Processing candidate transaction: " << item.key();
-            
             std::shared_ptr<STTx const> txn;
             try
             {

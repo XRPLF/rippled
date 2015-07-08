@@ -408,7 +408,7 @@ AmendmentTableImpl::doVoting (
     ValidationSet const& valSet)
 {
     // LCL must be flag ledger
-    //assert((lastClosedLedger->getLedgerSeq () % 256) == 0);
+    //assert((lastClosedLedger->info().seq % 256) == 0);
 
     AmendmentSet amendmentSet (closeTime);
 

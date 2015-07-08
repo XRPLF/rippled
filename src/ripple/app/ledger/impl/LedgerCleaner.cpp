@@ -259,9 +259,9 @@ public:
         catch (SHAMapMissingNode &)
         {
             m_journal.warning <<
-                "Node missing from ledger " << ledger->getLedgerSeq();
+                "Node missing from ledger " << ledger->info().seq;
             getApp().getInboundLedgers().acquire (
-                ledger->getHash(), ledger->getLedgerSeq(), InboundLedger::fcGENERIC);
+                ledger->getHash(), ledger->info().seq, InboundLedger::fcGENERIC);
         }
         return hash ? *hash : zero; // kludge
     }
@@ -291,7 +291,7 @@ public:
         Ledger::pointer dbLedger = Ledger::loadByIndex(ledgerIndex);
         if (! dbLedger ||
             (dbLedger->getHash() != ledgerHash) ||
-            (dbLedger->getParentHash() != nodeLedger->getParentHash()))
+            (dbLedger->info().parentHash != nodeLedger->info().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
             m_journal.debug <<
@@ -333,7 +333,7 @@ public:
     {
         LedgerHash ledgerHash;
 
-        if (!referenceLedger || (referenceLedger->getLedgerSeq() < ledgerIndex))
+        if (!referenceLedger || (referenceLedger->info().seq < ledgerIndex))
         {
             referenceLedger = getApp().getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
@@ -343,7 +343,7 @@ public:
             }
         }
 
-        if (referenceLedger->getLedgerSeq() >= ledgerIndex)
+        if (referenceLedger->info().seq >= ledgerIndex)
         {
             // See if the hash for the ledger we need is in the reference ledger
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);

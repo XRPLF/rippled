@@ -130,11 +130,11 @@ buildHello (uint256 const& sharedValue, Application& app)
 
     auto const closedLedger = app.getLedgerMaster().getClosedLedger();
 
-    if (closedLedger && closedLedger->isClosed ())
+    if (closedLedger && !closedLedger->info().open)
     {
         uint256 hash = closedLedger->getHash ();
         h.set_ledgerclosed (hash.begin (), hash.size ());
-        hash = closedLedger->getParentHash ();
+        hash = closedLedger->info().parentHash;
         h.set_ledgerprevious (hash.begin (), hash.size ());
     }
 
