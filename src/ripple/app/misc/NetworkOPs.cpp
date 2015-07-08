@@ -197,7 +197,7 @@ public:
 
     bool isValidated (Ledger::ref l) override
     {
-        return isValidated (l->getLedgerSeq (), l->getHash ());
+        return isValidated (l->info().seq, l->getHash ());
     }
     bool getValidatedRange (
         std::uint32_t& minVal, std::uint32_t& maxVal) override
@@ -759,7 +759,7 @@ std::uint32_t NetworkOPsImp::getLedgerID (uint256 const& hash)
 {
     Ledger::pointer  lrLedger   = m_ledgerMaster.getLedgerByHash (hash);
 
-    return lrLedger ? lrLedger->getLedgerSeq () : 0;
+    return lrLedger ? lrLedger->info().seq : 0;
 }
 
 Ledger::pointer NetworkOPsImp::getLedgerBySeq (const std::uint32_t seq)
@@ -769,7 +769,7 @@ Ledger::pointer NetworkOPsImp::getLedgerBySeq (const std::uint32_t seq)
 
 std::uint32_t NetworkOPsImp::getCurrentLedgerID ()
 {
-    return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
+    return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
 
 bool NetworkOPsImp::haveLedger (std::uint32_t seq)
@@ -787,7 +787,7 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq, uint256 const& hash)
     if (!haveLedger (seq))
         return false;
 
-    if (seq > m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ())
+    if (seq > m_ledgerMaster.getValidatedLedger ()->info().seq)
         return false;
 
     return m_ledgerMaster.getHashBySeq (seq) == hash;
@@ -1291,7 +1291,7 @@ void NetworkOPsImp::tryStartConsensus ()
         // Note: Do not go to omFULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to omCONNECTED -- TODO
         if (getApp().getOPs ().getNetworkTimeNC () <
-            m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ())
+            m_ledgerMaster.getCurrentLedger ()->info().closeTime)
         {
             setMode (omFULL);
         }
@@ -1317,7 +1317,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         return false;
 
     uint256 closedLedger = ourClosed->getHash ();
-    uint256 prevClosedLedger = ourClosed->getParentHash ();
+    uint256 prevClosedLedger = ourClosed->info().parentHash;
     m_journal.trace << "OurClosed:  " << closedLedger;
     m_journal.trace << "PrevClosed: " << prevClosedLedger;
 
@@ -1492,9 +1492,9 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     protocol::TMStatusChange s;
     s.set_newevent (protocol::neSWITCHED_LEDGER);
-    s.set_ledgerseq (newLCL->getLedgerSeq ());
+    s.set_ledgerseq (newLCL->info().seq);
     s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
-    uint256 hash = newLCL->getParentHash ();
+    uint256 hash = newLCL->info().parentHash;
     s.set_ledgerhashprevious (hash.begin (), hash.size ());
     hash = newLCL->getHash ();
     s.set_ledgerhash (hash.begin (), hash.size ());
@@ -1507,11 +1507,11 @@ bool NetworkOPsImp::beginConsensus (
     uint256 const& networkClosed, Ledger::pointer closingLedger)
 {
     if (m_journal.info) m_journal.info <<
-        "Consensus time for #" << closingLedger->getLedgerSeq () <<
-        " with LCL " << closingLedger->getParentHash ();
+        "Consensus time for #" << closingLedger->info().seq <<
+        " with LCL " << closingLedger->info().parentHash;
 
     auto prevLedger = m_ledgerMaster.getLedgerByHash (
-        closingLedger->getParentHash ());
+        closingLedger->info().parentHash);
 
     if (!prevLedger)
     {
@@ -1525,8 +1525,8 @@ bool NetworkOPsImp::beginConsensus (
         return false;
     }
 
-    assert (prevLedger->getHash () == closingLedger->getParentHash ());
-    assert (closingLedger->getParentHash () ==
+    assert (prevLedger->getHash () == closingLedger->info().parentHash);
+    assert (closingLedger->info().parentHash ==
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
     // Create a consensus object to get consensus on this ledger
@@ -1539,7 +1539,7 @@ bool NetworkOPsImp::beginConsensus (
         m_ledgerMaster,
         networkClosed,
         prevLedger,
-        m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
+        m_ledgerMaster.getCurrentLedger ()->info().closeTime);
 
     m_journal.debug << "Initiating consensus engine";
     return true;
@@ -1629,7 +1629,7 @@ NetworkOPsImp::mapComplete (uint256 const& hash,
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
 {
-    uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->getParentHash ();
+    uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->info().parentHash;
 
     // Why do we make a copy of the peer list here?
     std::vector <Peer::ptr> peerList = getApp().overlay ().getActivePeers ();
@@ -2097,7 +2097,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         std::uint64_t baseFee = lpClosed->getBaseFee ();
         std::uint64_t baseRef = lpClosed->getReferenceFeeUnits ();
         Json::Value l (Json::objectValue);
-        l[jss::seq] = Json::UInt (lpClosed->getLedgerSeq ());
+        l[jss::seq] = Json::UInt (lpClosed->info().seq);
         l[jss::hash] = to_string (lpClosed->getHash ());
 
         if (!human)
@@ -2107,7 +2107,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             l[jss::reserve_inc] =
                     Json::Value::UInt (lpClosed->getReserveInc ());
             l[jss::close_time] =
-                    Json::Value::UInt (lpClosed->getCloseTimeNC ());
+                    Json::Value::UInt (lpClosed->info().closeTime);
         }
         else
         {
@@ -2127,7 +2127,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             if (std::abs (offset) >= 60)
                 l[jss::system_time_offset] = offset;
 
-            std::uint32_t lCloseTime (lpClosed->getCloseTimeNC ());
+            std::uint32_t lCloseTime (lpClosed->info().closeTime);
             if (std::abs (mCloseTimeOffset) >= 60)
                 l[jss::close_time_offset] = mCloseTimeOffset;
 
@@ -2148,8 +2148,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         Ledger::pointer lpPublished = m_ledgerMaster.getPublishedLedger ();
         if (!lpPublished)
             info[jss::published_ledger] = "none";
-        else if (lpPublished->getLedgerSeq() != lpClosed->getLedgerSeq())
-            info[jss::published_ledger] = lpPublished->getLedgerSeq();
+        else if (lpPublished->info().seq != lpClosed->info().seq)
+            info[jss::published_ledger] = lpPublished->info().seq;
     }
 
     return info;
@@ -2210,10 +2210,10 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
             Json::Value jvObj (Json::objectValue);
 
             jvObj[jss::type] = "ledgerClosed";
-            jvObj[jss::ledger_index] = lpAccepted->getLedgerSeq ();
+            jvObj[jss::ledger_index] = lpAccepted->info().seq;
             jvObj[jss::ledger_hash] = to_string (lpAccepted->getHash ());
             jvObj[jss::ledger_time]
-                    = Json::Value::UInt (lpAccepted->getCloseTimeNC ());
+                    = Json::Value::UInt (lpAccepted->info().closeTime);
 
             jvObj[jss::fee_ref]
                     = Json::UInt (lpAccepted->getReferenceFeeUnits ());
@@ -2280,9 +2280,9 @@ Json::Value NetworkOPsImp::transJson(
 
     if (bValidated)
     {
-        jvObj[jss::ledger_index]           = lpCurrent->getLedgerSeq ();
+        jvObj[jss::ledger_index]           = lpCurrent->info().seq;
         jvObj[jss::ledger_hash]            = to_string (lpCurrent->getHash ());
-        jvObj[jss::transaction][jss::date]  = lpCurrent->getCloseTimeNC ();
+        jvObj[jss::transaction][jss::date]  = lpCurrent->info().closeTime;
         jvObj[jss::validated]              = true;
 
         // WRITEME: Put the account next seq here
@@ -2291,7 +2291,7 @@ Json::Value NetworkOPsImp::transJson(
     else
     {
         jvObj[jss::validated]              = false;
-        jvObj[jss::ledger_current_index]   = lpCurrent->getLedgerSeq ();
+        jvObj[jss::ledger_current_index]   = lpCurrent->info().seq;
     }
 
     jvObj[jss::status]                 = bValidated ? "closed" : "proposed";
@@ -2558,7 +2558,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
         m_ledgerMaster.getClosedLedger ()->getHash (),
         m_ledgerMaster.getCurrentLedger ());
     mLedgerConsensus->simulate ();
-    return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
+    return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
 
 // <-- bool: true=added, false=already there
@@ -2568,10 +2568,10 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
 
     if (lpClosed)
     {
-        jvResult[jss::ledger_index]    = lpClosed->getLedgerSeq ();
+        jvResult[jss::ledger_index]    = lpClosed->info().seq;
         jvResult[jss::ledger_hash]     = to_string (lpClosed->getHash ());
         jvResult[jss::ledger_time]
-                = Json::Value::UInt (lpClosed->getCloseTimeNC ());
+                = Json::Value::UInt (lpClosed->info().closeTime);
         jvResult[jss::fee_ref]
                 = Json::UInt (lpClosed->getReferenceFeeUnits ());
         jvResult[jss::fee_base]        = Json::UInt (lpClosed->getBaseFee ());
@@ -3096,7 +3096,7 @@ void NetworkOPsImp::makeFetchPack (
         return;
     }
 
-    if (!haveLedger->isClosed ())
+    if (haveLedger->info().open)
     {
         m_journal.warning
             << "Peer requests fetch pack from open ledger: "
@@ -3105,14 +3105,14 @@ void NetworkOPsImp::makeFetchPack (
         return;
     }
 
-    if (haveLedger->getLedgerSeq() < m_ledgerMaster.getEarliestFetch())
+    if (haveLedger->info().seq < m_ledgerMaster.getEarliestFetch())
     {
         m_journal.debug << "Peer requests fetch pack that is too early";
         peer->charge (Resource::feeInvalidRequest);
         return;
     }
 
-    Ledger::pointer wantLedger = getLedgerByHash (haveLedger->getParentHash ());
+    Ledger::pointer wantLedger = getLedgerByHash (haveLedger->info().parentHash);
 
     if (!wantLedger)
     {
@@ -3145,7 +3145,7 @@ void NetworkOPsImp::makeFetchPack (
         //     the same process adding the previous ledger to the FetchPack.
         do
         {
-            std::uint32_t lSeq = wantLedger->getLedgerSeq ();
+            std::uint32_t lSeq = wantLedger->info().seq;
 
             protocol::TMIndexedObject& newObj = *reply.add_objects ();
             newObj.set_hash (wantLedger->getHash ().begin (), 256 / 8);
@@ -3160,7 +3160,7 @@ void NetworkOPsImp::makeFetchPack (
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
                                std::placeholders::_2));
 
-            if (wantLedger->getTransHash ().isNonZero ())
+            if (wantLedger->info().txHash.isNonZero ())
                 wantLedger->txMap().getFetchPack (
                     nullptr, true, 512,
                     std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
@@ -3171,7 +3171,7 @@ void NetworkOPsImp::makeFetchPack (
 
             // move may save a ref/unref
             haveLedger = std::move (wantLedger);
-            wantLedger = getLedgerByHash (haveLedger->getParentHash ());
+            wantLedger = getLedgerByHash (haveLedger->info().parentHash);
         }
         while (wantLedger &&
                UptimeTimer::getInstance ().getElapsedSeconds () <= uUptime + 1);

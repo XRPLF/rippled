@@ -75,7 +75,7 @@ Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
         if (ledger == nullptr)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
-        if (ledger->getLedgerSeq () > netOps.getValidatedSeq () &&
+        if (ledger->info().seq > netOps.getValidatedSeq () &&
             isValidatedOld ())
         {
             ledger.reset();
@@ -94,19 +94,19 @@ Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
             if (ledger == nullptr)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
-            assert (ledger->isClosed ());
+            assert (! ledger->info().open);
         }
         else
         {
             if (index.empty () || index == "current")
             {
                 ledger = netOps.getCurrentLedger ();
-                assert (! ledger->isClosed ());
+                assert (ledger->info().open);
             }
             else if (index == "closed")
             {
                 ledger = netOps.getClosedLedger ();
-                assert (ledger->isClosed ());
+                assert (! ledger->info().open);
             }
             else
             {
@@ -116,7 +116,7 @@ Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
             if (ledger == nullptr)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
-            if (ledger->getLedgerSeq () + minSequenceGap <
+            if (ledger->info().seq + minSequenceGap <
                 netOps.getValidatedSeq ())
             {
                 ledger.reset ();
@@ -132,13 +132,13 @@ Status ledgerFromRequest (Ledger::pointer& ledger, Context& context)
 
 bool isValidated (Ledger& ledger)
 {
-    if (ledger.isValidated ())
+    if (ledger.info().validated)
         return true;
 
-    if (!ledger.isClosed ())
+    if (ledger.info().open)
         return false;
 
-    auto seq = ledger.getLedgerSeq();
+    auto seq = ledger.info().seq;
     try
     {
         // Use the skip list in the last validated ledger to see if ledger
@@ -187,14 +187,14 @@ Status lookupLedger (
     if (auto status = ledgerFromRequest (ledger, context))
         return status;
 
-    if (ledger->isClosed ())
+    if (! ledger->info().open)
     {
         result[jss::ledger_hash] = to_string (ledger->getHash());
-        result[jss::ledger_index] = ledger->getLedgerSeq();
+        result[jss::ledger_index] = ledger->info().seq;
     }
     else
     {
-        result[jss::ledger_current_index] = ledger->getLedgerSeq();
+        result[jss::ledger_current_index] = ledger->info().seq;
     }
     result[jss::validated] = isValidated (*ledger);
     return Status::OK;

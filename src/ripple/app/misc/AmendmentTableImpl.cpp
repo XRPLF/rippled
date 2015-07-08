@@ -524,13 +524,13 @@ AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
 {
 
     // LCL must be flag ledger
-    assert((lastClosedLedger->getLedgerSeq () % 256) == 0);
+    assert((lastClosedLedger->info().seq % 256) == 0);
 
-    AmendmentSet amendmentSet (lastClosedLedger->getParentCloseTimeNC ());
+    AmendmentSet amendmentSet (lastClosedLedger->info().parentCloseTime);
 
     // get validations for ledger before flag ledger
     ValidationSet valSet = m_appApiFacade.getValidations (
-        lastClosedLedger->getParentHash ());
+        lastClosedLedger->info().parentHash);
     for (auto const& entry : valSet)
     {
         auto const& val = *entry.second;
@@ -549,7 +549,7 @@ AmendmentTableImpl<AppApiFacade>::doVoting (Ledger::ref lastClosedLedger,
     }
     reportValidations (amendmentSet);
 
-    amendmentList_t lAmendments = getToEnable (lastClosedLedger->getCloseTimeNC ());
+    amendmentList_t lAmendments = getToEnable (lastClosedLedger->info().closeTime);
     for (auto const& uAmendment : lAmendments)
     {
         if (m_journal.warning) m_journal.warning <<
@@ -717,7 +717,7 @@ void AppApiFacadeImpl::setMajorityTimesFromStateToDB (
     auto db (getApp ().getWalletDB ().checkoutDb ());
 
     soci::transaction tr(*db);
-    
+
     for (auto const& hash : changedAmendments)
     {
         AmendmentState const& fState = amendmentMap[hash];

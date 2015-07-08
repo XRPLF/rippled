@@ -62,7 +62,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         auto ledgerIndex = jsonIndex.asInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
-        if (ledgerIndex >= ledger->getLedgerSeq())
+        if (ledgerIndex >= ledger->info().seq)
             return RPC::make_param_error("Ledger index too large");
 
         auto const j = deprecatedLogs().journal("RPCHandler");
@@ -108,7 +108,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
     {
         // We already have the ledger they want
         Json::Value jvResult;
-        jvResult[jss::ledger_index] = ledger->getLedgerSeq();
+        jvResult[jss::ledger_index] = ledger->info().seq;
         addJson (jvResult, {*ledger, 0});
         return jvResult;
     }

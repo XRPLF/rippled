@@ -72,7 +72,7 @@ Json::Value doLedgerData (RPC::Context& context)
         limit = maxLimit;
 
     jvResult[jss::ledger_hash] = to_string (lpLedger->getHash());
-    jvResult[jss::ledger_index] = std::to_string( lpLedger->getLedgerSeq ());
+    jvResult[jss::ledger_index] = std::to_string( lpLedger->info().seq);
 
     Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
     auto& map = lpLedger->stateMap();

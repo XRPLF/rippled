@@ -122,7 +122,7 @@ public:
 
     bool can_remove (LocalTx& txn, Ledger::ref ledger)
     {
-        if (txn.isExpired (ledger->getLedgerSeq ()))
+        if (txn.isExpired (ledger->info().seq))
             return true;
         if (ledger->txExists(txn.getID()))
             return true;

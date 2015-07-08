@@ -291,7 +291,7 @@ SHAMapStoreImp::run()
                 continue;
         }
 
-        LedgerIndex validatedSeq = validatedLedger_->getLedgerSeq();
+        LedgerIndex validatedSeq = validatedLedger_->info().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;

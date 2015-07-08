@@ -144,7 +144,7 @@ public:
 
     LedgerIndex getCurrentLedgerIndex ()
     {
-        return mCurrentLedger.get ()->getLedgerSeq ();
+        return mCurrentLedger.get ()->info().seq;
     }
 
     LedgerIndex getValidLedgerIndex ()
@@ -161,7 +161,7 @@ public:
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
+        std::int64_t ret = getApp().getOPs().getCloseTimeNC();
         ret -= static_cast<std::int64_t> (pubClose);
         ret = (ret > 0) ? ret : 0;
 
@@ -178,7 +178,7 @@ public:
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
+        std::int64_t ret = getApp().getOPs().getCloseTimeNC();
         ret -= static_cast<std::int64_t> (valClose);
         ret = (ret > 0) ? ret : 0;
 
@@ -224,27 +224,27 @@ public:
         }
         else
         {
-            signTime = l->getCloseTimeNC();
+            signTime = l->info().closeTime;
         }
 
         mValidLedger.set (l);
         mValidLedgerSign = signTime;
-        mValidLedgerSeq = l->getLedgerSeq();
+        mValidLedgerSeq = l->info().seq;
         getApp().getOPs().updateLocalTx (l);
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
         mLedgerHistory.validatedLedger (l);
 
     #if RIPPLE_HOOK_VALIDATORS
-        getApp().getValidators().onLedgerClosed (l->getLedgerSeq(),
-            l->getHash(), l->getParentHash());
+        getApp().getValidators().onLedgerClosed (l->info().seq,
+            l->getHash(), l->info().parentHash);
     #endif
     }
 
     void setPubLedger(Ledger::ref l)
     {
         mPubLedger = l;
-        mPubLedgerClose = l->getCloseTimeNC();
-        mPubLedgerSeq = l->getLedgerSeq();
+        mPubLedgerClose = l->info().closeTime;
+        mPubLedgerSeq = l->info().seq;
     }
 
     void addHeldTransaction (Transaction::ref transaction)
@@ -285,9 +285,8 @@ public:
 
     void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
     {
-        assert (newLCL->isClosed () && newLCL->isAccepted ());
-        assert (!newOL->isClosed () && !newOL->isAccepted ());
-
+        assert (! newLCL->info().open && newLCL->info().accepted);
+        assert (newOL->info().open && !newOL->info().accepted);
 
         {
             ScopedLockType ml (m_mutex);
@@ -319,7 +318,7 @@ public:
             mCurrentLedger.set (current);
             mClosedLedger.set (lastClosed);
 
-            assert (!current->isClosed ());
+            assert (current->info().open);
         }
         checkAccept (lastClosed);
     }
@@ -506,7 +505,7 @@ public:
     {
         // The earliest ledger we will let people fetch is ledger zero,
         // unless that creates a larger range than allowed
-        std::uint32_t e = getClosedLedger()->getLedgerSeq();
+        std::uint32_t e = getClosedLedger()->info().seq;
 
         if (e > fetch_depth_)
             e -= fetch_depth_;
@@ -517,13 +516,13 @@ public:
 
     void tryFill (Job& job, Ledger::pointer ledger)
     {
-        std::uint32_t seq = ledger->getLedgerSeq ();
-        uint256 prevHash = ledger->getParentHash ();
+        std::uint32_t seq = ledger->info().seq;
+        uint256 prevHash = ledger->info().parentHash;
 
         std::map< std::uint32_t, std::pair<uint256, uint256> > ledgerHashes;
 
-        std::uint32_t minHas = ledger->getLedgerSeq ();
-        std::uint32_t maxHas = ledger->getLedgerSeq ();
+        std::uint32_t minHas = ledger->info().seq;
+        std::uint32_t maxHas = ledger->info().seq;
 
         while (! job.shouldCancel() && seq > 0)
         {
@@ -626,7 +625,7 @@ public:
         int invalidate = 0;
         boost::optional<uint256> hash;
 
-        for (std::uint32_t lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
+        for (std::uint32_t lSeq = ledger->info().seq - 1; lSeq > 0; --lSeq)
         {
             if (haveLedger (lSeq))
             {
@@ -670,7 +669,7 @@ public:
     void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent)
     {
         // A new ledger has been accepted as part of the trusted chain
-        WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
+        WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->info().seq << " accepted :" << ledger->getHash ();
         assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
@@ -685,12 +684,12 @@ public:
 
             {
                 ScopedLockType ml (mCompleteLock);
-                mCompleteLedgers.setValue (ledger->getLedgerSeq ());
+                mCompleteLedgers.setValue (ledger->info().seq);
             }
 
             ScopedLockType ml (m_mutex);
 
-            if (ledger->getLedgerSeq() > mValidLedgerSeq)
+            if (ledger->info().seq > mValidLedgerSeq)
                 setValidLedger(ledger);
             if (!mPubLedger)
             {
@@ -698,12 +697,12 @@ public:
                 getApp().getOrderBookDB().setup(ledger);
             }
 
-            if ((ledger->getLedgerSeq () != 0) && haveLedger (ledger->getLedgerSeq () - 1))
+            if ((ledger->info().seq != 0) && haveLedger (ledger->info().seq - 1))
             {
                 // we think we have the previous ledger, double check
-                Ledger::pointer prevLedger = getLedgerBySeq (ledger->getLedgerSeq () - 1);
+                Ledger::pointer prevLedger = getLedgerBySeq (ledger->info().seq - 1);
 
-                if (!prevLedger || (prevLedger->getHash () != ledger->getParentHash ()))
+                if (!prevLedger || (prevLedger->getHash () != ledger->info().parentHash))
                 {
                     WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger invalidates previous ledger: " <<
                                                        (prevLedger ? "hashMismatch" : "missingLedger");
@@ -785,13 +784,13 @@ public:
 
     void checkAccept (Ledger::ref ledger)
     {
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        if (ledger->info().seq <= mValidLedgerSeq)
             return;
 
         // Can we advance the last fully-validated ledger? If so, can we publish?
         ScopedLockType ml (m_mutex);
 
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        if (ledger->info().seq <= mValidLedgerSeq)
             return;
 
         int minVal = getNeededValidations();
@@ -802,10 +801,10 @@ public:
             return;
         }
 
-        WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << ledger->getLedgerSeq() << " with >= " << minVal << " validations";
+        WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << ledger->info().seq << " with >= " << minVal << " validations";
 
         mLastValidateHash = ledger->getHash();
-        mLastValidateSeq = ledger->getLedgerSeq();
+        mLastValidateSeq = ledger->info().seq;
 
         ledger->setValidated();
         ledger->setFull();
@@ -820,7 +819,7 @@ public:
         std::uint64_t const base = getApp().getFeeTrack().getLoadBase();
         auto fees = getApp().getValidations().fees (ledger->getHash(), base);
         {
-            auto fees2 = getApp().getValidations().fees (ledger->getParentHash(), base);
+            auto fees2 = getApp().getValidations().fees (ledger->info().parentHash, base);
             fees.reserve (fees.size() + fees2.size());
             std::copy (fees2.begin(), fees2.end(), std::back_inserter(fees));
         }
@@ -851,18 +850,18 @@ public:
         if (standalone_)
             return;
 
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        if (ledger->info().seq <= mValidLedgerSeq)
         {
             WriteLog (lsINFO,  LedgerConsensus)
                << "Consensus built old ledger: "
-               << ledger->getLedgerSeq() << " <= " << mValidLedgerSeq;
+               << ledger->info().seq << " <= " << mValidLedgerSeq;
             return;
         }
 
         // See if this ledger can be the new fully-validated ledger
         checkAccept (ledger);
 
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        if (ledger->info().seq <= mValidLedgerSeq)
         {
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Consensus ledger fully validated";
@@ -916,7 +915,7 @@ public:
                 {
                     Ledger::pointer ledger = getLedgerByHash (v.first);
                     if (ledger)
-                        v.second.ledgerSeq_ = ledger->getLedgerSeq();
+                        v.second.ledgerSeq_ = ledger->info().seq;
                 }
 
                 if (v.second.ledgerSeq_ > maxSeq)
@@ -960,7 +959,7 @@ public:
         // Try to get the hash of a ledger we need to fetch for history
         boost::optional<LedgerHash> ret;
 
-        if (mHistLedger && (mHistLedger->getLedgerSeq() >= index))
+        if (mHistLedger && (mHistLedger->info().seq >= index))
         {
             ret = hashOfSeq(*mHistLedger, index, m_journal);
             if (! ret)
@@ -992,7 +991,7 @@ public:
                     std::uint32_t missing;
                     {
                         ScopedLockType sl (mCompleteLock);
-                        missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
+                        missing = mCompleteLedgers.prevMissing(mPubLedger->info().seq);
                     }
                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                     if ((missing != RangeSet::absent) && (missing > 0) &&
@@ -1028,15 +1027,15 @@ public:
                                 }
                                 if (ledger)
                                 {
-                                    assert(ledger->getLedgerSeq() == missing);
-                                    WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->getLedgerSeq();
+                                    assert(ledger->info().seq == missing);
+                                    WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->info().seq;
                                     setFullLedger(ledger, false, false);
                                     mHistLedger = ledger;
-                                    if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
+                                    if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->info().seq - 1) == ledger->info().parentHash))
                                     {
                                         // Previous ledger is in DB
                                         ScopedLockType lock (m_mutex);
-                                        mFillInProgress = ledger->getLedgerSeq();
+                                        mFillInProgress = ledger->info().seq;
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
                                             &LedgerMasterImp::tryFill, this,
                                             std::placeholders::_1, ledger));
@@ -1094,7 +1093,7 @@ public:
                     {
                         ScopedUnlockType sul (m_mutex);
                         WriteLog(lsDEBUG, LedgerMaster) <<
-                            "tryAdvance publishing seq " << ledger->getLedgerSeq();
+                            "tryAdvance publishing seq " << ledger->info().seq;
 
                         setFullLedger(ledger, true, true);
                         getApp().getOPs().pubLedger(ledger);
@@ -1141,7 +1140,7 @@ public:
 
             std::uint32_t pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
             Ledger::pointer valLedger = mValidLedger.get ();
-            std::uint32_t valSeq = valLedger->getLedgerSeq ();
+            std::uint32_t valSeq = valLedger->info().seq;
 
             ScopedUnlockType sul(m_mutex);
             try
@@ -1177,7 +1176,7 @@ public:
                             *hash, seq, InboundLedger::fcGENERIC);
 
                     // Did we acquire the next ledger we need to publish?
-                    if (ledger && (ledger->getLedgerSeq() == pubSeq))
+                    if (ledger && (ledger->info().seq == pubSeq))
                     {
                         ledger->setValidated();
                         ret.push_back (ledger);
@@ -1214,7 +1213,7 @@ public:
     // VFALCO NOTE This should return boost::optional<uint256>
     uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
     {
-        assert(desiredSeq < knownGoodLedger->getLedgerSeq());
+        assert(desiredSeq < knownGoodLedger->info().seq);
 
         auto hash = hashOfSeq(*knownGoodLedger, desiredSeq, m_journal);
 
@@ -1264,7 +1263,7 @@ public:
                 ScopedLockType ml (m_mutex);
 
                 if (!mValidLedger.empty() &&
-                    (!mPathLedger || (mPathLedger->getLedgerSeq() != mValidLedgerSeq)))
+                    (!mPathLedger || (mPathLedger->info().seq != mValidLedgerSeq)))
                 { // We have a new valid ledger since the last full pathfinding
                     mPathLedger = mValidLedger.get ();
                     lastLedger = mPathLedger;
@@ -1283,7 +1282,7 @@ public:
             if (!standalone_)
             { // don't pathfind with a ledger that's more than 60 seconds old
                 std::int64_t age = getApp().getOPs().getCloseTimeNC();
-                age -= static_cast<std::int64_t> (lastLedger->getCloseTimeNC());
+                age -= static_cast<std::int64_t> (lastLedger->info().closeTime);
                 if (age > 60)
                 {
                     WriteLog (lsDEBUG, LedgerMaster) << "Published ledger too old for updating paths";
@@ -1299,7 +1298,7 @@ public:
             catch (SHAMapMissingNode&)
             {
                 WriteLog (lsINFO, LedgerMaster) << "Missing node detected during pathfinding";
-                getApp().getInboundLedgers().acquire(lastLedger->getHash (), lastLedger->getLedgerSeq (),
+                getApp().getInboundLedgers().acquire(lastLedger->getHash (), lastLedger->info().seq,
                     InboundLedger::fcGENERIC);
             }
         }
@@ -1427,7 +1426,7 @@ public:
     // VFALCO NOTE This should return boost::optional<uint256>
     uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
     {
-        if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
+        if (!referenceLedger || (referenceLedger->info().seq < index))
         {
             // Nothing we can do. No validated ledger.
             return zero;
@@ -1483,7 +1482,7 @@ public:
             auto valid = mValidLedger.get ();
             if (valid)
             {
-                if (valid->getLedgerSeq() == index)
+                if (valid->info().seq == index)
                     return valid;
 
                 try
@@ -1504,11 +1503,11 @@ public:
             return ret;
 
         ret = mCurrentLedger.get ();
-        if (ret && (ret->getLedgerSeq () == index))
+        if (ret && (ret->info().seq == index))
             return ret;
 
         ret = mClosedLedger.get ();
-        if (ret && (ret->getLedgerSeq () == index))
+        if (ret && (ret->info().seq == index))
             return ret;
 
         clearLedger (index);

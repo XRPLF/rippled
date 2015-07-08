@@ -174,7 +174,7 @@ public:
     void
     rawDestroyXRP (std::uint64_t feeDrops) override
     {
-        mTotCoins -= feeDrops;
+        info_.drops -= feeDrops;
     }
 
     //
@@ -208,7 +208,7 @@ public:
 
     void setValidated()
     {
-        mValidated = true;
+        info_.validated = true;
     }
 
     void setAccepted (std::uint32_t closeTime,
@@ -218,27 +218,11 @@ public:
 
     void setImmutable ();
 
-    // DEPRECATED use closed()
-    bool isClosed () const
-    {
-        return closed();
-    }
-
-    bool isAccepted () const
-    {
-        return mAccepted;
-    }
-
-    bool isValidated () const
-    {
-        return mValidated;
-    }
-
     bool isImmutable () const
     {
         return mImmutable;
     }
-    
+
     // Indicates that all ledger entries
     // are available locally. For example,
     // all in the NodeStore and memory.
@@ -258,57 +242,9 @@ public:
     uint256 const&
     getHash();
 
-    uint256 const& getParentHash () const
+    void setTotalCoins (std::uint64_t totDrops)
     {
-        return mParentHash;
-    }
-
-    uint256 const& getTransHash () const
-    {
-        return mTransHash;
-    }
-
-    uint256 const& getAccountHash () const
-    {
-        return mAccountHash;
-    }
-
-    std::uint64_t getTotalCoins () const
-    {
-        return mTotCoins;
-    }
-
-    void setTotalCoins (std::uint64_t totCoins)
-    {
-        mTotCoins = totCoins;
-    }
-
-    // DEPRECATED
-    std::uint32_t getCloseTimeNC () const
-    {
-        return info_.closeTime;
-    }
-
-    // DEPRECATED Use parentCloseTime()
-    std::uint32_t getParentCloseTimeNC () const
-    {
-        return info_.parentCloseTime;
-    }
-
-    // DEPRECATED Use seq()
-    std::uint32_t getLedgerSeq () const
-    {
-        return info_.seq;
-    }
-
-    int getCloseResolution () const
-    {
-        return mCloseResolution;
-    }
-
-    bool getCloseAgree () const
-    {
-        return (mCloseFlags & sLCF_NoConsensusTime) == 0;
+        info_.drops = totDrops;
     }
 
     // close time functions
@@ -321,21 +257,6 @@ public:
     void setCloseTime (boost::posix_time::ptime);
 
     boost::posix_time::ptime getCloseTime () const;
-
-    // VFALCO NOTE We should ensure that there are
-    //             always valid state and tx maps
-    //             and get rid of these functions.
-    bool
-    haveStateMap() const
-    {
-        return stateMap_ != nullptr;
-    }
-
-    bool
-    haveTxMap() const
-    {
-        return txMap_ != nullptr;
-    }
 
     SHAMap const&
     stateMap() const
@@ -444,9 +365,6 @@ private:
     }
     bool saveValidatedLedger (bool current);
 
-    // ledger close flags
-    static const std::uint32_t sLCF_NoConsensusTime = 1;
-
     std::shared_ptr<SLE>
     peek (Keylet const& k) const;
 
@@ -461,19 +379,8 @@ private:
     void deprecatedUpdateCachedFees() const;
 
     // The basic Ledger structure, can be opened, closed, or synching
-    uint256 mParentHash;
-    uint256 mTransHash;
-    uint256 mAccountHash;
-    std::uint64_t mTotCoins;
 
-    // the resolution for this ledger close time (2-120 seconds)
-    int           mCloseResolution;
-
-    // flags indicating how this ledger close took place
-    std::uint32_t mCloseFlags;
-    bool mValidated = false;
     bool mValidHash = false;
-    bool mAccepted = false;
     bool mImmutable;
 
     std::shared_ptr<SHAMap> txMap_;

@@ -89,7 +89,7 @@ Json::Value doAccountTx (RPC::Context& context)
         if (! ledger)
             return ret;
 
-        uLedgerMin = uLedgerMax = ledger->getLedgerSeq ();
+        uLedgerMin = uLedgerMax = ledger->info().seq;
     }
 
     Json::Value resumeToken;

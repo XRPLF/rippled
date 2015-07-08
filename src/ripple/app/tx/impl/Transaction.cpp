@@ -182,7 +182,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
             auto ledger = getApp().getLedgerMaster ().
                     getLedgerBySeq (mInLedger);
             if (ledger)
-                ret[jss::date] = ledger->getCloseTimeNC ();
+                ret[jss::date] = ledger->info().closeTime;
         }
     }
 

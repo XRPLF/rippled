@@ -76,7 +76,7 @@ Json::Value doCanDelete (RPC::Context& context)
                 if (!ledger)
                     return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
 
-                canDeleteSeq = ledger->getLedgerSeq();
+                canDeleteSeq = ledger->info().seq;
             }
             else
             {
