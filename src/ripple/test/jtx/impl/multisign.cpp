@@ -102,7 +102,7 @@ msig::operator()(Env const& env, JTx& jt) const
             auto const& e = accounts[i];
             auto& jo = js[i]["SigningAccount"];
             jo[jss::Account] = e.human();
-            jo[jss::SigningPubKey] = strHex(make_Slice(
+            jo[jss::SigningPubKey] = strHex(makeSlice(
                 e.pk().getAccountPublic()));
 
             Serializer ss;
@@ -110,7 +110,7 @@ msig::operator()(Env const& env, JTx& jt) const
             st->addWithoutSigningFields(ss);
             ss.add160(*signFor);
             ss.add160(e.id());
-            jo["MultiSignature"] = strHex(make_Slice(
+            jo["MultiSignature"] = strHex(makeSlice(
                 e.sk().accountPrivateSign(ss.getData())));
 
         }
@@ -165,7 +165,7 @@ msig2_t::operator()(Env const& env, JTx& jt) const
             {
                 auto& jj = js[j.first]["SigningAccount"];
                 jj[jss::Account] = j.second->human();
-                jj[jss::SigningPubKey] = strHex(make_Slice(
+                jj[jss::SigningPubKey] = strHex(makeSlice(
                     j.second->pk().getAccountPublic()));
 
                 Serializer ss;
@@ -173,7 +173,7 @@ msig2_t::operator()(Env const& env, JTx& jt) const
                 st->addWithoutSigningFields(ss);
                 ss.add160(sign_for.id());
                 ss.add160(j.second->id());
-                jj["MultiSignature"] = strHex(make_Slice(
+                jj["MultiSignature"] = strHex(makeSlice(
                     j.second->sk().accountPrivateSign(
                         ss.getData())));
             }

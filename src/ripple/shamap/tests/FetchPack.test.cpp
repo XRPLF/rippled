@@ -108,7 +108,7 @@ public:
 
     void on_fetch (Map& map, uint256 const& hash, Blob const& blob)
     {
-        expect (sha512Half(make_Slice(blob)) == hash,
+        expect (sha512Half(makeSlice(blob)) == hash,
             "Hash mismatch");
         map.emplace (hash, blob);
     }

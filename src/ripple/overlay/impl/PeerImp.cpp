@@ -1010,7 +1010,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    SerialIter sit (make_Slice(m->rawtransaction()));
+    SerialIter sit (makeSlice(m->rawtransaction()));
 
     try
     {
@@ -1424,7 +1424,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
     {
         STValidation::pointer val;
         {
-            SerialIter sit (make_Slice(m->validation()));
+            SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
         }
@@ -1437,7 +1437,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
         }
 
         if (! getApp().getHashRouter ().addSuppressionPeer(
-            sha512Half(make_Slice(m->validation())), id_))
+            sha512Half(makeSlice(m->validation())), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return;

@@ -3206,7 +3206,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
 
     mFetchPack.del (hash, false);
 
-    if (hash != sha512Half(make_Slice(data)))
+    if (hash != sha512Half(makeSlice(data)))
     {
         m_journal.warning << "Bad entry in fetch pack";
         return false;

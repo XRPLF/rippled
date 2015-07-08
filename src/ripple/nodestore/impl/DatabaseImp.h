@@ -288,7 +288,7 @@ public:
                         Backend& backend)
     {
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert (hash == sha512Hash(make_Slice(data)));
+        assert (hash == sha512Hash(makeSlice(data)));
         #endif
 
         std::shared_ptr<NodeObject> object = NodeObject::createObject(

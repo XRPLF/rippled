@@ -163,7 +163,7 @@ void fillJson (Object& json, LedgerFill const& fill)
                         // VFALCO This is making a needless copy
                         SerialIter sit (item->slice ());
                         auto const vl = sit.getVL();
-                        SerialIter tsit (make_Slice(vl));
+                        SerialIter tsit (makeSlice(vl));
                         STTx txn (tsit);
 
                         TxMeta meta (

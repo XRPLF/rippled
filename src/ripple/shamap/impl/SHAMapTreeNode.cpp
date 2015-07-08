@@ -197,7 +197,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         if (prefix == HashPrefix::transactionID)
         {
             auto item = std::make_shared<SHAMapItem const>(
-                sha512Half(make_Slice(rawNode)),
+                sha512Half(makeSlice(rawNode)),
                     s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_NM, seq, hash);
@@ -307,18 +307,18 @@ SHAMapTreeNode::updateHash()
     if (mType == tnTRANSACTION_NM)
     {
         nh = sha512Half(HashPrefix::transactionID,
-            make_Slice(mItem->peekData()));
+            makeSlice(mItem->peekData()));
     }
     else if (mType == tnACCOUNT_STATE)
     {
         nh = sha512Half(HashPrefix::leafNode,
-            make_Slice(mItem->peekData()),
+            makeSlice(mItem->peekData()),
                 mItem->key());
     }
     else if (mType == tnTRANSACTION_MD)
     {
         nh = sha512Half(HashPrefix::txNode,
-            make_Slice(mItem->peekData()),
+            makeSlice(mItem->peekData()),
                 mItem->key());
     }
     else
