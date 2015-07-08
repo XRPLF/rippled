@@ -2145,6 +2145,9 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerToJson.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\OpenLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
