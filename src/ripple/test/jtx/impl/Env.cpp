@@ -104,7 +104,8 @@ Env::closed() const
 }
 
 void
-Env::close(NetClock::time_point const& closeTime)
+Env::close(NetClock::time_point const& closeTime,
+    OpenLedger::modify_type const& f)
 {
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
@@ -134,7 +135,7 @@ Env::close(NetClock::time_point const& closeTime)
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
-        locals, false, retries, applyFlags(), *router);
+        locals, false, retries, applyFlags(), *router, "", f);
     closed_ = next;
     cachedSLEs_.expire();
 }

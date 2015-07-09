@@ -195,7 +195,8 @@ public:
             The Env clock is set to the new time.
     */
     void
-    close (NetClock::time_point const& closeTime);
+    close (NetClock::time_point const& closeTime,
+        OpenLedger::modify_type const& f = {});
 
     /** Close and advance the ledger.
 
@@ -205,10 +206,11 @@ public:
     template <class Rep, class Period>
     void
     close (std::chrono::duration<
-        Rep, Period> const& elapsed)
+        Rep, Period> const& elapsed,
+        OpenLedger::modify_type const& f = {})
     {
         stopwatch_.advance(elapsed);
-        close (clock.now() + elapsed);
+        close (clock.now() + elapsed, f);
     }
 
     /** Close and advance the ledger.
@@ -217,9 +219,9 @@ public:
         the previous ledger closing time.
     */
     void
-    close()
+    close(OpenLedger::modify_type const& f = {})
     {
-        close (std::chrono::seconds(5));
+        close (std::chrono::seconds(5), f);
     }
 
     /** Turn on JSON tracing.
