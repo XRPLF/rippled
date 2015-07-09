@@ -441,6 +441,9 @@ public:
     bool subRTTransactions (InfoSub::ref ispListener) override;
     bool unsubRTTransactions (std::uint64_t uListener) override;
 
+    bool subValidations (InfoSub::ref ispListener) override;
+    bool unsubValidations (std::uint64_t uListener) override;
+
     InfoSub::pointer findRpcSub (std::string const& strUrl) override;
     InfoSub::pointer addRpcSub (
         std::string const& strUrl, InfoSub::ref) override;
@@ -479,6 +482,7 @@ private:
         bool isAccepted);
 
     void pubServer ();
+    void pubValidation (STValidation::ref val);
 
     std::string getHostId (bool forAdmin);
 
@@ -524,6 +528,7 @@ private:
     SubMapType mSubServer;            // When server changes connectivity state.
     SubMapType mSubTransactions;      // All accepted transactions.
     SubMapType mSubRTTransactions;    // All proposed and accepted transactions.
+    SubMapType mSubValidations;       // Received validations.
 
     TaggedCache<uint256, Blob>  mFetchPack;
     std::uint32_t mFetchSeq;
@@ -1630,6 +1635,39 @@ void NetworkOPsImp::pubServer ()
     }
 }
 
+
+void NetworkOPsImp::pubValidation (STValidation::ref val)
+{
+    // VFALCO consider std::shared_mutex
+    ScopedLockType sl (mSubLock);
+
+    if (!mSubValidations.empty ())
+    {
+        Json::Value jvObj (Json::objectValue);
+
+        jvObj [jss::type]                  = "validationReceived";
+        jvObj [jss::validation_public_key] = val->getSignerPublic ().humanNodePublic ();
+        jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
+        jvObj [jss::signature]             = strHex (val->getSignature ());
+
+        for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
+        {
+            InfoSub::pointer p = i->second.lock ();
+
+            if (p)
+            {
+                p->send (jvObj, true);
+                ++i;
+            }
+            else
+            {
+                i = mSubValidations.erase (i);
+            }
+        }
+    }
+}
+
+
 void NetworkOPsImp::setMode (OperatingMode om)
 {
     if (om == omCONNECTED)
@@ -1906,6 +1944,7 @@ bool NetworkOPsImp::recvValidation (
 {
     m_journal.debug << "recvValidation " << val->getLedgerHash ()
                     << " from " << source;
+    pubValidation (val);
     return getApp().getValidations ().addValidation (val, source);
 }
 
@@ -2593,6 +2632,20 @@ bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
 {
     ScopedLockType sl (mSubLock);
     return mSubRTTransactions.erase (uSeq);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPsImp::subValidations (InfoSub::ref isrListener)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubValidations.emplace (isrListener->getSeq (), isrListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPsImp::unsubValidations (std::uint64_t uSeq)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubValidations.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)

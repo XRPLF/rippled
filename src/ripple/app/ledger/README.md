@@ -420,7 +420,7 @@ ledger's sequence number, it attempts to publish those ledgers, retrieving
 them if needed.
 
 If there are no new ledgers to publish, `doAdvance` determines if it can
-backfill history. If the publication is not caught up, bakfilling is not
+backfill history. If the publication is not caught up, backfilling is not
 attempted to conserve resources.
 
 If history can be backfilled, the missing ledger with the highest
