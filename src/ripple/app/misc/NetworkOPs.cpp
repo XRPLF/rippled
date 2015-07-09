@@ -238,7 +238,7 @@ public:
     void submitTransaction (Job&, STTx::pointer) override;
 
     void processTransaction (
-        Transaction::pointer transaction,
+        Transaction::pointer& transaction,
         bool bAdmin, bool bLocal, FailHard failType) override;
 
     /**
@@ -989,7 +989,7 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
                    FailHard::no));
 }
 
-void NetworkOPsImp::processTransaction (Transaction::pointer transaction,
+void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
         bool bAdmin, bool bLocal, FailHard failType)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
@@ -1168,7 +1168,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& lock)
                     // transaction should be held
                     m_journal.debug << "Transaction should be held: " << e.result;
                     e.transaction->setStatus (HELD);
-                    getApp().getMasterTransaction().canonicalize (&e.transaction);
                     m_ledgerMaster.addHeldTransaction (e.transaction);
                 }
             }

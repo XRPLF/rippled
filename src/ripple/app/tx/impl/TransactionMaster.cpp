@@ -95,25 +95,17 @@ STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
     return txn;
 }
 
-bool TransactionMaster::canonicalize (Transaction::pointer* pTransaction)
+void
+TransactionMaster::canonicalize(Transaction::pointer* pTransaction)
 {
-    Transaction::pointer txn (*pTransaction);
-
-    uint256 tid = txn->getID ();
-
-    if (!tid)
-        return false;
-
-    // VFALCO NOTE canonicalize can change the value of txn!
-    if (mCache.canonicalize (tid, txn))
+    uint256 const tid = (*pTransaction)->getID();
+    if (tid != zero)
     {
+        Transaction::pointer txn(*pTransaction);
+        // VFALCO NOTE canonicalize can change the value of txn!
+        mCache.canonicalize(tid, txn);
         *pTransaction = txn;
-        return true;
     }
-
-    // VFALCO NOTE I am unsure if this is necessary but better safe than sorry.
-    *pTransaction = txn;
-    return false;
 }
 
 void TransactionMaster::sweep (void)

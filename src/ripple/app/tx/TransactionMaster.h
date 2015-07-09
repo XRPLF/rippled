@@ -39,7 +39,7 @@ public:
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, std::uint32_t ledger);
-    bool canonicalize (Transaction::pointer* pTransaction);
+    void canonicalize (Transaction::pointer* pTransaction);
     void sweep (void);
     TaggedCache <uint256, Transaction>& getCache();
 

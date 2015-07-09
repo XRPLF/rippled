@@ -75,7 +75,7 @@ public:
         STPath& fullLiquidityPath) const;
 
     void processTransaction (
-        Transaction::ref tpTrans,
+        Transaction::pointer& transaction,
         bool bAdmin,
         bool bLocal,
         NetworkOPs::FailHard failType);

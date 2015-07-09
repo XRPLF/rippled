@@ -133,7 +133,7 @@ std::uint32_t TxnSignApiFacade::getSeq () const
 }
 
 void TxnSignApiFacade::processTransaction (
-    Transaction::ref tpTrans,
+    Transaction::pointer& transaction,
     bool bAdmin,
     bool bLocal,
     NetworkOPs::FailHard failType)
@@ -141,7 +141,7 @@ void TxnSignApiFacade::processTransaction (
     if (!netOPs_) // Unit testing.
         return;
 
-    netOPs_->processTransaction (tpTrans, bAdmin, bLocal, failType);
+    netOPs_->processTransaction(transaction, bAdmin, bLocal, failType);
 }
 
 bool TxnSignApiFacade::findPathsForOneIssuer (
