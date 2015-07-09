@@ -143,7 +143,7 @@ public:
      * @param bLocal Client submission.
      * @param failType fail_hard setting from transaction submission.
      */
-    virtual void processTransaction (Transaction::pointer transaction,
+    virtual void processTransaction (Transaction::pointer& transaction,
         bool bAdmin, bool bLocal, FailHard failType) = 0;
 
     //--------------------------------------------------------------------------
