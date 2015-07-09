@@ -253,9 +253,9 @@ Env::trust (STAmount const& amount,
 void
 Env::submit (JTx const& jt)
 {
-    auto stx = st(jt);
     TER ter;
     bool didApply;
+    auto const& stx = jt.stx;
     if (stx)
     {
         openLedger.modify(
@@ -270,8 +270,8 @@ Env::submit (JTx const& jt)
     }
     else
     {
-        // Convert the exception into a TER so that
-        // callers can expect it using ter(temMALFORMED)
+        // Parsing failed or the JTx is
+        // otherwise missing the stx field.
         ter = temMALFORMED;
         didApply = false;
     }
@@ -338,7 +338,7 @@ Env::autofill (JTx& jt)
     }
 }
 
-std::shared_ptr<STTx>
+std::shared_ptr<STTx const>
 Env::st (JTx const& jt)
 {
     // The parse must succeed, since we

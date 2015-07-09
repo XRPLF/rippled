@@ -286,6 +286,7 @@ public:
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
         autofill(jt);
+        jt.stx = st(jt);
         return jt;
     }
 
@@ -460,8 +461,7 @@ protected:
         Throws:
             parse_error
     */
-    // VFALCO NOTE This should be <STTx const>
-    std::shared_ptr<STTx>
+    std::shared_ptr<STTx const>
     st (JTx const& jt);
 
     ApplyFlags
