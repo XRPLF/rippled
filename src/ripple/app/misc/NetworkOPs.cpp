@@ -1059,7 +1059,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     // transaction should be held
                     m_journal.debug << "Transaction should be held: " << e.result;
                     e.transaction->setStatus (HELD);
-                    getApp().getMasterTransaction().canonicalize (&e.transaction);
                     m_ledgerMaster.addHeldTransaction (e.transaction);
                 }
             }
