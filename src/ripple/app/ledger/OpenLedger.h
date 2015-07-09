@@ -57,6 +57,20 @@ private:
     std::shared_ptr<OpenView const> current_;
 
 public:
+    /** Signature for modification functions.
+
+        The modification function is called during
+        apply and modify with an OpenView to accumulate
+        changes and the Journal to use for logging.
+
+        A return value of `true` informs OpenLedger
+        that changes were made. Always returning
+        `true` won't cause harm, but it may be
+        sub-optimal.
+    */
+    using modify_type = std::function<
+        bool(OpenView&, beast::Journal)>;
+
     OpenLedger() = delete;
     OpenLedger (OpenLedger const&) = delete;
     OpenLedger& operator= (OpenLedger const&) = delete;
@@ -105,17 +119,13 @@ public:
         Thread safety:
             Can be called concurrently from any thread.
 
-        `f` will be called as
-            bool(ReadView&)
-
         If `f` returns `true`, the changes made in the
         OpenView will be published to the open ledger.
 
         @return `true` if the open view was changed
     */
     bool
-    modify (std::function<
-        bool(OpenView&, beast::Journal)> const& f);
+    modify (modify_type const& f);
 
     /** Accept a new ledger.
 
@@ -135,6 +145,12 @@ public:
             The list of local transactions are applied
             to the new open view.
 
+            The optional modify function f is called
+            to perform further modifications to the
+            open view, atomically. Changes made in
+            the modify function are not visible to
+            callers until accept() returns.
+
             Any failed, retriable transactions are left
             in `retries` for the caller.
 
@@ -150,7 +166,8 @@ public:
             OrderedTxs const& locals, bool retriesFirst,
                 OrderedTxs& retries, ApplyFlags flags,
                     HashRouter& router,
-                        std::string const& suffix = "");
+                        std::string const& suffix = "",
+                            modify_type const& f = {});
 
     /** Algorithm for applying transactions.
 

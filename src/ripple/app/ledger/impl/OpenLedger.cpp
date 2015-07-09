@@ -54,8 +54,7 @@ OpenLedger::current() const
 }
 
 bool
-OpenLedger::modify (std::function<
-    bool(OpenView&, beast::Journal)> const& f)
+OpenLedger::modify (modify_type const& f)
 {
     std::lock_guard<
         std::mutex> lock1(modify_mutex_);
@@ -77,7 +76,8 @@ OpenLedger::accept(Application& app, Rules const& rules,
     std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
-                HashRouter& router, std::string const& suffix)
+                HashRouter& router, std::string const& suffix,
+                    modify_type const& f)
 {
     JLOG(j_.trace) <<
         "accept ledger " << ledger->seq() << " " << suffix;
@@ -112,6 +112,9 @@ OpenLedger::accept(Application& app, Rules const& rules,
     for (auto const& item : locals)
         ripple::apply(app, *next,
             *item.second, flags, j_);
+    // Call the modifier
+    if (f)
+        f(*next, j_);
     // Switch to the new open view
     std::lock_guard<
         std::mutex> lock2(current_mutex_);
