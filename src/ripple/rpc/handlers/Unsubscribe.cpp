@@ -73,6 +73,9 @@ Json::Value doUnsubscribe (RPC::Context& context)
                          || streamName == "rt_transactions") // DEPRECATED
                     context.netOps.unsubRTTransactions (ispSub->getSeq ());
 
+                else if (streamName == "validations")
+                    context.netOps.unsubValidations (ispSub->getSeq ());
+
                 else
                     jvResult[jss::error] = "Unknown stream: " + streamName;
             }

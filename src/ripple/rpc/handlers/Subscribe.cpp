@@ -123,6 +123,10 @@ Json::Value doSubscribe (RPC::Context& context)
                 {
                     context.netOps.subRTTransactions (ispSub);
                 }
+                else if (streamName == "validations")
+                {
+                    context.netOps.subValidations (ispSub);
+                }
                 else
                 {
                     jvResult[jss::error]   = "unknownStream";

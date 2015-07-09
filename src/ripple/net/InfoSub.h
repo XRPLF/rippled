@@ -98,6 +98,9 @@ public:
         virtual bool subRTTransactions (ref ispListener) = 0;
         virtual bool unsubRTTransactions (std::uint64_t uListener) = 0;
 
+        virtual bool subValidations (ref ispListener) = 0;
+        virtual bool unsubValidations (std::uint64_t uListener) = 0;
+
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
