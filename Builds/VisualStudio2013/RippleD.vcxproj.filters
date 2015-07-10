@@ -3495,10 +3495,19 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\LedgerFormats.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\PublicKey.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Quality.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\protocol\impl\secp256k1.h">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\SecretKey.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Serializer.cpp">
@@ -3594,6 +3603,9 @@
     <ClInclude Include="..\..\src\ripple\protocol\Protocol.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\PublicKey.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Quality.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
@@ -3607,6 +3619,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\RipplePublicKey.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\SecretKey.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
@@ -3679,6 +3694,9 @@
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\Issue.test.cpp">
+      <Filter>ripple\protocol\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\PublicKey_test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\Quality.test.cpp">
