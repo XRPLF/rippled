@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/Utilities.h>
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 namespace RPC {

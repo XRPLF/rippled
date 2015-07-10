@@ -27,7 +27,7 @@ namespace jss {
 
 // JSON static strings
 
-#define JSS(x) const Json::StaticString x ( #x )
+#define JSS(x) const ::Json::StaticString x ( #x )
 
 /* The "StaticString" field names are used instead of string literals to
    optimize the performance of accessing members of Json::Value objects.

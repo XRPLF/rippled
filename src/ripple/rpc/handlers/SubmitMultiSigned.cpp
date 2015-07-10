@@ -16,7 +16,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
 
