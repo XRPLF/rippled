@@ -414,7 +414,7 @@ public:
                             (weeks(2), MAJORITY_FRACTION,
                              m_logs.journal("AmendmentTable")))
 
-        , mFeeTrack (LoadFeeTrack::New (m_logs.journal("LoadManager")))
+        , mFeeTrack (std::make_unique<LoadFeeTrack>(m_logs.journal("LoadManager")))
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 

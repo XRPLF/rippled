@@ -23,6 +23,7 @@
 #include <ripple/json/json_value.h>
 #include <beast/utility/Journal.h>
 #include <cstdint>
+#include <mutex>
 
 namespace ripple {
 
@@ -39,37 +40,99 @@ namespace ripple {
 class LoadFeeTrack
 {
 public:
-    /** Create a new tracker.
-    */
-    static LoadFeeTrack* New (beast::Journal journal);
+    explicit LoadFeeTrack (beast::Journal journal = beast::Journal())
+        : m_journal (journal)
+        , mLocalTxnLoadFee (lftNormalFee)
+        , mRemoteTxnLoadFee (lftNormalFee)
+        , mClusterTxnLoadFee (lftNormalFee)
+        , raiseCount (0)
+    {
+    }
 
     virtual ~LoadFeeTrack () { }
 
     // Scale from fee units to millionths of a ripple
-    virtual std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
-                                        std::uint32_t referenceFeeUnits) = 0;
+    std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
+        std::uint32_t referenceFeeUnits) const;
 
     // Scale using load as well as base rate
-    virtual std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
-                                        std::uint32_t referenceFeeUnits,
-                                        bool bAdmin) = 0;
+    std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
+        std::uint32_t referenceFeeUnits, bool bAdmin) const;
 
-    virtual void setRemoteFee (std::uint32_t) = 0;
+    void setRemoteFee (std::uint32_t f)
+    {
+        ScopedLockType sl (mLock);
+        mRemoteTxnLoadFee = f;
+    }
 
-    virtual std::uint32_t getRemoteFee () = 0;
-    virtual std::uint32_t getLocalFee () = 0;
-    virtual std::uint32_t getClusterFee () = 0;
+    std::uint32_t getRemoteFee () const
+    {
+        ScopedLockType sl (mLock);
+        return mRemoteTxnLoadFee;
+    }
 
-    virtual std::uint32_t getLoadBase () = 0;
-    virtual std::uint32_t getLoadFactor () = 0;
+    std::uint32_t getLocalFee () const
+    {
+        ScopedLockType sl (mLock);
+        return mLocalTxnLoadFee;
+    }
 
-    virtual Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) = 0;
+    std::uint32_t getClusterFee () const
+    {
+        ScopedLockType sl (mLock);
+        return mClusterTxnLoadFee;
+    }
 
-    virtual void setClusterFee (std::uint32_t) = 0;
-    virtual bool raiseLocalFee () = 0;
-    virtual bool lowerLocalFee () = 0;
-    virtual bool isLoadedLocal () = 0;
-    virtual bool isLoadedCluster () = 0;
+    std::uint32_t getLoadBase () const
+    {
+        return lftNormalFee;
+    }
+
+    std::uint32_t getLoadFactor () const
+    {
+        ScopedLockType sl (mLock);
+        return std::max({ mClusterTxnLoadFee, mLocalTxnLoadFee, mRemoteTxnLoadFee });
+    }
+
+
+    Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) const;
+
+    void setClusterFee (std::uint32_t fee)
+    {
+        ScopedLockType sl (mLock);
+        mClusterTxnLoadFee = fee;
+    }
+
+    bool raiseLocalFee ();
+    bool lowerLocalFee ();
+
+    bool isLoadedLocal () const
+    {
+        ScopedLockType sl (mLock);
+        return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
+    }
+
+    bool isLoadedCluster () const
+    {
+        ScopedLockType sl (mLock);
+        return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee) || (mClusterTxnLoadFee != lftNormalFee);
+    }
+
+private:
+    static const int lftNormalFee = 256;        // 256 is the minimum/normal load factor
+    static const int lftFeeIncFraction = 4;     // increase fee by 1/4
+    static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
+    static const int lftFeeMax = lftNormalFee * 1000000;
+
+    beast::Journal m_journal;
+    using LockType = std::mutex;
+    using ScopedLockType = std::lock_guard <LockType>;
+    LockType mutable mLock;
+
+    std::uint32_t mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
+    std::uint32_t mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
+    std::uint32_t mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
+    int raiseCount;
 };
 
 } // ripple
