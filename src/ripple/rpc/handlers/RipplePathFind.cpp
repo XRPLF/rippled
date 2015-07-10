@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/RipplePathFind.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
@@ -79,6 +80,12 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
+        if (getApp().getLedgerMaster().getValidatedLedgerAge() >
+            RPC::Tuning::maxValidatedLedgerAge)
+        {
+            return rpcError (rpcNO_NETWORK);
+        }
+
         context.loadType = Resource::feeHighBurdenRPC;
         lpLedger = context.netOps.getClosedLedger();
 
