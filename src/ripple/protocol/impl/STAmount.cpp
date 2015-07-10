@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/crypto/CBigNum.h>
@@ -621,7 +623,9 @@ void STAmount::canonicalize ()
     if ((mOffset < cMinOffset) || (mValue < cMinValue))
     {
         mValue = 0;
-        mOffset = 0;
+        mIsNegative = false;
+        mOffset = -100;
+        return;
     }
 
     if (mOffset > cMaxOffset)
@@ -913,7 +917,6 @@ operator- (STAmount const& value)
 // Arithmetic
 //
 //------------------------------------------------------------------------------
-
 STAmount
 divide (STAmount const& num, STAmount const& den, Issue const& issue)
 {

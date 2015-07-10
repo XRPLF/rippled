@@ -56,10 +56,12 @@
 #include <ripple/protocol/impl/STValidation.cpp>
 #include <ripple/protocol/impl/STVar.cpp>
 #include <ripple/protocol/impl/STVector256.cpp>
+#include <ripple/protocol/impl/IOUAmount.cpp>
 
 
 #include <ripple/protocol/tests/BuildInfo.test.cpp>
 #include <ripple/protocol/tests/InnerObjectFormats.test.cpp>
+#include <ripple/protocol/tests/IOUAmount.test.cpp>
 #include <ripple/protocol/tests/Issue.test.cpp>
 #include <ripple/protocol/tests/PublicKey_test.cpp>
 #include <ripple/protocol/tests/Quality.test.cpp>
@@ -68,6 +70,7 @@
 #include <ripple/protocol/tests/STObject.test.cpp>
 #include <ripple/protocol/tests/STTx.test.cpp>
 #include <ripple/protocol/tests/types_test.cpp>
+#include <ripple/protocol/tests/XRPAmount.test.cpp>
 
 #if DOXYGEN
 #include <ripple/protocol/README.md>

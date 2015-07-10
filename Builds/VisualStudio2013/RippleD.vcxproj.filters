@@ -3474,6 +3474,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\InnerObjectFormats.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\IOUAmount.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Keylet.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
@@ -3568,6 +3571,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\InnerObjectFormats.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\IOUAmount.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Issue.h">
@@ -3678,6 +3684,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\tests\InnerObjectFormats.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\IOUAmount.test.cpp">
+      <Filter>ripple\protocol\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\Issue.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
@@ -3702,6 +3711,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\tests\types_test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\XRPAmount.test.cpp">
+      <Filter>ripple\protocol\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\tokens.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
@@ -3718,6 +3730,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\UintTypes.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\XRPAmount.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
