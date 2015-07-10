@@ -20,6 +20,10 @@
 #include <BeastConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/TestSuite.h>
+#include <ripple/json/json_value.h>
+#include <ripple/json/json_writer.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
 
@@ -125,13 +129,13 @@ public:
     void testKeyType (char const* keyType, key_strings const& strings)
     {
         testcase (keyType);
-        
+
         Json::Value params;
         params[jss::key_type] = keyType;
         params[jss::passphrase] = common::passphrase;
 
         testSecretWallet (params, strings);
-        
+
         params[jss::seed] = strings.master_seed;
 
         // Secret fields are mutually exclusive.
@@ -214,13 +218,13 @@ public:
     void testKeyType (char const* keyType, key_strings const& strings)
     {
         testcase (keyType);
-        
+
         Json::Value params;
         params[jss::key_type] = keyType;
         params[jss::passphrase] = common::passphrase;
 
         testSecretWallet (params, strings);
-        
+
         params[jss::seed] = strings.master_seed;
 
         // Secret fields are mutually exclusive.

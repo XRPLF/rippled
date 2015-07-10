@@ -20,6 +20,7 @@
 #ifndef RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
 #define RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
 
+#include <ripple/json/json_value.h>
 #include <beast/utility/PropertyStream.h>
 
 namespace ripple {

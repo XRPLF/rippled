@@ -18,6 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/core/Config.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/rpc/impl/Handler.h>
 #include <beast/utility/make_lock.h>
 
 namespace ripple {

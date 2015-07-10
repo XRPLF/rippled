@@ -51,7 +51,7 @@
 #include <ripple/rpc/handlers/GatewayBalances.cpp>
 #include <ripple/rpc/handlers/GetCounts.cpp>
 #include <ripple/rpc/handlers/Internal.cpp>
-#include <ripple/rpc/handlers/Ledger.cpp>
+#include <ripple/rpc/handlers/LedgerHandler.cpp>
 #include <ripple/rpc/handlers/LedgerAccept.cpp>
 #include <ripple/rpc/handlers/LedgerCleanerHandler.cpp>
 #include <ripple/rpc/handlers/LedgerClosed.cpp>

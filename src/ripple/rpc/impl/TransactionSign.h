@@ -20,6 +20,10 @@
 #ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/server/Role.h>
+
 namespace ripple {
 namespace RPC {
 
@@ -106,7 +110,7 @@ enum class AutoFill : unsigned char
     might
 };
 
-static Json::Value checkFee (
+Json::Value checkFee (
     Json::Value& request,
     TxnSignApiFacade& apiFacade,
     Role const role,
@@ -123,7 +127,8 @@ Json::Value transactionSign (
     Role role);
 
 /** Returns a Json::objectValue. */
-inline Json::Value transactionSign (
+inline
+Json::Value transactionSign (
     Json::Value const& params,
     NetworkOPs::FailHard failType,
     NetworkOPs& netOPs,
@@ -141,6 +146,7 @@ Json::Value transactionSubmit (
     Role role);
 
 /** Returns a Json::objectValue. */
+inline
 Json::Value transactionSubmit (
     Json::Value const& params,
     NetworkOPs::FailHard failType,
@@ -159,6 +165,7 @@ Json::Value transactionSignFor (
     Role role);
 
 /** Returns a Json::objectValue. */
+inline
 Json::Value transactionSignFor (
     Json::Value const& params,
     NetworkOPs::FailHard failType,
@@ -177,6 +184,7 @@ Json::Value transactionSubmitMultiSigned (
     Role role);
 
 /** Returns a Json::objectValue. */
+inline
 Json::Value transactionSubmitMultiSigned (
     Json::Value const& params,
     NetworkOPs::FailHard failType,

@@ -18,19 +18,24 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/rpc/impl/TransactionSign.h>
-#include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/app/paths/FindPaths.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/TxFlags.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/TxFlags.h>
+#include <ripple/rpc/impl/KeypairForSignature.h>
+#include <ripple/rpc/impl/LegacyPathFind.h>
+#include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
-
-//------------------------------------------------------------------------------
-
-
 namespace RPC {
 namespace detail {
 
@@ -301,7 +306,7 @@ bool TxnSignApiFacade::isLoadedCluster () const
     @return         A JSON object containing the error results, if any
 */
 
-static Json::Value checkFee (
+Json::Value checkFee (
     Json::Value& request,
     TxnSignApiFacade& apiFacade,
     Role const role,

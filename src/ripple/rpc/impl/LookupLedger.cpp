@@ -18,8 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/Log.h>
+#include <ripple/json/json_value.h>
 #include <ripple/ledger/View.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 namespace RPC {

@@ -20,6 +20,9 @@
 #ifndef RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 
+#include <cstdint>
+#include <string>
+
 namespace ripple {
 
 class ClusterNodeStatus
@@ -29,10 +32,12 @@ public:
     ClusterNodeStatus() : mLoadFee(0), mReportTime(0)
     { ; }
 
-    explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
+    explicit ClusterNodeStatus(std::string const& name) :
+            mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(std::string const& name, std::uint32_t fee, std::uint32_t rtime) :
+    ClusterNodeStatus(
+        std::string const& name, std::uint32_t fee, std::uint32_t rtime) :
         mNodeName(name),
         mLoadFee(fee),
         mReportTime(rtime)

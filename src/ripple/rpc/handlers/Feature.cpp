@@ -18,31 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/rpc/Context.h>
 #include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {
-
-static void textTime (
-    std::string& text, int& seconds, const char* unitName, int unitVal)
-{
-    int i = seconds / unitVal;
-
-    if (i == 0)
-        return;
-
-    seconds -= unitVal * i;
-
-    if (!text.empty ())
-        text += ", ";
-
-    text += beast::lexicalCastThrow <std::string> (i);
-    text += " ";
-    text += unitName;
-
-    if (i > 1)
-        text += "s";
-}
 
 Json::Value doFeature (RPC::Context& context)
 {

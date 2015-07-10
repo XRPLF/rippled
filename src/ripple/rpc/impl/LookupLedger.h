@@ -20,7 +20,12 @@
 #ifndef RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 #define RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/rpc/Status.h>
+
+namespace Json {
+class Value;
+}
 
 namespace ripple {
 
@@ -28,7 +33,7 @@ class ReadView;
 
 namespace RPC {
 
-class Context;
+struct Context;
 
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.

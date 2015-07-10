@@ -3843,12 +3843,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Internal.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\Ledger.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\handlers\Ledger.h">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerAccept.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -3867,6 +3861,12 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerEntry.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerHandler.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\handlers\LedgerHandler.h">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerHeader.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
