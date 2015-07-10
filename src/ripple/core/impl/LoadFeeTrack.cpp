@@ -25,41 +25,6 @@
 
 namespace ripple {
 
-template <class T1, class T2>
-void lowestTerms(T1& a,  T2& b)
-{
-    std::uint64_t x = a, y = b;
-    while (y != 0)
-    {
-        auto t = x % y;
-        x = y;
-        y = t;
-    }
-    a /= x;
-    b /= x;
-}
-
-// TODO REMOVE!
-static
-std::uint64_t
-mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
-{
-    lowestTerms(value, div);
-    lowestTerms(mul, div);
-
-    if (value < mul)
-        std::swap(value, mul);
-    const auto max = std::numeric_limits<std::uint64_t>::max();
-    if (value > max / mul)
-    {
-        value /= div;
-        if (value > max / mul)
-            throw std::overflow_error("mulDiv");
-        return value * mul;
-    }
-    return value * mul / div;
-}
-
 // Scale from fee units to millionths of a ripple
 std::uint64_t
 LoadFeeTrack::scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
