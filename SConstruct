@@ -56,7 +56,7 @@ The following environment variables modify the build environment:
       If set, used to detect a toolchain.
 
     BOOST_ROOT
-      Path to the boost directory. 
+      Path to the boost directory.
     OPENSSL_ROOT
       Path to the openssl directory.
 
@@ -664,6 +664,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/overlay', '.cpp'))
     append_sources(result, *list_sources('src/ripple/peerfinder', '.cpp'))
     append_sources(result, *list_sources('src/ripple/protocol', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
     append_sources(
@@ -698,6 +699,7 @@ def get_unity_sources():
         'src/ripple/unity/peerfinder.cpp',
         'src/ripple/unity/json.cpp',
         'src/ripple/unity/protocol.cpp',
+        'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/test.cpp',
     )
@@ -825,7 +827,6 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
-                'src/ripple/unity/rpcx.cpp',
                 'src/ripple/unity/server.cpp',
                 'src/ripple/unity/validators.cpp',
                 'src/ripple/unity/websocket02.cpp'
@@ -947,4 +948,3 @@ def do_count(target, source, env):
     print "Total unit test lines: %d" % lines
 
 PhonyTargets(env, count = do_count)
-

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/BasicConfig.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 

@@ -22,6 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/json/JsonPropertyStream.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 namespace RPC {

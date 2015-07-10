@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/Log.h>
+#include <ripple/rpc/impl/Handler.h>
 
 namespace ripple {
 
-Json::Value doLogRotate (RPC::Context& context)
+Json::Value doLogRotate (RPC::Context&)
 {
     return RPC::makeObjectValue (deprecatedLogs().rotate());
 }

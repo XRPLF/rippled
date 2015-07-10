@@ -20,7 +20,12 @@
 #ifndef RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 #define RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/rpc/Status.h>
+
+namespace Json {
+class Value;
+}
 
 namespace ripple {
 

@@ -20,14 +20,22 @@
 #include <BeastConfig.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/json/json_value.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/base_uint.h>
 
 namespace ripple {
+
+namespace RPC {
+class Context;
+}
 
 // Result:
 // {
 //   random: <uint256>
 // }
-Json::Value doRandom (RPC::Context& context)
+Json::Value doRandom (RPC::Context&)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.

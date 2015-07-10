@@ -19,7 +19,15 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/basics/strHex.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/LookupLedger.h>
 
 namespace ripple {
 

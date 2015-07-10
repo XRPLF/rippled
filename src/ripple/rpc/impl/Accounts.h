@@ -23,6 +23,9 @@
 #include <ripple/app/ledger/Ledger.h>
 
 namespace ripple {
+
+class NetworkOPs;
+
 namespace RPC {
 
 Json::Value accounts (

@@ -18,7 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format.hpp>

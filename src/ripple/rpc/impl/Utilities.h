@@ -20,13 +20,23 @@
 #ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
 #define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
 
+#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/app/tx/Transaction.h>
+
+namespace Json {
+class Value;
+}
+
 namespace ripple {
+
 namespace RPC {
+
+class Context;
 
 void
 addPaymentDeliveredAmount (
     Json::Value&,
-    RPC::Context&,
+    Context&,
     Transaction::pointer,
     TxMeta::pointer);
 

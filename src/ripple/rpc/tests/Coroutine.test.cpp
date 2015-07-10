@@ -72,24 +72,6 @@ public:
 
         Coroutine (suspendCallback).run();
         expectCollectionEquals (result, expected);
-
-        static
-        auto const printResults = false;
-        if (! printResults)
-            return;
-
-        std::string indent1 = "        ";
-        std::string indent2 = indent1 + "           ";
-
-        std::cerr << indent1 << "test (" + name + ", {";
-        for (auto i = 0; i < result.size(); ++i) {
-            if (i)
-                std::cerr << ",";
-            std::cerr << "\n" << indent2;
-            std::cerr << '"' << result[i] << '"';
-        }
-        std::cerr << "\n" << indent2 << "});\n";
-        expect(true);
     }
 
     void run() override

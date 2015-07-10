@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Tuning.h>
@@ -32,6 +33,7 @@
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
