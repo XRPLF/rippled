@@ -50,26 +50,14 @@ namespace test {
 
 namespace jtx {
 
-std::shared_ptr<Ledger>
-Env::genesis()
-{
-    Account const master("master",
-        generateKeyPair(KeyType::secp256k1,
-            generateSeed("masterpassphrase")));
-    auto const ledger =
-        std::make_shared<Ledger>(
-            master.id(), SYSTEM_CURRENCY_START);
-    ledger->setClosed();
-    return ledger;
-}
-
 // VFALCO Could wrap the log in a Journal here
 Env::Env (beast::unit_test::suite& test_)
     : test(test_)
     , master("master", generateKeyPair(
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
-    , closed_ (genesis())
+    , closed_ (std::make_shared<Ledger>(
+        create_genesis, config))
     , cachedSLEs_ (std::chrono::seconds(5), clock)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {

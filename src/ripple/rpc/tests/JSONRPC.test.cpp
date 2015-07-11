@@ -910,25 +910,10 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
-        std::string const secret = "masterpassphrase";
-        RippleAddress rootSeedMaster
-                = RippleAddress::createSeedGeneric (secret);
-
-        RippleAddress rootGeneratorMaster
-                = RippleAddress::createGeneratorPublic (rootSeedMaster);
-
-        RippleAddress rootAddress
-                = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-
-        std::uint64_t startAmount (100000);
-
-        auto const masterAccountID =
-            calcAccountID(generateKeyPair(
-                KeyType::secp256k1,
-                    generateSeed("masterpassphrase")).first);
-
-        Ledger::pointer ledger (std::make_shared <Ledger> (
-            masterAccountID, startAmount));
+        Config const config;
+        auto const ledger =
+            std::make_shared<Ledger>(
+                create_genesis, config);
 
         using namespace detail;
         TxnSignApiFacade apiFacade (TxnSignApiFacade::noNetOPs, ledger);
