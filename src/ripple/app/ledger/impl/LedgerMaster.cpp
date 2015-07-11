@@ -362,7 +362,7 @@ public:
         ScopedLockType sl (m_mutex);
 
         // Start with a mutable snapshot of the open ledger
-        auto const ledger =
+        auto const newOL =
             mCurrentLedger.getMutable();
         int recovers = 0;
 
@@ -386,7 +386,7 @@ public:
     #endif
 
         {
-            OpenView view(&*ledger);
+            OpenView view(&*newOL);
             for (auto const& it : mHeldTransactions)
             {
                 ApplyFlags tepFlags = tapNONE;
@@ -405,14 +405,16 @@ public:
                 // it will become disputed in the consensus process, which
                 // will cause it to be relayed.
             }
-            view.apply(*ledger);
+            view.apply(*newOL);
         }
 
         CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
 
         // VFALCO TODO recreate the CanonicalTxSet object instead of resetting it
-        mHeldTransactions.reset (ledger->getHash ());
-        mCurrentLedger.set (ledger);
+        // VFALCO NOTE The hash for an open ledger is undefined so
+        //             we use something that is a reasonable substitute.
+        mHeldTransactions.reset (newOL->info().hash);
+        mCurrentLedger.set (newOL);
     }
 
     LedgerIndex getBuildingLedger ()
