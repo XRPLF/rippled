@@ -26,6 +26,8 @@
 
 namespace ripple {
 
+class BasicConfig;
+
 /*  Programming By Contract
 
     This routines are used when checking
@@ -35,13 +37,17 @@ namespace ripple {
 namespace detail {
 
 void
-accessViolation();
-
-void
 throwException(
     std::exception_ptr ep);
 
 } // detail
+
+struct FailureReport
+{
+    std::string message;
+    int line;
+    char const* filename;
+};
 
 template <class Exception,
     class... Args>
@@ -54,11 +60,84 @@ Throw (Args&&... args)
                 Args>(args)...)));
 }
 
-/** Called when faulty logic causes a broken invariant. */
+/**
+   Write a failure report, and then die.
+ */
+void die(FailureReport const&);
+
+/**
+   Write a failure report, and then die if we are in danger mode.
+ */
+void danger(FailureReport const&);
+
+
+/** Set or reset danger mode from a BasicConfig. */
+void setupDanger(BasicConfig const&);
+
+
+/** Called when faulty logic causes a broken invariant. DEPRECATED.
+ */
 void
 LogicError (
     std::string const& how);
 
 } // ripple
+
+/**
+   Write a failure report, and then die.
+ */
+#define DIE(MSG) ::ripple::die({(MSG), __LINE__, __FILE__})
+
+/**
+   Write a failure report, and then die if we are in danger mode.
+ */
+#define DANGER(MSG) ::ripple::danger({(MSG), __LINE__, __FILE__})
+
+#define FAILURE_IF(COND, HANDLER)                  \
+    do {                                           \
+        if (COND)                                  \
+            HANDLER({#COND, __LINE__, __FILE__});  \
+    } while (false)
+
+/**
+   If COND is true, write a failure report, and then die.
+ */
+#define DANGER_IF(COND) FAILURE_IF((COND), ::ripple::danger)
+
+/**
+   If COND is true, write a failure report, and then die if we are in danger
+   mode.
+ */
+#define DIE_IF(COND) FAILURE_IF((COND), ::ripple::die)
+
+/**
+   If COND is false, write a failure report, and then die if we are in danger
+   mode.
+ */
+#define DANGER_UNLESS(COND) DANGER_IF(!(COND))
+
+/**
+   If COND is false, write a failure report, and then die.
+ */
+#define DIE_UNLESS(COND) DIE_IF(!(COND))
+
+/**
+   DANGER_EXPENSIVE will call the danger function only if the EXPENSIVE
+   macro is set and true - or if it's not set and DEBUG is true.
+ */
+
+#ifndef EXPENSIVE
+    #ifdef DEBUG
+        #define EXPENSIVE true
+    #else
+        #define EXPENSIVE false
+    #endif
+#endif
+
+#if EXPENSIVE
+    #define DANGER_UNLESS_EXPENSIVE(COND) DANGER_UNLESS(COND)
+#else
+    #define DANGER_UNLESS_EXPENSIVE(COND) do {} while (false)
+#endif
 
 #endif

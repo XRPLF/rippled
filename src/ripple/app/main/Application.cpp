@@ -48,6 +48,7 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -697,6 +698,8 @@ public:
     //
     void setup ()
     {
+        setupDanger (getConfig());
+
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
         m_jobQueue->setThreadCount (0, getConfig ().RUN_STANDALONE);
 
