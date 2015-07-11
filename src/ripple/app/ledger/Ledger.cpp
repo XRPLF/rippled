@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/contract.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -31,18 +30,20 @@
 #include <ripple/app/misc/IHashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/Config.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/core/SociDB.h>
+#include <ripple/json/to_string.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/core/LoadFeeTrack.h>
-#include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/types.h>
@@ -53,6 +54,8 @@
 #include <utility>
 
 namespace ripple {
+
+create_genesis_t const create_genesis {};
 
 class Ledger::txs_iter_impl
     : public txs_type::iter_base
@@ -110,51 +113,29 @@ public:
 
 //------------------------------------------------------------------------------
 
-/*  Create the "genesis" account root.
-    The genesis account root contains all the XRP
-    that will ever exist in the system.
-    @param id The AccountID of the account root
-    @param drops The number of drops to start with
-*/
-static
-std::shared_ptr<SLE>
-makeGenesisAccount (AccountID const& id,
-    std::uint64_t drops)
-{
-    std::shared_ptr<SLE> sle =
-        std::make_shared<SLE>(ltACCOUNT_ROOT,
-            getAccountRootIndex(id));
-    sle->setAccountID (sfAccount, id);
-    sle->setFieldAmount (sfBalance, drops);
-    sle->setFieldU32 (sfSequence, 1);
-    return sle;
-}
-
-// VFALCO This constructor could be eliminating by providing
-//        a free function createGenesisLedger, call the
-//        other constructor with appropriate parameters, and
-//        then create the master account / flush dirty.
-//
-Ledger::Ledger (AccountID const& masterAccountID,
-        std::uint64_t balanceInDrops)
+Ledger::Ledger (create_genesis_t, Config const& config)
     : mImmutable (false)
     , txMap_  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
-    // VFALCO Needs audit
-    , fees_(getFees(*this, getConfig()))
+    , fees_ (getFees(*this, getConfig()))
 {
-    // first ledger
     info_.seq = 1;
-    info_.drops = balanceInDrops;
+    info_.drops = SYSTEM_CURRENCY_START;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
-    auto const sle = makeGenesisAccount(
-        masterAccountID, balanceInDrops);
-    WriteLog (lsTRACE, Ledger)
-            << "root account: " << sle->getJson(0);
+    auto const id = calcAccountID(
+        generateKeyPair(KeyType::secp256k1,
+            generateSeed("masterpassphrase")).first);
+    auto const sle = std::make_shared<SLE>(keylet::account(id));
+    sle->setFieldU32 (sfSequence, 1);
+    sle->setAccountID (sfAccount, id);
+    sle->setFieldAmount (sfBalance, info_.drops);
     rawInsert(sle);
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
+    updateHash();
+    setClosed();
+    setAccepted();
 }
 
 Ledger::Ledger (uint256 const& parentHash,
@@ -403,6 +384,8 @@ bool Ledger::addSLE (SLE const& sle)
 uint256 const&
 Ledger::getHash()
 {
+    CHECK_PRECONDITION(mImmutable);
+    CHECK_PRECONDITION(mValidHash);
     if (! mValidHash)
         updateHash();
     return info_.hash;

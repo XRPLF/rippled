@@ -40,6 +40,9 @@ class TransactionMaster;
 
 class SqliteStatement;
 
+struct create_genesis_t { };
+extern create_genesis_t const create_genesis;
+
 /** Holds a ledger.
 
     The ledger is composed of two SHAMaps. The state map holds all of the
@@ -80,13 +83,19 @@ public:
     Ledger (Ledger const&) = delete;
     Ledger& operator= (Ledger const&) = delete;
 
-    /** Construct the genesis ledger.
+    /** Create the Genesis ledger.
 
-        @param masterAccountID The public of the account that
-               will hold `balanceInDrops` XRP in drops.
+        The Genesis ledger contains a single account whose
+        AccountID is generated with a Generator using the seed
+        computed from the string "masterpassphrase" and ordinal
+        zero.
+
+        The account has an XRP balance equal to the total amount
+        of XRP in the system. No more XRP than the amount which
+        starts in this account can ever exist, with amounts
+        used to pay fees being destroyed.
     */
-    Ledger (AccountID const& masterAccountID,
-        std::uint64_t balanceInDrops);
+    Ledger (create_genesis_t, Config const& config);
 
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,

@@ -761,7 +761,7 @@ public:
         {
             m_journal.info << "Starting new Ledger";
 
-            startNewLedger ();
+            startGenesisLedger ();
         }
         else if (startUp == Config::LOAD ||
                  startUp == Config::LOAD_FILE ||
@@ -782,10 +782,12 @@ public:
             if (!getConfig ().RUN_STANDALONE)
                 m_networkOPs->needNetworkLedger ();
 
-            startNewLedger ();
+            startGenesisLedger ();
         }
         else
-            startNewLedger ();
+        {
+            startGenesisLedger ();
+        }
 
         m_orderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
 
@@ -1036,7 +1038,7 @@ public:
 
 private:
     void updateTables ();
-    void startNewLedger ();
+    void startGenesisLedger ();
     Ledger::pointer getLastFullLedger();
     bool loadOldLedger (
         std::string const& ledgerID, bool replay, bool isFilename);
@@ -1046,45 +1048,19 @@ private:
 
 //------------------------------------------------------------------------------
 
-void ApplicationImp::startNewLedger ()
+void ApplicationImp::startGenesisLedger ()
 {
-    // New stuff.
-    RippleAddress   rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
-    RippleAddress   rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
-    RippleAddress   rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-
-    // Print enough information to be able to claim root account.
-    m_journal.info << "Root master seed: " << rootSeedMaster.humanSeed ();
-    m_journal.info << "Root account: " << toBase58(calcAccountID(rootAddress));
-
-    {
-        auto const masterAccountID =
-            calcAccountID(generateKeyPair(
-                KeyType::secp256k1,
-                    generateSeed("masterpassphrase")).first);
-
-        auto firstLedger = std::make_shared<Ledger>(
-            masterAccountID, SYSTEM_CURRENCY_START);
-        assert (firstLedger->exists(keylet::account(
-            calcAccountID(rootAddress))));
-        // TODO(david): Add any default amendments
-        // TODO(david): Set default fee/reserve
-        firstLedger->getHash(); // updates the hash
-        firstLedger->setClosed ();
-        firstLedger->setAccepted ();
-        m_ledgerMaster->pushLedger (firstLedger);
-
-        Ledger::pointer secondLedger = std::make_shared<Ledger> (true, std::ref (*firstLedger));
-        secondLedger->setClosed ();
-        secondLedger->setAccepted ();
-
-        m_networkOPs->setLastCloseTime (secondLedger->info().closeTime);
-        openLedger_.emplace(secondLedger, getConfig(),
-            cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
-        m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (secondLedger->exists(keylet::account(
-            calcAccountID(rootAddress))));
-    }
+    auto const genesis = std::make_shared<Ledger>(
+        create_genesis, getConfig());
+    auto const next =
+        std::make_shared<Ledger>(true, *genesis);
+    next->setClosed ();
+    next->setAccepted ();
+    m_networkOPs->setLastCloseTime (next->info().closeTime);
+    openLedger_.emplace(next, getConfig(),
+        cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
+    m_ledgerMaster->pushLedger (next,
+        std::make_shared<Ledger>(true, *next));
 }
 
 Ledger::pointer

@@ -147,15 +147,6 @@ public:
 
     Env (beast::unit_test::suite& test_);
 
-    /** Creates a genesis ledger.
-
-        This is called by the implementation but provided
-        as a public member for interested callers.
-    */
-    static
-    std::shared_ptr<Ledger>
-    genesis();
-
     /** Returns the open ledger.
 
         This is a non-modifiable snapshot of the
