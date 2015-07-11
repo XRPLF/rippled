@@ -119,6 +119,8 @@ JSS ( count );                      // in: AccountTx*
 JSS ( currency );                   // in: paths/PathRequest, STAmount
                                     // out: paths/Node, STPathSet, STAmount
 JSS ( current );                    // out: OwnerInfo
+JSS ( current_ledger_size );        // out: TxQ
+JSS ( current_queue_size );         // out: TxQ
 JSS ( data );                       // out: LedgerData
 JSS ( date );                       // out: tx/Transaction, NetworkOPs
 JSS ( dbKBLedger );                 // out: getCounts
@@ -136,6 +138,7 @@ JSS ( dir_entry );                  // out: DirectoryEntryIterator
 JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
 JSS ( directory );                  // in: LedgerEntry
+JSS ( drops );                      // out: TxQ
 JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
@@ -145,6 +148,7 @@ JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( expand );                     // in: handler/Ledger
+JSS ( expected_ledger_size );       // out: TxQ
 JSS ( fail_hard );                  // in: Sign, Submit
 JSS ( failed );                     // out: InboundLedger
 JSS ( feature );                    // in: Feature
@@ -232,6 +236,9 @@ JSS ( master_key );                 // out: WalletPropose
 JSS ( master_seed );                // out: WalletPropose
 JSS ( master_seed_hex );            // out: WalletPropose
 JSS ( max_ledger );                 // in/out: LedgerCleaner
+JSS ( max_queue_size );             // out: TxQ
+JSS ( median_fee );                 // out: TxQ
+JSS ( median_level );               // out: TxQ
 JSS ( message );                    // error.
 JSS ( meta );                       // out: NetworkOPs, AccountTx*, Tx
 JSS ( metaData );
@@ -239,6 +246,8 @@ JSS ( metadata );                   // out: TransactionEntry
 JSS ( method );                     // RPC
 JSS ( min_count );                  // in: GetCounts
 JSS ( min_ledger );                 // in: LedgerCleaner
+JSS ( minimum_fee );                // out: TxQ
+JSS ( minimum_level );              // out: TxQ
 JSS ( missingCommand );             // error
 JSS ( name );                       // out: AmendmentTableImpl, PeerImp
 JSS ( needed_state_hashes );        // out: InboundLedger
@@ -261,6 +270,8 @@ JSS ( offers );                     // out: NetworkOPs, AccountOffers, Subscribe
 JSS ( offline );                    // in: TransactionSign
 JSS ( offset );                     // in/out: AccountTxOld
 JSS ( open );                       // out: handlers/Ledger
+JSS ( open_ledger_fee );            // out: TxQ
+JSS ( open_ledger_level );          // out: TxQ
 JSS ( owner );                      // in: LedgerEntry, out: NetworkOPs
 JSS ( owner_funds );                // out: NetworkOPs, AcceptedLedgerTx
 JSS ( params );                     // RPC
@@ -293,6 +304,7 @@ JSS ( quality_out );                // out: AccountLines
 JSS ( random );                     // out: Random
 JSS ( raw_meta );                   // out: AcceptedLedgerTx
 JSS ( receive_currencies );         // out: AccountCurrencies
+JSS ( reference_level );            // out: TxQ
 JSS ( regular_seed );               // in/out: LedgerEntry
 JSS ( remote );                     // out: Logic.h
 JSS ( request );                    // RPC

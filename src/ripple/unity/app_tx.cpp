@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/tx/impl/apply.cpp>
+#include <ripple/app/tx/impl/applySteps.cpp>
 #include <ripple/app/tx/impl/BookTip.cpp>
 #include <ripple/app/tx/impl/CancelOffer.cpp>
 #include <ripple/app/tx/impl/CancelTicket.cpp>

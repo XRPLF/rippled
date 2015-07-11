@@ -38,6 +38,7 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/PathRequests.h>
@@ -326,6 +327,7 @@ public:
     std::unique_ptr <HashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
+    std::unique_ptr <TxQ> txQ_;
     beast::DeadlineTimer m_sweepTimer;
     beast::DeadlineTimer m_entropyTimer;
 
@@ -459,6 +461,8 @@ public:
         , mValidations (make_Validations (*this))
 
         , m_loadManager (make_LoadManager (*this, *this, logs_->journal("LoadManager")))
+
+        , txQ_(make_TxQ(setup_TxQ(*config_), logs_->journal("TxQ")))
 
         , m_sweepTimer (this)
 
@@ -681,6 +685,12 @@ public:
     Overlay& overlay () override
     {
         return *m_overlay;
+    }
+
+    TxQ& getTxQ() override
+    {
+        assert(txQ_.get() != nullptr);
+        return *txQ_;
     }
 
     DatabaseCon& getTxnDB () override

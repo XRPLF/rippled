@@ -76,12 +76,13 @@ makeConfig()
 }
 
 // VFALCO Could wrap the log in a Journal here
-Env::Env (beast::unit_test::suite& test_)
+Env::Env(beast::unit_test::suite& test_,
+    std::unique_ptr<Config const> config)
     : test (test_)
     , master ("master", generateKeyPair(
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
-    , bundle_ (makeConfig())
+    , bundle_ (std::move(config))
     , closed_ (std::make_shared<Ledger>(
         create_genesis, app().config(), app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
@@ -89,6 +90,11 @@ Env::Env (beast::unit_test::suite& test_)
 {
     memoize(master);
     Pathfinder::initPathTable();
+}
+
+Env::Env(beast::unit_test::suite& test_)
+    : Env(test_, makeConfig())
+{
 }
 
 std::shared_ptr<OpenView const>
@@ -118,13 +124,12 @@ Env::close(NetClock::time_point const& closeTime,
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
-    auto router = std::make_unique<HashRouter>(60);
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
         OpenLedger::apply(app(), accum, *closed_,
-            txs, retries, applyFlags(), *router,
-                journal);
+            txs, retries, applyFlags(), journal);
+
         accum.apply(*next);
     }
     // To ensure that the close time is exact and not rounded, we don't
@@ -135,7 +140,7 @@ Env::close(NetClock::time_point const& closeTime,
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
-        locals, false, retries, applyFlags(), *router, "", f);
+        locals, false, retries, applyFlags(), "", f);
     closed_ = next;
     cachedSLEs_.expire();
 }

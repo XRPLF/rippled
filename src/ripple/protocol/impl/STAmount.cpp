@@ -1277,4 +1277,18 @@ mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
     return value * mul / div;
 }
 
+// compute (value)*(mul)/(div) - avoid overflow but keep precision
+std::uint64_t
+mulDivNoThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
+{
+    try
+    {
+        return mulDiv(value, mul, div);
+    }
+    catch (std::overflow_error)
+    {
+        return std::numeric_limits<std::uint64_t>::max();
+    }
+}
+
 } // ripple

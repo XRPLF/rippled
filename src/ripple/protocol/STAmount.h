@@ -407,6 +407,14 @@ inline bool isXRP(STAmount const& amount)
 std::uint64_t
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
 
+/**
+    A utility function to compute (value)*(mul)/(div) while avoiding
+    overflow but keeping precision. Will return the max uint64_t
+    value if mulDiv would overflow anyway.
+*/
+std::uint64_t
+mulDivNoThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
+
 template <class T1, class T2>
 void lowestTerms(T1& a,  T2& b)
 {

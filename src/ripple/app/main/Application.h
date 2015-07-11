@@ -62,6 +62,7 @@ class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
+class TxQ;
 class Validations;
 
 class DatabaseCon;
@@ -114,6 +115,7 @@ public:
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
+    virtual TxQ&                    getTxQ() = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;

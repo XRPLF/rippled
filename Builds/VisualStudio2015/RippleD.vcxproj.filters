@@ -2256,6 +2256,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.h">
       <Filter>ripple\app\misc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\TxQ.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2272,6 +2275,9 @@
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
@@ -2439,7 +2445,13 @@
     <ClCompile Include="..\..\src\ripple\app\tests\Taker.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\TxQ_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
+      <Filter>ripple\app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\tx\applySteps.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\apply.cpp">
@@ -2451,9 +2463,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\ApplyContext.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\impl\applyImpl.h">
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\applySteps.cpp">
       <Filter>ripple\app\tx\impl</Filter>
-    </ClInclude>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -3859,6 +3871,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Feature1.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\Fee1.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\FetchInfo.cpp">

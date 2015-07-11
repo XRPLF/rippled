@@ -24,7 +24,6 @@
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
@@ -165,9 +164,8 @@ public:
         std::shared_ptr<Ledger const> const& ledger,
             OrderedTxs const& locals, bool retriesFirst,
                 OrderedTxs& retries, ApplyFlags flags,
-                    HashRouter& router,
-                        std::string const& suffix = "",
-                            modify_type const& f = {});
+                    std::string const& suffix = "",
+                        modify_type const& f = {});
 
     /** Algorithm for applying transactions.
 
@@ -180,7 +178,7 @@ public:
     apply (Application& app, OpenView& view,
         ReadView const& check, FwdRange const& txs,
             OrderedTxs& retries, ApplyFlags flags,
-                HashRouter& router, beast::Journal j);
+                beast::Journal j);
 
 private:
     enum Result
@@ -199,7 +197,7 @@ private:
     apply_one (Application& app, OpenView& view,
         std::shared_ptr< STTx const> const& tx,
             bool retry, ApplyFlags flags,
-                HashRouter& router, beast::Journal j);
+                beast::Journal j);
 };
 
 //------------------------------------------------------------------------------
@@ -209,7 +207,7 @@ void
 OpenLedger::apply (Application& app, OpenView& view,
     ReadView const& check, FwdRange const& txs,
         OrderedTxs& retries, ApplyFlags flags,
-            HashRouter& router, beast::Journal j)
+            beast::Journal j)
 {
     for (auto iter = txs.begin();
         iter != txs.end(); ++iter)
@@ -222,7 +220,7 @@ OpenLedger::apply (Application& app, OpenView& view,
             if (check.txExists(tx->getTransactionID()))
                 continue;
             auto const result = apply_one(app, view,
-                tx, true, flags, router, j);
+                tx, true, flags, j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
@@ -243,7 +241,7 @@ OpenLedger::apply (Application& app, OpenView& view,
         {
             switch (apply_one(app, view,
                 iter->second, retry, flags,
-                    router, j))
+                    j))
             {
             case Result::success:
                 ++changes;

@@ -35,6 +35,7 @@
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/misc/UniqueNodeList.h>
@@ -839,8 +840,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     if (e.admin)
                         flags = flags | tapADMIN;
 
-                    auto const result = ripple::apply(app_, view,
-                        *e.transaction->getSTransaction(), flags, j);
+                    auto const result = app_.getTxQ().apply(
+                        app_, view, e.transaction->getSTransaction(),
+                        flags, j);
                     e.result = result.first;
                     e.applied = result.second;
                     changed = changed || result.second;
@@ -887,6 +889,16 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 m_journal.info << "Transaction is obsolete";
                 e.transaction->setStatus (OBSOLETE);
             }
+            else if (e.result == terQUEUED)
+            {
+                JLOG(m_journal.info) << "Transaction is likely to claim a " <<
+                    "fee, but is queued until fee drops";
+                e.transaction->setStatus(HELD);
+                // Add to held transactions, because it could get
+                // kicked out of the queue, and this will try to
+                // put it back.
+                m_ledgerMaster.addHeldTransaction(e.transaction);
+            }
             else if (isTerRetry (e.result))
             {
                 if (e.failType == FailHard::yes)
@@ -914,8 +926,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     e.transaction->getSTransaction());
             }
 
-            if (e.applied ||
-                    ((mMode != omFULL) && (e.failType != FailHard::yes) && e.local))
+            if (e.applied || ((mMode != omFULL) &&
+                (e.failType != FailHard::yes) && e.local) ||
+                    (e.result == terQUEUED))
             {
                 std::set<Peer::id_t> peers;
 
@@ -929,6 +942,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     tx.set_rawtransaction (&s.getData().front(), s.getLength());
                     tx.set_status (protocol::tsCURRENT);
                     tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
+                    tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
                     app_.overlay().foreach (send_if_not (
                         std::make_shared<Message> (tx, protocol::mtTRANSACTION),
@@ -1254,6 +1268,11 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     clearNeedNetworkLedger ();
     newLCL->setClosed ();
+
+    // Update fee computations.
+    // TODO: Needs an open ledger
+    //app_.getTxQ().processValidatedLedger(app_, *newLCL, true);
+
     // Caller must own master lock
     {
         // Apply tx in old open ledger to new
@@ -1269,7 +1288,12 @@ void NetworkOPsImp::switchLastClosedLedger (
             rules.emplace();
         app_.openLedger().accept(app_, *rules,
             newLCL, OrderedTxs({}), false, retries,
-                tapNONE, app_.getHashRouter(), "jump");
+                tapNONE, "jump",
+                    [&](OpenView& view, beast::Journal j)
+                    {
+                        // Stuff the ledger with transactions from the queue.
+                        return app_.getTxQ().accept(app_, view);
+                    });
     }
 
     m_ledgerMaster.switchLCL (newLCL);
