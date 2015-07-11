@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_SIGN_H_INCLUDED
 #define RIPPLE_PROTOCOL_SIGN_H_INCLUDED
 
-#include <ripple/protocol/AnyPublicKey.h>
-#include <ripple/protocol/AnySecretKey.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STObject.h>
 #include <utility>
 
@@ -35,7 +35,7 @@ namespace ripple {
 void
 sign (STObject& st,
     HashPrefix const& prefix,
-        AnySecretKey const& sk);
+        KeyType type, SecretKey const& sk);
 
 /** Verify the signature on a STObject.
     The signature must be contained in sfSignature.
@@ -43,7 +43,8 @@ sign (STObject& st,
 bool
 verify (STObject const& st,
     HashPrefix const& prefix,
-        AnyPublicKeySlice const& pk);
+        PublicKey const& pk,
+            bool mustBeFullyCanonical);
 
 } // ripple
 

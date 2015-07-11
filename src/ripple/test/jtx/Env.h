@@ -34,7 +34,6 @@
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
-#include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
@@ -154,7 +153,7 @@ public:
         as a public member for interested callers.
     */
     static
-    std::shared_ptr<Ledger const>
+    std::shared_ptr<Ledger>
     genesis();
 
     /** Returns the open ledger.

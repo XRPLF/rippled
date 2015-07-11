@@ -59,6 +59,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
 #include <ripple/rpc/Manager.h>
@@ -1057,7 +1058,13 @@ void ApplicationImp::startNewLedger ()
     m_journal.info << "Root account: " << toBase58(calcAccountID(rootAddress));
 
     {
-        Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
+        auto const masterAccountID =
+            calcAccountID(generateKeyPair(
+                KeyType::secp256k1,
+                    generateSeed("masterpassphrase")).first);
+
+        auto firstLedger = std::make_shared<Ledger>(
+            masterAccountID, SYSTEM_CURRENCY_START);
         assert (firstLedger->exists(keylet::account(
             calcAccountID(rootAddress))));
         // TODO(david): Add any default amendments

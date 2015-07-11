@@ -1147,13 +1147,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
         return;
 
+    auto const type = publicKeyType(
+        makeSlice(set.nodepubkey()));
+
     // VFALCO Magic numbers are bad
     // Roll this into a validation function
-    if (
+    if ((! type) ||
         (set.currenttxhash ().size () != 32) ||
-        (set.nodepubkey ().size () < 28) ||
         (set.signature ().size () < 56) ||
-        (set.nodepubkey ().size () > 128) ||
         (set.signature ().size () > 128)
     )
     {
@@ -1215,7 +1216,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     auto proposal = std::make_shared<LedgerProposal> (
         prevLedger, set.proposeseq (), proposeHash, set.closetime (),
-            signerPublic, suppression);
+            signerPublic, PublicKey(makeSlice(set.nodepubkey())),
+                suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose", std::bind(beast::weak_fn(

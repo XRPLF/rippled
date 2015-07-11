@@ -48,14 +48,14 @@ Account::operator= (Account&& rhs)
 }
 #endif
 
-Account::Account(
-        std::string name, KeyPair&& keys)
+Account::Account(std::string name,
+        std::pair<PublicKey, SecretKey> const& keys)
     : name_(std::move(name))
+    , pk_ (keys.first)
+    , sk_ (keys.second)
+    , id_ (calcAccountID(pk_))
+    , human_ (toBase58(id_))
 {
-    pk_ = std::move(keys.publicKey);
-    sk_ = std::move(keys.secretKey);
-    id_ = calcAccountID(pk_);
-    human_ = toBase58(id_);
 }
 
 Account::Account (std::string name,
@@ -66,9 +66,7 @@ Account::Account (std::string name,
     // Fails on Clang and possibly gcc
     : Account(std::move(name),
 #endif
-        generateKeysFromSeed(type,
-            RippleAddress::createSeedGeneric(
-                name)))
+        generateKeyPair(type, generateSeed(name)))
 {
 }
 
