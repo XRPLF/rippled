@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/Accounts.h>
+#include <ripple/rpc/impl/Utilities.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>

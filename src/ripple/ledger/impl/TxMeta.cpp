@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>

@@ -400,115 +400,6 @@ bool Ledger::addSLE (SLE const& sle)
     return stateMap_->addItem(item, false, false);
 }
 
-Transaction::pointer
-getTransaction (Ledger const& ledger,
-    uint256 const& transID, TransactionMaster& cache)
-{
-    SHAMapTreeNode::TNType type;
-    auto const item =
-        ledger.txMap().peekItem (transID, type);
-
-    if (!item)
-        return Transaction::pointer ();
-
-    auto txn = cache.fetch (transID, false);
-
-    if (txn)
-        return txn;
-
-    if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-    {
-        txn = Transaction::sharedTransaction (item->peekData (), Validate::YES);
-    }
-    else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
-    {
-        auto sit = SerialIter{item->data(), item->size()};
-        txn = Transaction::sharedTransaction(sit.getVL(), Validate::NO);
-    }
-    else
-    {
-        assert (false);
-        return Transaction::pointer ();
-    }
-
-    if (txn->getStatus () == NEW)
-    {
-        txn->setStatus (
-            ledger.info().open ? INCLUDED : COMMITTED, ledger.info().seq);
-    }
-
-    cache.canonicalize (&txn);
-    return txn;
-}
-
-bool
-getTransaction (Ledger const& ledger,
-    uint256 const& txID, Transaction::pointer& txn,
-        TxMeta::pointer& meta,
-            TransactionMaster& cache)
-{
-    SHAMapTreeNode::TNType type;
-    auto const item =
-        ledger.txMap().peekItem (txID, type);
-    if (!item)
-        return false;
-
-    if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-    {
-        // in tree with no metadata
-        txn = cache.fetch (txID, false);
-        meta.reset ();
-
-        if (!txn)
-        {
-            txn = Transaction::sharedTransaction (
-                item->peekData (), Validate::YES);
-        }
-    }
-    else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
-    {
-        // in tree with metadata
-        SerialIter it (item->slice());
-        txn = getApp().getMasterTransaction ().fetch (txID, false);
-
-        if (!txn)
-            txn = Transaction::sharedTransaction (it.getVL (), Validate::YES);
-        else
-            it.getVL (); // skip transaction
-
-        meta = std::make_shared<TxMeta> (
-            txID, ledger.seq(), it.getVL ());
-    }
-    else
-        return false;
-
-    if (txn->getStatus () == NEW)
-        txn->setStatus (ledger.info().open ? INCLUDED : COMMITTED, ledger.seq());
-
-    cache.canonicalize (&txn);
-    return true;
-}
-
-bool getTransactionMeta (Ledger const& ledger,
-    uint256 const& txID, TxMeta::pointer& meta)
-{
-    SHAMapTreeNode::TNType type;
-    auto const item =
-        ledger.txMap().peekItem (txID, type);
-
-    if (!item)
-        return false;
-
-    if (type != SHAMapTreeNode::tnTRANSACTION_MD)
-        return false;
-
-    SerialIter it (item->slice());
-    it.getVL (); // skip transaction
-    meta = std::make_shared<TxMeta> (txID, ledger.seq(), it.getVL ());
-
-    return true;
-}
-
 uint256 const&
 Ledger::getHash()
 {
@@ -1447,7 +1338,8 @@ void Ledger::deprecatedUpdateCachedFees() const
     }
 }
 
-std::vector<uint256> Ledger::getNeededTransactionHashes (
+std::vector<uint256>
+Ledger::getNeededTransactionHashes (
     int max, SHAMapSyncFilter* filter) const
 {
     std::vector<uint256> ret;
@@ -1463,7 +1355,8 @@ std::vector<uint256> Ledger::getNeededTransactionHashes (
     return ret;
 }
 
-std::vector<uint256> Ledger::getNeededAccountStateHashes (
+std::vector<uint256>
+Ledger::getNeededAccountStateHashes (
     int max, SHAMapSyncFilter* filter) const
 {
     std::vector<uint256> ret;
@@ -1480,119 +1373,102 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 }
 
 //------------------------------------------------------------------------------
-//
-// API
-//
-//------------------------------------------------------------------------------
 
-boost::optional<uint256>
-hashOfSeq (Ledger& ledger, LedgerIndex seq,
-    beast::Journal journal)
-{
-    // Easy cases...
-    if (seq > ledger.seq())
-    {
-        if (journal.warning) journal.warning <<
-            "Can't get seq " << seq <<
-            " from " << ledger.seq() << " future";
-        return boost::none;
-    }
-    if (seq == ledger.seq())
-        return ledger.getHash();
-    if (seq == (ledger.seq() - 1))
-        return ledger.info().parentHash;
-
-    // Within 256...
-    {
-        int diff = ledger.seq() - seq;
-        if (diff <= 256)
-        {
-            auto const hashIndex = cachedRead(
-                ledger, getLedgerHashIndex());
-            if (hashIndex)
-            {
-                assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
-                        (ledger.seq() - 1));
-                STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-                if (vec.size () >= diff)
-                    return vec[vec.size () - diff];
-                if (journal.warning) journal.warning <<
-                    "Ledger " << ledger.seq() <<
-                    " missing hash for " << seq <<
-                    " (" << vec.size () << "," << diff << ")";
-            }
-            else
-            {
-                if (journal.warning) journal.warning <<
-                    "Ledger " << ledger.seq() <<
-                    ":" << ledger.getHash () << " missing normal list";
-            }
-        }
-        if ((seq & 0xff) != 0)
-        {
-            if (journal.debug) journal.debug <<
-                "Can't get seq " << seq <<
-                " from " << ledger.seq() << " past";
-            return boost::none;
-        }
-    }
-
-    // in skiplist
-    auto const hashIndex = cachedRead(ledger,
-        getLedgerHashIndex(seq));
-    if (hashIndex)
-    {
-        auto const lastSeq =
-            hashIndex->getFieldU32 (sfLastLedgerSequence);
-        assert (lastSeq >= seq);
-        assert ((lastSeq & 0xff) == 0);
-        auto const diff = (lastSeq - seq) >> 8;
-        STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-        if (vec.size () > diff)
-            return vec[vec.size () - diff - 1];
-    }
-    if (journal.warning) journal.warning <<
-        "Can't get seq " << seq <<
-        " from " << ledger.seq() << " error";
-    return boost::none;
-}
-
-void
-injectSLE (Json::Value& jv,
-    SLE const& sle)
-{
-    jv = sle.getJson(0);
-    if (sle.getType() == ltACCOUNT_ROOT)
-    {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash =
-                sle.getFieldH128(sfEmailHash);
-            Blob const b (hash.begin(), hash.end());
-            std::string md5 = strHex(b);
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] = str(boost::format(
-                "http://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
-    }
-}
-
-//------------------------------------------------------------------------------
-
-bool
-getMetaHex (Ledger const& ledger,
-    uint256 const& transID, std::string& hex)
+Transaction::pointer
+getTransaction (Ledger const& ledger,
+    uint256 const& transID, TransactionMaster& cache)
 {
     SHAMapTreeNode::TNType type;
     auto const item =
         ledger.txMap().peekItem (transID, type);
+
+    if (!item)
+        return Transaction::pointer ();
+
+    auto txn = cache.fetch (transID, false);
+
+    if (txn)
+        return txn;
+
+    if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+    {
+        txn = Transaction::sharedTransaction (item->peekData (), Validate::YES);
+    }
+    else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+    {
+        auto sit = SerialIter{item->data(), item->size()};
+        txn = Transaction::sharedTransaction(sit.getVL(), Validate::NO);
+    }
+    else
+    {
+        assert (false);
+        return Transaction::pointer ();
+    }
+
+    if (txn->getStatus () == NEW)
+    {
+        txn->setStatus (
+            ledger.info().open ? INCLUDED : COMMITTED, ledger.info().seq);
+    }
+
+    cache.canonicalize (&txn);
+    return txn;
+}
+
+bool
+getTransaction (Ledger const& ledger,
+    uint256 const& txID, Transaction::pointer& txn,
+        TxMeta::pointer& meta,
+            TransactionMaster& cache)
+{
+    SHAMapTreeNode::TNType type;
+    auto const item =
+        ledger.txMap().peekItem (txID, type);
+    if (!item)
+        return false;
+
+    if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+    {
+        // in tree with no metadata
+        txn = cache.fetch (txID, false);
+        meta.reset ();
+
+        if (!txn)
+        {
+            txn = Transaction::sharedTransaction (
+                item->peekData (), Validate::YES);
+        }
+    }
+    else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+    {
+        // in tree with metadata
+        SerialIter it (item->slice());
+        txn = getApp().getMasterTransaction ().fetch (txID, false);
+
+        if (!txn)
+            txn = Transaction::sharedTransaction (it.getVL (), Validate::YES);
+        else
+            it.getVL (); // skip transaction
+
+        meta = std::make_shared<TxMeta> (
+            txID, ledger.seq(), it.getVL ());
+    }
+    else
+        return false;
+
+    if (txn->getStatus () == NEW)
+        txn->setStatus (ledger.info().open ? INCLUDED : COMMITTED, ledger.seq());
+
+    cache.canonicalize (&txn);
+    return true;
+}
+
+bool getTransactionMeta (Ledger const& ledger,
+    uint256 const& txID, TxMeta::pointer& meta)
+{
+    SHAMapTreeNode::TNType type;
+    auto const item =
+        ledger.txMap().peekItem (txID, type);
 
     if (!item)
         return false;
@@ -1602,7 +1478,8 @@ getMetaHex (Ledger const& ledger,
 
     SerialIter it (item->slice());
     it.getVL (); // skip transaction
-    hex = strHex (it.getVL ());
+    meta = std::make_shared<TxMeta> (txID, ledger.seq(), it.getVL ());
+
     return true;
 }
 

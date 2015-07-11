@@ -41,6 +41,7 @@
 #include <vector>
 
 namespace ripple {
+
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -139,6 +140,50 @@ getEnabledAmendments (ReadView const& view);
 using majorityAmendments_t = std::map <uint256, std::uint32_t>;
 majorityAmendments_t
 getMajorityAmendments (ReadView const& view);
+
+/** Return the hash of a ledger by sequence.
+    The hash is retrieved by looking up the "skip list"
+    in the passed ledger. As the skip list is limited
+    in size, if the requested ledger sequence number is
+    out of the range of ledgers represented in the skip
+    list, then boost::none is returned.
+    @return The hash of the ledger with the
+            given sequence number or boost::none.
+*/
+boost::optional<uint256>
+hashOfSeq (ReadView const& ledger, LedgerIndex seq,
+    beast::Journal journal);
+
+/** Find a ledger index from which we could easily get the requested ledger
+
+    The index that we return should meet two requirements:
+        1) It must be the index of a ledger that has the hash of the ledger
+            we are looking for. This means that its sequence must be equal to
+            greater than the sequence that we want but not more than 256 greater
+            since each ledger contains the hashes of the 256 previous ledgers.
+
+        2) Its hash must be easy for us to find. This means it must be 0 mod 256
+            because every such ledger is permanently enshrined in a LedgerHashes
+            page which we can easily retrieve via the skip list.
+*/
+inline
+LedgerIndex
+getCandidateLedger (LedgerIndex requested)
+{
+    return (requested + 255) & (~255);
+}
+
+/** Run a functor on each SLE in a ReadView starting from the key start,
+    as long as the functor returns true.
+ */
+template <class Functor>
+void forEachSLE(ReadView const& view, Functor func, uint256 const& start = {})
+{
+    for (auto k = view.succ(start); k; k = view.succ(*k))
+        if (auto sle = view.read(keylet::unchecked(*k)))
+            if (! func(*sle))
+                break;
+}
 
 //------------------------------------------------------------------------------
 //
