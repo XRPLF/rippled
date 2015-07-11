@@ -110,9 +110,13 @@ public:
     Ledger (void const* data,
         std::size_t size, bool hasPrefix);
 
-    // Create a new ledger that follows this one
-    // VFALCO `previous` should be const
-    Ledger (bool dummy, Ledger& previous);
+    /** Create a new open ledger
+
+        The ledger will have the sequence number that
+        follows previous, and have
+        parentCloseTime == previous.closeTime.
+    */
+    Ledger (open_ledger_t, Ledger const& previous);
 
     // Create a new ledger that's a snapshot of this one
     Ledger (Ledger const& target, bool isMutable);
@@ -198,18 +202,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Hint that the contents have changed.
-        Thread Safety:
-            Not thread safe
-        Effects:
-            The next call to getHash will return updated hashes
-    */
-    void
-    touch()
-    {
-        mValidHash = false;
-    }
-
     void setClosed()
     {
         info_.open = false;
@@ -245,11 +237,13 @@ public:
     void addRaw (Serializer& s) const;
     void setRaw (SerialIter& sit, bool hasPrefix);
 
-    /** Return the hash of the ledger.
-        This will recalculate the hash if necessary.
-    */
+    // DEPRECATED
+    // Remove contract.h include
     uint256 const&
-    getHash();
+    getHash() const
+    {
+        return info_.hash;
+    }
 
     void setTotalDrops (std::uint64_t totDrops)
     {
