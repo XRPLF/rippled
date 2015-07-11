@@ -26,6 +26,7 @@
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/app/tx/TxQ.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
@@ -378,8 +379,8 @@ public:
                 for (auto const& it : mHeldTransactions)
                 {
                     ApplyFlags flags = tapNONE;
-                    auto const result = apply(app_, view,
-                        *it.second, flags, j);
+                    auto const result = app_.getTxQ().apply(
+                        app_, view, it.second, flags, j);
                     if (result.second)
                         any = true;
                 }

@@ -151,6 +151,10 @@ public:
     bool
     changed (DigestAwareReadView const& ledger) const;
 
+    /** Returns `true` if these Rules match. */
+    bool
+    unchanged(Rules const& other) const;
+
     /** Returns `true` if two rule sets are identical.
 
         @note This is for diagnostics. To determine if new

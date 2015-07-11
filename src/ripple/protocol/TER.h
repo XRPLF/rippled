@@ -144,6 +144,7 @@ enum TER
                          // burden network.
     terLAST,             // Process after all other transactions
     terNO_RIPPLE,        // Rippling not allowed
+    terQUEUED,           // Transaction is being held in TxQ until fee drops
 
     // 0: S Success (success)
     // Causes:

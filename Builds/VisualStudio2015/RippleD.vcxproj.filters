@@ -2466,6 +2466,9 @@
     <ClCompile Include="..\..\src\ripple\app\tests\Taker.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\TxQ_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
@@ -2595,6 +2598,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Transactor.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\TxQImpl.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\InboundTransactions.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
@@ -2608,6 +2614,9 @@
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMaster.h">
+      <Filter>ripple\app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\tx\TxQ.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
@@ -3886,6 +3895,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Feature1.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\Fee1.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\FetchInfo.cpp">

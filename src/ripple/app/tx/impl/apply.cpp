@@ -70,6 +70,45 @@ invoke_preflight (PreflightContext const& ctx)
 }
 
 /*
+invoke_calculateBaseFee<T> uses name hiding to accomplish
+compile-time polymorphism of (presumably) static
+class functions for Transactor and derived classes.
+*/
+template<class T>
+static
+std::uint64_t
+invoke_calculateBaseFee(PreclaimContext const& ctx)
+{
+    return T::calculateBaseFee(ctx);
+}
+
+static
+std::uint64_t
+invoke_calculateBaseFee(PreclaimContext const& ctx)
+{
+    switch (ctx.tx.getTxnType())
+    {
+    case ttACCOUNT_SET:     return invoke_calculateBaseFee<SetAccount>(ctx);
+    case ttOFFER_CANCEL:    return invoke_calculateBaseFee<CancelOffer>(ctx);
+    case ttOFFER_CREATE:    return invoke_calculateBaseFee<CreateOffer>(ctx);
+    case ttPAYMENT:         return invoke_calculateBaseFee<Payment>(ctx);
+    case ttSUSPAY_CREATE:   return invoke_calculateBaseFee<SusPayCreate>(ctx);
+    case ttSUSPAY_FINISH:   return invoke_calculateBaseFee<SusPayFinish>(ctx);
+    case ttSUSPAY_CANCEL:   return invoke_calculateBaseFee<SusPayCancel>(ctx);
+    case ttREGULAR_KEY_SET: return invoke_calculateBaseFee<SetRegularKey>(ctx);
+    case ttSIGNER_LIST_SET: return invoke_calculateBaseFee<SetSignerList>(ctx);
+    case ttTICKET_CANCEL:   return invoke_calculateBaseFee<CancelTicket>(ctx);
+    case ttTICKET_CREATE:   return invoke_calculateBaseFee<CreateTicket>(ctx);
+    case ttTRUST_SET:       return invoke_calculateBaseFee<SetTrust>(ctx);
+    case ttAMENDMENT:
+    case ttFEE:             return invoke_calculateBaseFee<Change>(ctx);
+    default:
+        assert(false);
+        return 0;
+    }
+}
+
+/*
     invoke_preclaim<T> uses name hiding to accomplish
     compile-time polymorphism of (presumably) static
     class functions for Transactor and derived classes.
@@ -89,22 +128,22 @@ invoke_preclaim(PreclaimContext const& ctx)
         result = T::checkSeq(ctx);
 
         if (result != tesSUCCESS)
-            return { result, 0 };
+            return { result, baseFee };
 
         result = T::checkFee(ctx, baseFee);
 
         if (result != tesSUCCESS)
-            return { result, 0 };
+            return { result, baseFee };
 
         result = T::checkSign(ctx);
 
         if (result != tesSUCCESS)
-            return { result, 0 };
+            return { result, baseFee };
 
         result = T::preclaim(ctx);
 
         if (result != tesSUCCESS)
-            return{ result, 0 };
+            return{ result, baseFee };
     }
     else
     {
@@ -276,7 +315,7 @@ preclaim (PreflightResult const& preflightResult,
     Application& app, OpenView const& view)
 {
     boost::optional<PreclaimContext const> ctx;
-    if (preflightResult.ctx.rules != view.rules())
+    if (!preflightResult.ctx.rules.unchanged(view.rules()))
     {
         auto secondFlight = preflight(app, view.rules(),
             preflightResult.ctx.tx, preflightResult.ctx.flags,
@@ -310,6 +349,31 @@ preclaim (PreflightResult const& preflightResult,
     }
 }
 
+std::uint64_t
+calculateBaseFee(Application& app, ReadView const& view,
+    STTx const& tx, beast::Journal j)
+{
+    PreclaimContext const ctx(
+            app, view, tesSUCCESS, tx,
+            tapNONE, j);
+    try
+    {
+        return invoke_calculateBaseFee(ctx);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal) <<
+            "calculateBaseFee: " << e.what();
+        return 0;
+    }
+    catch (...)
+    {
+        JLOG(j.fatal) <<
+            "calculateBaseFee: <unknown exception>";
+        return 0;
+    }
+}
+
 std::pair<TER, bool>
 doApply(PreclaimResult const& preclaimResult,
     Application& app, OpenView& view)
@@ -322,8 +386,7 @@ doApply(PreclaimResult const& preclaimResult,
     }
     try
     {
-        if (preclaimResult.ter != tesSUCCESS
-                && !isTecClaim(preclaimResult.ter))
+        if (!preclaimResult.likelyToClaimFee)
             return{ preclaimResult.ter, false };
         ApplyContext ctx(app, view,
             preclaimResult.ctx.tx, preclaimResult.ter,

@@ -40,4 +40,3 @@
 #include <ripple/app/ledger/impl/LedgerTiming.cpp>
 #include <ripple/app/ledger/impl/OpenLedger.cpp>
 #include <ripple/app/ledger/impl/LedgerToJson.cpp>
-

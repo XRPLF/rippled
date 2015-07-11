@@ -32,7 +32,7 @@ struct PreflightContext
 public:
     Application& app;
     STTx const& tx;
-    Rules const& rules;
+    Rules rules;
     ApplyFlags flags;
     beast::Journal j;
 
@@ -85,12 +85,15 @@ public:
     PreclaimContext const ctx;
     TER const ter;
     std::uint64_t const baseFee;
+    bool const likelyToClaimFee;
 
     PreclaimResult(PreclaimContext const& ctx_,
         TER ter_, std::uint64_t const& baseFee_)
         : ctx(ctx_)
         , ter(ter_)
         , baseFee(baseFee_)
+        , likelyToClaimFee(ter == tesSUCCESS
+            || isTecClaim(ter))
     {
     }
 

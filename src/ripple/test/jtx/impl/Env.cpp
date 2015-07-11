@@ -76,12 +76,13 @@ makeConfig()
 }
 
 // VFALCO Could wrap the log in a Journal here
-Env::Env (beast::unit_test::suite& test_)
+Env::Env(beast::unit_test::suite& test_,
+    std::unique_ptr<Config const>&& config)
     : test (test_)
     , master ("master", generateKeyPair(
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
-    , bundle_ (makeConfig())
+    , bundle_ (std::move(config))
     , closed_ (std::make_shared<Ledger>(
         create_genesis, app().config(), app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
@@ -89,6 +90,11 @@ Env::Env (beast::unit_test::suite& test_)
 {
     memoize(master);
     Pathfinder::initPathTable();
+}
+
+Env::Env(beast::unit_test::suite& test_)
+    : Env(test_, std::move(makeConfig()))
+{
 }
 
 std::shared_ptr<OpenView const>
@@ -125,6 +131,7 @@ Env::close(NetClock::time_point const& closeTime,
         OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), *router,
                 journal);
+
         accum.apply(*next);
     }
     // To ensure that the close time is exact and not rounded, we don't

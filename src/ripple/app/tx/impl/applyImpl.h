@@ -60,6 +60,19 @@ PreclaimResult
 preclaim(PreflightResult const& preflightResult,
     Application& app, OpenView const& view);
 
+/** Compute only the expected base fee for a transaction.
+
+    Base fees are transaction specific, so any calculation
+    needing them must get the base fee for each transaction.
+
+    No validation is done or implied by this function.
+
+    @return The base fee.
+*/
+std::uint64_t
+calculateBaseFee(Application& app, ReadView const& view,
+    STTx const& tx, beast::Journal j);
+
 /** Apply a prechecked transaction to an OpenView.
 
 See also: apply()

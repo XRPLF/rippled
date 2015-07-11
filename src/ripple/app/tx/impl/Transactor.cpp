@@ -236,6 +236,11 @@ Transactor::checkSeq (PreclaimContext const& ctx)
     {
         if (a_seq < t_seq)
         {
+            if (ctx.flags & tapPOST_SEQ)
+            {
+                return tesSUCCESS;
+            }
+
             JLOG(ctx.j.trace) <<
                 "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;

@@ -42,3 +42,4 @@
 #include <ripple/app/tx/impl/ApplyContext.cpp>
 #include <ripple/app/tx/impl/TransactionAcquire.cpp>
 #include <ripple/app/tx/impl/Transactor.cpp>
+#include <ripple/app/tx/impl/TxQImpl.cpp>
