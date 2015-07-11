@@ -24,11 +24,20 @@ namespace ripple {
 
 namespace detail {
 
+/*  Terminate the application.
+  
+    The implementation must assure that
+
+    1. The application will be terminated
+
+    2. A core dump will be produced if the
+       system is configured correctly.
+*/
+static
 void
 accessViolation()
 {
-    // dereference memory
-    // location zero
+    // dereference memory location zero
     int volatile* j = 0;
     (void)*j;
 }
@@ -43,8 +52,16 @@ throwException (std::exception_ptr ep)
 
 } // detail
 
+//------------------------------------------------------------------------------
+
 void
 LogicError (std::string const&)
+{
+    detail::accessViolation();
+}
+
+void
+FailPrecondition (std::string const&)
 {
     detail::accessViolation();
 }
