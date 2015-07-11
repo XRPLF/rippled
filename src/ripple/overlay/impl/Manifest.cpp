@@ -36,8 +36,8 @@ make_Manifest (std::string s)
         STObject st (sfGeneric);
         SerialIter sit (s.data (), s.size ());
         st.set (sit);
-        auto const opt_pk = get<AnyPublicKey>(st, sfPublicKey);
-        auto const opt_spk = get<AnyPublicKey>(st, sfSigningPubKey);
+        auto const opt_pk = get<PublicKey>(st, sfPublicKey);
+        auto const opt_spk = get<PublicKey>(st, sfSigningPubKey);
         auto const opt_seq = get (st, sfSequence);
         auto const opt_sig = get (st, sfSignature);
         if (!opt_pk || !opt_spk || !opt_seq || !opt_sig)
@@ -57,11 +57,11 @@ Stream&
 logMftAct (
     Stream& s,
     std::string const& action,
-    AnyPublicKey const& pk,
+    PublicKey const& pk,
     std::uint32_t seq)
 {
     s << "Manifest: " << action <<
-         ";Pk: " << toString (pk) <<
+         ";Pk: " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, pk) <<
          ";Seq: " << seq << ";";
     return s;
 }
@@ -70,20 +70,20 @@ template<class Stream>
 Stream& logMftAct (
     Stream& s,
     std::string const& action,
-    AnyPublicKey const& pk,
+    PublicKey const& pk,
     std::uint32_t seq,
     std::uint32_t oldSeq)
 {
     s << "Manifest: " << action <<
-         ";Pk: " << toString (pk) <<
+         ";Pk: " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, pk) <<
          ";Seq: " << seq <<
          ";OldSeq: " << oldSeq << ";";
     return s;
 }
 
 Manifest::Manifest (std::string s,
-                    AnyPublicKey pk,
-                    AnyPublicKey spk,
+                    PublicKey pk,
+                    PublicKey spk,
                     std::uint32_t seq)
     : serialized (std::move (s))
     , masterKey (std::move (pk))
@@ -97,7 +97,7 @@ bool Manifest::verify () const
     STObject st (sfGeneric);
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
-    return ripple::verify (st, HashPrefix::manifest, masterKey);
+    return ripple::verify (st, HashPrefix::manifest, masterKey, true);
 }
 
 uint256 Manifest::hash () const
@@ -146,11 +146,11 @@ ManifestCache::configValidatorKey(
         throw std::runtime_error ("Expected Ed25519 key (0xED)");
     }
 
-    auto const masterKey = AnyPublicKey (key.data() + 1, key.size() - 1);
+    auto const masterKey = PublicKey (Slice(key.data() + 1, key.size() - 1));
     std::string comment = std::move(words[1]);
 
     if (journal.debug) journal.debug
-        << masterKey << " " << comment;
+        << toBase58(TokenType::TOKEN_NODE_PUBLIC, masterKey) << " " << comment;
 
     addTrustedKey (masterKey, std::move(comment));
 }
@@ -172,7 +172,7 @@ ManifestCache::configManifest(Manifest m, beast::Journal const& journal)
 }
 
 void
-ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string comment)
+ManifestCache::addTrustedKey (PublicKey const& pk, std::string comment)
 {
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -188,7 +188,7 @@ ManifestCache::addTrustedKey (AnyPublicKey const& pk, std::string comment)
 }
 
 ManifestDisposition
-ManifestCache::canApply (AnyPublicKey const& pk, std::uint32_t seq,
+ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
     beast::Journal const& journal) const
 {
     auto const iter = map_.find(pk);

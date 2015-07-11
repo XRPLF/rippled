@@ -39,7 +39,7 @@ Json::Value accounts (
 
     do
     {
-        // VFALCO Should be AnyPublicKey
+        // VFALCO Should be PublicKey and Generator
         RippleAddress pk;
         pk.setAccountPublic (naMasterGenerator, uIndex++);
 

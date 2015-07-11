@@ -33,6 +33,7 @@ LedgerProposal::LedgerProposal (
         uint256 const& tx,
         std::uint32_t closeTime,
         RippleAddress const& publicKey,
+        PublicKey const& pk,
         uint256 const& suppression)
     : mPreviousLedger (pLgr)
     , mCurrentHash (tx)
@@ -40,6 +41,7 @@ LedgerProposal::LedgerProposal (
     , mCloseTime (closeTime)
     , mProposeSeq (seq)
     , mPublicKey (publicKey)
+    , publicKey_ (pk)
 {
     mPeerID = mPublicKey.getNodeID ();
     mTime = std::chrono::steady_clock::now ();
@@ -72,12 +74,47 @@ uint256 LedgerProposal::getSigningHash () const
         mCurrentHash);
 }
 
+struct HashStream
+{
+    static beast::endian const endian =
+        beast::endian::big;
+
+    std::vector<std::uint8_t> v;
+
+    std::uint8_t const*
+    data() const
+    {
+        return v.data();
+    }
+
+    std::size_t
+    size() const
+    {
+        return v.size();
+    }
+
+    void
+    operator()(void const* data,
+        std::size_t size) noexcept
+    {
+        auto const p = reinterpret_cast<
+            std::uint8_t const*>(data);
+        v.insert(v.end(), p, p + size);
+    }
+};
+
 bool LedgerProposal::checkSign (std::string const& signature) const
 {
-    return mPublicKey.verifyNodePublic (
-        getSigningHash (),
-        signature,
-        ECDSA::not_strict);
+    auto const valid = mPublicKey.verifyNodePublic(
+        getSigningHash(), signature, ECDSA::not_strict);
+
+    HashStream h;
+    hash_append(h);
+    assert(valid == (publicKey_.verify(
+        Slice(h.data(), h.size()),
+            makeSlice(signature), false)));
+
+    return valid;
 }
 
 bool LedgerProposal::changePosition (

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
 #include <beast/utility/noexcept.h>
@@ -37,10 +37,8 @@ class Account
 {
 private:
     std::string name_;
-    // VFALCO TODO use AnyPublicKey, AnySecretKey
-    //             instead of RippleAddress
-    RippleAddress pk_;
-    RippleAddress sk_;
+    PublicKey pk_;
+    SecretKey sk_;
     AccountID id_;
     std::string human_; // base58 public key string
 
@@ -58,12 +56,14 @@ public:
 #endif
 
     /** Create an account from a key pair. */
-    Account (std::string name, KeyPair&& keys);
+    Account (std::string name,
+        std::pair<PublicKey, SecretKey> const& keys);
 
     /** Create an account from a simple string name. */
     /** @{ */
     Account (std::string name,
         KeyType type = KeyType::secp256k1);
+
     Account (char const* name,
         KeyType type = KeyType::secp256k1)
         : Account(std::string(name), type)
@@ -79,14 +79,14 @@ public:
     }
 
     /** Return the public key. */
-    RippleAddress const&
+    PublicKey const&
     pk() const
     {
         return pk_;
     }
 
     /** Return the secret key. */
-    RippleAddress const&
+    SecretKey const&
     sk() const
     {
         return sk_;
