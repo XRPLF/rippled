@@ -1365,7 +1365,7 @@ void NetworkOPsImp::switchLastClosedLedger (
     clearNeedNetworkLedger ();
     newLCL->setClosed ();
     auto const newOL = std::make_shared<
-        Ledger>(false, std::ref (*newLCL));
+        Ledger>(open_ledger, std::ref (*newLCL));
     // Caller must own master lock
     {
         auto const oldOL =

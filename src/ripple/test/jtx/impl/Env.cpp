@@ -84,7 +84,7 @@ Env::close(
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        false, const_cast<Ledger&>(*closed_));
+        open_ledger, *closed_);
     next->setClosed();
 #if 0
     // Build a SHAMap, put all the transactions

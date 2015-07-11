@@ -148,9 +148,12 @@ class View_test
     {
         Config const config;
         using namespace jtx;
-        auto const ledger =
+        std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
                 create_genesis, config);
+        auto const ledger =
+            std::make_shared<Ledger>(
+                open_ledger, *genesis);
         wipe(*ledger);
         ReadView& v = *ledger;
         succ(v, 0, boost::none);
@@ -392,9 +395,12 @@ class View_test
         // erase the item, apply.
         {
             Config const config;
-            auto const ledger =
+            std::shared_ptr<Ledger const> const genesis =
                 std::make_shared<Ledger>(
                     create_genesis, config);
+            auto const ledger =
+                std::make_shared<Ledger>(
+                    open_ledger, *genesis);
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView& v0 = *ledger;
