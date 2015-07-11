@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
-#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
@@ -447,50 +447,6 @@ cachedRead (ReadView const& ledger, uint256 const& key,
     return ledger.read(keylet::unchecked(key));
 }
 
-/** Return the hash of a ledger by sequence.
-    The hash is retrieved by looking up the "skip list"
-    in the passed ledger. As the skip list is limited
-    in size, if the requested ledger sequence number is
-    out of the range of ledgers represented in the skip
-    list, then boost::none is returned.
-    @return The hash of the ledger with the
-            given sequence number or boost::none.
-*/
-boost::optional<uint256>
-hashOfSeq (Ledger& ledger, LedgerIndex seq,
-    beast::Journal journal);
-
-/** Find a ledger index from which we could easily get the requested ledger
-
-    The index that we return should meet two requirements:
-        1) It must be the index of a ledger that has the hash of the ledger
-            we are looking for. This means that its sequence must be equal to
-            greater than the sequence that we want but not more than 256 greater
-            since each ledger contains the hashes of the 256 previous ledgers.
-
-        2) Its hash must be easy for us to find. This means it must be 0 mod 256
-            because every such ledger is permanently enshrined in a LedgerHashes
-            page which we can easily retrieve via the skip list.
-*/
-inline
-LedgerIndex
-getCandidateLedger (LedgerIndex requested)
-{
-    return (requested + 255) & (~255);
-}
-
-/** Inject JSON describing ledger entry
-
-    Effects:
-        Adds the JSON description of `sle` to `jv`.
-
-        If `sle` holds an account root, also adds the
-        urlgravatar field JSON if sfEmailHash is present.
-*/
-void
-injectSLE (Json::Value& jv,
-    SLE const& sle);
-
 //------------------------------------------------------------------------------
 
 // VFALCO NOTE This is called from only one place
@@ -509,11 +465,6 @@ bool
 getTransactionMeta (Ledger const&,
     uint256 const& transID,
         TxMeta::pointer & txMeta);
-
-// VFALCO NOTE This is called from only one place
-bool
-getMetaHex (Ledger const& ledger,
-    uint256 const& transID, std::string & hex);
 
 void
 ownerDirDescriber (SLE::ref, bool, AccountID const& owner);

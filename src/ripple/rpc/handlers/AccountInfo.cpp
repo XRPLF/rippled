@@ -26,6 +26,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/types.h>
+#include <ripple/rpc/impl/Utilities.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
@@ -69,7 +70,7 @@ Json::Value doAccountInfo (RPC::Context& context)
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
-        injectSLE(jvAccepted, *sleAccepted);
+        RPC::injectSLE(jvAccepted, *sleAccepted);
 
         // See if there's a SignerEntries for this account.
         auto const signerList = ledger->read (keylet::signers(accountID));
