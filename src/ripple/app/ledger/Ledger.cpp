@@ -200,8 +200,7 @@ Ledger::Ledger (Ledger const& ledger,
 }
 
 // Create a new open ledger that follows this one
-Ledger::Ledger (bool /* dummy */,
-                Ledger& prevLedger)
+Ledger::Ledger (open_ledger_t, Ledger const& prevLedger)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
@@ -216,28 +215,17 @@ Ledger::Ledger (bool /* dummy */,
     info_.hash = prevLedger.info().hash + uint256(1);
     info_.drops = prevLedger.info().drops;
     info_.closeTimeResolution = prevLedger.info_.closeTimeResolution;
-
-    prevLedger.updateHash ();
-
-    // VFALCO TODO Require callers to update the hash
     info_.parentHash = prevLedger.getHash ();
-
-    assert (info_.parentHash.isNonZero ());
-
     info_.closeTimeResolution = getNextLedgerTimeResolution (
         prevLedger.info_.closeTimeResolution,
         getCloseAgree(prevLedger.info()), info_.seq);
-
+    // VFALCO Remove this call to getApp
     if (prevLedger.info_.closeTime == 0)
-    {
         info_.closeTime = roundCloseTime (
             getApp().getOPs ().getCloseTimeNC (), info_.closeTimeResolution);
-    }
     else
-    {
         info_.closeTime =
             prevLedger.info_.closeTime + info_.closeTimeResolution;
-    }
 }
 
 Ledger::Ledger (void const* data,
@@ -379,16 +367,6 @@ bool Ledger::addSLE (SLE const& sle)
 {
     SHAMapItem item (sle.getIndex(), sle.getSerializer());
     return stateMap_->addItem(item, false, false);
-}
-
-uint256 const&
-Ledger::getHash()
-{
-    CHECK_PRECONDITION(mImmutable);
-    CHECK_PRECONDITION(mValidHash);
-    if (! mValidHash)
-        updateHash();
-    return info_.hash;
 }
 
 bool Ledger::saveValidatedLedger (bool current)
@@ -1012,9 +990,6 @@ Ledger::rawTxInsert (uint256 const& key,
                 std::move(item), true, false))
             LogicError("duplicate_tx: " + to_string(key));
     }
-
-    // VFALCO TODO We could touch only the txMap
-    touch();
 }
 
 std::shared_ptr<SLE>

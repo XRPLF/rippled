@@ -1050,17 +1050,18 @@ private:
 
 void ApplicationImp::startGenesisLedger ()
 {
-    auto const genesis = std::make_shared<Ledger>(
-        create_genesis, getConfig());
-    auto const next =
-        std::make_shared<Ledger>(true, *genesis);
+    auto const genesis =
+        std::make_shared<Ledger const>(
+            create_genesis, getConfig());
+    auto const next = std::make_shared<Ledger>(
+        open_ledger, *genesis);
     next->setClosed ();
     next->setAccepted ();
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, getConfig(),
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
     m_ledgerMaster->pushLedger (next,
-        std::make_shared<Ledger>(true, *next));
+        std::make_shared<Ledger>(open_ledger, *next));
 }
 
 Ledger::pointer
@@ -1306,7 +1307,8 @@ bool ApplicationImp::loadOldLedger (
 
         m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
 
-        Ledger::pointer openLedger = std::make_shared<Ledger> (false, std::ref (*loadLedger));
+        auto const openLedger =
+            std::make_shared<Ledger>(open_ledger, *loadLedger);
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);

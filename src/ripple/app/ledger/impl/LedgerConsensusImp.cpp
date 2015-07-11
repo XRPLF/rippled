@@ -979,7 +979,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     CanonicalTXSet retriableTransactions (set->getHash ());
 
     // Build the new last closed ledger
-    auto newLCL = std::make_shared<Ledger> (false, *mPreviousLedger);
+    auto newLCL = std::make_shared<Ledger>(
+        open_ledger, *mPreviousLedger);
     newLCL->setClosed (); // so applyTransactions sees a closed ledger
 
     // Set up to write SHAMap changes to our database,
@@ -1075,7 +1076,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     ledgerMaster_.consensusBuilt (newLCL);
 
     // Build new open ledger
-    auto newOL = std::make_shared<Ledger> (true, *newLCL);
+    auto newOL = std::make_shared<Ledger>(
+        open_ledger, *newLCL);
     OpenView accum(&*newOL);
     assert(accum.open());
 
