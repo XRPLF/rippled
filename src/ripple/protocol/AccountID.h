@@ -22,7 +22,7 @@
 
 #include <ripple/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
-//#include <ripple/protocol/AnyPublicKey.h>
+//#include <ripple/protocol/PublicKey.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/json/json_value.h>
@@ -32,9 +32,6 @@
 #include <string>
 
 namespace ripple {
-
-// VFALCO Forward declared due to header issues
-class AnyPublicKey;
 
 namespace detail {
 
@@ -96,8 +93,9 @@ parseHexOrBase58 (std::string const& s);
     guard bytes included in the base58 representation.
 
 */
-AccountID
-calcAccountID (AnyPublicKey const& pk);
+// VFALCO In PublicKey.h for now
+//AccountID
+//calcAccountID (PublicKey const& pk);
 
 /** A special account that's used as the "issuer" for XRP. */
 AccountID const&

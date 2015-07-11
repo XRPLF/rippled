@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/digest.h>
 #include <cassert>

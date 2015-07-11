@@ -20,8 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/protocol/impl/AccountID.cpp>
-#include <ripple/protocol/impl/AnyPublicKey.cpp>
-#include <ripple/protocol/impl/AnySecretKey.cpp>
 #include <ripple/protocol/impl/BuildInfo.cpp>
 #include <ripple/protocol/impl/ByteOrder.cpp>
 #include <ripple/protocol/impl/digest.cpp>

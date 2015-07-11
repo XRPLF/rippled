@@ -23,7 +23,10 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
+#include <beast/hash/hash_append.h>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -53,6 +56,7 @@ public:
         uint256 const& propose,
         std::uint32_t closeTime,
         RippleAddress const& publicKey,
+        PublicKey const& pk,
         uint256 const& suppress);
 
     // Our own proposal: the publicKey, if set, indicates we are a validating
@@ -116,11 +120,24 @@ public:
     Json::Value getJson () const;
 
 private:
+    template <class Hasher>
+    void
+    hash_append (Hasher& h) const
+    {
+        using beast::hash_append;
+        hash_append(h, HashPrefix::proposal);
+        hash_append(h, std::uint32_t(mProposeSeq));
+        hash_append(h, std::uint32_t(mCloseTime));
+        hash_append(h, mPreviousLedger);
+        hash_append(h, mCurrentHash);
+    }
+
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
     std::uint32_t mCloseTime, mProposeSeq;
 
     NodeID          mPeerID;
     RippleAddress   mPublicKey;
+    PublicKey publicKey_;
 
     std::chrono::steady_clock::time_point mTime;
 };
