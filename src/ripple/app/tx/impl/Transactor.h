@@ -94,7 +94,7 @@ protected:
     explicit
     Transactor (ApplyContext& ctx);
 
-    // Returns the fee, not scaled for load (Should be in fee units. FIXME)
+    // Returns the fee in fee units, not scaled for load.
     virtual std::uint64_t calculateBaseFee ();
 
     virtual void preCompute();
