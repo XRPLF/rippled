@@ -98,8 +98,20 @@ Transactor::Transactor(
 
 std::uint64_t Transactor::calculateBaseFee ()
 {
-    // Returns the fee in fee units
-    return ctx_.config.TRANSACTION_FEE_BASE;
+    // Returns the fee in fee units.
+
+    // The computation has two parts:
+    //  * The base fee, which is the same for most transactions.
+    //  * The additional cost of each multisignature on the transaction.
+    std::uint64_t baseFee = view().fees().units;
+
+    // Each signer adds one more baseFee to the minimum required fee
+    // for the transaction.
+    std::uint32_t signerCount = 0;
+    if (tx().isFieldPresent (sfSigners))
+        signerCount =  tx().getFieldArray (sfSigners).size();
+
+    return baseFee + (signerCount * baseFee);
 }
 
 TER Transactor::payFee ()
@@ -216,9 +228,9 @@ TER Transactor::apply ()
         return terNO_ACCOUNT;
     }
 
+    auto const& fees = view().fees();
     mFeeDue = STAmount (getApp().getFeeTrack().scaleFeeLoad(
-        calculateBaseFee(), view().fees().base,
-            view().fees().units, view().flags() & tapADMIN));
+        calculateBaseFee(), fees.base, fees.units, view().flags() & tapADMIN));
 
     if (sle)
     {
