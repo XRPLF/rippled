@@ -28,7 +28,7 @@
 namespace ripple {
 
 namespace RPC {
-class Context;
+struct Context;
 }
 
 // Result:

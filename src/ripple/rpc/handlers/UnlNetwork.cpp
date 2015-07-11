@@ -26,7 +26,7 @@
 namespace ripple {
 
 namespace RPC {
-class Context;
+struct Context;
 }
 
 // Populate the UNL from ripple.com's validators.txt file.

@@ -39,7 +39,7 @@ class Object;
 namespace ripple {
 namespace RPC {
 
-class Context;
+struct Context;
 
 // ledger [id|index|current|closed] [full]
 // {

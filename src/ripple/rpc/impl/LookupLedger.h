@@ -33,7 +33,7 @@ class ReadView;
 
 namespace RPC {
 
-class Context;
+struct Context;
 
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.

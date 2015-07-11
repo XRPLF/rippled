@@ -23,7 +23,7 @@
 namespace ripple {
 
 namespace RPC {
-class Context;
+struct Context;
 } // RPC
 
 Json::Value doPing (RPC::Context&)

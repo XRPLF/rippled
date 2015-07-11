@@ -26,7 +26,7 @@
 namespace ripple {
 
 namespace RPC {
-class Context;
+struct Context;
 }
 
 Json::Value doStop (RPC::Context&)

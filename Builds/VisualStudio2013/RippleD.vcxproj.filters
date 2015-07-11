@@ -2160,9 +2160,6 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\OpenLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\TxMeta.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2227,9 +2224,6 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\TxMeta.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
@@ -3066,6 +3060,9 @@
     <ClCompile Include="..\..\src\ripple\ledger\impl\RawStateTable.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\TxMeta.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\View.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
@@ -3093,6 +3090,9 @@
     <ClCompile Include="..\..\src\ripple\ledger\tests\View_test.cpp">
       <Filter>ripple\ledger\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\ledger\TxMeta.h">
+      <Filter>ripple\ledger</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
