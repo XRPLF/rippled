@@ -49,6 +49,7 @@ throwException(
 
 template <class Exception,
     class... Args>
+NORETURN
 void
 Throw (Args&&... args)
 {

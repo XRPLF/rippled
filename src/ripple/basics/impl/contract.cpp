@@ -34,6 +34,7 @@ namespace detail {
        system is configured correctly.
 */
 static
+NORETURN
 void
 accessViolation()
 {
