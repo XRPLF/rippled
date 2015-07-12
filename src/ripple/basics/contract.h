@@ -24,10 +24,14 @@
 #include <string>
 #include <utility>
 
+#if 0
 #ifdef _MSC_VER
 # define NORETURN __declspec(noreturn)
 #else
 # define NORETURN [[ noreturn ]]
+#endif
+#else
+# define NORETURN
 #endif
 
 namespace ripple {
