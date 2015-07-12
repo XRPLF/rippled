@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/app/paths/RippleState.h>
+#include <ripple/resource/Fees.h>
 
 namespace ripple {
 

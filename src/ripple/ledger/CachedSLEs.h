@@ -44,8 +44,7 @@ public:
     CachedSLEs (std::chrono::duration<
         Rep, Period> const& timeToLive,
             Stopwatch& clock)
-        : clock_ (clock)
-        , timeToLive_ (timeToLive)
+        : timeToLive_ (timeToLive)
         , map_ (clock)
     {
     }
@@ -102,7 +101,6 @@ public:
 private:
     std::size_t hit_ = 0;
     std::size_t miss_ = 0;
-    Stopwatch const& clock_;
     std::mutex mutable mutex_;
     Stopwatch::duration timeToLive_;
     beast::aged_unordered_map <digest_type,

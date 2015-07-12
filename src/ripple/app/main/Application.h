@@ -34,7 +34,6 @@ namespace ripple {
 namespace Validators { class Manager; }
 namespace Resource { class Manager; }
 namespace NodeStore { class Database; }
-namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -95,7 +94,6 @@ public:
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual shamap::Family&         family() = 0;
     virtual JobQueue&               getJobQueue () = 0;
-    virtual RPC::Manager&           getRPCManager () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
     virtual Validators::Manager&    getValidators () = 0;

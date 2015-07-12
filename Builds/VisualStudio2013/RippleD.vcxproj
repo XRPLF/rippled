@@ -3257,8 +3257,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\DoPrint.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3284,9 +3282,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\LookupLedger.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\ParseAccountIds.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3317,10 +3312,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\Request.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
     </ClInclude>

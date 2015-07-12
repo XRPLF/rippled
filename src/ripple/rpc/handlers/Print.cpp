@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/json/JsonPropertyStream.h>
 
 namespace ripple {
 

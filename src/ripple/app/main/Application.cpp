@@ -61,7 +61,6 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
-#include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/shamap/Family.h>
 #include <ripple/validators/make_Manager.h>
@@ -277,7 +276,6 @@ public:
 
     // These are Stoppable-related
     std::unique_ptr <JobQueue> m_jobQueue;
-    std::unique_ptr <RPC::Manager> m_rpcManager;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
@@ -364,8 +362,6 @@ public:
         //
         // Anything which calls addJob must be a descendant of the JobQueue
         //
-
-        , m_rpcManager (RPC::make_Manager (m_logs.journal("RPCManager")))
 
         , m_orderBookDB (*m_jobQueue)
 
@@ -471,11 +467,6 @@ public:
     JobQueue& getJobQueue ()
     {
         return *m_jobQueue;
-    }
-
-    RPC::Manager& getRPCManager ()
-    {
-        return *m_rpcManager;
     }
 
     LocalCredentials& getLocalCredentials ()
