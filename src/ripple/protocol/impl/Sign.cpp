@@ -17,25 +17,27 @@
 */
 //==============================================================================
 
+#include <BeastConfig.h>
 #include <ripple/protocol/Sign.h>
 
 namespace ripple {
 
 void
 sign (STObject& st, HashPrefix const& prefix,
-    AnySecretKey const& sk)
+    KeyType type, SecretKey const& sk)
 {
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
     set(st, sfSignature,
-        sk.sign(ss.data(), ss.size()));
+        sign(type, sk, ss.slice()));
 }
 
 bool
 verify (STObject const& st,
     HashPrefix const& prefix,
-        AnyPublicKeySlice const& pk)
+        PublicKey const& pk,
+            bool mustBeFullyCanonical)
 {
     auto const sig = get(st, sfSignature);
     if (! sig)
@@ -44,8 +46,9 @@ verify (STObject const& st,
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
     return pk.verify(
-        ss.data(), ss.size(),
-            sig->data(), sig->size());
+        Slice(ss.data(), ss.size()),
+            Slice(sig->data(), sig->size()),
+                true);
 }
 
 } // ripple

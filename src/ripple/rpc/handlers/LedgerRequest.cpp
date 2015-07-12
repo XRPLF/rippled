@@ -20,6 +20,12 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -62,7 +68,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         auto ledgerIndex = jsonIndex.asInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
-        if (ledgerIndex >= ledger->getLedgerSeq())
+        if (ledgerIndex >= ledger->info().seq)
             return RPC::make_param_error("Ledger index too large");
 
         auto const j = deprecatedLogs().journal("RPCHandler");
@@ -108,7 +114,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
     {
         // We already have the ledger they want
         Json::Value jvResult;
-        jvResult[jss::ledger_index] = ledger->getLedgerSeq();
+        jvResult[jss::ledger_index] = ledger->info().seq;
         addJson (jvResult, {*ledger, 0});
         return jvResult;
     }

@@ -18,8 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/core/Job.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
+#include <ripple/rpc/impl/Tuning.h>
+#include <ripple/core/LoadFeeTrack.h>
 
 namespace ripple {
 namespace RPC {

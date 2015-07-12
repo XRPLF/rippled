@@ -18,14 +18,44 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/ledger/CachedSLEs.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeTimer.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/json/json_value.h>
+#include <ripple/ledger/CachedSLEs.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
 
 namespace ripple {
+
+static
+void textTime (
+    std::string& text, int& seconds, const char* unitName, int unitVal)
+{
+    int i = seconds / unitVal;
+
+    if (i == 0)
+        return;
+
+    seconds -= unitVal * i;
+
+    if (!text.empty ())
+        text += ", ";
+
+    text += std::to_string(i);
+    text += " ";
+    text += unitName;
+
+    if (i > 1)
+        text += "s";
+}
 
 // {
 //   min_count: <number>  // optional, defaults to 10

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
-#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
@@ -33,12 +33,17 @@
 #include <boost/optional.hpp>
 #include <mutex>
 
+#include <ripple/basics/contract.h> // REMOVE
+
 namespace ripple {
 
 class Job;
 class TransactionMaster;
 
 class SqliteStatement;
+
+struct create_genesis_t { };
+extern create_genesis_t const create_genesis;
 
 /** Holds a ledger.
 
@@ -80,18 +85,24 @@ public:
     Ledger (Ledger const&) = delete;
     Ledger& operator= (Ledger const&) = delete;
 
-    /** Construct the genesis ledger.
+    /** Create the Genesis ledger.
 
-        @param masterPublicKey The public of the account that
-               will hold `startAmount` XRP in drops.
+        The Genesis ledger contains a single account whose
+        AccountID is generated with a Generator using the seed
+        computed from the string "masterpassphrase" and ordinal
+        zero.
+
+        The account has an XRP balance equal to the total amount
+        of XRP in the system. No more XRP than the amount which
+        starts in this account can ever exist, with amounts
+        used to pay fees being destroyed.
     */
-    Ledger (RippleAddress const& masterPublicKey,
-        std::uint64_t balanceInDrops);
+    Ledger (create_genesis_t, Config const& config);
 
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
             uint256 const& accountHash,
-            std::uint64_t totCoins, std::uint32_t closeTime,
+            std::uint64_t totDrops, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded);
 
@@ -101,9 +112,13 @@ public:
     Ledger (void const* data,
         std::size_t size, bool hasPrefix);
 
-    // Create a new ledger that follows this one
-    // VFALCO `previous` should be const
-    Ledger (bool dummy, Ledger& previous);
+    /** Create a new open ledger
+
+        The ledger will have the sequence number that
+        follows previous, and have
+        parentCloseTime == previous.closeTime.
+    */
+    Ledger (open_ledger_t, Ledger const& previous);
 
     // Create a new ledger that's a snapshot of this one
     Ledger (Ledger const& target, bool isMutable);
@@ -174,7 +189,7 @@ public:
     void
     rawDestroyXRP (std::uint64_t feeDrops) override
     {
-        mTotCoins -= feeDrops;
+        info_.drops -= feeDrops;
     }
 
     //
@@ -189,18 +204,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Hint that the contents have changed.
-        Thread Safety:
-            Not thread safe
-        Effects:
-            The next call to getHash will return updated hashes
-    */
-    void
-    touch()
-    {
-        mValidHash = false;
-    }
-
     void setClosed()
     {
         info_.open = false;
@@ -208,7 +211,7 @@ public:
 
     void setValidated()
     {
-        mValidated = true;
+        info_.validated = true;
     }
 
     void setAccepted (std::uint32_t closeTime,
@@ -218,27 +221,11 @@ public:
 
     void setImmutable ();
 
-    // DEPRECATED use closed()
-    bool isClosed () const
-    {
-        return closed();
-    }
-
-    bool isAccepted () const
-    {
-        return mAccepted;
-    }
-
-    bool isValidated () const
-    {
-        return mValidated;
-    }
-
     bool isImmutable () const
     {
         return mImmutable;
     }
-    
+
     // Indicates that all ledger entries
     // are available locally. For example,
     // all in the NodeStore and memory.
@@ -252,63 +239,19 @@ public:
     void addRaw (Serializer& s) const;
     void setRaw (SerialIter& sit, bool hasPrefix);
 
-    /** Return the hash of the ledger.
-        This will recalculate the hash if necessary.
-    */
-    uint256 const&
-    getHash();
-
-    uint256 const& getParentHash () const
-    {
-        return mParentHash;
-    }
-
-    uint256 const& getTransHash () const
-    {
-        return mTransHash;
-    }
-
-    uint256 const& getAccountHash () const
-    {
-        return mAccountHash;
-    }
-
-    std::uint64_t getTotalCoins () const
-    {
-        return mTotCoins;
-    }
-
-    void setTotalCoins (std::uint64_t totCoins)
-    {
-        mTotCoins = totCoins;
-    }
-
     // DEPRECATED
-    std::uint32_t getCloseTimeNC () const
+    // Remove contract.h include
+    uint256 const&
+    getHash() const
     {
-        return info_.closeTime;
+        CHECK_PRECONDITION(mImmutable);
+        CHECK_PRECONDITION(mValidHash);
+        return info_.hash;
     }
 
-    // DEPRECATED Use parentCloseTime()
-    std::uint32_t getParentCloseTimeNC () const
+    void setTotalDrops (std::uint64_t totDrops)
     {
-        return info_.parentCloseTime;
-    }
-
-    // DEPRECATED Use seq()
-    std::uint32_t getLedgerSeq () const
-    {
-        return info_.seq;
-    }
-
-    int getCloseResolution () const
-    {
-        return mCloseResolution;
-    }
-
-    bool getCloseAgree () const
-    {
-        return (mCloseFlags & sLCF_NoConsensusTime) == 0;
+        info_.drops = totDrops;
     }
 
     // close time functions
@@ -321,21 +264,6 @@ public:
     void setCloseTime (boost::posix_time::ptime);
 
     boost::posix_time::ptime getCloseTime () const;
-
-    // VFALCO NOTE We should ensure that there are
-    //             always valid state and tx maps
-    //             and get rid of these functions.
-    bool
-    haveStateMap() const
-    {
-        return stateMap_ != nullptr;
-    }
-
-    bool
-    haveTxMap() const
-    {
-        return txMap_ != nullptr;
-    }
 
     SHAMap const&
     stateMap() const
@@ -444,9 +372,6 @@ private:
     }
     bool saveValidatedLedger (bool current);
 
-    // ledger close flags
-    static const std::uint32_t sLCF_NoConsensusTime = 1;
-
     std::shared_ptr<SLE>
     peek (Keylet const& k) const;
 
@@ -461,19 +386,8 @@ private:
     void deprecatedUpdateCachedFees() const;
 
     // The basic Ledger structure, can be opened, closed, or synching
-    uint256 mParentHash;
-    uint256 mTransHash;
-    uint256 mAccountHash;
-    std::uint64_t mTotCoins;
 
-    // the resolution for this ledger close time (2-120 seconds)
-    int           mCloseResolution;
-
-    // flags indicating how this ledger close took place
-    std::uint32_t mCloseFlags;
-    bool mValidated = false;
     bool mValidHash = false;
-    bool mAccepted = false;
     bool mImmutable;
 
     std::shared_ptr<SHAMap> txMap_;
@@ -540,50 +454,6 @@ cachedRead (ReadView const& ledger, uint256 const& key,
     return ledger.read(keylet::unchecked(key));
 }
 
-/** Return the hash of a ledger by sequence.
-    The hash is retrieved by looking up the "skip list"
-    in the passed ledger. As the skip list is limited
-    in size, if the requested ledger sequence number is
-    out of the range of ledgers represented in the skip
-    list, then boost::none is returned.
-    @return The hash of the ledger with the
-            given sequence number or boost::none.
-*/
-boost::optional<uint256>
-hashOfSeq (Ledger& ledger, LedgerIndex seq,
-    beast::Journal journal);
-
-/** Find a ledger index from which we could easily get the requested ledger
-
-    The index that we return should meet two requirements:
-        1) It must be the index of a ledger that has the hash of the ledger
-            we are looking for. This means that its sequence must be equal to
-            greater than the sequence that we want but not more than 256 greater
-            since each ledger contains the hashes of the 256 previous ledgers.
-
-        2) Its hash must be easy for us to find. This means it must be 0 mod 256
-            because every such ledger is permanently enshrined in a LedgerHashes
-            page which we can easily retrieve via the skip list.
-*/
-inline
-LedgerIndex
-getCandidateLedger (LedgerIndex requested)
-{
-    return (requested + 255) & (~255);
-}
-
-/** Inject JSON describing ledger entry
-
-    Effects:
-        Adds the JSON description of `sle` to `jv`.
-
-        If `sle` holds an account root, also adds the
-        urlgravatar field JSON if sfEmailHash is present.
-*/
-void
-injectSLE (Json::Value& jv,
-    SLE const& sle);
-
 //------------------------------------------------------------------------------
 
 // VFALCO NOTE This is called from only one place
@@ -602,11 +472,6 @@ bool
 getTransactionMeta (Ledger const&,
     uint256 const& transID,
         TxMeta::pointer & txMeta);
-
-// VFALCO NOTE This is called from only one place
-bool
-getMetaHex (Ledger const& ledger,
-    uint256 const& transID, std::string & hex);
 
 void
 ownerDirDescriber (SLE::ref, bool, AccountID const& owner);

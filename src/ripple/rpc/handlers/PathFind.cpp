@@ -18,13 +18,20 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/paths/PathRequests.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
 
 namespace ripple {
 
 Json::Value doPathFind (RPC::Context& context)
 {
-    Ledger::pointer lpLedger = context.netOps.getClosedLedger();
+    auto lpLedger = context.netOps.getClosedLedger();
 
     if (!context.params.isMember (jss::subcommand) ||
         !context.params[jss::subcommand].isString ())
@@ -35,7 +42,7 @@ Json::Value doPathFind (RPC::Context& context)
     if (!context.infoSub)
         return rpcError (rpcNO_EVENTS);
 
-    std::string sSubCommand = context.params[jss::subcommand].asString ();
+    auto sSubCommand = context.params[jss::subcommand].asString ();
 
     if (sSubCommand == "create")
     {

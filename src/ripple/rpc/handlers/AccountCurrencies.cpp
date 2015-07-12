@@ -18,9 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/RippleState.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
-#include <ripple/app/paths/RippleState.h>
 
 namespace ripple {
 
@@ -29,8 +33,8 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     auto& params = context.params;
 
     // Get the current ledger
-    Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger (ledger, context);
 
     if (!ledger)
         return result;

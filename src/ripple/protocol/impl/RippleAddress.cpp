@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/crypto/ECDSA.h>
 #include <ripple/crypto/ECIES.h>
@@ -67,7 +67,7 @@ static
 uint128 PassPhraseToKey (std::string const& passPhrase)
 {
     return uint128::fromVoid(sha512Half_s(
-        make_Slice(passPhrase)).data());
+        makeSlice(passPhrase)).data());
 }
 
 static
@@ -414,7 +414,7 @@ bool RippleAddress::accountPublicVerify (
     }
 
     return verifySignature (getAccountPublic(),
-        sha512Half(make_Slice(message)), vucSig,
+        sha512Half(makeSlice(message)), vucSig,
             fullyCanonical);
 }
 
@@ -496,7 +496,7 @@ Blob RippleAddress::accountPrivateSign (Blob const& message) const
     }
 
     Blob result = ECDSASign(
-        sha512Half(make_Slice(message)), getAccountPrivate());
+        sha512Half(makeSlice(message)), getAccountPrivate());
     bool const ok = !result.empty();
 
     CondLog (!ok, lsWARNING, RippleAddress)

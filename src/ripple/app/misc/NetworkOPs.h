@@ -161,7 +161,7 @@ public:
 
     virtual void getBookPage (
         bool bAdmin,
-        Ledger::pointer lpLedger,
+        std::shared_ptr<ReadView const>& lpLedger,
         Book const& book,
         AccountID const& uTakerID,
         bool const bProof,

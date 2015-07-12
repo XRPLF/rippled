@@ -24,6 +24,16 @@
 #include <string>
 #include <utility>
 
+#if 0
+#ifdef _MSC_VER
+# define NORETURN __declspec(noreturn)
+#else
+# define NORETURN [[ noreturn ]]
+#endif
+#else
+# define NORETURN
+#endif
+
 namespace ripple {
 
 /*  Programming By Contract
@@ -34,9 +44,7 @@ namespace ripple {
 
 namespace detail {
 
-void
-accessViolation();
-
+NORETURN
 void
 throwException(
     std::exception_ptr ep);
@@ -45,6 +53,7 @@ throwException(
 
 template <class Exception,
     class... Args>
+NORETURN
 void
 Throw (Args&&... args)
 {
@@ -55,9 +64,28 @@ Throw (Args&&... args)
 }
 
 /** Called when faulty logic causes a broken invariant. */
+NORETURN
 void
 LogicError (
     std::string const& how);
+
+/** Called when a precondition is not met. */
+NORETURN
+void
+FailPrecondition (std::string const& m);
+
+/** Called to verify a precondition. */
+template <class Condition>
+void
+CheckPrecondition (Condition const& c,
+    std::string const& m)
+{
+    if (static_cast<bool>(c))
+        return;
+    FailPrecondition(m);
+}
+
+#define CHECK_PRECONDITION(c) CheckPrecondition((c), #c)
 
 } // ripple
 

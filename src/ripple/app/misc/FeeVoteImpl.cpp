@@ -148,7 +148,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
-    assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
+    assert ((lastClosedLedger->info().seq % 256) == 0);
 
     detail::VotableInteger<std::uint64_t> baseFeeVote (
         lastClosedLedger->getBaseFee (), target_.reference_fee);
@@ -162,7 +162,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     // get validations for ledger before flag
     ValidationSet const set =
         getApp().getValidations ().getValidations (
-            lastClosedLedger->getParentHash ());
+            lastClosedLedger->info().parentHash);
     for (auto const& e : set)
     {
         STValidation const& val = *e.second;

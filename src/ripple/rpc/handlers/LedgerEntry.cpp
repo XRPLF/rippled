@@ -19,7 +19,15 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/basics/strHex.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/LookupLedger.h>
 
 namespace ripple {
 
@@ -30,9 +38,8 @@ namespace ripple {
 // }
 Json::Value doLedgerEntry (RPC::Context& context)
 {
-    Ledger::pointer lpLedger;
-    Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.netOps);
+    std::shared_ptr<ReadView const> lpLedger;
+    auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -202,8 +209,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (uNodeIndex.isNonZero ())
     {
-        auto const sleNode = cachedRead(*lpLedger, uNodeIndex);
-
+        auto const sleNode = lpLedger->read(keylet::unchecked(uNodeIndex));
         if (context.params.isMember(jss::binary))
             bNodeBinary = context.params[jss::binary].asBool();
 

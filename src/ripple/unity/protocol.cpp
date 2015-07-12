@@ -20,8 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/protocol/impl/AccountID.cpp>
-#include <ripple/protocol/impl/AnyPublicKey.cpp>
-#include <ripple/protocol/impl/AnySecretKey.cpp>
 #include <ripple/protocol/impl/BuildInfo.cpp>
 #include <ripple/protocol/impl/ByteOrder.cpp>
 #include <ripple/protocol/impl/digest.cpp>
@@ -30,8 +28,10 @@
 #include <ripple/protocol/impl/Indexes.cpp>
 #include <ripple/protocol/impl/Keylet.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
+#include <ripple/protocol/impl/PublicKey.cpp>
 #include <ripple/protocol/impl/Quality.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
+#include <ripple/protocol/impl/SecretKey.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
 #include <ripple/protocol/impl/SField.cpp>
 #include <ripple/protocol/impl/Sign.cpp>
@@ -61,6 +61,7 @@
 #include <ripple/protocol/tests/BuildInfo.test.cpp>
 #include <ripple/protocol/tests/InnerObjectFormats.test.cpp>
 #include <ripple/protocol/tests/Issue.test.cpp>
+#include <ripple/protocol/tests/PublicKey_test.cpp>
 #include <ripple/protocol/tests/Quality.test.cpp>
 #include <ripple/protocol/tests/RippleAddress.test.cpp>
 #include <ripple/protocol/tests/STAmount.test.cpp>

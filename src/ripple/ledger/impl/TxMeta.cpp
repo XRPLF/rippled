@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/STAccount.h>
@@ -35,7 +35,7 @@ TxMeta::TxMeta (uint256 const& txid,
     , mLedger (ledger)
     , mNodes (sfAffectedNodes, 32)
 {
-    SerialIter sit (make_Slice(data));
+    SerialIter sit (makeSlice(data));
 
     STObject obj(sit, sfMetadata);
     mResult = obj.getFieldU8 (sfTransactionResult);

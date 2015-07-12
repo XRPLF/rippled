@@ -88,7 +88,7 @@ public:
         txnSeed.setSeedRandom ();
         // VFALCO Generators are no longer supported
         RippleAddress txnGenerator = txnSeed.createGeneratorPublic (txnSeed);
-        // VFALCO Use AnyPublicKey here
+        // VFALCO Use PublicKey here
         RippleAddress txnPublicAcct = txnSeed.createAccountPublic (txnGenerator, 1);
 
         STTx txn (ttACCOUNT_SET);

@@ -18,13 +18,19 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/utility/make_lock.h>
 
 namespace ripple {
 
-Json::Value doPeers (RPC::Context& context)
+namespace RPC {
+struct Context;
+}
+
+Json::Value doPeers (RPC::Context&)
 {
 
     Json::Value jvResult (Json::objectValue);

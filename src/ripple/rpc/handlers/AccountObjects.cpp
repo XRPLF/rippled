@@ -18,10 +18,19 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/GetAccountObjects.h>
+#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 #include <string>
 #include <sstream>
@@ -46,8 +55,8 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! params.isMember (jss::account))
         return RPC::missing_field_error (jss::account);
 
-    Ledger::pointer ledger;
-    auto result = RPC::lookupLedger (params, ledger, context.netOps);
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger (ledger, context);
     if (ledger == nullptr)
         return result;
 

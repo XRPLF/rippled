@@ -18,7 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
@@ -41,6 +47,27 @@ isHexTxID (std::string const& txid)
         });
 
     return (ret == txid.end ());
+}
+
+static
+bool
+getMetaHex (Ledger const& ledger,
+    uint256 const& transID, std::string& hex)
+{
+    SHAMapTreeNode::TNType type;
+    auto const item =
+        ledger.txMap().peekItem (transID, type);
+
+    if (!item)
+        return false;
+
+    if (type != SHAMapTreeNode::tnTRANSACTION_MD)
+        return false;
+
+    SerialIter it (item->slice());
+    it.getVL (); // skip transaction
+    hex = strHex (it.getVL ());
+    return true;
 }
 
 Json::Value doTx (RPC::Context& context)

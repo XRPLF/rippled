@@ -44,33 +44,20 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/types.h>
 #include <memory>
-// VFALCO TODO Use AnyPublicKey, AnySecretKey, AccountID
 
 namespace ripple {
 namespace test {
 
 namespace jtx {
 
-std::shared_ptr<Ledger const>
-Env::genesis()
-{
-    Account master("master", generateKeysFromSeed(
-        KeyType::secp256k1, RippleAddress::createSeedGeneric(
-            "masterpassphrase")));
-    auto const ledger =
-        std::make_shared<Ledger>(master.pk(),
-            SYSTEM_CURRENCY_START);
-    ledger->setClosed();
-    return ledger;
-}
-
 // VFALCO Could wrap the log in a Journal here
 Env::Env (beast::unit_test::suite& test_)
     : test(test_)
-    , master("master", generateKeysFromSeed(
-        KeyType::secp256k1, RippleAddress::createSeedGeneric(
-            "masterpassphrase")))
-    , closed_ (genesis())
+    , master("master", generateKeyPair(
+        KeyType::secp256k1,
+            generateSeed("masterpassphrase")))
+    , closed_ (std::make_shared<Ledger>(
+        create_genesis, config))
     , cachedSLEs_ (std::chrono::seconds(5), clock)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {
@@ -97,7 +84,7 @@ Env::close(
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        false, const_cast<Ledger&>(*closed_));
+        open_ledger, *closed_);
     next->setClosed();
 #if 0
     // Build a SHAMap, put all the transactions

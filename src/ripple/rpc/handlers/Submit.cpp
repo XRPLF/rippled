@@ -18,7 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/strHex.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
@@ -53,7 +61,7 @@ Json::Value doSubmit (RPC::Context& context)
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
 
-    SerialIter sitTrans (make_Slice(ret.first));
+    SerialIter sitTrans (makeSlice(ret.first));
 
     STTx::pointer stpTrans;
 

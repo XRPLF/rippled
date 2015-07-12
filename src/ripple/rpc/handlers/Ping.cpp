@@ -18,10 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/json/json_value.h>
 
 namespace ripple {
 
-Json::Value doPing (RPC::Context& context)
+namespace RPC {
+struct Context;
+} // RPC
+
+Json::Value doPing (RPC::Context&)
 {
     return Json::Value (Json::objectValue);
 }

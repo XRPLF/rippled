@@ -18,9 +18,18 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+
 #include <ripple/app/main/Application.h>
+#include <ripple/json/json_value.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/types.h>
+#include <ripple/rpc/impl/Utilities.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/AccountFromString.h>
+#include <ripple/rpc/impl/LookupLedger.h>
 
 namespace ripple {
 
@@ -37,8 +46,8 @@ Json::Value doAccountInfo (RPC::Context& context)
 {
     auto& params = context.params;
 
-    Ledger::pointer ledger;
-    Json::Value result = RPC::lookupLedger (params, ledger, context.netOps);
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger (ledger, context);
 
     if (!ledger)
         return result;
@@ -58,16 +67,13 @@ Json::Value doAccountInfo (RPC::Context& context)
     if (jvAccepted)
         return jvAccepted;
 
-    auto const sleAccepted = cachedRead(*ledger,
-        keylet::account(accountID).key, ltACCOUNT_ROOT);
-
+    auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
-        injectSLE(jvAccepted, *sleAccepted);
+        RPC::injectSLE(jvAccepted, *sleAccepted);
 
         // See if there's a SignerEntries for this account.
-        uint256 const signerListIndex = getSignerListIndex (accountID);
-        auto const signerList = cachedRead(*ledger, signerListIndex);
+        auto const signerList = ledger->read (keylet::signers(accountID));
 
         if (signerList)
         {

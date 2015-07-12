@@ -186,7 +186,7 @@ bool InboundLedger::tryLocal ()
 
     if (!mHaveTransactions)
     {
-        if (mLedger->getTransHash ().isZero ())
+        if (mLedger->info().txHash.isZero ())
         {
             if (m_journal.trace) m_journal.trace <<
                 "No TXNs to fetch";
@@ -197,7 +197,7 @@ bool InboundLedger::tryLocal ()
             TransactionStateSF filter;
 
             if (mLedger->txMap().fetchRoot (
-                mLedger->getTransHash (), &filter))
+                mLedger->info().txHash, &filter))
             {
                 auto h (mLedger->getNeededTransactionHashes (1, &filter));
 
@@ -213,7 +213,7 @@ bool InboundLedger::tryLocal ()
 
     if (!mHaveState)
     {
-        if (mLedger->getAccountHash ().isZero ())
+        if (mLedger->info().accountHash.isZero ())
         {
             if (m_journal.fatal) m_journal.fatal <<
                 "We are acquiring a ledger with a zero account hash";
@@ -225,7 +225,7 @@ bool InboundLedger::tryLocal ()
             AccountStateSF filter;
 
             if (mLedger->stateMap().fetchRoot (
-                mLedger->getAccountHash (), &filter))
+                mLedger->info().accountHash, &filter))
             {
                 auto h (mLedger->getNeededAccountStateHashes (1, &filter));
 
@@ -506,7 +506,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     }
 
     if (mLedger)
-        tmGL.set_ledgerseq (mLedger->getLedgerSeq ());
+        tmGL.set_ledgerseq (mLedger->info().seq);
 
     // If the peer has high latency, query extra deep
     if (peer && peer->isHighLatency ())
@@ -672,7 +672,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         if (m_journal.debug) m_journal.debug <<
             "Done:" << (mComplete ? " complete" : "") <<
                 (mFailed ? " failed " : " ") <<
-            mLedger->getLedgerSeq ();
+            mLedger->info().seq;
         sl.unlock ();
         done ();
     }
@@ -784,10 +784,10 @@ bool InboundLedger::takeHeader (std::string const& data)
 
     progress ();
 
-    if (mLedger->getTransHash ().isZero ())
+    if (mLedger->info().txHash.isZero ())
         mHaveTransactions = true;
 
-    if (mLedger->getAccountHash ().isZero ())
+    if (mLedger->info().accountHash.isZero ())
         mHaveState = true;
 
     mLedger->setAcquiring ();
@@ -823,7 +823,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->txMap().addRootNode (
-                mLedger->getTransHash (), *nodeDatait, snfWIRE, &tFilter);
+                mLedger->info().txHash, *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood())
                 return false;
         }
@@ -890,7 +890,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->stateMap().addRootNode (
-                mLedger->getAccountHash (), *nodeDatait, snfWIRE, &tFilter);
+                mLedger->info().accountHash, *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood ())
             {
                 if (m_journal.warning) m_journal.warning <<
@@ -949,7 +949,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 
     AccountStateSF tFilter;
     san += mLedger->stateMap().addRootNode (
-        mLedger->getAccountHash (), data, snfWIRE, &tFilter);
+        mLedger->info().accountHash, data, snfWIRE, &tFilter);
     return san.isGood();
 }
 
@@ -973,7 +973,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 
     TransactionStateSF tFilter;
     san += mLedger->txMap().addRootNode (
-        mLedger->getTransHash (), data, snfWIRE, &tFilter);
+        mLedger->info().txHash, data, snfWIRE, &tFilter);
     return san.isGood();
 }
 

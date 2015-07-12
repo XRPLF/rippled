@@ -61,7 +61,7 @@ Transaction::pointer Transaction::sharedTransaction (
 {
     try
     {
-        SerialIter sit (make_Slice(vucTransaction));
+        SerialIter sit (makeSlice(vucTransaction));
         std::string reason;
 
         return std::make_shared<Transaction> (std::make_shared<STTx> (sit),
@@ -130,7 +130,7 @@ Transaction::pointer Transaction::transactionFromSQL (
     std::uint32_t const inLedger =
         rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
 
-    SerialIter it (make_Slice(rawTxn));
+    SerialIter it (makeSlice(rawTxn));
     auto txn = std::make_shared<STTx> (it);
     std::string reason;
     auto tr = std::make_shared<Transaction> (txn, validate, reason);
@@ -182,7 +182,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
             auto ledger = getApp().getLedgerMaster ().
                     getLedgerBySeq (mInLedger);
             if (ledger)
-                ret[jss::date] = ledger->getCloseTimeNC ();
+                ret[jss::date] = ledger->info().closeTime;
         }
     }
 

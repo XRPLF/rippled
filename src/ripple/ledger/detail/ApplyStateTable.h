@@ -27,7 +27,7 @@
 #include <beast/utility/Journal.h>
 #include <memory>
 // VFALCO TODO Move TxMeta to ripple/ledger/
-#include <ripple/app/ledger/TxMeta.h>
+#include <ripple/ledger/TxMeta.h>
 
 namespace ripple {
 namespace detail {

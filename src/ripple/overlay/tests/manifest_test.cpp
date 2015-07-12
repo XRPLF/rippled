@@ -22,6 +22,7 @@
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/DBInit.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STExchange.h>
 #include <boost/filesystem.hpp>
@@ -85,18 +86,18 @@ public:
 
     Manifest
     make_Manifest
-        (AnySecretKey const& sk, AnyPublicKey const& spk, int seq,
+        (KeyType type, SecretKey const& sk, PublicKey const& spk, int seq,
          bool broken = false)
     {
-        auto const pk = sk.publicKey();
+        auto const pk = derivePublicKey(type, sk);
 
         STObject st(sfGeneric);
         set(st, sfSequence, seq);
         set(st, sfPublicKey, pk);
         set(st, sfSigningPubKey, spk);
 
-        sign(st, HashPrefix::manifest, sk);
-        expect(verify(st, HashPrefix::manifest, pk));
+        sign(st, HashPrefix::manifest, type, sk);
+        expect(verify(st, HashPrefix::manifest, pk, true));
 
         if (broken)
         {
@@ -191,19 +192,19 @@ public:
 
             beast::Journal journal;
 
-            auto const sk_a = AnySecretKey::make_ed25519 ();
-            auto const sk_b = AnySecretKey::make_ed25519 ();
-            auto const pk_a = sk_a.publicKey ();
-            auto const pk_b = sk_b.publicKey ();
-            auto const kp_a = AnySecretKey::make_secp256k1_pair ();
-            auto const kp_b = AnySecretKey::make_secp256k1_pair ();
+            auto const sk_a = randomSecretKey();
+            auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
+            auto const kp_a = randomKeyPair(KeyType::secp256k1);
+            auto const s_a0 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 0);
+            auto const s_a1 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 1);
 
-            auto const s_a0 = make_Manifest (sk_a, kp_a.second, 0);
-            auto const s_a1 = make_Manifest (sk_a, kp_a.second, 1);
-            auto const s_b0 = make_Manifest (sk_b, kp_b.second, 0);
-            auto const s_b1 = make_Manifest (sk_b, kp_b.second, 1);
+            auto const sk_b = randomSecretKey();
+            auto const pk_b = derivePublicKey(KeyType::ed25519, sk_b);
+            auto const kp_b = randomKeyPair(KeyType::secp256k1);
+            auto const s_b0 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 0);
+            auto const s_b1 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 1);
             auto const s_b2 =
-                make_Manifest (sk_b, kp_b.second, 2, true);  // broken
+                make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 2, true);  // broken
             auto const fake = s_b1.serialized + '\0';
 
             expect (cache.applyManifest (clone (s_a0), journal) == untrusted,

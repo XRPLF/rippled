@@ -18,7 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Manager.h>
+#include <ripple/rpc/Context.h>
 
 namespace ripple {
 

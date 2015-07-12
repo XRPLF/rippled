@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/AnyPublicKey.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/tokens.h>
 #include <cstring>
@@ -139,9 +139,8 @@ parseHexOrBase58 (std::string const& s)
         less secure than Bitcoin. So where there was no good reason
         to change something, it was not changed."
 */
-
 AccountID
-calcAccountID (AnyPublicKey const& pk)
+calcAccountID (PublicKey const& pk)
 {
     ripesha_hasher rsh;
     rsh(pk.data(), pk.size());

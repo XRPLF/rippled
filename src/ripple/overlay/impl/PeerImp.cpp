@@ -28,7 +28,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -539,7 +539,7 @@ PeerImp::onTimer (error_code const& ec)
     }
     else
     {
-        // We have an outstanding ping, raise latency        
+        // We have an outstanding ping, raise latency
         auto minLatency = std::chrono::duration_cast <std::chrono::milliseconds>
             (clock_type::now() - lastPingTime_);
 
@@ -1010,7 +1010,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    SerialIter sit (make_Slice(m->rawtransaction()));
+    SerialIter sit (makeSlice(m->rawtransaction()));
 
     try
     {
@@ -1147,13 +1147,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
         return;
 
+    auto const type = publicKeyType(
+        makeSlice(set.nodepubkey()));
+
     // VFALCO Magic numbers are bad
     // Roll this into a validation function
-    if (
+    if ((! type) ||
         (set.currenttxhash ().size () != 32) ||
-        (set.nodepubkey ().size () < 28) ||
         (set.signature ().size () < 56) ||
-        (set.nodepubkey ().size () > 128) ||
         (set.signature ().size () > 128)
     )
     {
@@ -1215,7 +1216,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     auto proposal = std::make_shared<LedgerProposal> (
         prevLedger, set.proposeseq (), proposeHash, set.closetime (),
-            signerPublic, suppression);
+            signerPublic, PublicKey(makeSlice(set.nodepubkey())),
+                suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose", std::bind(beast::weak_fn(
@@ -1424,7 +1426,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
     {
         STValidation::pointer val;
         {
-            SerialIter sit (make_Slice(m->validation()));
+            SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
         }
@@ -1437,7 +1439,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
         }
 
         if (! getApp().getHashRouter ().addSuppressionPeer(
-            sha512Half(make_Slice(m->validation())), id_))
+            sha512Half(makeSlice(m->validation())), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return;
@@ -2026,9 +2028,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         {
             ledger = getApp().getLedgerMaster ().getClosedLedger ();
 
-            if (ledger && !ledger->isClosed ())
+            if (ledger && ledger->info().open)
                 ledger = getApp().getLedgerMaster ().getLedgerBySeq (
-                    ledger->getLedgerSeq () - 1);
+                    ledger->info().seq - 1);
         }
         else
         {
@@ -2039,7 +2041,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         }
 
         if ((!ledger) || (packet.has_ledgerseq () && (
-            packet.ledgerseq () != ledger->getLedgerSeq ())))
+            packet.ledgerseq () != ledger->info().seq)))
         {
             charge (Resource::feeInvalidRequest);
 
@@ -2050,7 +2052,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
         }
 
-        if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() <
+        if (!packet.has_ledgerseq() && (ledger->info().seq <
             getApp().getLedgerMaster().getEarliestFetch()))
         {
             if (p_journal_.debug) p_journal_.debug <<
@@ -2061,7 +2063,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         // Fill out the reply
         uint256 lHash = ledger->getHash ();
         reply.set_ledgerhash (lHash.begin (), lHash.size ());
-        reply.set_ledgerseq (ledger->getLedgerSeq ());
+        reply.set_ledgerseq (ledger->info().seq);
         reply.set_type (packet.itype ());
 
         if (packet.itype () == protocol::liBASE)
@@ -2074,31 +2076,28 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 
-            if (ledger->haveStateMap())
+            auto const& stateMap = ledger->stateMap ();
+            if (stateMap.getHash() != zero)
             {
-                auto const& stateMap = ledger->stateMap ();
-                if (stateMap.getHash() != zero)
+                // return account state root node if possible
+                Serializer rootNode (768);
+                if (stateMap.getRootNode(rootNode, snfWIRE))
                 {
-                    // return account state root node if possible
-                    Serializer rootNode (768);
-                    if (stateMap.getRootNode(rootNode, snfWIRE))
+                    reply.add_nodes ()->set_nodedata (
+                        rootNode.getDataPtr (), rootNode.getLength ());
+
+                    if (ledger->info().txHash != zero)
                     {
-                        reply.add_nodes ()->set_nodedata (
-                            rootNode.getDataPtr (), rootNode.getLength ());
+                        auto const& txMap = ledger->txMap ();
 
-                        if (ledger->getTransHash () != zero && ledger->haveTxMap ())
+                        if (txMap.getHash() != zero)
                         {
-                            auto const& txMap = ledger->txMap ();
+                            rootNode.erase ();
 
-                            if (txMap.getHash() != zero)
-                            {
-                                rootNode.erase ();
-
-                                if (txMap.getRootNode (rootNode, snfWIRE))
-                                    reply.add_nodes ()->set_nodedata (
-                                        rootNode.getDataPtr (),
-                                            rootNode.getLength ());
-                            }
+                            if (txMap.getRootNode (rootNode, snfWIRE))
+                                reply.add_nodes ()->set_nodedata (
+                                    rootNode.getDataPtr (),
+                                    rootNode.getLength ());
                         }
                     }
                 }
@@ -2112,14 +2111,12 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         if (packet.itype () == protocol::liTX_NODE)
         {
-            assert (ledger->haveTxMap ());
             map = &ledger->txMap ();
             logMe += " TX:";
             logMe += to_string (map->getHash ());
         }
         else if (packet.itype () == protocol::liAS_NODE)
         {
-            assert (ledger->haveStateMap ());
             map = &ledger->stateMap ();
             logMe += " AS:";
             logMe += to_string (map->getHash ());

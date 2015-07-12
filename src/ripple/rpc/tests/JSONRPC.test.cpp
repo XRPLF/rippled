@@ -21,6 +21,7 @@
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <beast/unit_test/suite.h>
@@ -909,19 +910,10 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
-        std::string const secret = "masterpassphrase";
-        RippleAddress rootSeedMaster
-                = RippleAddress::createSeedGeneric (secret);
-
-        RippleAddress rootGeneratorMaster
-                = RippleAddress::createGeneratorPublic (rootSeedMaster);
-
-        RippleAddress rootAddress
-                = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-
-        std::uint64_t startAmount (100000);
-        Ledger::pointer ledger (std::make_shared <Ledger> (
-            rootAddress, startAmount));
+        Config const config;
+        auto const ledger =
+            std::make_shared<Ledger>(
+                create_genesis, config);
 
         using namespace detail;
         TxnSignApiFacade apiFacade (TxnSignApiFacade::noNetOPs, ledger);

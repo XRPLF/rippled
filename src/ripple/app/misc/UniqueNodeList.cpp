@@ -25,7 +25,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Time.h>
@@ -91,18 +91,6 @@ strJoin (Iterator first, Iterator last, std::string strSeparator)
     }
 
     return ossValues.str ();
-}
-
-static
-std::string
-encodeCredential (AnyPublicKey const& pk, unsigned char type)
-{
-    Blob buffer;
-    buffer.reserve(1 + pk.size());
-    buffer.push_back (type);
-    auto const data = pk.data();
-    buffer.insert (buffer.end(), data, data + pk.size());
-    return Base58::encodeWithCheck (buffer);
 }
 
 template <size_t I, class String>
@@ -229,7 +217,7 @@ private:
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
     hash_set<std::string>   mUNL;
-    hash_map<AnyPublicKey, std::string>  ephemeralValidatorKeys_;
+    hash_map<PublicKey, std::string>  ephemeralValidatorKeys_;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
@@ -260,8 +248,8 @@ public:
     // Get update times and start fetching and scoring as needed.
     void start();
 
-    void insertEphemeralKey (AnyPublicKey pk, std::string comment);
-    void deleteEphemeralKey (AnyPublicKey const& pk);
+    void insertEphemeralKey (PublicKey pk, std::string comment);
+    void deleteEphemeralKey (PublicKey const& pk);
 
     // Add a trusted node.  Called by RPC or other source.
     void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment);
@@ -487,14 +475,14 @@ void UniqueNodeListImp::start()
 
 //--------------------------------------------------------------------------
 
-void UniqueNodeListImp::insertEphemeralKey (AnyPublicKey pk, std::string comment)
+void UniqueNodeListImp::insertEphemeralKey (PublicKey pk, std::string comment)
 {
     ScopedUNLLockType sl (mUNLLock);
 
     ephemeralValidatorKeys_.insert (std::make_pair(std::move(pk), std::move(comment)));
 }
 
-void UniqueNodeListImp::deleteEphemeralKey (AnyPublicKey const& pk)
+void UniqueNodeListImp::deleteEphemeralKey (PublicKey const& pk)
 {
     ScopedUNLLockType sl (mUNLLock);
 
@@ -648,7 +636,7 @@ void UniqueNodeListImp::nodeScore()
 bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
 {
     auto const& blob = naNodePublic.getNodePublic();
-    AnyPublicKey const pk (blob.data(), blob.size());
+    PublicKey const pk (Slice(blob.data(), blob.size()));
 
     ScopedUNLLockType sl (mUNLLock);
 
@@ -932,7 +920,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
     {
         Json::Value node (Json::objectValue);
 
-        node["publicKey"]   = encodeCredential (key.first, TOKEN_NODE_PUBLIC);
+        node["publicKey"]   = toBase58(TokenType::TOKEN_NODE_PUBLIC, key.first);
         node["comment"]     = key.second;
 
         ret.append (node);
@@ -1599,7 +1587,7 @@ bool UniqueNodeListImp::responseFetch (std::string const& strDomain, const boost
             (void) bFound;
 
             uint256 iSha256 =
-                sha512Half(make_Slice(strSiteFile));
+                sha512Half(makeSlice(strSiteFile));
             bool bChangedB =
                 sdCurrent.iSha256 != iSha256;
 

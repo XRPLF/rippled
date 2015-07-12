@@ -18,11 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Quality.h>
+#include <boost/algorithm/string.hpp>
 
 namespace ripple {
 
@@ -71,6 +73,19 @@ getFees (ReadView const& view,
 }
 
 //------------------------------------------------------------------------------
+
+void addRaw (LedgerInfo const& info, Serializer& s)
+{
+    s.add32 (info.seq);
+    s.add64 (info.drops);
+    s.add256 (info.parentHash);
+    s.add256 (info.txHash);
+    s.add256 (info.accountHash);
+    s.add32 (info.parentCloseTime);
+    s.add32 (info.closeTime);
+    s.add8 (info.closeTimeResolution);
+    s.add8 (info.closeFlags);
+}
 
 bool
 isGlobalFrozen (ReadView const& view,
@@ -348,7 +363,7 @@ cdirFirst (ReadView const& view,
     return cdirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
-bool 
+bool
 cdirNext (ReadView const& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
@@ -386,6 +401,78 @@ cdirNext (ReadView const& view,
         " uDirEntry=" << uDirEntry <<
         " uEntryIndex=" << uEntryIndex;
     return true;
+}
+
+boost::optional<uint256>
+hashOfSeq (ReadView const& ledger, LedgerIndex seq,
+    beast::Journal journal)
+{
+    // Easy cases...
+    if (seq > ledger.seq())
+    {
+        if (journal.warning) journal.warning <<
+            "Can't get seq " << seq <<
+            " from " << ledger.seq() << " future";
+        return boost::none;
+    }
+    if (seq == ledger.seq())
+        return ledger.info().hash;
+    if (seq == (ledger.seq() - 1))
+        return ledger.info().parentHash;
+
+    // Within 256...
+    {
+        int diff = ledger.seq() - seq;
+        if (diff <= 256)
+        {
+            auto const hashIndex =
+                ledger.read(keylet::skip());
+            if (hashIndex)
+            {
+                assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
+                        (ledger.seq() - 1));
+                STVector256 vec = hashIndex->getFieldV256 (sfHashes);
+                if (vec.size () >= diff)
+                    return vec[vec.size () - diff];
+                if (journal.warning) journal.warning <<
+                    "Ledger " << ledger.seq() <<
+                    " missing hash for " << seq <<
+                    " (" << vec.size () << "," << diff << ")";
+            }
+            else
+            {
+                if (journal.warning) journal.warning <<
+                    "Ledger " << ledger.seq() <<
+                    ":" << ledger.info().hash << " missing normal list";
+            }
+        }
+        if ((seq & 0xff) != 0)
+        {
+            if (journal.debug) journal.debug <<
+                "Can't get seq " << seq <<
+                " from " << ledger.seq() << " past";
+            return boost::none;
+        }
+    }
+
+    // in skiplist
+    auto const hashIndex =
+        ledger.read(keylet::skip(seq));
+    if (hashIndex)
+    {
+        auto const lastSeq =
+            hashIndex->getFieldU32 (sfLastLedgerSequence);
+        assert (lastSeq >= seq);
+        assert ((lastSeq & 0xff) == 0);
+        auto const diff = (lastSeq - seq) >> 8;
+        STVector256 vec = hashIndex->getFieldV256 (sfHashes);
+        if (vec.size () > diff)
+            return vec[vec.size () - diff - 1];
+    }
+    if (journal.warning) journal.warning <<
+        "Can't get seq " << seq <<
+        " from " << ledger.seq() << " error";
+    return boost::none;
 }
 
 //------------------------------------------------------------------------------
@@ -444,7 +531,7 @@ dirFirst (ApplyView& view,
     return dirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
-bool 
+bool
 dirNext (ApplyView& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE>& sleNode,      // <-> current node

@@ -19,6 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/basics/strHex.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/impl/LookupLedger.h>
 
 namespace ripple {
 
@@ -28,17 +32,14 @@ namespace ripple {
 // }
 Json::Value doLedgerHeader (RPC::Context& context)
 {
-    Ledger::pointer lpLedger;
-    Json::Value jvResult = RPC::lookupLedger (
-        context.params, lpLedger, context.netOps);
+    std::shared_ptr<ReadView const> lpLedger;
+    auto jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
 
     Serializer  s;
-
-    lpLedger->addRaw (s);
-
+    addRaw (lpLedger->info(), s);
     jvResult[jss::ledger_data] = strHex (s.peekData ());
 
     // This information isn't verified: they should only use it if they trust

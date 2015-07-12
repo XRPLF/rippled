@@ -20,9 +20,16 @@
 #ifndef RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
 #define RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/Object.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/Handler.h>
 #include <ripple/server/Role.h>
 
 namespace Json {
@@ -31,6 +38,8 @@ class Object;
 
 namespace ripple {
 namespace RPC {
+
+struct Context;
 
 // ledger [id|index|current|closed] [full]
 // {
@@ -64,7 +73,7 @@ public:
 
 private:
     Context& context_;
-    Ledger::pointer ledger_;
+    std::shared_ptr<ReadView const> ledger_;
     Json::Value result_;
     int options_ = 0;
 };

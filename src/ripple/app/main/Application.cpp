@@ -59,6 +59,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
 #include <ripple/rpc/Manager.h>
@@ -760,7 +761,7 @@ public:
         {
             m_journal.info << "Starting new Ledger";
 
-            startNewLedger ();
+            startGenesisLedger ();
         }
         else if (startUp == Config::LOAD ||
                  startUp == Config::LOAD_FILE ||
@@ -781,10 +782,12 @@ public:
             if (!getConfig ().RUN_STANDALONE)
                 m_networkOPs->needNetworkLedger ();
 
-            startNewLedger ();
+            startGenesisLedger ();
         }
         else
-            startNewLedger ();
+        {
+            startGenesisLedger ();
+        }
 
         m_orderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
 
@@ -1035,7 +1038,7 @@ public:
 
 private:
     void updateTables ();
-    void startNewLedger ();
+    void startGenesisLedger ();
     Ledger::pointer getLastFullLedger();
     bool loadOldLedger (
         std::string const& ledgerID, bool replay, bool isFilename);
@@ -1045,39 +1048,20 @@ private:
 
 //------------------------------------------------------------------------------
 
-void ApplicationImp::startNewLedger ()
+void ApplicationImp::startGenesisLedger ()
 {
-    // New stuff.
-    RippleAddress   rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
-    RippleAddress   rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
-    RippleAddress   rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-
-    // Print enough information to be able to claim root account.
-    m_journal.info << "Root master seed: " << rootSeedMaster.humanSeed ();
-    m_journal.info << "Root account: " << toBase58(calcAccountID(rootAddress));
-
-    {
-        Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
-        assert (firstLedger->exists(keylet::account(
-            calcAccountID(rootAddress))));
-        // TODO(david): Add any default amendments
-        // TODO(david): Set default fee/reserve
-        firstLedger->getHash(); // updates the hash
-        firstLedger->setClosed ();
-        firstLedger->setAccepted ();
-        m_ledgerMaster->pushLedger (firstLedger);
-
-        Ledger::pointer secondLedger = std::make_shared<Ledger> (true, std::ref (*firstLedger));
-        secondLedger->setClosed ();
-        secondLedger->setAccepted ();
-
-        m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
-        openLedger_.emplace(secondLedger, getConfig(),
-            cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
-        m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
-        assert (secondLedger->exists(keylet::account(
-            calcAccountID(rootAddress))));
-    }
+    auto const genesis =
+        std::make_shared<Ledger const>(
+            create_genesis, getConfig());
+    auto const next = std::make_shared<Ledger>(
+        open_ledger, *genesis);
+    next->setClosed ();
+    next->setAccepted ();
+    m_networkOPs->setLastCloseTime (next->info().closeTime);
+    openLedger_.emplace(next, getConfig(),
+        cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
+    m_ledgerMaster->pushLedger (next,
+        std::make_shared<Ledger>(open_ledger, *next));
 }
 
 Ledger::pointer
@@ -1162,7 +1146,7 @@ bool ApplicationImp::loadOldLedger (
                      std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
                      std::uint32_t closeTimeResolution = 30;
                      bool closeTimeEstimated = false;
-                     std::uint64_t totalCoins = 0;
+                     std::uint64_t totalDrops = 0;
 
                      if (ledger.get().isMember ("accountState"))
                      {
@@ -1186,7 +1170,7 @@ bool ApplicationImp::loadOldLedger (
                           }
                           if (ledger.get().isMember ("total_coins"))
                           {
-                              totalCoins =
+                              totalDrops =
                                 beast::lexicalCastThrow<std::uint64_t>
                                     (ledger.get()["total_coins"].asString());
                           }
@@ -1199,7 +1183,7 @@ bool ApplicationImp::loadOldLedger (
                      else
                      {
                          loadLedger = std::make_shared<Ledger> (seq, closeTime);
-                         loadLedger->setTotalCoins(totalCoins);
+                         loadLedger->setTotalDrops(totalDrops);
 
                          for (Json::UInt index = 0; index < ledger.get().size(); ++index)
                          {
@@ -1275,14 +1259,14 @@ bool ApplicationImp::loadOldLedger (
 
             m_journal.info << "Loading parent ledger";
 
-            loadLedger = Ledger::loadByHash (replayLedger->getParentHash ());
+            loadLedger = Ledger::loadByHash (replayLedger->info().parentHash);
             if (!loadLedger)
             {
                 m_journal.info << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
-                    replayLedger->getParentHash(), 0, InboundLedger::fcGENERIC,
+                    replayLedger->info().parentHash, 0, InboundLedger::fcGENERIC,
                     stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
@@ -1298,9 +1282,9 @@ bool ApplicationImp::loadOldLedger (
 
         loadLedger->setClosed ();
 
-        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->getLedgerSeq ();
+        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->info().seq;
 
-        if (loadLedger->getAccountHash ().isZero ())
+        if (loadLedger->info().accountHash.isZero ())
         {
             m_journal.fatal << "Ledger is empty.";
             assert (false);
@@ -1321,12 +1305,13 @@ bool ApplicationImp::loadOldLedger (
             return false;
         }
 
-        m_ledgerMaster->setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
+        m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
 
-        Ledger::pointer openLedger = std::make_shared<Ledger> (false, std::ref (*loadLedger));
+        auto const openLedger =
+            std::make_shared<Ledger>(open_ledger, *loadLedger);
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
-        m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
+        m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, getConfig(),
             cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
 

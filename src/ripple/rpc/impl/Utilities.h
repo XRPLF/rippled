@@ -20,15 +20,37 @@
 #ifndef RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
 #define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
 
+#include <ripple/ledger/TxMeta.h>
+#include <ripple/app/tx/Transaction.h>
+
+namespace Json {
+class Value;
+}
+
 namespace ripple {
+
 namespace RPC {
+
+struct Context;
 
 void
 addPaymentDeliveredAmount (
     Json::Value&,
-    RPC::Context&,
+    Context&,
     Transaction::pointer,
     TxMeta::pointer);
+
+/** Inject JSON describing ledger entry
+
+    Effects:
+        Adds the JSON description of `sle` to `jv`.
+
+        If `sle` holds an account root, also adds the
+        urlgravatar field JSON if sfEmailHash is present.
+*/
+void
+injectSLE (Json::Value& jv,
+    SLE const& sle);
 
 } // RPC
 } // ripple

@@ -19,9 +19,18 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/json/json_value.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/types.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/rpc/impl/Utilities.h>
 #include <ripple/server/Role.h>
-#include <ripple/protocol/types.h>
 
 namespace ripple {
 
@@ -83,13 +92,13 @@ Json::Value doAccountTx (RPC::Context& context)
     }
     else
     {
-        Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (params, l, context.netOps);
+        std::shared_ptr<ReadView const> ledger;
+        auto ret = RPC::lookupLedger (ledger, context);
 
-        if (!l)
+        if (! ledger)
             return ret;
 
-        uLedgerMin = uLedgerMax = l->getLedgerSeq ();
+        uLedgerMin = uLedgerMax = ledger->info().seq;
     }
 
     Json::Value resumeToken;

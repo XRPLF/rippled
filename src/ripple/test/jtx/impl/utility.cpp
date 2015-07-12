@@ -46,14 +46,15 @@ sign (Json::Value& jv,
     Account const& account)
 {
     jv[jss::SigningPubKey] =
-        strHex(make_Slice(
-            account.pk().getAccountPublic()));
+        strHex(account.pk().slice());
     Serializer ss;
     ss.add32 (HashPrefix::txSign);
     parse(jv).add(ss);
-    jv[jss::TxnSignature] = strHex(make_Slice(
-        account.sk().accountPrivateSign(
-            ss.getData())));
+    auto const sig = ripple::sign(
+        *publicKeyType(account.pk().slice()),
+            account.sk(), ss.slice());
+    jv[jss::TxnSignature] =
+        strHex(Slice{ sig.data(), sig.size() });
 }
 
 void

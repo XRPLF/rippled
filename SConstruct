@@ -56,7 +56,7 @@ The following environment variables modify the build environment:
       If set, used to detect a toolchain.
 
     BOOST_ROOT
-      Path to the boost directory. 
+      Path to the boost directory.
     OPENSSL_ROOT
       Path to the openssl directory.
 
@@ -644,6 +644,15 @@ def get_soci_sources(style):
                        CPPPATH=cpp_path)
     return result
 
+def get_common_sources():
+    result = []
+    append_sources(
+        result,
+        'src/ripple/unity/secp256k1.cpp',
+        CPPPATH=[
+            'src/secp256k1',
+        ])
+    return result
 
 def get_classic_sources():
     result = []
@@ -664,8 +673,10 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/overlay', '.cpp'))
     append_sources(result, *list_sources('src/ripple/peerfinder', '.cpp'))
     append_sources(result, *list_sources('src/ripple/protocol', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
+   
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -676,8 +687,9 @@ def get_classic_sources():
         ])
 
     result += get_soci_sources('classic')
-    return result
+    result += get_common_sources()
 
+    return result
 
 def get_unity_sources():
     result = []
@@ -698,11 +710,10 @@ def get_unity_sources():
         'src/ripple/unity/peerfinder.cpp',
         'src/ripple/unity/json.cpp',
         'src/ripple/unity/protocol.cpp',
+        'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/test.cpp',
     )
-
-    result += get_soci_sources('unity')
 
     append_sources(
         result,
@@ -712,6 +723,9 @@ def get_unity_sources():
             'src/snappy/snappy',
             'src/snappy/config',
         ])
+
+    result += get_soci_sources('unity')
+    result += get_common_sources()
 
     return result
 
@@ -825,7 +839,6 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
-                'src/ripple/unity/rpcx.cpp',
                 'src/ripple/unity/server.cpp',
                 'src/ripple/unity/validators.cpp',
                 'src/ripple/unity/websocket02.cpp'
@@ -947,4 +960,3 @@ def do_count(target, source, env):
     print "Total unit test lines: %d" % lines
 
 PhonyTargets(env, count = do_count)
-

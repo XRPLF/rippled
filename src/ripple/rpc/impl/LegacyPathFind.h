@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RPC_LEGACYPATHFIND_H_INCLUDED
 #define RIPPLE_RPC_LEGACYPATHFIND_H_INCLUDED
 
+#include <atomic>
+
 namespace ripple {
 namespace RPC {
 

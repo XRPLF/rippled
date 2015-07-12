@@ -31,12 +31,12 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit)
 {
     // VFALCO This is making a needless copy
     auto const vl = sit.getVL();
-    SerialIter txnIt (make_Slice(vl));
+    SerialIter txnIt (makeSlice(vl));
 
     mTxn =      std::make_shared<STTx> (std::ref (txnIt));
     mRawMeta =  sit.getVL ();
     mMeta =     std::make_shared<TxMeta> (mTxn->getTransactionID (),
-        ledger->getLedgerSeq (), mRawMeta);
+        ledger->info().seq, mRawMeta);
     mAffected = mMeta->getAffectedAccounts ();
     mResult =   mMeta->getResultTER ();
     buildJson ();

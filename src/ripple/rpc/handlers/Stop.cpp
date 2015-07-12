@@ -18,11 +18,18 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/json/json_value.h>
+#include <ripple/rpc/impl/Handler.h>
 #include <beast/utility/make_lock.h>
 
 namespace ripple {
 
-Json::Value doStop (RPC::Context& context)
+namespace RPC {
+struct Context;
+}
+
+Json::Value doStop (RPC::Context&)
 {
     auto lock = beast::make_lock(getApp().getMasterMutex());
     getApp().signalStop ();

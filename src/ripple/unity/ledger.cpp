@@ -27,6 +27,7 @@
 #include <ripple/ledger/impl/OpenView.cpp>
 #include <ripple/ledger/impl/PaymentSandbox.cpp>
 #include <ripple/ledger/impl/RawStateTable.cpp>
+#include <ripple/ledger/impl/TxMeta.cpp>
 #include <ripple/ledger/impl/View.cpp>
 
 #include <ripple/ledger/tests/PaymentSandbox_test.cpp>
