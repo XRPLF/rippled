@@ -42,28 +42,39 @@ this class implements.
 class SetSignerList : public Transactor
 {
 private:
-    // Values determined during preCheck for use later.
+    // Values determined during preCompute for use later.
     enum Operation {unknown, set, destroy};
     Operation do_ {unknown};
     std::uint32_t quorum_ {0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
-    template <class... Args>
-    SetSignerList (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    SetSignerList (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
     TER doApply () override;
-    TER preCheck () override;
+    void preCompute() override;
 
 private:
-    // `signers` is sorted on return
+    static
+    std::tuple<TER, std::uint32_t,
+        std::vector<SignerEntries::SignerEntry>,
+            Operation>
+    determineOperation(STTx const& tx,
+        ApplyFlags flags, beast::Journal j);
+
+    static
     TER validateQuorumAndSignerEntries (
         std::uint32_t quorum,
-        std::vector<SignerEntries::SignerEntry>& signers) const;
+            std::vector<SignerEntries::SignerEntry> const& signers,
+                AccountID const& account,
+                    beast::Journal j);
 
     TER replaceSignerList (uint256 const& index);
     TER destroySignerList (uint256 const& index);

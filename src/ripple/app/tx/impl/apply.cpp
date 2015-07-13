@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CancelTicket.h>
 #include <ripple/app/tx/impl/Change.h>
@@ -34,68 +33,112 @@
 
 namespace ripple {
 
-template <class Processor,
-    class... Args>
 static
-std::pair<TER, bool>
-do_apply (Args&&... args)
+TER
+invoke_preflight (PreflightContext const& ctx)
 {
-    ApplyContext ctx (
-        std::forward<Args>(args)...);
-    Processor p(ctx);
-    return p();
-}
-
-template <class... Args>
-static
-std::pair<TER, bool>
-invoke (TxType type,
-    Args&&... args)
-{
-    switch(type)
+    switch(ctx.tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return do_apply< SetAccount    >(std::forward<Args>(args)...);
-    case ttOFFER_CANCEL:    return do_apply< CancelOffer   >(std::forward<Args>(args)...);
-    case ttOFFER_CREATE:    return do_apply< CreateOffer   >(std::forward<Args>(args)...);
-    case ttPAYMENT:         return do_apply< Payment       >(std::forward<Args>(args)...);
-    case ttREGULAR_KEY_SET: return do_apply< SetRegularKey >(std::forward<Args>(args)...);
-    case ttSIGNER_LIST_SET: return do_apply< SetSignerList >(std::forward<Args>(args)...);
-    case ttTICKET_CANCEL:   return do_apply< CancelTicket  >(std::forward<Args>(args)...);
-    case ttTICKET_CREATE:   return do_apply< CreateTicket  >(std::forward<Args>(args)...);
-    case ttTRUST_SET:       return do_apply< SetTrust      >(std::forward<Args>(args)...);
-
-    // VFALCO These are both the same?
+    case ttACCOUNT_SET:     return SetAccount       ::preflight(ctx);
+    case ttOFFER_CANCEL:    return CancelOffer      ::preflight(ctx);
+    case ttOFFER_CREATE:    return CreateOffer      ::preflight(ctx);
+    case ttPAYMENT:         return Payment          ::preflight(ctx);
+    case ttREGULAR_KEY_SET: return SetRegularKey    ::preflight(ctx);
+    case ttSIGNER_LIST_SET: return SetSignerList    ::preflight(ctx);
+    case ttTICKET_CANCEL:   return CancelTicket     ::preflight(ctx);
+    case ttTICKET_CREATE:   return CreateTicket     ::preflight(ctx);
+    case ttTRUST_SET:       return SetTrust         ::preflight(ctx);
     case ttAMENDMENT:
-    case ttFEE:             return do_apply< Change        >(std::forward<Args>(args)...);
+    case ttFEE:             return Change           ::preflight(ctx);
     default:
-        break;
+        return temUNKNOWN;
     }
-    return { temUNKNOWN, false };
 }
 
+static
 std::pair<TER, bool>
-apply (OpenView& view,
-    STTx const& tx, ApplyFlags flags,
-        Config const& config,
-            beast::Journal j)
+invoke_apply (ApplyContext& ctx)
+{
+    switch(ctx.tx.getTxnType())
+    {
+    case ttACCOUNT_SET:     { SetAccount    p(ctx); return p(); }
+    case ttOFFER_CANCEL:    { CancelOffer   p(ctx); return p(); }
+    case ttOFFER_CREATE:    { CreateOffer   p(ctx); return p(); }
+    case ttPAYMENT:         { Payment       p(ctx); return p(); }
+    case ttREGULAR_KEY_SET: { SetRegularKey p(ctx); return p(); }
+    case ttSIGNER_LIST_SET: { SetSignerList p(ctx); return p(); }
+    case ttTICKET_CANCEL:   { CancelTicket  p(ctx); return p(); }
+    case ttTICKET_CREATE:   { CreateTicket  p(ctx); return p(); }
+    case ttTRUST_SET:       { SetTrust      p(ctx); return p(); }
+    case ttAMENDMENT:
+    case ttFEE:             { Change        p(ctx); return p(); }
+    default:
+        return { temUNKNOWN, false };
+    }
+}
+
+//------------------------------------------------------------------------------
+
+TER
+preflight (Rules const& rules, STTx const& tx,
+    ApplyFlags flags,
+        Config const& config, beast::Journal j)
 {
     try
     {
-        return invoke (tx.getTxnType(),
+        PreflightContext pfctx(
+            tx, rules, flags, j);
+        return invoke_preflight(pfctx);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal) <<
+            "apply: " << e.what();
+        return tefEXCEPTION;
+    }
+    catch (...)
+    {
+        JLOG(j.fatal) <<
+            "apply: <unknown exception>";
+        return tefEXCEPTION;
+    }
+}
+
+std::pair<TER, bool>
+doapply(OpenView& view, STTx const& tx,
+    ApplyFlags flags, Config const& config,
+        beast::Journal j)
+{
+    try
+    {
+        ApplyContext ctx(
             view, tx, flags, config, j);
+        return invoke_apply(ctx);
     }
-    catch(std::exception const& e)
+    catch (std::exception const& e)
     {
         JLOG(j.fatal) <<
-            "Caught exception: " << e.what();
+            "apply: " << e.what();
         return { tefEXCEPTION, false };
     }
-    catch(...)
+    catch (...)
     {
         JLOG(j.fatal) <<
-            "Caught unknown exception";
+            "apply: <unknown exception>";
         return { tefEXCEPTION, false };
     }
+}
+
+std::pair<TER, bool>
+apply (OpenView& view, STTx const& tx,
+    ApplyFlags flags,
+        Config const& config, beast::Journal j)
+{
+    auto pfresult = preflight(view.rules(),
+        tx, flags, config, j);
+    if (pfresult != tesSUCCESS)
+        return { pfresult, false };
+    return doapply(view, tx, flags, config, j);
 }
 
 } // ripple

@@ -29,22 +29,25 @@
 namespace ripple {
 
 TER
-SetAccount::preCheck ()
+SetAccount::preflight (PreflightContext const& ctx)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    std::uint32_t const uTxFlags = tx.getFlags ();
 
     if (uTxFlags & tfAccountSetMask)
     {
-        j_.trace << "Malformed transaction: Invalid flags set.";
+        JLOG(j.trace) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = tx.getFieldU32 (sfSetFlag);
+    std::uint32_t const uClearFlag = tx.getFieldU32 (sfClearFlag);
 
     if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
     {
-        j_.trace << "Malformed transaction: Set and clear same flag.";
+        JLOG(j.trace) << "Malformed transaction: Set and clear same flag.";
         return temINVALID_FLAG;
     }
 
@@ -56,7 +59,7 @@ SetAccount::preCheck ()
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
-        j_.trace << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -68,7 +71,7 @@ SetAccount::preCheck ()
 
     if (bSetRequireDest && bClearRequireDest)
     {
-        j_.trace << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -80,29 +83,29 @@ SetAccount::preCheck ()
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
-        j_.trace << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
     // TransferRate
-    if (mTxn.isFieldPresent (sfTransferRate))
+    if (tx.isFieldPresent (sfTransferRate))
     {
-        std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = tx.getFieldU32 (sfTransferRate);
 
         if (uRate && (uRate < QUALITY_ONE))
         {
-            j_.trace << "Malformed transaction: Bad transfer rate.";
+            JLOG(j.trace) << "Malformed transaction: Bad transfer rate.";
             return temBAD_TRANSFER_RATE;
         }
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 TER
 SetAccount::doApply ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = tx().getFlags ();
 
     auto const sle = view().peek(
         keylet::account(account_));
@@ -110,8 +113,8 @@ SetAccount::doApply ()
     std::uint32_t const uFlagsIn = sle->getFieldU32 (sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = tx().getFieldU32 (sfSetFlag);
+    std::uint32_t const uClearFlag = tx().getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
     bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
@@ -259,9 +262,9 @@ SetAccount::doApply ()
     //
     // EmailHash
     //
-    if (mTxn.isFieldPresent (sfEmailHash))
+    if (tx().isFieldPresent (sfEmailHash))
     {
-        uint128 const uHash = mTxn.getFieldH128 (sfEmailHash);
+        uint128 const uHash = tx().getFieldH128 (sfEmailHash);
 
         if (!uHash)
         {
@@ -278,9 +281,9 @@ SetAccount::doApply ()
     //
     // WalletLocator
     //
-    if (mTxn.isFieldPresent (sfWalletLocator))
+    if (tx().isFieldPresent (sfWalletLocator))
     {
-        uint256 const uHash = mTxn.getFieldH256 (sfWalletLocator);
+        uint256 const uHash = tx().getFieldH256 (sfWalletLocator);
 
         if (!uHash)
         {
@@ -297,9 +300,9 @@ SetAccount::doApply ()
     //
     // MessageKey
     //
-    if (mTxn.isFieldPresent (sfMessageKey))
+    if (tx().isFieldPresent (sfMessageKey))
     {
-        Blob const messageKey = mTxn.getFieldVL (sfMessageKey);
+        Blob const messageKey = tx().getFieldVL (sfMessageKey);
 
         if (messageKey.size () > PUBLIC_BYTES_MAX)
         {
@@ -322,9 +325,9 @@ SetAccount::doApply ()
     //
     // Domain
     //
-    if (mTxn.isFieldPresent (sfDomain))
+    if (tx().isFieldPresent (sfDomain))
     {
-        Blob const domain = mTxn.getFieldVL (sfDomain);
+        Blob const domain = tx().getFieldVL (sfDomain);
 
         if (domain.size () > DOMAIN_BYTES_MAX)
         {
@@ -347,9 +350,9 @@ SetAccount::doApply ()
     //
     // TransferRate
     //
-    if (mTxn.isFieldPresent (sfTransferRate))
+    if (tx().isFieldPresent (sfTransferRate))
     {
-        std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = tx().getFieldU32 (sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {

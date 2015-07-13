@@ -39,20 +39,22 @@ class CreateOffer
     : public Transactor
 {
 public:
-    template <class... Args>
-    CreateOffer (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    CreateOffer (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
 
     /** Returns the reserve the account would have if an offer was added. */
     // VFALCO This function is not needed just inline the behavior
     STAmount
     getAccountReserve (SLE::pointer account); // const?
 
-    TER
-    preCheck () override;
+    void
+    preCompute() override;
 
     std::pair<TER, bool>
     applyGuts (ApplyView& view, ApplyView& view_cancel);

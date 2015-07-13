@@ -30,10 +30,56 @@
 
 namespace ripple {
 
+TER
+Transactor::preflight (PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    auto const id = tx.getAccountID(sfAccount);
+    if (id == zero)
+    {
+        JLOG(j.warning) << "Transactor::preflight: bad account id";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    // Extract signing key
+    // Transactions contain a signing key.  This allows us to trivially verify a
+    // transaction has at least been properly signed without going to disk.
+    // Each transaction also notes a source account id. This is used to verify
+    // that the signing key is associated with the account.
+    // XXX This could be a lot cleaner to prevent unnecessary copying.
+    auto const pk =
+        RippleAddress::createAccountPublic(
+            tx.getSigningPubKey());
+    if (!tx.isKnownGood ())
+    {
+        if (tx.isKnownBad () ||
+            (! (ctx.flags & tapNO_CHECK_SIGN) && !tx.checkSign(
+                (
+#if RIPPLE_ENABLE_MULTI_SIGN
+                    true
+#else
+                    ctx.flags & tapENABLE_TESTING
+#endif
+                ))))
+        {
+            tx.setBad();
+            j.debug << "apply: Invalid transaction (bad signature)";
+            return temINVALID;
+        }
+
+        tx.setGood();
+    }
+
+    return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+
 Transactor::Transactor(
     ApplyContext& ctx)
-    : mTxn (ctx.tx)
-    , ctx_ (ctx)
+    : ctx_ (ctx)
     , j_ (ctx.journal)
     , mHasAuthKey (false)
     , mSigMaster (false)
@@ -55,7 +101,7 @@ std::uint64_t Transactor::calculateBaseFee ()
 
 TER Transactor::payFee ()
 {
-    STAmount saPaid = mTxn.getTransactionFee ();
+    STAmount saPaid = tx().getTransactionFee ();
 
     if (!isLegalNet (saPaid))
         return temBAD_AMOUNT;
@@ -111,7 +157,7 @@ TER Transactor::checkSeq ()
     auto const sle = view().peek(
         keylet::account(account_));
 
-    std::uint32_t const t_seq = mTxn.getSequence ();
+    std::uint32_t const t_seq = tx().getSequence ();
     std::uint32_t const a_seq = sle->getFieldU32 (sfSequence);
 
     if (t_seq != a_seq)
@@ -124,7 +170,7 @@ TER Transactor::checkSeq ()
             return terPRE_SEQ;
         }
 
-        if (view().txExists(mTxn.getTransactionID ()))
+        if (view().txExists(tx().getTransactionID ()))
             return tefALREADY;
 
         j_.trace << "applyTransaction: has past sequence number " <<
@@ -132,91 +178,41 @@ TER Transactor::checkSeq ()
         return tefPAST_SEQ;
     }
 
-    if (mTxn.isFieldPresent (sfAccountTxnID) &&
-            (sle->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
+    if (tx().isFieldPresent (sfAccountTxnID) &&
+            (sle->getFieldH256 (sfAccountTxnID) != tx().getFieldH256 (sfAccountTxnID)))
         return tefWRONG_PRIOR;
 
-    if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
-            (view().seq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
+    if (tx().isFieldPresent (sfLastLedgerSequence) &&
+            (view().seq() > tx().getFieldU32 (sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
     sle->setFieldU32 (sfSequence, t_seq + 1);
 
     if (sle->isFieldPresent (sfAccountTxnID))
-        sle->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
+        sle->setFieldH256 (sfAccountTxnID, tx().getTransactionID ());
 
     return tesSUCCESS;
 }
 
 // check stuff before you bother to lock the ledger
-TER Transactor::preCheck ()
+void Transactor::preCompute ()
 {
-    TER result = preCheckAccount ();
-    if (result != tesSUCCESS)
-        return result;
-
-    return preCheckSigningKey ();
-}
-
-TER Transactor::preCheckAccount ()
-{
-    account_ = mTxn.getAccountID(sfAccount);
-
-    if (!account_)
-    {
-        j_.warning << "applyTransaction: bad transaction source id";
-        return temBAD_SRC_ACCOUNT;
-    }
-    return tesSUCCESS;
-}
-
-TER Transactor::preCheckSigningKey ()
-{
-    // Extract signing key
-    // Transactions contain a signing key.  This allows us to trivially verify a
-    // transaction has at least been properly signed without going to disk.
-    // Each transaction also notes a source account id. This is used to verify
-    // that the signing key is associated with the account.
-    // XXX This could be a lot cleaner to prevent unnecessary copying.
+    account_ = tx().getAccountID(sfAccount);
+    assert(account_ != zero);
     mSigningPubKey =
-        RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
-
-    // Consistency: really signed.
-    if (!mTxn.isKnownGood ())
-    {
-        if (mTxn.isKnownBad () ||
-            (!(view().flags() & tapNO_CHECK_SIGN) && !mTxn.checkSign(
-                (
-#if RIPPLE_ENABLE_MULTI_SIGN
-                    true
-#else
-                    view().flags() & tapENABLE_TESTING
-#endif
-                ))))
-        {
-            mTxn.setBad ();
-            j_.debug << "apply: Invalid transaction (bad signature)";
-            return temINVALID;
-        }
-
-        mTxn.setGood ();
-    }
-
-    return tesSUCCESS;
+        RippleAddress::createAccountPublic(
+            tx().getSigningPubKey());
 }
 
 TER Transactor::apply ()
 {
     // No point in going any further if the transaction fee is malformed.
-    STAmount const saTxnFee = mTxn.getTransactionFee ();
+    STAmount const saTxnFee = tx().getTransactionFee ();
 
     if (!saTxnFee.native () || saTxnFee.negative () || !isLegalNet (saTxnFee))
         return temBAD_FEE;
 
-    TER terResult = preCheck ();
-
-    if (terResult != tesSUCCESS)
-        return terResult;
+    preCompute();
 
     // Find source account
     auto const sle = view().peek (keylet::account(account_));
@@ -229,9 +225,9 @@ TER Transactor::apply ()
     {
         if (mustHaveValidAccount ())
         {
-            j_.trace <<
+            JLOG(j_.trace) <<
                 "applyTransaction: delay: source account does not exist " <<
-                toBase58(mTxn.getAccountID(sfAccount));
+                toBase58(tx().getAccountID(sfAccount));
             return terNO_ACCOUNT;
         }
     }
@@ -242,17 +238,17 @@ TER Transactor::apply ()
         mHasAuthKey     = sle->isFieldPresent (sfRegularKey);
     }
 
-    terResult = checkSeq ();
+    auto terResult = checkSeq ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terResult != tesSUCCESS) return terResult;
 
     terResult = payFee ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terResult != tesSUCCESS) return terResult;
 
     terResult = checkSign ();
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terResult != tesSUCCESS) return terResult;
 
     if (sle)
         view().update (sle);
@@ -514,7 +510,7 @@ TER Transactor::checkMultiSign ()
         return outer.ter;
 
     // Get the actual array of transaction signers.
-    STArray const& multiSigners (mTxn.getFieldArray (sfMultiSigners));
+    STArray const& multiSigners (tx().getFieldArray (sfMultiSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.
@@ -650,7 +646,7 @@ Transactor::operator()()
     JLOG(j_.trace) <<
         "applyTransaction>";
 
-    uint256 const& txID = mTxn.getTransactionID ();
+    uint256 const& txID = tx().getTransactionID ();
 
     if (!txID)
     {
@@ -665,15 +661,15 @@ Transactor::operator()()
 #ifdef BEAST_DEBUG
     {
         Serializer ser;
-        mTxn.add (ser);
+        tx().add (ser);
         SerialIter sit(ser.slice());
         STTx s2 (sit);
 
-        if (! s2.isEquivalent(mTxn))
+        if (! s2.isEquivalent(tx()))
         {
             JLOG(j_.fatal) <<
                 "Transaction serdes mismatch";
-            JLOG(j_.info) << to_string(mTxn.getJson (0));
+            JLOG(j_.info) << to_string(tx().getJson (0));
             JLOG(j_.fatal) << s2.getJson (0);
             assert (false);
         }
@@ -716,11 +712,11 @@ Transactor::operator()()
         ctx_.discard();
 
         auto const txnAcct = view().peek(
-            keylet::account(mTxn.getAccountID(sfAccount)));
+            keylet::account(tx().getAccountID(sfAccount)));
 
         if (txnAcct)
         {
-            std::uint32_t t_seq = mTxn.getSequence ();
+            std::uint32_t t_seq = tx().getSequence ();
             std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
 
             if (a_seq < t_seq)
@@ -729,7 +725,7 @@ Transactor::operator()()
                 terResult = tefPAST_SEQ;
             else
             {
-                STAmount fee        = mTxn.getTransactionFee ();
+                STAmount fee        = tx().getTransactionFee ();
                 STAmount balance    = txnAcct->getFieldAmount (sfBalance);
 
                 // We retry/reject the transaction if the account
@@ -774,7 +770,7 @@ Transactor::operator()()
             // encapsulation of STAmount here and use "special
             // knowledge" - namely that a native amount is
             // stored fully in the mantissa:
-            auto const fee = mTxn.getTransactionFee ();
+            auto const fee = tx().getTransactionFee ();
 
             // The transactor guarantees these will never trigger
             if (!fee.native () || fee.negative ())

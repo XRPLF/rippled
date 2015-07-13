@@ -32,14 +32,15 @@ class SetTrust
     : public Transactor
 {
 public:
-    template <class... Args>
-    SetTrust (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    SetTrust (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
-    TER preCheck () override;
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
     TER doApply () override;
 };
 
