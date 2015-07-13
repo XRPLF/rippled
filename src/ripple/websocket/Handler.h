@@ -463,9 +463,9 @@ public:
 
         cpClient->set_body (
             "<!DOCTYPE html><html><head><title>" + systemName () +
-            " Test</title></head>" + "<body><h1>" + systemName () +
-            " Test</h1><p>This page shows http(s) connectivity is working."
-            "</p></body></html>");
+            " Test page for rippled</title></head>" + "<body><h1>" +
+            systemName () + " Test</h1><p>This page shows rippled http(s) "
+            "connectivity is working./p></body></html>");
         return true;
     }
 
