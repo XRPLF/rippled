@@ -26,10 +26,11 @@ namespace ripple {
 
 // This class is only needed on add functions
 // sync filter for account state nodes during ledger sync
-class AccountStateSF : public SHAMapSyncFilter
+class AccountStateSF
+    : public SHAMapSyncFilter
 {
 public:
-    AccountStateSF();
+    AccountStateSF() = default;
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,

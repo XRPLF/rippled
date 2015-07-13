@@ -151,14 +151,14 @@ error_code_i fillHandler (Context& context,
     if (! getConfig ().RUN_STANDALONE &&
         handler->condition_ & NEEDS_CURRENT_LEDGER)
     {
-        if (getApp ().getLedgerMaster ().getValidatedLedgerAge () >
+        if (context.ledgerMaster.getValidatedLedgerAge () >
             Tuning::maxValidatedLedgerAge)
         {
             return rpcNO_CURRENT;
         }
 
-        auto const cID = context.netOps.getCurrentLedgerID ();
-        auto const vID = context.netOps.getValidatedSeq ();
+        auto const cID = context.ledgerMaster.getCurrentLedgerIndex ();
+        auto const vID = context.ledgerMaster.getValidLedgerIndex ();
 
         if (cID + 10 < vID)
         {
@@ -169,7 +169,7 @@ error_code_i fillHandler (Context& context,
     }
 
     if ((handler->condition_ & NEEDS_CLOSED_LEDGER) &&
-        !context.netOps.getClosedLedger ())
+        !context.ledgerMaster.getClosedLedger ())
     {
         return rpcNO_CLOSED;
     }

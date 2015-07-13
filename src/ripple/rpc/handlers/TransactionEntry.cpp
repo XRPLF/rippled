@@ -34,7 +34,7 @@ Json::Value doTransactionEntry (RPC::Context& context)
     Json::Value jvResult = RPC::lookupLedger (
         context.params,
         lpLedger,
-        context.netOps);
+        context.ledgerMaster);
 
     if (!lpLedger)
         return jvResult;

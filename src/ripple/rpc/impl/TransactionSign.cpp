@@ -109,7 +109,7 @@ void TxnSignApiFacade::snapshotAccountState (AccountID const& accountID)
     if (!netOPs_) // Unit testing.
         return;
 
-    ledger_ = netOPs_->getCurrentLedger ();
+    ledger_ = getApp().getLedgerMaster ().getCurrentLedger ();
     accountID_ = accountID;
     sle_ = cachedRead(*ledger_,
         keylet::account(accountID_).key, ltACCOUNT_ROOT);
@@ -266,7 +266,7 @@ int TxnSignApiFacade::getValidatedLedgerAge () const
     if (!netOPs_) // Unit testing.
         return 0;
 
-    return getApp( ).getLedgerMaster ().getValidatedLedgerAge ();
+    return getApp().getLedgerMaster ().getValidatedLedgerAge ();
 }
 
 bool TxnSignApiFacade::isLoadedCluster () const

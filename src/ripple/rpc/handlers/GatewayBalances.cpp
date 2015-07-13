@@ -50,7 +50,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
     // Get the current ledger
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
+    Json::Value result (RPC::lookupLedger (params, ledger, context.ledgerMaster));
 
     if (!ledger)
         return result;

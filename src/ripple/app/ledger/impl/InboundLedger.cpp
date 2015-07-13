@@ -156,7 +156,7 @@ bool InboundLedger::tryLocal ()
         {
             Blob data;
 
-            if (!getApp().getOPs ().getFetchPack (mHash, data))
+            if (!getApp().getLedgerMaster ().getFetchPack (mHash, data))
                 return false;
 
             if (m_journal.trace) m_journal.trace <<

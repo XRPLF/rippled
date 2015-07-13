@@ -127,13 +127,13 @@ public:
             m_name << " target age set to " << m_target_age;
     }
 
-    int getCacheSize ()
+    int getCacheSize () const
     {
         lock_guard lock (m_mutex);
         return m_cache_count;
     }
 
-    int getTrackSize ()
+    int getTrackSize () const
     {
         lock_guard lock (m_mutex);
         return m_cache.size ();

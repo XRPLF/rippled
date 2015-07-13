@@ -35,8 +35,8 @@ Json::Value doLedgerAccept (RPC::Context& context)
     {
         context.netOps.acceptLedger ();
 
-        jvResult[jss::ledger_current_index]
-                = context.netOps.getCurrentLedgerID ();
+        jvResult[jss::ledger_current_index] =
+            context.ledgerMaster.getCurrentLedgerIndex ();
     }
 
     return jvResult;

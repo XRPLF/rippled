@@ -24,7 +24,7 @@ namespace ripple {
 
 Json::Value doPathFind (RPC::Context& context)
 {
-    Ledger::pointer lpLedger = context.netOps.getClosedLedger();
+    Ledger::pointer lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember (jss::subcommand) ||
         !context.params[jss::subcommand].isString ())

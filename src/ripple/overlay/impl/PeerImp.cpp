@@ -539,7 +539,7 @@ PeerImp::onTimer (error_code const& ec)
     }
     else
     {
-        // We have an outstanding ping, raise latency        
+        // We have an outstanding ping, raise latency
         auto minLatency = std::chrono::duration_cast <std::chrono::milliseconds>
             (clock_type::now() - lastPingTime_);
 
@@ -1570,7 +1570,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                                 "GetObj: Full fetch pack for " << pLSeq;
 
                         pLSeq = obj.ledgerseq ();
-                        pLDo = !getApp().getOPs ().haveLedger (pLSeq);
+                        pLDo = !getApp().getLedgerMaster ().haveLedger (pLSeq);
 
                         if (!pLDo)
                                 p_journal_.debug <<
@@ -1589,7 +1589,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                         std::make_shared< Blob > (
                             obj.data ().begin (), obj.data ().end ()));
 
-                    getApp().getOPs ().addFetchPack (hash, data);
+                    getApp().getLedgerMaster ().addFetchPack (hash, data);
                 }
             }
         }
@@ -1599,7 +1599,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
             p_journal_.debug << "GetObj: Partial fetch pack for " << pLSeq;
 
         if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
-            getApp().getOPs ().gotFetchPack (progress, pLSeq);
+            getApp().getLedgerMaster ().gotFetchPack (progress, pLSeq);
     }
 }
 
@@ -1679,7 +1679,7 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
     memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
     getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-        std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (),
+        std::bind (&LedgerMaster::makeFetchPack, &getApp().getLedgerMaster (),
             std::placeholders::_1, std::weak_ptr<PeerImp> (shared_from_this ()),
                 packet, hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
 }

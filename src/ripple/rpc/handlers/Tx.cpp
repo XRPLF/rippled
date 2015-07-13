@@ -43,6 +43,19 @@ isHexTxID (std::string const& txid)
     return (ret == txid.end ());
 }
 
+static
+bool
+isValidated (RPC::Context& context, std::uint32_t seq, uint256 const& hash)
+{
+    if (!context.ledgerMaster.haveLedger (seq))
+        return false;
+
+    if (seq > context.ledgerMaster.getValidatedLedger ()->getLedgerSeq ())
+        return false;
+
+    return context.ledgerMaster.getHashBySeq (seq) == hash;
+}
+
 Json::Value doTx (RPC::Context& context)
 {
     if (!context.params.isMember (jss::transaction))
@@ -67,7 +80,7 @@ Json::Value doTx (RPC::Context& context)
     if (txn->getLedger () == 0)
         return ret;
 
-    if (auto lgr = context.netOps.getLedgerBySeq (txn->getLedger ()))
+    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
     {
         bool okay = false;
 
@@ -95,7 +108,8 @@ Json::Value doTx (RPC::Context& context)
         }
 
         if (okay)
-            ret[jss::validated] = context.netOps.isValidated (lgr);
+            ret[jss::validated] = isValidated (
+                context, lgr->getLedgerSeq (), lgr->getHash ());
     }
 
     return ret;

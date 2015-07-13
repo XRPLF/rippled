@@ -74,7 +74,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     {
         // The caller specified a ledger
         jvResult = RPC::lookupLedger (
-            context.params, lpLedger, context.netOps);
+            context.params, lpLedger, context.ledgerMaster);
         if (!lpLedger)
             return jvResult;
     }
@@ -87,7 +87,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
 
         context.loadType = Resource::feeHighBurdenRPC;
-        lpLedger = context.netOps.getClosedLedger();
+        lpLedger = context.ledgerMaster.getClosedLedger();
 
         PathRequest::pointer request;
         context.suspend ([&request, &context, &jvResult, &lpLedger](RPC::Callback const& c)
@@ -160,7 +160,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         {
             // The closed ledger is recent and any nodes made resident
             // have the best chance to persist
-            lpLedger = context.netOps.getClosedLedger();
+            lpLedger = context.ledgerMaster.getClosedLedger();
             cache = getApp().getPathRequests().getLineCache(lpLedger, false);
         }
 
@@ -205,7 +205,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         auto contextPaths = context.params.isMember(jss::paths) ?
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
-        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount, 
+        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount,
             jvSrcCurrencies, contextPaths, level);
         if (!pathFindResult.first)
             return pathFindResult.second;
@@ -222,9 +222,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
 }
 
 std::pair<bool, Json::Value>
-ripplePathFind (RippleLineCache::pointer const& cache, 
+ripplePathFind (RippleLineCache::pointer const& cache,
   AccountID const& raSrc, AccountID const& raDst,
-    STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies, 
+    STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
         boost::optional<Json::Value> const& contextPaths, int const& level)
 {
     FindPaths fp(

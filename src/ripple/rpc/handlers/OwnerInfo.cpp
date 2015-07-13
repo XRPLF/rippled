@@ -39,14 +39,14 @@ Json::Value doOwnerInfo (RPC::Context& context)
 
     // Get info on account.
 
-    auto const& closedLedger = context.netOps.getClosedLedger ();
+    auto const& closedLedger = context.ledgerMaster.getClosedLedger ();
     AccountID accountID;
     auto jAccepted = RPC::accountFromString (accountID, strIdent);
 
     ret[jss::accepted] = ! jAccepted ?
             context.netOps.getOwnerInfo (closedLedger, accountID) : jAccepted;
 
-    auto const& currentLedger = context.netOps.getCurrentLedger ();
+    auto const& currentLedger = context.ledgerMaster.getCurrentLedger ();
     auto jCurrent = RPC::accountFromString (accountID, strIdent);
 
     ret[jss::current] = ! jCurrent ?

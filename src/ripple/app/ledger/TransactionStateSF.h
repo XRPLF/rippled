@@ -27,10 +27,11 @@ namespace ripple {
 
 // This class is only needed on add functions
 // sync filter for transactions tree during ledger sync
-class TransactionStateSF : public SHAMapSyncFilter
+class TransactionStateSF
+    : public SHAMapSyncFilter
 {
 public:
-    TransactionStateSF();
+    TransactionStateSF() = default;
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
