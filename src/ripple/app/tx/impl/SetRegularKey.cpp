@@ -42,19 +42,19 @@ SetRegularKey::calculateBaseFee ()
 }
 
 TER
-SetRegularKey::preCheck ()
+SetRegularKey::preflight (PreflightContext const& ctx)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = ctx.tx.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
-        if (j_.trace) j_.trace <<
+        JLOG(ctx.j.trace) <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 TER
@@ -66,10 +66,10 @@ SetRegularKey::doApply ()
     if (mFeeDue == zero)
         sle->setFlag (lsfPasswordSpent);
 
-    if (mTxn.isFieldPresent (sfRegularKey))
+    if (tx().isFieldPresent (sfRegularKey))
     {
         sle->setAccountID (sfRegularKey,
-            mTxn.getAccountID (sfRegularKey));
+            tx().getAccountID (sfRegularKey));
     }
     else
     {

@@ -39,13 +39,16 @@ allowDeliverMin (ApplyView const& view)
 }
 
 TER
-Payment::preCheck ()
+Payment::preflight (PreflightContext const& ctx)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    std::uint32_t const uTxFlags = tx.getFlags ();
 
     if (uTxFlags & tfPaymentMask)
     {
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -53,20 +56,21 @@ Payment::preCheck ()
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     bool const limitQuality = uTxFlags & tfLimitQuality;
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
-    bool const bPaths = mTxn.isFieldPresent (sfPaths);
-    bool const bMax = mTxn.isFieldPresent (sfSendMax);
+    bool const bPaths = tx.isFieldPresent (sfPaths);
+    bool const bMax = tx.isFieldPresent (sfSendMax);
 
-    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
+    STAmount const saDstAmount (tx.getFieldAmount (sfAmount));
 
     STAmount maxSourceAmount;
+    auto const account = tx.getAccountID(sfAccount);
 
     if (bMax)
-        maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+        maxSourceAmount = tx.getFieldAmount (sfSendMax);
     else if (saDstAmount.native ())
         maxSourceAmount = saDstAmount;
     else
         maxSourceAmount = STAmount (
-            { saDstAmount.getCurrency (), account_ },
+            { saDstAmount.getCurrency (), account },
             saDstAmount.mantissa(), saDstAmount.exponent (),
             saDstAmount < zero);
 
@@ -79,134 +83,137 @@ Payment::preCheck ()
     if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
         return temBAD_AMOUNT;
 
-    AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
+    auto const uDstAccountID = tx.getAccountID (sfDestination);
 
     if (!uDstAccountID)
     {
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "Payment destination account not specified.";
         return temDST_NEEDED;
     }
     if (bMax && maxSourceAmount <= zero)
     {
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "bad max amount: " << maxSourceAmount.getFullText ();
         return temBAD_AMOUNT;
     }
     if (saDstAmount <= zero)
     {
-        j_.trace << "Malformed transaction: "<<
+        JLOG(j.trace) << "Malformed transaction: "<<
             "bad dst amount: " << saDstAmount.getFullText ();
         return temBAD_AMOUNT;
     }
     if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
     {
-        j_.trace <<"Malformed transaction: " <<
+        JLOG(j.trace) <<"Malformed transaction: " <<
             "Bad currency.";
         return temBAD_CURRENCY;
     }
-    if (account_ == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
+    if (account == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
         // You're signing yourself a payment.
         // If bPaths is true, you might be trying some arbitrage.
-        j_.trace << "Malformed transaction: " <<
-            "Redundant payment from " << to_string (account_) <<
+        JLOG(j.trace) << "Malformed transaction: " <<
+            "Redundant payment from " << to_string (account) <<
             " to self without path for " << to_string (uDstCurrency);
         return temREDUNDANT;
     }
     if (bXRPDirect && bMax)
     {
         // Consistent but redundant transaction.
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "SendMax specified for XRP to XRP.";
         return temBAD_SEND_XRP_MAX;
     }
     if (bXRPDirect && bPaths)
     {
         // XRP is sent without paths.
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "Paths specified for XRP to XRP.";
         return temBAD_SEND_XRP_PATHS;
     }
     if (bXRPDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "Partial payment specified for XRP to XRP.";
         return temBAD_SEND_XRP_PARTIAL;
     }
     if (bXRPDirect && limitQuality)
     {
         // Consistent but redundant transaction.
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "Limit quality specified for XRP to XRP.";
         return temBAD_SEND_XRP_LIMIT;
     }
     if (bXRPDirect && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
-        j_.trace << "Malformed transaction: " <<
+        JLOG(j.trace) << "Malformed transaction: " <<
             "No ripple direct specified for XRP to XRP.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
-    if (mTxn.isFieldPresent(sfDeliverMin))
+    if (tx.isFieldPresent(sfDeliverMin))
     {
-        if (! allowDeliverMin(view()))
-            return temMALFORMED;
-
         if (! partialPaymentAllowed)
         {
-            j_.trace << "Malformed transaction: Partial payment not "
+            JLOG(j.trace) << "Malformed transaction: Partial payment not "
                 "specified for " << jss::DeliverMin.c_str() << ".";
             return temBAD_AMOUNT;
         }
 
-        auto const dMin = mTxn.getFieldAmount(sfDeliverMin);
-        if (! isLegalNet(dMin) || dMin <= zero)
+        auto const dMin = tx.getFieldAmount(sfDeliverMin);
+        if (!isLegalNet(dMin) || dMin <= zero)
         {
-            j_.trace << "Malformed transaction: Invalid " <<
+            JLOG(j.trace) << "Malformed transaction: Invalid " <<
                 jss::DeliverMin.c_str() << " amount. " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin.issue() != saDstAmount.issue())
         {
-            j_.trace <<  "Malformed transaction: Dst issue differs "
+            JLOG(j.trace) <<  "Malformed transaction: Dst issue differs "
                 "from " << jss::DeliverMin.c_str() << ". " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin > saDstAmount)
         {
-            j_.trace << "Malformed transaction: Dst amount less than " <<
+            JLOG(j.trace) << "Malformed transaction: Dst amount less than " <<
                 jss::DeliverMin.c_str() << ". " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 TER
 Payment::doApply ()
 {
+    bool const deliverMin = tx().isFieldPresent(sfDeliverMin);
+
+    if (deliverMin)
+    {
+        if (! allowDeliverMin(view()))
+            return temMALFORMED;
+    }
+
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = tx().getFlags ();
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     bool const limitQuality = uTxFlags & tfLimitQuality;
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
-    bool const bPaths = mTxn.isFieldPresent (sfPaths);
-    bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    bool const deliverMin = mTxn.isFieldPresent(sfDeliverMin) &&
-        allowDeliverMin(view());
+    bool const bPaths = tx().isFieldPresent (sfPaths);
+    bool const bMax = tx().isFieldPresent (sfSendMax);
 
-    AccountID const uDstAccountID (mTxn.getAccountID (sfDestination));
-    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
+    AccountID const uDstAccountID (tx().getAccountID (sfDestination));
+    STAmount const saDstAmount (tx().getFieldAmount (sfAmount));
     STAmount maxSourceAmount;
     if (bMax)
-        maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+        maxSourceAmount = tx().getFieldAmount (sfSendMax);
     else if (saDstAmount.native ())
         maxSourceAmount = saDstAmount;
     else
@@ -269,7 +276,7 @@ Payment::doApply ()
         view().insert(sleDst);
     }
     else if ((sleDst->getFlags () & lsfRequireDestTag) &&
-                !mTxn.isFieldPresent (sfDestinationTag))
+                !tx().isFieldPresent (sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -299,7 +306,7 @@ Payment::doApply ()
         // transitive balances.
 
         // Copy paths into an editable class.
-        STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
+        STPathSet spsPaths = tx().getFieldPathSet (sfPaths);
 
         try
         {
@@ -345,7 +352,7 @@ Payment::doApply ()
                     rc.actualAmountOut != saDstAmount)
                 {
                     if (deliverMin && rc.actualAmountOut <
-                        mTxn.getFieldAmount (sfDeliverMin))
+                        tx().getFieldAmount (sfDeliverMin))
                         rc.setResult (tecPATH_PARTIAL);
                     else
                         ctx_.deliver (rc.actualAmountOut);
@@ -383,7 +390,7 @@ Payment::doApply ()
         // mPriorBalance is the balance on the sending account BEFORE the
         // fees were charged. We want to make sure we have enough reserve
         // to send. Allow final spend to use reserve for fee.
-        auto const mmm = std::max(mTxn.getTransactionFee (),
+        auto const mmm = std::max(tx().getTransactionFee (),
             STAmount (uReserve));
 
         if (mPriorBalance < saDstAmount + mmm)

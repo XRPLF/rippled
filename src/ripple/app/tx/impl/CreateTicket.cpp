@@ -26,24 +26,24 @@
 namespace ripple {
 
 TER
-CreateTicket::preCheck ()
+CreateTicket::preflight (PreflightContext const& ctx)
 {
 #if ! RIPPLE_ENABLE_TICKETS
-    if (! (view().flags() & tapENABLE_TESTING))
+    if (! (ctx.flags & tapENABLE_TESTING))
         return temDISABLED;
 #endif
 
-    if (mTxn.isFieldPresent (sfExpiration))
+    if (ctx.tx.isFieldPresent (sfExpiration))
     {
-        if (mTxn.getFieldU32 (sfExpiration) == 0)
+        if (ctx.tx.getFieldU32 (sfExpiration) == 0)
         {
-            j_.warning <<
+            JLOG(ctx.j.warning) <<
                 "Malformed transaction: bad expiration";
             return temBAD_EXPIRATION;
         }
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 STAmount
@@ -65,25 +65,25 @@ CreateTicket::doApply ()
 
     std::uint32_t expiration (0);
 
-    if (mTxn.isFieldPresent (sfExpiration))
+    if (tx().isFieldPresent (sfExpiration))
     {
-        expiration = mTxn.getFieldU32 (sfExpiration);
+        expiration = tx().getFieldU32 (sfExpiration);
 
         if (view().parentCloseTime() >= expiration)
             return tesSUCCESS;
     }
 
     SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
-        getTicketIndex (account_, mTxn.getSequence ()));
+        getTicketIndex (account_, tx().getSequence ()));
     sleTicket->setAccountID (sfAccount, account_);
-    sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
+    sleTicket->setFieldU32 (sfSequence, tx().getSequence ());
     if (expiration != 0)
         sleTicket->setFieldU32 (sfExpiration, expiration);
     view().insert (sleTicket);
 
-    if (mTxn.isFieldPresent (sfTarget))
+    if (tx().isFieldPresent (sfTarget))
     {
-        AccountID const target_account (mTxn.getAccountID (sfTarget));
+        AccountID const target_account (tx().getAccountID (sfTarget));
 
         SLE::pointer sleTarget = view().peek (keylet::account(target_account));
 

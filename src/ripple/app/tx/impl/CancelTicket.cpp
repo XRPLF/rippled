@@ -26,19 +26,19 @@
 namespace ripple {
 
 TER
-CancelTicket::preCheck()
+CancelTicket::preflight (PreflightContext const& ctx)
 {
 #if ! RIPPLE_ENABLE_TICKETS
-    if (! (view().flags() & tapENABLE_TESTING))
+    if (! (ctx.flags & tapENABLE_TESTING))
         return temDISABLED;
 #endif
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 TER
 CancelTicket::doApply ()
 {
-    uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
+    uint256 const ticketId = tx().getFieldH256 (sfTicketID);
 
     // VFALCO This is highly suspicious, we're requiring that the
     //        transaction provide the return value of getTicketIndex?
