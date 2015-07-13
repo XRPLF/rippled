@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/validators/Manager.h>
+#include <ripple/validators/ValidatorManager.h>
 #include <ripple/validators/make_Manager.h>
 #include <ripple/validators/impl/ConnectionImp.h>
 #include <ripple/validators/impl/Logic.h>

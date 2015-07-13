@@ -29,7 +29,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Coroutine.h>
 #include <beast/crypto/base64.h>

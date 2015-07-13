@@ -39,7 +39,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
-#include <ripple/validators/Manager.h>
+#include <ripple/validators/ValidatorManager.h>
 #include <algorithm>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>
@@ -377,7 +377,7 @@ public:
     #endif
 
         {
-            OpenView view(&*ledger); 
+            OpenView view(&*ledger);
             for (auto const& it : mHeldTransactions)
             {
                 ApplyFlags tepFlags = tapNONE;

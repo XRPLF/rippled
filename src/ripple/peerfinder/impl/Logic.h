@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
-#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Bootcache.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>

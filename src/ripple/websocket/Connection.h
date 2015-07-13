@@ -31,7 +31,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Port.h>
 #include <ripple/json/to_string.h>
