@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 
 namespace ripple {
 

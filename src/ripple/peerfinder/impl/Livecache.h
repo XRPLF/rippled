@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
-#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Tuning.h>
 #include <beast/chrono/chrono_io.h>

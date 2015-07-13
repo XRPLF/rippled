@@ -3351,10 +3351,10 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderConfig.cpp">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderConfig.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderManager.cpp">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
@@ -3387,7 +3387,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\make_Manager.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Manager.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\PeerfinderManager.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>
     <None Include="..\..\src\ripple\peerfinder\README.md">
@@ -3750,18 +3750,18 @@
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
       <Filter>ripple\resource\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\resource\impl\ResourceManager.cpp">
       <Filter>ripple\resource\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
       <Filter>ripple\resource\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\Manager.h">
-      <Filter>ripple\resource</Filter>
-    </ClInclude>
     <None Include="..\..\src\ripple\resource\README.md">
       <Filter>ripple\resource</Filter>
     </None>
+    <ClInclude Include="..\..\src\ripple\resource\ResourceManager.h">
+      <Filter>ripple\resource</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\resource\tests\Logic.test.cpp">
       <Filter>ripple\resource\tests</Filter>
     </ClCompile>
@@ -3771,7 +3771,7 @@
     <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrencies.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrenciesHandler.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountInfo.cpp">
@@ -3837,7 +3837,7 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerAccept.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerCleaner.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerCleanerHandler.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerClosed.cpp">
@@ -3894,10 +3894,10 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\ServerState.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\Sign.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignFor.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignFor.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignHandler.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Stop.cpp">
@@ -4266,7 +4266,7 @@
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\flags.cpp">
       <Filter>ripple\test\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\json.cpp">
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\jtx_json.cpp">
       <Filter>ripple\test\jtx\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\memo.cpp">
@@ -4314,10 +4314,10 @@
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\utility.cpp">
       <Filter>ripple\test\jtx\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\jtx\json.h">
+    <ClInclude Include="..\..\src\ripple\test\jtx\JTx.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\JTx.h">
+    <ClInclude Include="..\..\src\ripple\test\jtx\jtx_json.h">
       <Filter>ripple\test\jtx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\memo.h">
@@ -4509,9 +4509,6 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
       <Filter>ripple\validators\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
-      <Filter>ripple\validators\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
       <Filter>ripple\validators\impl</Filter>
     </ClInclude>
@@ -4524,15 +4521,18 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
       <Filter>ripple\validators\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorManager.cpp">
+      <Filter>ripple\validators\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\make_Manager.h">
-      <Filter>ripple\validators</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\Manager.h">
       <Filter>ripple\validators</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
       <Filter>ripple\validators\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\ValidatorManager.h">
+      <Filter>ripple\validators</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>

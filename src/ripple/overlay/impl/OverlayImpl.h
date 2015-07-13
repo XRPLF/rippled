@@ -28,8 +28,8 @@
 #include <ripple/basics/Resolver.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/peerfinder/Manager.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/strand.hpp>

@@ -19,10 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
-    
+
 namespace ripple {
 namespace Resource {
 

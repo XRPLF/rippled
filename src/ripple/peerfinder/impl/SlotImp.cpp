@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
-#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Tuning.h>
 
 namespace ripple {

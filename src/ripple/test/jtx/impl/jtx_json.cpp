@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx/json.h>
+#include <ripple/test/jtx/jtx_json.h>
 #include <ripple/test/jtx/utility.h>
 #include <ripple/json/json_reader.h>
 

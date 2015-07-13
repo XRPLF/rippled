@@ -24,7 +24,7 @@
 #include <ripple/resource/impl/Fees.cpp>
 #include <ripple/resource/impl/Key.h>
 #include <ripple/resource/impl/Kind.h>
-#include <ripple/resource/impl/Manager.cpp>
+#include <ripple/resource/impl/ResourceManager.cpp>
 #include <ripple/resource/impl/Tuning.h>
 #include <ripple/resource/tests/Logic.test.cpp>
 

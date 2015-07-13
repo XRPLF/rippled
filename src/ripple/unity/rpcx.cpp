@@ -33,7 +33,7 @@
 #include <ripple/rpc/impl/Utilities.cpp>
 
 #include <ripple/rpc/handlers/Handlers.h>
-#include <ripple/rpc/handlers/AccountCurrencies.cpp>
+#include <ripple/rpc/handlers/AccountCurrenciesHandler.cpp>
 #include <ripple/rpc/handlers/AccountInfo.cpp>
 #include <ripple/rpc/handlers/AccountLines.cpp>
 #include <ripple/rpc/handlers/AccountObjects.cpp>
@@ -53,7 +53,7 @@
 #include <ripple/rpc/handlers/Internal.cpp>
 #include <ripple/rpc/handlers/Ledger.cpp>
 #include <ripple/rpc/handlers/LedgerAccept.cpp>
-#include <ripple/rpc/handlers/LedgerCleaner.cpp>
+#include <ripple/rpc/handlers/LedgerCleanerHandler.cpp>
 #include <ripple/rpc/handlers/LedgerClosed.cpp>
 #include <ripple/rpc/handlers/LedgerCurrent.cpp>
 #include <ripple/rpc/handlers/LedgerData.cpp>
@@ -72,7 +72,7 @@
 #include <ripple/rpc/handlers/RipplePathFind.cpp>
 #include <ripple/rpc/handlers/ServerInfo.cpp>
 #include <ripple/rpc/handlers/ServerState.cpp>
-#include <ripple/rpc/handlers/Sign.cpp>
+#include <ripple/rpc/handlers/SignHandler.cpp>
 #include <ripple/rpc/handlers/SignFor.cpp>
 #include <ripple/rpc/handlers/Stop.cpp>
 #include <ripple/rpc/handlers/Submit.cpp>

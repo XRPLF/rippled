@@ -21,7 +21,7 @@
 #define RIPPLE_SERVER_MAKE_SERVERHANDLER_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <ripple/server/ServerHandler.h>
 #include <beast/threads/Stoppable.h>
 #include <boost/asio/io_service.hpp>
