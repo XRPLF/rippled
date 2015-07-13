@@ -147,10 +147,7 @@ class View_test
     testLedger()
     {
         using namespace jtx;
-        Account const master("master");
-        auto const ledger =
-            std::make_shared<Ledger>(
-                master.pk(), 1000000000);
+        auto const ledger = Env::genesis();
         wipe(*ledger);
         ReadView& v = *ledger;
         succ(v, 0, boost::none);
@@ -391,10 +388,7 @@ class View_test
         // ApplyView on that, then another ApplyView,
         // erase the item, apply.
         {
-            Account const master("master");
-            auto const ledger =
-                std::make_shared<Ledger>(
-                    master.pk(), 1000000000);
+            auto const ledger = Env::genesis();
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView& v0 = *ledger;

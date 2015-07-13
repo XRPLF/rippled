@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <beast/cxx14/type_traits.h> // <type_traits>
@@ -35,22 +36,20 @@ namespace ripple {
 /** An immutable linear range of bytes.
 
     A fully constructed Slice is guaranteed to be in a valid state.
-    Default construction, construction from nullptr, and zero-byte
-    ranges are disallowed. A Slice is lightweight and copyable, it
-    retains no ownership of the underlying memory.
+    A Slice is lightweight and copyable, it retains no ownership
+    of the underlying memory.
 */
 class Slice
 {
 private:
     std::uint8_t const* data_;
-    std::size_t size_;
+    std::size_t size_ = 0;
 
 public:
-    // Disallowed
-    Slice() = delete;
+    /** Default constructed Slice has length 0. */
+    Slice() = default;
 
     Slice (Slice const&) = default;
-    
     Slice& operator= (Slice const&) = default;
 
     /** Create a slice pointing to existing memory. */
@@ -63,9 +62,16 @@ public:
         assert(size_ > 0);
     }
 
+    /** Return `true` if the byte range is empty. */
+    bool
+    empty() const noexcept
+    {
+        return size_ == 0;
+    }
+
     /** Returns the number of bytes in the storage.
 
-        This will never be zero.
+        This may be zero for an empty range.
     */
     std::size_t
     size() const noexcept
@@ -82,7 +88,37 @@ public:
     {
         return data_;
     }
+
+    /** Access raw bytes. */
+    std::uint8_t
+    operator[](std::size_t i) const noexcept
+    {
+        assert(i < size_);
+        return data_[i];
+    }
+
+    /** Advance the buffer. */
+    /** @{ */
+    Slice&
+    operator+= (std::size_t n)
+    {
+        if (n > size_)
+            throw std::domain_error("too small");
+        data_ += n;
+        size_ -= n;
+        return *this;
+    }
+
+    Slice
+    operator+ (std::size_t n) const
+    {
+        Slice temp = *this;
+        return temp += n;
+    }
+    /** @} */
 };
+
+//------------------------------------------------------------------------------
 
 template <class Hasher>
 inline
@@ -131,14 +167,14 @@ std::enable_if_t<
         std::is_same<T, unsigned char>::value,
     Slice
 >
-make_Slice (std::vector<T, Alloc> const& v)
+makeSlice (std::vector<T, Alloc> const& v)
 {
     return Slice(v.data(), v.size());
 }
 
 template <class Traits, class Alloc>
 Slice
-make_Slice (std::basic_string<char, Traits, Alloc> const& s)
+makeSlice (std::basic_string<char, Traits, Alloc> const& s)
 {
     return Slice(s.data(), s.size());
 }

@@ -28,7 +28,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -1010,7 +1010,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         return;
     }
 
-    SerialIter sit (make_Slice(m->rawtransaction()));
+    SerialIter sit (makeSlice(m->rawtransaction()));
 
     try
     {
@@ -1147,13 +1147,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
         return;
 
+    auto const type = publicKeyType(
+        makeSlice(set.nodepubkey()));
+
     // VFALCO Magic numbers are bad
     // Roll this into a validation function
-    if (
+    if ((! type) ||
         (set.currenttxhash ().size () != 32) ||
-        (set.nodepubkey ().size () < 28) ||
         (set.signature ().size () < 56) ||
-        (set.nodepubkey ().size () > 128) ||
         (set.signature ().size () > 128)
     )
     {
@@ -1215,7 +1216,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     auto proposal = std::make_shared<LedgerProposal> (
         prevLedger, set.proposeseq (), proposeHash, set.closetime (),
-            signerPublic, suppression);
+            signerPublic, PublicKey(makeSlice(set.nodepubkey())),
+                suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose", std::bind(beast::weak_fn(
@@ -1424,7 +1426,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
     {
         STValidation::pointer val;
         {
-            SerialIter sit (make_Slice(m->validation()));
+            SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
         }
@@ -1437,7 +1439,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
         }
 
         if (! getApp().getHashRouter ().addSuppressionPeer(
-            sha512Half(make_Slice(m->validation())), id_))
+            sha512Half(makeSlice(m->validation())), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return;

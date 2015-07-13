@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/RipplePublicKey.h>
@@ -48,7 +48,7 @@ public:
 
         // Check node signing.
         Blob vucTextSrc = strCopy ("Hello, nurse!");
-        uint256 uHash   = sha512Half(make_Slice(vucTextSrc));
+        uint256 uHash   = sha512Half(makeSlice(vucTextSrc));
         Blob vucTextSig;
 
         naNodePrivate.signNodePrivate (uHash, vucTextSig);

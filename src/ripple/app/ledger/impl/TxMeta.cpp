@@ -35,7 +35,7 @@ TxMeta::TxMeta (uint256 const& txid,
     , mLedger (ledger)
     , mNodes (sfAffectedNodes, 32)
 {
-    SerialIter sit (make_Slice(data));
+    SerialIter sit (makeSlice(data));
 
     STObject obj(sit, sfMetadata);
     mResult = obj.getFieldU8 (sfTransactionResult);

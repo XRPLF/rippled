@@ -82,10 +82,10 @@ public:
 
     /** Construct the genesis ledger.
 
-        @param masterPublicKey The public of the account that
-               will hold `startAmount` XRP in drops.
+        @param masterAccountID The public of the account that
+               will hold `balanceInDrops` XRP in drops.
     */
-    Ledger (RippleAddress const& masterPublicKey,
+    Ledger (AccountID const& masterAccountID,
         std::uint64_t balanceInDrops);
 
     // Used for ledgers loaded from JSON files

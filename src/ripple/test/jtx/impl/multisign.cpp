@@ -102,17 +102,18 @@ msig::operator()(Env const& env, JTx& jt) const
             auto const& e = accounts[i];
             auto& jo = js[i]["SigningAccount"];
             jo[jss::Account] = e.human();
-            jo[jss::SigningPubKey] = strHex(make_Slice(
-                e.pk().getAccountPublic()));
+            jo[jss::SigningPubKey] = strHex(e.pk().slice());
 
             Serializer ss;
             ss.add32 (HashPrefix::txMultiSign);
             st->addWithoutSigningFields(ss);
             ss.add160(*signFor);
             ss.add160(e.id());
-            jo["MultiSignature"] = strHex(make_Slice(
-                e.sk().accountPrivateSign(ss.getData())));
-
+            auto const sig = ripple::sign(
+                *publicKeyType(e.pk().slice()),
+                    e.sk(), ss.slice());
+            jo["MultiSignature"] =
+                strHex(Slice{ sig.data(), sig.size() });
         }
     };
 }
@@ -165,17 +166,19 @@ msig2_t::operator()(Env const& env, JTx& jt) const
             {
                 auto& jj = js[j.first]["SigningAccount"];
                 jj[jss::Account] = j.second->human();
-                jj[jss::SigningPubKey] = strHex(make_Slice(
-                    j.second->pk().getAccountPublic()));
+                jj[jss::SigningPubKey] = strHex(
+                    j.second->pk().slice());
 
                 Serializer ss;
                 ss.add32 (HashPrefix::txMultiSign);
                 st->addWithoutSigningFields(ss);
                 ss.add160(sign_for.id());
                 ss.add160(j.second->id());
-                jj["MultiSignature"] = strHex(make_Slice(
-                    j.second->sk().accountPrivateSign(
-                        ss.getData())));
+                auto const sig = ripple::sign(
+                    *publicKeyType(j.second->pk().slice()),
+                        j.second->sk(), ss.slice());
+                jj["MultiSignature"] =
+                    strHex(Slice{ sig.data(), sig.size() });
             }
         }
     };

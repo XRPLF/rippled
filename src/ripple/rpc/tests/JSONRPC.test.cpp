@@ -21,6 +21,7 @@
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <beast/unit_test/suite.h>
@@ -920,8 +921,14 @@ public:
                 = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
 
         std::uint64_t startAmount (100000);
+
+        auto const masterAccountID =
+            calcAccountID(generateKeyPair(
+                KeyType::secp256k1,
+                    generateSeed("masterpassphrase")).first);
+
         Ledger::pointer ledger (std::make_shared <Ledger> (
-            rootAddress, startAmount));
+            masterAccountID, startAmount));
 
         using namespace detail;
         TxnSignApiFacade apiFacade (TxnSignApiFacade::noNetOPs, ledger);

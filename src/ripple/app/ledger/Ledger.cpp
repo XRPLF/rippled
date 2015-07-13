@@ -32,12 +32,13 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -134,8 +135,7 @@ makeGenesisAccount (AccountID const& id,
 //        other constructor with appropriate parameters, and
 //        then create the master account / flush dirty.
 //
-// VFALCO Use `AnyPublicKey masterPublicKey`
-Ledger::Ledger (RippleAddress const& masterPublicKey,
+Ledger::Ledger (AccountID const& masterAccountID,
         std::uint64_t balanceInDrops)
     : mTotCoins (balanceInDrops)
     , mCloseResolution (ledgerDefaultTimeResolution)
@@ -151,8 +151,7 @@ Ledger::Ledger (RippleAddress const& masterPublicKey,
     // first ledger
     info_.seq = 1;
     auto const sle = makeGenesisAccount(
-        calcAccountID(masterPublicKey),
-            balanceInDrops);
+        masterAccountID, balanceInDrops);
     WriteLog (lsTRACE, Ledger)
             << "root account: " << sle->getJson(0);
     rawInsert(sle);

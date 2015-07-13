@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -197,7 +197,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         if (prefix == HashPrefix::transactionID)
         {
             auto item = std::make_shared<SHAMapItem const>(
-                sha512Half(make_Slice(rawNode)),
+                sha512Half(makeSlice(rawNode)),
                     s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_NM, seq, hash);
@@ -275,13 +275,6 @@ SHAMapInnerNode::updateHash()
         nh = sha512Half(HashPrefix::innerNode,
             Slice(reinterpret_cast<unsigned char const*>(mHashes),
                 sizeof (mHashes)));
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        SHA512HalfHasher h;
-        using beast::hash_append;
-        hash_append(h, HashPrefix::innerNode, mHashes);
-        assert (nh == sha512Half(
-            static_cast<uint256>(h)));
-#endif
     }
     if (nh == mHash)
         return false;
@@ -307,18 +300,18 @@ SHAMapTreeNode::updateHash()
     if (mType == tnTRANSACTION_NM)
     {
         nh = sha512Half(HashPrefix::transactionID,
-            make_Slice(mItem->peekData()));
+            makeSlice(mItem->peekData()));
     }
     else if (mType == tnACCOUNT_STATE)
     {
         nh = sha512Half(HashPrefix::leafNode,
-            make_Slice(mItem->peekData()),
+            makeSlice(mItem->peekData()),
                 mItem->key());
     }
     else if (mType == tnTRANSACTION_MD)
     {
         nh = sha512Half(HashPrefix::txNode,
-            make_Slice(mItem->peekData()),
+            makeSlice(mItem->peekData()),
                 mItem->key());
     }
     else

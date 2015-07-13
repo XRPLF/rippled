@@ -26,7 +26,7 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
 #include <beast/threads/Thread.h>
@@ -288,7 +288,7 @@ public:
                         Backend& backend)
     {
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert (hash == sha512Hash(make_Slice(data)));
+        assert (hash == sha512Hash(makeSlice(data)));
         #endif
 
         std::shared_ptr<NodeObject> object = NodeObject::createObject(

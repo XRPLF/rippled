@@ -22,7 +22,7 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/protocol/AnyPublicKey.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STExchange.h>
 #include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
@@ -85,11 +85,11 @@ namespace ripple {
 struct Manifest
 {
     std::string serialized;
-    AnyPublicKey masterKey;
-    AnyPublicKey signingKey;
+    PublicKey masterKey;
+    PublicKey signingKey;
     std::uint32_t sequence;
 
-    Manifest(std::string s, AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq);
+    Manifest(std::string s, PublicKey pk, PublicKey spk, std::uint32_t seq);
 
 #ifdef _MSC_VER
     Manifest(Manifest&& other)
@@ -166,7 +166,7 @@ private:
 #endif
         MappedType(std::string comment,
                    std::string serialized,
-                   AnyPublicKey pk, AnyPublicKey spk, std::uint32_t seq)
+                   PublicKey pk, PublicKey spk, std::uint32_t seq)
             :comment (std::move(comment))
         {
             m.emplace (std::move(serialized), std::move(pk), std::move(spk),
@@ -177,13 +177,13 @@ private:
         boost::optional<Manifest> m;
     };
 
-    using MapType = hash_map<AnyPublicKey, MappedType>;
+    using MapType = hash_map<PublicKey, MappedType>;
 
     mutable std::mutex mutex_;
     MapType map_;
 
     ManifestDisposition
-    canApply (AnyPublicKey const& pk, std::uint32_t seq,
+    canApply (PublicKey const& pk, std::uint32_t seq,
         beast::Journal const& journal) const;
 
 public:
@@ -195,7 +195,7 @@ public:
     void configValidatorKey(std::string const& line, beast::Journal const& journal);
     void configManifest(Manifest m, beast::Journal const& journal);
 
-    void addTrustedKey (AnyPublicKey const& pk, std::string comment);
+    void addTrustedKey (PublicKey const& pk, std::string comment);
 
     ManifestDisposition
     applyManifest (Manifest m, beast::Journal const& journal);

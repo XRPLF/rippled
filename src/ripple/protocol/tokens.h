@@ -42,6 +42,10 @@ template <class T>
 boost::optional<T>
 parseBase58 (std::string const& s);
 
+template<class T>
+boost::optional<T>
+parseBase58 (TokenType type, std::string const& s);
+
 template <class T>
 boost::optional<T>
 parseHex (std::string const& s);

@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/tests/common.h>
-#include <ripple/basics/SHA512Half.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/UInt160.h>
@@ -108,7 +108,7 @@ public:
 
     void on_fetch (Map& map, uint256 const& hash, Blob const& blob)
     {
-        expect (sha512Half(make_Slice(blob)) == hash,
+        expect (sha512Half(makeSlice(blob)) == hash,
             "Hash mismatch");
         map.emplace (hash, blob);
     }
