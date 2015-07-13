@@ -1150,8 +1150,10 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 newLCL, retriableTransactions, tapNONE);
         }
         for (auto const& item : localTx)
-            apply (accum, *item.second, tapNONE, getConfig(),
-                deprecatedLogs().journal("LedgerConsensus"));
+            apply (accum, *item.second, tapNONE,
+                getApp().getHashRouter().sigVerify(),
+                    getConfig(), deprecatedLogs().
+                        journal("LedgerConsensus"));
         accum.apply(*newOL);
         // We have a new Last Closed Ledger and new Open Ledger
         ledgerMaster_.pushLedger (newLCL, newOL);
@@ -1787,8 +1789,10 @@ applyTransaction (OpenView& view,
 
     try
     {
-        auto const result = apply(view, *txn, flags, getConfig(),
-            deprecatedLogs().journal("LedgerConsensus"));
+        auto const result = apply(view, *txn, flags,
+            getApp().getHashRouter().sigVerify(),
+                getConfig(), deprecatedLogs().
+                    journal("LedgerConsensus"));
         if (result.second)
         {
             WriteLog (lsDEBUG, LedgerConsensus)

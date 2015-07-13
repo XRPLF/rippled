@@ -39,7 +39,7 @@ namespace ripple {
 */
 TER
 preflight (Rules const& rules, STTx const& tx,
-    ApplyFlags flags,
+    ApplyFlags flags, SigVerify verify,
         Config const& config, beast::Journal j);
 
 /** Apply a prechecked transaction to an OpenView.
@@ -86,8 +86,9 @@ doapply(OpenView& view, STTx const& tx,
 std::pair<TER, bool>
 apply (OpenView& view,
     STTx const& tx, ApplyFlags flags,
-        Config const& config,
-            beast::Journal journal);
+        SigVerify verify,
+            Config const& config,
+                beast::Journal journal);
 
 } // ripple
 

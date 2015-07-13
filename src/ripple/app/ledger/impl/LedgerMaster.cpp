@@ -379,7 +379,8 @@ public:
                     if (getApp().getHashRouter().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
                         flags = flags | tapNO_CHECK_SIGN;
                     auto const result = apply(view,
-                        *it.second, flags, getConfig(), j);
+                        *it.second, flags, getApp().getHashRouter(
+                            ).sigVerify(), getConfig(), j);
                     if (result.second)
                         any = true;
                 }
@@ -396,9 +397,9 @@ public:
                 if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
                     tepFlags = static_cast<ApplyFlags> (tepFlags | tapNO_CHECK_SIGN);
 
-                auto const ret = apply(
-                    view, *it.second, tepFlags, getConfig(),
-                        deprecatedLogs().journal("LedgerMaster"));
+                auto const ret = apply(view, *it.second,
+                    tepFlags, getApp().getHashRouter().sigVerify(),
+                        getConfig(), deprecatedLogs().journal("LedgerMaster"));
 
                 if (ret.second)
                     ++recovers;

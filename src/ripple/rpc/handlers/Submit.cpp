@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/IHashRouter.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/net/RPCErr.h>
@@ -79,7 +81,8 @@ Json::Value doSubmit (RPC::Context& context)
 
     Transaction::pointer            tpTrans;
     std::string reason;
-    tpTrans = std::make_shared<Transaction> (stpTrans, Validate::YES, reason);
+    tpTrans = std::make_shared<Transaction> (stpTrans, Validate::YES,
+        getApp().getHashRouter().sigVerify(), reason);
     if (tpTrans->getStatus() != NEW)
     {
         jvResult[jss::error]            = "invalidTransaction";
