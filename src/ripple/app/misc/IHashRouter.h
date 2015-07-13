@@ -22,9 +22,12 @@
 
 #include <ripple/basics/base_uint.h>
 #include <cstdint>
+#include <functional>
 #include <set>
 
 namespace ripple {
+
+class STTx;
 
 // VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
 // VFALCO TODO convert these macros to int constants
@@ -80,6 +83,15 @@ public:
     virtual int getFlags (uint256 const& index) = 0;
 
     virtual bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) = 0;
+
+    /**
+        Function wrapper that will check the signature status
+        of a STTx before calling an expensive signature
+        checking function.
+    */
+    virtual
+    std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
+    sigVerify() = 0;
 };
 
 } // ripple

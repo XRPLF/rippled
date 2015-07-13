@@ -129,23 +129,6 @@ public:
 #endif
             ) const;
 
-    bool isKnownGood () const
-    {
-        return (sig_state_ == true);
-    }
-    bool isKnownBad () const
-    {
-        return (sig_state_ == false);
-    }
-    void setGood () const
-    {
-        sig_state_ = true;
-    }
-    void setBad () const
-    {
-        sig_state_ = false;
-    }
-
     // SQL Functions with metadata.
     static
     std::string const&
@@ -165,11 +148,17 @@ private:
     bool checkMultiSign () const;
 
     TxType tx_type_;
-
-    mutable boost::tribool sig_state_;
 };
 
 bool passesLocalChecks (STObject const& st, std::string&);
+
+using SigVerify = std::function < bool(STTx const&, std::function<bool(STTx const&)>) > ;
+
+inline
+bool directSigVerify(STTx const& tx, std::function<bool(STTx const&)> sigCheck)
+{
+    return sigCheck(tx);
+}
 
 } // ripple
 

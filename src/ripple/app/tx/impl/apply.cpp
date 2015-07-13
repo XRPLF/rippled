@@ -81,13 +81,13 @@ invoke_apply (ApplyContext& ctx)
 
 TER
 preflight (Rules const& rules, STTx const& tx,
-    ApplyFlags flags,
+    ApplyFlags flags, SigVerify verify,
         Config const& config, beast::Journal j)
 {
     try
     {
         PreflightContext pfctx(
-            tx, rules, flags, j);
+            tx, rules, flags, verify, j);
         return invoke_preflight(pfctx);
     }
     catch (std::exception const& e)
@@ -131,11 +131,11 @@ doapply(OpenView& view, STTx const& tx,
 
 std::pair<TER, bool>
 apply (OpenView& view, STTx const& tx,
-    ApplyFlags flags,
+    ApplyFlags flags, SigVerify verify,
         Config const& config, beast::Journal j)
 {
     auto pfresult = preflight(view.rules(),
-        tx, flags, config, j);
+        tx, flags, verify, config, j);
     if (pfresult != tesSUCCESS)
         return { pfresult, false };
     return doapply(view, tx, flags, config, j);

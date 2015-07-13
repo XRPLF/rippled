@@ -721,7 +721,8 @@ transactionConstructImpl (STTx::pointer stpTrans)
     Transaction::pointer tpTrans;
     {
         std::string reason;
-        tpTrans = std::make_shared<Transaction>(stpTrans, Validate::NO, reason);
+        tpTrans = std::make_shared<Transaction>(stpTrans, Validate::NO,
+            directSigVerify, reason);
         if (tpTrans->getStatus () != NEW)
         {
             ret.first = RPC::make_error (rpcINTERNAL,

@@ -52,24 +52,22 @@ Transactor::preflight (PreflightContext const& ctx)
     auto const pk =
         RippleAddress::createAccountPublic(
             tx.getSigningPubKey());
-    if (!tx.isKnownGood ())
-    {
-        if (tx.isKnownBad () ||
-            (! (ctx.flags & tapNO_CHECK_SIGN) && !tx.checkSign(
-                (
+
+    if(! ctx.verify(tx,
+        [&, ctx] (STTx const& tx)
+        {
+            return (ctx.flags & tapNO_CHECK_SIGN) ||
+                tx.checkSign(
 #if RIPPLE_ENABLE_MULTI_SIGN
                     true
 #else
                     ctx.flags & tapENABLE_TESTING
 #endif
-                ))))
-        {
-            tx.setBad();
-            j.debug << "apply: Invalid transaction (bad signature)";
-            return temINVALID;
-        }
-
-        tx.setGood();
+                );
+        }))
+    {
+        JLOG(j.debug) << "apply: Invalid transaction (bad signature)";
+        return temINVALID;
     }
 
     return tesSUCCESS;

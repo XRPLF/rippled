@@ -1707,7 +1707,9 @@ PeerImp::checkTransaction (Job&, int flags,
 
         auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
         std::string reason;
-        auto tx = std::make_shared<Transaction> (stx, validate, reason);
+        auto tx = std::make_shared<Transaction> (stx, validate,
+            directSigVerify,
+            reason);
 
         if (tx->getStatus () == INVALID)
         {

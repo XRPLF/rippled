@@ -697,7 +697,8 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransaction,
                    this,
-                   std::make_shared<Transaction> (trans, Validate::NO, reason),
+                   std::make_shared<Transaction> (trans, Validate::NO,
+                    directSigVerify, reason),
                    false,
                    false,
                    FailHard::no));
@@ -722,7 +723,7 @@ void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
         // signature not checked
         std::string reason;
 
-        if (! transaction->checkSign (reason))
+        if (! transaction->checkSign (reason, directSigVerify))
         {
             m_journal.info << "Transaction has bad signature: " << reason;
             transaction->setStatus (INVALID);
@@ -870,8 +871,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 std::tie (e.result, e.applied) =
                     ripple::apply (*accum,
                         *e.transaction->getSTransaction(), flags,
-                            getConfig(), deprecatedLogs().journal(
-                                "NetworkOPs"));
+                            getApp().getHashRouter().sigVerify(),
+                                getConfig(), deprecatedLogs().journal(
+                                    "NetworkOPs"));
                 applied |= e.applied;
 
             #if RIPPLE_OPEN_LEDGER
@@ -881,8 +883,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     [&](OpenView& view, beast::Journal j)
                     {
                         auto const result = ripple::apply(
-                            view, *e.transaction->getSTransaction(),
-                                flags, getConfig(), j);
+                            view, *e.transaction->getSTransaction(), flags,
+                                getApp().getHashRouter().sigVerify(),
+                                    getConfig(), j);
                         if (result.first != e.result)
                             mismatch(sle1,  e.result, sle2, result.first,
                                     e.transaction->getSTransaction(), j);

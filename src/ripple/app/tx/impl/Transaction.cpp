@@ -23,12 +23,14 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/IHashRouter.h>
 #include <ripple/protocol/JsonFields.h>
 #include <boost/optional.hpp>
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref stx, Validate validate, std::string& reason)
+Transaction::Transaction (STTx::ref stx, Validate validate,
+    SigVerify sigVerify, std::string& reason)
     noexcept
     : mTransaction (stx)
 {
@@ -50,7 +52,8 @@ Transaction::Transaction (STTx::ref stx, Validate validate, std::string& reason)
     }
 
     if (validate == Validate::NO ||
-        (passesLocalChecks (*mTransaction, reason) && checkSign (reason)))
+        (passesLocalChecks (*mTransaction, reason) &&
+            checkSign (reason, sigVerify)))
     {
         mStatus = NEW;
     }
@@ -65,7 +68,7 @@ Transaction::pointer Transaction::sharedTransaction (
         std::string reason;
 
         return std::make_shared<Transaction> (std::make_shared<STTx> (sit),
-            validate, reason);
+            validate, getApp().getHashRouter().sigVerify(), reason);
     }
     catch (std::exception& e)
     {
@@ -84,11 +87,14 @@ Transaction::pointer Transaction::sharedTransaction (
 // Misc.
 //
 
-bool Transaction::checkSign (std::string& reason) const
+bool Transaction::checkSign (std::string& reason, SigVerify sigVerify) const
 {
     if (! mFromPubKey.isValid ())
         reason = "Transaction has bad source public key";
-    else if (! mTransaction->checkSign ())
+    else if (!sigVerify(*mTransaction, [] (STTx const& tx)
+    {
+        return tx.checkSign();
+    }))
         reason = "Transaction has bad signature";
     else
         return true;
@@ -133,7 +139,8 @@ Transaction::pointer Transaction::transactionFromSQL (
     SerialIter it (makeSlice(rawTxn));
     auto txn = std::make_shared<STTx> (it);
     std::string reason;
-    auto tr = std::make_shared<Transaction> (txn, validate, reason);
+    auto tr = std::make_shared<Transaction> (txn, validate,
+        getApp().getHashRouter().sigVerify(), reason);
 
     tr->setStatus (sqlTransactionStatus (status));
     tr->setLedger (inLedger);

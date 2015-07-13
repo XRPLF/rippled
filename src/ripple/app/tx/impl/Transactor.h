@@ -31,12 +31,12 @@ struct PreflightContext
 public:
     explicit PreflightContext(STTx const& tx_,
         Rules const& rules_, ApplyFlags flags_,
-            //SigVerify verify_,
+            SigVerify verify_,
                 beast::Journal j_ = {})
         : tx(tx_)
         , rules(rules_)
         , flags(flags_)
-        //, verify(verify_)
+        , verify(verify_)
         , j(j_)
     {
     }
@@ -44,7 +44,7 @@ public:
     STTx const& tx;
     Rules const& rules;
     ApplyFlags flags;
-    //SigVerify verify;
+    SigVerify verify;
     beast::Journal j;
 };
 

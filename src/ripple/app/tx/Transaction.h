@@ -62,7 +62,7 @@ public:
     using ref = const pointer&;
 
 public:
-    Transaction (STTx::ref, Validate, std::string&) noexcept;
+    Transaction (STTx::ref, Validate, SigVerify, std::string&) noexcept;
 
     static
     Transaction::pointer
@@ -80,7 +80,7 @@ public:
     TransStatus
     sqlTransactionStatus(boost::optional<std::string> const& status);
 
-    bool checkSign (std::string&) const;
+    bool checkSign (std::string&, SigVerify) const;
 
     STTx::ref getSTransaction ()
     {
