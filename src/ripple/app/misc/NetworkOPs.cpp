@@ -59,7 +59,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
-#include <ripple/resource/Manager.h>
+#include <ripple/resource/ResourceManager.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>

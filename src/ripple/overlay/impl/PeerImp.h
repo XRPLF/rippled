@@ -33,7 +33,7 @@
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/validators/Manager.h>
+#include <ripple/validators/ValidatorManager.h>
 #include <beast/ByteOrder.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>

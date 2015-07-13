@@ -28,7 +28,7 @@
 #include <ripple/peerfinder/impl/Bootcache.cpp>
 #include <ripple/peerfinder/impl/PeerfinderConfig.cpp>
 #include <ripple/peerfinder/impl/Endpoint.cpp>
-#include <ripple/peerfinder/impl/Manager.cpp>
+#include <ripple/peerfinder/impl/PeerfinderManager.cpp>
 #include <ripple/peerfinder/impl/SlotImp.cpp>
 #include <ripple/peerfinder/impl/SourceStrings.cpp>
 

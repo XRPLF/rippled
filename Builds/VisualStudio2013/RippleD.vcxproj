@@ -2645,11 +2645,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderConfig.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderConfig.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\PeerfinderManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2677,7 +2677,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\make_Manager.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Manager.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\PeerfinderManager.h">
     </ClInclude>
     <None Include="..\..\src\ripple\peerfinder\README.md">
     </None>
@@ -3044,15 +3044,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\resource\impl\ResourceManager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\Manager.h">
-    </ClInclude>
     <None Include="..\..\src\ripple\resource\README.md">
     </None>
+    <ClInclude Include="..\..\src\ripple\resource\ResourceManager.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\resource\tests\Logic.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3060,7 +3060,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrencies.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrenciesHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountInfo.cpp">
@@ -3124,7 +3124,7 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerAccept.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerCleaner.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerCleanerHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\LedgerClosed.cpp">
@@ -3181,10 +3181,10 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\ServerState.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\Sign.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignFor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignFor.cpp">
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\SignHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Stop.cpp">
@@ -3512,7 +3512,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\json.cpp">
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\jtx_json.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3576,9 +3576,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\jtx\json.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\JTx.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\jtx_json.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\memo.h">
     </ClInclude>
@@ -3776,9 +3776,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
@@ -3788,13 +3785,16 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorManager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\make_Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\Manager.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\ValidatorManager.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Config04.h">

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 
-#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/impl/Tuning.h>
 #include <random>

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
 #define RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
 
-#include <ripple/validators/Manager.h>
+#include <ripple/validators/ValidatorManager.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/Journal.h>
 #include <beast/module/core/files/File.h>
