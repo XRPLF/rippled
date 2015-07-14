@@ -158,6 +158,7 @@ JSS ( forward );                    // in: AccountTx
 JSS ( freeze );                     // out: AccountLines
 JSS ( freeze_peer );                // out: AccountLines
 JSS ( full );                       // in: LedgerClearer, handlers/Ledger
+JSS ( full_reply );                 // out: PathFind
 JSS ( fullbelow_size );             // in: GetCounts
 JSS ( generator );                  // in: LedgerEntry
 JSS ( good );                       // out: RPCVersion
