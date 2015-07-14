@@ -44,38 +44,6 @@ namespace ripple {
 //
 //------------------------------------------------------------------------------
 
-Fees
-getFees (ReadView const& view,
-    Config const& config)
-{
-    Fees f;
-    f.base = config.FEE_DEFAULT;
-    f.units = config.TRANSACTION_FEE_BASE;
-    f.reserve = config.FEE_ACCOUNT_RESERVE;
-    f.increment = config.FEE_OWNER_RESERVE;
-    auto const sle =
-        view.read(keylet::fees());
-    if (sle)
-    {
-        // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
-
-        if (sle->getFieldIndex (sfBaseFee) != -1)
-            f.base = sle->getFieldU64 (sfBaseFee);
-
-        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-            f.units = sle->getFieldU32 (sfReferenceFeeUnits);
-
-        if (sle->getFieldIndex (sfReserveBase) != -1)
-            f.reserve = sle->getFieldU32 (sfReserveBase);
-
-        if (sle->getFieldIndex (sfReserveIncrement) != -1)
-            f.increment = sle->getFieldU32 (sfReserveIncrement);
-    }
-    return f;
-}
-
-//------------------------------------------------------------------------------
-
 void addRaw (LedgerInfo const& info, Serializer& s)
 {
     s.add32 (info.seq);

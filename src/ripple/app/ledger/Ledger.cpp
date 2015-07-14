@@ -33,18 +33,19 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
+#include <ripple/nodestore/Database.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/nodestore/Database.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/types.h>
 #include <beast/module/core/text/LexicalCast.h>
@@ -56,6 +57,8 @@
 namespace ripple {
 
 create_genesis_t const create_genesis {};
+
+//------------------------------------------------------------------------------
 
 class Ledger::txs_iter_impl
     : public txs_type::iter_base
@@ -119,7 +122,6 @@ Ledger::Ledger (create_genesis_t, Config const& config)
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
-    , fees_ (getFees(*this, getConfig()))
 {
     info_.seq = 1;
     info_.drops = SYSTEM_CURRENCY_START;
@@ -136,6 +138,7 @@ Ledger::Ledger (create_genesis_t, Config const& config)
     updateHash();
     setClosed();
     setAccepted();
+    setFees(config);
 }
 
 Ledger::Ledger (uint256 const& parentHash,
@@ -147,15 +150,14 @@ Ledger::Ledger (uint256 const& parentHash,
                 int closeFlags,
                 int closeResolution,
                 std::uint32_t ledgerSeq,
-                bool& loaded)
+                bool& loaded,
+                Config const& config)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, transHash, getApp().family(),
                 deprecatedLogs().journal("SHAMap")))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
-    // VFALCO Needs audit
-    , fees_(getFees(*this, getConfig()))
 {
     info_.seq = ledgerSeq;
     info_.parentCloseTime = parentCloseTime;
@@ -184,6 +186,7 @@ Ledger::Ledger (uint256 const& parentHash,
 
     txMap_->setImmutable ();
     stateMap_->setImmutable ();
+    setFees(config);
 }
 
 // Create a new ledger that's a snapshot of this one
@@ -192,8 +195,7 @@ Ledger::Ledger (Ledger const& ledger,
     : mImmutable (!isMutable)
     , txMap_ (ledger.txMap_->snapShot (isMutable))
     , stateMap_ (ledger.stateMap_->snapShot (isMutable))
-    // VFALCO Needs audit
-    , fees_(getFees(*this, getConfig()))
+    , fees_ (ledger.fees_)
     , info_ (ledger.info_)
 {
     updateHash ();
@@ -205,8 +207,7 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         getApp().family(), deprecatedLogs().journal("SHAMap")))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
-    // VFALCO Needs audit
-    , fees_(getFees(*this, getConfig()))
+    , fees_(prevLedger.fees_)
 {
     info_.open = true;
     info_.seq = prevLedger.info_.seq + 1;
@@ -229,8 +230,8 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger)
 }
 
 Ledger::Ledger (void const* data,
-        std::size_t size, bool hasPrefix)
-
+    std::size_t size, bool hasPrefix,
+        Config const& config)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
           SHAMapType::TRANSACTION, getApp().family(),
@@ -241,10 +242,11 @@ Ledger::Ledger (void const* data,
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix);
-    fees_ = getFees(*this, getConfig());
+    setFees(config);
 }
 
-Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
+Ledger::Ledger (std::uint32_t ledgerSeq,
+        std::uint32_t closeTime, Config const& config)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
           SHAMapType::TRANSACTION, getApp().family(),
@@ -252,12 +254,11 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
     , stateMap_ (std::make_shared <SHAMap> (
           SHAMapType::STATE, getApp().family(),
             deprecatedLogs().journal("SHAMap")))
-    // VFALCO Needs audit
-    , fees_(getFees(*this, getConfig()))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
+    setFees(config);
 }
 
 //------------------------------------------------------------------------------
@@ -635,7 +636,8 @@ loadLedgerHelper(std::string const& sqlSuffix)
                                       closeFlags.value_or(0),
                                       closeResolution.value_or(0),
                                       ledgerSeq,
-                                      loaded);
+                                      loaded,
+                                      getConfig());
 
     if (!loaded)
         return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
@@ -989,6 +991,32 @@ Ledger::rawTxInsert (uint256 const& key,
         if (! txMap().addGiveItem(
                 std::move(item), true, false))
             LogicError("duplicate_tx: " + to_string(key));
+    }
+}
+
+void
+Ledger::setFees (Config const& config)
+{
+    fees_.base = config.FEE_DEFAULT;
+    fees_.units = config.TRANSACTION_FEE_BASE;
+    fees_.reserve = config.FEE_ACCOUNT_RESERVE;
+    fees_.increment = config.FEE_OWNER_RESERVE;
+    auto const sle = read(keylet::fees());
+    if (sle)
+    {
+        // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
+
+        if (sle->getFieldIndex (sfBaseFee) != -1)
+            fees_.base = sle->getFieldU64 (sfBaseFee);
+
+        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
+            fees_.units = sle->getFieldU32 (sfReferenceFeeUnits);
+
+        if (sle->getFieldIndex (sfReserveBase) != -1)
+            fees_.reserve = sle->getFieldU32 (sfReserveBase);
+
+        if (sle->getFieldIndex (sfReserveIncrement) != -1)
+            fees_.increment = sle->getFieldU32 (sfReserveIncrement);
     }
 }
 
