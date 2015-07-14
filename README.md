@@ -12,6 +12,7 @@ accelerate the movement of money. Ripple enables the world to move value the
 way it moves information on the Internet.
 
 ![Ripple Network](images/network.png)
+© 2015 Ripple Labs
 
 **What is a Gateway?**
 
@@ -51,10 +52,12 @@ to everyone.
 decreases slowly over time, with no mining. XRP acts as a bridge currency, and
 pays for transaction fees that protect the network against spam.
 ![XRP as a bridge currency](/images/vehicle_currency.png)
+© 2015 Ripple Labs
 
 2. Pathfinding discovers cheap and efficient payment paths through multiple
 [order books](https://www.ripplecharts.com) allowing anyone to [trade](https://www.rippletrade.com) anything. When two accounts aren’t linked by relationships of trust, the Ripple pathfinding engine considers intermediate links and order books to produce a set of possible paths the transaction can take. When the payment is processed, the liquidity along these paths is iteratively consumed in best-first order.
 ![Pathfinding from Dollars to Euro](/images/pathfinding.png)
+© 2015 Ripple Labs
 
 3. [Consensus](https://www.youtube.com/watch?v=pj1QVb1vlC0) confirms
 transactions in an atomic fashion, without mining, ensuring efficient use of
@@ -120,3 +123,4 @@ LICENSE file for more details.
 * Ripple Gateway Primer - https://ripple.com/ripple-gateways.pdf  
 * Consensus - https://wiki.ripple.com/Consensus
 
+© 2015 Ripple Labs
