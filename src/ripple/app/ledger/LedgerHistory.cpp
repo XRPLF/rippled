@@ -134,8 +134,7 @@ static
 void
 log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 {
-    TxMeta::pointer metaData;
-    getTransactionMeta(*ledger, tx, metaData);
+    auto metaData = ledger->txRead(tx).second;
 
     if (metaData != nullptr)
     {
@@ -155,10 +154,17 @@ void
 log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger,
                         uint256 const& tx)
 {
-    TxMeta::pointer validMetaData;
-    getTransactionMeta(*validLedger, tx, validMetaData);
-    TxMeta::pointer builtMetaData;
-    getTransactionMeta(*builtLedger, tx, builtMetaData);
+    auto getMeta = [](Ledger const& ledger,
+        uint256 const& txID) -> std::shared_ptr<TxMeta>
+    {
+        auto meta = ledger.txRead(txID).second;
+        if (!meta)
+            return {};
+        return std::make_shared<TxMeta> (txID, ledger.seq(), *meta);
+    };
+
+    auto validMetaData = getMeta (*validLedger, tx);
+    auto builtMetaData = getMeta (*builtLedger, tx);
     assert(validMetaData != nullptr || builtMetaData != nullptr);
 
     if (validMetaData != nullptr && builtMetaData != nullptr)

@@ -475,23 +475,6 @@ cachedRead (ReadView const& ledger, uint256 const& key,
 
 //------------------------------------------------------------------------------
 
-// VFALCO NOTE This is called from only one place
-Transaction::pointer
-getTransaction (Ledger const& ledger,
-    uint256 const& transID, TransactionMaster& cache);
-
-// VFALCO NOTE This is called from only one place
-bool
-getTransaction (Ledger const& ledger,
-    uint256 const& transID, Transaction::pointer & txn,
-        TxMeta::pointer & txMeta,
-            TransactionMaster& cache);
-
-bool
-getTransactionMeta (Ledger const&,
-    uint256 const& transID,
-        TxMeta::pointer & txMeta);
-
 void
 ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
 

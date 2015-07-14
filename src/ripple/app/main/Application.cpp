@@ -1327,12 +1327,11 @@ bool ApplicationImp::loadOldLedger (
             for (auto const& item : txns)
             {
                 auto const txn =
-                    getTransaction(*replayLedger, item.key(),
-                        getApp().getMasterTransaction());
+                    replayLedger->txRead(item.key()).first;
                 if (m_journal.info) m_journal.info <<
                     txn->getJson(0);
                 Serializer s;
-                txn->getSTransaction()->add(s);
+                txn->add(s);
                 cur->rawTxInsert(item.key(),
                     std::make_shared<Serializer const>(
                         std::move(s)), nullptr);

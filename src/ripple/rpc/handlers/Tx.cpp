@@ -123,10 +123,10 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            TxMeta::pointer txMeta;
-
-            if (getTransactionMeta (*lgr, txn->getID (), txMeta))
+            auto rawMeta = lgr->txRead (txn->getID()).second;
+            if (rawMeta)
             {
+                auto txMeta = std::make_shared <TxMeta> (txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (0);
                 addPaymentDeliveredAmount (meta, context, txn, txMeta);
