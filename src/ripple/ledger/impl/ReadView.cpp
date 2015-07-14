@@ -18,21 +18,58 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/ledger/ReadView.h>
 
-#include <ripple/ledger/impl/ApplyStateTable.cpp>
-#include <ripple/ledger/impl/ApplyViewBase.cpp>
-#include <ripple/ledger/impl/ApplyViewImpl.cpp>
-#include <ripple/ledger/impl/CachedSLEs.cpp>
-#include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/Directory.cpp>
-#include <ripple/ledger/impl/OpenView.cpp>
-#include <ripple/ledger/impl/PaymentSandbox.cpp>
-#include <ripple/ledger/impl/RawStateTable.cpp>
-#include <ripple/ledger/impl/ReadView.cpp>
-#include <ripple/ledger/impl/TxMeta.cpp>
-#include <ripple/ledger/impl/View.cpp>
+namespace ripple {
 
-#include <ripple/ledger/tests/Directory_test.cpp>
-#include <ripple/ledger/tests/PaymentSandbox_test.cpp>
-#include <ripple/ledger/tests/SkipList_test.cpp>
-#include <ripple/ledger/tests/View_test.cpp>
+ReadView::sles_type::sles_type(
+        ReadView const& view)
+    : ReadViewFwdRange(view)
+{
+}
+
+auto
+ReadView::sles_type::begin() const ->
+    iterator
+{
+    return iterator(view_, view_->slesBegin());
+}
+
+auto
+ReadView::sles_type::end() const ->
+    iterator const&
+{
+    if (! end_)
+        end_ = iterator(view_, view_->slesEnd());
+    return *end_;
+}
+
+ReadView::txs_type::txs_type(
+        ReadView const& view)
+    : ReadViewFwdRange(view)
+{
+}
+
+bool
+ReadView::txs_type::empty() const
+{
+    return begin() == end();
+}
+
+auto
+ReadView::txs_type::begin() const ->
+    iterator
+{
+    return iterator(view_, view_->txsBegin());
+}
+
+auto
+ReadView::txs_type::end() const ->
+    iterator const&
+{
+    if (! end_)
+        end_ = iterator(view_, view_->txsEnd());
+    return *end_;
+}
+
+} // ripple

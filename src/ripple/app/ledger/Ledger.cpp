@@ -61,6 +61,59 @@ create_genesis_t const create_genesis {};
 
 //------------------------------------------------------------------------------
 
+class Ledger::sles_iter_impl
+    : public sles_type::iter_base
+{
+private:
+    ReadView const* view_;
+    SHAMap::const_iterator iter_;
+
+public:
+    sles_iter_impl() = delete;
+    sles_iter_impl& operator= (sles_iter_impl const&) = delete;
+
+    sles_iter_impl (sles_iter_impl const&) = default;
+
+    sles_iter_impl (SHAMap::const_iterator iter,
+            ReadView const& view)
+        : view_ (&view)
+        , iter_ (iter)
+    {
+    }
+
+    std::unique_ptr<base_type>
+    copy() const override
+    {
+        return std::make_unique<
+            sles_iter_impl>(*this);
+    }
+
+    bool
+    equal (base_type const& impl) const override
+    {
+        auto const& other = dynamic_cast<
+            sles_iter_impl const&>(impl);
+        return iter_ == other.iter_;
+    }
+
+    void
+    increment() override
+    {
+        ++iter_;
+    }
+
+    sles_type::value_type
+    dereference() const override
+    {
+        auto const item = *iter_;
+        SerialIter sit(item.slice());
+        return std::make_shared<SLE const>(
+            sit, item.key());
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class Ledger::txs_iter_impl
     : public txs_type::iter_base
 {
@@ -869,6 +922,24 @@ Ledger::read (Keylet const& k) const
 }
 
 //------------------------------------------------------------------------------
+
+auto
+Ledger::slesBegin() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return std::make_unique<
+        sles_iter_impl>(
+            stateMap_->begin(), *this);
+}
+
+auto
+Ledger::slesEnd() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return std::make_unique<
+        sles_iter_impl>(
+            stateMap_->end(), *this);
+}
 
 auto
 Ledger::txsBegin() const ->

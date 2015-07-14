@@ -3078,6 +3078,9 @@
     <ClCompile Include="..\..\src\ripple\ledger\impl\RawStateTable.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\ReadView.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\TxMeta.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>

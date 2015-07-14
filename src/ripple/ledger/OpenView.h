@@ -164,6 +164,12 @@ public:
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
 
+    std::unique_ptr<sles_type::iter_base>
+    slesBegin() const override;
+
+    std::unique_ptr<sles_type::iter_base>
+    slesEnd() const override;
+
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const override;
 

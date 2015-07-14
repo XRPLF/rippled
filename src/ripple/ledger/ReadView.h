@@ -136,11 +136,22 @@ public:
     using mapped_type =
         std::shared_ptr<SLE const>;
 
-    using sles_type = detail::ReadViewFwdRange<
-        std::shared_ptr<SLE const>>;
+    struct sles_type : detail::ReadViewFwdRange<
+        std::shared_ptr<SLE const>>
+    {
+        explicit sles_type (ReadView const& view);
+        iterator begin() const;
+        iterator const& end() const;
+    };
 
-    using txs_type =
-        detail::ReadViewFwdRange<tx_type>;
+    struct txs_type
+        : detail::ReadViewFwdRange<tx_type>
+    {
+        explicit txs_type (ReadView const& view);
+        bool empty() const;
+        iterator begin() const;
+        iterator const& end() const;
+    };
 
     virtual ~ReadView() = default;
 
@@ -148,17 +159,20 @@ public:
     ReadView& operator= (ReadView const& other) = delete;
 
     ReadView()
-        : txs(*this)
+        : sles(*this)
+        , txs(*this)
     {
     }
 
     ReadView (ReadView const&)
-        : txs(*this)
+        : sles(*this)
+        , txs(*this)
     {
     }
 
     ReadView (ReadView&& other)
-        : txs(*this)
+        : sles(*this)
+        , txs(*this)
     {
     }
 
@@ -256,6 +270,16 @@ public:
 
     // used by the implementation
     virtual
+    std::unique_ptr<sles_type::iter_base>
+    slesBegin() const = 0;
+
+    // used by the implementation
+    virtual
+    std::unique_ptr<sles_type::iter_base>
+    slesEnd() const = 0;
+
+    // used by the implementation
+    virtual
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const = 0;
 
@@ -289,8 +313,14 @@ public:
     // Memberspaces
     //
 
-    // The range of ledger entries
-    //sles_type sles;
+    /** Iterable range of ledger state items.
+
+        Visiting each state entry in the ledger can be
+        quite expensive. This will only visit entries in
+        the base ledger. Entries in open views, apply
+        views, or sandboxes will not be visited.
+    */
+    sles_type sles;
 
     // The range of transactions
     txs_type txs;
