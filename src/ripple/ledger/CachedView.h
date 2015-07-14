@@ -84,6 +84,18 @@ public:
         return base_.succ(key, last);
     }
 
+    std::unique_ptr<sles_type::iter_base>
+    slesBegin() const override
+    {
+        return base_.slesBegin();
+    }
+
+    std::unique_ptr<sles_type::iter_base>
+    slesEnd() const override
+    {
+        return base_.slesEnd();
+    }
+
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const override
     {

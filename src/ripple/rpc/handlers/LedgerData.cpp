@@ -80,28 +80,27 @@ Json::Value doLedgerData (RPC::Context& context)
 
     Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
 
-    forEachSLE(*lpLedger, [&] (SLE const& sle) {
+    for(auto const& sle : lpLedger->sles)
+    {
        if (limit-- <= 0)
        {
-           auto marker = sle.key();
+           auto marker = sle->key();
            jvResult[jss::marker] = to_string (--marker);
-           return false;
+           break;
        }
 
        if (isBinary)
        {
            Json::Value& entry = nodes.append (Json::objectValue);
-           entry[jss::data] = serializeHex(sle);
-           entry[jss::index] = to_string (sle.key());
+           entry[jss::data] = serializeHex(*sle);
+           entry[jss::index] = to_string (sle->key());
        }
        else
        {
-           Json::Value& entry = nodes.append (sle.getJson (0));
-           entry[jss::index] = to_string (sle.key());
+           Json::Value& entry = nodes.append (sle->getJson (0));
+           entry[jss::index] = to_string (sle->key());
        }
-
-       return true;
-    });
+    }
 
     return jvResult;
 }

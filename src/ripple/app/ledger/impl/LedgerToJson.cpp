@@ -131,20 +131,20 @@ void fillJsonState(Object& json, LedgerFill const& fill)
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
-    forEachSLE(ledger, [&] (SLE const& sle) {
+    for(auto const& sle : ledger.sles)
+    {
         count.yield();
         if (binary)
         {
             auto&& obj = appendObject(array);
-            obj[jss::hash] = to_string(sle.key());
-            obj[jss::tx_blob] = serializeHex(sle);
+            obj[jss::hash] = to_string(sle->key());
+            obj[jss::tx_blob] = serializeHex(*sle);
         }
         else if (expanded)
-            array.append(sle.getJson(0));
+            array.append(sle->getJson(0));
         else
-            array.append(to_string(sle.key()));
-        return true;
-    });
+            array.append(to_string(sle->key()));
+    }
 }
 
 template <class Object>

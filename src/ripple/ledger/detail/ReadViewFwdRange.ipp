@@ -27,7 +27,8 @@ template<class ValueType>
 ReadViewFwdRange<ValueType>::iterator::iterator(
         iterator const& other)
     : view_ (other.view_)
-    , impl_ (other.impl_->copy())
+    , impl_ (other.impl_ ?
+        other.impl_->copy() : nullptr)
     , cache_ (other.cache_)
 {
 }
@@ -59,7 +60,8 @@ ReadViewFwdRange<ValueType>::iterator::operator=(
     if (this == &other)
         return *this;
     view_ = other.view_;
-    impl_ = other.impl_->copy();
+    impl_ = other.impl_ ?
+        other.impl_->copy() : nullptr;
     cache_ = other.cache_;
     return *this;
 }
@@ -131,33 +133,6 @@ ReadViewFwdRange<ValueType>::iterator::operator++(int) ->
     prev.cache_ = std::move(cache_);
     ++(*this);
     return prev;
-}
-
-//------------------------------------------------------------------------------
-
-template<class ValueType>
-bool
-ReadViewFwdRange<ValueType>::empty() const
-{
-    return begin() == end();
-}
-
-template<class ValueType>
-auto
-ReadViewFwdRange<ValueType>::begin() const ->
-    iterator
-{
-    return iterator(view_, view_->txsBegin());
-}
-
-template<class ValueType>
-auto
-ReadViewFwdRange<ValueType>::end() const ->
-    iterator const&
-{
-    if (! end_)
-        end_.emplace(view_, view_->txsEnd());
-    return *end_;
 }
 
 } // detail
