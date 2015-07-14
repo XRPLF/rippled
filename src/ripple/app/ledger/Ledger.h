@@ -40,7 +40,7 @@ class TransactionMaster;
 
 class SqliteStatement;
 
-struct create_genesis_t { };
+struct create_genesis_t {};
 extern create_genesis_t const create_genesis;
 
 /** Holds a ledger.
@@ -102,13 +102,10 @@ public:
             uint256 const& accountHash,
             std::uint64_t totDrops, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
-            std::uint32_t ledgerSeq, bool & loaded);
+            std::uint32_t ledgerSeq, bool & loaded, Config const& config);
 
-    // used for database ledgers
-    Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
-
-    Ledger (void const* data,
-        std::size_t size, bool hasPrefix);
+    // Create a new ledger that's a snapshot of this one
+    Ledger (Ledger const& target, bool isMutable);
 
     /** Create a new open ledger
 
@@ -118,8 +115,13 @@ public:
     */
     Ledger (open_ledger_t, Ledger const& previous);
 
-    // Create a new ledger that's a snapshot of this one
-    Ledger (Ledger const& target, bool isMutable);
+    Ledger (void const* data,
+        std::size_t size, bool hasPrefix,
+            Config const& config);
+
+    // used for database ledgers
+    Ledger (std::uint32_t ledgerSeq,
+        std::uint32_t closeTime, Config const& config);
 
     ~Ledger();
 
@@ -367,6 +369,9 @@ private:
         saveValidatedLedger(current);
     }
     bool saveValidatedLedger (bool current);
+
+    void
+    setFees (Config const& config);
 
     std::shared_ptr<SLE>
     peek (Keylet const& k) const;

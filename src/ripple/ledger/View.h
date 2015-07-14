@@ -55,10 +55,6 @@ enum FreezeHandling
     fhZERO_IF_FROZEN
 };
 
-Fees
-getFees (ReadView const& view,
-    Config const& config);
-
 bool
 isGlobalFrozen (ReadView const& view,
     AccountID const& issuer);
