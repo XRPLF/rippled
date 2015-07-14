@@ -32,8 +32,8 @@ class OrderBookDB
 public:
     explicit OrderBookDB (Stoppable& parent);
 
-    void setup (Ledger::ref ledger);
-    void update (Ledger::pointer ledger);
+    void setup (std::shared_ptr<ReadView const> const& ledger);
+    void update (std::shared_ptr<ReadView const> const& ledger);
     void invalidate ();
 
     void addOrderBook(Book const&);
@@ -53,8 +53,8 @@ public:
 
     // see if this txn effects any orderbook
     void processTxn (
-        Ledger::ref ledger, const AcceptedLedgerTx& alTx,
-        Json::Value const& jvObj);
+        std::shared_ptr<ReadView const> const& ledger,
+        const AcceptedLedgerTx& alTx, Json::Value const& jvObj);
 
     using IssueToOrderBook = hash_map <Issue, OrderBook::List>;
 

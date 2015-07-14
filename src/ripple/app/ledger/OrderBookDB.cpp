@@ -40,7 +40,8 @@ void OrderBookDB::invalidate ()
     mSeq = 0;
 }
 
-void OrderBookDB::setup (Ledger::ref ledger)
+void OrderBookDB::setup(
+    std::shared_ptr<ReadView const> const& ledger)
 {
     {
         ScopedLockType sl (mLock);
@@ -70,37 +71,8 @@ void OrderBookDB::setup (Ledger::ref ledger)
             std::bind(&OrderBookDB::update, this, ledger));
 }
 
-static void updateHelper (SLE::ref entry,
-    hash_set< uint256 >& seen,
-    OrderBookDB::IssueToOrderBook& destMap,
-    OrderBookDB::IssueToOrderBook& sourceMap,
-    hash_set< Issue >& XRPBooks,
-    int& books)
-{
-    if (entry->getType () == ltDIR_NODE &&
-        entry->isFieldPresent (sfExchangeRate) &&
-        entry->getFieldH256 (sfRootIndex) == entry->getIndex())
-    {
-        Book book;
-        book.in.currency.copyFrom (entry->getFieldH160 (sfTakerPaysCurrency));
-        book.in.account.copyFrom (entry->getFieldH160 (sfTakerPaysIssuer));
-        book.out.account.copyFrom (entry->getFieldH160 (sfTakerGetsIssuer));
-        book.out.currency.copyFrom (entry->getFieldH160 (sfTakerGetsCurrency));
-
-        uint256 index = getBookBase (book);
-        if (seen.insert (index).second)
-        {
-            auto orderBook = std::make_shared<OrderBook> (index, book);
-            sourceMap[book.in].push_back (orderBook);
-            destMap[book.out].push_back (orderBook);
-            if (isXRP(book.out))
-                XRPBooks.insert(book.in);
-            ++books;
-        }
-    }
-}
-
-void OrderBookDB::update (Ledger::pointer ledger)
+void OrderBookDB::update(
+    std::shared_ptr<ReadView const> const& ledger)
 {
     hash_set< uint256 > seen;
     OrderBookDB::IssueToOrderBook destMap;
@@ -114,9 +86,30 @@ void OrderBookDB::update (Ledger::pointer ledger)
 
     try
     {
-        ledger->visitStateItems(std::bind(&updateHelper, std::placeholders::_1,
-                                          std::ref(seen), std::ref(destMap),
-            std::ref(sourceMap), std::ref(XRPBooks), std::ref(books)));
+        for(auto& sle : ledger->sles)
+        {
+            if (sle->getType () == ltDIR_NODE &&
+                sle->isFieldPresent (sfExchangeRate) &&
+                sle->getFieldH256 (sfRootIndex) == sle->getIndex())
+            {
+                Book book;
+                book.in.currency.copyFrom (sle->getFieldH160 (sfTakerPaysCurrency));
+                book.in.account.copyFrom (sle->getFieldH160 (sfTakerPaysIssuer));
+                book.out.account.copyFrom (sle->getFieldH160 (sfTakerGetsIssuer));
+                book.out.currency.copyFrom (sle->getFieldH160 (sfTakerGetsCurrency));
+
+                uint256 index = getBookBase (book);
+                if (seen.insert (index).second)
+                {
+                    auto orderBook = std::make_shared<OrderBook> (index, book);
+                    sourceMap[book.in].push_back (orderBook);
+                    destMap[book.out].push_back (orderBook);
+                    if (isXRP(book.out))
+                        XRPBooks.insert(book.in);
+                    ++books;
+                }
+            }
+        }
     }
     catch (const SHAMapMissingNode&)
     {
@@ -225,7 +218,8 @@ BookListeners::pointer OrderBookDB::getBookListeners (Book const& book)
 // Based on the meta, send the meta to the streams that are listening.
 // We need to determine which streams a given meta effects.
 void OrderBookDB::processTxn (
-    Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
+    std::shared_ptr<ReadView const> const& ledger,
+        const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
     ScopedLockType sl (mLock);
 
