@@ -651,8 +651,9 @@ OverlayImpl::onManifests (Job&,
             if (!hashRouter.addSuppressionPeer (hash, from->id ()))
                 continue;
 
+            auto const serialized = mo->serialized;
             auto const result =
-                manifestCache_.applyManifest (std::move (*mo), journal);
+                manifestCache_.applyManifest (std::move(*mo), journal);
 
             if (result == ManifestDisposition::accepted)
             {
@@ -662,7 +663,7 @@ OverlayImpl::onManifests (Job&,
                 static const char* const sql =
                         "INSERT INTO ValidatorManifests (RawData) VALUES (:rawData);";
                 soci::blob rawData(*db);
-                convert (mo->serialized, rawData);
+                convert (serialized, rawData);
                 *db << sql, soci::use (rawData);
                 tr.commit ();
             }
