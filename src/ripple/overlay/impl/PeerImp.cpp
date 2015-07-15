@@ -2022,10 +2022,6 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (p_journal_.debug) p_journal_.debug <<
                     "GetLedger: Don't have " << packet.ledgerseq ();
         }
-        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
-        {
-            ledger = getApp().getLedgerMaster ().getCurrentLedger ();
-        }
         else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
         {
             ledger = getApp().getLedgerMaster ().getClosedLedger ();

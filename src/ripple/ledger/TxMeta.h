@@ -58,6 +58,7 @@ public:
 
     TxMeta (uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta (uint256 const& txID, std::uint32_t ledger, std::string const&);
+    TxMeta (uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     void init (uint256 const& transactionID, std::uint32_t ledger);
     void clear ()

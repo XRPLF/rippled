@@ -41,7 +41,6 @@ struct Context;
     If there is no error in the return value, then the ledger pointer will have
     been filled.
 */
-Json::Value lookupLedgerDeprecated (Ledger::pointer&, Context&);
 Json::Value lookupLedger (std::shared_ptr<ReadView const>&, Context&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data

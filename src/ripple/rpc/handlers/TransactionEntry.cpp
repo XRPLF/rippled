@@ -34,8 +34,8 @@ namespace ripple {
 // means any ledger.
 Json::Value doTransactionEntry (RPC::Context& context)
 {
-    Ledger::pointer     lpLedger;
-    Json::Value jvResult = RPC::lookupLedgerDeprecated (lpLedger, context);
+    std::shared_ptr <ReadView const>     lpLedger;
+    Json::Value jvResult = RPC::lookupLedger (lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -68,16 +68,16 @@ Json::Value doTransactionEntry (RPC::Context& context)
             Transaction::pointer        tpTrans;
             TxMeta::pointer tmTrans;
 
-            if (!getTransaction (*lpLedger, uTransID, tpTrans, tmTrans,
-                    getApp().getMasterTransaction()))
+            auto tx = lpLedger->txRead (uTransID);
+            if (!tx.first)
             {
                 jvResult[jss::error]   = "transactionNotFound";
             }
             else
             {
-                jvResult[jss::tx_json]     = tpTrans->getJson (0);
-                if (tmTrans)
-                    jvResult[jss::metadata]    = tmTrans->getJson (0);
+                jvResult[jss::tx_json]     = tx.first->getJson (0);
+                if (tx.second)
+                    jvResult[jss::metadata]    = tx.second->getJson (0);
                 // 'accounts'
                 // 'engine_...'
                 // 'ledger_...'

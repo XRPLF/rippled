@@ -51,16 +51,17 @@ public:
     using ref = const pointer&;
 
 public:
-    AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit);
-    AcceptedLedgerTx (Ledger::ref ledger, STTx::ref,
-        TxMeta::ref);
-    AcceptedLedgerTx (Ledger::ref ledger, STTx::ref, TER result);
+    AcceptedLedgerTx (
+        std::shared_ptr<ReadView const> const& ledger,
+        std::shared_ptr<STTx const> const&,
+        std::shared_ptr<STObject const> const&);
+    AcceptedLedgerTx (std::shared_ptr<ReadView const> const& ledger, STTx::ref, TER result);
 
-    STTx::ref getTxn () const
+    std::shared_ptr <STTx const> const& getTxn () const
     {
         return mTxn;
     }
-    TxMeta::ref getMeta () const
+    std::shared_ptr <TxMeta> const& getMeta () const
     {
         return mMeta;
     }
@@ -103,9 +104,9 @@ public:
     }
 
 private:
-    Ledger::pointer                 mLedger;
-    STTx::pointer  mTxn;
-    TxMeta::pointer     mMeta;
+    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<STTx const> mTxn;
+    std::shared_ptr<TxMeta> mMeta;
     TER                             mResult;
     boost::container::flat_set<AccountID> mAffected;
     Blob        mRawMeta;

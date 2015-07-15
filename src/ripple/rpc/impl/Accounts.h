@@ -29,7 +29,7 @@ class NetworkOPs;
 namespace RPC {
 
 Json::Value accounts (
-    Ledger::ref lrLedger,
+    std::shared_ptr <ReadView const> const& lrLedger,
     RippleAddress const& naMasterGenerator,
     NetworkOPs& netOps);
 

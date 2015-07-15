@@ -129,7 +129,7 @@ public:
     // Owner functions
     //
 
-    virtual Json::Value getOwnerInfo (Ledger::pointer lpLedger,
+    virtual Json::Value getOwnerInfo (std::shared_ptr<ReadView const> lpLedger,
         AccountID const& account) = 0;
 
     //--------------------------------------------------------------------------
@@ -227,7 +227,8 @@ public:
     // Monitoring: publisher side
     //
     virtual void pubLedger (Ledger::ref lpAccepted) = 0;
-    virtual void pubProposedTransaction (Ledger::ref lpCurrent,
+    virtual void pubProposedTransaction (
+        std::shared_ptr<ReadView const> const& lpCurrent,
         STTx::ref stTxn, TER terResult) = 0;
 };
 

@@ -26,40 +26,36 @@
 
 namespace ripple {
 
-AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerialIter& sit)
-    : mLedger (ledger)
-{
-    // VFALCO This is making a needless copy
-    auto const vl = sit.getVL();
-    SerialIter txnIt (makeSlice(vl));
-
-    mTxn =      std::make_shared<STTx> (std::ref (txnIt));
-    mRawMeta =  sit.getVL ();
-    mMeta =     std::make_shared<TxMeta> (mTxn->getTransactionID (),
-        ledger->info().seq, mRawMeta);
-    mAffected = mMeta->getAffectedAccounts ();
-    mResult =   mMeta->getResultTER ();
-    buildJson ();
-}
-
-AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
-    STTx::ref txn, TxMeta::ref met)
+AcceptedLedgerTx::AcceptedLedgerTx (
+    std::shared_ptr<ReadView const> const& ledger,
+    std::shared_ptr<STTx const> const& txn,
+    std::shared_ptr<STObject const> const& met)
     : mLedger (ledger)
     , mTxn (txn)
-    , mMeta (met)
-    , mAffected (met->getAffectedAccounts ())
+    , mMeta (std::make_shared<TxMeta> (
+        txn->getTransactionID(), ledger->seq(), *met))
+    , mAffected (mMeta->getAffectedAccounts ())
 {
+    assert (! ledger->info().open);
+
     mResult = mMeta->getResultTER ();
+
+    Serializer s;
+    met->add(s);
+    mRawMeta = std::move (s.modData());
+
     buildJson ();
 }
 
-AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
+AcceptedLedgerTx::AcceptedLedgerTx (
+    std::shared_ptr<ReadView const> const& ledger,
     STTx::ref txn, TER result)
     : mLedger (ledger)
     , mTxn (txn)
     , mResult (result)
     , mAffected (txn->getMentionedAccounts ())
 {
+    assert (ledger->info().open);
     buildJson ();
 }
 

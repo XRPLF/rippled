@@ -46,6 +46,24 @@ TxMeta::TxMeta (uint256 const& txid,
         setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
 }
 
+TxMeta::TxMeta (uint256 const& txid, std::uint32_t ledger, STObject const& obj)
+    : mTransactionID (txid)
+    , mLedger (ledger)
+    , mNodes (obj.getFieldArray (sfAffectedNodes))
+{
+    mResult = obj.getFieldU8 (sfTransactionResult);
+    mIndex = obj.getFieldU32 (sfTransactionIndex);
+
+    auto affectedNodes = dynamic_cast <STArray const*>
+        (obj.peekAtPField (sfAffectedNodes));
+    assert (affectedNodes);
+    if (affectedNodes)
+        mNodes = *affectedNodes;
+
+    if (obj.isFieldPresent (sfDeliveredAmount))
+        setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
+}
+
 TxMeta::TxMeta (uint256 const& txid,
                                         std::uint32_t ledger,
                                         Blob const& vec)

@@ -78,7 +78,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     AccountID raSrc;
     AccountID raDst;
     STAmount saDstAmount;
-    Ledger::pointer lpLedger;
+    std::shared_ptr <ReadView const> lpLedger;
 
     Json::Value jvResult;
 
@@ -88,7 +88,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         context.params.isMember(jss::ledger_hash))
     {
         // The caller specified a ledger
-        jvResult = RPC::lookupLedgerDeprecated (lpLedger, context);
+        jvResult = RPC::lookupLedger (lpLedger, context);
         if (!lpLedger)
             return jvResult;
     }
@@ -170,7 +170,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
         if (lpLedger)
         {
             // The caller specified a ledger
-            lpLedger = std::make_shared<Ledger> (std::ref (*lpLedger), false);
             cache = std::make_shared<RippleLineCache>(lpLedger);
         }
         else

@@ -28,7 +28,7 @@ namespace ripple {
 namespace RPC {
 
 Json::Value accounts (
-    Ledger::ref lrLedger,
+    std::shared_ptr <ReadView const> const& lrLedger,
     RippleAddress const& naMasterGenerator,
     NetworkOPs& netOps)
 {
@@ -44,8 +44,8 @@ Json::Value accounts (
         RippleAddress pk;
         pk.setAccountPublic (naMasterGenerator, uIndex++);
 
-        auto const sle = cachedRead(*lrLedger,
-            keylet::account(calcAccountID(pk)).key, ltACCOUNT_ROOT);
+        auto const sle =
+            lrLedger->read (keylet::account(calcAccountID(pk)));
 
         if (sle)
         {

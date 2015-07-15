@@ -188,28 +188,6 @@ bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
 // return value.  Otherwise, the object contains the field "validated" and
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
-Status lookupLedgerDeprecated (
-    Ledger::pointer& ledger, Context& context, Json::Value& result)
-{
-    if (auto status = ledgerFromRequest (ledger, context))
-        return status;
-
-    auto& info = ledger->info();
-
-    if (!info.open)
-    {
-        result[jss::ledger_hash] = to_string (info.hash);
-        result[jss::ledger_index] = info.seq;
-    }
-    else
-    {
-        result[jss::ledger_current_index] = info.seq;
-    }
-
-    result[jss::validated] = getApp().getLedgerMaster().isValidLedger(info);
-    return Status::OK;
-}
-
 Status lookupLedger (
     std::shared_ptr<ReadView const>& ledger, Context& context,
     Json::Value& result)
@@ -231,15 +209,6 @@ Status lookupLedger (
 
     result[jss::validated] = isValidated (context.ledgerMaster, *ledger);
     return Status::OK;
-}
-
-Json::Value lookupLedgerDeprecated (Ledger::pointer& ledger, Context& context)
-{
-    Json::Value result;
-    if (auto status = lookupLedgerDeprecated (ledger, context, result))
-        status.inject (result);
-
-    return result;
 }
 
 Json::Value lookupLedger (
