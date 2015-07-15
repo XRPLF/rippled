@@ -50,13 +50,13 @@ public:
     using const_iterator = map_t::const_iterator;
 
 public:
-    static pointer makeAcceptedLedger (Ledger::ref ledger);
+    static pointer makeAcceptedLedger (std::shared_ptr<ReadView const> const& ledger);
     static void sweep ()
     {
         s_cache.sweep ();
     }
 
-    Ledger::ref getLedger () const
+    std::shared_ptr<ReadView const> const& getLedger () const
     {
         return mLedger;
     }
@@ -78,15 +78,15 @@ public:
     AcceptedLedgerTx::pointer getTxn (int) const;
 
 private:
-    explicit AcceptedLedger (Ledger::ref ledger);
+    explicit AcceptedLedger (std::shared_ptr<ReadView const> const& ledger);
 
     void insert (AcceptedLedgerTx::ref);
 
 private:
     static TaggedCache <uint256, AcceptedLedger> s_cache;
 
-    Ledger::pointer     mLedger;
-    map_t               mMap;
+    std::shared_ptr<ReadView const> mLedger;
+    map_t mMap;
 };
 
 } // ripple

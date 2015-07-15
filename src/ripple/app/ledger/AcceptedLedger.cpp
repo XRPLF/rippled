@@ -31,25 +31,34 @@ TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
     "AcceptedLedger", 4, 60, stopwatch(),
         deprecatedLogs().journal("TaggedCache"));
 
-AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
+AcceptedLedger::AcceptedLedger (std::shared_ptr<ReadView const> const& ledger)
+    : mLedger (ledger)
 {
-    for (auto const& item : ledger->txMap())
+    for (auto const& item : ledger->txs)
     {
-        SerialIter sit (item.slice());
         insert (std::make_shared<AcceptedLedgerTx>(
-            ledger, std::ref (sit)));
+            ledger, item.first, item.second));
     }
 }
 
-AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (Ledger::ref ledger)
+AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (
+    std::shared_ptr<ReadView const> const& ledger)
 {
-    AcceptedLedger::pointer ret = s_cache.fetch (ledger->getHash());
+    AcceptedLedger::pointer ret;
 
-    if (ret)
-        return ret;
+    if (ledger->closed ())
+    {
+        ret = s_cache.fetch (ledger->info().hash);
+
+        if (ret)
+            return ret;
+    }
 
     ret = AcceptedLedger::pointer (new AcceptedLedger (ledger));
-    s_cache.canonicalize (ledger->getHash (), ret);
+
+    if (ledger->closed ())
+        s_cache.canonicalize (ledger->info().hash, ret);
+
     return ret;
 }
 

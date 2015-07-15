@@ -35,7 +35,7 @@ class TxnSignApiFacade
 {
 private:
     NetworkOPs* const netOPs_;
-    Ledger::pointer ledger_;
+    std::shared_ptr<ReadView const> ledger_;
     AccountID accountID_;
     std::shared_ptr<SLE const> sle_;
 
@@ -59,7 +59,7 @@ public:
     : netOPs_ (nullptr) { }
 
     // For testAutoFillFees unit tests.
-    TxnSignApiFacade (NoNetworkOPs noOPs, Ledger::pointer ledger)
+    TxnSignApiFacade (NoNetworkOPs noOPs, std::shared_ptr<ReadView const> ledger)
     : netOPs_ (nullptr)
     , ledger_ (ledger)
     { }
