@@ -66,25 +66,30 @@ struct Fees
 /** Information about the notional ledger backing the view. */
 struct LedgerInfo
 {
-    // Fields for all ledgers
+    //
+    // For all ledgers
+    //
+
     bool open = true;
     LedgerIndex seq = 0;
     std::uint32_t parentCloseTime = 0;
 
-    // Fields for closed ledgers
+    //
+    // For closed ledgers
+    //
+
     // Closed means "tx set already determined"
     uint256 hash = zero;
     uint256 txHash = zero;
     uint256 accountHash = zero;
     uint256 parentHash = zero;
-
-    //uint256 stateHash;
     std::uint64_t drops = 0;
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.
-    mutable
-    bool validated = false;
+    // VFALCO TODO Make this not mutable
+    bool mutable validated = false;
+    bool accepted = false;
 
     // flags indicating how this ledger close took place
     int closeFlags = 0;
@@ -102,7 +107,6 @@ struct LedgerInfo
 // ledger close flags
 static
 std::uint32_t const sLCF_NoConsensusTime = 1;
-
 
 inline
 bool getCloseAgree (LedgerInfo const& info)

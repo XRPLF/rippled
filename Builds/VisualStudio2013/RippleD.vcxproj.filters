@@ -2805,13 +2805,16 @@
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\SNTPClient.cpp">
+    <ClCompile Include="..\..\src\ripple\core\impl\SNTPClock.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\core\impl\SNTPClient.h">
+    <ClInclude Include="..\..\src\ripple\core\impl\SNTPClock.h">
       <Filter>ripple\core\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\SociDB.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\TimeKeeper.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
@@ -2850,6 +2853,9 @@
     <ClCompile Include="..\..\src\ripple\core\tests\SociDB.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\Base58.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>

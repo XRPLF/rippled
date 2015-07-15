@@ -21,11 +21,12 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ThreadName.h>
 #include <ripple/crypto/RandomNumbers.h>
-#include <ripple/core/impl/SNTPClient.h>
+#include <ripple/core/impl/SNTPClock.h>
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
+#include <cmath>
 #include <deque>
 #include <map>
 #include <beast/cxx14/memory.h> // <memory>
@@ -69,7 +70,7 @@ static uint8_t SNTPQueryData[48] =
 #define NTP_OFF_XMITTS_FRAC     11
 
 class SNTPClientImp
-    : public SNTPClient
+    : public SNTPClock
 {
 private:
     struct Query
@@ -78,7 +79,7 @@ private:
         time_t sent; // VFALCO time_t, really?
         std::uint32_t nonce;
 
-        Query (time_t j = (time_t) -1)
+        Query (time_t j = time_t(-1))
             : replied (false)
             , sent (j)
         {
@@ -86,7 +87,7 @@ private:
     };
 
     beast::Journal j_;
-    std::mutex mutex_;
+    std::mutex mutable mutex_;
     std::thread thread_;
     boost::asio::io_service io_service_;
     boost::optional<
@@ -114,9 +115,45 @@ public:
         , timer_ (io_service_)
         , resolver_ (io_service_)
         , offset_ (0)
-        , lastUpdate_ ((time_t) -1)
+        , lastUpdate_ (time_t(-1))
         , buf_ (256)
     {
+    }
+
+    ~SNTPClientImp ()
+    {
+        if (thread_.joinable())
+        {
+            error_code ec;
+            timer_.cancel(ec);
+            socket_.cancel(ec);
+            work_ = boost::none;
+            thread_.join();
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    void
+    run (const std::vector<std::string>& servers) override
+    {
+        std::vector<std::string>::const_iterator it = servers.begin ();
+
+        if (it == servers.end ())
+        {
+            JLOG(j_.info) <<
+                "SNTP: no server specified";
+            return;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            for (auto const& item : servers)
+                servers_.emplace_back(
+                    item, time_t(-1));
+        }
+        queryAll();
+
         using namespace boost::asio;
         socket_.open (ip::udp::v4 ());
         socket_.async_receive_from (buffer (buf_, 256),
@@ -129,25 +166,38 @@ public:
         timer_.async_wait(std::bind(
             &SNTPClientImp::onTimer, this,
                 beast::asio::placeholders::error));
-        thread_ = std::thread(&SNTPClientImp::run, this);
+
+        // VFALCO Is it correct to launch the thread
+        //        here after queuing I/O?
+        //
+        thread_ = std::thread(&SNTPClientImp::doRun, this);
     }
 
-    ~SNTPClientImp ()
+    time_point
+    now() const override
     {
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.cancel(ec);
-        work_ = boost::none;
-        thread_.join();
+        std::lock_guard<std::mutex> lock (mutex_);
+        auto const when = clock_type::now();
+        if ((lastUpdate_ == (time_t)-1) ||
+                ((lastUpdate_ + NTP_TIMESTAMP_VALID) < time(nullptr)))
+            return when;
+        return when + std::chrono::seconds(offset_);
     }
-
-    void run ()
+    
+    duration
+    offset() const override
     {
-        setCallingThreadName("SNTPClient");
-        io_service_.run();
+        std::lock_guard<std::mutex> lock (mutex_);
+        return std::chrono::seconds(offset_);
     }
 
     //--------------------------------------------------------------------------
+
+    void doRun ()
+    {
+        setCallingThreadName("SNTPClock");
+        io_service_.run();
+    }
   
     void
     onTimer (error_code const& ec)
@@ -158,7 +208,7 @@ public:
         if (ec)
         {
             JLOG(j_.error) <<
-                "SNTPClient::onTimer: " << ec.message();
+                "SNTPClock::onTimer: " << ec.message();
             return;
         }
 
@@ -190,29 +240,41 @@ public:
             std::lock_guard<std::mutex> lock (mutex_);
             auto const query = queries_.find (ep_);
             if (query == queries_.end ())
+            {
                 JLOG(j_.debug) <<
                     "SNTP: Reply from " << ep_ << " found without matching query";
+            }
             else if (query->second.replied)
+            {
                 JLOG(j_.debug) <<
                     "SNTP: Duplicate response from " << ep_;
+            }
             else
             {
                 query->second.replied = true;
 
                 if (time (nullptr) > (query->second.sent + 1))
+                {
                     JLOG(j_.warning) <<
                         "SNTP: Late response from " << ep_;
+                }
                 else if (bytes_xferd < 48)
+                {
                     JLOG(j_.warning) <<
                         "SNTP: Short reply from " << ep_ <<
                             " (" << bytes_xferd << ") " << buf_.size ();
+                }
                 else if (reinterpret_cast<std::uint32_t*>(
                         &buf_[0])[NTP_OFF_ORGTS_FRAC] !=
                             query->second.nonce)
+                {
                     JLOG(j_.warning) <<
                         "SNTP: Reply from " << ep_ << "had wrong nonce";
+                }
                 else
+                {
                     processReply ();
+                }
             }
         }
 
@@ -224,26 +286,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void init (const std::vector<std::string>& servers)
-    {
-        std::vector<std::string>::const_iterator it = servers.begin ();
-
-        if (it == servers.end ())
-        {
-            JLOG(j_.info) <<
-                "SNTP: no server specified";
-            return;
-        }
-
-        for (auto const& it : servers)
-            addServer (it);
-        queryAll ();
-    }
-
     void addServer (std::string const& server)
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        servers_.push_back (std::make_pair (server, (time_t) - 1));
+        servers_.push_back (std::make_pair (server, time_t(-1)));
     }
 
     void queryAll ()
@@ -253,27 +299,15 @@ public:
         }
     }
 
-    bool getOffset (int& offset)
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-
-        if ((lastUpdate_ == (time_t) - 1) || ((lastUpdate_ + NTP_TIMESTAMP_VALID) < time (nullptr)))
-            return false;
-
-        offset = offset_;
-        return true;
-    }
-
     bool doQuery ()
     {
-
         std::lock_guard<std::mutex> lock (mutex_);
         std::vector< std::pair<std::string, time_t> >::iterator best = servers_.end ();
 
-        for (std::vector< std::pair<std::string, time_t> >::iterator it = servers_.begin (), end = best;
-                it != end; ++it)
-            if ((best == end) || (it->second == (time_t) - 1) || (it->second < best->second))
-                best = it;
+        for (auto iter = servers_.begin (), end = best;
+                iter != end; ++iter)
+            if ((best == end) || (iter->second == time_t(-1)) || (iter->second < best->second))
+                best = iter;
 
         if (best == servers_.end ())
         {
@@ -284,7 +318,7 @@ public:
 
         time_t now = time (nullptr);
 
-        if ((best->second != (time_t) - 1) && ((best->second + NTP_MIN_QUERY) >= now))
+        if ((best->second != time_t(-1)) && ((best->second + NTP_MIN_QUERY) >= now))
         {
             JLOG(j_.trace) <<
                 "SNTP: All servers recently queried";
@@ -300,44 +334,53 @@ public:
                 beast::asio::placeholders::error,
                     beast::asio::placeholders::iterator));
         JLOG(j_.trace) <<
-            "SNTP: Resolve pending for " << best->first;
+            "SNTPClock: Resolve pending for " << best->first;
         return true;
     }
 
-    void resolveComplete (const error_code& error, boost::asio::ip::udp::resolver::iterator it)
+    void resolveComplete (error_code const& ec,
+        boost::asio::ip::udp::resolver::iterator it)
     {
-        if (!error)
+        using namespace boost::asio;
+        if (ec == error::operation_aborted)
+            return;
+        if (ec)
         {
-            boost::asio::ip::udp::resolver::iterator sel = it;
-            int i = 1;
+            JLOG(j_.trace) <<
+                "SNTPClock::resolveComplete: " << ec.message();
+            return;
+        }
 
-            while (++it != boost::asio::ip::udp::resolver::iterator ())
-                if ((rand () % ++i) == 0)
-                    sel = it;
+        ip::udp::resolver::iterator sel = it;
+        int i = 1;
 
-            if (sel != boost::asio::ip::udp::resolver::iterator ())
+        while (++it != ip::udp::resolver::iterator())
+            if ((rand () % ++i) == 0)
+                sel = it;
+
+        if (sel != ip::udp::resolver::iterator ())
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            Query& query = queries_[*sel];
+            time_t now = time (nullptr);
+
+            if ((query.sent == now) || ((query.sent + 1) == now))
             {
-                std::lock_guard<std::mutex> lock (mutex_);
-                Query& query = queries_[*sel];
-                time_t now = time (nullptr);
-
-                if ((query.sent == now) || ((query.sent + 1) == now))
-                {
-                    // This can happen if the same IP address is reached through multiple names
-                    JLOG(j_.trace) <<
-                        "SNTP: Redundant query suppressed";
-                    return;
-                }
-
-                query.replied = false;
-                query.sent = now;
-                random_fill (&query.nonce);
-                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
-                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.nonce;
-                socket_.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,
-                                       std::bind (&SNTPClientImp::onSend, this,
-                                                    beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
+                // This can happen if the same IP address is reached through multiple names
+                JLOG(j_.trace) <<
+                    "SNTP: Redundant query suppressed";
+                return;
             }
+
+            query.replied = false;
+            query.sent = now;
+            random_fill (&query.nonce);
+            reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
+            reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.nonce;
+            socket_.async_send_to(buffer(SNTPQueryData, 48),
+                *sel, std::bind (&SNTPClientImp::onSend, this,
+                    beast::asio::placeholders::error,
+                        beast::asio::placeholders::bytes_transferred));
         }
     }
 
@@ -349,7 +392,7 @@ public:
         if (ec)
         {
             JLOG(j_.warning) <<
-                "SNTPClient::onSend: " << ec.message();
+                "SNTPClock::onSend: " << ec.message();
             return;
         }
     }
@@ -414,8 +457,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr<SNTPClient>
-make_SNTPClient (beast::Journal j)
+std::unique_ptr<SNTPClock>
+make_SNTPClock (beast::Journal j)
 {
     return std::make_unique<SNTPClientImp>(j);
 }

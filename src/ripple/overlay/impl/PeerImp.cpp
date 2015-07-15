@@ -32,6 +32,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/server/ServerHandler.h>
@@ -1144,7 +1145,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         set.set_hops(set.hops() + 1);
 
     // VFALCO Magic numbers are bad
-    if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
+    if ((set.closetime() + 180) < getApp().timeKeeper().closeTime().time_since_epoch().count())
         return;
 
     auto const type = publicKeyType(
@@ -1231,7 +1232,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
     p_journal_.trace << "Status: Change";
 
     if (!m->has_networktime ())
-        m->set_networktime (getApp().getOPs ().getNetworkTimeNC ());
+        m->set_networktime (getApp().timeKeeper().now().time_since_epoch().count());
 
     if (!last_status_.has_newstatus () || m->has_newstatus ())
         last_status_ = *m;
@@ -1410,7 +1411,7 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
-    std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
+    auto const closeTime = getApp().timeKeeper().closeTime().time_since_epoch().count();
 
     if (m->has_hops() && ! slot_->cluster())
         m->set_hops(m->hops() + 1);

@@ -38,6 +38,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/json/to_string.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
@@ -721,7 +722,7 @@ void LedgerConsensusImp::statePreClose ()
     if (mHaveCorrectLCL && getCloseAgree(mPreviousLedger->info()))
     {
         // we can use consensus timing
-        sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
+        sinceClose = 1000 * (getApp().timeKeeper().closeTime().time_since_epoch().count()
             - mPreviousLedger->info().closeTime);
         idleInterval = 2 * mPreviousLedger->info().closeTimeResolution;
 
@@ -731,7 +732,7 @@ void LedgerConsensusImp::statePreClose ()
     else
     {
         // Use the time we saw the last ledger close
-        sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
+        sinceClose = 1000 * (getApp().timeKeeper().closeTime().time_since_epoch().count()
             - consensus_.getLastCloseTime ());
         idleInterval = LEDGER_IDLE_INTERVAL;
     }
@@ -1041,7 +1042,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     {
         // Build validation
         auto v = std::make_shared<STValidation> (newLCLHash,
-            consensus_.validationTimestamp (getApp().getOPs ().getNetworkTimeNC ()),
+            consensus_.validationTimestamp (getApp().timeKeeper().now().time_since_epoch().count()),
             mValPublic, mProposing);
         v->setFieldU32 (sfLedgerSequence, newLCL->info().seq);
         addLoad(v);  // Our network load
@@ -1195,7 +1196,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         WriteLog (lsINFO, LedgerConsensus)
             << "Our close offset is estimated at "
             << offset << " (" << closeCount << ")";
-        getApp().getOPs ().closeTimeOffset (offset);
+        getApp().timeKeeper().adjustCloseTime(
+            std::chrono::seconds(offset));
     }
 }
 
@@ -1280,7 +1282,7 @@ void LedgerConsensusImp::addDisputedTransaction (
         protocol::TMTransaction msg;
         msg.set_rawtransaction (& (tx.front ()), tx.size ());
         msg.set_status (protocol::tsNEW);
-        msg.set_receivetimestamp (getApp().getOPs ().getNetworkTimeNC ());
+        msg.set_receivetimestamp (getApp().timeKeeper().now().time_since_epoch().count());
         getApp ().overlay ().foreach (send_always (
             std::make_shared<Message> (
                 msg, protocol::mtTRANSACTION)));
@@ -1355,7 +1357,7 @@ void LedgerConsensusImp::statusChange (protocol::NodeEvent event, Ledger& ledger
         s.set_newevent (event);
 
     s.set_ledgerseq (ledger.info().seq);
-    s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
+    s.set_networktime (getApp().timeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(ledger.info().parentHash.begin (),
         std::decay_t<decltype(ledger.info().parentHash)>::bytes);
     s.set_ledgerhash (ledger.getHash ().begin (),
@@ -1650,7 +1652,7 @@ void LedgerConsensusImp::closeLedger ()
     checkOurValidation ();
     state_ = State::establish;
     mConsensusStartTime = std::chrono::steady_clock::now ();
-    mCloseTime = getApp().getOPs ().getCloseTimeNC ();
+    mCloseTime = getApp().timeKeeper().closeTime().time_since_epoch().count();
     consensus_.setLastCloseTime (mCloseTime);
     statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
     ledgerMaster_.applyHeldTransactions ();
@@ -1682,7 +1684,7 @@ void LedgerConsensusImp::checkOurValidation ()
     }
 
     auto v = std::make_shared<STValidation> (mPreviousLedger->getHash (),
-        consensus_.validationTimestamp (getApp().getOPs ().getNetworkTimeNC ()),
+        consensus_.validationTimestamp (getApp().timeKeeper().now().time_since_epoch().count()),
         mValPublic, false);
     addLoad(v);
     v->setTrusted ();
