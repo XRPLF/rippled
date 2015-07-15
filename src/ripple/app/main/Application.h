@@ -60,6 +60,7 @@ class PathRequests;
 class PendingSaves;
 class AccountIDCache;
 class STLedgerEntry;
+class TimeKeeper;
 class TransactionMaster;
 class Validations;
 
@@ -93,6 +94,7 @@ public:
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual shamap::Family&         family() = 0;
+    virtual TimeKeeper&             timeKeeper() = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
@@ -132,7 +134,6 @@ public:
     //
     virtual DatabaseCon& getWalletDB () = 0;
 
-    virtual bool getSystemTimeOffset (int& offset) = 0;
     virtual bool isShutdown () = 0;
     virtual bool running () = 0;
     virtual void setup () = 0;

@@ -50,10 +50,10 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/ledger/CachedSLEs.h>
-#include <ripple/core/impl/SNTPClient.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
@@ -259,6 +259,8 @@ public:
     beast::Journal m_journal;
     Application::MutexType m_masterMutex;
 
+    std::unique_ptr<TimeKeeper> timeKeeper_;
+
     // Required by the SHAMapStore
     TransactionMaster m_txMaster;
 
@@ -289,7 +291,6 @@ public:
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
-    std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <Validators::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
@@ -332,6 +333,9 @@ public:
         , m_logs (logs)
 
         , m_journal (m_logs.journal("Application"))
+
+        , timeKeeper_ (make_TimeKeeper(
+            deprecatedLogs().journal("TimeKeeper")))
 
         , m_nodeStoreScheduler (*this)
 
@@ -403,9 +407,6 @@ public:
         , serverHandler_ (make_ServerHandler (*m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
 
-        , m_sntpClient (make_SNTPClient(
-            deprecatedLogs().journal("SNTPClient")))
-
         , m_validators (Validators::make_Manager(*this, get_io_service(),
             m_logs.journal("UVL"), getConfig ()))
 
@@ -468,6 +469,12 @@ public:
     family()
     {
         return family_;
+    }
+
+    TimeKeeper&
+    timeKeeper()
+    {
+        return *timeKeeper_;
     }
 
     JobQueue& getJobQueue ()
@@ -625,10 +632,6 @@ public:
     {
         return mTxnDB != nullptr;
     }
-    bool getSystemTimeOffset (int& offset)
-    {
-        return m_sntpClient->getOffset (offset);
-    }
 
     DatabaseCon& getTxnDB ()
     {
@@ -724,7 +727,7 @@ public:
         }
 
         if (!getConfig ().RUN_STANDALONE)
-            m_sntpClient->init (getConfig ().SNTP_SERVERS);
+            timeKeeper_->run(getConfig ().SNTP_SERVERS);
 
         if (!initSqliteDbs ())
         {
@@ -1139,7 +1142,7 @@ bool ApplicationImp::loadOldLedger (
 
 
                      std::uint32_t seq = 1;
-                     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
+                     auto closeTime = getApp().timeKeeper().closeTime().time_since_epoch().count();
                      std::uint32_t closeTimeResolution = 30;
                      bool closeTimeEstimated = false;
                      std::uint64_t totalDrops = 0;

@@ -48,6 +48,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
@@ -128,7 +129,6 @@ public:
         , m_clusterTimer (this)
         , mConsensus (make_Consensus ())
         , m_ledgerMaster (ledgerMaster)
-        , mCloseTimeOffset (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
         , m_job_queue (job_queue)
@@ -139,21 +139,7 @@ public:
 
     ~NetworkOPsImp() override = default;
 
-    // Network information.
-    // Our best estimate of wall time in seconds from 1/1/2000.
-    std::uint32_t getNetworkTimeNC () const override;
-
-    // Our best estimate of current ledger close time.
-    std::uint32_t getCloseTimeNC () const override;
-private:
-    std::uint32_t getCloseTimeNC (int& offset) const;
-
 public:
-    void closeTimeOffset (int) override;
-
-    /** On return the offset param holds the System time offset in seconds.
-    */
-    boost::posix_time::ptime getNetworkTimePT(int& offset) const;
     OperatingMode getOperatingMode () const override
     {
         return mMode;
@@ -461,8 +447,6 @@ private:
     LedgerMaster& m_ledgerMaster;
     InboundLedger::pointer mAcquiringLedger;
 
-    int mCloseTimeOffset;
-
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
 
@@ -592,7 +576,7 @@ void NetworkOPsImp::processClusterTimer ()
 {
     bool synced = (m_ledgerMaster.getValidatedLedgerAge() <= 240);
     ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0,
-                         getNetworkTimeNC());
+                         getApp().timeKeeper().now().time_since_epoch().count());
     auto& unl = getApp().getUNL();
     if (!unl.nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
@@ -650,56 +634,6 @@ std::string NetworkOPsImp::strOperatingMode () const
     }
 
     return paStatusToken[mMode];
-}
-
-boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT (int& offset) const
-{
-    offset = 0;
-    getApp().getSystemTimeOffset (offset);
-
-    if (std::abs (offset) >= 60)
-        m_journal.warning << "Large system time offset (" << offset << ").";
-
-    // VFALCO TODO Replace this with a beast call
-    return boost::posix_time::microsec_clock::universal_time () +
-            boost::posix_time::seconds (offset);
-}
-
-std::uint32_t NetworkOPsImp::getNetworkTimeNC () const
-{
-    int offset;
-    return iToSeconds (getNetworkTimePT (offset));
-}
-
-std::uint32_t NetworkOPsImp::getCloseTimeNC () const
-{
-    int offset;
-    return getCloseTimeNC (offset);
-}
-
-std::uint32_t NetworkOPsImp::getCloseTimeNC (int& offset) const
-{
-    return iToSeconds (getNetworkTimePT (offset) +
-                       boost::posix_time::seconds (mCloseTimeOffset));
-}
-
-void NetworkOPsImp::closeTimeOffset (int offset)
-{
-    // take large offsets, ignore small offsets, push towards our wall time
-    if (offset > 1)
-        mCloseTimeOffset += (offset + 3) / 4;
-    else if (offset < -1)
-        mCloseTimeOffset += (offset - 3) / 4;
-    else
-        mCloseTimeOffset = (mCloseTimeOffset * 3) / 4;
-
-    if (mCloseTimeOffset != 0)
-    {
-        m_journal.info << "Close time offset now " << mCloseTimeOffset;
-
-        if (std::abs (mCloseTimeOffset) >= 60)
-            m_journal.warning << "Large close time offset (" << mCloseTimeOffset << ").";
-    }
 }
 
 void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
@@ -1044,7 +978,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     e.transaction->getSTransaction()->add (s);
                     tx.set_rawtransaction (&s.getData().front(), s.getLength());
                     tx.set_status (protocol::tsCURRENT);
-                    tx.set_receivetimestamp (getApp().getOPs().getNetworkTimeNC());
+                    tx.set_receivetimestamp (getApp().timeKeeper().now().time_since_epoch().count());
                     // FIXME: This should be when we received it
                     getApp().overlay().foreach (send_if_not (
                         std::make_shared<Message> (tx, protocol::mtTRANSACTION),
@@ -1198,7 +1132,7 @@ void NetworkOPsImp::tryStartConsensus ()
         // check if the ledger is good enough to go to omFULL
         // Note: Do not go to omFULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to omCONNECTED -- TODO
-        if (getApp().getOPs ().getNetworkTimeNC () <
+        if (getApp().timeKeeper().now().time_since_epoch().count() <
             m_ledgerMaster.getCurrentLedger ()->info().closeTime)
         {
             setMode (omFULL);
@@ -1401,7 +1335,7 @@ void NetworkOPsImp::switchLastClosedLedger (
     protocol::TMStatusChange s;
     s.set_newevent (protocol::neSWITCHED_LEDGER);
     s.set_ledgerseq (newLCL->info().seq);
-    s.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
+    s.set_networktime (getApp().timeKeeper().now().time_since_epoch().count());
     uint256 hash = newLCL->info().parentHash;
     s.set_ledgerhashprevious (hash.begin (), hash.size ());
     hash = newLCL->getHash ();
@@ -2063,22 +1997,24 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                     lpClosed->getReserveInc () * baseFee / baseRef))
                     / SYSTEM_CURRENCY_PARTS;
 
-            int offset;
-            std::uint32_t closeTime (getCloseTimeNC (offset));
-            if (std::abs (offset) >= 60)
-                l[jss::system_time_offset] = offset;
+            auto const nowOffset = getApp().timeKeeper().nowOffset();
+            if (std::abs (nowOffset.count()) >= 60)
+                l[jss::system_time_offset] = nowOffset.count();
 
+            auto const closeOffset = getApp().timeKeeper().closeOffset();
+            if (std::abs (closeOffset.count()) >= 60)
+                l[jss::close_time_offset] = closeOffset.count();
+
+            // VFALCO How do we fix this?
+            /*
             std::uint32_t lCloseTime (lpClosed->info().closeTime);
-            if (std::abs (mCloseTimeOffset) >= 60)
-                l[jss::close_time_offset] = mCloseTimeOffset;
-
             if (lCloseTime <= closeTime)
             {
                 std::uint32_t age = closeTime - lCloseTime;
-
                 if (age < 1000000)
                     l[jss::age] = Json::UInt (age);
             }
+            */
         }
 
         if (valid)

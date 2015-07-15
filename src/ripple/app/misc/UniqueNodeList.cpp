@@ -31,6 +31,7 @@
 #include <ripple/basics/Time.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/Base58.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/JsonFields.h>
@@ -695,7 +696,7 @@ UniqueNodeListImp::getClusterStatus()
 
 std::uint32_t UniqueNodeListImp::getClusterFee()
 {
-    int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
+    auto const thresh = getApp().timeKeeper().now().time_since_epoch().count() - 90;
 
     std::vector<std::uint32_t> fees;
     {
@@ -723,7 +724,7 @@ void UniqueNodeListImp::addClusterStatus (Json::Value& obj)
     ScopedUNLLockType sl (mUNLLock);
     if (m_clusterNodes.size() > 1) // nodes other than us
     {
-        int          now   = getApp().getOPs().getNetworkTimeNC();
+        auto const now = getApp().timeKeeper().now().time_since_epoch().count();
         std::uint32_t ref   = getApp().getFeeTrack().getLoadBase();
         Json::Value& nodes = (obj[jss::cluster] = Json::objectValue);
 

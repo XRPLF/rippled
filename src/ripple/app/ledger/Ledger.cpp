@@ -39,6 +39,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/SociDB.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/digest.h>
@@ -223,7 +224,7 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger)
     // VFALCO Remove this call to getApp
     if (prevLedger.info_.closeTime == 0)
         info_.closeTime = roundCloseTime (
-            getApp().getOPs ().getCloseTimeNC (), info_.closeTimeResolution);
+            getApp().timeKeeper().closeTime().time_since_epoch().count(), info_.closeTimeResolution);
     else
         info_.closeTime =
             prevLedger.info_.closeTime + info_.closeTimeResolution;

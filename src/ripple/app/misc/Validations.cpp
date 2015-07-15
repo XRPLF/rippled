@@ -29,6 +29,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/core/TimeKeeper.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
 #include <thread>
@@ -86,7 +87,7 @@ private:
         if (!val->isTrusted() && getApp().getUNL().nodeInUNL (signer))
             val->setTrusted();
 
-        std::uint32_t now = getApp().getOPs().getCloseTimeNC();
+        auto const now = getApp().timeKeeper().closeTime().time_since_epoch().count();
         std::uint32_t valClose = val->getSignTime();
 
         if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
@@ -176,7 +177,8 @@ private:
 
         if (set)
         {
-            std::uint32_t now = getApp().getOPs ().getNetworkTimeNC ();
+            auto const now =
+                getApp().timeKeeper().now().time_since_epoch().count();
             for (auto& it: *set)
             {
                 bool isTrusted = it.second->isTrusted ();
@@ -304,7 +306,8 @@ private:
 
     std::list<STValidation::pointer> getCurrentTrustedValidations ()
     {
-        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        // VFALCO LEDGER_VAL_INTERVAL should be a NetClock::duration
+        auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
 
         std::list<STValidation::pointer> ret;
 
@@ -339,7 +342,7 @@ private:
     LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 priorLedger)
     {
-        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
