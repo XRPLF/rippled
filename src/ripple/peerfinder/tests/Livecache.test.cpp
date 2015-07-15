@@ -29,7 +29,7 @@ namespace PeerFinder {
 class Livecache_test : public beast::unit_test::suite
 {
 public:
-    TestClock m_clock;
+    TestStopwatch m_clock;
 
     // Add the address as an endpoint
     template <class C>

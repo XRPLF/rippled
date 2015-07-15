@@ -30,7 +30,7 @@ class KeyCache_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        TestClock clock;
+        TestStopwatch clock;
         clock.set (0);
 
         using Key = std::string;

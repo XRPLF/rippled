@@ -117,7 +117,7 @@ noripple (Account const& account,
 class Env
 {
 public:
-    using clock_type = TestClock;
+    using clock_type = TestNetClock;
 
     clock_type clock;
 
@@ -190,7 +190,7 @@ public:
             The Env clock is set to the new time.
     */
     void
-    close (TestClock::time_point const& closeTime);
+    close (NetClock::time_point const& closeTime);
 
     /** Close and advance the ledger.
 
@@ -202,6 +202,7 @@ public:
     close (std::chrono::duration<
         Rep, Period> const& elapsed)
     {
+        stopwatch_.advance(elapsed);
         close (clock.now() + elapsed);
     }
 
@@ -452,6 +453,7 @@ public:
 protected:
     int trace_ = 0;
     bool testing_ = true;
+    TestStopwatch stopwatch_;
 
     void
     autofill_sig (JTx& jt);

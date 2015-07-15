@@ -24,6 +24,15 @@
 namespace ripple {
 namespace path {
 
+static
+bool enableDirRestartFix (
+    std::uint32_t parentCloseTime)
+{
+    // Mon Aug 3 11:00:00am PDT
+    static std::uint32_t const enableAfter = 491940000;
+    return parentCloseTime > enableAfter;
+}
+
 // At the right most node of a list of consecutive offer nodes, given the amount
 // requested to be delivered, push towards the left nodes the amount requested
 // for the right nodes so we can compute how much to deliver from the source.
@@ -35,16 +44,20 @@ namespace path {
 // as the rate does not increase past the initial rate.
 
 // To deliver from an order book, when computing
-TER PathCursor::deliverNodeReverse (
-    AccountID const& uOutAccountID,  // --> Output owner's account.
-    STAmount const& saOutReq,      // --> Funds requested to be
-                                   // delivered for an increment.
-    STAmount& saOutAct) const      // <-- Funds actually delivered for an
-                                   // increment.
+TER PathCursor::deliverNodeReverseImpl (
+    AccountID const& uOutAccountID, // --> Output owner's account.
+    STAmount const& saOutReq,       // --> Funds requested to be
+                                    // delivered for an increment.
+    STAmount& saOutAct              // <-- Funds actually delivered for an
+                                    // increment
+                                        ) const
 {
     TER resultCode   = tesSUCCESS;
 
-    node().directory.restart(multiQuality_);
+    if (!enableDirRestartFix (rippleCalc_.view.info ().parentCloseTime))
+    {
+        node().directory.restart(multiQuality_);
+    }
 
     // Accumulation of what the previous node must deliver.
     // Possible optimization: Note this gets zeroed on each increment, ideally
@@ -235,7 +248,7 @@ TER PathCursor::deliverNodeReverse (
             // Compute in previous offer node how much could come in.
 
             // TODO(tom): Fix nasty recursion here!
-            resultCode = increment(-1).deliverNodeReverse(
+            resultCode = increment(-1).deliverNodeReverseImpl(
                 node().offerOwnerAccount_,
                 saInPassReq,
                 saInPassAct);
@@ -343,6 +356,23 @@ TER PathCursor::deliverNodeReverse (
         << " saPrvDlvReq=" << previousNode().saRevDeliver;
 
     return resultCode;
+}
+
+TER PathCursor::deliverNodeReverse (
+    AccountID const& uOutAccountID, // --> Output owner's account.
+    STAmount const& saOutReq,       // --> Funds requested to be
+                                    // delivered for an increment.
+    STAmount& saOutAct              // <-- Funds actually delivered for an
+                                    // increment
+                                    ) const
+{
+    if (enableDirRestartFix (rippleCalc_.view.info ().parentCloseTime))
+    {
+        for (int i = nodeIndex_; i >= 0 && !node (i).isAccount(); --i)
+            node (i).directory.restart (multiQuality_);
+    }
+
+    return deliverNodeReverseImpl(uOutAccountID, saOutReq, saOutAct);
 }
 
 }  // path
