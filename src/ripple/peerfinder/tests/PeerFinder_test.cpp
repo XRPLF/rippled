@@ -71,7 +71,7 @@ public:
         testcase("backoff 1");
         TestStore store;
         TestChecker checker;
-        TestClock clock;
+        TestStopwatch clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
@@ -109,7 +109,7 @@ public:
         testcase("backoff 2");
         TestStore store;
         TestChecker checker;
-        TestClock clock;
+        TestStopwatch clock;
         Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));

@@ -42,7 +42,7 @@ public:
     {
         beast::Journal const j;
 
-        TestClock clock;
+        TestStopwatch clock;
         clock.set (0);
 
         using Key = int;

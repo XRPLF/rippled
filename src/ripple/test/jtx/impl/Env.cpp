@@ -58,7 +58,7 @@ Env::Env (beast::unit_test::suite& test_)
             generateSeed("masterpassphrase")))
     , closed_ (std::make_shared<Ledger>(
         create_genesis, config))
-    , cachedSLEs_ (std::chrono::seconds(5), clock)
+    , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {
     memoize(master);
@@ -78,8 +78,7 @@ Env::closed() const
 }
 
 void
-Env::close(
-    TestClock::time_point const& closeTime)
+Env::close(NetClock::time_point const& closeTime)
 {
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
@@ -111,10 +110,12 @@ Env::close(
                 config, journal);
         accum.apply(*next);
     }
-    next->setAccepted(
-        closeTime.time_since_epoch().count(),
-            ledgerPossibleTimeResolutions[0],
-                true);
+    // To ensure that the close time is exact and not rounded, we don't
+    // claim to have reached consensus on what it should be.
+    next->setAccepted (
+        std::chrono::duration_cast<std::chrono::seconds> (
+            closeTime.time_since_epoch ()).count (),
+        ledgerPossibleTimeResolutions[0], false);
     OrderedTxs locals({});
     openLedger.accept(next, locals,
         false, retries, applyFlags(), *router);

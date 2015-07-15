@@ -39,19 +39,6 @@ using weeks = std::chrono::duration
     <int, std::ratio_multiply<
         days::period, std::ratio<7>>>;
 
-/** A clock for measuring elapsed time.
-
-    The epoch is unspecified.
-*/
-using Stopwatch =
-    beast::abstract_clock<
-        std::chrono::steady_clock>;
-
-/** A manual clock for unit tests. */
-using TestClock =
-    beast::manual_clock<
-        Stopwatch::clock_type>;
-
 /** Clock for measuring Ripple Network Time.
   
     The epoch is January 1, 2000
@@ -77,8 +64,39 @@ public:
         std::chrono::time_point<
             NetClock, duration>;
 
-    // VFALCO now() intentionally omitted for the moment
+    static bool const /* constexpr? */ is_steady =
+        std::chrono::system_clock::is_steady;
+
+    static
+    time_point
+    now()
+    {
+        using namespace std;
+        auto const when =
+            chrono::system_clock::now();
+        return time_point(
+            chrono::duration_cast<duration>(
+                when.time_since_epoch() -
+                    days(10957)));
+    }
 };
+
+/** A manual NetClock for unit tests. */
+using TestNetClock =
+    beast::manual_clock<NetClock>;
+
+/** A clock for measuring elapsed time.
+
+    The epoch is unspecified.
+*/
+using Stopwatch =
+    beast::abstract_clock<
+        std::chrono::steady_clock>;
+
+/** A manual Stopwatch for unit tests. */
+using TestStopwatch =
+    beast::manual_clock<
+        std::chrono::steady_clock>;
 
 /** Returns an instance of a wall clock. */
 inline
