@@ -68,7 +68,7 @@ public:
         @param ledger A closed ledger
     */
     explicit
-    OpenLedger (std::shared_ptr<
+    OpenLedger(std::shared_ptr<
         Ledger const> const& ledger,
             Config const& config, CachedSLEs& cache,
                 beast::Journal journal);

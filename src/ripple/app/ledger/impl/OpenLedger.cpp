@@ -20,13 +20,13 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/ledger/CachingReadView.h>
+#include <ripple/ledger/CachedView.h>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 
-OpenLedger::OpenLedger(
-    std::shared_ptr<Ledger const> const& ledger,
+OpenLedger::OpenLedger(std::shared_ptr<
+    Ledger const> const& ledger,
         Config const& config, CachedSLEs& cache,
             beast::Journal journal)
     : j_ (journal)
@@ -65,7 +65,7 @@ OpenLedger::modify (std::function<
 }
 
 void
-OpenLedger::accept (std::shared_ptr<
+OpenLedger::accept(std::shared_ptr<
     Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
@@ -113,12 +113,12 @@ OpenLedger::accept (std::shared_ptr<
 //------------------------------------------------------------------------------
 
 std::shared_ptr<OpenView>
-OpenLedger::create (std::shared_ptr<
+OpenLedger::create(std::shared_ptr<
     Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
         open_ledger, std::make_shared<
-            CachingReadView const>(ledger,
+            CachedLedger const>(ledger,
                 cache_));
 }
 

@@ -18,30 +18,21 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/ledger/CachingReadView.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/Serializer.h>
 
 namespace ripple {
-
-CachingReadView::CachingReadView(
-    DigestAwareReadView const* base,
-        CachedSLEs& cache,
-            std::shared_ptr<void const> hold)
-    : cache_ (cache)
-    , base_ (*base)
-    , hold_ (hold)
-{
-}
+namespace detail {
 
 bool
-CachingReadView::exists (Keylet const& k) const
+CachedViewImpl::exists (Keylet const& k) const
 {
     return read(k) != nullptr;
 }
 
 std::shared_ptr<SLE const>
-CachingReadView::read (Keylet const& k) const
+CachedViewImpl::read (Keylet const& k) const
 {
     {
         std::lock_guard<
@@ -70,9 +61,10 @@ CachingReadView::read (Keylet const& k) const
         return sle;
     }
     if (! k.check(*iter->second))
-        LogicError("CachingReadView::read: wrong type");
+        LogicError("CachedView::read: wrong type");
     return iter->second;
 
 }
 
+} // detail
 } // ripple

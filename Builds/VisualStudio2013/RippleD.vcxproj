@@ -2303,7 +2303,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\CachedSLEs.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\CachingReadView.h">
+    <ClInclude Include="..\..\src\ripple\ledger\CachedView.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\detail\ApplyStateTable.h">
     </ClInclude>
@@ -2333,7 +2333,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\ledger\impl\CachingReadView.cpp">
+    <ClCompile Include="..\..\src\ripple\ledger\impl\CachedView.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

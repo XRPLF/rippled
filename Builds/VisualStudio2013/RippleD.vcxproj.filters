@@ -3030,7 +3030,7 @@
     <ClInclude Include="..\..\src\ripple\ledger\CachedSLEs.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\CachingReadView.h">
+    <ClInclude Include="..\..\src\ripple\ledger\CachedView.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\detail\ApplyStateTable.h">
@@ -3063,7 +3063,7 @@
     <ClCompile Include="..\..\src\ripple\ledger\impl\CachedSLEs.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\ledger\impl\CachingReadView.cpp">
+    <ClCompile Include="..\..\src\ripple\ledger\impl\CachedView.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\Directory.cpp">
