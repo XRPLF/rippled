@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Indexes.h>
@@ -411,6 +412,9 @@ private:
     // Reserve increment in drops
     std::uint32_t mutable mReserveIncrement = 0;
 };
+
+/** A ledger wrapped in a CachedView. */
+using CachedLedger = CachedView<Ledger>;
 
 //------------------------------------------------------------------------------
 //

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_CACHINGREADVIEW_H_INCLUDED
-#define RIPPLE_LEDGER_CACHINGREADVIEW_H_INCLUDED
+#ifndef RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
+#define RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
 
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/ReadView.h>
@@ -26,40 +26,38 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <type_traits>
 
 namespace ripple {
 
-//------------------------------------------------------------------------------
+namespace detail {
 
-/** ReadView that caches by key and hash. */
-class CachingReadView
-    : public ReadView
+class CachedViewImpl
+    : public DigestAwareReadView
 {
 private:
+    DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    DigestAwareReadView const& base_;
-    std::shared_ptr<void const> hold_;
     std::unordered_map<key_type,
         std::shared_ptr<SLE const>,
             hardened_hash<>> mutable map_;
 
 public:
-    CachingReadView() = delete;
-    CachingReadView (CachingReadView const&) = delete;
-    CachingReadView& operator= (CachingReadView const&) = delete;
+    CachedViewImpl() = delete;
+    CachedViewImpl (CachedViewImpl const&) = delete;
+    CachedViewImpl& operator= (CachedViewImpl const&) = delete;
 
-    CachingReadView(
-        DigestAwareReadView const* base,
-            CachedSLEs& cache,
-                std::shared_ptr<void const> hold);
-
-    CachingReadView (std::shared_ptr<
-        DigestAwareReadView const> const& base,
+    CachedViewImpl (DigestAwareReadView const* base,
             CachedSLEs& cache)
-        : CachingReadView (&*base, cache, base)
+        : base_ (*base)
+        , cache_ (cache)
     {
     }
+
+    //
+    // ReadView
+    //
 
     bool
     exists (Keylet const& k) const override;
@@ -110,39 +108,58 @@ public:
         return base_.txRead(key);
     }
 
+    //
+    // DigestAwareReadView
+    //
+
+    boost::optional<digest_type>
+    digest (key_type const& key) const override
+    {
+        return base_.digest(key);
+    }
+
 };
 
-//------------------------------------------------------------------------------
+} // detail
 
-/** Wrap a DigestAwareReadView with a cache.
+/** Wraps a DigestAwareReadView to provide caching.
 
-    Effects:
-
-        Returns ownership of a base ReadView that is
-        wrapped in a thread-safe cache.
-
-        The returned ReadView gains a reference to
-        the base.
-
-    Postconditions:
-
-        The base object will not be destroyed before
-        the returned view is destroyed.
-
-    The caller is responsible for ensuring that the
-    `cache` object lifetime extends to the lifetime of
-    the returned object.
+    @tparam Base A subclass of DigestAwareReadView
 */
-inline
-std::shared_ptr<ReadView const>
-makeCached (std::shared_ptr<
-    DigestAwareReadView const> const& base,
-        CachedSLEs& cache)
+template <class Base>
+class CachedView
+    : public detail::CachedViewImpl
 {
-    return std::make_shared<
-        CachingReadView const>(
-            &*base, cache, base);
-}
+private:
+    static_assert(std::is_base_of<
+        DigestAwareReadView, Base>::value, "");
+
+    std::shared_ptr<Base const> sp_;
+
+public:
+    using base_type = Base;
+
+    CachedView() = delete;
+    CachedView (CachedView const&) = delete;
+    CachedView& operator= (CachedView const&) = delete;
+
+    CachedView (std::shared_ptr<
+        Base const> const& base, CachedSLEs& cache)
+        : CachedViewImpl (base.get(), cache)
+        , sp_ (base)
+    {
+    }
+
+    /** Returns the base type.
+
+        @note This breaks encapsulation and bypasses the cache.
+    */
+    std::shared_ptr<Base const> const&
+    base() const
+    {
+        return sp_;
+    }
+};
 
 } // ripple
 
