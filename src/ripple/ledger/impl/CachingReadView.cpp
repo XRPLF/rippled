@@ -70,7 +70,7 @@ CachingReadView::read (Keylet const& k) const
         return sle;
     }
     if (! k.check(*iter->second))
-        LogicError("CachingReadView::read: wrong type");
+        DIE("CachingReadView::read: wrong type");
     return iter->second;
 
 }

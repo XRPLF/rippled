@@ -74,13 +74,6 @@ void danger(FailureReport const&);
 /** Set or reset danger mode from a BasicConfig. */
 void setupDanger(BasicConfig const&);
 
-
-/** Called when faulty logic causes a broken invariant. DEPRECATED.
- */
-void
-LogicError (
-    std::string const& how);
-
 } // ripple
 
 /**

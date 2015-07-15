@@ -122,7 +122,7 @@ RawStateTable::erase(
     switch(item.first)
     {
     case Action::erase:
-        LogicError("RawStateTable::erase: already erased");
+        DIE("RawStateTable::erase: already erased");
         break;
     case Action::insert:
         items_.erase(result.first);
@@ -153,10 +153,10 @@ RawStateTable::insert(
         item.second = sle;
         break;
     case Action::insert:
-        LogicError("RawStateTable::insert: already inserted");
+        DIE("RawStateTable::insert: already inserted");
         break;
     case Action::replace:
-        LogicError("RawStateTable::insert: already exists");
+        DIE("RawStateTable::insert: already exists");
         break;
     }
 }
@@ -176,7 +176,7 @@ RawStateTable::replace(
     switch(item.first)
     {
     case Action::erase:
-        LogicError("RawStateTable::replace: was erased");
+        DIE("RawStateTable::replace: was erased");
         break;
     case Action::insert:
     case Action::replace:

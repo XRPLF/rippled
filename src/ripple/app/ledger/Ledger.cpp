@@ -931,7 +931,7 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (! stateMap_->delItem(sle->key()))
-        LogicError("Ledger::rawErase: key not found");
+        DIE("Ledger::rawErase: key not found");
 }
 
 void
@@ -945,7 +945,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     // VFALCO NOTE addGiveItem should take ownership
     if (! stateMap_->addGiveItem(
             std::move(item), false, false))
-        LogicError("Ledger::rawInsert: key already exists");
+        DIE("Ledger::rawInsert: key already exists");
 }
 
 void
@@ -959,7 +959,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     // VFALCO NOTE updateGiveItem should take ownership
     if (! stateMap_->updateGiveItem(
             std::move(item), false, false))
-        LogicError("Ledger::rawReplace: key not found");
+        DIE("Ledger::rawReplace: key not found");
 }
 
 void
@@ -981,7 +981,7 @@ Ledger::rawTxInsert (uint256 const& key,
             SHAMapItem const> (key, std::move(s));
         if (! txMap().addGiveItem
                 (std::move(item), true, true))
-            LogicError("duplicate_tx: " + to_string(key));
+            DIE("duplicate_tx: " + to_string(key));
     }
     else
     {
@@ -990,7 +990,7 @@ Ledger::rawTxInsert (uint256 const& key,
             SHAMapItem const>(key, txn->peekData());
         if (! txMap().addGiveItem(
                 std::move(item), true, false))
-            LogicError("duplicate_tx: " + to_string(key));
+            DIE("duplicate_tx: " + to_string(key));
     }
 }
 

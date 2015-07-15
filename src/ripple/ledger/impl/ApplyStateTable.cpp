@@ -335,14 +335,14 @@ ApplyStateTable::erase(
     auto const iter =
         items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::erase: missing key");
+        DIE("ApplyStateTable::erase: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::erase: unknown SLE");
+        DIE("ApplyStateTable::erase: unknown SLE");
     switch(item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::erase: double erase");
+        DIE("ApplyStateTable::erase: double erase");
         break;
     case Action::insert:
         items_.erase(iter);
@@ -369,7 +369,7 @@ ApplyStateTable::rawErase (ReadView const& base,
     switch(item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::rawErase: double erase");
+        DIE("ApplyStateTable::rawErase: double erase");
         break;
     case Action::insert:
         items_.erase(result.first);
@@ -402,11 +402,11 @@ ApplyStateTable::insert (ReadView const& base,
     switch(item.first)
     {
     case Action::cache:
-        LogicError("ApplyStateTable::insert: already cached");
+        DIE("ApplyStateTable::insert: already cached");
     case Action::insert:
-        LogicError("ApplyStateTable::insert: already inserted");        
+        DIE("ApplyStateTable::insert: already inserted");
     case Action::modify:
-        LogicError("ApplyStateTable::insert: already modified");
+        DIE("ApplyStateTable::insert: already modified");
     case Action::erase:
         break;
     }
@@ -433,7 +433,7 @@ ApplyStateTable::replace (ReadView const& base,
     switch (item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::replace: already erased");
+        DIE("ApplyStateTable::replace: already erased");
     case Action::cache:
         item.first = Action::modify;
         break;
@@ -451,14 +451,14 @@ ApplyStateTable::update (ReadView const& base,
     auto const iter =
         items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::update: missing key");
+        DIE("ApplyStateTable::update: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::update: unknown SLE");
+        DIE("ApplyStateTable::update: unknown SLE");
     switch (item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::update: erased");
+        DIE("ApplyStateTable::update: erased");
         break;
     case Action::cache:
         item.first = Action::modify;

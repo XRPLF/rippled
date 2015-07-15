@@ -98,10 +98,4 @@ void danger(FailureReport const& report)
     detail::endExecution(detail::dangerMode, "DANGER", report);
 }
 
-void
-LogicError (std::string const&)
-{
-    detail::accessViolation();
-}
-
 } // ripple
