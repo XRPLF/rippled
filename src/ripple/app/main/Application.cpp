@@ -101,7 +101,7 @@ public:
 
     static Application& getInstance ()
     {
-        bassert (s_instance != nullptr);
+        DANGER_UNLESS(s_instance != nullptr);
         return *s_instance;
     }
 };

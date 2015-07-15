@@ -20,13 +20,14 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
+#include <ripple/basics/UnorderedContainers.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/basics/contract.h>
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/impl/Import.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/JsonFields.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/Insight.h>
 #include <beast/threads/SharedData.h>
@@ -462,7 +463,7 @@ public:
                     state->admin.iterator_to (entry));
                 break;
             default:
-                bassertfalse;
+                DANGER("Unreachable");
                 break;
             }
             state->inactive.push_back (entry);
@@ -473,7 +474,7 @@ public:
     void erase (Table::iterator iter, SharedState::Access& state)
     {
         Entry& entry (iter->second);
-        bassert (entry.refcount == 0);
+        DANGER_UNLESS(entry.refcount == 0);
         state->inactive.erase (
             state->inactive.iterator_to (entry));
         state->table.erase (iter);

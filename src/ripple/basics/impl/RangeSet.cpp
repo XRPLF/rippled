@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/basics/contract.h>
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/foreach.hpp>
@@ -121,7 +122,7 @@ std::uint32_t RangeSet::prevMissing (std::uint32_t v) const
         }
     }
 
-    bassert (result == absent || !hasValue (result));
+    DANGER_UNLESS(result == absent || !hasValue (result));
 
     return result;
 }
