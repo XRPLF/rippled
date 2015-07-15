@@ -53,7 +53,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/ledger/CachedSLEs.h>
-#include <ripple/net/SNTPClient.h>
+#include <ripple/core/impl/SNTPClient.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
@@ -403,7 +403,8 @@ public:
         , serverHandler_ (make_ServerHandler (*m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
 
-        , m_sntpClient (SNTPClient::New (*this))
+        , m_sntpClient (make_SNTPClient(
+            deprecatedLogs().journal("SNTPClient")))
 
         , m_validators (Validators::make_Manager(*this, get_io_service(),
             m_logs.journal("UVL"), getConfig ()))

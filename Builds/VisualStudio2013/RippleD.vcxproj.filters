@@ -2805,6 +2805,12 @@
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\SNTPClient.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\impl\SNTPClient.h">
+      <Filter>ripple\core\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\SociDB.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
@@ -3132,9 +3138,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCSub.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\SNTPClient.cpp">
-      <Filter>ripple\net\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\net\InfoSub.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
@@ -3145,9 +3148,6 @@
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCSub.h">
-      <Filter>ripple\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\SNTPClient.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Backend.h">
