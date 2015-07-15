@@ -280,15 +280,16 @@ public:
             if (it.second != 0)
                 trans.setFieldU32 (sfFlags, it.second);
 
-            uint256 txID = trans.getTransactionID();
-
             Serializer s;
             trans.add (s);
 
-#if RIPPLE_PROPOSE_AMENDMENTS
+        #if ! RIPPLE_PROPOSE_AMENDMENTS
+            return;
+        #endif
+
+            uint256 txID = trans.getTransactionID();
             auto tItem = std::make_shared <SHAMapItem> (txID, s.peekData());
             initialPosition->addGiveItem (tItem, true, false);
-#endif
         }
     }
 
