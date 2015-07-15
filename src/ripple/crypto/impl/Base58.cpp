@@ -122,10 +122,7 @@ bool Base58::raw_decode (char const* first, char const* last, void* dest,
             return false;
         bnChar.setuint ((unsigned int) i);
 
-        int const success (BN_mul (&bn, &bn, &bn58, pctx));
-
-        assert (success);
-        (void) success;
+        DANGER_UNLESS(BN_mul (&bn, &bn, &bn58, pctx));
 
         bn += bnChar;
     }

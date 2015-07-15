@@ -141,7 +141,7 @@ ManagerImp::erase (Factory& factory)
     std::lock_guard<std::mutex> _(mutex_);
     auto const iter = std::find_if(list_.begin(), list_.end(),
         [&factory](Factory* other) { return other == &factory; });
-    assert(iter != list_.end());
+    DANGER_UNLESS(iter != list_.end());
     list_.erase(iter);
 }
 

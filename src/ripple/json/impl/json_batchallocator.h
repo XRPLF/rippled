@@ -47,8 +47,8 @@ public:
         , objectsPerPage_ ( objectsPerPage )
     {
         //      printf( "Size: %d => %s\n", sizeof(AllocatedType), typeid(AllocatedType).name() );
-        assert ( sizeof (AllocatedType) * objectPerAllocation >= sizeof (AllocatedType*) ); // We must be able to store a slist in the object free space.
-        assert ( objectsPerPage >= 16 );
+        DANGER_UNLESS( sizeof (AllocatedType) * objectPerAllocation >= sizeof (AllocatedType*) ); // We must be able to store a slist in the object free space.
+        DANGER_UNLESS( objectsPerPage >= 16 );
         batches_ = allocateBatch ( 0 );  // allocated a dummy page
         currentBatch_ = batches_;
     }
@@ -98,7 +98,7 @@ public:
     /// @warning it is the responsability of the caller to actually destruct the object.
     void release ( AllocatedType* object )
     {
-        assert ( object != 0 );
+        DANGER_UNLESS( object != 0 );
         * (AllocatedType**)object = freeHead_;
         freeHead_ = object;
     }
@@ -138,4 +138,3 @@ private:
 } // namespace Json
 
 #endif // JSONCPP_BATCHALLOCATOR_H_INCLUDED
-

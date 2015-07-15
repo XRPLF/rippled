@@ -22,7 +22,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
-    
+
 namespace ripple {
 
 ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,
@@ -91,7 +91,7 @@ ConnectAttempt::run()
 void
 ConnectAttempt::close()
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (stream_.next_layer().is_open())
     {
         error_code ec;
@@ -105,7 +105,7 @@ ConnectAttempt::close()
 void
 ConnectAttempt::fail (std::string const& reason)
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (stream_.next_layer().is_open())
         if (journal_.debug) journal_.debug <<
             reason;
@@ -115,7 +115,7 @@ ConnectAttempt::fail (std::string const& reason)
 void
 ConnectAttempt::fail (std::string const& name, error_code ec)
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (stream_.next_layer().is_open())
         if (journal_.debug) journal_.debug <<
             name << ": " << ec.message();

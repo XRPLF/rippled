@@ -69,7 +69,7 @@ public:
     void setValueH160 (base_uint<160, Tag> const& v)
     {
         peekValue () = Buffer (v.data (), v.size ());
-        assert (peekValue ().size () == (160 / 8));
+        DANGER_UNLESS(peekValue ().size () == (160 / 8));
     }
 
     // VFALCO This is a clumsy interface, it should return

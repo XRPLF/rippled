@@ -43,8 +43,8 @@ creditLimit (
         result.setIssuer (account);
     }
 
-    assert (result.getIssuer () == account);
-    assert (result.getCurrency () == currency);
+    DANGER_UNLESS(result.getIssuer () == account);
+    DANGER_UNLESS(result.getCurrency () == currency);
     return result;
 }
 
@@ -67,8 +67,8 @@ STAmount creditBalance (
         result.setIssuer (account);
     }
 
-    assert (result.getIssuer () == account);
-    assert (result.getCurrency () == currency);
+    DANGER_UNLESS(result.getIssuer () == account);
+    DANGER_UNLESS(result.getCurrency () == currency);
     return result;
 }
 

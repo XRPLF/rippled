@@ -834,7 +834,7 @@ void STObject::add (Serializer& s, bool withSigningFields) const
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
-        assert ((field->getSType() != STI_OBJECT) ||
+        DANGER_UNLESS((field->getSType() != STI_OBJECT) ||
             (field->getFName().fieldType == STI_OBJECT));
         field->addFieldID (s);
         field->add (s);
@@ -872,7 +872,7 @@ STObject::getSortedFields (STObject const& objToSort)
 
     // There should never be duplicate fields in an STObject. Verify that
     // in debug mode.
-    assert (std::adjacent_find (sf.cbegin (), sf.cend ()) == sf.cend ());
+    DANGER_UNLESS(std::adjacent_find (sf.cbegin (), sf.cend ()) == sf.cend ());
 
     return sf;
 }
@@ -880,8 +880,8 @@ STObject::getSortedFields (STObject const& objToSort)
 bool STObject::equivalentSTObjectSameTemplate (
     STObject const& obj1, STObject const& obj2)
 {
-    assert (obj1.mType != nullptr);
-    assert (obj1.mType == obj2.mType);
+    DANGER_UNLESS(obj1.mType != nullptr);
+    DANGER_UNLESS(obj1.mType == obj2.mType);
 
     return std::equal (obj1.begin (), obj1.end (), obj2.begin (), obj2.end (),
         [] (STBase const& st1, STBase const& st2)

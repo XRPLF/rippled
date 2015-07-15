@@ -67,22 +67,22 @@ BasicTaker::BasicTaker (
     , cross_type_ (cross_type)
     , journal_ (journal)
 {
-    assert (remaining_.in > zero);
-    assert (remaining_.out > zero);
+    DANGER_UNLESS(remaining_.in > zero);
+    DANGER_UNLESS(remaining_.out > zero);
 
-    assert (m_rate_in != 0);
-    assert (m_rate_out != 0);
+    DANGER_UNLESS(m_rate_in != 0);
+    DANGER_UNLESS(m_rate_out != 0);
 
     // If we are dealing with a particular flavor, make sure that it's the
     // flavor we expect:
-    assert (cross_type != CrossType::XrpToIou ||
+    DANGER_UNLESS(cross_type != CrossType::XrpToIou ||
         (isXRP (issue_in ()) && !isXRP (issue_out ())));
 
-    assert (cross_type != CrossType::IouToXrp ||
+    DANGER_UNLESS(cross_type != CrossType::IouToXrp ||
         (!isXRP (issue_in ()) && isXRP (issue_out ())));
 
     // And make sure we're not crossing XRP for XRP
-    assert (!isXRP (issue_in ()) || !isXRP (issue_out ()));
+    DANGER_UNLESS(!isXRP (issue_in ()) || !isXRP (issue_out ()));
 
     // If this is a passive order, we adjust the quality so as to prevent offers
     // at the same quality level from being consumed.
@@ -95,7 +95,7 @@ BasicTaker::effective_rate (
     std::uint32_t rate, Issue const &issue,
     AccountID const& from, AccountID const& to)
 {
-    assert (rate != 0);
+    DANGER_UNLESS(rate != 0);
 
     if (rate != QUALITY_ONE)
     {
@@ -151,14 +151,14 @@ BasicTaker::remaining_offer () const
 
     if (sell_)
     {
-        assert (remaining_.in > zero);
+        DANGER_UNLESS(remaining_.in > zero);
 
         // We scale the output based on the remaining input:
         return Amounts (remaining_.in, divRound (
             remaining_.in, quality_.rate (), issue_out_, true));
     }
 
-    assert (remaining_.out > zero);
+    DANGER_UNLESS(remaining_.out > zero);
 
     // We scale the input based on the remaining output:
     return Amounts (mulRound (
@@ -377,7 +377,7 @@ BasicTaker::flow_iou_to_iou (
 BasicTaker::Flow
 BasicTaker::do_cross (Amounts offer, Quality quality, AccountID const& owner)
 {
-    assert (!done ());
+    DANGER_UNLESS(!done ());
 
     auto const owner_funds = get_funds (owner, offer.out);
     auto const taker_funds = get_funds (account (), offer.in);
@@ -406,7 +406,7 @@ BasicTaker::do_cross (Amounts offer, Quality quality, AccountID const& owner)
     remaining_.out -= result.order.out;
     remaining_.in -= result.order.in;
 
-    assert (remaining_.in >= zero);
+    DANGER_UNLESS(remaining_.in >= zero);
 
     return result;
 }
@@ -417,12 +417,12 @@ BasicTaker::do_cross (
     Amounts offer1, Quality quality1, AccountID const& owner1,
     Amounts offer2, Quality quality2, AccountID const& owner2)
 {
-    assert (!done ());
+    DANGER_UNLESS(!done ());
 
-    assert (!offer1.in.native ());
-    assert (offer1.out.native ());
-    assert (offer2.in.native ());
-    assert (!offer2.out.native ());
+    DANGER_UNLESS(!offer1.in.native ());
+    DANGER_UNLESS(offer1.out.native ());
+    DANGER_UNLESS(offer2.in.native ());
+    DANGER_UNLESS(!offer2.out.native ());
 
     // If the taker owns the first leg of the offer, then the taker's available
     // funds aren't the limiting factor for the input - the offer itself is.
@@ -528,8 +528,8 @@ Taker::Taker (CrossType cross_type, ApplyView& view,
     , direct_crossings_ (0)
     , bridge_crossings_ (0)
 {
-    assert (issue_in () == offer.in.issue ());
-    assert (issue_out () == offer.out.issue ());
+    DANGER_UNLESS(issue_in () == offer.in.issue ());
+    DANGER_UNLESS(issue_out () == offer.out.issue ());
 
     if (journal_.debug)
     {
@@ -657,7 +657,7 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
 
     if (cross_type () != CrossType::XrpToIou)
     {
-        assert (!isXRP (flow.order.in));
+        DANGER_UNLESS(!isXRP (flow.order.in));
 
         if(result == tesSUCCESS)
             result = redeemIOU (account (), flow.issuers.in, flow.issuers.in.issue ());
@@ -667,7 +667,7 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
     }
     else
     {
-        assert (isXRP (flow.order.in));
+        DANGER_UNLESS(isXRP (flow.order.in));
 
         if (result == tesSUCCESS)
             result = transferXRP (account (), offer.owner (), flow.order.in);
@@ -676,7 +676,7 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
     // Now send funds from the account whose offer we're taking
     if (cross_type () != CrossType::IouToXrp)
     {
-        assert (!isXRP (flow.order.out));
+        DANGER_UNLESS(!isXRP (flow.order.out));
 
         if(result == tesSUCCESS)
             result = redeemIOU (offer.owner (), flow.issuers.out, flow.issuers.out.issue ());
@@ -686,7 +686,7 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
     }
     else
     {
-        assert (isXRP (flow.order.out));
+        DANGER_UNLESS(isXRP (flow.order.out));
 
         if (result == tesSUCCESS)
             result = transferXRP (offer.owner (), account (), flow.order.out);
@@ -783,4 +783,3 @@ Taker::calculateRate (
 }
 
 } // ripple
-

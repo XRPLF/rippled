@@ -35,9 +35,7 @@ std::string Status::codeString () const
     {
         std::string s1, s2;
 
-        auto success = transResultInfo (toTER (), s1, s2);
-        assert (success);
-        (void) success;
+        DANGER_UNLESS(transResultInfo (toTER (), s1, s2));
 
         return s1 + ": " + s2;
     }
@@ -48,7 +46,7 @@ std::string Status::codeString () const
         return info.token +  ": " + info.message;
     }
 
-    assert (false);
+    DANGER("Unreachable");
     return "";
 }
 

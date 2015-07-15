@@ -60,7 +60,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
         << " inAct()=" << inAct()
         << " inReq()=" << inReq();
 
-    assert (inReq() < zero || inAct() < inReq());
+    DANGER_UNLESS(inReq() < zero || inAct() < inReq());
     // Error if done.
 
     CondLog (outAct() >= outReq(), lsWARNING, RippleCalc)
@@ -68,8 +68,8 @@ void PathState::reset(STAmount const& in, STAmount const& out)
         << " saOutAct=" << outAct()
         << " saOutReq=" << outReq();
 
-    assert (outAct() < outReq());
-    assert (nodes().size () >= 2);
+    DANGER_UNLESS(outAct() < outReq());
+    DANGER_UNLESS(nodes().size () >= 2);
 }
 
 // Return true, iff lhs has less priority than rhs.
@@ -536,7 +536,7 @@ TER PathState::expandPath (
         && !isXRP(currencyOutID)               // Next is not XRP
         && issuerOutID != uReceiverID)         // Out issuer is not receiver
     {
-        assert (!nodes_.empty ());
+        DANGER_UNLESS(!nodes_.empty ());
 
         auto const& backNode = nodes_.back ();
 
@@ -610,7 +610,7 @@ TER PathState::expandPath (
 /** Check if an expanded path violates freeze rules */
 void PathState::checkFreeze()
 {
-    assert (nodes_.size() >= 2);
+    DANGER_UNLESS(nodes_.size() >= 2);
 
     // A path with no intermediaries -- pure issue/redeem
     // cannot be frozen.

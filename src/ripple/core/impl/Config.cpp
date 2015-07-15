@@ -415,7 +415,7 @@ void Config::loadFromString (std::string const& fileContents)
         if (getSingleSection (secConfig, "database_path", dbPath))
         {
             boost::filesystem::path p(dbPath);
-            legacy("database_path", 
+            legacy("database_path",
                    boost::filesystem::absolute (p).string ());
         }
     }
@@ -590,7 +590,7 @@ int Config::getSize (SizedItemName item) const
             return sizeTable[i].sizes[NODE_SIZE];
     }
 
-    assert (false);
+    DANGER("Unknown configuration size");
     return -1;
 }
 

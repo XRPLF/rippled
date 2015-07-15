@@ -61,19 +61,19 @@ void
 SlotImp::state (State state_)
 {
     // Must go through activate() to set active state
-    assert (state_ != active);
+    DANGER_UNLESS(state_ != active);
 
     // The state must be different
-    assert (state_ != m_state);
+    DANGER_UNLESS(state_ != m_state);
 
     // You can't transition into the initial states
-    assert (state_ != accept && state_ != connect);
+    DANGER_UNLESS(state_ != accept && state_ != connect);
 
     // Can only become connected from outbound connect state
-    assert (state_ != connected || (! m_inbound && m_state == connect));
+    DANGER_UNLESS(state_ != connected || (! m_inbound && m_state == connect));
 
     // Can't gracefully close on an outbound connection attempt
-    assert (state_ != closing || m_state != connect);
+    DANGER_UNLESS(state_ != closing || m_state != connect);
 
     m_state = state_;
 }
@@ -82,7 +82,7 @@ void
 SlotImp::activate (clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
-    assert (m_state == accept || m_state == connected);
+    DANGER_UNLESS(m_state == accept || m_state == connected);
 
     m_state = active;
     whenAcceptEndpoints = now;

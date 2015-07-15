@@ -128,7 +128,7 @@ static bignum makeHash (Blob const& pubGen, int seq, bignum const& order)
 
     bignum result;
 
-    assert(pubGen.size() == 33);
+    DANGER_UNLESS(pubGen.size() == 33);
     do
     {
         // buf: 0          pubGen             33 seq   37 subSeq  41

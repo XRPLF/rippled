@@ -37,7 +37,7 @@ TER
 CreateOffer::checkAcceptAsset(IssueRef issue) const
 {
     // Only valid for custom currencies
-    assert (!isXRP (issue.currency));
+    DANGER_UNLESS(!isXRP (issue.currency));
 
     auto const issuerAccount = ctx_.view().read(
         keylet::account(issue.account));
@@ -103,7 +103,7 @@ CreateOffer::select_path (
     bool have_bridge, OfferStream const& leg1, OfferStream const& leg2)
 {
     // If we don't have any viable path, why are we here?!
-    assert (have_direct || have_bridge);
+    DANGER_UNLESS(have_direct || have_bridge);
 
     // If there's no bridged path, the direct is the best by default.
     if (!have_bridge)
@@ -136,7 +136,7 @@ CreateOffer::bridged_cross (
 {
     auto const& taker_amount = taker.original_offer ();
 
-    assert (!isXRP (taker_amount.in) && !isXRP (taker_amount.out));
+    DANGER_UNLESS(!isXRP (taker_amount.in) && !isXRP (taker_amount.out));
 
     if (isXRP (taker_amount.in) || isXRP (taker_amount.out))
         throw std::logic_error ("Bridging with XRP and an endpoint.");
@@ -266,7 +266,7 @@ CreateOffer::bridged_cross (
 
         // Postcondition: If we aren't done, then we *must* have consumed at
         //                least one offer fully.
-        assert (direct_consumed || leg1_consumed || leg2_consumed);
+        DANGER_UNLESS(direct_consumed || leg1_consumed || leg2_consumed);
 
         if (!direct_consumed && !leg1_consumed && !leg2_consumed)
             throw std::logic_error ("bridged crossing: nothing was fully consumed.");
@@ -340,7 +340,7 @@ CreateOffer::direct_cross (
 
         // Postcondition: If we aren't done, then we *must* have consumed the
         //                offer on the books fully!
-        assert (direct_consumed);
+        DANGER_UNLESS(direct_consumed);
 
         if (!direct_consumed)
             throw std::logic_error ("direct crossing: nothing was fully consumed.");
@@ -661,7 +661,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         }
 
         std::tie(result, place_offer) = cross (view, view_cancel, taker_amount);
-        assert (result != tefINTERNAL);
+        DANGER_UNLESS(result != tefINTERNAL);
 
         if (j_.trace)
         {
@@ -679,8 +679,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
             return { result, true };
         }
 
-        assert (saTakerGets.issue () == place_offer.in.issue ());
-        assert (saTakerPays.issue () == place_offer.out.issue ());
+        DANGER_UNLESS(saTakerGets.issue () == place_offer.in.issue ());
+        DANGER_UNLESS(saTakerPays.issue () == place_offer.out.issue ());
 
         if (taker_amount != place_offer)
             crossed = true;
@@ -708,7 +708,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         saTakerGets = place_offer.in;
     }
 
-    assert (saTakerPays > zero && saTakerGets > zero);
+    DANGER_UNLESS(saTakerPays > zero && saTakerGets > zero);
 
     if (result != tesSUCCESS)
     {

@@ -52,7 +52,7 @@ SetSignerList::doApply ()
         // Fall through intentionally
         break;
     }
-    assert (false); // Should not be possible to get here.
+    DANGER("Unreachable");
     return temMALFORMED;
 }
 

@@ -131,7 +131,7 @@ STTx::getMentionedAccounts () const
         if (auto sa = dynamic_cast<STAccount const*> (&it))
         {
             AccountID id;
-            assert(sa->isValueH160());
+            DANGER_UNLESS(sa->isValueH160());
             if (sa->getValueH160(id))
                 list.insert(id);
         }
@@ -210,7 +210,7 @@ bool STTx::checkSign(bool allowMultiSign) const
         }
     }
 
-    assert (!boost::indeterminate (sig_state_));
+    DANGER_UNLESS(!boost::indeterminate (sig_state_));
 
     return static_cast<bool> (sig_state_);
 }
@@ -267,7 +267,7 @@ STTx::getMetaSQL (Serializer rawTxn,
     std::string rTxn = sqlEscape (rawTxn.peekData ());
 
     auto format = TxFormats::getInstance().findByType (tx_type_);
-    assert (format != nullptr);
+    DANGER_UNLESS(format != nullptr);
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % format->getName ()
@@ -338,7 +338,7 @@ STTx::checkMultiSign () const
     /*
         We need to detect (and reject) if a multi-signer is both signing
         directly and using a SigningFor.  Here's an example:
-        
+
         {
             ...
             "MultiSigners": [
@@ -364,22 +364,22 @@ STTx::checkMultiSign () const
                 ...
             }
         }
-        
+
         Why is this way of signing a problem?  Alice has a signer list, and
         Becky can show up in that list only once.  By design.  So if Becky
         signs twice -- once directly and once indirectly -- we have three
         options:
-        
+
          1. We can add Becky's weight toward Alice's quorum twice, once for
             each signature.  This seems both unexpected and counter to Alice's
             intention.
-        
+
          2. We could allow both signatures, but only add Becky's weight
             toward Alice's quorum once.  This seems a bit better.  But it allows
             our clients to ask rippled to do more work than necessary.  We
             should also let the client know that only one of the signatures
             was necessary.
-        
+
          3. The only way to tell the client that they have done more work
             than necessary (and that one of the signatures will be ignored) is
             to declare the transaction malformed.  This behavior also aligns

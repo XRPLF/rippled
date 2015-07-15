@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_JOBTYPES_H_INCLUDED
 #define RIPPLE_CORE_JOBTYPES_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/core/Job.h>
 #include <ripple/core/JobTypeInfo.h>
 #include <map>
@@ -178,7 +179,7 @@ public:
     JobTypeInfo const& get (JobType jt) const
     {
         Map::const_iterator const iter (m_map.find (jt));
-        assert (iter != m_map.end ());
+        DANGER_UNLESS(iter != m_map.end ());
 
         if (iter != m_map.end())
             return iter->second;
@@ -215,7 +216,7 @@ private:
     void add(JobType jt, std::string name, int limit,
         bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
     {
-        assert (m_map.find (jt) == m_map.end ());
+        DANGER_UNLESS(m_map.find (jt) == m_map.end ());
 
         std::pair<Map::iterator,bool> result (m_map.emplace (
             std::piecewise_construct,
@@ -223,8 +224,7 @@ private:
             std::forward_as_tuple (jt, name, limit, skip, special,
                 avgLatency, peakLatency)));
 
-        assert (result.second == true);
-        (void) result.second;
+        DANGER_UNLESS(result.second == true);
     }
 
     JobTypeInfo m_unknown;

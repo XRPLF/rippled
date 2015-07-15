@@ -58,8 +58,8 @@ public:
             std::uint8_t const*>(data))
         , size_ (size)
     {
-        assert(data_ != nullptr);
-        assert(size_ > 0);
+        DANGER_UNLESS(data_ != nullptr);
+        DANGER_UNLESS(size_ > 0);
     }
 
     /** Return `true` if the byte range is empty. */
@@ -93,7 +93,7 @@ public:
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
-        assert(i < size_);
+        DANGER_UNLESS(i < size_);
         return data_[i];
     }
 

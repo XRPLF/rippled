@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/json/json_writer.h>
+#include <ripple/json/impl/json_assert.h>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -69,7 +70,7 @@ std::string valueToString ( Int value )
     if ( isNegative )
         *--current = '-';
 
-    assert ( current >= buffer );
+    DANGER_UNLESS( current >= buffer );
     return current;
 }
 
@@ -79,7 +80,7 @@ std::string valueToString ( UInt value )
     char buffer[32];
     char* current = buffer + sizeof (buffer);
     uintToString ( value, current );
-    assert ( current >= buffer );
+    DANGER_UNLESS( current >= buffer );
     return current;
 }
 
@@ -397,7 +398,7 @@ StyledWriter::writeArrayValue ( const Value& value )
         }
         else // output on a single line
         {
-            assert ( childValues_.size () == size );
+            DANGER_UNLESS( childValues_.size () == size );
             document_ += "[ ";
 
             for ( unsigned index = 0; index < size; ++index )
@@ -495,7 +496,7 @@ StyledWriter::indent ()
 void
 StyledWriter::unindent ()
 {
-    assert ( int (indentString_.size ()) >= indentSize_ );
+    DANGER_UNLESS( int (indentString_.size ()) >= indentSize_ );
     indentString_.resize ( indentString_.size () - indentSize_ );
 }
 
@@ -631,7 +632,7 @@ StyledStreamWriter::writeArrayValue ( const Value& value )
         }
         else // output on a single line
         {
-            assert ( childValues_.size () == size );
+            DANGER_UNLESS( childValues_.size () == size );
             *document_ << "[ ";
 
             for ( unsigned index = 0; index < size; ++index )
@@ -730,7 +731,7 @@ StyledStreamWriter::indent ()
 void
 StyledStreamWriter::unindent ()
 {
-    assert ( indentString_.size () >= indentation_.size () );
+    DANGER_UNLESS( indentString_.size () >= indentation_.size () );
     indentString_.resize ( indentString_.size () - indentation_.size () );
 }
 

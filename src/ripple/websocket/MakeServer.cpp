@@ -35,7 +35,7 @@ std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
     WriteLog (lsWARNING, WebSocket) << "Websocket version " << version;
     if (version == WebSocket02::versionName())
         return makeServer02 (desc);
-    assert (version == "04");
+    DANGER_UNLESS(version == "04");
     return makeServer04 (desc);
 }
 

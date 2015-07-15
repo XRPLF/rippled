@@ -52,7 +52,7 @@ getSNValue (STAmount const& amount)
 
     auto ret = static_cast<std::int64_t>(amount.mantissa ());
 
-    assert (static_cast<std::uint64_t>(ret) == amount.mantissa ());
+    DANGER_UNLESS(static_cast<std::uint64_t>(ret) == amount.mantissa ());
 
     if (amount.negative ())
         ret = -ret;
@@ -366,7 +366,7 @@ getRate (STAmount const& offerOut, STAmount const& offerIn)
         STAmount r = divide (offerIn, offerOut, noIssue());
         if (r == zero) // offer is too good
             return 0;
-        assert ((r.exponent() >= -100) && (r.exponent() <= 155));
+        DANGER_UNLESS((r.exponent() >= -100) && (r.exponent() <= 155));
         std::uint64_t ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
@@ -453,7 +453,7 @@ STAmount::getText () const
         return ret;
     }
 
-    assert (mOffset + 43 > 0);
+    DANGER_UNLESS(mOffset + 43 > 0);
 
     size_t const pad_prefix = 27;
     size_t const pad_suffix = 23;
@@ -477,7 +477,7 @@ STAmount::getText () const
     if (std::distance (pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    assert (post_to >= post_from);
+    DANGER_UNLESS(post_to >= post_from);
 
     pre_from = std::find_if (pre_from, pre_to,
         [](char c)
@@ -490,7 +490,7 @@ STAmount::getText () const
     if (std::distance (post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    assert (post_to >= post_from);
+    DANGER_UNLESS(post_to >= post_from);
 
     post_to = std::find_if(
         std::make_reverse_iterator (post_to),
@@ -528,7 +528,7 @@ STAmount::add (Serializer& s) const
 {
     if (mIsNative)
     {
-        assert (mOffset == 0);
+        DANGER_UNLESS(mOffset == 0);
 
         if (!mIsNegative)
             s.add64 (mValue | cPosNative);
@@ -631,9 +631,9 @@ void STAmount::canonicalize ()
     if (mOffset > cMaxOffset)
         throw std::runtime_error ("value overflow");
 
-    assert ((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
-    assert ((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
-    assert ((mValue != 0) || (mOffset != -100));
+    DANGER_UNLESS((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
+    DANGER_UNLESS((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
+    DANGER_UNLESS((mValue != 0) || (mOffset != -100));
 }
 
 void STAmount::set (std::int64_t v)
@@ -961,7 +961,7 @@ divide (STAmount const& num, STAmount const& den, Issue const& issue)
     }
 
     // 10^16 <= quotient <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
+    DANGER_UNLESS(BN_num_bytes (&v) <= 64);
 
     // TODO(tom): where do 5 and 17 come from?
     return STAmount (issue, v.getuint64 () + 5,
@@ -1026,7 +1026,7 @@ multiply (STAmount const& v1, STAmount const& v2, Issue const& issue)
     }
 
     // 10^16 <= product <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
+    DANGER_UNLESS(BN_num_bytes (&v) <= 64);
 
     // TODO(tom): where do 7 and 14 come from?
     return STAmount (issue, v.getuint64 () + 7,
@@ -1137,7 +1137,7 @@ mulRound (STAmount const& v1, STAmount const& v2,
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= product <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
+    DANGER_UNLESS(BN_num_bytes (&v) <= 64);
 
     std::uint64_t amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
@@ -1188,7 +1188,7 @@ divRound (STAmount const& num, STAmount const& den,
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= quotient <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
+    DANGER_UNLESS(BN_num_bytes (&v) <= 64);
 
     std::uint64_t amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;

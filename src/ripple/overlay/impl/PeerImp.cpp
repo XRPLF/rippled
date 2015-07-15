@@ -90,8 +90,8 @@ PeerImp::~PeerImp ()
             name_ << " left cluster";
     if (state_ == State::active)
     {
-        assert(publicKey_.isSet());
-        assert(publicKey_.isValid());
+        DANGER_UNLESS(publicKey_.isSet());
+        DANGER_UNLESS(publicKey_.isValid());
         overlay_.onPeerDeactivate(id_, publicKey_);
     }
     overlay_.peerFinder().on_closed (slot_);
@@ -124,7 +124,7 @@ PeerImp::run()
     }
     else
     {
-        assert (state_ == State::active);
+        DANGER_UNLESS(state_ == State::active);
         // XXX Set timer: connection is in grace period to be useful.
         // XXX Set timer: connection idle (idle may vary depending on connection type.)
         if ((hello_.has_ledgerclosed ()) && (
@@ -400,7 +400,7 @@ PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
 void
 PeerImp::close()
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         detaching_ = true; // DEPRECATED
@@ -423,7 +423,7 @@ PeerImp::close()
 void
 PeerImp::fail(std::string const& reason)
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (socket_.is_open())
         if (journal_.debug) journal_.debug <<
             reason;
@@ -433,7 +433,7 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
-    assert(strand_.running_in_this_thread());
+    DANGER_UNLESS(strand_.running_in_this_thread());
     if (socket_.is_open())
         if (journal_.debug) journal_.debug <<
             name << ": " << ec.message();
@@ -443,9 +443,9 @@ PeerImp::fail(std::string const& name, error_code ec)
 void
 PeerImp::gracefulClose()
 {
-    assert(strand_.running_in_this_thread());
-    assert(socket_.is_open());
-    assert(! gracefulClose_);
+    DANGER_UNLESS(strand_.running_in_this_thread());
+    DANGER_UNLESS(socket_.is_open());
+    DANGER_UNLESS(! gracefulClose_);
     gracefulClose_ = true;
 #if 0
     // Flush messages
@@ -572,8 +572,8 @@ PeerImp::onShutdown(error_code ec)
 
 void PeerImp::doAccept()
 {
-    assert(read_buffer_.size() == 0);
-    assert(http_message_.upgrade());
+    DANGER_UNLESS(read_buffer_.size() == 0);
+    DANGER_UNLESS(http_message_.upgrade());
 
     if(journal_.debug) journal_.debug <<
         "doAccept: " << remote_address_;
@@ -769,7 +769,7 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
             "onWriteMessage";
     }
 
-    assert(! send_queue_.empty());
+    DANGER_UNLESS(! send_queue_.empty());
     send_queue_.pop();
     if (! send_queue_.empty())
     {
@@ -1743,7 +1743,7 @@ PeerImp::checkPropose (Job& job,
     p_journal_.trace <<
         "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    assert (packet);
+    DANGER_UNLESS(packet);
     protocol::TMProposeSet& set = *packet;
 
     if (! cluster() && ! proposal->checkSign (set.signature ()))
@@ -2160,7 +2160,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             // to keep the compiler happy.
             if (map && map->getNodeFat (mn, nodeIDs, rawNodes, fatLeaves, depth))
             {
-                assert (nodeIDs.size () == rawNodes.size ());
+                DANGER_UNLESS(nodeIDs.size () == rawNodes.size ());
                 if (p_journal_.trace) p_journal_.trace <<
                     "GetLedger: getNodeFat got " << rawNodes.size () << " nodes";
                 std::vector<SHAMapNodeID>::iterator nodeIDIterator;

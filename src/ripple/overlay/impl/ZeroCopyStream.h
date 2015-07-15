@@ -214,7 +214,7 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp (int count)
 {
-    assert(count <= commit_);
+    DANGER_UNLESS(count <= commit_);
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;

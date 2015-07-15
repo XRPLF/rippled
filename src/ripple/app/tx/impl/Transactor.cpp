@@ -675,7 +675,7 @@ Transactor::operator()()
                 "Transaction serdes mismatch";
             JLOG(j_.info) << to_string(mTxn.getJson (0));
             JLOG(j_.fatal) << s2.getJson (0);
-            assert (false);
+            DANGER("Transaction series mismatch");
         }
     }
 #endif
@@ -712,7 +712,7 @@ Transactor::operator()()
         // only claim the transaction fee
         JLOG(j_.debug) <<
             "Reprocessing tx " << txID << " to only claim fee";
-        
+
         ctx_.discard();
 
         auto const txnAcct = view().peek(

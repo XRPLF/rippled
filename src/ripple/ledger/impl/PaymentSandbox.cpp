@@ -42,8 +42,8 @@ void DeferredCredits::credit (AccountID const& sender,
 {
     using std::get;
 
-    assert (sender != receiver);
-    assert (!amount.negative ());
+    DANGER_UNLESS(sender != receiver);
+    DANGER_UNLESS(!amount.negative ());
 
     auto const k = makeKey (sender, receiver, amount.getCurrency ());
     auto i = map_.find (k);
@@ -147,16 +147,16 @@ PaymentSandbox::creditHook (AccountID const& from,
 void
 PaymentSandbox::apply (RawView& to)
 {
-    assert(! ps_);
+    DANGER_UNLESS(! ps_);
     items_.apply(to);
 }
 
 void
 PaymentSandbox::apply (PaymentSandbox& to)
 {
-    assert(ps_ == &to);
+    DANGER_UNLESS(ps_ == &to);
     items_.apply(to);
     tab_.apply(to.tab_);
 }
 
-}  // ripple
+} // ripple

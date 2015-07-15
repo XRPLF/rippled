@@ -107,7 +107,7 @@ static
 void
 load (Number& mp, Slice const& buf)
 {
-    assert(buf.size() != 0);
+    DANGER_UNLESS(buf.size() != 0);
     auto& b = mp.backend();         // backend
     auto const a = &b.limbs()[0];   // limb array
     using Limb = std::decay_t<

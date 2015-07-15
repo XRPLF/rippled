@@ -256,7 +256,7 @@ inline
 uint256 const&
 SHAMapInnerNode::getChildHash (int m) const
 {
-    assert ((m >= 0) && (m < 16) && (getType() == tnINNER));
+    DANGER_UNLESS((m >= 0) && (m < 16) && (getType() == tnINNER));
     return mHashes[m];
 }
 

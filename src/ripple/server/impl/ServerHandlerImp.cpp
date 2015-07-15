@@ -232,7 +232,7 @@ ServerHandlerImp::processRequest (
 
     // Move off the webserver thread onto the JobQueue.
     yield();
-    assert (getApp().getJobQueue().getJobForThread());
+    DANGER_UNLESS(getApp().getJobQueue().getJobForThread());
 
     if (auto count = setup_.yieldStrategy.byteYieldCount)
         output = RPC::chunkedYieldingOutput (std::move (output), yield, count);

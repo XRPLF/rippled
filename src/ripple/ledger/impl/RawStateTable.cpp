@@ -52,7 +52,7 @@ bool
 RawStateTable::exists (ReadView const& base,
     Keylet const& k) const
 {
-    assert(k.key.isNonZero());
+    DANGER_UNLESS(k.key.isNonZero());
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);

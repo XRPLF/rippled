@@ -81,7 +81,7 @@ bool
 ReadViewFwdRange<ValueType>::iterator::operator==(
     iterator const& other) const
 {
-    assert(view_ == other.view_);
+    DANGER_UNLESS(view_ == other.view_);
     return impl_->equal(*other.impl_);
 }
 

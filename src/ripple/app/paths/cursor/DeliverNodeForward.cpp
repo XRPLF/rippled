@@ -237,7 +237,7 @@ TER PathCursor::deliverNodeForward (
                     // Output fees are paid by offer owner and not passed to
                     // previous.
 
-                    assert (saOutPassAct < saOutPassMax);
+                    DANGER_UNLESS(saOutPassAct < saOutPassMax);
                     auto inPassAct = mulRound (
                         saOutPassAct, node().saOfrRate, saInReq.issue (), true);
                     saInPassAct = std::min (node().saTakerPays, inPassAct);
@@ -337,7 +337,7 @@ TER PathCursor::deliverNodeForward (
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;
 
-                assert (saOutPassAct < saOutFunded);
+                DANGER_UNLESS(saOutPassAct < saOutFunded);
             }
 
             saInAct += saInPassAct;

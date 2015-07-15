@@ -38,7 +38,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
     //        SHAMap should provide an accessor to get the injected Database,
     //        and this should use that Database instad of getNodeStore
-    assert(type !=
+    DANGER_UNLESS(type !=
         SHAMapTreeNode::tnTRANSACTION_NM);
     getApp().getNodeStore().store(
         hotTRANSACTION_NODE,

@@ -29,7 +29,7 @@ namespace ripple {
 Json::Value doLedgerClosed (RPC::Context& context)
 {
     auto ledger = context.ledgerMaster.getClosedLedger ();
-    assert (ledger);
+    DANGER_UNLESS(ledger);
 
     Json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->info().seq;

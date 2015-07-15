@@ -110,7 +110,7 @@ bool LedgerProposal::checkSign (std::string const& signature) const
 
     HashStream h;
     hash_append(h);
-    assert(valid == (publicKey_.verify(
+    DANGER_UNLESS(valid == (publicKey_.verify(
         Slice(h.data(), h.size()),
             makeSlice(signature), false)));
 

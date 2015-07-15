@@ -102,7 +102,7 @@ ApplyStateTable::apply (OpenView& to,
             meta.setAffectedNode (item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
-                assert (origNode && curNode);
+                DANGER_UNLESS(origNode && curNode);
                 threadOwners (to, meta, origNode, newMod, j);
 
                 STObject prevs (sfPreviousFields);
@@ -133,7 +133,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else if (type == &sfModifiedNode)
             {
-                assert (curNode && origNode);
+                DANGER_UNLESS(curNode && origNode);
 
                 if (curNode->isThreadedType ()) // thread transaction to node item modified
                     threadTx (meta, curNode, newMod);
@@ -162,7 +162,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else if (type == &sfCreatedNode) // if created, thread to owner(s)
             {
-                assert (curNode && !origNode);
+                DANGER_UNLESS(curNode && !origNode);
                 threadOwners (to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType ()) // always thread to self
@@ -183,7 +183,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else
             {
-                assert (false);
+                DANGER("Unreachable");
             }
         }
 
@@ -493,7 +493,7 @@ ApplyStateTable::threadTx (TxMeta& meta,
                 sfModifiedNode), prevTxID,
                     prevLgrID))
         return true;
-    assert (false);
+    DANGER("No threadTx");
     return false;
 }
 
@@ -519,7 +519,7 @@ ApplyStateTable::getForMod (ReadView const& base,
         auto miter = mods.find (key);
         if (miter != mods.end ())
         {
-            assert (miter->second);
+            DANGER_UNLESS(miter->second);
             return miter->second;
         }
     }
@@ -544,7 +544,7 @@ ApplyStateTable::threadTx (ReadView const& base,
 {
     auto const sle = getForMod(
         base, keylet::account(to).key, mods, j);
-    assert(sle);
+    DANGER_UNLESS(sle);
     if (! sle)
     {
         // VFALCO We need to think about throwing

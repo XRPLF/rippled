@@ -75,7 +75,7 @@ getGeneratorIndex (AccountID const& uGeneratorID)
 uint256
 getBookBase (Book const& book)
 {
-    assert (isConsistent (book));
+    DANGER_UNLESS(isConsistent (book));
     // Return with quality 0.
     return getQualityIndex(sha512Half(
         std::uint16_t(spaceBookDir),
@@ -256,14 +256,14 @@ Keylet offer_t::operator()(AccountID const& id,
 Keylet quality_t::operator()(Keylet const& k,
     std::uint64_t q) const
 {
-    assert(k.type == ltDIR_NODE);
+    DANGER_UNLESS(k.type == ltDIR_NODE);
     return { ltDIR_NODE,
         getQualityIndex(k.key, q) };
 }
 
 Keylet next_t::operator()(Keylet const& k) const
 {
-    assert(k.type == ltDIR_NODE);
+    DANGER_UNLESS(k.type == ltDIR_NODE);
     return { ltDIR_NODE,
         getQualityNext(k.key) };
 }
@@ -304,7 +304,7 @@ Keylet page(uint256 const& key,
 Keylet page(Keylet const& root,
     std::uint64_t index)
 {
-    assert(root.type == ltDIR_NODE);
+    DANGER_UNLESS(root.type == ltDIR_NODE);
     return page(root.key, index);
 }
 

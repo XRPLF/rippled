@@ -60,7 +60,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
     : SHAMapAbstractNode(type, seq)
     , mItem (item)
 {
-    assert (item->peekData ().size () >= 12);
+    DANGER_UNLESS(item->peekData ().size () >= 12);
     updateHash();
 }
 
@@ -69,7 +69,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
     : SHAMapAbstractNode(type, seq, hash)
     , mItem (item)
 {
-    assert (item->peekData ().size () >= 12);
+    DANGER_UNLESS(item->peekData ().size () >= 12);
 }
 
 std::shared_ptr<SHAMapAbstractNode>
@@ -261,7 +261,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             throw std::runtime_error ("invalid node prefix");
         }
     }
-    assert (false);
+    DANGER("Unknown format.");
     throw std::runtime_error ("Unknown format");
 }
 
@@ -315,7 +315,7 @@ SHAMapTreeNode::updateHash()
                 mItem->key());
     }
     else
-        assert (false);
+        DANGER("Unreachable");
 
     if (nh == mHash)
         return false;
@@ -327,7 +327,7 @@ SHAMapTreeNode::updateHash()
 void
 SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
-    assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
+    DANGER_UNLESS((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
     if (mType == tnERROR)
         throw std::runtime_error ("invalid I node type");
@@ -338,7 +338,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
     }
     else if (mType == tnINNER)
     {
-        assert (!isEmpty ());
+        DANGER_UNLESS(!isEmpty ());
 
         if (format == snfPREFIX)
         {
@@ -371,13 +371,13 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
         }
     }
     else
-        assert (false);
+        DANGER("Unreachable");
 }
 
 void
 SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 {
-    assert ((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
+    DANGER_UNLESS((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 
     if (mType == tnERROR)
         throw std::runtime_error ("invalid I node type");
@@ -430,15 +430,15 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
         }
     }
     else
-        assert (false);
+        DANGER("Unreachable");
 }
 
 bool SHAMapTreeNode::setItem (std::shared_ptr<SHAMapItem const> const& i, TNType type)
 {
     mType = type;
     mItem = i;
-    assert (isLeaf ());
-    assert (mSeq != 0);
+    DANGER_UNLESS(isLeaf ());
+    DANGER_UNLESS(mSeq != 0);
     return updateHash ();
 }
 
@@ -449,7 +449,7 @@ bool SHAMapInnerNode::isEmpty () const
 
 int SHAMapInnerNode::getBranchCount () const
 {
-    assert (isInner ());
+    DANGER_UNLESS(isInner ());
     int count = 0;
 
     for (int i = 0; i < 16; ++i)
@@ -524,10 +524,10 @@ SHAMapTreeNode::getString(const SHAMapNodeID & id) const
 void
 SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapAbstractNode> const& child)
 {
-    assert ((m >= 0) && (m < 16));
-    assert (mType == tnINNER);
-    assert (mSeq != 0);
-    assert (child.get() != this);
+    DANGER_UNLESS((m >= 0) && (m < 16));
+    DANGER_UNLESS(mType == tnINNER);
+    DANGER_UNLESS(mSeq != 0);
+    DANGER_UNLESS(child.get() != this);
     mHashes[m].zero();
     mHash.zero();
     if (child)
@@ -540,11 +540,11 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapAbstractNode> const& chil
 // finished modifying, now make shareable
 void SHAMapInnerNode::shareChild (int m, std::shared_ptr<SHAMapAbstractNode> const& child)
 {
-    assert ((m >= 0) && (m < 16));
-    assert (mType == tnINNER);
-    assert (mSeq != 0);
-    assert (child);
-    assert (child.get() != this);
+    DANGER_UNLESS((m >= 0) && (m < 16));
+    DANGER_UNLESS(mType == tnINNER);
+    DANGER_UNLESS(mSeq != 0);
+    DANGER_UNLESS(child);
+    DANGER_UNLESS(child.get() != this);
 
     mChildren[m] = child;
 }
@@ -552,8 +552,8 @@ void SHAMapInnerNode::shareChild (int m, std::shared_ptr<SHAMapAbstractNode> con
 SHAMapAbstractNode*
 SHAMapInnerNode::getChildPointer (int branch)
 {
-    assert (branch >= 0 && branch < 16);
-    assert (isInner());
+    DANGER_UNLESS(branch >= 0 && branch < 16);
+    DANGER_UNLESS(isInner());
 
     std::unique_lock <std::mutex> lock (childLock);
     return mChildren[branch].get ();
@@ -562,8 +562,8 @@ SHAMapInnerNode::getChildPointer (int branch)
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapInnerNode::getChild (int branch)
 {
-    assert (branch >= 0 && branch < 16);
-    assert (isInner());
+    DANGER_UNLESS(branch >= 0 && branch < 16);
+    DANGER_UNLESS(isInner());
 
     std::unique_lock <std::mutex> lock (childLock);
     return mChildren[branch];
@@ -572,10 +572,10 @@ SHAMapInnerNode::getChild (int branch)
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapInnerNode::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNode> node)
 {
-    assert (branch >= 0 && branch < 16);
-    assert (isInner());
-    assert (node);
-    assert (node->getNodeHash() == mHashes[branch]);
+    DANGER_UNLESS(branch >= 0 && branch < 16);
+    DANGER_UNLESS(isInner());
+    DANGER_UNLESS(node);
+    DANGER_UNLESS(node->getNodeHash() == mHashes[branch]);
 
     std::unique_lock <std::mutex> lock (childLock);
     if (mChildren[branch])

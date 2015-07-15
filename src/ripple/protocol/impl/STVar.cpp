@@ -148,7 +148,7 @@ STVar::STVar (SerialIter& sit, SField const& name)
 
 STVar::STVar (SerializedTypeID id, SField const& name)
 {
-    assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
+    DANGER_UNLESS((id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)
     {
     case STI_NOTPRESENT:    construct<STBase>(name); return;

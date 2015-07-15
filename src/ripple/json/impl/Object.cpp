@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/Object.h>
 
 namespace Json {
@@ -154,7 +155,7 @@ void Array::append (Json::Value const& v)
         return;
     }
     }
-    assert (false);  // Can't get here.
+    DANGER("");
 }
 
 void Object::set (std::string const& k, Json::Value const& v)
@@ -184,7 +185,7 @@ void Object::set (std::string const& k, Json::Value const& v)
         return;
     }
     }
-    assert (false);  // Can't get here.
+    DANGER("Unreachable");
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +195,7 @@ namespace {
 template <class Object>
 void doCopyFrom (Object& to, Json::Value const& from)
 {
-    assert (from.isObject());
+    DANGER_UNLESS(from.isObject());
     auto members = from.getMemberNames();
     for (auto& m: members)
         to[m] = from[m];

@@ -93,8 +93,8 @@ public:
     void
     add (Serializer& s) const override
     {
-        assert (fName->isBinary ());
-        assert (fName->fieldType == getSType());
+        DANGER_UNLESS(fName->isBinary ());
+        DANGER_UNLESS(fName->fieldType == getSType());
         s.addBitString<Bits> (bitString_);
     }
 

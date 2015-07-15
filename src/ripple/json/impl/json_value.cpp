@@ -832,7 +832,7 @@ Value::resize ( UInt newSize )
         for ( UInt index = newSize; index < oldSize; ++index )
             value_.map_->erase ( index );
 
-        assert ( size () == newSize );
+        DANGER_UNLESS( size () == newSize );
     }
 }
 

@@ -88,7 +88,7 @@ class ApplicationImpBase : public Application
 public:
     ApplicationImpBase ()
     {
-        assert (s_instance == nullptr);
+        DANGER_UNLESS(s_instance == nullptr);
         s_instance = this;
     }
 
@@ -632,17 +632,17 @@ public:
 
     DatabaseCon& getTxnDB ()
     {
-        assert (mTxnDB.get() != nullptr);
+        DANGER_UNLESS(mTxnDB.get() != nullptr);
         return *mTxnDB;
     }
     DatabaseCon& getLedgerDB ()
     {
-        assert (mLedgerDB.get() != nullptr);
+        DANGER_UNLESS(mLedgerDB.get() != nullptr);
         return *mLedgerDB;
     }
     DatabaseCon& getWalletDB ()
     {
-        assert (mWalletDB.get() != nullptr);
+        DANGER_UNLESS(mWalletDB.get() != nullptr);
         return *mWalletDB;
     }
 
@@ -655,9 +655,9 @@ public:
     //--------------------------------------------------------------------------
     bool initSqliteDbs ()
     {
-        assert (mTxnDB.get () == nullptr);
-        assert (mLedgerDB.get () == nullptr);
-        assert (mWalletDB.get () == nullptr);
+        DANGER_UNLESS(mTxnDB.get () == nullptr);
+        DANGER_UNLESS(mLedgerDB.get () == nullptr);
+        DANGER_UNLESS(mWalletDB.get () == nullptr);
 
         DatabaseCon::Setup setup = setup_DatabaseCon (getConfig());
         mTxnDB = std::make_unique <DatabaseCon> (setup, "transaction.db",
@@ -709,7 +709,7 @@ public:
         m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
             std::placeholders::_1, std::placeholders::_2));
 
-        assert (mTxnDB == nullptr);
+        DANGER_UNLESS(mTxnDB == nullptr);
 
         auto debug_log = getConfig ().getDebugLogFile ();
 
@@ -1094,7 +1094,7 @@ ApplicationImp::getLastFullLedger()
                 WriteLog (lsERROR, Ledger) << p;
             }
 
-            assert (false);
+            DANGER("Wrong ledger hash.");
             return Ledger::pointer ();
         }
 
@@ -1272,7 +1272,7 @@ bool ApplicationImp::loadOldLedger (
                 if (!loadLedger)
                 {
                     m_journal.fatal << "Replay ledger missing/damaged";
-                    assert (false);
+                    DANGER("Replay ledger missing/damaged");
                     return false;
                 }
             }
@@ -1285,21 +1285,21 @@ bool ApplicationImp::loadOldLedger (
         if (loadLedger->info().accountHash.isZero ())
         {
             m_journal.fatal << "Ledger is empty.";
-            assert (false);
+            DANGER("Ledger is empty.");
             return false;
         }
 
         if (!loadLedger->walkLedger ())
         {
             m_journal.fatal << "Ledger is missing nodes.";
-            assert(false);
+            DANGER("Ledger is missing nodes.");
             return false;
         }
 
         if (!loadLedger->assertSane ())
         {
             m_journal.fatal << "Ledger is not sane.";
-            assert(false);
+            DANGER("Ledger is not sane.");
             return false;
         }
 
@@ -1321,7 +1321,7 @@ bool ApplicationImp::loadOldLedger (
             // Get a mutable snapshot of the open ledger
             Ledger::pointer cur = getLedgerMaster().getCurrentLedger();
             cur = std::make_shared <Ledger> (*cur, true);
-            assert (!cur->isImmutable());
+            DANGER_UNLESS(!cur->isImmutable());
 
             for (auto const& item : txns)
             {
@@ -1525,8 +1525,8 @@ void ApplicationImp::updateTables ()
     }
 
     // perform any needed table updates
-    assert (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
-    assert (!schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "foobar"));
+    DANGER_UNLESS(schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
+    DANGER_UNLESS(!schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "foobar"));
     addTxnSeqField ();
 
     if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "PRIMARY"))

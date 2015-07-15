@@ -234,7 +234,7 @@ LedgerConsensusImp::LedgerConsensusImp (
     WriteLog (lsTRACE, LedgerConsensus)
         << "LCL:" << previousLedger->getHash () << ", ct=" << closeTime;
 
-    assert (mPreviousMSeconds);
+    DANGER_UNLESS(mPreviousMSeconds);
 
     inboundTransactions_.newRound (mPreviousLedger->info().seq);
 
@@ -421,7 +421,7 @@ void LedgerConsensusImp::mapCompleteInternal (
         return;
     }
 
-    assert (hash == map->getHash ());
+    DANGER_UNLESS(hash == map->getHash ());
 
     auto it = mAcquired.find (hash);
 
@@ -456,14 +456,14 @@ void LedgerConsensusImp::mapCompleteInternal (
 
         if (it2 != mAcquired.end ())
         {
-            assert ((it2->first == mOurPosition->getCurrentHash ())
+            DANGER_UNLESS((it2->first == mOurPosition->getCurrentHash ())
                 && it2->second);
             mCompares.insert(hash);
             // Our position is not the same as the acquired position
             createDisputes (it2->second, map);
         }
         else
-            assert (false); // We don't have our own position?!
+            DANGER("We don't have our own position.");
     }
     else
         WriteLog (lsDEBUG, LedgerConsensus)
@@ -593,7 +593,7 @@ void LedgerConsensusImp::checkLCL ()
 
 void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 {
-    assert ((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash () != lclHash));
+    DANGER_UNLESS((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash () != lclHash));
 
     if (mPrevLedgerHash != lclHash)
     {
@@ -642,8 +642,8 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
         return;
     }
 
-    assert (!newLCL->info().open && newLCL->isImmutable ());
-    assert (newLCL->getHash () == lclHash);
+    DANGER_UNLESS(!newLCL->info().open && newLCL->isImmutable ());
+    DANGER_UNLESS(newLCL->getHash () == lclHash);
     mPreviousLedger = newLCL;
     mPrevLedgerHash = lclHash;
 
@@ -693,7 +693,7 @@ void LedgerConsensusImp::timerEntry ()
             return;
         }
 
-        assert (false);
+        DANGER("Unreachable");
     }
     catch (SHAMapMissingNode const& mn)
     {
@@ -877,7 +877,7 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 
     if (currentPosition)
     {
-        assert (peerID == currentPosition->getPeerID ());
+        DANGER_UNLESS(peerID == currentPosition->getPeerID ());
 
         if (newPosition->getProposeSeq ()
             <= currentPosition->getProposeSeq ())
@@ -947,7 +947,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         if (set->getHash ().isNonZero ())
            consensus_.takePosition (mPreviousLedger->info().seq, set);
 
-        assert (set->getHash () == mOurPosition->getCurrentHash ());
+        DANGER_UNLESS(set->getHash () == mOurPosition->getCurrentHash ());
         // these are now obsolete
         consensus_.peekStoredProposals ().clear ();
     }
@@ -991,7 +991,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     {
         OpenView accum(&*newLCL);
-        assert(accum.closed());
+        DANGER_UNLESS(accum.closed());
         applyTransactions (set.get(), accum,
             newLCL, retriableTransactions, tapNONE);
         accum.apply(*newLCL);
@@ -1079,7 +1079,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     auto newOL = std::make_shared<Ledger>(
         open_ledger, *newLCL);
     OpenView accum(&*newOL);
-    assert(accum.open());
+    DANGER_UNLESS(accum.open());
 
     // Apply disputed transactions that didn't get in
     //
@@ -1220,19 +1220,19 @@ void LedgerConsensusImp::createDisputes (
         if (pos.second.first)
         {
             // transaction is only in first map
-            assert (!pos.second.second);
+            DANGER_UNLESS(!pos.second.second);
             addDisputedTransaction (pos.first
                 , pos.second.first->peekData ());
         }
         else if (pos.second.second)
         {
             // transaction is only in second map
-            assert (!pos.second.first);
+            DANGER_UNLESS(!pos.second.first);
             addDisputedTransaction (pos.first
                 , pos.second.second->peekData ());
         }
-        else // No other disagreement over a transaction should be possible
-            assert (false);
+        else
+            DANGER("No other disagreement over a transaction is possible");
     }
     WriteLog (lsDEBUG, LedgerConsensus) << dc << " differences found";
 }
@@ -1257,7 +1257,7 @@ void LedgerConsensusImp::addDisputedTransaction (
         if (mit != mAcquired.end ())
             ourVote = mit->second->hasItem (txID);
         else
-            assert (false); // We don't have our own position?
+            DANGER("We don't have our own position.");
     }
 
     auto txn = std::make_shared<DisputedTx> (txID, tx, ourVote);
@@ -1508,7 +1508,7 @@ void LedgerConsensusImp::updateOurPositions ()
             {
                 ourPosition = mAcquired[mOurPosition->getCurrentHash ()]
                     ->snapShot (true);
-                assert (ourPosition);
+                DANGER_UNLESS(ourPosition);
                 changes = true;
             }
 
@@ -1607,7 +1607,7 @@ void LedgerConsensusImp::updateOurPositions ()
         // close time changed or our position is stale
         ourPosition = mAcquired[mOurPosition->getCurrentHash ()]
             ->snapShot (true);
-        assert (ourPosition);
+        DANGER_UNLESS(ourPosition);
         changes = true; // We pretend our position changed to force
     }                   //   a new proposal
 
@@ -1900,7 +1900,7 @@ void applyTransactions (
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert (retriableTransactions.empty() || !certainRetry);
+    DANGER_UNLESS(retriableTransactions.empty() || !certainRetry);
 }
 
 } // ripple

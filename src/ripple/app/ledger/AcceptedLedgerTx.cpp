@@ -65,7 +65,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
 
 std::string AcceptedLedgerTx::getEscMeta () const
 {
-    assert (!mRawMeta.empty ());
+    DANGER_UNLESS(!mRawMeta.empty ());
     return sqlEscape (mRawMeta);
 }
 

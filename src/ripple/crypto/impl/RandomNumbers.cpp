@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/rand.h>
 #include <cassert>
@@ -40,7 +41,7 @@ bool stir_entropy (std::string file)
 
 void add_entropy (void* buffer, int count)
 {
-    assert (buffer == nullptr || count != 0);
+    DANGER_UNLESS(buffer == nullptr || count != 0);
 
     // If we are passed data in we use it but conservatively estimate that it
     // contains only around 2 bits of entropy per byte.
@@ -62,7 +63,7 @@ void add_entropy (void* buffer, int count)
 
 void random_fill (void* buffer, int count)
 {
-    assert (count > 0);
+    DANGER_UNLESS(count > 0);
 
     if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), count) != 1)
         throw std::runtime_error ("Insufficient entropy in pool.");

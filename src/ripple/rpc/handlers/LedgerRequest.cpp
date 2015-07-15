@@ -79,7 +79,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
             // Find a ledger more likely to have the hash of the desired ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
-            assert(refHash);
+            DANGER_UNLESS(refHash);
 
             ledger = ledgerMaster.getLedgerByHash (*refHash);
             if (! ledger)
@@ -105,7 +105,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
-        assert (neededHash);
+        DANGER_UNLESS(neededHash);
         ledgerHash = neededHash ? *neededHash : zero; // kludge
     }
 

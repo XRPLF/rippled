@@ -87,7 +87,7 @@ public:
     close() override
     {
         // VFALCO TODO How do we close everything?
-        assert(false);
+        DANGER("VFALCO TODO How do we close everything?");
     }
 
     std::int32_t getWriteLoad() const override

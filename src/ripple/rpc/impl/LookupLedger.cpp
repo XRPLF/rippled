@@ -103,19 +103,19 @@ Status ledgerFromRequest (T& ledger, Context& context)
             if (ledger == nullptr)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
-            assert (! ledger->info().open);
+            DANGER_UNLESS(!ledger->info().open);
         }
         else
         {
             if (index.empty () || index == "current")
             {
                 ledger = ledgerMaster.getCurrentLedger ();
-                assert (ledger->info().open);
+                DANGER_UNLESS(ledger->info().open);
             }
             else if (index == "closed")
             {
                 ledger = ledgerMaster.getClosedLedger ();
-                assert (! ledger->info().open);
+                DANGER_UNLESS(! ledger->info().open);
             }
             else
             {

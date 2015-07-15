@@ -157,7 +157,7 @@ public:
                     // deadlock resolution code has failed, which qualifies as undefined
                     // behavior.
                     //
-                    assert (timeSpentDeadlocked < 500);
+                    DANGER_UNLESS(timeSpentDeadlocked < 500);
                 }
             }
 

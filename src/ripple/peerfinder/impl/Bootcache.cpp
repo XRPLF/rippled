@@ -146,7 +146,7 @@ Bootcache::on_success (beast::IP::Endpoint const& endpoint)
         m_map.erase (result.first);
         result = m_map.insert (
             value_type (endpoint, entry));
-        assert (result.second);
+        DANGER_UNLESS(result.second);
     }
     Entry const& entry (result.first->right);
     if (m_journal.info) m_journal.info << beast::leftw (18) <<
@@ -174,7 +174,7 @@ Bootcache::on_failure (beast::IP::Endpoint const& endpoint)
         m_map.erase (result.first);
         result = m_map.insert (
             value_type (endpoint, entry));
-        assert (result.second);
+        DANGER_UNLESS(result.second);
     }
     Entry const& entry (result.first->right);
     auto const n (std::abs (entry.valence()));

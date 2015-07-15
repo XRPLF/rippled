@@ -255,15 +255,15 @@ void RangeSet::checkInternalConsistency () const noexcept
         for (const_iterator cur = mRanges.begin (); cur != last; ++cur)
         {
             const_iterator const next = std::next (cur);
-            assert (cur->first <= cur->second);
-            assert (next->first <= next->second);
-            assert (cur->second + 1 < next->first);
+            DANGER_UNLESS(cur->first <= cur->second);
+            DANGER_UNLESS(next->first <= next->second);
+            DANGER_UNLESS(cur->second + 1 < next->first);
         }
     }
     else if (mRanges.size () == 1)
     {
         const_iterator const iter = mRanges.begin ();
-        assert (iter->first <= iter->second);
+        DANGER_UNLESS(iter->first <= iter->second);
     }
 #endif
 }

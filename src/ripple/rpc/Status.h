@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RPC_STATUS_H_INCLUDED
 #define RIPPLE_RPC_STATUS_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/ErrorCodes.h>
 
@@ -87,7 +88,7 @@ public:
         This may only be called if type() == Type::TER. */
     TER toTER () const
     {
-        assert (type_ == Type::TER);
+        DANGER_UNLESS(type_ == Type::TER);
         return TER (code_);
     }
 
@@ -95,7 +96,7 @@ public:
         This may only be called if type() == Type::error_code_i. */
     error_code_i toErrorCode() const
     {
-        assert (type_ == Type::error_code_i);
+        DANGER_UNLESS(type_ == Type::error_code_i);
         return error_code_i (code_);
     }
 

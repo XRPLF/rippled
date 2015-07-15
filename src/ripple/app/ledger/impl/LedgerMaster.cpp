@@ -297,8 +297,8 @@ public:
 
     void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
     {
-        assert (! newLCL->info().open && newLCL->info().accepted);
-        assert (newOL->info().open && !newOL->info().accepted);
+        DANGER_UNLESS(! newLCL->info().open && newLCL->info().accepted);
+        DANGER_UNLESS(newOL->info().open && !newOL->info().accepted);
 
         {
             ScopedLockType ml (m_mutex);
@@ -319,7 +319,7 @@ public:
 
     void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current)
     {
-        assert (lastClosed && current);
+        DANGER_UNLESS(lastClosed && current);
 
         {
             ScopedLockType ml (m_mutex);
@@ -330,7 +330,7 @@ public:
             mCurrentLedger.set (current);
             mClosedLedger.set (lastClosed);
 
-            assert (current->info().open);
+            DANGER_UNLESS(current->info().open);
         }
         checkAccept (lastClosed);
     }
@@ -684,7 +684,7 @@ public:
     {
         // A new ledger has been accepted as part of the trusted chain
         WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->info().seq << " accepted :" << ledger->getHash ();
-        assert (ledger->stateMap().getHash ().isNonZero ());
+        DANGER_UNLESS(ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
         ledger->setFull();
@@ -950,7 +950,7 @@ public:
     void advanceThread()
     {
         ScopedLockType sl (m_mutex);
-        assert (!mValidLedger.empty () && mAdvanceThread);
+        DANGER_UNLESS(!mValidLedger.empty () && mAdvanceThread);
 
         WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
 
@@ -1052,7 +1052,7 @@ public:
                     else if (hash->isZero())
                     {
                         WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << valSeq << " does not have hash for " << seq;
-                        assert (false);
+                        DANGER("Ledger doesn't have hash.");
                     }
                     else
                     {
@@ -1102,7 +1102,7 @@ public:
     // VFALCO NOTE This should return boost::optional<uint256>
     uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
     {
-        assert(desiredSeq < knownGoodLedger->info().seq);
+        DANGER_UNLESS(desiredSeq < knownGoodLedger->info().seq);
 
         auto hash = hashOfSeq(*knownGoodLedger, desiredSeq, m_journal);
 
@@ -1110,7 +1110,7 @@ public:
         if (! hash)
         {
             std::uint32_t seq = (desiredSeq + 255) % 256;
-            assert(seq < desiredSeq);
+            DANGER_UNLESS(seq < desiredSeq);
 
             hash = hashOfSeq(*knownGoodLedger, seq, m_journal);
             if (hash)
@@ -1119,12 +1119,12 @@ public:
                 if (l)
                 {
                     hash = hashOfSeq(*l, desiredSeq, m_journal);
-                    assert (hash);
+                    DANGER_UNLESS(hash);
                 }
             }
             else
             {
-                assert(false);
+                DANGER("No hash.");
             }
         }
 
@@ -1360,7 +1360,7 @@ public:
         // be located easily and should contain the hash.
         LedgerIndex refIndex = getCandidateLedger(index);
         auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-        assert(refHash);
+        DANGER_UNLESS(refHash);
         if (refHash)
         {
             // Try the hash and sequence of a better reference ledger just found
@@ -1386,7 +1386,7 @@ public:
                 if (ledger)
                 {
                     ledgerHash = hashOfSeq(*ledger, index, m_journal);
-                    assert (ledgerHash);
+                    DANGER_UNLESS(ledgerHash);
                 }
             }
         }
@@ -1599,7 +1599,7 @@ void LedgerMasterImp::doAdvance ()
                             if (ledger)
                             {
                                 auto seq = ledger->info().seq;
-                                assert(seq == missing);
+                                DANGER_UNLESS(seq == missing);
                                 WriteLog (lsTRACE, LedgerMaster)
                                         << "tryAdvance acquired "
                                         << ledger->info().seq;

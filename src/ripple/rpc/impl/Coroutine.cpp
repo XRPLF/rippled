@@ -74,7 +74,7 @@ Coroutine::~Coroutine() = default;
 
 void Coroutine::run()
 {
-    assert (impl_);
+    DANGER_UNLESS(impl_);
     if (impl_)
         impl_->run();
     impl_.reset();

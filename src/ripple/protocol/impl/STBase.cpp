@@ -33,7 +33,7 @@ STBase::STBase()
 STBase::STBase (SField const& n)
     : fName(&n)
 {
-    assert(fName);
+    DANGER_UNLESS(fName);
 }
 
 STBase&
@@ -104,14 +104,13 @@ STBase::getJson (int /*options*/) const
 void
 STBase::add (Serializer& s) const
 {
-    // Should never be called
-    assert(false);
+    DANGER("Should never be called");
 }
 
 bool
 STBase::isEquivalent (const STBase& t) const
 {
-    assert (getSType () == STI_NOTPRESENT);
+    DANGER_UNLESS(getSType () == STI_NOTPRESENT);
     if (t.getSType () == STI_NOTPRESENT)
         return true;
     // VFALCO We shouldn't be logging at this low a level
@@ -129,7 +128,7 @@ void
 STBase::setFName (SField const& n)
 {
     fName = &n;
-    assert (fName);
+    DANGER_UNLESS(fName);
 }
 
 SField const&
@@ -141,7 +140,7 @@ STBase::getFName() const
 void
 STBase::addFieldID (Serializer& s) const
 {
-    assert (fName->isBinary ());
+    DANGER_UNLESS(fName->isBinary ());
     s.addFieldID (fName->fieldType, fName->fieldValue);
 }
 

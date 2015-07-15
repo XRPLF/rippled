@@ -424,7 +424,7 @@ Payment::doApply ()
     }
     else
     {
-        assert (false);
+        DANGER("No transResultInfo.");
     }
 
     return terResult;

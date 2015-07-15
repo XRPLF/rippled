@@ -899,7 +899,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
 
     auto db = getApp().getWalletDB ().checkoutDb ();
 
-    
+
     std::vector<std::array<boost::optional<std::string>, 2>> columns;
     selectBlobsIntoStrings(*db,
                            "SELECT PublicKey, Comment FROM TrustedNodes;",
@@ -985,7 +985,7 @@ bool UniqueNodeListImp::miscLoad()
 
     if (!db->got_data() )
         return false;
-    
+
     mtpFetchUpdated = ptFromSeconds (fuO.value_or(-1));
     mtpScoreUpdated = ptFromSeconds (suO.value_or(-1));
 
@@ -1145,8 +1145,8 @@ void UniqueNodeListImp::scoreCompute()
             std::string const strPublicKey = *strArray[1];
             std::string const strSource = strArray[2].value_or("");
 
-            assert (!strSource.empty ());
-            
+            DANGER_UNLESS(!strSource.empty ());
+
             int         const iScore       = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
             auto siOld   = umPulicIdx.find (strPublicKey);
 
@@ -1196,7 +1196,7 @@ void UniqueNodeListImp::scoreCompute()
         {
             std::string strPublicKey    = strArray[0].value_or("");
             std::string strSource       = strArray[1].value_or("");
-            assert (!strSource.empty ());
+            DANGER_UNLESS(!strSource.empty ());
             int         iScore          = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
             auto siOld   = umPulicIdx.find (strPublicKey);
 
@@ -1268,7 +1268,7 @@ void UniqueNodeListImp::scoreCompute()
         for(auto const& strArray : columns)
         {
             strReferral = strArray[0].value_or("");
-            
+
             int         iReferral;
 
             RippleAddress       na;
@@ -1371,7 +1371,7 @@ void UniqueNodeListImp::scoreCompute()
         for(auto const& col : columns)
         {
             pk = get<0>(col).value_or ("");
-            
+
             vsnNodes[umPulicIdx[pk]].iSeen   = get<1>(col).value_or (-1);
         }
     }
@@ -1582,9 +1582,7 @@ bool UniqueNodeListImp::responseFetch (std::string const& strDomain, const boost
         {
             seedDomain  sdCurrent;
 
-            bool bFound = getSeedDomains (strDomain, sdCurrent);
-            assert (bFound);
-            (void) bFound;
+            DANGER_UNLESS(getSeedDomains (strDomain, sdCurrent));
 
             uint256 iSha256 =
                 sha512Half(makeSlice(strSiteFile));
@@ -1709,9 +1707,7 @@ void UniqueNodeListImp::fetchNext()
             mtpFetchNext    = boost::posix_time::ptime (boost::posix_time::not_a_date_time);
 
             seedDomain  sdCurrent;
-            bool bFound  = getSeedDomains (strDomain, sdCurrent);
-            assert (bFound);
-            (void) bFound;
+            DANGER_UNLESS(getSeedDomains (strDomain, sdCurrent));
 
             // Update time of next fetch and this scan attempt.
             sdCurrent.tpScan        = tpNow;
@@ -2163,7 +2159,7 @@ bool UniqueNodeListImp::getSeedDomains (std::string const& strDomain, seedDomain
         }
         else
         {
-            assert (0);
+            DANGER("Soci failed");
         }
 
         dstSeedDomain.tpNext    = ptFromSeconds (iNext.value_or (0));
@@ -2273,7 +2269,7 @@ bool UniqueNodeListImp::getSeedNodes (RippleAddress const& naNodePublic, seedNod
         dstSeedNode.vsSource    = static_cast<ValidatorSource> (strSource[0]);
     }
     else
-        assert (0);
+        DANGER("Soci failed");
 
     dstSeedNode.tpNext  = ptFromSeconds (iNext.value_or(0));
     dstSeedNode.tpScan  = ptFromSeconds (iScan.value_or(0));
@@ -2304,7 +2300,7 @@ void UniqueNodeListImp::setSeedNodes (const seedNode& snSource, bool bNext)
 
     // WriteLog (lsTRACE) << str(boost::format("setSeedNodes: iNext=%s tpNext=%s") % iNext % sdSource.tpNext);
 
-    assert (snSource.naPublicKey.isValid ());
+    DANGER_UNLESS(snSource.naPublicKey.isValid ());
 
     std::string strSql  = str (boost::format ("REPLACE INTO SeedNodes (PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES ('%s', '%c', %d, %d, %d, '%s', %s);")
                                % snSource.naPublicKey.humanNodePublic ()

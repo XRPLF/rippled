@@ -329,7 +329,7 @@ cdirFirst (ReadView const& view,
 {
     sleNode = view.read(keylet::page(uRootIndex));
     uDirEntry   = 0;
-    assert (sleNode);           // Never probe for directories.
+    DANGER_UNLESS(sleNode);           // Never probe for directories.
     return cdirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
@@ -341,7 +341,7 @@ cdirNext (ReadView const& view,
     uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
 {
     auto const& svIndexes = sleNode->getFieldV256 (sfIndexes);
-    assert (uDirEntry <= svIndexes.size ());
+    DANGER_UNLESS(uDirEntry <= svIndexes.size ());
     if (uDirEntry >= svIndexes.size ())
     {
         auto const uNodeNext =
@@ -430,7 +430,7 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
                 ledger.read(keylet::skip());
             if (hashIndex)
             {
-                assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
+                DANGER_UNLESS(hashIndex->getFieldU32 (sfLastLedgerSequence) ==
                         (ledger.seq() - 1));
                 STVector256 vec = hashIndex->getFieldV256 (sfHashes);
                 if (vec.size () >= diff)
@@ -463,8 +463,8 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
     {
         auto const lastSeq =
             hashIndex->getFieldU32 (sfLastLedgerSequence);
-        assert (lastSeq >= seq);
-        assert ((lastSeq & 0xff) == 0);
+        DANGER_UNLESS(lastSeq >= seq);
+        DANGER_UNLESS((lastSeq & 0xff) == 0);
         auto const diff = (lastSeq - seq) >> 8;
         STVector256 vec = hashIndex->getFieldV256 (sfHashes);
         if (vec.size () > diff)
@@ -487,7 +487,7 @@ adjustOwnerCount (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
         int amount)
 {
-    assert(amount != 0);
+    DANGER_UNLESS(amount != 0);
     auto const current =
         sle->getFieldU32 (sfOwnerCount);
     auto adjusted = current + amount;
@@ -512,7 +512,7 @@ adjustOwnerCount (ApplyView& view,
                 "Account " << sle->getAccountID (sfAccount) <<
                 " owner count set below 0!";
             adjusted = 0;
-            assert(false);
+            DANGER("owner count set below 0");
         }
     }
     sle->setFieldU32 (sfOwnerCount, adjusted);
@@ -528,7 +528,7 @@ dirFirst (ApplyView& view,
 {
     sleNode = view.peek(keylet::page(uRootIndex));
     uDirEntry   = 0;
-    assert (sleNode);           // Never probe for directories.
+    DANGER_UNLESS(sleNode);           // Never probe for directories.
     return dirNext (view, uRootIndex, sleNode, uDirEntry, uEntryIndex);
 }
 
@@ -540,7 +540,7 @@ dirNext (ApplyView& view,
     uint256& uEntryIndex)       // <-- The entry, if available. Otherwise, zero.
 {
     auto const& svIndexes = sleNode->getFieldV256 (sfIndexes);
-    assert (uDirEntry <= svIndexes.size ());
+    DANGER_UNLESS(uDirEntry <= svIndexes.size ());
     if (uDirEntry >= svIndexes.size ())
     {
         auto const uNodeNext =
@@ -607,7 +607,7 @@ dirAdd (ApplyView& view,
             // Try adding to last node.
             sleNode = view.peek (keylet::page(uRootIndex, uNodeDir));
 
-            assert (sleNode);
+            DANGER_UNLESS(sleNode);
         }
         else
         {
@@ -688,7 +688,7 @@ dirDelete (ApplyView& view,
 
         if (!bSoft)
         {
-            assert (false);
+            DANGER("no such node and !bSoft");
             return tefBAD_LEDGER;
         }
         else if (uNodeDir < 20)
@@ -712,7 +712,7 @@ dirDelete (ApplyView& view,
     {
         if (!bSoft)
         {
-            assert (false);
+            DANGER("No such entry.");
             WriteLog (lsWARNING, View) << "dirDelete: no such entry";
             return tefBAD_LEDGER;
         }
@@ -777,7 +777,7 @@ dirDelete (ApplyView& view,
                 // Have only a root node and a last node.
                 auto sleLast = view.peek(keylet::page(uRootIndex, uNodeNext));
 
-                assert (sleLast);
+                DANGER_UNLESS(sleLast);
 
                 if (sleLast->getFieldV256 (sfIndexes).empty ())
                 {
@@ -800,13 +800,13 @@ dirDelete (ApplyView& view,
             auto slePrevious =
                 view.peek(keylet::page(uRootIndex, uNodePrevious));
             auto sleNext = view.peek(keylet::page(uRootIndex, uNodeNext));
-            assert (slePrevious);
+            DANGER_UNLESS(slePrevious);
             if (!slePrevious)
             {
                 WriteLog (lsWARNING, View) << "dirDelete: previous node is missing";
                 return tefBAD_LEDGER;
             }
-            assert (sleNext);
+            DANGER_UNLESS(sleNext);
             if (!sleNext)
             {
                 WriteLog (lsWARNING, View) << "dirDelete: next node is missing";
@@ -834,7 +834,7 @@ dirDelete (ApplyView& view,
             // Last and only node besides the root.
             auto sleRoot = view.peek (keylet::page(uRootIndex));
 
-            assert (sleRoot);
+            DANGER_UNLESS(sleRoot);
 
             if (sleRoot->getFieldV256 (sfIndexes).empty ())
             {
@@ -910,11 +910,11 @@ trustCreate (ApplyView& view,
         const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
         const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-        assert (sleAccount->getAccountID (sfAccount) ==
+        DANGER_UNLESS(sleAccount->getAccountID (sfAccount) ==
             (bSetHigh ? uHighAccountID : uLowAccountID));
         auto slePeer = view.peek (keylet::account(
             bSetHigh ? uLowAccountID : uHighAccountID));
-        assert (slePeer);
+        DANGER_UNLESS(slePeer);
 
         // Remember deletion hints.
         sleRippleState->setFieldU64 (sfLowNode, uLowNode);
@@ -1054,12 +1054,11 @@ rippleCredit (ApplyView& view,
     auto currency = saAmount.getCurrency ();
 
     // Make sure issuer is involved.
-    assert (
+    DANGER_UNLESS(
         !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
-    (void) issuer;
 
     // Disallow sending to self.
-    assert (uSenderID != uReceiverID);
+    DANGER_UNLESS(uSenderID != uReceiverID);
 
     bool bSenderHigh = uSenderID > uReceiverID;
     uint256 uIndex = getRippleStateIndex (
@@ -1068,8 +1067,8 @@ rippleCredit (ApplyView& view,
 
     TER terResult;
 
-    assert (!isXRP (uSenderID) && uSenderID != noAccount());
-    assert (!isXRP (uReceiverID) && uReceiverID != noAccount());
+    DANGER_UNLESS(!isXRP (uSenderID) && uSenderID != noAccount());
+    DANGER_UNLESS(!isXRP (uReceiverID) && uReceiverID != noAccount());
 
     if (!sleRippleState)
     {
@@ -1226,8 +1225,8 @@ rippleSend (ApplyView& view,
     auto const issuer   = saAmount.getIssuer ();
     TER             terResult;
 
-    assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
-    assert (uSenderID != uReceiverID);
+    DANGER_UNLESS(!isXRP (uSenderID) && !isXRP (uReceiverID));
+    DANGER_UNLESS(uSenderID != uReceiverID);
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
@@ -1269,7 +1268,7 @@ accountSend (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     STAmount const& saAmount)
 {
-    assert (saAmount >= zero);
+    DANGER_UNLESS(saAmount >= zero);
 
     /* If we aren't sending anything or if the sender is the same as the
      * receiver then we don't need to do anything.
@@ -1383,7 +1382,7 @@ updateTrustLine (
     std::uint32_t const flags (state->getFieldU32 (sfFlags));
 
     auto sle = view.peek (keylet::account(sender));
-    assert (sle);
+    DANGER_UNLESS(sle);
 
     // YYY Could skip this if rippling in reverse.
     if (before > zero
@@ -1427,13 +1426,13 @@ issueIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount, Issue const& issue)
 {
-    assert (!isXRP (account) && !isXRP (issue.account));
+    DANGER_UNLESS(!isXRP (account) && !isXRP (issue.account));
 
     // Consistency check
-    assert (issue == amount.issue ());
+    DANGER_UNLESS(issue == amount.issue ());
 
     // Can't send to self!
-    assert (issue.account != account);
+    DANGER_UNLESS(issue.account != account);
 
     WriteLog (lsTRACE, View) << "issueIOU: " <<
         to_string (account) << ": " <<
@@ -1500,13 +1499,13 @@ redeemIOU (ApplyView& view,
     STAmount const& amount,
     Issue const& issue)
 {
-    assert (!isXRP (account) && !isXRP (issue.account));
+    DANGER_UNLESS(!isXRP (account) && !isXRP (issue.account));
 
     // Consistency check
-    assert (issue == amount.issue ());
+    DANGER_UNLESS(issue == amount.issue ());
 
     // Can't send to self!
-    assert (issue.account != account);
+    DANGER_UNLESS(issue.account != account);
 
     WriteLog (lsTRACE, View) << "redeemIOU: " <<
         to_string (account) << ": " <<
@@ -1569,10 +1568,10 @@ transferXRP (ApplyView& view,
     AccountID const& to,
     STAmount const& amount)
 {
-    assert (from != beast::zero);
-    assert (to != beast::zero);
-    assert (from != to);
-    assert (amount.native ());
+    DANGER_UNLESS(from != beast::zero);
+    DANGER_UNLESS(to != beast::zero);
+    DANGER_UNLESS(from != to);
+    DANGER_UNLESS(amount.native ());
 
     SLE::pointer sender = view.peek (keylet::account(from));
     SLE::pointer receiver = view.peek (keylet::account(to));

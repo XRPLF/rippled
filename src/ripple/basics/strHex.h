@@ -25,6 +25,7 @@
 #ifndef RIPPLE_BASICS_STRHEX_H_INCLUDED
 #define RIPPLE_BASICS_STRHEX_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <cassert>
 #include <string>
 
@@ -41,7 +42,7 @@ charHex (unsigned int digit)
     static
     char const xtab[] = "0123456789ABCDEF";
 
-    assert (digit < 16);
+    DANGER_UNLESS(digit < 16);
 
     return xtab[digit];
 }

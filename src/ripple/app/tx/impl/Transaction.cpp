@@ -117,7 +117,7 @@ TransStatus Transaction::sqlTransactionStatus(
     case TXN_SQL_INCLUDED:  return INCLUDED;
     }
 
-    assert (c == TXN_SQL_UNKNOWN);
+    DANGER_UNLESS(c == TXN_SQL_UNKNOWN);
     return INVALID;
 }
 

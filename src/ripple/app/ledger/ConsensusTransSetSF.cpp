@@ -54,7 +54,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
             Serializer s (nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit (s.slice());
             STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
-            assert (stx->getTransactionID () == nodeHash);
+            DANGER_UNLESS(stx->getTransactionID () == nodeHash);
             getApp().getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
                 std::bind (&NetworkOPs::submitTransaction, &getApp().getOPs (),
@@ -83,7 +83,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeH
         Serializer s;
         s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s);
-        assert(sha512Half(s.slice()) == nodeHash);
+        DANGER_UNLESS(sha512Half(s.slice()) == nodeHash);
         nodeData = s.peekData ();
         return true;
     }

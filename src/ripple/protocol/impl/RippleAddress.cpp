@@ -147,7 +147,7 @@ RippleAddress RippleAddress::createNodePublic (std::string const& strPublic)
 RipplePublicKey
 RippleAddress::toPublicKey() const
 {
-    assert (nVersion == TOKEN_NODE_PUBLIC);
+    DANGER_UNLESS(nVersion == TOKEN_NODE_PUBLIC);
     return RipplePublicKey (vchData.begin(), vchData.end());
 }
 
@@ -490,7 +490,7 @@ Blob RippleAddress::accountPrivateSign (Blob const& message) const
             message.data(), message.size(), secretKey, publicKey,
             &signature[0]);
 
-        assert (isCanonicalEd25519Signature (signature.data()));
+        DANGER_UNLESS(isCanonicalEd25519Signature (signature.data()));
 
         return signature;
     }
@@ -764,7 +764,7 @@ uint256 keyFromSeed (uint128 const& seed)
 RippleAddress getSeedFromRPC (Json::Value const& params)
 {
     // This function is only called when `key_type` is present.
-    assert (params.isMember (jss::key_type));
+    DANGER_UNLESS(params.isMember (jss::key_type));
 
     bool const has_passphrase = params.isMember (jss::passphrase);
     bool const has_seed       = params.isMember (jss::seed);
@@ -832,7 +832,7 @@ KeyPair generateKeysFromSeed (KeyType type, RippleAddress const& seed)
         Blob ed25519_key (33);
         ed25519_key[0] = 0xED;
 
-        assert (secretkey.size() + 1 == ed25519_key.size());
+        DANGER_UNLESS(secretkey.size() + 1 == ed25519_key.size());
         memcpy (&ed25519_key[1], secretkey.data(), secretkey.size());
         result.secretKey.setAccountPrivate (ed25519_key);
 
@@ -843,7 +843,7 @@ KeyPair generateKeysFromSeed (KeyType type, RippleAddress const& seed)
     }
     else
     {
-        assert (false);  // not reached
+        DANGER("Unreachable");
     }
 
     return result;

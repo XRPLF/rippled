@@ -109,8 +109,8 @@ public:
     void
     add (Serializer& s) const override
     {
-        assert (fName->isBinary ());
-        assert ((fName->fieldType == STI_VL) ||
+        DANGER_UNLESS(fName->isBinary ());
+        DANGER_UNLESS((fName->fieldType == STI_VL) ||
             (fName->fieldType == STI_ACCOUNT));
         s.addVL (value_.data (), value_.size ());
     }

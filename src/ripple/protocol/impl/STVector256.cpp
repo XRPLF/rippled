@@ -46,8 +46,8 @@ STVector256::STVector256(SerialIter& sit, SField const& name)
 void
 STVector256::add (Serializer& s) const
 {
-    assert (fName->isBinary ());
-    assert (fName->fieldType == STI_VECTOR256);
+    DANGER_UNLESS(fName->isBinary ());
+    DANGER_UNLESS(fName->fieldType == STI_VECTOR256);
     s.addVL (mValue.empty () ? nullptr : mValue[0].begin (), mValue.size () * (256 / 8));
 }
 

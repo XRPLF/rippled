@@ -405,7 +405,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
     // but we will use it to make connections and hand it out
     // when redirecting.
     //
-    assert (ep.hops <= (Tuning::maxHops + 1));
+    DANGER_UNLESS(ep.hops <= (Tuning::maxHops + 1));
     std::pair <typename cache_type::iterator, bool> result (
         m_cache.emplace (ep.address, ep));
     Element& e (result.first->second);
@@ -525,7 +525,7 @@ template <class Allocator>
 void
 Livecache <Allocator>::hops_t::insert (Element& e)
 {
-    assert (e.endpoint.hops >= 0 &&
+    DANGER_UNLESS(e.endpoint.hops >= 0 &&
         e.endpoint.hops <= Tuning::maxHops + 1);
     // This has security implications without a shuffle
     m_lists [e.endpoint.hops].push_front (e);
@@ -536,7 +536,7 @@ template <class Allocator>
 void
 Livecache <Allocator>::hops_t::reinsert (Element& e, int hops)
 {
-    assert (hops >= 0 && hops <= Tuning::maxHops + 1);
+    DANGER_UNLESS(hops >= 0 && hops <= Tuning::maxHops + 1);
     list_type& list (m_lists [e.endpoint.hops]);
     list.erase (list.iterator_to (e));
     --m_hist [e.endpoint.hops];

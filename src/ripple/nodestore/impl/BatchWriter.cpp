@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/nodestore/impl/BatchWriter.h>
-    
+
 namespace ripple {
 namespace NodeStore {
 
@@ -79,7 +79,7 @@ BatchWriter::writeBatch ()
             std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
 
             mWriteSet.swap (set);
-            assert (mWriteSet.empty ());
+            DANGER_UNLESS(mWriteSet.empty ());
             mWriteLoad = set.size ();
 
             if (set.empty ())

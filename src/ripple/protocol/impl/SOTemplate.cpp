@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SOTemplate.h>
 
 namespace ripple {
@@ -36,11 +37,11 @@ void SOTemplate::push_back (SOElement const& r)
 
     // Make sure the field's index is in range
     //
-    assert (r.e_field.getNum () < mIndex.size ());
+    DANGER_UNLESS(r.e_field.getNum () < mIndex.size ());
 
     // Make sure that this field hasn't already been assigned
     //
-    assert (getIndex (r.e_field) == -1);
+    DANGER_UNLESS(getIndex (r.e_field) == -1);
 
     // Add the field to the index mapping table
     //
@@ -55,7 +56,7 @@ int SOTemplate::getIndex (SField const& f) const
 {
     // The mapping table should be large enough for any possible field
     //
-    assert (f.getNum () < mIndex.size ());
+    DANGER_UNLESS(f.getNum () < mIndex.size ());
 
     return mIndex[f.getNum ()];
 }

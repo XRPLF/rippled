@@ -74,7 +74,7 @@ IOU
 Account::operator[](std::string const& s) const
 {
     auto const currency = to_currency(s);
-    assert(currency != noCurrency());
+    DANGER_UNLESS(currency != noCurrency());
     return IOU(*this, currency);
 }
 

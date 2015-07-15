@@ -64,7 +64,7 @@ public:
             {
                 log <<
                     "Unable to add item to map";
-                assert (false);
+                DANGER("Unable to add item to map");
                 return false;
             }
         }
@@ -75,7 +75,7 @@ public:
             {
                 log <<
                     "Unable to remove item from map";
-                assert (false);
+                DANGER("Unable to remove item from map");
                 return false;
             }
         }
@@ -84,7 +84,7 @@ public:
         {
             log <<
                 "Hashes do not match " << beforeHash << " " << map.getHash ();
-            assert (false);
+            DANGER("Hashes do not match.");
             return false;
         }
 
@@ -165,7 +165,7 @@ public:
                 }
             }
 
-            assert (gotNodeIDs.size () == gotNodes.size ());
+            DANGER_UNLESS(gotNodeIDs.size () == gotNodes.size ());
             nodeIDs.clear ();
             hashes.clear ();
 

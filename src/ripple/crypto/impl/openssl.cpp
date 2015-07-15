@@ -147,8 +147,7 @@ void serialize_ec_point (ec_point const& point, std::uint8_t* ptr)
 
     int const size = i2o_ECPublicKey ((EC_KEY*) key.get(), &ptr);
 
-    assert (size <= 33);
-    (void) size;
+    DANGER_UNLESS(size <= 33);
 }
 
 } // openssl

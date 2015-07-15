@@ -190,8 +190,8 @@ STPathSet::getJson (int options) const
 void
 STPathSet::add (Serializer& s) const
 {
-    assert (fName->isBinary ());
-    assert (fName->fieldType == STI_PATHSET);
+    DANGER_UNLESS(fName->isBinary ());
+    DANGER_UNLESS(fName->fieldType == STI_PATHSET);
     bool first = true;
 
     for (auto const& spPath : value)

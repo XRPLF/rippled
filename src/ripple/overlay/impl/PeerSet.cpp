@@ -50,7 +50,7 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
     , mTimer (getApp().getIOService ())
 {
     mLastAction = m_clock.now();
-    assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
+    DANGER_UNLESS((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
 PeerSet::~PeerSet ()

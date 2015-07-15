@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/net/SNTPClient.h>
 #include <beast/asio/placeholders.h>
@@ -285,7 +286,7 @@ public:
 
     void processReply ()
     {
-        assert (mReceiveBuffer.size () >= 48);
+        DANGER_UNLESS(mReceiveBuffer.size () >= 48);
         std::uint32_t* recvBuffer = reinterpret_cast<std::uint32_t*> (&mReceiveBuffer.front ());
 
         unsigned info = ntohl (recvBuffer[NTP_OFF_INFO]);

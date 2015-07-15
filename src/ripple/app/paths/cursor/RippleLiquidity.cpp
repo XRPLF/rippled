@@ -67,12 +67,12 @@ void rippleLiquidity (
         << " saCurAct=" << saCurAct;
 
     // saCurAct was once zero in a production server.
-    assert (saCurReq != zero);
-    assert (saCurReq > zero);
+    DANGER_UNLESS(saCurReq != zero);
+    DANGER_UNLESS(saCurReq > zero);
 
-    assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
-    assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
-    assert (saPrvReq.getIssuer () == saPrvAct.getIssuer ());
+    DANGER_UNLESS(saPrvReq.getCurrency () == saCurReq.getCurrency ());
+    DANGER_UNLESS(saPrvReq.getCurrency () == saPrvAct.getCurrency ());
+    DANGER_UNLESS(saPrvReq.getIssuer () == saPrvAct.getIssuer ());
 
     const bool bPrvUnlimited = (saPrvReq < zero);  // -1 means unlimited.
 
@@ -217,7 +217,7 @@ rippleQuality (
         auto const sleRippleState = view.read(
             keylet::line(destination, source, currency));
 
-        // we should be able to assert(sleRippleState) here
+        // we should be able to DANGER_UNLESS(sleRippleState) here
 
         if (sleRippleState)
         {

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SField.h>
 #include <map>
 #include <memory>
@@ -281,7 +282,7 @@ SField::SField (SerializedTypeID tid, int fv)
     fieldName = std::to_string (tid) + '/' + std::to_string (fv);
     rawJsonName = getName ();
     jsonName = Json::StaticString (rawJsonName.c_str ());
-    assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
+    DANGER_UNLESS((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
 
 SField const&

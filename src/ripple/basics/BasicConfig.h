@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 #define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <beast/container/const_container.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/lexical_cast.hpp>
@@ -87,7 +88,7 @@ public:
             lines_.emplace_back (std::move (value));
         else
         {
-            assert (lines_.size () == 1);
+            DANGER_UNLESS(lines_.size () == 1);
             lines_[0] = std::move (value);
         }
     }

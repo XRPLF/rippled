@@ -117,7 +117,7 @@ bool Serializer::get256 (uint256& o, int offset) const
 int Serializer::addFieldID (int type, int name)
 {
     int ret = mData.size ();
-    assert ((type > 0) && (type < 256) && (name > 0) && (name < 256));
+    DANGER_UNLESS((type > 0) && (type < 256) && (name > 0) && (name < 256));
 
     if (type < 16)
     {
@@ -237,7 +237,7 @@ int Serializer::addVL (Blob const& vector)
 {
     int ret = addEncoded (vector.size ());
     addRaw (vector);
-    assert (mData.size () == (ret + vector.size () + encodeLengthLength (vector.size ())));
+    DANGER_UNLESS(mData.size () == (ret + vector.size () + encodeLengthLength (vector.size ())));
     return ret;
 }
 
@@ -567,7 +567,7 @@ int SerialIter::getVLDataLength ()
     }
     else
     {
-        assert(lenLen == 3);
+        DANGER_UNLESS(lenLen == 3);
         int b2 = get8();
         int b3 = get8();
         datLen = Serializer::decodeVLLength (b1, b2, b3);
