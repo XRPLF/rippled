@@ -41,50 +41,73 @@ public:
         // would remove the first "taker gets" xrp offer, even though the offer is
         // still funded and not used for the payment.
 
-        using namespace jtx;
-        Env env (*this);
-        auto const gw = Account ("gateway");
-        auto const USD = gw["USD"];
-        auto const BTC = gw["BTC"];
-        Account const alice ("alice");
-        Account const bob ("bob");
-        Account const carol ("carol");
+        // Mon Aug 3 11:00:00am PDT
+        static NetClock::time_point const switchoverTime (
+            std::chrono::seconds (491940000));
 
-        env.fund (XRP (10000), alice, bob, carol, gw);
-        env.trust (USD (1000), alice, bob, carol);
-        env.trust (BTC (1000), alice, bob, carol);
+        for(int i=0; i<2; ++i)
+        {
+            using namespace jtx;
+            Env env (*this);
 
-        env (pay (gw, alice, BTC (1000)));
+            auto const tp = switchoverTime + std::chrono::seconds (i);
+            bool const enableFix = tp > switchoverTime;
+            expect (enableFix == bool(i));
 
-        env (pay (gw, carol, USD (1000)));
-        env (pay (gw, carol, BTC (1000)));
+            // ledger close times have a dynamic resolution depending on network
+            // conditions it appears the resolution in test is 10 seconds
+            env.close (tp);
 
-        // Must be two offers at the same quality
-        // "taker gets" must be XRP
-        // (Different amounts so I can distinguish the offers)
-        env (offer (carol, BTC (49), XRP (49)));
-        env (offer (carol, BTC (51), XRP (51)));
+            NetClock::time_point const pct (
+                std::chrono::seconds (env.open ()->info ().parentCloseTime));
+            if (enableFix)
+                expect (pct > switchoverTime);
+            else
+                expect (pct <= switchoverTime);
 
-        // Offers for the poor quality path
-        // Must be two offers at the same quality
-        env (offer (carol, XRP (50), USD (50)));
-        env (offer (carol, XRP (50), USD (50)));
+            auto const gw = Account ("gateway");
+            auto const USD = gw["USD"];
+            auto const BTC = gw["BTC"];
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const carol ("carol");
 
-        // Offers for the good quality path
-        env (offer (carol, BTC (1), USD (100)));
+            env.fund (XRP (10000), alice, bob, carol, gw);
+            env.trust (USD (1000), alice, bob, carol);
+            env.trust (BTC (1000), alice, bob, carol);
 
-        PathSet paths (
-            Path (XRP, USD),
-            Path (USD));
+            env (pay (gw, alice, BTC (1000)));
 
-        env (pay ("alice", "bob", USD (100)),
-             json (paths.json ()),
-             sendmax (BTC (1000)),
-             txflags (tfPartialPayment));
+            env (pay (gw, carol, USD (1000)));
+            env (pay (gw, carol, BTC (1000)));
 
-        require (balance ("bob", USD (100)));
-        expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
-            isOffer (env, "carol", BTC (49), XRP (49)));
+            // Must be two offers at the same quality
+            // "taker gets" must be XRP
+            // (Different amounts so I can distinguish the offers)
+            env (offer (carol, BTC (49), XRP (49)));
+            env (offer (carol, BTC (51), XRP (51)));
+
+            // Offers for the poor quality path
+            // Must be two offers at the same quality
+            env (offer (carol, XRP (50), USD (50)));
+            env (offer (carol, XRP (50), USD (50)));
+
+            // Offers for the good quality path
+            env (offer (carol, BTC (1), USD (100)));
+
+            PathSet paths (Path (XRP, USD), Path (USD));
+
+            env (pay ("alice", "bob", USD (100)), json (paths.json ()),
+                sendmax (BTC (1000)), txflags (tfPartialPayment));
+
+            require (balance ("bob", USD (100)));
+            if (enableFix)
+                expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
+                    isOffer (env, "carol", BTC (49), XRP (49)));
+            else
+                expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
+                    !isOffer (env, "carol", BTC (49), XRP (49)));
+        }
     }
     void testCanceledOffer ()
     {

@@ -24,6 +24,15 @@
 namespace ripple {
 namespace path {
 
+static
+bool enableDirRestartFix (
+    std::uint32_t parentCloseTime)
+{
+    // Mon Aug 3 11:00:00am PDT
+    static std::uint32_t const enableAfter = 491940000;
+    return parentCloseTime > enableAfter;
+}
+
 // At the right most node of a list of consecutive offer nodes, given the amount
 // requested to be delivered, push towards the left nodes the amount requested
 // for the right nodes so we can compute how much to deliver from the source.
@@ -44,6 +53,12 @@ TER PathCursor::deliverNodeReverseImpl (
                                         ) const
 {
     TER resultCode   = tesSUCCESS;
+
+    if (!enableDirRestartFix (rippleCalc_.view.info ().parentCloseTime))
+    {
+        node().directory.restart(multiQuality_);
+    }
+
     // Accumulation of what the previous node must deliver.
     // Possible optimization: Note this gets zeroed on each increment, ideally
     // only on first increment, then it could be a limit on the forward pass.
@@ -351,8 +366,11 @@ TER PathCursor::deliverNodeReverse (
                                     // increment
                                     ) const
 {
-    for (int i = nodeIndex_; i >= 0 && !node (i).isAccount(); --i)
-        node (i).directory.restart (multiQuality_);
+    if (enableDirRestartFix (rippleCalc_.view.info ().parentCloseTime))
+    {
+        for (int i = nodeIndex_; i >= 0 && !node (i).isAccount(); --i)
+            node (i).directory.restart (multiQuality_);
+    }
 
     return deliverNodeReverseImpl(uOutAccountID, saOutReq, saOutAct);
 }
