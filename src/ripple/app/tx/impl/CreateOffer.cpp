@@ -556,8 +556,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     //       sequence to determine the transaction. Why is the offer sequence
     //       number insufficient?
 
-    auto const sleCreator = view.peek (
-        keylet::account(account_));
+    auto const sleCreator = view.peek (keylet::account(account_));
 
     std::uint32_t const uAccountSequenceNext = sleCreator->getFieldU32 (sfSequence);
     std::uint32_t const uSequence = mTxn.getSequence ();
@@ -822,9 +821,12 @@ CreateOffer::doApply()
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox view (&ctx_.view());
-    // This is a checkpoint with just the fees paid. If something goes wrong
-    // with this transaction, we roll back to this ledger.
+
+    // This is a ledger with just the fees paid and any unfunded or expired
+    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
+    // if the order isn't going to be placed, to avoid wasting the work we did.
     Sandbox viewCancel (&ctx_.view());
+
     auto const result = applyGuts(view, viewCancel);
     if (result.second)
         view.apply(ctx_.rawView());

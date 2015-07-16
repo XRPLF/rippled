@@ -139,13 +139,13 @@ log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 
     if (metaData != nullptr)
     {
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+        WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
             ": " << msg << " is missing this transaction:\n" <<
             metaData->getJson (0);
     }
     else
     {
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+        WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
             ": " << msg << " is missing this transaction.";
     }
 }
@@ -185,31 +185,31 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
         {
             if (result_diff && index_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different result and index!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Result: " << builtMetaData->getResult () <<
                     " Index: " << builtMetaData->getIndex ();
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Result: " << validMetaData->getResult () <<
                     " Index: " << validMetaData->getIndex ();
             }
             else if (result_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different result!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Result: " << builtMetaData->getResult ();
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Result: " << validMetaData->getResult ();
             }
             else if (index_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different index!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Index: " << builtMetaData->getIndex ();
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Index: " << validMetaData->getIndex ();
             }
         }
@@ -217,42 +217,42 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
         {
             if (result_diff && index_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different result, index and nodes!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:\n" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:\n" <<
                     builtMetaData->getJson (0);
-                WriteLog (lsERROR, LedgerMaster) << " Valid:\n" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:\n" <<
                     validMetaData->getJson (0);
             }
             else if (result_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different result and nodes!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Result: " << builtMetaData->getResult () <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Result: " << validMetaData->getResult () <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
             else if (index_diff)
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different index and nodes!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Index: " << builtMetaData->getIndex () <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Index: " << validMetaData->getIndex () <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
             else // nodes_diff
             {
-                WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
                     ": Different nodes!";
-                WriteLog (lsERROR, LedgerMaster) << " Built:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsERROR, LedgerMaster) << " Valid:" <<
+                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
         }
