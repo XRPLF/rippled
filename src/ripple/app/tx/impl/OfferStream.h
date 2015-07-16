@@ -21,12 +21,11 @@
 #define RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
 
 #include <ripple/app/tx/impl/BookTip.h>
-#include <ripple/app/tx/impl/Offer.h>   
+#include <ripple/app/tx/impl/Offer.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
-#include <functional>
 
 namespace ripple {
 
@@ -51,40 +50,22 @@ class OfferStream
 {
 private:
     beast::Journal j_;
-    std::reference_wrapper <ApplyView> m_view;
-    std::reference_wrapper <ApplyView> m_view_cancel;
-    Book m_book;
-    Clock::time_point m_when;
-    BookTip m_tip;
-    Offer m_offer;
+    ApplyView& view_;
+    ApplyView& cancelView_;
+    Book book_;
+    Clock::time_point const expire_;
+    BookTip tip_;
+    Offer offer_;
     Config const& config_;
 
     void
     erase (ApplyView& view);
 
 public:
-    OfferStream (ApplyView& view, ApplyView& view_cancel,
+    OfferStream (ApplyView& view, ApplyView& cancelView,
         BookRef book, Clock::time_point when,
             Config const& config,
                 beast::Journal journal);
-
-    ApplyView&
-    view () noexcept
-    {
-        return m_view;
-    }
-
-    ApplyView&
-    view_cancel () noexcept
-    {
-        return m_view_cancel;
-    }
-
-    Book const&
-    book () const noexcept
-    {
-        return m_book;
-    }
 
     /** Returns the offer at the tip of the order book.
         Offers are always presented in decreasing quality.
@@ -93,7 +74,7 @@ public:
     Offer const&
     tip () const
     {
-        return m_offer;
+        return offer_;
     }
 
     /** Advance to the next valid offer.
