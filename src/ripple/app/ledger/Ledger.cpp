@@ -342,13 +342,12 @@ void Ledger::setAccepted (
 {
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
-    assert (closed() && !info_.accepted);
+    assert (closed());
     info_.closeTime = correctCloseTime
         ? roundCloseTime (closeTime, closeResolution)
         : closeTime;
     info_.closeTimeResolution = closeResolution;
     info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    info_.accepted = true;
     setImmutable ();
 }
 
@@ -361,7 +360,6 @@ void Ledger::setAccepted ()
         info_.closeTime = roundCloseTime(
             info_.closeTime, info_.closeTimeResolution);
 
-    info_.accepted = true;
     setImmutable ();
 }
 
