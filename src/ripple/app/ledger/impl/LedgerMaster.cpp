@@ -297,8 +297,8 @@ public:
 
     void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
     {
-        assert (! newLCL->info().open && newLCL->info().accepted);
-        assert (newOL->info().open && !newOL->info().accepted);
+        assert (! newLCL->info().open);
+        assert (newOL->info().open);
 
         {
             ScopedLockType ml (m_mutex);
