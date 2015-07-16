@@ -644,17 +644,20 @@ def get_soci_sources(style):
                        CPPPATH=cpp_path)
     return result
 
-def get_common_sources():
+def get_common_sources(toolchain):
     result = []
+    if toolchain == 'msvc':
+        warning_flags = {}
+    else:
+        warning_flags = {'CCFLAGS': ['-Wno-unused-function']}
     append_sources(
         result,
         'src/ripple/unity/secp256k1.cpp',
-        CPPPATH=[
-            'src/secp256k1',
-        ])
+        CPPPATH=['src/secp256k1'],
+        **warning_flags)
     return result
 
-def get_classic_sources():
+def get_classic_sources(toolchain):
     result = []
     append_sources(
         result,
@@ -676,7 +679,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
-   
+
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -687,11 +690,11 @@ def get_classic_sources():
         ])
 
     result += get_soci_sources('classic')
-    result += get_common_sources()
+    result += get_common_sources(toolchain)
 
     return result
 
-def get_unity_sources():
+def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
@@ -725,7 +728,7 @@ def get_unity_sources():
         ])
 
     result += get_soci_sources('unity')
-    result += get_common_sources()
+    result += get_common_sources(toolchain)
 
     return result
 
@@ -789,10 +792,6 @@ def should_build_ninja(style, toolchain, variant):
     return False
 
 for tu_style in ['classic', 'unity']:
-    if tu_style == 'classic':
-        sources = get_classic_sources()
-    else:
-        sources = get_unity_sources()
     for toolchain in all_toolchains:
         for variant in variants:
             if not should_prepare_targets(tu_style, toolchain, variant):
@@ -817,6 +816,10 @@ for tu_style in ['classic', 'unity']:
 
             object_builder = ObjectBuilder(env, variant_dirs)
 
+            if tu_style == 'classic':
+                sources = get_classic_sources(toolchain)
+            else:
+                sources = get_unity_sources(toolchain)
             for s, k in sources:
                 object_builder.add_source_files(*s, **k)
 
