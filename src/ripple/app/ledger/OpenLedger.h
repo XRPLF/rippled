@@ -143,14 +143,16 @@ public:
             The current view is atomically set to the
             new open view.
 
+        @param rules The rules for the open ledger
         @param ledger A new closed ledger
     */
     void
-    accept(std::shared_ptr<Ledger const> const& ledger,
-        OrderedTxs const& locals, bool retriesFirst,
-            OrderedTxs& retries, ApplyFlags flags,
-                IHashRouter& router,
-                    std::string const& suffix = "");
+    accept (Rules const& rules,
+        std::shared_ptr<Ledger const> const& ledger,
+            OrderedTxs const& locals, bool retriesFirst,
+                OrderedTxs& retries, ApplyFlags flags,
+                    IHashRouter& router,
+                        std::string const& suffix = "");
 
     /** Algorithm for applying transactions.
 
@@ -174,8 +176,8 @@ private:
     };
 
     std::shared_ptr<OpenView>
-    create (std::shared_ptr<
-        Ledger const> const& ledger);
+    create (Rules const& rules,
+        std::shared_ptr<Ledger const> const& ledger);
 
     static
     Result

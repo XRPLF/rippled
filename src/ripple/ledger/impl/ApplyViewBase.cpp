@@ -25,8 +25,7 @@ namespace ripple {
 namespace detail {
 
 ApplyViewBase::ApplyViewBase(
-    ReadView const* base,
-        ApplyFlags flags)
+    ReadView const* base, ApplyFlags flags)
     : flags_ (flags)
     , base_ (base)
 {
@@ -44,6 +43,12 @@ Fees const&
 ApplyViewBase::fees() const
 {
     return base_->fees();
+}
+
+Rules const&
+ApplyViewBase::rules() const
+{
+    return base_->rules();
 }
 
 bool

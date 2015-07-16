@@ -89,9 +89,10 @@ public:
 //------------------------------------------------------------------------------
 
 OpenView::OpenView (open_ledger_t,
-    ReadView const* base,
+    ReadView const* base, Rules const& rules,
         std::shared_ptr<void const> hold)
-    : info_ (base->info())
+    : rules_ (rules)
+    , info_ (base->info())
     , base_ (base)
     , hold_ (std::move(hold))
 {
@@ -102,7 +103,8 @@ OpenView::OpenView (open_ledger_t,
 
 OpenView::OpenView (ReadView const* base,
         std::shared_ptr<void const> hold)
-    : info_ (base->info())
+    : rules_ (base->rules())
+    , info_ (base->info())
     , base_ (base)
     , hold_ (std::move(hold))
 {
@@ -136,6 +138,12 @@ Fees const&
 OpenView::fees() const
 {
     return base_->fees();
+}
+
+Rules const&
+OpenView::rules() const
+{
+    return rules_;
 }
 
 bool

@@ -107,8 +107,7 @@ public:
     PaymentSandbox (PaymentSandbox&&) = default;
 #endif
 
-    PaymentSandbox (ReadView const* base,
-            ApplyFlags flags)
+    PaymentSandbox (ReadView const* base, ApplyFlags flags)
         : ApplyViewBase (base, flags)
     {
     }
@@ -134,14 +133,14 @@ public:
     /** @{ */
     explicit
     PaymentSandbox (PaymentSandbox const* base)
-        : ApplyViewBase (base, base->flags())
+        : ApplyViewBase(base, base->flags())
         , ps_ (base)
     {
     }
 
     explicit
     PaymentSandbox (PaymentSandbox* base)
-        : ApplyViewBase (base, base->flags())
+        : ApplyViewBase(base, base->flags())
         , ps_ (base)
     {
     }

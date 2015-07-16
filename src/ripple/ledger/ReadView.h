@@ -104,17 +104,59 @@ struct LedgerInfo
     std::uint32_t closeTime = 0;
 };
 
-// ledger close flags
-static
-std::uint32_t const sLCF_NoConsensusTime = 1;
+//------------------------------------------------------------------------------
 
-inline
-bool getCloseAgree (LedgerInfo const& info)
+class DigestAwareReadView;
+
+/** Rules controlling protocol behavior. */
+class Rules
 {
-    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
-}
+private:
+    class Impl;
 
-void addRaw (LedgerInfo const&, Serializer&);
+    std::shared_ptr<Impl const> impl_;
+
+public:
+    Rules (Rules const&) = default;
+    Rules& operator= (Rules const&) = default;
+
+    /** Construct an empty rule set.
+
+        These are the rules reflected by
+        the genesis ledger.
+    */
+    Rules() = default;
+
+    /** Construct rules from a ledger.
+
+        The ledger contents are analyzed for rules
+        and amendments and extracted to the object.
+    */
+    explicit
+    Rules (DigestAwareReadView const& ledger);
+
+    /** Returns `true` if a feature is enabled. */
+    bool
+    enabled (uint256 const& feature) const;
+
+    /** Returns `true` if these rules don't match the ledger. */
+    bool
+    changed (DigestAwareReadView const& ledger) const;
+
+    /** Returns `true` if two rule sets are identical.
+
+        @note This is for diagnostics. To determine if new
+        rules should be constructed, call changed() first instead.
+    */
+    bool
+    operator== (Rules const&) const;
+
+    bool
+    operator!= (Rules const& other) const
+    {
+        return ! (*this == other);
+    }
+};
 
 //------------------------------------------------------------------------------
 
@@ -213,6 +255,11 @@ public:
     virtual
     Fees const&
     fees() const = 0;
+
+    /** Returns the tx processing rules. */
+    virtual
+    Rules const&
+    rules() const = 0;
 
     /** Determine if a state item exists.
 
@@ -343,6 +390,20 @@ public:
     boost::optional<digest_type>
     digest (key_type const& key) const = 0;
 };
+
+//------------------------------------------------------------------------------
+
+// ledger close flags
+static
+std::uint32_t const sLCF_NoConsensusTime = 1;
+
+inline
+bool getCloseAgree (LedgerInfo const& info)
+{
+    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
+}
+
+void addRaw (LedgerInfo const&, Serializer&);
 
 } // ripple
 

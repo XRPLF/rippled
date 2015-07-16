@@ -1322,7 +1322,14 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     #if RIPPLE_OPEN_LEDGER
         auto retries = localTx;
-        getApp().openLedger().accept(
+        auto const lastVal =
+            getApp().getLedgerMaster().getValidatedLedger();
+        boost::optional<Rules> rules;
+        if (lastVal)
+            rules.emplace(*lastVal);
+        else
+            rules.emplace();
+        getApp().openLedger().accept(*rules,
             newLCL, OrderedTxs({}), false, retries,
                 tapNONE, getApp().getHashRouter(), "jump");
         getApp().openLedger().verify(

@@ -19,8 +19,104 @@
 
 #include <BeastConfig.h>
 #include <ripple/ledger/ReadView.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
+
+class Rules::Impl
+{
+private:
+    std::unordered_set<uint256,
+        hardened_hash<>> set_;
+    boost::optional<uint256> digest_;
+
+public:
+    Impl (DigestAwareReadView const& ledger)
+    {
+        auto const k = keylet::amendments();
+        digest_ = ledger.digest(k.key);
+        if (! digest_)
+            return;
+        auto const sle = ledger.read(k);
+        if (! sle)
+        {
+            // LogicError() ?
+            return;
+        }
+
+        for (auto const& item :
+                sle->getFieldV256(sfAmendments))
+            set_.insert(item);
+    }
+
+    bool
+    enabled (uint256 const& feature) const
+    {
+        return set_.count(feature) > 0;
+    }
+
+    bool
+    changed (DigestAwareReadView const& ledger) const
+    {
+        auto const digest =
+            ledger.digest(keylet::amendments().key);
+        if (! digest && ! digest_)
+            return false;
+        if (! digest || ! digest_)
+            return true;
+        return *digest != *digest_;
+    }
+
+    bool
+    operator== (Impl const& other) const
+    {
+        if (! digest_ && ! other.digest_)
+            return true;
+        if (! digest_ || ! other.digest_)
+            return false;
+        return *digest_ == *other.digest_;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+Rules::Rules (DigestAwareReadView const& ledger)
+    : impl_(std::make_shared<Impl>(ledger))
+{
+}
+
+bool
+Rules::enabled (uint256 const& feature) const
+{
+    if (! impl_)
+        return false;
+    return impl_->enabled(feature);
+}
+
+bool
+Rules::changed (DigestAwareReadView const& ledger) const
+{
+    if (! impl_)
+        return static_cast<bool>(
+            ledger.digest(keylet::amendments().key));
+    return impl_->changed(ledger);
+}
+
+bool
+Rules::operator== (Rules const& other) const
+{
+#if 0
+    if (! impl_ && ! other.impl_)
+        return true;
+    if (! impl_ || ! other.impl_)
+        return false;
+    return *impl_ == *other.impl_;
+#else
+    return impl_.get() == other.impl_.get();
+#endif
+}
+
+//------------------------------------------------------------------------------
 
 ReadView::sles_type::sles_type(
         ReadView const& view)

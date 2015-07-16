@@ -49,14 +49,13 @@ public:
     Sandbox (Sandbox&&) = default;
 #endif
 
-    Sandbox (ReadView const* base,
-            ApplyFlags flags)
+    Sandbox (ReadView const* base, ApplyFlags flags)
         : ApplyViewBase (base, flags)
     {
     }
 
     Sandbox (ApplyView const* base)
-        : Sandbox (base, base->flags())
+        : Sandbox(base, base->flags())
     {
     }
 

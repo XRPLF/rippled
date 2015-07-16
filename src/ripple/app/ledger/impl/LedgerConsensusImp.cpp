@@ -1157,8 +1157,15 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         ledgerMaster_.pushLedger (newLCL, newOL);
 
     #if RIPPLE_OPEN_LEDGER
-        getApp().openLedger().accept(newLCL,
-            localTx, anyDisputes, retries, tapNONE,
+        auto const lastVal =
+            getApp().getLedgerMaster().getValidatedLedger();
+        boost::optional<Rules> rules;
+        if (lastVal)
+            rules.emplace(*lastVal);
+        else
+            rules.emplace();
+        getApp().openLedger().accept(*rules,
+            newLCL, localTx, anyDisputes, retries, tapNONE,
                 getApp().getHashRouter(), "consensus");
         getApp().openLedger().verify(*newOL, "consensus after");
     #endif

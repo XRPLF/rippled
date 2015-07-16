@@ -32,7 +32,7 @@ OpenLedger::OpenLedger(std::shared_ptr<
     : j_ (journal)
     , cache_ (cache)
     , config_ (config)
-    , current_ (create(ledger))
+    , current_ (create(ledger->rules(), ledger))
 {
 }
 
@@ -73,15 +73,15 @@ OpenLedger::modify (std::function<
 }
 
 void
-OpenLedger::accept(std::shared_ptr<
-    Ledger const> const& ledger,
+OpenLedger::accept(Rules const& rules,
+    std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
                 IHashRouter& router, std::string const& suffix)
 {
     JLOG(j_.error) <<
         "accept ledger " << ledger->seq() << " " << suffix;
-    auto next = create(ledger);
+    auto next = create(rules, ledger);
     if (retriesFirst)
     {
         // Handle disputed tx, outside lock
@@ -121,11 +121,11 @@ OpenLedger::accept(std::shared_ptr<
 //------------------------------------------------------------------------------
 
 std::shared_ptr<OpenView>
-OpenLedger::create(std::shared_ptr<
-    Ledger const> const& ledger)
+OpenLedger::create (Rules const& rules,
+    std::shared_ptr<Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
-        open_ledger, std::make_shared<
+        open_ledger, rules, std::make_shared<
             CachedLedger const>(ledger,
                 cache_));
 }

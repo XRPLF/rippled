@@ -77,6 +77,12 @@ public:
         return base_.fees();
     }
 
+    Rules const&
+    rules() const override
+    {
+        return base_.rules();
+    }
+
     boost::optional<key_type>
     succ (key_type const& key, boost::optional<
         key_type> last = boost::none) const override

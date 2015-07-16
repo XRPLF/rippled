@@ -52,8 +52,8 @@ public:
     ApplyViewBase (ApplyViewBase&&) = default;
 #endif
 
-    ApplyViewBase (ReadView const* base,
-        ApplyFlags flags);
+    ApplyViewBase(
+        ReadView const* base, ApplyFlags flags);
 
     // ReadView
 
@@ -62,6 +62,9 @@ public:
 
     Fees const&
     fees() const override;
+
+    Rules const&
+    rules() const override;
 
     bool
     exists (Keylet const& k) const override;

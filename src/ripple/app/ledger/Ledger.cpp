@@ -192,7 +192,7 @@ Ledger::Ledger (create_genesis_t, Config const& config)
     updateHash();
     setClosed();
     setAccepted();
-    setFees(config);
+    setup(config);
 }
 
 Ledger::Ledger (uint256 const& parentHash,
@@ -240,7 +240,7 @@ Ledger::Ledger (uint256 const& parentHash,
 
     txMap_->setImmutable ();
     stateMap_->setImmutable ();
-    setFees(config);
+    setup(config);
 }
 
 // Create a new ledger that's a snapshot of this one
@@ -296,7 +296,7 @@ Ledger::Ledger (void const* data,
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix);
-    // We can't set the fees until the stateMap is populated
+    // Can't set up until the stateMap is filled in
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq,
@@ -312,7 +312,7 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
-    setFees(config);
+    setup(config);
 }
 
 //------------------------------------------------------------------------------
@@ -332,7 +332,7 @@ void Ledger::setImmutable ()
         txMap_->setImmutable ();
     if (stateMap_)
         stateMap_->setImmutable ();
-    setFees (getConfig ());
+    setup(getConfig ());
 }
 
 void Ledger::updateHash()
@@ -1066,7 +1066,7 @@ Ledger::rawTxInsert (uint256 const& key,
 }
 
 void
-Ledger::setFees (Config const& config)
+Ledger::setup (Config const& config)
 {
     fees_.base = config.FEE_DEFAULT;
     fees_.units = config.TRANSACTION_FEE_BASE;
@@ -1089,6 +1089,7 @@ Ledger::setFees (Config const& config)
         if (sle->getFieldIndex (sfReserveIncrement) != -1)
             fees_.increment = sle->getFieldU32 (sfReserveIncrement);
     }
+    rules_ = Rules(*this);
 }
 
 std::shared_ptr<SLE>

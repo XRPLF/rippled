@@ -28,6 +28,7 @@ RippleLineCache::RippleLineCache(
 {
     // We want the caching that OpenView provides
     // And we need to own a shared_ptr to the input view
+    // VFALCO TODO This should be a CachedLedger
     mLedger = std::make_shared<OpenView>(&*ledger, ledger);
 }
 

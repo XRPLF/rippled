@@ -20,12 +20,12 @@
 #include <BeastConfig.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/basics/contract.h>
+#include <cassert>
 
 namespace ripple {
 
 ApplyViewImpl::ApplyViewImpl(
-    ReadView const* base,
-        ApplyFlags flags)
+    ReadView const* base, ApplyFlags flags)
     : ApplyViewBase (base, flags)
 {
 }

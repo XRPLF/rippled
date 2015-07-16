@@ -54,6 +54,7 @@ private:
             Serializer const>, std::shared_ptr<
                 Serializer const>>>;
 
+    Rules rules_;
     txs_map txs_;
     LedgerInfo info_;
     ReadView const* base_;
@@ -69,6 +70,7 @@ public:
     OpenView (OpenView&& other)
         : ReadView (std::move(other))
         , TxsRawView (std::move(other))
+        , rules_ (std::move(other.rules_))
         , txs_ (std::move(other.txs_))
         , info_ (std::move(other.info_))
         , base_ (std::move(other.base_))
@@ -108,16 +110,20 @@ public:
             ownership of a copy of `hold` until
             the MetaView is destroyed.
 
+            Calls to rules() will return the
+            rules provided on construction.
+
         The tx list starts empty and will contain
         all newly inserted tx.
     */
     /** @{ */
-    OpenView (open_ledger_t, ReadView const* base,
-        std::shared_ptr<void const> hold = nullptr);
+    OpenView (open_ledger_t,
+        ReadView const* base, Rules const& rules,
+            std::shared_ptr<void const> hold = nullptr);
 
-    OpenView (open_ledger_t, std::shared_ptr<
-            ReadView const> const& base)
-        : OpenView (open_ledger, &*base, base)
+    OpenView (open_ledger_t, Rules const& rules,
+            std::shared_ptr<ReadView const> const& base)
+        : OpenView (open_ledger, &*base, rules, base)
     {
     }
     /** @} */
@@ -127,6 +133,8 @@ public:
         Effects:
 
             The LedgerInfo is copied from the base.
+
+            The rules are inherited from the base.
 
         The tx list starts empty and will contain
         all newly inserted tx.
@@ -153,6 +161,9 @@ public:
 
     Fees const&
     fees() const override;
+
+    Rules const&
+    rules() const override;
 
     bool
     exists (Keylet const& k) const override;

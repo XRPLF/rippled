@@ -117,7 +117,7 @@ Env::close(NetClock::time_point const& closeTime)
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false);
     OrderedTxs locals({});
-    openLedger.accept(next, locals,
+    openLedger.accept(next->rules(), next, locals,
         false, retries, applyFlags(), *router);
     closed_ = next;
     cachedSLEs_.expire();

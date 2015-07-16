@@ -142,6 +142,12 @@ public:
         return fees_;
     }
 
+    Rules const&
+    rules() const override
+    {
+        return rules_;
+    }
+
     bool
     exists (Keylet const& k) const override;
 
@@ -379,7 +385,7 @@ private:
     bool saveValidatedLedger (bool current);
 
     void
-    setFees (Config const& config);
+    setup (Config const& config);
 
     std::shared_ptr<SLE>
     peek (Keylet const& k) const;
@@ -406,6 +412,7 @@ private:
     std::mutex mutable mutex_;
 
     Fees fees_;
+    Rules rules_;
     LedgerInfo info_;
 
     // Ripple cost of the reference transaction

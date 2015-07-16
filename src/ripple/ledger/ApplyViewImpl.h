@@ -53,8 +53,8 @@ public:
     ApplyViewImpl (ApplyViewImpl&&) = default;
 #endif
 
-    ApplyViewImpl (ReadView const* base,
-        ApplyFlags flags);
+    ApplyViewImpl(
+        ReadView const* base, ApplyFlags flags);
 
     /** Apply the transaction.
 
