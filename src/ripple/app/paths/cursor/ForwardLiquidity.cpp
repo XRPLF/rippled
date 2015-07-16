@@ -44,7 +44,7 @@ TER PathCursor::forwardLiquidity () const
         saInAct,
         saInFees);
 
-    assert (resultCode != tesSUCCESS ||
+    DANGER_UNLESS(resultCode != tesSUCCESS ||
             previousNode().saFwdDeliver == saInAct + saInFees);
     return resultCode;
 }

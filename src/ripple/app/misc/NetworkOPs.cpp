@@ -898,9 +898,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
     std::vector<TransactionStatus> transactions;
     mTransactions.swap (transactions);
-    assert (! transactions.empty());
+    DANGER_UNLESS(! transactions.empty());
 
-    assert (mDispatchState != DispatchState::running);
+    DANGER_UNLESS(mDispatchState != DispatchState::running);
     mDispatchState = DispatchState::running;
 
     batchLock.unlock();
@@ -1106,7 +1106,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
                 case ltACCOUNT_ROOT:
                 case ltDIR_NODE:
                 default:
-                    assert (false);
+                    DANGER("Unreachable");
                     break;
                 }
             }
@@ -1117,7 +1117,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
             {
                 sleNode = cachedRead(*lpLedger, getDirNodeIndex(
                     uRootIndex, uNodeDir), ltDIR_NODE);
-                assert (sleNode);
+                DANGER_UNLESS(sleNode);
             }
         }
         while (uNodeDir);
@@ -1377,7 +1377,7 @@ void NetworkOPsImp::switchLastClosedLedger (
         // Apply tx in old open ledger to new
         // open ledger. Then apply local tx.
         OpenView accum(&*newOL);
-        assert(accum.open());
+        DANGER_UNLESS(accum.open());
         auto const localTx = m_localTX->getTxSet();
         {
             auto retries = localTx;
@@ -1433,12 +1433,12 @@ bool NetworkOPsImp::beginConsensus (
         return false;
     }
 
-    assert (prevLedger->getHash () == closingLedger->info().parentHash);
-    assert (closingLedger->info().parentHash ==
+    DANGER_UNLESS(prevLedger->getHash () == closingLedger->info().parentHash);
+    DANGER_UNLESS(closingLedger->info().parentHash ==
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
     // Create a consensus object to get consensus on this ledger
-    assert (!mLedgerConsensus);
+    DANGER_UNLESS(!mLedgerConsensus);
     prevLedger->setImmutable ();
 
     mLedgerConsensus = mConsensus->startRound (
@@ -2472,7 +2472,7 @@ bool NetworkOPsImp::subBook (InfoSub::ref isrListener, Book const& book)
     if (auto listeners = getApp().getOrderBookDB ().makeBookListeners (book))
         listeners->addSubscriber (isrListener);
     else
-        assert (false);
+        DANGER("No listeners");
     return true;
 }
 
@@ -2480,6 +2480,8 @@ bool NetworkOPsImp::unsubBook (std::uint64_t uSeq, Book const& book)
 {
     if (auto listeners = getApp().getOrderBookDB ().getBookListeners (book))
         listeners->removeSubscriber (uSeq);
+    else
+        DANGER("No listeners");
 
     return true;
 }
@@ -2488,7 +2490,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
 {
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`
-    assert (m_standalone);
+    DANGER_UNLESS(m_standalone);
 
     if (!m_standalone)
         throw std::runtime_error ("Operation only possible in STANDALONE mode.");

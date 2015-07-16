@@ -135,7 +135,7 @@ public:
 
     explicit base_uint (Blob const& vch)
     {
-        assert (vch.size () == size ());
+        DANGER_UNLESS(vch.size () == size ());
 
         if (vch.size () == size ())
             memcpy (pn, &vch[0], size ());

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <unordered_map>
 #include <utility>
@@ -174,10 +175,9 @@ bool contains_error (Json::Value const& json)
 
 std::string rpcErrorString(Json::Value const& jv)
 {
-    assert(RPC::contains_error(jv));
+    DANGER_UNLESS(RPC::contains_error(jv));
     return jv[jss::error].asString() +
         jv[jss::error_message].asString();
 }
 
 } // ripple
-

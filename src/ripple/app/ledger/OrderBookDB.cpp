@@ -204,7 +204,7 @@ BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)
         ret = std::make_shared<BookListeners> ();
 
         mListeners [book] = ret;
-        assert (getBookListeners (book) == ret);
+        DANGER_UNLESS(getBookListeners (book) == ret);
     }
 
     return ret;

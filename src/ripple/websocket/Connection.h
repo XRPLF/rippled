@@ -186,7 +186,7 @@ bool ConnectionImpl <WebSocket>::checkMessage ()
 {
     ScopedLockType sl (m_receiveQueueMutex);
 
-    assert (m_receiveQueueRunning);
+    DANGER_UNLESS(m_receiveQueueRunning);
 
     if (m_isDead || m_receiveQueue.empty ())
     {

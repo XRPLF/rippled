@@ -61,7 +61,7 @@ SHAMapNodeID::Masks (int depth)
 SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
     : mNodeID (hash), mDepth (depth)
 {
-    assert ((depth >= 0) && (depth < 65));
+    DANGER_UNLESS((depth >= 0) && (depth < 65));
     mNodeID &= Masks(depth);
 }
 
@@ -101,8 +101,8 @@ std::string SHAMapNodeID::getRawString () const
 // This can be optimized to avoid the << if needed
 SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
 {
-    assert ((m >= 0) && (m < 16));
-    assert (mDepth <= 64);
+    DANGER_UNLESS((m >= 0) && (m < 16));
+    DANGER_UNLESS(mDepth <= 64);
 
     uint256 child (mNodeID);
     child.begin ()[mDepth / 2] |= (mDepth & 1) ? m : (m << 4);
@@ -117,7 +117,7 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
 
     if (mDepth >= 64)
     {
-        assert (false);
+        DANGER("Depth too large.");
         return -1;
     }
 
@@ -125,7 +125,7 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
     {
         std::cerr << "selectBranch(" << getString () << std::endl;
         std::cerr << "  " << hash << " off branch" << std::endl;
-        assert (false);
+        DANGER("Off branch.");
         return -1;  // does not go under this node
     }
 
@@ -138,7 +138,7 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
     else
         branch >>= 4;
 
-    assert ((branch >= 0) && (branch < 16));
+    DANGER_UNLESS((branch >= 0) && (branch < 16));
 
     return branch;
 }

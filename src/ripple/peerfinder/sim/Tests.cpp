@@ -344,7 +344,7 @@ public:
             Links::iterator const iter2 (std::find_if (
                 remote_node.links().begin(), remote_node.links().end(),
                     is_remote_endpoint (iter1->local_endpoint ())));
-            consistency_check (iter2 != remote_node.links().end());
+            DIE_UNLESS (iter2 != remote_node.links().end());
 
             //
             // VFALCO NOTE This looks wrong! Shouldn't it call receive()
@@ -564,9 +564,8 @@ static IP::Endpoint next_endpoint (IP::Endpoint address)
         return address;
     }
 
-    bassert (address.is_v6());
-    // unimplemented
-    bassertfalse;
+    DANGER_UNLESS(address.is_v6());
+    DANGER("Unimplemented");
     return IP::Endpoint();
 }
 

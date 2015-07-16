@@ -206,8 +206,7 @@ public:
             connection->setPingTimer ();
             auto result = mMap.emplace (cpClient, std::move (connection));
 
-            assert (result.second);
-            (void) result.second;
+            DANGER_UNLESS(result.second);
             WriteLog (lsDEBUG, HandlerLog) <<
                 "Ws:: on_open(" << remoteEndpoint << ")";
         }

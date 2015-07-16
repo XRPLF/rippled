@@ -157,8 +157,8 @@ TER PathCursor::reverseLiquidityForAccount () const
     //WriteLog (lsTRACE, RippleCalc) << pathState_.getJson ();
 
     // Current redeem req can't be more than IOUs on hand.
-    assert (!node().saRevRedeem || -saNxtOwed >= node().saRevRedeem);
-    assert (!node().saRevIssue  // If not issuing, fine.
+    DANGER_UNLESS(!node().saRevRedeem || -saNxtOwed >= node().saRevRedeem);
+    DANGER_UNLESS(!node().saRevIssue  // If not issuing, fine.
             || saNxtOwed >= zero
             // saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0:
             // Sender holding next IOUs.
@@ -472,7 +472,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                 return tefEXCEPTION;
             }
 
-            assert (saCurWantedReq > zero); // FIXME: We got one of these
+            DANGER_UNLESS(saCurWantedReq > zero); // FIXME: We got one of these
             // The previous node is an offer; we are receiving our own currency.
 
             // The previous order book's entries might hold our issuances; might

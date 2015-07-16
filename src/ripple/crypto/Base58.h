@@ -33,6 +33,7 @@
 #define RIPPLE_CRYPTO_BASE58_H_INCLUDED
 
 #include <ripple/basics/Blob.h>
+#include <ripple/basics/contract.h>
 #include <array>
 #include <cassert>
 #include <iterator>
@@ -53,15 +54,15 @@ public:
         explicit Alphabet (char const* chars)
             : m_chars (chars)
         {
-            assert (m_inverse.size () >= m_chars.length ());
+            DANGER_UNLESS(m_inverse.size () >= m_chars.length ());
 
             m_inverse.fill (-1);
 
             int i = 0;
             for (auto c : m_chars)
             {
-                assert ((c >= 0) && (c < m_inverse.size ()));
-                assert (m_inverse[c] == -1);
+                DANGER_UNLESS((c >= 0) && (c < m_inverse.size ()));
+                DANGER_UNLESS(m_inverse[c] == -1);
 
                 m_inverse[c] = i++;
             }

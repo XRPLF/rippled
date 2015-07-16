@@ -246,7 +246,7 @@ OpenView::rawTxInsert (key_type const& key,
     auto const result = txs_.emplace (key,
         std::make_pair(txn, metaData));
     if (! result.second)
-        LogicError("rawTxInsert: duplicate TX id" +
+        DIE("rawTxInsert: duplicate TX id" +
             to_string(key));
 }
 

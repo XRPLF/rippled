@@ -185,7 +185,7 @@ Pathfinder::Pathfinder (
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
-    assert (isXRP(uSrcCurrency) == isXRP(uSrcIssuer));
+    DANGER_UNLESS(isXRP(uSrcCurrency) == isXRP(uSrcIssuer));
 }
 
 Pathfinder::Pathfinder (
@@ -564,7 +564,7 @@ STPathSet Pathfinder::getBestPaths (
     if (mCompletePaths.empty() && extraPaths.empty())
         return mCompletePaths;
 
-    assert (fullLiquidityPath.empty ());
+    DANGER_UNLESS(fullLiquidityPath.empty ());
     const bool issuerIsSender = isXRP (mSrcCurrency) || (srcIssuer == mSrcAccount);
 
     std::vector <PathRank> extraPathRanks;
@@ -622,7 +622,7 @@ STPathSet Pathfinder::getBestPaths (
 
         if (path.empty ())
         {
-            assert (false);
+            DANGER_UNLESS(! path.empty());
             continue;
         }
 
@@ -667,7 +667,7 @@ STPathSet Pathfinder::getBestPaths (
 
     if (remaining > zero)
     {
-        assert (fullLiquidityPath.empty ());
+        DANGER_UNLESS(fullLiquidityPath.empty ());
         WriteLog (lsINFO, Pathfinder) <<
             "Paths could not send " << remaining << " of " << mDstAmount;
     }
@@ -799,7 +799,7 @@ STPathSet& Pathfinder::addPathsForType (PathType const& pathType)
     {
     case nt_SOURCE:
         // Source must always be at the start, so pathsOut has to be empty.
-        assert (pathsOut.empty ());
+        DANGER_UNLESS(pathsOut.empty ());
         pathsOut.push_back (STPath ());
         break;
 
@@ -1214,7 +1214,7 @@ Pathfinder::PathType makePath (char const *string)
 void fillPaths (Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    assert (list.empty());
+    DANGER_UNLESS(list.empty());
     for (auto& cost: costs)
         list.push_back ({cost.cost, makePath (cost.path)});
 }

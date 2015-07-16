@@ -477,7 +477,7 @@ public:
                     break;
 
                 default:
-                    assert (false);
+                    DANGER("Unreachable");
                     throw std::runtime_error ("unknown action");
             }
         }

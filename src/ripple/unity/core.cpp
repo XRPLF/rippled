@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/basics/contract.h>
 #include <ripple/core/impl/Config.cpp>
 #include <ripple/core/impl/DatabaseCon.cpp>
 #include <ripple/core/impl/LoadFeeTrackImp.cpp>

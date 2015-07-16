@@ -248,7 +248,7 @@ TER RippleCalc::rippleCalculate ()
                     WriteLog (lsWARNING, RippleCalc)
                         << "rippelCalc: Non-dry path moves no funds";
 
-                    assert (false);
+                    DANGER("Non-dry path moves no funds.");
 
                     pathState->setQuality (0);
                     ++iDry;
@@ -263,7 +263,7 @@ TER RippleCalc::rippleCalculate ()
                         << " inPass()=" << pathState->inPass()
                         << " saOutPass=" << pathState->outPass();
 
-                    assert (pathState->inPass() && pathState->outPass());
+                    DANGER_UNLESS(pathState->inPass() && pathState->outPass());
 
                     if ((!inputFlags.limitQuality ||
                          pathState->quality() <= uQualityLimit)
@@ -355,7 +355,7 @@ TER RippleCalc::rippleCalculate ()
                     << " saDstAmountReq_:" << saDstAmountReq_;
 
                 return tefEXCEPTION;  // TEMPORARY
-                assert (false);
+                DANGER("Too much output.");
             }
             else if (actualAmountIn_ != saMaxAmountReq_ &&
                      iDry != pathStateList_.size ())

@@ -35,7 +35,7 @@ Handler::Method<Json::Value> byRef (Function const& f)
         result = f (context);
         if (result.type() != Json::objectValue)
         {
-            assert (false);
+            DANGER("Wrong result type (bad RPC handler)");
             result = RPC::makeObjectValue (result);
         }
 
@@ -61,7 +61,7 @@ class HandlerTable {
     HandlerTable (std::vector<Handler> const& entries) {
         for (auto& entry: entries)
         {
-            assert (table_.find(entry.name_) == table_.end());
+            DANGER_UNLESS(table_.find(entry.name_) == table_.end());
             table_[entry.name_] = entry;
         }
 
@@ -81,7 +81,7 @@ class HandlerTable {
     template <class HandlerImpl>
     void addHandler()
     {
-        assert (table_.find(HandlerImpl::name()) == table_.end());
+        DANGER_UNLESS(table_.find(HandlerImpl::name()) == table_.end());
 
         Handler h;
         h.name_ = HandlerImpl::name();

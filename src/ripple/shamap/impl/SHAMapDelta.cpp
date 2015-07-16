@@ -121,7 +121,7 @@ SHAMap::compare (SHAMap const& otherMap,
     // throws on corrupt tables or missing nodes
     // CAUTION: otherMap is not locked and must be immutable
 
-    assert (isValid () && otherMap.isValid ());
+    DANGER_UNLESS(isValid () && otherMap.isValid ());
 
     if (getHash () == otherMap.getHash ())
         return true;
@@ -138,7 +138,7 @@ SHAMap::compare (SHAMap const& otherMap,
 
         if (!ourNode || !otherNode)
         {
-            assert (false);
+            DANGER("No nodes.");
             throw SHAMapMissingNode (type_, uint256 ());
         }
 
@@ -220,7 +220,7 @@ SHAMap::compare (SHAMap const& otherMap,
                 }
         }
         else
-            assert (false);
+            DANGER("Unreachable");
     }
 
     return true;

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <beast/ByteOrder.h>
 #include <algorithm>
@@ -73,7 +74,7 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
 std::shared_ptr<NodeObject> DecodedBlob::createObject ()
 {
-    bassert (m_success);
+    DANGER_UNLESS(m_success);
 
     std::shared_ptr<NodeObject> object;
 

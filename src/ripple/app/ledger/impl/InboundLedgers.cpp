@@ -58,7 +58,7 @@ public:
 
     Ledger::pointer acquire (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
     {
-        assert (hash.isNonZero ());
+        DANGER_UNLESS(hash.isNonZero ());
         bool isNew = true;
         InboundLedger::pointer inbound;
         {
@@ -92,7 +92,7 @@ public:
 
     InboundLedger::pointer find (uint256 const& hash)
     {
-        assert (hash.isNonZero ());
+        DANGER_UNLESS(hash.isNonZero ());
 
         InboundLedger::pointer ret;
 
@@ -111,7 +111,7 @@ public:
 
     bool hasLedger (LedgerHash const& hash)
     {
-        assert (hash.isNonZero ());
+        DANGER_UNLESS(hash.isNonZero ());
 
         ScopedLockType sl (mLock);
         return mLedgers.find (hash) != mLedgers.end ();
@@ -119,7 +119,7 @@ public:
 
     void dropLedger (LedgerHash const& hash)
     {
-        assert (hash.isNonZero ());
+        DANGER_UNLESS(hash.isNonZero ());
 
         ScopedLockType sl (mLock);
         mLedgers.erase (hash);
@@ -299,7 +299,7 @@ public:
             acquires.reserve (mLedgers.size ());
             for (auto const& it : mLedgers)
             {
-                assert (it.second);
+                DANGER_UNLESS(it.second);
                 acquires.push_back (it);
             }
             for (auto const& it : mRecentFailures)
@@ -334,7 +334,7 @@ public:
             acquires.reserve (mLedgers.size ());
             for (auto const& it : mLedgers)
             {
-                assert (it.second);
+                DANGER_UNLESS(it.second);
                 acquires.push_back (it.second);
             }
         }

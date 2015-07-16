@@ -55,7 +55,7 @@ AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (Ledger::ref ledger)
 
 void AcceptedLedger::insert (AcceptedLedgerTx::ref at)
 {
-    assert (mMap.find (at->getIndex ()) == mMap.end ());
+    DANGER_UNLESS(mMap.find (at->getIndex ()) == mMap.end ());
     mMap.insert (std::make_pair (at->getIndex (), at));
 }
 

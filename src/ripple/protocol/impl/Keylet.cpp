@@ -32,10 +32,10 @@ Keylet::check (SLE const& sle) const
         return false;
     if (type == ltCHILD)
     {
-        assert(sle.getType() != ltDIR_NODE);
+        DANGER_UNLESS(sle.getType() != ltDIR_NODE);
         return sle.getType() != ltDIR_NODE;
     }
-    assert(sle.getType() == type);
+    DANGER_UNLESS(sle.getType() == type);
     return sle.getType() == type;
 }
 

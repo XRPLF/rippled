@@ -43,7 +43,7 @@ template <class Target, class HopContainer>
 std::size_t
 handout_one (Target& t, HopContainer& h)
 {
-    assert (! t.full());
+    DANGER_UNLESS(! t.full());
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;

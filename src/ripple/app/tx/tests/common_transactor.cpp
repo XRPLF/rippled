@@ -211,7 +211,7 @@ void insertMultiSigs (STTx& tx, std::vector<MultiSig> const& multiSigs)
             signingFor->setAccountID (sfAccount, entry.signingForAccount());
             signingFor->setFieldArray (sfSigningAccounts, STArray());
         }
-        assert(signingFor);
+        DANGER_UNLESS(signingFor);
 
         // Construct this SigningAccount object and fill it in.
         STArray& signingAccounts = signingFor->peekFieldArray(

@@ -93,7 +93,7 @@ static void getECIESSecret (const openssl::ec_key& secretKey, const openssl::ec_
     ECIES_KEY_HASH (rawbuf, buflen, hbuf);
     memset (rawbuf, 0, ECIES_HMAC_KEY_SIZE);
 
-    assert ((ECIES_ENC_KEY_SIZE + ECIES_HMAC_KEY_SIZE) >= ECIES_KEY_LENGTH);
+    DANGER_UNLESS((ECIES_ENC_KEY_SIZE + ECIES_HMAC_KEY_SIZE) >= ECIES_KEY_LENGTH);
     memcpy (enc_key.begin (), hbuf, ECIES_ENC_KEY_SIZE);
     memcpy (hmac_key.begin (), hbuf + ECIES_ENC_KEY_SIZE, ECIES_HMAC_KEY_SIZE);
     memset (hbuf, 0, ECIES_KEY_LENGTH);
@@ -133,7 +133,7 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
         throw std::runtime_error ("finalize hmac");
     }
 
-    assert (ml == ECIES_HMAC_SIZE);
+    DANGER_UNLESS(ml == ECIES_HMAC_SIZE);
     HMAC_CTX_cleanup (&ctx);
 
     return ret;
@@ -173,7 +173,7 @@ Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& 
 
     // Encrypt/output HMAC
     bytesWritten = out.capacity () - len;
-    assert (bytesWritten > 0);
+    DANGER_UNLESS(bytesWritten > 0);
 
     if (EVP_EncryptUpdate (&ctx, & (out.front ()) + len, &bytesWritten, hmac.begin (), ECIES_HMAC_SIZE) < 0)
     {
@@ -185,7 +185,7 @@ Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& 
 
     // encrypt/output plaintext
     bytesWritten = out.capacity () - len;
-    assert (bytesWritten > 0);
+    DANGER_UNLESS(bytesWritten > 0);
 
     if (EVP_EncryptUpdate (&ctx, & (out.front ()) + len, &bytesWritten, & (plaintext.front ()), plaintext.size ()) < 0)
     {
@@ -207,8 +207,8 @@ Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& 
     len += bytesWritten;
 
     // Output contains: IV, encrypted HMAC, encrypted data, encrypted padding
-    assert (len <= (plaintext.size () + ECIES_HMAC_SIZE + (2 * ECIES_ENC_BLK_SIZE)));
-    assert (len >= (plaintext.size () + ECIES_HMAC_SIZE + ECIES_ENC_BLK_SIZE)); // IV, HMAC, data
+    DANGER_UNLESS(len <= (plaintext.size () + ECIES_HMAC_SIZE + (2 * ECIES_ENC_BLK_SIZE)));
+    DANGER_UNLESS(len >= (plaintext.size () + ECIES_HMAC_SIZE + ECIES_ENC_BLK_SIZE)); // IV, HMAC, data
     out.resize (len);
     EVP_CIPHER_CTX_cleanup (&ctx);
     return out;

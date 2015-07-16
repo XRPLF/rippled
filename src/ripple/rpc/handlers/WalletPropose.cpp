@@ -93,7 +93,7 @@ Json::Value walletPropose (Json::Value const& params)
     }
     else
     {
-        assert (false);  // not reached
+        DANGER("Unreachable");
     }
 
     Json::Value obj (Json::objectValue);

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/net/HTTPRequest.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/algorithm/string.hpp>
@@ -128,7 +129,7 @@ HTTPRequest::Action HTTPRequest::consume (boost::asio::streambuf& buf)
         return haREAD_LINE;
     }
 
-    assert (false);
+    DANGER("Unreachable");
     return haERROR;
 }
 

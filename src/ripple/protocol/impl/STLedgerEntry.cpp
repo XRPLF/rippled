@@ -142,7 +142,7 @@ bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
     if (oldPrevTxID == txID)
     {
         // this transaction is already threaded
-        assert (getFieldU32 (sfPreviousTxnLgrSeq) == ledgerSeq);
+        DANGER_UNLESS(getFieldU32 (sfPreviousTxnLgrSeq) == ledgerSeq);
         return false;
     }
 

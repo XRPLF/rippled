@@ -56,21 +56,21 @@ int UptimeTimer::getElapsedSeconds () const
 
 void UptimeTimer::beginManualUpdates ()
 {
-    //assert (!m_isUpdatingManually);
+    //DANGER_UNLESS(!m_isUpdatingManually);
 
     m_isUpdatingManually = true;
 }
 
 void UptimeTimer::endManualUpdates ()
 {
-    //assert (m_isUpdatingManually);
+    //DANGER_UNLESS(m_isUpdatingManually);
 
     m_isUpdatingManually = false;
 }
 
 void UptimeTimer::incrementElapsedTime ()
 {
-    //assert (m_isUpdatingManually);
+    //DANGER_UNLESS(m_isUpdatingManually);
     ++m_elapsedTime;
 }
 

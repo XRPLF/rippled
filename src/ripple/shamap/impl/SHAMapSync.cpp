@@ -50,7 +50,7 @@ SHAMap::visitLeaves(
 void SHAMap::visitNodes(std::function<bool (SHAMapAbstractNode&)> const& function) const
 {
     // Visit every node in a SHAMap
-    assert (root_->isValid ());
+    DANGER_UNLESS(root_->isValid ());
 
     if (!root_)
         return;
@@ -118,8 +118,8 @@ void
 SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes,
                         int max, SHAMapSyncFilter* filter)
 {
-    assert (root_->isValid ());
-    assert (root_->getNodeHash().isNonZero ());
+    DANGER_UNLESS(root_->isValid ());
+    DANGER_UNLESS(root_->getNodeHash().isNonZero ());
 
     std::uint32_t generation = f_.fullbelow().getGeneration();
 
@@ -417,7 +417,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
         return SHAMapAddNode::duplicate ();
     }
 
-    assert (seq_ >= 1);
+    DANGER_UNLESS(seq_ >= 1);
     auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
     if (!node || !node->isValid ())
         return SHAMapAddNode::invalid ();
@@ -453,11 +453,11 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     {
         if (journal_.trace) journal_.trace <<
             "got root node, already have one";
-        assert (root_->getNodeHash () == hash);
+        DANGER_UNLESS(root_->getNodeHash () == hash);
         return SHAMapAddNode::duplicate ();
     }
 
-    assert (seq_ >= 1);
+    DANGER_UNLESS(seq_ >= 1);
     auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
     if (!node || !node->isValid() || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
@@ -486,7 +486,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                       SHAMapSyncFilter* filter)
 {
     // return value: true=okay, false=error
-    assert (!node.isRoot ());
+    DANGER_UNLESS(!node.isRoot ());
 
     if (!isSynching ())
     {
@@ -504,7 +504,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
            (iNodeID.getDepth () < node.getDepth ()))
     {
         int branch = iNodeID.selectBranch (node.getNodeID ());
-        assert (branch >= 0);
+        DANGER_UNLESS(branch >= 0);
         auto inner = static_cast<SHAMapInnerNode*>(iNode);
         if (inner->isEmptyBranch (branch))
         {

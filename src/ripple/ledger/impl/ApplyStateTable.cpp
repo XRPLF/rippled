@@ -102,7 +102,7 @@ ApplyStateTable::apply (OpenView& to,
             meta.setAffectedNode (item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
-                assert (origNode && curNode);
+                DANGER_UNLESS(origNode && curNode);
                 threadOwners (to, meta, origNode, newMod, j);
 
                 STObject prevs (sfPreviousFields);
@@ -133,7 +133,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else if (type == &sfModifiedNode)
             {
-                assert (curNode && origNode);
+                DANGER_UNLESS(curNode && origNode);
 
                 if (curNode->isThreadedType ()) // thread transaction to node item modified
                     threadTx (meta, curNode, newMod);
@@ -162,7 +162,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else if (type == &sfCreatedNode) // if created, thread to owner(s)
             {
-                assert (curNode && !origNode);
+                DANGER_UNLESS(curNode && !origNode);
                 threadOwners (to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType ()) // always thread to self
@@ -183,7 +183,7 @@ ApplyStateTable::apply (OpenView& to,
             }
             else
             {
-                assert (false);
+                DANGER("Unreachable");
             }
         }
 
@@ -335,14 +335,14 @@ ApplyStateTable::erase(
     auto const iter =
         items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::erase: missing key");
+        DIE("ApplyStateTable::erase: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::erase: unknown SLE");
+        DIE("ApplyStateTable::erase: unknown SLE");
     switch(item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::erase: double erase");
+        DIE("ApplyStateTable::erase: double erase");
         break;
     case Action::insert:
         items_.erase(iter);
@@ -369,7 +369,7 @@ ApplyStateTable::rawErase (ReadView const& base,
     switch(item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::rawErase: double erase");
+        DIE("ApplyStateTable::rawErase: double erase");
         break;
     case Action::insert:
         items_.erase(result.first);
@@ -402,11 +402,11 @@ ApplyStateTable::insert (ReadView const& base,
     switch(item.first)
     {
     case Action::cache:
-        LogicError("ApplyStateTable::insert: already cached");
+        DIE("ApplyStateTable::insert: already cached");
     case Action::insert:
-        LogicError("ApplyStateTable::insert: already inserted");        
+        DIE("ApplyStateTable::insert: already inserted");
     case Action::modify:
-        LogicError("ApplyStateTable::insert: already modified");
+        DIE("ApplyStateTable::insert: already modified");
     case Action::erase:
         break;
     }
@@ -433,7 +433,7 @@ ApplyStateTable::replace (ReadView const& base,
     switch (item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::replace: already erased");
+        DIE("ApplyStateTable::replace: already erased");
     case Action::cache:
         item.first = Action::modify;
         break;
@@ -451,14 +451,14 @@ ApplyStateTable::update (ReadView const& base,
     auto const iter =
         items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::update: missing key");
+        DIE("ApplyStateTable::update: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::update: unknown SLE");
+        DIE("ApplyStateTable::update: unknown SLE");
     switch (item.first)
     {
     case Action::erase:
-        LogicError("ApplyStateTable::update: erased");
+        DIE("ApplyStateTable::update: erased");
         break;
     case Action::cache:
         item.first = Action::modify;
@@ -493,7 +493,7 @@ ApplyStateTable::threadTx (TxMeta& meta,
                 sfModifiedNode), prevTxID,
                     prevLgrID))
         return true;
-    assert (false);
+    DANGER("No threadTx");
     return false;
 }
 
@@ -519,7 +519,7 @@ ApplyStateTable::getForMod (ReadView const& base,
         auto miter = mods.find (key);
         if (miter != mods.end ())
         {
-            assert (miter->second);
+            DANGER_UNLESS(miter->second);
             return miter->second;
         }
     }
@@ -544,7 +544,7 @@ ApplyStateTable::threadTx (ReadView const& base,
 {
     auto const sle = getForMod(
         base, keylet::account(to).key, mods, j);
-    assert(sle);
+    DANGER_UNLESS(sle);
     if (! sle)
     {
         // VFALCO We need to think about throwing

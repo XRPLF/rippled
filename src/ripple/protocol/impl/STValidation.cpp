@@ -30,7 +30,7 @@ STValidation::STValidation (SerialIter& sit, bool checkSignature)
     , mTrusted (false)
 {
     mNodeID = RippleAddress::createNodePublic (getFieldVL (sfSigningPubKey)).getNodeID ();
-    assert (mNodeID.isNonZero ());
+    DANGER_UNLESS(mNodeID.isNonZero ());
 
     if  (checkSignature && !isValid ())
     {
@@ -51,7 +51,7 @@ STValidation::STValidation (
 
     setFieldVL (sfSigningPubKey, raPub.getNodePublic ());
     mNodeID = raPub.getNodeID ();
-    assert (mNodeID.isNonZero ());
+    DANGER_UNLESS(mNodeID.isNonZero ());
 
     if (!isFull)
         setFlag (kFullFlag);

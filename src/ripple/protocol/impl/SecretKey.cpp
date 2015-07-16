@@ -39,7 +39,7 @@ Seed::~Seed()
 Seed::Seed (Slice const& slice)
 {
     if (slice.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
+        DIE("Seed::Seed: invalid size");
     std::memcpy(buf_.data(),
         slice.data(), buf_.size());
 }
@@ -54,7 +54,7 @@ SecretKey::~SecretKey()
 SecretKey::SecretKey (Slice const& slice)
 {
     if (slice.size() != sizeof(buf_))
-        LogicError("SecretKey::SecretKey: invalid size");
+        DIE("SecretKey::SecretKey: invalid size");
     std::memcpy(buf_, slice.data(), sizeof(buf_));
 }
 
@@ -112,7 +112,7 @@ sign (PublicKey const& pk,
     auto const type =
         publicKeyType(pk.slice());
     if (! type)
-        LogicError("sign: invalid type");
+        DIE("sign: invalid type");
     switch(*type)
     {
     case KeyType::ed25519:
@@ -126,7 +126,7 @@ sign (PublicKey const& pk,
     }
     default:
         // VFALCO Work-around for missing msvc [[noreturn]]
-        LogicError("sign: invalid type");
+        DIE("sign: invalid type");
     case KeyType::secp256k1:
     {
         sha512_half_hasher h;
@@ -141,7 +141,7 @@ sign (PublicKey const& pk,
                     sk.data(), secp256k1_nonce_function_rfc6979,
                         nullptr);
         if (result != 1)
-            LogicError("sign: secp256k1_ecdsa_sign failed");
+            DIE("sign: secp256k1_ecdsa_sign failed");
         return Buffer(sig, siglen);
     }
     }
@@ -205,13 +205,13 @@ derivePublicKey (KeyType type, SecretKey const& sk)
                 secp256k1Context(),
                     buf, &len, sk.data(), 1);
         if (result != 1)
-            LogicError("derivePublicKey: failure");
+            DIE("derivePublicKey: failure");
         return PublicKey(Slice{ buf,
             static_cast<std::size_t>(len) });
     }
     default:
         // VFALCO Work-around for missing msvc [[noreturn]]
-        LogicError("derivePublicKey: bad key type");
+        DIE("derivePublicKey: bad key type");
     case KeyType::ed25519:
     {
         unsigned char buf[33];
@@ -249,4 +249,3 @@ randomKeyPair (KeyType type)
 }
 
 } // ripple
-

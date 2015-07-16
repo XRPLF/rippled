@@ -65,7 +65,7 @@ public:
 template <class FwdIt, class>
 RipplePublicKey::RipplePublicKey (FwdIt first, FwdIt last)
 {
-    assert(std::distance(first, last) == data_.size());
+    DANGER_UNLESS(std::distance(first, last) == data_.size());
     // VFALCO TODO Use 4-arg copy from C++14
     std::copy (first, last, data_.begin());
 }

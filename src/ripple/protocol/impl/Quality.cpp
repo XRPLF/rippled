@@ -37,7 +37,7 @@ Quality::Quality (Amounts const& amount)
 Quality&
 Quality::operator++()
 {
-    assert (m_value > 0);
+    DANGER_UNLESS(m_value > 0);
     --m_value;
     return *this;
 }
@@ -53,7 +53,7 @@ Quality::operator++ (int)
 Quality&
 Quality::operator--()
 {
-    assert (m_value < std::numeric_limits<value_type>::max());
+    DANGER_UNLESS(m_value < std::numeric_limits<value_type>::max());
     ++m_value;
     return *this;
 }
@@ -76,10 +76,10 @@ Quality::ceil_in (Amounts const& amount, STAmount const& limit) const
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        assert (result.in == limit);
+        DANGER_UNLESS(result.in == limit);
         return result;
     }
-    assert (amount.in <= limit);
+    DANGER_UNLESS(amount.in <= limit);
     return amount;
 }
 
@@ -93,10 +93,10 @@ Quality::ceil_out (Amounts const& amount, STAmount const& limit) const
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        assert (result.out == limit);
+        DANGER_UNLESS(result.out == limit);
         return result;
     }
-    assert (amount.out <= limit);
+    DANGER_UNLESS(amount.out <= limit);
     return amount;
 }
 
@@ -104,10 +104,10 @@ Quality
 composed_quality (Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate (lhs.rate ());
-    assert (lhs_rate != zero);
+    DANGER_UNLESS(lhs_rate != zero);
 
     STAmount const rhs_rate (rhs.rate ());
-    assert (rhs_rate != zero);
+    DANGER_UNLESS(rhs_rate != zero);
 
     STAmount const rate (mulRound (
         lhs_rate, rhs_rate, lhs_rate.issue (), true));
@@ -115,7 +115,7 @@ composed_quality (Quality const& lhs, Quality const& rhs)
     std::uint64_t const stored_exponent (rate.exponent () + 100);
     std::uint64_t const stored_mantissa (rate.mantissa());
 
-    assert ((stored_exponent > 0) && (stored_exponent <= 255));
+    DANGER_UNLESS((stored_exponent > 0) && (stored_exponent <= 255));
 
     return Quality ((stored_exponent << (64 - 8)) | stored_mantissa);
 }

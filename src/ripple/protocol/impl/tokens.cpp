@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/digest.h>
 #include <cassert>
@@ -130,7 +131,7 @@ encodeBase58(
             iter[-1] = carry % 58;
             carry /= 58;
         }
-        assert(carry == 0);
+        DANGER_UNLESS(carry == 0);
         pbegin++;
     }
     // Skip leading zeroes in base58 result.
@@ -157,7 +158,7 @@ encodeBase58(
         Wallet Seed
         Account Public Key
         Account ID
-    
+
     @param temp A pointer to storage of not
                 less than 2*(size+6) bytes
 */
@@ -233,7 +234,7 @@ decodeBase58 (std::string const& s,
             *iter = carry % 256;
             carry /= 256;
         }
-        assert(carry == 0);
+        DANGER_UNLESS(carry == 0);
         ++psz;
         --remain;
     }

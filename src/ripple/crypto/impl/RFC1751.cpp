@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/RFC1751.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>
@@ -266,10 +267,10 @@ unsigned long RFC1751::extract (char const* s, int start, int length)
     unsigned char cr;
     unsigned long x;
 
-    assert (length <= 11);
-    assert (start >= 0);
-    assert (length >= 0);
-    assert (start + length <= 66);
+    DANGER_UNLESS(length <= 11);
+    DANGER_UNLESS(start >= 0);
+    DANGER_UNLESS(length >= 0);
+    DANGER_UNLESS(start + length <= 66);
 
     cl = s[start / 8];                      // get components
     cc = s[start / 8 + 1];
@@ -314,10 +315,10 @@ void RFC1751::insert (char* s, int x, int start, int length)
     unsigned long y;
     int shift;
 
-    assert (length <= 11);
-    assert (start >= 0);
-    assert (length >= 0);
-    assert (start + length <= 66);
+    DANGER_UNLESS(length <= 11);
+    DANGER_UNLESS(start >= 0);
+    DANGER_UNLESS(length >= 0);
+    DANGER_UNLESS(start + length <= 66);
 
     shift = ((8  - (( start + length) % 8)) % 8);
     y = (long) x << shift;

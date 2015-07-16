@@ -444,7 +444,7 @@ private:
                               "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
         ScopedLockType sl (mLock);
-        assert (mWriting);
+        DANGER_UNLESS(mWriting);
 
         while (!mStaleValidations.empty ())
         {

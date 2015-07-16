@@ -100,9 +100,7 @@ public:
         {
             std::shared_ptr <SHAMapItem> item (
                 make_random_item (r));
-            auto const result (t.addItem (*item, false, false));
-            assert (result);
-            (void) result;
+            DANGER_UNLESS(t.addItem (*item, false, false));
         }
     }
 
@@ -166,4 +164,3 @@ BEAST_DEFINE_TESTSUITE(FetchPack,shamap,ripple);
 } // tests
 } // shamap
 } // ripple
-

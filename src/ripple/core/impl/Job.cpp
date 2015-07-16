@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/Job.h>
 
 namespace ripple {
@@ -57,7 +58,7 @@ JobType Job::getType () const
 
 Job::CancelCallback Job::getCancelCallback () const
 {
-    bassert (m_cancelCallback);
+    DANGER_UNLESS(m_cancelCallback);
     return m_cancelCallback;
 }
 

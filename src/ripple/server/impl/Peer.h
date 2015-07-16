@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_PEER_H_INCLUDED
 #define RIPPLE_SERVER_PEER_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/impl/ServerImpl.h>
@@ -400,7 +401,7 @@ Peer<Impl>::do_write (yield_context yield)
         void const* data;
         {
             std::lock_guard <std::mutex> lock (mutex_);
-            assert(! write_queue_.empty());
+            DANGER_UNLESS(! write_queue_.empty());
             buffer& b1 = write_queue_.front();
             b1.used += bytes;
             if (b1.used >= b1.bytes)

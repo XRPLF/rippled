@@ -54,7 +54,7 @@ private:
         Rate (std::uint32_t quality)
             : quality_ (quality)
         {
-            assert (quality_ != 0);
+            DANGER_UNLESS(quality_ != 0);
             rate_ = amountFromRate (quality_);
         }
 

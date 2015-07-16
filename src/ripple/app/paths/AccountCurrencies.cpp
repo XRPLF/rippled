@@ -39,7 +39,7 @@ hash_set<Currency> accountSourceCurrencies (
     for (auto const& item : rippleLines)
     {
         auto rspEntry = (RippleState*) item.get ();
-        assert (rspEntry);
+        DANGER_UNLESS(rspEntry);
         if (!rspEntry)
             continue;
 
@@ -77,7 +77,7 @@ hash_set<Currency> accountDestCurrencies (
     for (auto const& item : rippleLines)
     {
         auto rspEntry = (RippleState*) item.get ();
-        assert (rspEntry);
+        DANGER_UNLESS(rspEntry);
         if (!rspEntry)
             continue;
 

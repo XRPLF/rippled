@@ -325,7 +325,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
 
             boost::optional<PaymentSandbox> sandbox;
             sandbox.emplace(&*cache->getLedger(), tapNONE);
-            assert(sandbox->open());
+            DANGER_UNLESS(sandbox->open());
 
             auto rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
@@ -351,7 +351,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
 
                 spsComputed.push_back(fullLiquidityPath);
                 sandbox.emplace(&*cache->getLedger(), tapNONE);
-                assert(sandbox->open());
+                DANGER_UNLESS(sandbox->open());
                 rc = path::RippleCalc::rippleCalculate(
                     *sandbox,
                     saMaxAmount,            // --> Amount to send is unlimited

@@ -355,7 +355,7 @@ public:
                 LedgerHash refHash = getLedgerHash (referenceLedger, refIndex);
 
                 bool const nonzero (refHash.isNonZero ());
-                assert (nonzero);
+                DANGER_UNLESS(nonzero);
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference ledger

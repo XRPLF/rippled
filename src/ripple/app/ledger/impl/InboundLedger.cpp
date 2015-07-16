@@ -348,7 +348,7 @@ void InboundLedger::done ()
     if (m_journal.trace) m_journal.trace <<
         "Done acquiring ledger " << mHash;
 
-    assert (isComplete () || isFailed ());
+    DANGER_UNLESS(isComplete () || isFailed ());
 
     std::vector< std::function<void (InboundLedger::pointer)> > triggers;
     {
@@ -518,7 +518,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     // if we wind up abandoning this fetch.
     if (mHaveHeader && !mHaveState && !mFailed)
     {
-        assert (mLedger);
+        DANGER_UNLESS(mLedger);
 
         if (!mLedger->stateMap().isValid ())
         {
@@ -602,7 +602,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
 
     if (mHaveHeader && !mHaveTransactions && !mFailed)
     {
-        assert (mLedger);
+        DANGER_UNLESS(mLedger);
 
         if (!mLedger->txMap().isValid ())
         {
@@ -682,7 +682,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
     std::vector<uint256>& nodeHashes, int max, bool aggressive)
 {
     // ask for new nodes in preference to ones we've already asked for
-    assert (nodeIDs.size () == nodeHashes.size ());
+    DANGER_UNLESS(nodeIDs.size () == nodeHashes.size ());
 
     std::vector<bool> duplicates;
     duplicates.reserve (nodeIDs.size ());
@@ -942,7 +942,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        DANGER_UNLESS(mHaveHeader);
         san.incInvalid();
         return false;
     }
@@ -966,7 +966,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        DANGER_UNLESS(mHaveHeader);
         san.incInvalid();
         return false;
     }

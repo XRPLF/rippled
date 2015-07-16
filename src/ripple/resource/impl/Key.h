@@ -42,7 +42,7 @@ struct Key
         , address(addr)
         , name()
     {
-        assert(kind != kindAdmin);
+        DANGER_UNLESS(kind != kindAdmin);
     }
 
     // Constructor for Admin keys
@@ -51,7 +51,7 @@ struct Key
         , address()
         , name(n)
     {
-        assert(kind == kindAdmin);
+        DANGER_UNLESS(kind == kindAdmin);
     }
 
     struct hasher
@@ -68,7 +68,7 @@ struct Key
                 return m_name_hash (v.name);
 
             default:
-                assert(false);
+                DANGER("Unreachable");
             };
 
             return 0;
@@ -96,7 +96,7 @@ struct Key
                 return lhs.name == rhs.name;
 
             default:
-                assert(false);
+                DANGER("Unreachable");
             };
 
             return false;

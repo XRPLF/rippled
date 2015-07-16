@@ -190,8 +190,7 @@ accountTxPage (
     }
     else
     {
-        assert (false);
-        // sql is empty
+        DANGER("sql is empty");
         return;
     }
 

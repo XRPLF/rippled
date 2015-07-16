@@ -57,7 +57,7 @@ static
 std::string
 to_places(const T d, std::uint8_t places)
 {
-    assert(places <= std::numeric_limits<T>::digits10);
+    DANGER_UNLESS(places <= std::numeric_limits<T>::digits10);
 
     std::ostringstream oss;
     oss << std::setprecision(places) << std::fixed << d;

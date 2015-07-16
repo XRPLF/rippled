@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <boost/algorithm/string.hpp>
 // VFALCO TODO Use std::chrono
@@ -205,7 +206,7 @@ Logs::fromSeverity (beast::Journal::Severity level)
     case Journal::kError:   return lsERROR;
 
     default:
-        assert(false);
+        DANGER("Unreachable");
     case Journal::kFatal:
         break;
     }
@@ -225,7 +226,7 @@ Logs::toSeverity (LogSeverity level)
     case lsWARNING: return Journal::kWarning;
     case lsERROR:   return Journal::kError;
     default:
-        assert(false);
+        DANGER("Unreachable");
     case lsFATAL:
         break;
     }
@@ -245,7 +246,7 @@ Logs::toString (LogSeverity s)
     case lsERROR:   return "Error";
     case lsFATAL:   return "Fatal";
     default:
-        assert (false);
+        DANGER("Unreachable");
         return "Unknown";
     }
 }
@@ -315,7 +316,7 @@ Logs::format (std::string& output, std::string const& message,
     case beast::Journal::kWarning:  output += "WRN "; break;
     case beast::Journal::kError:    output += "ERR "; break;
     default:
-        assert(false);
+        DANGER("Unreachable");
     case beast::Journal::kFatal:    output += "FTL "; break;
     }
 

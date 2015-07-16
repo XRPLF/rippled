@@ -341,7 +341,7 @@ void Ledger::setAccepted (
 {
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
-    assert (closed() && !info_.accepted);
+    DANGER_UNLESS(closed() && !info_.accepted);
     info_.closeTime = correctCloseTime
         ? roundCloseTime (closeTime, closeResolution)
         : closeTime;
@@ -355,7 +355,7 @@ void Ledger::setAccepted ()
 {
     // used when we acquired the ledger
     // TODO: re-enable a test like the following:
-    // assert(closed() && (info_.closeTime != 0) && (info_.closeTimeResolution != 0));
+    // DANGER_UNLESS(closed() && (info_.closeTime != 0) && (info_.closeTimeResolution != 0));
     if ((info_.closeFlags & sLCF_NoConsensusTime) == 0)
         info_.closeTime = roundCloseTime(
             info_.closeTime, info_.closeTimeResolution);
@@ -399,7 +399,7 @@ bool Ledger::saveValidatedLedger (bool current)
     {
         WriteLog (lsFATAL, Ledger) << "AH is zero: "
                                    << getJson (*this);
-        assert (false);
+        DANGER("AH is zero");
     }
 
     if (info().accountHash != stateMap_->getHash ())
@@ -408,10 +408,10 @@ bool Ledger::saveValidatedLedger (bool current)
                                    << " != " << stateMap_->getHash ();
         WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
                                    << info_.seq << ", current=" << current;
-        assert (false);
+        DANGER("Wrong account hash.");
     }
 
-    assert (info().txHash == txMap_->getHash ());
+    DANGER_UNLESS(info().txHash == txMap_->getHash ());
 
     // Save the ledger header in the hashed object store
     {
@@ -688,7 +688,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 
     finishLoadByIndexOrHash (ledger);
 
-    assert (!ledger || ledger->getHash () == ledgerHash);
+    DANGER_UNLESS(!ledger || ledger->getHash () == ledgerHash);
 
     return ledger;
 }
@@ -818,7 +818,7 @@ boost::posix_time::ptime Ledger::getCloseTime () const
 
 void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 {
-    assert (!mImmutable);
+    DANGER_UNLESS(!mImmutable);
     info_.closeTime = iToSeconds (ptm);
 }
 
@@ -849,7 +849,7 @@ Ledger::read (Keylet const& k) const
 {
     if (k.key == zero)
     {
-        assert(false);
+        DANGER("Empty keylet");
         return nullptr;
     }
     auto const& item =
@@ -931,7 +931,7 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (! stateMap_->delItem(sle->key()))
-        LogicError("Ledger::rawErase: key not found");
+        DIE("Ledger::rawErase: key not found");
 }
 
 void
@@ -945,7 +945,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     // VFALCO NOTE addGiveItem should take ownership
     if (! stateMap_->addGiveItem(
             std::move(item), false, false))
-        LogicError("Ledger::rawInsert: key already exists");
+        DIE("Ledger::rawInsert: key already exists");
 }
 
 void
@@ -959,7 +959,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     // VFALCO NOTE updateGiveItem should take ownership
     if (! stateMap_->updateGiveItem(
             std::move(item), false, false))
-        LogicError("Ledger::rawReplace: key not found");
+        DIE("Ledger::rawReplace: key not found");
 }
 
 void
@@ -968,7 +968,7 @@ Ledger::rawTxInsert (uint256 const& key,
         > const& txn, std::shared_ptr<
             Serializer const> const& metaData)
 {
-    assert (static_cast<bool>(metaData) != info_.open);
+    DANGER_UNLESS(static_cast<bool>(metaData) != info_.open);
 
     if (metaData)
     {
@@ -981,7 +981,7 @@ Ledger::rawTxInsert (uint256 const& key,
             SHAMapItem const> (key, std::move(s));
         if (! txMap().addGiveItem
                 (std::move(item), true, true))
-            LogicError("duplicate_tx: " + to_string(key));
+            DIE("duplicate_tx: " + to_string(key));
     }
     else
     {
@@ -990,7 +990,7 @@ Ledger::rawTxInsert (uint256 const& key,
             SHAMapItem const>(key, txn->peekData());
         if (! txMap().addGiveItem(
                 std::move(item), true, false))
-            LogicError("duplicate_tx: " + to_string(key));
+            DIE("duplicate_tx: " + to_string(key));
     }
 }
 
@@ -1145,7 +1145,7 @@ bool Ledger::assertSane ()
 
     WriteLog (lsFATAL, Ledger) << "ledger is not sane" << j;
 
-    assert (false);
+    DANGER("ledger is not sane");
 
     return false;
 }
@@ -1179,7 +1179,7 @@ void Ledger::updateSkipList ()
             created = false;
         }
 
-        assert (hashes.size () <= 256);
+        DANGER_UNLESS(hashes.size () <= 256);
         hashes.push_back (info_.parentHash);
         sle->setFieldV256 (sfHashes, STVector256 (hashes));
         sle->setFieldU32 (sfLastLedgerSequence, prevIndex);
@@ -1205,7 +1205,7 @@ void Ledger::updateSkipList ()
             sle->getFieldV256 (sfHashes));
         created = false;
     }
-    assert (hashes.size () <= 256);
+    DANGER_UNLESS(hashes.size () <= 256);
     if (hashes.size () == 256)
         hashes.erase (hashes.begin ());
     hashes.push_back (info_.parentHash);
@@ -1228,7 +1228,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
         return true;
     }
 
-    assert (isImmutable ());
+    DANGER_UNLESS(isImmutable ());
 
     if (!getApp().pendingSaves().insert(info().seq))
     {
@@ -1387,7 +1387,7 @@ getTransaction (Ledger const& ledger,
     }
     else
     {
-        assert (false);
+        DANGER("Unreachable");
         return Transaction::pointer ();
     }
 

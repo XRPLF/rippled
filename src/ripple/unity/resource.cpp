@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/basics/contract.h>
 #include <ripple/resource/impl/Charge.cpp>
 #include <ripple/resource/impl/Consumer.cpp>
 #include <ripple/resource/impl/Fees.cpp>

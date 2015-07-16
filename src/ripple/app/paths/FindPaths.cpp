@@ -53,7 +53,7 @@ public:
                 maxPaths_,  fullLiquidityPath, pathsInOut, issue.account);
             return true;
         }
-        assert (false);
+        DANGER("No paths found.");
         return false;
     }
 

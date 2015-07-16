@@ -88,7 +88,7 @@ void TxMeta::setAffectedNode (uint256 const& node, SField const& type,
     mNodes.push_back (STObject (type));
     STObject& obj = mNodes.back ();
 
-    assert (obj.getFName () == type);
+    DANGER_UNLESS(obj.getFName () == type);
     obj.setFieldH256 (sfLedgerIndex, node);
     obj.setFieldU16 (sfLedgerEntryType, nodeType);
 }
@@ -108,7 +108,7 @@ TxMeta::getAffectedAccounts() const
         if (index != -1)
         {
             const STObject* inner = dynamic_cast<const STObject*> (&it.peekAtIndex (index));
-            assert(inner);
+            DANGER_UNLESS(inner);
             if (inner)
             {
                 for (auto const& field : *inner)
@@ -119,7 +119,7 @@ TxMeta::getAffectedAccounts() const
                     if (sa)
                     {
                         AccountID id;
-                        assert(sa->isValueH160());
+                        DANGER_UNLESS(sa->isValueH160());
                         if (sa->getValueH160(id))
                             list.insert(id);
                     }
@@ -150,7 +150,7 @@ TxMeta::getAffectedAccounts() const
 
 STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
 {
-    assert (&type);
+    DANGER_UNLESS(&type);
     uint256 index = node->getIndex ();
     for (auto& n : mNodes)
     {
@@ -160,7 +160,7 @@ STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
     mNodes.push_back (STObject (type));
     STObject& obj = mNodes.back ();
 
-    assert (obj.getFName () == type);
+    DANGER_UNLESS(obj.getFName () == type);
     obj.setFieldH256 (sfLedgerIndex, index);
     obj.setFieldU16 (sfLedgerEntryType, node->getFieldU16 (sfLedgerEntryType));
 
@@ -174,7 +174,7 @@ STObject& TxMeta::getAffectedNode (uint256 const& node)
         if (n.getFieldH256 (sfLedgerIndex) == node)
             return n;
     }
-    assert (false);
+    DANGER("Affected node not found");
     throw std::runtime_error ("Affected node not found");
 }
 
@@ -186,6 +186,7 @@ const STObject& TxMeta::peekAffectedNode (uint256 const& node) const
             return n;
     }
 
+    DANGER("Affected node not found");
     throw std::runtime_error ("Affected node not found");
 }
 
@@ -199,7 +200,7 @@ void TxMeta::init (uint256 const& id, std::uint32_t ledger)
 
 void TxMeta::swap (TxMeta& s) noexcept
 {
-    assert ((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
+    DANGER_UNLESS(mTransactionID == s.mTransactionID && mLedger == s.mLedger);
     mNodes.swap (s.mNodes);
 }
 
@@ -207,14 +208,14 @@ bool TxMeta::thread (STObject& node, uint256 const& prevTxID, std::uint32_t prev
 {
     if (node.getFieldIndex (sfPreviousTxnID) == -1)
     {
-        assert (node.getFieldIndex (sfPreviousTxnLgrSeq) == -1);
+        DANGER_UNLESS(node.getFieldIndex (sfPreviousTxnLgrSeq) == -1);
         node.setFieldH256 (sfPreviousTxnID, prevTxID);
         node.setFieldU32 (sfPreviousTxnLgrSeq, prevLgrID);
         return true;
     }
 
-    assert (node.getFieldH256 (sfPreviousTxnID) == prevTxID);
-    assert (node.getFieldU32 (sfPreviousTxnLgrSeq) == prevLgrID);
+    DANGER_UNLESS(node.getFieldH256 (sfPreviousTxnID) == prevTxID);
+    DANGER_UNLESS(node.getFieldU32 (sfPreviousTxnLgrSeq) == prevLgrID);
     return false;
 }
 
@@ -226,7 +227,7 @@ static bool compare (const STObject& o1, const STObject& o2)
 STObject TxMeta::getAsObject () const
 {
     STObject metaData (sfTransactionMetaData);
-    assert (mResult != 255);
+    DANGER_UNLESS(mResult != 255);
     metaData.setFieldU8 (sfTransactionResult, mResult);
     metaData.setFieldU32 (sfTransactionIndex, mIndex);
     metaData.emplace_back (mNodes);
@@ -239,7 +240,7 @@ void TxMeta::addRaw (Serializer& s, TER result, std::uint32_t index)
 {
     mResult = static_cast<int> (result);
     mIndex = index;
-    assert ((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
+    DANGER_UNLESS((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
     mNodes.sort (compare);
 

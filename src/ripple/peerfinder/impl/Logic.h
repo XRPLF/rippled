@@ -321,7 +321,7 @@ public:
                             ", self->remote_endpoint()=" << self->remote_endpoint();
                 }
                 // This assert goes off
-                //assert (consistent);
+                //DANGER_UNLESS(consistent);
                 if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
                     "Logic dropping " << remote_endpoint <<
                     " as self connect";
@@ -338,7 +338,7 @@ public:
         auto const result (state->slots.emplace (
             slot->remote_endpoint (), slot));
         // Remote address must not already exist
-        assert (result.second);
+        DANGER_UNLESS(result.second);
         // Add to the connected address list
         state->connected_addresses.emplace (remote_endpoint.address());
 
@@ -376,7 +376,7 @@ public:
             state->slots.emplace (slot->remote_endpoint (),
                 slot));
         // Remote address must not already exist
-        assert (result.second);
+        DANGER_UNLESS(result.second);
 
         // Add to the connected address list
         state->connected_addresses.emplace (remote_endpoint.address());
@@ -398,7 +398,7 @@ public:
         typename SharedState::Access state (m_state);
 
         // The object must exist in our table
-        assert (state->slots.find (slot->remote_endpoint ()) !=
+        DANGER_UNLESS(state->slots.find (slot->remote_endpoint ()) !=
             state->slots.end ());
         // Assign the local endpoint now that it's known
         slot->local_endpoint (local_endpoint);
@@ -408,7 +408,7 @@ public:
             auto const iter (state->slots.find (local_endpoint));
             if (iter != state->slots.end ())
             {
-                assert (iter->second->local_endpoint ()
+                DANGER_UNLESS(iter->second->local_endpoint ()
                         == slot->remote_endpoint ());
                 if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
                     "Logic dropping " << slot->remote_endpoint () <<
@@ -435,10 +435,10 @@ public:
         typename SharedState::Access state (m_state);
 
         // The object must exist in our table
-        assert (state->slots.find (slot->remote_endpoint ()) !=
+        DANGER_UNLESS(state->slots.find (slot->remote_endpoint ()) !=
             state->slots.end ());
         // Must be accepted or connected
-        assert (slot->state() == Slot::accept ||
+        DANGER_UNLESS(slot->state() == Slot::accept ||
             slot->state() == Slot::connected);
 
         // Check for duplicate connection by key
@@ -465,8 +465,7 @@ public:
         std::pair <Keys::iterator, bool> const result (
             state->keys.insert (key));
         // Public key must not already exist
-        assert (result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
 
         // Change state and update counts
         state->counts.remove (*slot);
@@ -481,7 +480,7 @@ public:
         if (slot->fixed() && ! slot->inbound())
         {
             auto iter (state->fixed.find (slot->remote_endpoint()));
-            assert (iter != state->fixed.end ());
+            DANGER_UNLESS(iter != state->fixed.end ());
             iter->second.success (m_clock.now ());
             if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
                 "Logic fixed " << slot->remote_endpoint () << " success";
@@ -802,11 +801,11 @@ public:
         typename SharedState::Access state (m_state);
 
         // The object must exist in our table
-        assert (state->slots.find (slot->remote_endpoint ()) !=
+        DANGER_UNLESS(state->slots.find (slot->remote_endpoint ()) !=
             state->slots.end ());
 
         // Must be handshaked!
-        assert (slot->state() == Slot::active);
+        DANGER_UNLESS(slot->state() == Slot::active);
 
         preprocess (slot, list, state);
 
@@ -814,7 +813,7 @@ public:
 
         for (auto const& ep : list)
         {
-            assert (ep.hops != 0);
+            DANGER_UNLESS(ep.hops != 0);
 
             slot->recent.insert (ep.address, ep.hops);
 
@@ -882,7 +881,7 @@ public:
         Slots::iterator const iter (state->slots.find (
             slot->remote_endpoint ()));
         // The slot must exist in the table
-        assert (iter != state->slots.end ());
+        DANGER_UNLESS(iter != state->slots.end ());
         // Remove from slot by IP table
         state->slots.erase (iter);
         // Remove the key if present
@@ -890,7 +889,7 @@ public:
         {
             Keys::iterator const iter (state->keys.find (*slot->public_key()));
             // Key must exist
-            assert (iter != state->keys.end ());
+            DANGER_UNLESS(iter != state->keys.end ());
             state->keys.erase (iter);
         }
         // Remove from connected address table
@@ -898,7 +897,7 @@ public:
             auto const iter (state->connected_addresses.find (
                 slot->remote_endpoint().address()));
             // Address must exist
-            assert (iter != state->connected_addresses.end ());
+            DANGER_UNLESS(iter != state->connected_addresses.end ());
             state->connected_addresses.erase (iter);
         }
 
@@ -916,7 +915,7 @@ public:
         if (slot->fixed() && ! slot->inbound() && slot->state() != Slot::active)
         {
             auto iter (state->fixed.find (slot->remote_endpoint()));
-            assert (iter != state->fixed.end ());
+            DANGER_UNLESS(iter != state->fixed.end ());
             iter->second.failure (m_clock.now ());
             if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                 "Logic fixed " << slot->remote_endpoint () << " failed";
@@ -950,7 +949,7 @@ public:
             break;
 
         default:
-            assert (false);
+            DANGER("Unreachable");
             break;
         }
     }

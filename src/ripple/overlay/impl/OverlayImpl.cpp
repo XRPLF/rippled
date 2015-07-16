@@ -331,7 +331,7 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
 void
 OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
 {
-    assert(work_);
+    DANGER_UNLESS(work_);
 
     auto usage = resourceManager().newOutboundEndpoint (remote_endpoint);
     if (usage.disconnect())
@@ -370,8 +370,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
     {
         auto const result =
             m_peers.emplace (peer->slot(), peer);
-        assert (result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
 
     // Now track this peer
@@ -380,15 +379,13 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
             std::piecewise_construct,
                 std::make_tuple (peer->id()),
                     std::make_tuple (peer)));
-        assert(result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
 
     {
         auto const result (m_publicKeyMap.emplace(
             peer->getNodePublic(), peer));
-        assert(result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
 
     list_.emplace(peer.get(), peer);
@@ -409,7 +406,7 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 {
     std::lock_guard <decltype(mutex_)> lock (mutex_);
     auto const iter = m_peers.find (slot);
-    assert(iter != m_peers.end ());
+    DANGER_UNLESS(iter != m_peers.end ());
     m_peers.erase (iter);
 }
 
@@ -599,15 +596,13 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
             std::piecewise_construct,
                 std::make_tuple (peer->id()),
                     std::make_tuple (peer)));
-        assert(result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
 
     {
         auto const result (m_publicKeyMap.emplace(
             peer->getNodePublic(), peer));
-        assert(result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
 
     journal_.debug <<
@@ -616,7 +611,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
         ":" << peer->getNodePublic().toPublicKey() << ")";
 
     // We just accepted this peer so we have non-zero active peers
-    assert(size() != 0);
+    DANGER_UNLESS(size() != 0);
 }
 
 void
@@ -931,8 +926,7 @@ OverlayImpl::add (std::shared_ptr<PeerImp> const& peer)
     {
         auto const result =
             m_peers.emplace (peer->slot(), peer);
-        assert (result.second);
-        (void) result.second;
+        DANGER_UNLESS(result.second);
     }
     list_.emplace(peer.get(), peer);
 }

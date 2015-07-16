@@ -215,7 +215,7 @@ bool HashRouter::setFlag (uint256 const& index, int flag)
     //             they appear in the generated documentation.
     //
     // return: true = changed, false = unchanged
-    assert (flag != 0);
+    DANGER_UNLESS(flag != 0);
 
     ScopedLockType lock (mMutex);
 

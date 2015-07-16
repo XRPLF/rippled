@@ -51,8 +51,8 @@ LedgerHistory::LedgerHistory (
 
 bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 {
-    assert (ledger && ledger->isImmutable ());
-    assert (ledger->stateMap().getHash ().isNonZero ());
+    DANGER_UNLESS(ledger && ledger->isImmutable ());
+    DANGER_UNLESS(ledger->stateMap().getHash ().isNonZero ());
 
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
@@ -93,13 +93,13 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
     if (!ret)
         return ret;
 
-    assert (ret->info().seq == index);
+    DANGER_UNLESS(ret->info().seq == index);
 
     {
         // Add this ledger to the local tracking by index
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
-        assert (ret->isImmutable ());
+        DANGER_UNLESS(ret->isImmutable ());
         m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
         mLedgersByIndex[ret->info().seq] = ret->getHash ();
         return (ret->info().seq == index) ? ret : Ledger::pointer ();
@@ -112,8 +112,8 @@ Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
 
     if (ret)
     {
-        assert (ret->isImmutable ());
-        assert (ret->getHash () == hash);
+        DANGER_UNLESS(ret->isImmutable ());
+        DANGER_UNLESS(ret->getHash () == hash);
         return ret;
     }
 
@@ -122,10 +122,10 @@ Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
     if (!ret)
         return ret;
 
-    assert (ret->isImmutable ());
-    assert (ret->getHash () == hash);
+    DANGER_UNLESS(ret->isImmutable ());
+    DANGER_UNLESS(ret->getHash () == hash);
     m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
-    assert (ret->getHash () == hash);
+    DANGER_UNLESS(ret->getHash () == hash);
 
     return ret;
 }
@@ -159,7 +159,7 @@ log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger
     getTransactionMeta(*validLedger, tx, validMetaData);
     TxMeta::pointer builtMetaData;
     getTransactionMeta(*builtLedger, tx, builtMetaData);
-    assert(validMetaData != nullptr || builtMetaData != nullptr);
+    DANGER_UNLESS(validMetaData != nullptr || builtMetaData != nullptr);
 
     if (validMetaData != nullptr && builtMetaData != nullptr)
     {
@@ -290,7 +290,7 @@ leaves (SHAMap const& sm)
 
 void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& valid)
 {
-    assert (built != valid);
+    DANGER_UNLESS(built != valid);
     ++mismatch_counter_;
 
     Ledger::pointer builtLedger = getLedgerByHash (built);
@@ -304,7 +304,7 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& v
         return;
     }
 
-    assert (builtLedger->info().seq == validLedger->info().seq);
+    DANGER_UNLESS(builtLedger->info().seq == validLedger->info().seq);
 
     // Determine the mismatch reason
     // Distinguish Byzantine failure from transaction processing difference
@@ -375,7 +375,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();
-    assert (!hash.isZero());
+    DANGER_UNLESS(!hash.isZero());
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
@@ -399,7 +399,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();
-    assert (!hash.isZero());
+    DANGER_UNLESS(!hash.isZero());
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 

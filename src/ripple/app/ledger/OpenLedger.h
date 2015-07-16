@@ -168,7 +168,7 @@ private:
             ApplyFlags flags, IHashRouter& router,
                 Config const& config, beast::Journal j);
 
-public:    
+public:
     //--------------------------------------------------------------------------
     //
     // TEST CODE
@@ -243,7 +243,7 @@ OpenLedger::apply (OpenView& view,
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert (retries.empty() || ! retry);
+    DANGER_UNLESS(retries.empty() || ! retry);
 }
 
 //------------------------------------------------------------------------------

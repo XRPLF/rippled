@@ -58,7 +58,7 @@ Most important thing that we do:
 
 namespace ripple {
 namespace Validators {
-    
+
 Logic::Logic (Store& store, beast::Journal journal)
     : /*store_ (store)
     , */journal_ (journal)
@@ -106,7 +106,7 @@ Logic::onTimer()
 void
 Logic::onValidation (STValidation const& v)
 {
-    assert(v.isFieldPresent (sfLedgerSequence));
+    DANGER_UNLESS(v.isFieldPresent (sfLedgerSequence));
     auto const seq_no =
         v.getFieldU32 (sfLedgerSequence);
     auto const key = v.getSignerPublic();
@@ -118,7 +118,7 @@ Logic::onValidation (STValidation const& v)
     auto const result = ledgers_.emplace (std::piecewise_construct,
         std::make_tuple(ledger), std::make_tuple());
     auto& meta = result.first->second;
-    assert(result.second || seq_no == meta.seq_no);
+    DANGER_UNLESS(result.second || seq_no == meta.seq_no);
     if (result.second)
         meta.seq_no = seq_no;
     meta.keys.insert (v.getSignerPublic());

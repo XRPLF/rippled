@@ -35,7 +35,7 @@ SHAMap::SHAMap (
     , state_ (SHAMapState::Modifying)
     , type_ (t)
 {
-    assert (seq_ != 0);
+    DANGER_UNLESS(seq_ != 0);
 
     root_ = std::make_shared<SHAMapInnerNode> (seq_);
 }
@@ -96,7 +96,7 @@ SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf) const
         stack.push ({node, nodeID});
 
         int branch = nodeID.selectBranch (id);
-        assert (branch >= 0);
+        DANGER_UNLESS(branch >= 0);
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(std::move(node));
         if (inner->isEmptyBranch (branch))
             return stack;
@@ -121,18 +121,18 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
     // stack is a path of inner nodes up to, but not including, child
     // child can be an inner node or a leaf
 
-    assert ((state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable));
-    assert (child && (child->getSeq() == seq_));
+    DANGER_UNLESS((state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable));
+    DANGER_UNLESS(child && (child->getSeq() == seq_));
 
     while (!stack.empty ())
     {
         auto node = std::dynamic_pointer_cast<SHAMapInnerNode>(stack.top ().first);
         SHAMapNodeID nodeID = stack.top ().second;
         stack.pop ();
-        assert (node != nullptr);
+        DANGER_UNLESS(node != nullptr);
 
         int branch = nodeID.selectBranch (target);
-        assert (branch >= 0);
+        DANGER_UNLESS(branch >= 0);
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild (branch, child);
@@ -333,9 +333,9 @@ std::pair <SHAMapAbstractNode*, SHAMapNodeID>
 SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
     int branch, SHAMapSyncFilter * filter) const
 {
-    assert (parent->isInner ());
-    assert ((branch >= 0) && (branch < 16));
-    assert (!parent->isEmptyBranch (branch));
+    DANGER_UNLESS(parent->isInner ());
+    DANGER_UNLESS((branch >= 0) && (branch < 16));
+    DANGER_UNLESS(!parent->isEmptyBranch (branch));
 
     SHAMapNodeID childID = parentID.getChildNodeID (branch);
     SHAMapAbstractNode* child = parent->getChildPointer (branch);
@@ -402,14 +402,14 @@ std::shared_ptr<Node>
 SHAMap::unshareNode (std::shared_ptr<Node> node, SHAMapNodeID const& nodeID)
 {
     // make sure the node is suitable for the intended operation (copy on write)
-    assert (node->isValid ());
-    assert (node->getSeq () <= seq_);
+    DANGER_UNLESS(node->isValid ());
+    DANGER_UNLESS(node->getSeq () <= seq_);
     if (node->getSeq () != seq_)
     {
         // have a CoW
-        assert (state_ != SHAMapState::Immutable);
+        DANGER_UNLESS(state_ != SHAMapState::Immutable);
         node = std::static_pointer_cast<Node>(node->clone(seq_));
-        assert (node->isValid ());
+        DANGER_UNLESS(node->isValid ());
         if (nodeID.isRoot ())
             root_ = node;
     }
@@ -422,7 +422,7 @@ SHAMap::firstBelow (SHAMapAbstractNode* node) const
     // Return the first item below this node
     do
     {
-        assert(node != nullptr);
+        DANGER_UNLESS(node != nullptr);
 
         if (node->isLeaf ())
             return static_cast<SHAMapTreeNode*>(node);
@@ -451,7 +451,7 @@ SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
     // Return the first item below this node
     while (true)
     {
-        assert(node != nullptr);
+        DANGER_UNLESS(node != nullptr);
         if (node->isLeaf())
             return static_cast<SHAMapTreeNode*>(node);
         bool foundNode = false;
@@ -461,7 +461,7 @@ SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
             if (!inner->isEmptyBranch(i))
             {
                 node = descendThrow(inner, i);
-                assert(!stack.empty());
+                DANGER_UNLESS(!stack.empty());
                 stack.push({node, stack.top().second.getChildNodeID(i)});
                 foundNode = true;
                 break;
@@ -522,7 +522,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
 
         if (!nextNode)
         {
-            assert (false);
+            DANGER("No nextNode");
             return no_item;
         }
 
@@ -532,7 +532,7 @@ SHAMap::onlyBelow (SHAMapAbstractNode* node) const
     // An inner node must have at least one leaf
     // below it, unless it's the root_
     auto leaf = static_cast<SHAMapTreeNode*>(node);
-    assert (leaf->hasItem () || (leaf == root_.get ()));
+    DANGER_UNLESS(leaf->hasItem () || (leaf == root_.get ()));
 
     return leaf->peekItem ();
 }
@@ -564,7 +564,7 @@ SHAMap::peekFirstItem () const
 SHAMapItem const*
 SHAMap::peekFirstItem(NodeStack& stack) const
 {
-    assert(stack.empty());
+    DANGER_UNLESS(stack.empty());
     stack.push({root_.get(), SHAMapNodeID{}});
     SHAMapTreeNode* node = firstBelow(root_.get(), stack);
     if (!node)
@@ -650,14 +650,14 @@ SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 SHAMapItem const*
 SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
 {
-    assert(!stack.empty());
-    assert(stack.top().first->isLeaf());
+    DANGER_UNLESS(!stack.empty());
+    DANGER_UNLESS(stack.top().first->isLeaf());
     stack.pop();
     while (!stack.empty())
     {
         auto node = stack.top().first;
         auto nodeID = stack.top().second;
-        assert(!node->isLeaf());
+        DANGER_UNLESS(!node->isLeaf());
         auto inner = static_cast<SHAMapInnerNode*>(node);
         for (auto i = nodeID.selectBranch(id) + 1; i < 16; ++i)
         {
@@ -669,7 +669,7 @@ SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
                 auto leaf = firstBelow(node, stack);
                 if (!leaf)
                     throw SHAMapMissingNode(type_, id);
-                assert(leaf->isLeaf());
+                DANGER_UNLESS(leaf->isLeaf());
                 return leaf->peekItem().get();
             }
         }
@@ -762,7 +762,7 @@ bool SHAMap::hasItem (uint256 const& id) const
 bool SHAMap::delItem (uint256 const& id)
 {
     // delete the item with this ID
-    assert (state_ != SHAMapState::Immutable);
+    DANGER_UNLESS(state_ != SHAMapState::Immutable);
 
     auto stack = getStack (id, true);
 
@@ -788,7 +788,7 @@ bool SHAMap::delItem (uint256 const& id)
         SHAMapNodeID nodeID = stack.top ().second;
         stack.pop ();
 
-        assert (node);
+        DANGER_UNLESS(node);
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild (nodeID.selectBranch (id), prevNode);
@@ -850,7 +850,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     SHAMapTreeNode::TNType type = !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
         (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM);
 
-    assert (state_ != SHAMapState::Immutable);
+    DANGER_UNLESS(state_ != SHAMapState::Immutable);
 
     auto stack = getStack (tag, true);
 
@@ -873,7 +873,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
         // easy case, we end on an inner node
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         int branch = nodeID.selectBranch (tag);
-        assert (inner->isEmptyBranch (branch));
+        DANGER_UNLESS(inner->isEmptyBranch (branch));
         auto newNode = std::make_shared<SHAMapTreeNode> (item, type, seq_);
         inner->setChild (branch, newNode);
     }
@@ -882,7 +882,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
         // this is a leaf node that has to be made an inner node holding two items
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(node);
         std::shared_ptr<SHAMapItem const> otherItem = leaf->peekItem ();
-        assert (otherItem && (tag != otherItem->key()));
+        DANGER_UNLESS(otherItem && (tag != otherItem->key()));
 
         node = std::make_shared<SHAMapInnerNode>(node->getSeq());
 
@@ -899,16 +899,16 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
         }
 
         // we can add the two leaf nodes here
-        assert (node->isInner ());
+        DANGER_UNLESS(node->isInner ());
 
         std::shared_ptr<SHAMapTreeNode> newNode =
             std::make_shared<SHAMapTreeNode> (item, type, seq_);
-        assert (newNode->isValid () && newNode->isLeaf ());
+        DANGER_UNLESS(newNode->isValid () && newNode->isLeaf ());
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         inner->setChild (b1, newNode);
 
         newNode = std::make_shared<SHAMapTreeNode> (otherItem, type, seq_);
-        assert (newNode->isValid () && newNode->isLeaf ());
+        DANGER_UNLESS(newNode->isValid () && newNode->isLeaf ());
         inner->setChild (b2, newNode);
     }
 
@@ -940,7 +940,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     // can't change the tag but can change the hash
     uint256 tag = item->key();
 
-    assert (state_ != SHAMapState::Immutable);
+    DANGER_UNLESS(state_ != SHAMapState::Immutable);
 
     auto stack = getStack (tag, true);
 
@@ -953,7 +953,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
 
     if (!node || (node->peekItem ()->key() != tag))
     {
-        assert (false);
+        DANGER("No node");
         return false;
     }
 
@@ -1000,7 +1000,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     if (newRoot)
     {
         root_ = newRoot;
-        assert (root_->getNodeHash () == hash);
+        DANGER_UNLESS(root_->getNodeHash () == hash);
         return true;
     }
 
@@ -1021,8 +1021,8 @@ SHAMap::writeNode (
     NodeObjectType t, std::uint32_t seq, std::shared_ptr<SHAMapAbstractNode> node) const
 {
     // Node is ours, so we can just make it shareable
-    assert (node->getSeq() == seq_);
-    assert (backed_);
+    DANGER_UNLESS(node->getSeq() == seq_);
+    DANGER_UNLESS(backed_);
     node->setSeq (0);
 
     canonicalize (node->getNodeHash(), node);
@@ -1043,7 +1043,7 @@ SHAMap::preFlushNode (std::shared_ptr<Node> node) const
 {
     // A shared node should never need to be flushed
     // because that would imply someone modified it
-    assert (node->getSeq() != 0);
+    DANGER_UNLESS(node->getSeq() != 0);
 
     if (node->getSeq() != seq_)
     {
@@ -1132,7 +1132,7 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
 
                         child = preFlushNode(std::move(child));
 
-                        assert (node->getSeq() == seq_);
+                        DANGER_UNLESS(node->getSeq() == seq_);
                         child->updateHash();
 
                         if (doWrite && backed_)
@@ -1162,7 +1162,7 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
         stack.pop();
 
         // Hook this inner node to its parent
-        assert (parent->getSeq() == seq_);
+        DANGER_UNLESS(parent->getSeq() == seq_);
         parent->shareChild (pos, node);
 
         // Continue with parent's next child, if any
@@ -1207,7 +1207,7 @@ void SHAMap::dump (bool hash) const
                     auto child = inner->getChildPointer (i);
                     if (child)
                     {
-                        assert (child->getNodeHash() == inner->getChildHash (i));
+                        DANGER_UNLESS(child->getNodeHash() == inner->getChildHash (i));
                         stack.push ({child, nodeID.getChildNodeID (i)});
                      }
                 }
@@ -1225,16 +1225,16 @@ void SHAMap::dump (bool hash) const
 std::shared_ptr<SHAMapAbstractNode> SHAMap::getCache (uint256 const& hash) const
 {
     auto ret = f_.treecache().fetch (hash);
-    assert (!ret || !ret->getSeq());
+    DANGER_UNLESS(!ret || !ret->getSeq());
     return ret;
 }
 
 void
 SHAMap::canonicalize(uint256 const& hash, std::shared_ptr<SHAMapAbstractNode>& node) const
 {
-    assert (backed_);
-    assert (node->getSeq() == 0);
-    assert (node->getNodeHash() == hash);
+    DANGER_UNLESS(backed_);
+    DANGER_UNLESS(node->getSeq() == 0);
+    DANGER_UNLESS(node->getNodeHash() == hash);
 
     f_.treecache().canonicalize (hash, node);
 }

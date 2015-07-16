@@ -162,7 +162,7 @@ void PathRequest::updateComplete ()
 {
     ScopedLockType sl (mIndexLock);
 
-    assert (mInProgress);
+    DANGER_UNLESS(mInProgress);
     mInProgress = false;
 
     if (fCompletion)

@@ -107,7 +107,7 @@ static
 void
 load (Number& mp, Slice const& buf)
 {
-    assert(buf.size() != 0);
+    DANGER_UNLESS(buf.size() != 0);
     auto& b = mp.backend();         // backend
     auto const a = &b.limbs()[0];   // limb array
     using Limb = std::decay_t<
@@ -241,7 +241,7 @@ ed25519Canonical (Slice const& sig)
 PublicKey::PublicKey (Slice const& slice)
 {
     if(! publicKeyType(slice))
-        LogicError("PublicKey::PublicKey invalid type");
+        DIE("PublicKey::PublicKey invalid type");
     size_ = slice.size();
     std::memcpy(buf_, slice.data(), slice.size());
 }
@@ -267,7 +267,7 @@ PublicKey::type() const
     auto const result =
         publicKeyType(Slice{ buf_, size_ });
     if (! result)
-        LogicError("PublicKey::type: invalid type");
+        DIE("PublicKey::type: invalid type");
     return *result;
 }
 
@@ -362,4 +362,3 @@ calcNodeID (PublicKey const& pk)
 }
 
 } // ripple
-

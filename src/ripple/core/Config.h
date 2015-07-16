@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/RippleAddress.h>

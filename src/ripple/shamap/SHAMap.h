@@ -184,12 +184,12 @@ public:
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
                           SHAMapSyncFilter * filter);
-    
+
     bool getNodeFat (SHAMapNodeID node,
         std::vector<SHAMapNodeID>& nodeIDs,
             std::vector<Blob>& rawNode,
                 bool fatLeaves, std::uint32_t depth) const;
-    
+
     bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
@@ -322,7 +322,7 @@ inline
 void
 SHAMap::setImmutable ()
 {
-    assert (state_ != SHAMapState::Invalid);
+    DANGER_UNLESS(state_ != SHAMapState::Invalid);
     state_ = SHAMapState::Immutable;
 }
 
@@ -443,7 +443,7 @@ inline
 bool
 operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
 {
-    assert(x.map_ == y.map_);
+    DANGER_UNLESS(x.map_ == y.map_);
     return x.item_ == y.item_;
 }
 

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/basics/contract.h>
 #include <beast/asio/placeholders.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio.hpp>
@@ -117,7 +118,7 @@ private:
         ~Base()
         {
             // Derived class must call wait() in the destructor
-            assert(list_.empty());
+            DANGER_UNLESS(list_.empty());
         }
 
         void

@@ -97,8 +97,7 @@ public:
                 auto const result (m_jobData.emplace (std::piecewise_construct,
                     std::forward_as_tuple (jt.type ()),
                     std::forward_as_tuple (jt, m_collector)));
-                assert (result.second == true);
-                (void) result.second;
+                DANGER_UNLESS(result.second == true);
             }
         }
     }
@@ -118,10 +117,10 @@ public:
     void addJob (JobType type, std::string const& name,
         boost::function <void (Job&)> const& jobFunc) override
     {
-        assert (type != jtINVALID);
+        DANGER_UNLESS(type != jtINVALID);
 
         JobDataMap::iterator iter (m_jobData.find (type));
-        assert (iter != m_jobData.end ());
+        DANGER_UNLESS(iter != m_jobData.end ());
 
         if (iter == m_jobData.end ())
             return;
@@ -130,7 +129,7 @@ public:
 
         // FIXME: Workaround incorrect client shutdown ordering
         // do not add jobs to a queue with no threads
-        assert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
+        DANGER_UNLESS(type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
         {
             // If this goes off it means that a child didn't follow
@@ -145,7 +144,7 @@ public:
             //      * Not all children are stopped
             //
             ScopedLock lock (m_mutex);
-            assert (! isStopped() && (
+            DANGER_UNLESS(! isStopped() && (
                 m_processCount>0 ||
                 ! m_jobSet.empty () ||
                 ! areChildrenStopped()));
@@ -241,7 +240,7 @@ public:
         JobType t, std::string const& name) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
-        assert (iter != m_jobData.end ());
+        DANGER_UNLESS(iter != m_jobData.end ());
 
         if (iter == m_jobData.end ())
             return std::shared_ptr<LoadEvent> ();
@@ -254,7 +253,7 @@ public:
         JobType t, std::string const& name) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
-        assert (iter != m_jobData.end ());
+        DANGER_UNLESS(iter != m_jobData.end ());
 
         if (iter == m_jobData.end ())
             return LoadEvent::autoptr ();
@@ -267,7 +266,7 @@ public:
         int count, std::chrono::milliseconds elapsed) override
     {
         JobDataMap::iterator iter (m_jobData.find (t));
-        assert (iter != m_jobData.end ());
+        DANGER_UNLESS(iter != m_jobData.end ());
         iter->second.load().addSamples (count, elapsed);
     }
 
@@ -298,7 +297,7 @@ public:
 
         for (auto& x : m_jobData)
         {
-            assert (x.first != jtINVALID);
+            DANGER_UNLESS(x.first != jtINVALID);
 
             if (x.first == jtGENERIC)
                 continue;
@@ -356,7 +355,7 @@ private:
     JobTypeData& getJobTypeData (JobType type)
     {
         JobDataMap::iterator c (m_jobData.find (type));
-        assert (c != m_jobData.end ());
+        DANGER_UNLESS(c != m_jobData.end ());
 
         // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
         //       and use something sane.
@@ -407,8 +406,8 @@ private:
     void queueJob (Job const& job, ScopedLock const& lock)
     {
         JobType const type (job.getType ());
-        assert (type != jtINVALID);
-        assert (m_jobSet.find (job) != m_jobSet.end ());
+        DANGER_UNLESS(type != jtINVALID);
+        DANGER_UNLESS(m_jobSet.find (job) != m_jobSet.end ());
 
         JobTypeData& data (getJobTypeData (type));
 
@@ -447,29 +446,29 @@ private:
     //
     void getNextJob (Job& job)
     {
-        assert (! m_jobSet.empty ());
+        DANGER_UNLESS(! m_jobSet.empty ());
 
         JobSet::const_iterator iter;
         for (iter = m_jobSet.begin (); iter != m_jobSet.end (); ++iter)
         {
             JobTypeData& data (getJobTypeData (iter->getType ()));
 
-            assert (data.running <= getJobLimit (data.type ()));
+            DANGER_UNLESS(data.running <= getJobLimit (data.type ()));
 
             // Run this job if we're running below the limit.
             if (data.running < getJobLimit (data.type ()))
             {
-                assert (data.waiting > 0);
+                DANGER_UNLESS(data.waiting > 0);
                 break;
             }
         }
 
-        assert (iter != m_jobSet.end ());
+        DANGER_UNLESS(iter != m_jobSet.end ());
 
         JobType const type = iter->getType ();
         JobTypeData& data (getJobTypeData (type));
 
-        assert (type != jtINVALID);
+        DANGER_UNLESS(type != jtINVALID);
 
         job = *iter;
         m_jobSet.erase (iter);
@@ -499,15 +498,15 @@ private:
     {
         JobType const type = job.getType ();
 
-        assert (m_jobSet.find (job) == m_jobSet.end ());
-        assert (type != jtINVALID);
+        DANGER_UNLESS(m_jobSet.find (job) == m_jobSet.end ());
+        DANGER_UNLESS(type != jtINVALID);
 
         JobTypeData& data (getJobTypeData (type));
 
         // Queue a deferred task if possible
         if (data.deferred > 0)
         {
-            assert (data.running + data.waiting >= getJobLimit (type));
+            DANGER_UNLESS(data.running + data.waiting >= getJobLimit (type));
 
             --data.deferred;
             m_workers.addTask ();
@@ -515,7 +514,7 @@ private:
 
         if (! m_threadIds.erase (std::this_thread::get_id()))
         {
-            assert (false);
+            DANGER("Can't erase this thread.");
         }
         --data.running;
     }
@@ -606,7 +605,7 @@ private:
     bool skipOnStop (JobType type)
     {
         JobTypeInfo const& j (getJobTypes ().get (type));
-        assert (j.type () != jtINVALID);
+        DANGER_UNLESS(j.type () != jtINVALID);
 
         return j.skip ();
     }
@@ -618,7 +617,7 @@ private:
     int getJobLimit (JobType type)
     {
         JobTypeInfo const& j (getJobTypes ().get (type));
-        assert (j.type () != jtINVALID);
+        DANGER_UNLESS(j.type () != jtINVALID);
 
         return j.limit ();
     }

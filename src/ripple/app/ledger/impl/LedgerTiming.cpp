@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <algorithm>
 #include <iterator>
 
@@ -30,12 +31,12 @@ int getNextLedgerTimeResolution (
     bool previousAgree,
     std::uint32_t ledgerSeq)
 {
-    assert (ledgerSeq);
+    DANGER_UNLESS(ledgerSeq);
 
     // Find the current resolution:
     auto iter = std::find (std::begin (ledgerPossibleTimeResolutions),
         std::end (ledgerPossibleTimeResolutions), previousResolution);
-    assert (iter != std::end (ledgerPossibleTimeResolutions));
+    DANGER_UNLESS(iter != std::end (ledgerPossibleTimeResolutions));
 
     // This should never happen, but just as a precaution
     if (iter == std::end (ledgerPossibleTimeResolutions))

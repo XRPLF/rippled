@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/server/Role.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 
@@ -26,7 +27,7 @@ bool
 passwordUnrequiredOrSentCorrect (HTTP::Port const& port,
                                  Json::Value const& params) {
 
-    assert(! port.admin_ip.empty ());
+    DANGER_UNLESS(! port.admin_ip.empty ());
     bool const passwordRequired = (!port.admin_user.empty() ||
                                    !port.admin_password.empty());
 

@@ -144,7 +144,7 @@ public:
 #endif
             if (result.second)
                 good_.insert(key);
-            // register a hit for slightly late validations 
+            // register a hit for slightly late validations
             if (ledger_ && ledger == ledger_)
                 if (result.first->second.onHit())
                     good_.insert(key);
@@ -162,7 +162,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         if (journal_.debug) journal_.debug <<
             "onLedger: " << ledger;
-        assert(ledger != ledger_);
+        DANGER_UNLESS(ledger != ledger_);
         ledger_ = ledger;
         auto item = items_.lower_bound(
             std::make_pair(ledger, RippleAddress()));

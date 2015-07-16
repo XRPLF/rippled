@@ -255,7 +255,7 @@ public:
     // close time functions
     void setCloseTime (std::uint32_t when)
     {
-        assert (!mImmutable);
+        DANGER_UNLESS(!mImmutable);
         info_.closeTime = when;
     }
 

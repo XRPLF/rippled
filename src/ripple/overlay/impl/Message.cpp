@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/overlay/Message.h>
 #include <cstdint>
 
@@ -27,7 +28,7 @@ Message::Message (::google::protobuf::Message const& message, int type)
 {
     unsigned const messageBytes = message.ByteSize ();
 
-    assert (messageBytes != 0);
+    DANGER_UNLESS(messageBytes != 0);
 
     mBuffer.resize (kHeaderBytes + messageBytes);
 
@@ -79,7 +80,7 @@ int Message::getType (std::vector<uint8_t> const& buf)
 
 void Message::encodeHeader (unsigned size, int type)
 {
-    assert (mBuffer.size () >= Message::kHeaderBytes);
+    DANGER_UNLESS(mBuffer.size () >= Message::kHeaderBytes);
     mBuffer[0] = static_cast<std::uint8_t> ((size >> 24) & 0xFF);
     mBuffer[1] = static_cast<std::uint8_t> ((size >> 16) & 0xFF);
     mBuffer[2] = static_cast<std::uint8_t> ((size >> 8) & 0xFF);

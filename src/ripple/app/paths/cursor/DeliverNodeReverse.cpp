@@ -70,7 +70,7 @@ TER PathCursor::deliverNodeReverseImpl (
         << " saOutReq=" << saOutReq
         << " saPrvDlvReq=" << previousNode().saRevDeliver;
 
-    assert (saOutReq != zero);
+    DANGER_UNLESS(saOutReq != zero);
 
     int loopCount = 0;
 
@@ -279,7 +279,7 @@ TER PathCursor::deliverNodeReverseImpl (
         else
         {
             // TODO(tom): more logging here.
-            assert (saInPassAct == saInPassReq);
+            DANGER_UNLESS(saInPassAct == saInPassReq);
         }
 
         // Funds were spent.
@@ -329,7 +329,7 @@ TER PathCursor::deliverNodeReverseImpl (
         }
         else
         {
-            assert (saOutPassAct < node().saTakerGets);
+            DANGER_UNLESS(saOutPassAct < node().saTakerGets);
         }
 
         saOutAct += saOutPassAct;
@@ -342,7 +342,7 @@ TER PathCursor::deliverNodeReverseImpl (
         << " saOutAct=" << saOutAct
         << " saOutReq=" << saOutReq;
 
-    assert (saOutAct <= saOutReq);
+    DANGER_UNLESS(saOutAct <= saOutReq);
 
     if (resultCode == tesSUCCESS && !saOutAct)
         resultCode = tecPATH_DRY;
