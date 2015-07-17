@@ -69,12 +69,6 @@ public:
 
     /** Returns the current time. */
     virtual time_point now() const = 0;
-
-    /** Returning elapsed ticks since the epoch. */
-    rep elapsed() const
-    {
-        return now().time_since_epoch().count();
-    }
 };
 
 //------------------------------------------------------------------------------
