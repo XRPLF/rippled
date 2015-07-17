@@ -421,6 +421,13 @@ CreateOffer::format_amount (STAmount const& amount)
 STAmount
 CreateOffer::getAccountReserve (SLE::pointer account)
 {
+    // Mon Aug 3 11:00:00am PDT
+    static NetClock::time_point const switchoverTime (
+        std::chrono::seconds (491940000));
+    if (ctx_.view().info().parentCloseTime <=
+            switchoverTime.time_since_epoch().count())
+        return STAmount (ctx_.view().fees().accountReserve(
+            deprecatedWrongOwnerCount_+1));
     return STAmount (ctx_.view().fees().accountReserve(
         account->getFieldU32 (sfOwnerCount) + 1));
 }
@@ -558,6 +565,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     auto const sleCreator = view.peek (
         keylet::account(account_));
+
+    deprecatedWrongOwnerCount_ = sleCreator->getFieldU32(sfOwnerCount);
 
     std::uint32_t const uAccountSequenceNext = sleCreator->getFieldU32 (sfSequence);
     std::uint32_t const uSequence = mTxn.getSequence ();
