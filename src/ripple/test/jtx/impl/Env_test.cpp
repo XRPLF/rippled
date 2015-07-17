@@ -574,10 +574,6 @@ public:
     void
     run()
     {
-        // Hack to silence logging
-        deprecatedLogs().severity(
-            beast::Journal::Severity::kNone);
-
         testAccount();
         testAmount();
         testEnv();

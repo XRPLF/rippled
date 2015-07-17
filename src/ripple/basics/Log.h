@@ -219,7 +219,6 @@ private:
         beast::Journal::Severity severity, std::string const& partition);
 };
 
-
 // Wraps a Journal::Stream to skip evaluation of
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
@@ -235,6 +234,25 @@ deprecatedLogs()
     static Logs logs;
     return logs;
 }
+
+class LogSquelcher
+{
+public:
+    LogSquelcher()
+        : severity_(deprecatedLogs().severity())
+    {
+        deprecatedLogs().severity(
+            beast::Journal::Severity::kNone);
+    }
+
+    ~LogSquelcher()
+    {
+        deprecatedLogs().severity(severity_);
+    }
+
+private:
+    beast::Journal::Severity const severity_;
+};
 
 // VFALCO DEPRECATED Inject beast::Journal instead
 #define ShouldLog(s, k) \
