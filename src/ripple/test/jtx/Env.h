@@ -135,12 +135,12 @@ public:
 private:
     std::shared_ptr<Ledger const> closed_;
     CachedSLEs cachedSLEs_;
-public:
+    LogSquelcher logSquelcher_;
 
+public:
     // Careful with this
     OpenLedger openLedger;
 
-public:
     Env() = delete;
     Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
