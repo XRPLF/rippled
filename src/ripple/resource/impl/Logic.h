@@ -316,13 +316,13 @@ public:
 
     void importConsumers (std::string const& origin, Gossip const& gossip)
     {
-        clock_type::rep const elapsed (m_clock.elapsed());
+        clock_type::rep const elapsed (m_clock.now().time_since_epoch().count());
         {
             SharedState::Access state (m_state);
             std::pair <Imports::iterator, bool> result (
                 state->import_table.emplace (std::piecewise_construct,
                     std::make_tuple(origin),                  // Key
-                    std::make_tuple(m_clock.elapsed())));     // Import
+                    std::make_tuple(m_clock.now().time_since_epoch().count())));     // Import
 
             if (result.second)
             {
@@ -384,7 +384,7 @@ public:
     {
         SharedState::Access state (m_state);
 
-        clock_type::rep const elapsed (m_clock.elapsed());
+        clock_type::rep const elapsed (m_clock.now().time_since_epoch().count());
 
         for (auto iter (state->inactive.begin()); iter != state->inactive.end();)
         {
@@ -466,7 +466,7 @@ public:
                 break;
             }
             state->inactive.push_back (entry);
-            entry.whenExpires = m_clock.elapsed() + secondsUntilExpiration;
+            entry.whenExpires = m_clock.now().time_since_epoch().count() + secondsUntilExpiration;
         }
     }
 
@@ -491,7 +491,7 @@ public:
     bool warn (Entry& entry, SharedState::Access& state)
     {
         bool notify (false);
-        clock_type::rep const elapsed (m_clock.elapsed());
+        clock_type::rep const elapsed (m_clock.now().time_since_epoch().count());
         if (entry.balance (m_clock.now()) >= warningThreshold &&
             elapsed != entry.lastWarningTime)
         {
