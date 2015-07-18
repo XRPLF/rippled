@@ -436,14 +436,11 @@
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\validators">
-      <UniqueIdentifier>{B23DCD4C-1622-2C31-4562-87F2F95D3884}</UniqueIdentifier>
+    <Filter Include="ripple\unl">
+      <UniqueIdentifier>{843C622F-AA52-E6C5-D3EB-D4B6D564B395}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\validators\impl">
-      <UniqueIdentifier>{3D1F0CBE-9B69-D29E-EAAE-E5A1204068BC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\validators\tests">
-      <UniqueIdentifier>{663AE0EE-6781-C2F4-8D04-0D5D30AC0773}</UniqueIdentifier>
+    <Filter Include="ripple\unl\impl">
+      <UniqueIdentifier>{416459B4-BDA4-31D6-834A-88932E767F37}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
@@ -4563,7 +4560,7 @@
     <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\unl.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
@@ -4572,44 +4569,41 @@
     <ClCompile Include="..\..\src\ripple\unity\websocket04.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\Connection.h">
-      <Filter>ripple\validators</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\Horizon.h">
+      <Filter>ripple\unl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ConnectionImp.cpp">
-      <Filter>ripple\validators\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\unl\impl\BasicHorizon.cpp">
+      <Filter>ripple\unl\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ConnectionImp.h">
-      <Filter>ripple\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\impl\BasicHorizon.h">
+      <Filter>ripple\unl\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Logic.cpp">
-      <Filter>ripple\validators\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\unl\impl\Logic.cpp">
+      <Filter>ripple\unl\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
-      <Filter>ripple\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\impl\Logic.h">
+      <Filter>ripple\unl\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
-      <Filter>ripple\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\impl\Store.h">
+      <Filter>ripple\unl\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
-      <Filter>ripple\validators\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\unl\impl\StoreSqdb.cpp">
+      <Filter>ripple\unl\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
-      <Filter>ripple\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\impl\StoreSqdb.h">
+      <Filter>ripple\unl\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
-      <Filter>ripple\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\impl\Tuning.h">
+      <Filter>ripple\unl\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorManager.cpp">
-      <Filter>ripple\validators\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\unl\impl\UNLManager.cpp">
+      <Filter>ripple\unl\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\make_Manager.h">
-      <Filter>ripple\validators</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\make_Manager.h">
+      <Filter>ripple\unl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
-      <Filter>ripple\validators\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\ValidatorManager.h">
-      <Filter>ripple\validators</Filter>
+    <ClInclude Include="..\..\src\ripple\unl\UNLManager.h">
+      <Filter>ripple\unl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>

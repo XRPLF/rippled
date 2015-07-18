@@ -3908,7 +3908,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\unl.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
     </ClCompile>
@@ -3918,36 +3920,37 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\Connection.h">
+    <ClInclude Include="..\..\src\ripple\unl\Horizon.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ConnectionImp.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple\unl\impl\BasicHorizon.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ConnectionImp.h">
+    <ClInclude Include="..\..\src\ripple\unl\impl\BasicHorizon.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Logic.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple\unl\impl\Logic.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
+    <ClInclude Include="..\..\src\ripple\unl\impl\Logic.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
+    <ClInclude Include="..\..\src\ripple\unl\impl\Store.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple\unl\impl\StoreSqdb.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
+    <ClInclude Include="..\..\src\ripple\unl\impl\StoreSqdb.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
+    <ClInclude Include="..\..\src\ripple\unl\impl\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorManager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple\unl\impl\UNLManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\make_Manager.h">
+    <ClInclude Include="..\..\src\ripple\unl\make_Manager.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\ValidatorManager.h">
+    <ClInclude Include="..\..\src\ripple\unl\UNLManager.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
     </ClInclude>

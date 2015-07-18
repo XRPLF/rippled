@@ -17,18 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_CONNECTIONIMP_H_INCLUDED
-#define RIPPLE_VALIDATORS_CONNECTIONIMP_H_INCLUDED
+#ifndef RIPPLE_UNL_BASICHORIZON_H_INCLUDED
+#define RIPPLE_UNL_BASICHORIZON_H_INCLUDED
 
+#include "ripple.pb.h"
 #include <ripple/basics/hardened_hash.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/RippleAddress.h>
-#include <ripple/validators/Connection.h>
-#include <ripple/validators/impl/Logic.h>
+#include <ripple/protocol/STValidation.h>
+#include <ripple/unl/Horizon.h>
+#include <beast/chrono/abstract_clock.h>
 #include <beast/utility/WrappedSink.h>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 #include <mutex>
+#include <set>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -36,12 +41,15 @@
 #include <map>
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
-class ConnectionImp
-    : public Connection
+class BasicHorizon
+    : public Horizon
 {
 private:
+    using clock_type = beast::abstract_clock<
+        std::chrono::steady_clock>;
+
     // Metadata on a validation source
     struct Source
     {
@@ -89,14 +97,20 @@ private:
 
     using Item = std::pair<LedgerHash, RippleAddress>;
 
-    Logic& logic_;
+    clock_type& clock_;
+    clock_type::time_point const start_;
     beast::WrappedSink sink_;
     beast::Journal journal_;
+    Kind const kind_;
     std::mutex mutex_;
     boost::optional<LedgerHash> ledger_;
     boost::container::flat_set<Item> items_;
     boost::container::flat_map<RippleAddress, Source> sources_;
     boost::container::flat_set<RippleAddress> good_;
+    std::set<PublicKey> view_;
+
+    boost::optional<
+        clock_type::time_point> lastHops1_;
 
     static
     std::string
@@ -108,23 +122,58 @@ private:
     }
 
 public:
-    template <class Clock>
-    ConnectionImp (int id, Logic& logic, Clock& clock)
-        : logic_ (logic)
-        , sink_ (logic.journal(), makePrefix(id))
+    BasicHorizon (int id, Kind kind,
+            beast::Journal journal, clock_type& clock)
+        : clock_ (clock)
+        , start_ (clock_.now())
+        , sink_ (journal, makePrefix(id))
         , journal_ (sink_)
+        , kind_ (kind)
     {
-        logic_.add(*this);
     }
 
-    ~ConnectionImp()
+    ~BasicHorizon()
     {
-        logic_.remove(*this);
+    }
+
+    bool
+    shouldDrop() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto const now = clock_.now();
+        if ((now - start_) < std::chrono::minutes{1})
+            return false;
+        if (! lastHops1_)
+            return true;
+        return (*lastHops1_ - now) >=
+            std::chrono::minutes{1};
+    }
+
+    Kind kind() const
+    {
+        return kind_;
+    }
+
+    // Returns the current set of synchronized
+    // validators seen on this horizon.
+    //
+    std::set<PublicKey>
+    view() const
+    {
+        return view_;
     }
 
     void
-    onValidation (STValidation const& v) override
+    onMessage (protocol::TMValidation const& m,
+        STValidation const& v)
     {
+        //if (m.hops() == 1)
+        if (m.has_hops())
+        {
+            // directly connected
+            lastHops1_ = clock_.now();
+        }
+
         auto const key = v.getSignerPublic();
         auto const ledger = v.getLedgerHash();
 
@@ -133,7 +182,8 @@ public:
             if (! items_.emplace(ledger, key).second)
                 return;
             if (journal_.debug) journal_.debug <<
-                "onValidation: " << ledger;
+                "onMessage: hops=" << m.hops() <<
+                    ", ledger=" << ledger;
 #if 0
             auto const result = sources_.emplace(
                 std::piecewise_construct, std::make_tuple(key),
@@ -149,9 +199,6 @@ public:
                 if (result.first->second.onHit())
                     good_.insert(key);
         }
-
-        // This can call onLedger, do it last
-        logic_.onValidation(v);
     }
 
     // Called when a supermajority of
@@ -160,7 +207,7 @@ public:
     onLedger (LedgerHash const& ledger)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (journal_.debug) journal_.debug <<
+        if (journal_.trace) journal_.trace <<
             "onLedger: " << ledger;
         assert(ledger != ledger_);
         ledger_ = ledger;

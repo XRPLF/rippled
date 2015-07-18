@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/validators/impl/ConnectionImp.h>
-#include <ripple/validators/impl/Logic.h>
+#include <ripple/unl/impl/BasicHorizon.h>
+#include <ripple/unl/impl/Logic.h>
 
 /*
 
@@ -57,7 +57,7 @@ Most important thing that we do:
 */
 
 namespace ripple {
-namespace Validators {
+namespace unl {
     
 Logic::Logic (Store& store, beast::Journal journal)
     : /*store_ (store)
@@ -77,14 +77,14 @@ Logic::load()
 }
 
 void
-Logic::add (ConnectionImp& c)
+Logic::insert (BasicHorizon& c)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     connections_.insert(&c);
 }
 
 void
-Logic::remove (ConnectionImp& c)
+Logic::erase (BasicHorizon& c)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     connections_.erase(&c);
@@ -104,7 +104,8 @@ Logic::onTimer()
 }
 
 void
-Logic::onValidation (STValidation const& v)
+Logic::onMessage (protocol::TMValidation const& m,
+    STValidation const& v)
 {
     assert(v.isFieldPresent (sfLedgerSequence));
     auto const seq_no =
@@ -128,7 +129,7 @@ Logic::onValidation (STValidation const& v)
         {
             //ledgers_.clear();
             latest_ = *result.first;
-            if (journal_.info) journal_.info <<
+            if (journal_.trace) journal_.trace <<
                 "Accepted " << latest_.second.seq_no <<
                     " (" << ledger << ")";
             for (auto& _ : connections_)
@@ -141,7 +142,7 @@ void
 Logic::onLedgerClosed (LedgerIndex index,
     LedgerHash const& hash, LedgerHash const& parent)
 {
-    if (journal_.info) journal_.info <<
+    if (journal_.trace) journal_.trace <<
         "onLedgerClosed: " << index << " " << hash << " (parent " << parent << ")";
 }
 

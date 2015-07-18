@@ -17,13 +17,9 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_TUNING_H_INCLUDED
-#define RIPPLE_VALIDATORS_TUNING_H_INCLUDED
+#include <BeastConfig.h>
 
-namespace ripple {
-namespace Validators {
-
-}
-}
-
-#endif
+#include <ripple/unl/impl/BasicHorizon.cpp>
+#include <ripple/unl/impl/Logic.cpp>
+#include <ripple/unl/impl/UNLManager.cpp>
+#include <ripple/unl/impl/StoreSqdb.cpp>
