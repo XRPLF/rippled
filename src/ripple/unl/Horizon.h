@@ -17,17 +17,35 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_STORE_H_INCLUDED
-#define RIPPLE_VALIDATORS_STORE_H_INCLUDED
+#ifndef RIPPLE_UNL_HORIZON_H_INCLUDED
+#define RIPPLE_UNL_HORIZON_H_INCLUDED
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
-/** Abstract persistence for Validators data. */
-class Store
+/** Maintains validator horizon statistics on a connection. */
+class Horizon
 {
 public:
-    virtual ~Store() = default;
+    enum Kind
+    {
+        /*  Outbound made by autoconnect.
+            Can be dropped.
+        */
+        kindManaged,
+
+        /*  Inbound. */
+        kindUntrusted,
+
+        /* Fixed or cluster peer.
+            Can't be dropped.
+        */
+        kindTrusted
+    };
+
+    virtual ~Horizon() = default;
+
+    virtual bool shouldDrop() = 0;
 };
 
 }
