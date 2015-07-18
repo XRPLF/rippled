@@ -17,22 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_CONNECTION_H_INCLUDED
-#define RIPPLE_VALIDATORS_CONNECTION_H_INCLUDED
+#ifndef RIPPLE_UNL_STORESQDB_H_INCLUDED
+#define RIPPLE_UNL_STORESQDB_H_INCLUDED
 
-#include <ripple/protocol/STValidation.h>
+#include <ripple/unl/impl/Store.h>
+#include <beast/module/core/files/File.h>
+#include <beast/utility/Journal.h>
+#include <ripple/core/SociDB.h>
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
-/** Represents validator concerns on a protocol connection. */
-class Connection
+/** Database persistence for Validators using SQLite */
+class StoreSqdb : public Store
 {
-public:
-    virtual ~Connection() = default;
+private:
+    beast::Journal m_journal;
+    soci::session m_session;
 
-    /** Called when a signed validation is received on the connection. */
-    virtual void onValidation (STValidation const& v) = 0;
+public:
+    enum
+    {
+        // This affects the format of the data!
+        currentSchemaVersion = 1
+    };
+
+    explicit
+    StoreSqdb (beast::Journal journal);
+
+    ~StoreSqdb();
+
+    void
+    open (SociConfig const& sociConfig);
 };
 
 }

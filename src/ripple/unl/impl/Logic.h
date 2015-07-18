@@ -17,15 +17,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
-#define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
+#ifndef RIPPLE_UNL_LOGIC_H_INCLUDED
+#define RIPPLE_UNL_LOGIC_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/validators/impl/Store.h>
-#include <ripple/validators/impl/Tuning.h>
+#include <ripple/protocol/STValidation.h>
+#include <ripple/unl/impl/Store.h>
+#include <ripple/unl/impl/Tuning.h>
 #include <beast/container/aged_container_utility.h>
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_unordered_set.h>
@@ -36,9 +37,9 @@
 #include <mutex>
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
-class ConnectionImp;
+class BasicHorizon;
 
 class Logic
 {
@@ -69,7 +70,7 @@ private:
     beast::aged_unordered_map <LedgerHash, LedgerMeta,
         std::chrono::steady_clock, hardened_hash<>> ledgers_;
     std::pair<LedgerHash, LedgerMeta> latest_; // last fully validated
-    boost::container::flat_set<ConnectionImp*> connections_;
+    boost::container::flat_set<BasicHorizon*> connections_;
     
     //boost::container::flat_set<
 
@@ -88,10 +89,10 @@ public:
     void load();
 
     void
-    add (ConnectionImp& c);
+    insert (BasicHorizon& c);
 
     void
-    remove (ConnectionImp& c);
+    erase (BasicHorizon& c);
 
     bool
     isStale (STValidation const& v);
@@ -100,7 +101,8 @@ public:
     onTimer();
 
     void
-    onValidation (STValidation const& v);
+    onMessage (protocol::TMValidation const& m,
+        STValidation const& v);
 
     void
     onLedgerClosed (LedgerIndex index,

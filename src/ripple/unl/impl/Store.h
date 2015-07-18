@@ -17,9 +17,20 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/validators/impl/ConnectionImp.cpp>
-#include <ripple/validators/impl/Logic.cpp>
-#include <ripple/validators/impl/ValidatorManager.cpp>
-#include <ripple/validators/impl/StoreSqdb.cpp>
-#include <ripple/validators/tests/Validators.test.cpp>
+#ifndef RIPPLE_UNL_STORE_H_INCLUDED
+#define RIPPLE_UNL_STORE_H_INCLUDED
+
+namespace ripple {
+namespace unl {
+
+/** Abstract persistence for Validators data. */
+class Store
+{
+public:
+    virtual ~Store() = default;
+};
+
+}
+}
+
+#endif

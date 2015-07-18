@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/validators/impl/ConnectionImp.h>
+#ifndef RIPPLE_UNL_TUNING_H_INCLUDED
+#define RIPPLE_UNL_TUNING_H_INCLUDED
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
 }
 }
+
+#endif

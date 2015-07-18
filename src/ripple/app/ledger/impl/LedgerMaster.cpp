@@ -45,7 +45,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/validators/ValidatorManager.h>
+#include <ripple/unl/UNLManager.h>
 #include <algorithm>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>

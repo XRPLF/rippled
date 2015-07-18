@@ -81,7 +81,8 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
     , http_message_(std::move(request))
-    , validatorsConnection_(getApp().getValidators().newConnection(id))
+    , unlHorizon_(getApp().getValidators().insert(id,
+        slotToHorizonKind(*slot_)))
 {
 }
 
@@ -425,7 +426,10 @@ PeerImp::close()
 void
 PeerImp::fail(std::string const& reason)
 {
-    assert(strand_.running_in_this_thread());
+    if(! strand_.running_in_this_thread())
+        return strand_.post(std::bind (
+            (void(Peer::*)(std::string const&))&PeerImp::fail,
+                shared_from_this(), reason));
     if (socket_.is_open())
         if (journal_.debug) journal_.debug <<
             reason;
@@ -1803,7 +1807,8 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
         }
 
     #if RIPPLE_HOOK_VALIDATORS
-        validatorsConnection_->onValidation(*val);
+        getApp().getValidators().onMessage(
+            unlHorizon_, *packet, *val);
     #endif
 
         if (getApp().getOPs ().recvValidation(

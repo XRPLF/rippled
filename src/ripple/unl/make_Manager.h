@@ -17,39 +17,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
-#define RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
+#ifndef RIPPLE_UNL_MAKE_MANAGER_H_INCLUDED
+#define RIPPLE_UNL_MAKE_MANAGER_H_INCLUDED
 
-#include <ripple/validators/impl/Store.h>
-#include <beast/module/core/files/File.h>
+#include <ripple/unl/UNLManager.h>
+#include <beast/threads/Stoppable.h>
 #include <beast/utility/Journal.h>
-#include <ripple/core/SociDB.h>
+#include <beast/module/core/files/File.h>
+#include <boost/asio/io_service.hpp>
+#include <memory>
 
 namespace ripple {
-namespace Validators {
+class BasicConfig;
+namespace unl {
 
-/** Database persistence for Validators using SQLite */
-class StoreSqdb : public Store
-{
-private:
-    beast::Journal m_journal;
-    soci::session m_session;
-
-public:
-    enum
-    {
-        // This affects the format of the data!
-        currentSchemaVersion = 1
-    };
-
-    explicit
-    StoreSqdb (beast::Journal journal);
-
-    ~StoreSqdb();
-
-    void
-    open (SociConfig const& sociConfig);
-};
+std::unique_ptr<Manager>
+make_Manager (beast::Stoppable& stoppableParent,
+    boost::asio::io_service& io_service,
+    beast::Journal journal,
+    BasicConfig const& config);
 
 }
 }
