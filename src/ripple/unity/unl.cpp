@@ -23,3 +23,6 @@
 #include <ripple/unl/impl/Logic.cpp>
 #include <ripple/unl/impl/UNLManager.cpp>
 #include <ripple/unl/impl/StoreSqdb.cpp>
+
+#include <ripple/unl/tests/Network_test.cpp>
+#include <ripple/unl/tests/SlotPeer_test.cpp>

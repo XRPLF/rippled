@@ -442,6 +442,9 @@
     <Filter Include="ripple\unl\impl">
       <UniqueIdentifier>{416459B4-BDA4-31D6-834A-88932E767F37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\unl\tests">
+      <UniqueIdentifier>{2C910562-8D0A-B115-B829-556779436F2F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
     </Filter>
@@ -4602,6 +4605,15 @@
     <ClInclude Include="..\..\src\ripple\unl\make_Manager.h">
       <Filter>ripple\unl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unl\tests\Network_test.cpp">
+      <Filter>ripple\unl\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unl\tests\SlotPeer_test.cpp">
+      <Filter>ripple\unl\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\unl\UNLManager.h">
       <Filter>ripple\unl</Filter>
     </ClInclude>
