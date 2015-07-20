@@ -404,7 +404,7 @@ ApplyStateTable::insert (ReadView const& base,
     case Action::cache:
         LogicError("ApplyStateTable::insert: already cached");
     case Action::insert:
-        LogicError("ApplyStateTable::insert: already inserted");        
+        LogicError("ApplyStateTable::insert: already inserted");
     case Action::modify:
         LogicError("ApplyStateTable::insert: already modified");
     case Action::erase:
@@ -504,7 +504,7 @@ ApplyStateTable::getForMod (ReadView const& base,
     auto iter = items_.find (key);
     if (iter != items_.end ())
     {
-        auto const& item = iter->second;
+        auto& item = iter->second;
         if (item.first == Action::erase)
         {
             // VFALCO We need to think about throwing
@@ -513,6 +513,9 @@ ApplyStateTable::getForMod (ReadView const& base,
                 "Trying to thread to deleted node";
             return nullptr;
         }
+        // Track when a node gets modified only by metadata
+        if (item.first == Action::cache)
+            item.first = Action::modify;
         return item.second;
     }
     {
