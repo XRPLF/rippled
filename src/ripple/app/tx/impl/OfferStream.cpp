@@ -19,18 +19,19 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/OfferStream.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
-OfferStream::OfferStream (ApplyView& view, ApplyView& view_cancel,
+OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
     BookRef book, Clock::time_point when,
         Config const& config, beast::Journal journal)
     : j_ (journal)
-    , m_view (view)
-    , m_view_cancel (view_cancel)
-    , m_book (book)
-    , m_when (when)
-    , m_tip (view, book)
+    , view_ (view)
+    , cancelView_ (cancelView)
+    , book_ (book)
+    , expire_ (when)
+    , tip_ (view, book_)
     , config_ (config)
 {
 }
@@ -44,24 +45,24 @@ OfferStream::erase (ApplyView& view)
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p = view.peek (keylet::page(m_tip.dir()));
+    auto p = view.peek (keylet::page(tip_.dir()));
 
     if (p == nullptr)
     {
-        if (j_.error) j_.error <<
-            "Missing directory " << m_tip.dir() <<
-            " for offer " << m_tip.index();
+        JLOG(j_.error) <<
+            "Missing directory " << tip_.dir() <<
+            " for offer " << tip_.index();
         return;
     }
 
     auto v (p->getFieldV256 (sfIndexes));
-    auto it (std::find (v.begin(), v.end(), m_tip.index()));
+    auto it (std::find (v.begin(), v.end(), tip_.index()));
 
     if (it == v.end())
     {
-        if (j_.error) j_.error <<
-            "Missing offer " << m_tip.index() <<
-            " for directory " << m_tip.dir();
+        JLOG(j_.error) <<
+            "Missing offer " << tip_.index() <<
+            " for directory " << tip_.dir();
         return;
     }
 
@@ -69,9 +70,9 @@ OfferStream::erase (ApplyView& view)
     p->setFieldV256 (sfIndexes, v);
     view.update (p);
 
-    if (j_.trace) j_.trace <<
-        "Missing offer " << m_tip.index() <<
-        " removed from directory " << m_tip.dir();
+    JLOG(j_.trace) <<
+        "Missing offer " << tip_.index() <<
+        " removed from directory " << tip_.dir();
 }
 
 bool
@@ -84,52 +85,48 @@ OfferStream::step ()
     {
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
-        if (! m_tip.step())
+        if (! tip_.step())
             return false;
 
-        std::shared_ptr<SLE> entry = m_tip.entry();
+        std::shared_ptr<SLE> entry = tip_.entry();
 
         // Remove if missing
         if (! entry)
         {
-            erase (view());
-            erase (view_cancel());
+            erase (view_);
+            erase (cancelView_);
             continue;
         }
 
         // Remove if expired
         if (entry->isFieldPresent (sfExpiration) &&
-            entry->getFieldU32 (sfExpiration) <= m_when)
+            entry->getFieldU32 (sfExpiration) <= expire_)
         {
-            if (j_.trace) j_.trace <<
+            JLOG(j_.trace) <<
                 "Removing expired offer " << entry->getIndex();
-            offerDelete (view_cancel(),
-                view_cancel().peek(
-                    keylet::offer(entry->key())));
+            offerDelete (cancelView_,
+                cancelView_.peek(keylet::offer(entry->key())));
             continue;
         }
 
-        m_offer = Offer (entry, m_tip.quality());
+        offer_ = Offer (entry, tip_.quality());
 
-        Amounts const amount (m_offer.amount());
+        Amounts const amount (offer_.amount());
 
         // Remove if either amount is zero
         if (amount.empty())
         {
-            if (j_.warning) j_.warning <<
+            JLOG(j_.warning) <<
                 "Removing bad offer " << entry->getIndex();
-            offerDelete (view_cancel(),
-                view_cancel().peek(
-                    keylet::offer(entry->key())));
-            m_offer = Offer{};
+            offerDelete (cancelView_,
+                cancelView_.peek(keylet::offer(entry->key())));
+            offer_ = Offer{};
             continue;
         }
 
         // Calculate owner funds
-        // NIKB NOTE The calling code also checks the funds, how expensive is
-        //           looking up the funds twice?
-        auto const owner_funds = accountFunds(view(),
-            m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
+        auto const owner_funds = accountFunds(view_,
+            offer_.owner(), amount.out, fhZERO_IF_FROZEN,
                 config_);
 
         // Check for unfunded offer
@@ -138,23 +135,23 @@ OfferStream::step ()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFunds(view_cancel(),
-                m_offer.owner(), amount.out, fhZERO_IF_FROZEN,
+            auto const original_funds = accountFunds(cancelView_,
+                offer_.owner(), amount.out, fhZERO_IF_FROZEN,
                     config_);
 
             if (original_funds == owner_funds)
             {
-                offerDelete (view_cancel(), view_cancel().peek(
+                offerDelete (cancelView_, cancelView_.peek(
                     keylet::offer(entry->key())));
-                if (j_.trace) j_.trace <<
+                JLOG(j_.trace) <<
                     "Removing unfunded offer " << entry->getIndex();
             }
             else
             {
-                if (j_.trace) j_.trace <<
+                JLOG(j_.trace) <<
                     "Removing became unfunded offer " << entry->getIndex();
             }
-            m_offer = Offer{};
+            offer_ = Offer{};
             continue;
         }
 
