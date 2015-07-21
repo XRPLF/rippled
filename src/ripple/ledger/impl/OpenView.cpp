@@ -159,6 +159,20 @@ OpenView::read (Keylet const& k) const
 }
 
 auto
+OpenView::slesBegin() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return base_->slesBegin();
+}
+
+auto
+OpenView::slesEnd() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return base_->slesEnd();
+}
+
+auto
 OpenView::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {

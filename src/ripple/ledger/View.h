@@ -169,18 +169,6 @@ getCandidateLedger (LedgerIndex requested)
     return (requested + 255) & (~255);
 }
 
-/** Run a functor on each SLE in a ReadView starting from the key start,
-    as long as the functor returns true.
- */
-template <class Functor>
-void forEachSLE(ReadView const& view, Functor func, uint256 const& start = {})
-{
-    for (auto k = view.succ(start); k; k = view.succ(*k))
-        if (auto sle = view.read(keylet::unchecked(*k)))
-            if (! func(*sle))
-                break;
-}
-
 //------------------------------------------------------------------------------
 //
 // Modifiers

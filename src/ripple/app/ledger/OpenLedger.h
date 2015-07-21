@@ -68,10 +68,26 @@ public:
         @param ledger A closed ledger
     */
     explicit
-    OpenLedger (std::shared_ptr<
+    OpenLedger(std::shared_ptr<
         Ledger const> const& ledger,
             Config const& config, CachedSLEs& cache,
                 beast::Journal journal);
+
+    /** Returns `true` if there are no transactions.
+
+        The behavior of ledger closing can be different
+        depending on whether or not transactions exist
+        in the open ledger.
+
+        @note The value returned is only meaningful for
+              that specific instant in time. An open,
+              empty ledger can become non empty from
+              subsequent modifications. Caller is
+              responsible for synchronizing the meaning of
+              the return value.
+    */
+    bool
+    empty() const;
 
     /** Returns a view to the current open ledger.
 

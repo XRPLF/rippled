@@ -50,7 +50,7 @@ private:
     using items_t = std::map<key_type,
         std::pair<Action, std::shared_ptr<SLE>>>;
 
-    items_t items_;
+    items_t mutable items_;
     std::uint64_t dropsDestroyed_ = 0;
 
 public:

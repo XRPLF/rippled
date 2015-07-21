@@ -139,18 +139,6 @@ public:
     ReadViewFwdRange (ReadViewFwdRange const&) = default;
     ReadViewFwdRange& operator= (ReadViewFwdRange const&) = default;
 
-    /** Returns `true` if the range is empty. */
-    bool
-    empty() const;
-
-    /** Return iterator to the beginning of the range. */
-    iterator
-    begin() const;
-
-    /** Return iterator to one past the end of the range. */
-    iterator const&
-    end() const;
-
     // VFALCO Otherwise causes errors on clang
 //private:
 //    friend class ReadView;
@@ -161,7 +149,7 @@ public:
     {
     }
 
-private:
+protected:
     ReadView const* view_;
     boost::optional<iterator> mutable end_;
 };

@@ -272,9 +272,22 @@ std::shared_ptr<SLE const>
 ApplyStateTable::read (ReadView const& base,
     Keylet const& k) const
 {
-    auto const iter = items_.find(k.key);
-    if (iter == items_.end())
-        return base.read(k);
+    auto iter = items_.lower_bound(k.key);
+    if (iter == items_.end() ||
+        iter->first != k.key)
+    {
+        auto const sle = base.read(k);
+        if (! sle)
+            return nullptr;
+        // Make our own copy
+        using namespace std;
+        iter = items_.emplace_hint (iter,
+            piecewise_construct,
+                forward_as_tuple(sle->key()),
+                    forward_as_tuple(Action::cache,
+                        make_shared<SLE>(*sle)));
+        return iter->second.second;
+    }
     auto const& item = iter->second;
     auto const& sle = item.second;
     switch (item.first)

@@ -67,6 +67,20 @@ ApplyViewBase::read (Keylet const& k) const
 }
 
 auto
+ApplyViewBase::slesBegin() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return base_->slesBegin();
+}
+
+auto
+ApplyViewBase::slesEnd() const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return base_->slesEnd();
+}
+
+auto
 ApplyViewBase::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {

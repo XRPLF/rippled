@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Indexes.h>
@@ -150,6 +151,12 @@ public:
 
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
+
+    std::unique_ptr<sles_type::iter_base>
+    slesBegin() const override;
+
+    std::unique_ptr<sles_type::iter_base>
+    slesEnd() const override;
 
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const override;
@@ -362,6 +369,7 @@ public:
                   getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
 
 private:
+    class sles_iter_impl;
     class txs_iter_impl;
 
     void saveValidatedLedgerAsync(Job&, bool current)
@@ -411,6 +419,9 @@ private:
     // Reserve increment in drops
     std::uint32_t mutable mReserveIncrement = 0;
 };
+
+/** A ledger wrapped in a CachedView. */
+using CachedLedger = CachedView<Ledger>;
 
 //------------------------------------------------------------------------------
 //
