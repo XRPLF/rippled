@@ -242,7 +242,7 @@ Ledger::Ledger (void const* data,
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix);
-    setFees(config);
+    // We can't set the fees until the stateMap is populated
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq,
@@ -278,6 +278,7 @@ void Ledger::setImmutable ()
         txMap_->setImmutable ();
     if (stateMap_)
         stateMap_->setImmutable ();
+    setFees (getConfig ());
 }
 
 void Ledger::updateHash()
