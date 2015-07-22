@@ -17,26 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_SNTPCLIENT_H_INCLUDED
-#define RIPPLE_NET_SNTPCLIENT_H_INCLUDED
+#ifndef RIPPLE_NET_SNTPCLOCK_H_INCLUDED
+#define RIPPLE_NET_SNTPCLOCK_H_INCLUDED
 
-#include <beast/threads/Stoppable.h>
+#include <beast/chrono/abstract_clock.h>
+#include <beast/utility/Journal.h>
+#include <chrono>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace ripple {
 
-class SNTPClient : public beast::Stoppable
+/** A clock based on system_clock and adjusted for SNTP. */
+class SNTPClock
+    : public beast::abstract_clock<
+        std::chrono::system_clock>
 {
-protected:
-    explicit SNTPClient (beast::Stoppable& parent);
-
 public:
-    static SNTPClient* New (beast::Stoppable& parent);
-    virtual ~SNTPClient() { }
-    virtual void init (std::vector <std::string> const& servers) = 0;
-    virtual void addServer (std::string const& mServer) = 0;
-    virtual void queryAll () = 0;
-    virtual bool getOffset (int& offset) = 0;
+    virtual 
+    void
+    run (std::vector <std::string> const& servers) = 0;
+
+    virtual
+    duration
+    offset() const = 0;
 };
+
+extern
+std::unique_ptr<SNTPClock>
+make_SNTPClock (beast::Journal);
 
 } // ripple
 

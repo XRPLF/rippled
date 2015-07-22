@@ -101,12 +101,6 @@ public:
     // Network information
     //
 
-    // Our best estimate of wall time in seconds from 1/1/2000
-    virtual std::uint32_t getNetworkTimeNC () const = 0;
-    // Our best estimate of current ledger close time
-    virtual std::uint32_t getCloseTimeNC () const = 0;
-    virtual void closeTimeOffset (int) = 0;
-
     virtual OperatingMode getOperatingMode () const = 0;
     virtual std::string strOperatingMode () const = 0;
 

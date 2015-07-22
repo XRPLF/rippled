@@ -39,6 +39,7 @@
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/digest.h>
@@ -172,7 +173,8 @@ public:
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs().getCloseTimeNC();
+        // VFALCO int widening?
+        std::int64_t ret = getApp().timeKeeper().closeTime().time_since_epoch().count();
         ret -= static_cast<std::int64_t> (pubClose);
         ret = (ret > 0) ? ret : 0;
 
@@ -189,7 +191,7 @@ public:
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs().getCloseTimeNC();
+        std::int64_t ret = getApp().timeKeeper().closeTime().time_since_epoch().count();
         ret -= static_cast<std::int64_t> (valClose);
         ret = (ret > 0) ? ret : 0;
 
@@ -1170,7 +1172,7 @@ public:
 
             if (!standalone_)
             { // don't pathfind with a ledger that's more than 60 seconds old
-                std::int64_t age = getApp().getOPs().getCloseTimeNC();
+                std::int64_t age = getApp().timeKeeper().closeTime().time_since_epoch().count();
                 age -= static_cast<std::int64_t> (lastLedger->info().closeTime);
                 if (age > 60)
                 {

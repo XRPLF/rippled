@@ -22,6 +22,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/overlay/impl/TMHello.h>
@@ -116,7 +117,7 @@ buildHello (uint256 const& sharedValue, Application& app)
     h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
     h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
     h.set_fullversion (BuildInfo::getFullVersionString ());
-    h.set_nettime (app.getOPs ().getNetworkTimeNC ());
+    h.set_nettime (app.timeKeeper().now().time_since_epoch().count());
     h.set_nodepublic (app.getLocalCredentials ().getNodePublic (
         ).humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
@@ -300,7 +301,7 @@ verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
     beast::Journal journal, Application& app)
 {
     std::pair<RippleAddress, bool> result = { {}, false };
-    std::uint32_t const ourTime = app.getOPs().getNetworkTimeNC();
+    auto const ourTime = app.timeKeeper().now().time_since_epoch().count();
     std::uint32_t const minTime = ourTime - clockToleranceDeltaSeconds;
     std::uint32_t const maxTime = ourTime + clockToleranceDeltaSeconds;
 
