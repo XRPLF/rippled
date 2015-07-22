@@ -543,6 +543,25 @@ public:
     }
 
     void
+    testPath()
+    {
+        using namespace jtx;
+        Env env(*this);
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        env.fund(XRP(10000), "alice", "bob");
+        env.json(
+            pay("alice", "bob", USD(10)),
+                path(Account("alice")),
+                path("bob"),
+                path(USD),
+                path(~XRP),
+                path(~USD),
+                path("bob", USD, ~XRP, ~USD)
+                );
+    }
+
+    void
     run()
     {
         testAccount();
@@ -560,6 +579,7 @@ public:
         testMemo();
         testAdvance();
         testClose();
+        testPath();
     }
 };
 

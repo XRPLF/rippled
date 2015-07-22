@@ -49,6 +49,43 @@ paths::operator()(Env const& env, JTx& jt) const
         jv[jss::Paths] = ps.getJson(0);
 }
 
+//------------------------------------------------------------------------------
+
+Json::Value&
+path::create()
+{
+    return jv_.append(Json::objectValue);
+}
+
+void
+path::append_one(Account const& account)
+{
+    auto& jv = create();
+    jv["account"] = toBase58(account.id());
+}
+
+void
+path::append_one(IOU const& iou)
+{
+    auto& jv = create();
+    jv["currency"] = to_string(iou.issue().currency);
+    jv["account"] = toBase58(iou.issue().account);
+}
+
+void
+path::append_one(BookSpec const& book)
+{
+    auto& jv = create();
+    jv["currency"] = to_string(book.currency);
+    jv["issuer"] = toBase58(book.account);
+}
+
+void
+path::operator()(Env const& env, JTx& jt) const
+{
+    jt.jv["Paths"].append(jv_);
+}
+
 } // jtx
 } // test
 } // ripple
