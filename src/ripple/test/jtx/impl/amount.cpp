@@ -107,13 +107,13 @@ operator<< (std::ostream& os,
 
 //------------------------------------------------------------------------------
 
-detail::XRP_t const XRP { };
+XRP_t const XRP {};
 
 PrettyAmount
 IOU::operator()(epsilon_t) const
 {
     return { STAmount(issue(), 1, -81),
-        account_.name() };
+        account.name() };
 }
 
 PrettyAmount
@@ -121,7 +121,7 @@ IOU::operator()(detail::epsilon_multiple m) const
 {
     return { STAmount(issue(),
         static_cast<std::uint64_t>(m.n), -81),
-            account_.name() };
+            account.name() };
 }
 
 std::ostream&
@@ -130,7 +130,7 @@ operator<<(std::ostream& os,
 {
     os <<
         to_string(iou.issue().currency) <<
-            "(" << iou.account().name() << ")";
+            "(" << iou.account.name() << ")";
     return os;
 }
 
