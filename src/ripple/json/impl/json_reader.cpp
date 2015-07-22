@@ -552,12 +552,6 @@ Reader::readArray ( Token& tokenStart )
     return true;
 }
 
-static inline bool
-in ( Reader::Char c, Reader::Char c1, Reader::Char c2, Reader::Char c3, Reader::Char c4 )
-{
-    return c == c1  ||  c == c2  ||  c == c3  ||  c == c4;
-}
-
 bool
 Reader::decodeNumber ( Token& token )
 {

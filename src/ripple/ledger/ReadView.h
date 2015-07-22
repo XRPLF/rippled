@@ -85,7 +85,6 @@ struct LedgerInfo
     // Once validated is true, it will never be set false at a later time.
     mutable
     bool validated = false;
-    bool accepted = false;
 
     // flags indicating how this ledger close took place
     int closeFlags = 0;
