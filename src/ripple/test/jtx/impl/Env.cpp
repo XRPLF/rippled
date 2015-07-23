@@ -370,7 +370,9 @@ Env::st (JTx const& jt)
 ApplyFlags
 Env::applyFlags() const
 {
-    return tapENABLE_TESTING;
+    if (testing_)
+        return tapENABLE_TESTING;
+    return tapNONE;
 }
 
 } // jtx
