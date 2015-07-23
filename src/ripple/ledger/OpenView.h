@@ -85,7 +85,7 @@ public:
         Effects:
 
             Creates a new object with a copy of
-            the modificaiton state table.
+            the modification state table.
 
         The objects managed by shared pointers are
         not duplicated but shared between instances.

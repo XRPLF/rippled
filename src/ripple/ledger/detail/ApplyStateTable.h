@@ -124,9 +124,8 @@ private:
 
     static
     bool
-    threadTx (TxMeta& meta,
-        std::shared_ptr<SLE> const& to,
-            Mods& mods);
+    threadItem (TxMeta& meta,
+        std::shared_ptr<SLE> const& to);
 
     std::shared_ptr<SLE>
     getForMod (ReadView const& base,

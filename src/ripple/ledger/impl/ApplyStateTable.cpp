@@ -71,8 +71,6 @@ ApplyStateTable::apply (OpenView& to,
         if (deliver)
             meta.setDeliveredAmount(*deliver);
         Mods newMod;
-        // VFALCO NOTE getForMod can insert items with
-        //             Action::cache during the loop.
         for (auto& item : items_)
         {
             SField const* type;
@@ -136,7 +134,7 @@ ApplyStateTable::apply (OpenView& to,
                 assert (curNode && origNode);
 
                 if (curNode->isThreadedType ()) // thread transaction to node item modified
-                    threadTx (meta, curNode, newMod);
+                    threadItem (meta, curNode);
 
                 STObject prevs (sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -166,7 +164,7 @@ ApplyStateTable::apply (OpenView& to,
                 threadOwners (to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType ()) // always thread to self
-                    threadTx (meta, curNode, newMod);
+                    threadItem (meta, curNode);
 
                 STObject news (sfNewFields);
                 for (auto const& obj : *curNode)
@@ -189,7 +187,7 @@ ApplyStateTable::apply (OpenView& to,
 
         // add any new modified nodes to the modification set
         for (auto& mod : newMod)
-            update (to, mod.second);
+            to.rawReplace (mod.second);
 
         sMeta = std::make_shared<Serializer>();
         meta.addRaw (*sMeta, ter, to.txCount());
@@ -477,13 +475,16 @@ ApplyStateTable::destroyXRP(std::uint64_t feeDrops)
 
 //------------------------------------------------------------------------------
 
+/*  Add a tx to the account root's thread
+    Preconditions:
+        `to` is an account root in newMods or items_
+*/
 bool
-ApplyStateTable::threadTx (TxMeta& meta,
-    std::shared_ptr<SLE> const& to,
-        Mods& mods)
+ApplyStateTable::threadItem (TxMeta& meta,
+    std::shared_ptr<SLE> const& to)
 {
     key_type prevTxID;
-    std::uint32_t prevLgrID;
+    LedgerIndex prevLgrID;
     if (! to->thread(meta.getTxID(),
             meta.getLgrSeq(), prevTxID, prevLgrID))
         return false;
@@ -501,23 +502,6 @@ std::shared_ptr<SLE>
 ApplyStateTable::getForMod (ReadView const& base,
     key_type const& key, Mods& mods, beast::Journal j)
 {
-    auto iter = items_.find (key);
-    if (iter != items_.end ())
-    {
-        auto& item = iter->second;
-        if (item.first == Action::erase)
-        {
-            // VFALCO We need to think about throwing
-            //        an exception or calling LogicError
-            JLOG(j.fatal) <<
-                "Trying to thread to deleted node";
-            return nullptr;
-        }
-        // Track when a node gets modified only by metadata
-        if (item.first == Action::cache)
-            item.first = Action::modify;
-        return item.second;
-    }
     {
         auto miter = mods.find (key);
         if (miter != mods.end ())
@@ -526,9 +510,28 @@ ApplyStateTable::getForMod (ReadView const& base,
             return miter->second;
         }
     }
-    auto sle = peek(base,
-        keylet::unchecked(key));
-    if (! sle)
+    {
+        auto iter = items_.find (key);
+        if (iter != items_.end ())
+        {
+            auto const& item = iter->second;
+            if (item.first == Action::erase)
+            {
+                // VFALCO We need to think about throwing
+                //        an exception or calling LogicError
+                JLOG(j.fatal) <<
+                    "Trying to thread to deleted node";
+                return nullptr;
+            }
+            if (item.first != Action::cache)
+                return item.second;
+
+            // If it's only cached, then the node is being modified only by
+            // metadata; fall through and track it in the mods table.
+        }
+    }
+    auto c = base.read (keylet::unchecked (key));
+    if (! c)
     {
         // VFALCO We need to think about throwing
         //        an exception or calling LogicError
@@ -536,6 +539,7 @@ ApplyStateTable::getForMod (ReadView const& base,
             "ApplyStateTable::getForMod: key not found";
         return nullptr;
     }
+    auto sle = std::make_shared<SLE> (*c);
     mods.emplace(key, sle);
     return sle;
 }
@@ -558,7 +562,7 @@ ApplyStateTable::threadTx (ReadView const& base,
         return false;
     }
 
-    return threadTx (meta, sle, mods);
+    return threadItem (meta, sle);
 }
 
 bool
