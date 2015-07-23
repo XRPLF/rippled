@@ -676,6 +676,7 @@ def get_classic_sources():
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/unl', '.cpp'))
    
     append_sources(
         result,
@@ -713,6 +714,7 @@ def get_unity_sources():
         'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/test.cpp',
+        'src/ripple/unity/unl.cpp',
     )
 
     append_sources(
@@ -840,7 +842,6 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
                 'src/ripple/unity/server.cpp',
-                'src/ripple/unity/validators.cpp',
                 'src/ripple/unity/websocket02.cpp'
             )
 
