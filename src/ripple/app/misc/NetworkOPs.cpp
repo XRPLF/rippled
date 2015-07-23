@@ -211,7 +211,8 @@ public:
     //
 
     Json::Value getOwnerInfo (
-        Ledger::pointer lpLedger, AccountID const& account) override;
+        std::shared_ptr<ReadView const> lpLedger,
+        AccountID const& account) override;
 
     //
     // Book functions.
@@ -348,7 +349,8 @@ public:
     //
     void pubLedger (Ledger::ref lpAccepted) override;
     void pubProposedTransaction (
-        Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult) override;
+        std::shared_ptr<ReadView const> const& lpCurrent,
+        STTx::ref stTxn, TER terResult) override;
 
     //--------------------------------------------------------------------------
     //
@@ -416,13 +418,13 @@ private:
 
     Json::Value transJson (
         const STTx& stTxn, TER terResult, bool bValidated,
-        Ledger::ref lpCurrent);
+        std::shared_ptr<ReadView const> const& lpCurrent);
     bool haveConsensusObject ();
 
     void pubValidatedTransaction (
         Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
     void pubAccountTransaction (
-        Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction,
+        std::shared_ptr<ReadView const> const& lpCurrent, const AcceptedLedgerTx& alTransaction,
         bool isAccepted);
 
     void pubServer ();
@@ -1069,11 +1071,11 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 //
 
 Json::Value NetworkOPsImp::getOwnerInfo (
-    Ledger::pointer lpLedger, AccountID const& account)
+    std::shared_ptr<ReadView const> lpLedger, AccountID const& account)
 {
     Json::Value jvObjects (Json::objectValue);
     auto uRootIndex = getOwnerDirIndex (account);
-    auto sleNode = cachedRead(*lpLedger, uRootIndex, ltDIR_NODE);
+    auto sleNode = lpLedger->read (keylet::page (uRootIndex));
     if (sleNode)
     {
         std::uint64_t  uNodeDir;
@@ -1082,7 +1084,8 @@ Json::Value NetworkOPsImp::getOwnerInfo (
         {
             for (auto const& uDirEntry : sleNode->getFieldV256 (sfIndexes))
             {
-                auto sleCur = cachedRead(*lpLedger, uDirEntry);
+                auto sleCur = lpLedger->read (keylet::child (uDirEntry));
+                assert (sleCur);
 
                 switch (sleCur->getType ())
                 {
@@ -1115,8 +1118,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
             if (uNodeDir)
             {
-                sleNode = cachedRead(*lpLedger, getDirNodeIndex(
-                    uRootIndex, uNodeDir), ltDIR_NODE);
+                sleNode = lpLedger->read (keylet::page (uRootIndex, uNodeDir));
                 assert (sleNode);
             }
         }
@@ -2107,7 +2109,8 @@ Json::Value NetworkOPsImp::getLedgerFetchInfo ()
 }
 
 void NetworkOPsImp::pubProposedTransaction (
-    Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult)
+    std::shared_ptr<ReadView const> const& lpCurrent,
+    STTx::ref stTxn, TER terResult)
 {
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
@@ -2135,13 +2138,12 @@ void NetworkOPsImp::pubProposedTransaction (
     pubAccountTransaction (lpCurrent, alt, false);
 }
 
-void NetworkOPsImp::pubLedger (Ledger::ref accepted)
+void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
 {
     // Ledgers are published only when they acquire sufficient validations
     // Holes are filled across connection loss or other catastrophe
 
-    auto alpAccepted = AcceptedLedger::makeAcceptedLedger (accepted);
-    Ledger::ref lpAccepted = alpAccepted->getLedger ();
+    auto alpAccepted = AcceptedLedger::makeAcceptedLedger (lpAccepted);
 
     {
         ScopedLockType sl (mSubLock);
@@ -2208,7 +2210,7 @@ void NetworkOPsImp::reportFeeChange ()
 // transactions.
 Json::Value NetworkOPsImp::transJson(
     const STTx& stTxn, TER terResult, bool bValidated,
-    Ledger::ref lpCurrent)
+    std::shared_ptr<ReadView const> const& lpCurrent)
 {
     Json::Value jvObj (Json::objectValue);
     std::string sToken;
@@ -2222,8 +2224,8 @@ Json::Value NetworkOPsImp::transJson(
     if (bValidated)
     {
         jvObj[jss::ledger_index]           = lpCurrent->info().seq;
-        jvObj[jss::ledger_hash]            = to_string (lpCurrent->getHash ());
-        jvObj[jss::transaction][jss::date]  = lpCurrent->info().closeTime;
+        jvObj[jss::ledger_hash]            = to_string (lpCurrent->info().hash);
+        jvObj[jss::transaction][jss::date] = lpCurrent->info().closeTime;
         jvObj[jss::validated]              = true;
 
         // WRITEME: Put the account next seq here
@@ -2303,7 +2305,9 @@ void NetworkOPsImp::pubValidatedTransaction (
 }
 
 void NetworkOPsImp::pubAccountTransaction (
-    Ledger::ref lpCurrent, const AcceptedLedgerTx& alTx, bool bAccepted)
+    std::shared_ptr<ReadView const> const& lpCurrent,
+    const AcceptedLedgerTx& alTx,
+    bool bAccepted)
 {
     hash_set<InfoSub::pointer>  notify;
     int                             iProposed   = 0;

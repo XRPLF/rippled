@@ -299,7 +299,7 @@ enum TMLedgerInfoType
 enum TMLedgerType
 {
     ltACCEPTED      = 0;
-    ltCURRENT       = 1;
+    ltCURRENT       = 1;        // no longer supported
     ltCLOSED        = 2;
 }
 
