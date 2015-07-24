@@ -124,9 +124,6 @@ sign (PublicKey const& pk,
             sk.data(), pk.data() + 1, b.data());
         return b;
     }
-    default:
-        // VFALCO Work-around for missing msvc [[noreturn]]
-        LogicError("sign: invalid type");
     case KeyType::secp256k1:
     {
         sha512_half_hasher h;
@@ -144,6 +141,8 @@ sign (PublicKey const& pk,
             LogicError("sign: secp256k1_ecdsa_sign failed");
         return Buffer(sig, siglen);
     }
+    default:
+        LogicError("sign: invalid type");
     }
 }
 
@@ -209,9 +208,6 @@ derivePublicKey (KeyType type, SecretKey const& sk)
         return PublicKey(Slice{ buf,
             static_cast<std::size_t>(len) });
     }
-    default:
-        // VFALCO Work-around for missing msvc [[noreturn]]
-        LogicError("derivePublicKey: bad key type");
     case KeyType::ed25519:
     {
         unsigned char buf[33];
@@ -219,6 +215,8 @@ derivePublicKey (KeyType type, SecretKey const& sk)
         ed25519_publickey(sk.data(), &buf[1]);
         return PublicKey(Slice{ buf, sizeof(buf) });
     }
+    default:
+        LogicError("derivePublicKey: bad key type");
     };
 }
 

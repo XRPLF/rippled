@@ -33,19 +33,19 @@ FatalError (char const* message, char const* file, int line)
     static std::atomic <int> error_count (0);
     static std::recursive_mutex gate;
 
-    // We only allow one thread to report a fatal error. Other threads that
-    // encounter fatal errors while we are reporting get blocked here.
-    std::lock_guard<std::recursive_mutex> lock(gate);
-
-    // If we encounter a recursive fatal error, then we want to terminate
-    // unconditionally.
-    if (error_count++ != 0)
-        return std::terminate ();
-
     // We protect this entire block of code since writing to cerr might trigger
     // exceptions.
     try
     {
+        // We only allow one thread to report a fatal error. Other threads that
+        // encounter fatal errors while we are reporting get blocked here.
+        std::lock_guard<std::recursive_mutex> lock(gate);
+
+        // If we encounter a recursive fatal error, then we want to terminate
+        // unconditionally.
+        if (error_count++ != 0)
+            throw std::runtime_error ("recursive fatal error");
+
         std::cerr << "An error has occurred. The application will terminate.\n";
 
         if (message != nullptr && message [0] != 0)
@@ -69,7 +69,7 @@ FatalError (char const* message, char const* file, int line)
         // nothing we can do - just fall through and terminate
     }
 
-    return std::terminate ();
+    std::terminate ();
 }
 
 } // beast
