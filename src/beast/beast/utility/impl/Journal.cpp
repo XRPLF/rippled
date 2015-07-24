@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <beast/utility/Journal.h>
-#include <beast/utility/static_initializer.h>
 
 namespace beast {
 
@@ -60,8 +59,8 @@ public:
 
 Journal::Sink& Journal::getNullSink ()
 {
-    static beast::static_initializer<NullJournalSink> sink;
-    return *sink;
+    static NullJournalSink sink;
+    return sink;
 }
 
 //------------------------------------------------------------------------------

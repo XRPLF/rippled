@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <beast/utility/static_initializer.h>
-
 namespace beast
 {
 
@@ -47,8 +45,8 @@ public:
     Manager&
     instance()
     {
-        static beast::static_initializer<Manager> m;
-        return *m;
+        static Manager m;
+        return m;
     }
 
     // Okay to call on an active timer.

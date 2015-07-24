@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
 #include <beast/utility/noexcept.h>
-#include <beast/utility/static_initializer.h>
 #include <atomic>
 #include <string>
 #include <utility>
@@ -136,8 +135,8 @@ private:
 private:
     static Counter& getCounter()
     {
-        static beast::static_initializer<Counter> c;
-        return *c;
+        static Counter c;
+        return c;
     }
 };
 
