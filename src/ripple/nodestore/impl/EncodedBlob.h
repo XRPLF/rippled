@@ -22,7 +22,6 @@
 
 #include <ripple/nodestore/NodeObject.h>
 #include <beast/module/core/memory/MemoryBlock.h>
-#include <beast/utility/noexcept.h>
 #include <cstddef>
 
 namespace ripple {

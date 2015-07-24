@@ -26,8 +26,6 @@
 
 #include <beast/Config.h>
 
-#include <beast/utility/noexcept.h>
-
 #include <cmath>
 #include <cstdint>
 #include <algorithm>

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_BUFFER_H_INCLUDED
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>

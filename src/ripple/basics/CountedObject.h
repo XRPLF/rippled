@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <atomic>
 #include <string>
 #include <utility>

@@ -24,7 +24,6 @@
 #include <beast/hash/xxhasher.h>
 #include <beast/cxx14/utility.h> // <utility>
 #include <beast/cxx14/type_traits.h> // <type_traits>
-#include <beast/utility/noexcept.h>
 
 #include <cstdint>
 #include <functional>

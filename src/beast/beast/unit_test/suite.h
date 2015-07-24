@@ -22,7 +22,6 @@
 
 #include <beast/unit_test/runner.h>
 
-#include <beast/utility/noexcept.h>
 #include <string>
 #include <sstream>
 

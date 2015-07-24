@@ -1701,9 +1701,6 @@
     <ClInclude Include="..\..\src\beast\beast\utility\meta.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
       <Filter>beast\utility</Filter>
     </ClInclude>

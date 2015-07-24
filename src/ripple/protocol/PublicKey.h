@@ -25,7 +25,6 @@
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <cstdint>
@@ -182,7 +181,7 @@ enum class ECDSACanonicality
 
     Therefore, to prevent malleability attacks we
     define a fully canonical signature as one where:
-    
+
         R < G - S
 
     where G is the curve order.

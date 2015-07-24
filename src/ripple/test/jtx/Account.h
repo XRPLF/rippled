@@ -23,7 +23,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
-#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {

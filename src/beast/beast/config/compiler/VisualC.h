@@ -22,5 +22,4 @@
 #ifndef BEAST_CONFIG_COMPILER_VISUALC_H_INCLUDED
 #define BEAST_CONFIG_COMPILER_VISUALC_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #endif

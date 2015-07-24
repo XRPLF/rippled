@@ -1034,8 +1034,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\meta.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">

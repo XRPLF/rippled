@@ -29,10 +29,9 @@
 
 #include <beast/Config.h>
 
-#include <beast/utility/noexcept.h>
 #include <ctime>
 #include <locale>
-    
+
 /*
 
     chrono_io synopsis
@@ -58,7 +57,7 @@ public:
 
     explicit durationpunct(size_t refs = 0);
     explicit durationpunct(duration_style fmt, size_t refs = 0);
-    
+
     bool is_symbol_name() const noexcept;
     bool is_prefix_name() const noexcept;
 };

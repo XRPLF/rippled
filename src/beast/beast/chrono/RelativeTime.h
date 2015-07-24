@@ -27,7 +27,6 @@
 #include <beast/Config.h>
 #include <beast/strings/String.h>
 
-#include <beast/utility/noexcept.h>
 #include <string>
 #include <sstream>
 
