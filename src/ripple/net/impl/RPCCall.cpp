@@ -499,7 +499,7 @@ private:
 
         std::string     strLedger   = jvParams[0u].asString ();
 
-        if (strLedger.length () == 32)
+        if (strLedger.length () == 64)
         {
             jvRequest[jss::ledger_hash]    = strLedger;
         }
