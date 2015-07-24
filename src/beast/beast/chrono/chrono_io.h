@@ -29,7 +29,6 @@
 
 #include <beast/Config.h>
 
-#include <beast/utility/noexcept.h>
 #include <ctime>
 #include <locale>
 

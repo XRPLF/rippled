@@ -21,7 +21,6 @@
 #ifndef BEAST_HASH_SIPHASH_H_INCLUDED
 #define BEAST_HASH_SIPHASH_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <cstddef>
 #include <cstdint>
 

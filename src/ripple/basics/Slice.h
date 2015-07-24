@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_SLICE_H_INCLUDED
 
 #include <ripple/basics/strHex.h>
-#include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
