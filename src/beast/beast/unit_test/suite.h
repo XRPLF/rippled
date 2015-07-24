@@ -176,6 +176,48 @@ public:
         return expect (shouldBeTrue, "");
     }
 
+    /** Expect an exception from f() */
+    /** @{ */
+    template <class F, class String>
+    bool
+    except (F&& f, String const& reason);
+
+    template <class F>
+    bool
+    except (F&& f)
+    {
+        return except(f, "");
+    }
+    /** @} */
+
+    /** Expect an exception of the given type from f() */
+    /** @{ */
+    template <class E, class F, class String>
+    bool
+    except (F&& f, String const& reason);
+
+    template <class E, class F>
+    bool
+    except (F&& f)
+    {
+        return except<E>(f, "");
+    }
+    /** @} */
+
+    /** Fail if f() throws */
+    /** @{ */
+    template <class F, class String>
+    bool
+    unexcept (F&& f, String const& reason);
+
+    template <class F>
+    bool
+    unexcept (F&& f)
+    {
+        return unexcept(f, "");
+    }
+    /** @} */
+
     /** Return the argument associated with the runner. */
     std::string const&
     arg() const
@@ -353,6 +395,57 @@ suite::expect (Condition shouldBeTrue,
     else
         fail (reason);
     return b;
+}
+
+template <class F, class String>
+bool
+suite::except (F&& f, String const& reason)
+{
+    try
+    {
+        f();
+        fail(reason);
+        return false;
+    }
+    catch(...)
+    {
+        pass();
+    }
+    return true;
+}
+
+template <class E, class F, class String>
+bool
+suite::except (F&& f, String const& reason)
+{
+    try
+    {
+        f();
+        fail(reason);
+        return false;
+    }
+    catch(E const&)
+    {
+        pass();
+    }
+    return true;
+}
+
+template <class F, class String>
+bool
+suite::unexcept (F&& f, String const& reason)
+{
+    try
+    {
+        f();
+        pass();
+        return true;
+    }
+    catch(...)
+    {
+        fail(reason);
+    }
+    return false;
 }
 
 template <class Condition, class String>
