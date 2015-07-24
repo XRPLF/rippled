@@ -25,7 +25,6 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/noexcept.h>
 
 namespace ripple {
 

@@ -23,7 +23,6 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Indexes.h>
-#include <beast/utility/noexcept.h>
 
 #include <functional>
 

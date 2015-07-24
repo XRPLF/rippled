@@ -21,7 +21,6 @@
 #ifndef BEAST_HASH_FNV1A_H_INCLUDED
 #define BEAST_HASH_FNV1A_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <cstddef>
 #include <cstdint>
 #include <beast/cxx14/type_traits.h> // <type_traits>

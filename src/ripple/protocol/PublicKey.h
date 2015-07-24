@@ -25,7 +25,6 @@
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/utility/noexcept.h>
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <cstdint>
