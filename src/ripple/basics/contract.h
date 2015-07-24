@@ -43,12 +43,11 @@ throwException(
 
 } // detail
 
-template <class Exception,
-    class... Args>
+template <class Exception, class... Args>
 void
 Throw (Args&&... args)
 {
-    throwException(
+    detail::throwException(
         std::make_exception_ptr(
             Exception(std::forward<
                 Args>(args)...)));
@@ -58,6 +57,11 @@ Throw (Args&&... args)
 void
 LogicError (
     std::string const& how);
+
+/** Called to throw an exception. */
+#ifndef THROW
+#define THROW(T, arg) Throw<T>(arg)
+#endif
 
 } // ripple
 
