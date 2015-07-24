@@ -20,7 +20,6 @@
 #include <beast/http/basic_parser.h>
 #include <beast/http/impl/joyent_parser.h>
 #include <beast/http/rfc2616.h>
-#include <beast/utility/noexcept.h>
 #include <boost/system/error_code.hpp>
 
 namespace beast {
@@ -94,7 +93,7 @@ basic_parser::basic_parser (bool request) noexcept
     h->on_headers_complete  = &basic_parser::cb_headers_complete;
     h->on_body              = &basic_parser::cb_body;
     h->on_message_complete  = &basic_parser::cb_message_complete;
-    
+
     joyent::http_parser_init (s, request
         ? joyent::http_parser_type::HTTP_REQUEST
         : joyent::http_parser_type::HTTP_RESPONSE);

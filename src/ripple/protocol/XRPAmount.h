@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
 #include <ripple/protocol/SystemParameters.h>
-#include <beast/utility/noexcept.h>
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>

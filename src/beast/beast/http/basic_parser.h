@@ -27,7 +27,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <beast/utility/noexcept.h>
 
 namespace beast {
 

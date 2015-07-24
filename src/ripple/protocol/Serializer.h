@@ -24,7 +24,6 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
-#include <beast/utility/noexcept.h>
 #include <cassert>
 #include <cstdint>
 #include <iomanip>
@@ -343,7 +342,7 @@ public:
     {
         return getBitString<160>();
     }
-    
+
     uint256
     get256()
     {

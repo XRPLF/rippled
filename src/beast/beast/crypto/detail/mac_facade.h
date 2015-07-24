@@ -22,7 +22,6 @@
 
 #include <beast/crypto/secure_erase.h>
 #include <beast/hash/endian.h>
-#include <beast/utility/noexcept.h>
 #include <type_traits>
 #include <array>
 
@@ -44,7 +43,7 @@ public:
         std::array<std::uint8_t,
             Context::digest_size>;
 
-    mac_facade() noexcept 
+    mac_facade() noexcept
     {
         init(ctx_);
     }

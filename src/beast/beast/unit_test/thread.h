@@ -20,7 +20,6 @@
 #ifndef BEAST_UNIT_TEST_THREAD_H_INCLUDED
 #define BEAST_UNIT_TEST_THREAD_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
 #include <thread>
@@ -62,7 +61,7 @@ public:
     thread (suite& s, F&& f, Args&&... args)
         : s_ (&s)
     {
-        std::function<void(void)> b = 
+        std::function<void(void)> b =
             std::bind(std::forward<F>(f),
                 std::forward<Args>(args)...);
         t_ = std::thread (&thread::run, this,
