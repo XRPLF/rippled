@@ -81,7 +81,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     {
         using filter_types = std::vector <std::pair <std::string, LedgerEntryType>>;
         static
-        beast::static_initializer <filter_types> const types ([]() -> filter_types {
+        filter_types const types ([]() -> filter_types {
             return {
                 { "account", ltACCOUNT_ROOT },
                 { "amendments", ltAMENDMENTS },
@@ -99,10 +99,10 @@ Json::Value doAccountObjects (RPC::Context& context)
             return RPC::expected_field_error (jss::type, "string");
 
         auto const filter = p.asString ();
-        auto iter = std::find_if (types->begin (), types->end (),
-            [&filter](decltype (types->front ())& t)
+        auto iter = std::find_if (types.begin (), types.end (),
+            [&filter](decltype (types.front ())& t)
                 { return t.first == filter; });
-        if (iter == types->end ())
+        if (iter == types.end ())
             return RPC::invalid_field_error (jss::type);
 
         type = iter->second;

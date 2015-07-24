@@ -32,8 +32,8 @@ namespace NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static beast::static_initializer<ManagerImp> _;
-    return _.get();
+    static ManagerImp _;
+    return _;
 }
 
 void

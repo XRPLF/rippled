@@ -20,7 +20,6 @@
 #ifndef RIPPLE_PROTOCOL_SECP256K1_H_INCLUDED
 #define RIPPLE_PROTOCOL_SECP256K1_H_INCLUDED
 
-#include <beast/utility/static_initializer.h>
 #include <secp256k1/include/secp256k1.h>
 
 namespace ripple {
@@ -44,8 +43,8 @@ secp256k1Context()
             secp256k1_context_destroy(impl);
         }
     };
-    static beast::static_initializer<holder> const h;
-    return h->impl;
+    static holder const h;
+    return h.impl;
 }
 
 inline

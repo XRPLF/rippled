@@ -29,7 +29,6 @@
 #include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
 #include <beast/module/core/text/LexicalCast.h>
-#include <beast/utility/static_initializer.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 
@@ -197,7 +196,7 @@ appendHello (beast::http::message& m,
 std::vector<ProtocolVersion>
 parse_ProtocolVersions (std::string const& s)
 {
-    static beast::static_initializer<boost::regex> re (
+    static boost::regex re (
         "^"                  // start of line
         "RTXP/"              // the string "RTXP/"
         "([1-9][0-9]*)"      // a number (non-zero and with no leading zeroes)
@@ -211,7 +210,7 @@ parse_ProtocolVersions (std::string const& s)
     for (auto const& s : list)
     {
         boost::smatch m;
-        if (! boost::regex_match (s, m, *re))
+        if (! boost::regex_match (s, m, re))
             continue;
         int major;
         int minor;
