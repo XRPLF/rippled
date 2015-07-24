@@ -125,45 +125,16 @@ public:
     class ConstUnlockedAccess;
 
     /** Create a shared data container.
-        Up to 8 parameters can be specified in the constructor. These parameters
-        are forwarded to the corresponding constructor in Data. If no
-        constructor in Data matches the parameter list, a compile error is
-        generated.
+        All specified parameters are forwarded to the corresponding constructor
+        in Data. If no constructor in Data matches the parameter list, a compile
+        error is generated.
     */
-    /** @{ */
-    SharedData () = default;
+    template <class... Params>
+    SharedData (Params... params)
+        : m_value (std::forward<Params>(params)...)
+    {
 
-    template <class T1>
-    explicit SharedData (T1 t1)
-        : m_value (t1) { }
-
-    template <class T1, class T2>
-    SharedData (T1 t1, T2 t2)
-        : m_value (t1, t2) { }
-
-    template <class T1, class T2, class T3>
-    SharedData (T1 t1, T2 t2, T3 t3)
-        : m_value (t1, t2, t3) { }
-
-    template <class T1, class T2, class T3, class T4>
-    SharedData (T1 t1, T2 t2, T3 t3, T4 t4)
-        : m_value (t1, t2, t3, t4) { }
-
-    template <class T1, class T2, class T3, class T4, class T5>
-    SharedData (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
-        : m_value (t1, t2, t3, t4, t5) { }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6>
-    SharedData (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
-        : m_value (t1, t2, t3, t4, t5, t6) { }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
-    SharedData (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7) : m_value (t1, t2, t3, t4, t5, t6, t7) { }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
-    SharedData (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
-        : m_value (t1, t2, t3, t4, t5, t6, t7, t8) { }
-    /** @} */
+    }
 
     SharedData (SharedData const&) = delete;
     SharedData& operator= (SharedData const&) = delete;
@@ -185,7 +156,7 @@ public:
     explicit Access (SharedData& state)
         : m_state (state)
         , m_lock (m_state.m_mutex)
-        { }
+    { }
 
     Access (Access const&) = delete;
     Access& operator= (Access const&) = delete;
@@ -215,7 +186,7 @@ public:
     explicit ConstAccess (SharedData const volatile& state)
         : m_state (const_cast <SharedData const&> (state))
         , m_lock (m_state.m_mutex)
-        { }
+    { }
 
     ConstAccess (ConstAccess const&) = delete;
     ConstAccess& operator= (ConstAccess const&) = delete;
@@ -241,7 +212,7 @@ public:
     /** Create an UnlockedAccess from the specified SharedData */
     explicit ConstUnlockedAccess (SharedData const volatile& state)
         : m_state (const_cast <SharedData const&> (state))
-        { }
+    { }
 
     ConstUnlockedAccess (ConstUnlockedAccess const&) = delete;
     ConstUnlockedAccess& operator= (ConstUnlockedAccess const&) = delete;
@@ -266,7 +237,7 @@ public:
     /** Create an UnlockedAccess from the specified SharedData */
     explicit UnlockedAccess (SharedData& state)
         : m_state (state)
-        { }
+    { }
 
     UnlockedAccess (UnlockedAccess const&) = delete;
     UnlockedAccess& operator= (UnlockedAccess const&) = delete;
