@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_BUFFER_H_INCLUDED
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
+#include <ripple/basics/Slice.h>
 #include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <cstring>
@@ -80,6 +81,13 @@ public:
         std::memcpy(p_.get(), data, size);
     }
 
+    /** Create a buffer from a copy of existing memory. */
+    explicit
+    Buffer (Slice const& slice)
+        : Buffer(slice.data(), slice.size())
+    {
+    }
+
     /** Returns the number of bytes in the buffer. */
     std::size_t
     size() const noexcept
@@ -91,6 +99,13 @@ public:
     empty () const noexcept
     {
         return 0 == size_;
+    }
+
+    operator Slice() const noexcept
+    {
+        if (! size_)
+            return Slice{};
+        return Slice{ p_.get(), size_ };
     }
 
     /** Return a pointer to beginning of the storage.

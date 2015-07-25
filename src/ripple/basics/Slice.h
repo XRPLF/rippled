@@ -58,8 +58,6 @@ public:
             std::uint8_t const*>(data))
         , size_ (size)
     {
-        assert(data_ != nullptr);
-        assert(size_ > 0);
     }
 
     /** Return `true` if the byte range is empty. */

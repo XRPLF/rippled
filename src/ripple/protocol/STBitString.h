@@ -29,7 +29,7 @@ class STBitString final
     : public STBase
 {
 public:
-    using BitString = base_uint<Bits>;
+    using value_type = base_uint<Bits>;
 
     STBitString () = default;
 
@@ -37,24 +37,24 @@ public:
         : STBase (n)
     { }
 
-    STBitString (const BitString& v)
-        : bitString_ (v)
+    STBitString (const value_type& v)
+        : value_ (v)
     { }
 
-    STBitString (SField const& n, const BitString& v)
-        : STBase (n), bitString_ (v)
+    STBitString (SField const& n, const value_type& v)
+        : STBase (n), value_ (v)
     { }
 
     STBitString (SField const& n, const char* v)
         : STBase (n)
     {
-        bitString_.SetHex (v);
+        value_.SetHex (v);
     }
 
     STBitString (SField const& n, std::string const& v)
         : STBase (n)
     {
-        bitString_.SetHex (v);
+        value_.SetHex (v);
     }
 
     STBitString (SerialIter& sit, SField const& name)
@@ -80,14 +80,14 @@ public:
     std::string
     getText () const override
     {
-        return to_string (bitString_);
+        return to_string (value_);
     }
 
     bool
     isEquivalent (const STBase& t) const override
     {
         const STBitString* v = dynamic_cast<const STBitString*> (&t);
-        return v && (bitString_ == v->bitString_);
+        return v && (value_ == v->value_);
     }
 
     void
@@ -95,34 +95,40 @@ public:
     {
         assert (fName->isBinary ());
         assert (fName->fieldType == getSType());
-        s.addBitString<Bits> (bitString_);
+        s.addBitString<Bits> (value_);
     }
 
-    const BitString&
+    const value_type&
     getValue () const
     {
-        return bitString_;
+        return value_;
     }
 
     template <typename Tag>
     void setValue (base_uint<Bits, Tag> const& v)
     {
-        bitString_.copyFrom(v);
+        value_.copyFrom(v);
     }
 
-    operator BitString () const
+    value_type const&
+    value() const
     {
-        return bitString_;
+        return value_;
+    }
+
+    operator value_type () const
+    {
+        return value_;
     }
 
     bool
     isDefault () const override
     {
-        return bitString_ == zero;
+        return value_ == zero;
     }
 
 private:
-    BitString bitString_;
+    value_type value_;
 };
 
 using STHash128 = STBitString<128>;
