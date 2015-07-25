@@ -97,6 +97,11 @@ public:
         return { buf_, size_ };
     }
 
+    operator Slice() const noexcept
+    {
+        return slice();
+    }
+
     bool
     verify (Slice const& message, Slice const& sig,
         bool mustBeFullyCanonical) const;
