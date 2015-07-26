@@ -35,6 +35,7 @@
 #include <ripple/app/tx/impl/SetSignerList.cpp>
 #include <ripple/app/tx/impl/SetTrust.cpp>
 #include <ripple/app/tx/impl/SignerEntries.cpp>
+#include <ripple/app/tx/impl/SusPay.cpp>
 #include <ripple/app/tx/impl/Taker.cpp>
 #include <ripple/app/tx/impl/TransactionMaster.cpp>
 #include <ripple/app/tx/impl/Transaction.cpp>

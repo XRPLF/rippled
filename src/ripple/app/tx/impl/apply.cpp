@@ -30,6 +30,7 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
+#include <ripple/app/tx/impl/SusPay.h>
 
 namespace ripple {
 
@@ -43,6 +44,9 @@ invoke_preflight (PreflightContext const& ctx)
     case ttOFFER_CANCEL:    return CancelOffer      ::preflight(ctx);
     case ttOFFER_CREATE:    return CreateOffer      ::preflight(ctx);
     case ttPAYMENT:         return Payment          ::preflight(ctx);
+    case ttSUSPAY_CREATE:   return SusPayCreate     ::preflight(ctx);
+    case ttSUSPAY_FINISH:   return SusPayFinish     ::preflight(ctx);
+    case ttSUSPAY_CANCEL:   return SusPayCancel     ::preflight(ctx);
     case ttREGULAR_KEY_SET: return SetRegularKey    ::preflight(ctx);
     case ttSIGNER_LIST_SET: return SetSignerList    ::preflight(ctx);
     case ttTICKET_CANCEL:   return CancelTicket     ::preflight(ctx);
@@ -65,6 +69,9 @@ invoke_apply (ApplyContext& ctx)
     case ttOFFER_CANCEL:    { CancelOffer   p(ctx); return p(); }
     case ttOFFER_CREATE:    { CreateOffer   p(ctx); return p(); }
     case ttPAYMENT:         { Payment       p(ctx); return p(); }
+    case ttSUSPAY_CREATE:   { SusPayCreate  p(ctx); return p(); }
+    case ttSUSPAY_FINISH:   { SusPayFinish  p(ctx); return p(); }
+    case ttSUSPAY_CANCEL:   { SusPayCancel  p(ctx); return p(); }
     case ttREGULAR_KEY_SET: { SetRegularKey p(ctx); return p(); }
     case ttSIGNER_LIST_SET: { SetSignerList p(ctx); return p(); }
     case ttTICKET_CANCEL:   { CancelTicket  p(ctx); return p(); }

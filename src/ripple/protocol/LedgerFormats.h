@@ -64,15 +64,12 @@ enum LedgerEntryType
     */
     ltDIR_NODE          = 'd',
 
-    /** Describes a trust line.
-    */
     ltRIPPLE_STATE      = 'r',
 
     ltTICKET            = 'T',
 
     ltSIGNER_LIST       = 'S',
 
-    /* Deprecated. */
     ltOFFER             = 'o',
 
     ltLEDGER_HASHES     = 'h',
@@ -80,6 +77,8 @@ enum LedgerEntryType
     ltAMENDMENTS        = 'f',
 
     ltFEE_SETTINGS      = 's',
+
+    ltSUSPAY            = 'u',
 
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
@@ -103,6 +102,7 @@ enum LedgerNameSpace
     spaceBookDir        = 'B',  // Directory of order books.
     spaceContract       = 'c',
     spaceSkipList       = 's',
+    spaceSusPay         = 'u',
     spaceAmendment      = 'f',
     spaceFee            = 'e',
     spaceTicket         = 'T',

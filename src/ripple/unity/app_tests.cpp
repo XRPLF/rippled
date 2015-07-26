@@ -19,4 +19,5 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/app/tests/SusPay_test.cpp>
 #include <ripple/app/tests/Regression_test.cpp>
