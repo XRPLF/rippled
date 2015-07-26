@@ -23,8 +23,8 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/st.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/STArray.h>
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 
@@ -570,6 +570,15 @@ dirNext (ApplyView& view,
         " uDirEntry=" << uDirEntry <<
         " uEntryIndex=" << uEntryIndex;
     return true;
+}
+
+std::function<void (SLE::ref, bool)>
+describeOwnerDir(AccountID const& account)
+{
+    return [account](std::shared_ptr<SLE> const& sle, bool)
+    {
+        (*sle)[sfOwner] = account;
+    };
 }
 
 TER
