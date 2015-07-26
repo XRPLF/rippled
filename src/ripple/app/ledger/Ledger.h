@@ -492,6 +492,7 @@ getTransactionMeta (Ledger const&,
     uint256 const& transID,
         TxMeta::pointer & txMeta);
 
+// VFALCO DEPRECATED, use describeOwnerDir
 void
 ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
 
