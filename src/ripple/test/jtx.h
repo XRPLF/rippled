@@ -22,6 +22,7 @@
 
 // Convenience header that includes everything
 
+#include <ripple/json/to_string.h>
 #include <ripple/test/jtx/Account.h>
 #include <ripple/test/jtx/amount.h>
 #include <ripple/test/jtx/balance.h>
@@ -46,6 +47,7 @@
 #include <ripple/test/jtx/sendmax.h>
 #include <ripple/test/jtx/seq.h>
 #include <ripple/test/jtx/sig.h>
+#include <ripple/test/jtx/tag.h>
 #include <ripple/test/jtx/tags.h>
 #include <ripple/test/jtx/ter.h>
 #include <ripple/test/jtx/ticket.h>

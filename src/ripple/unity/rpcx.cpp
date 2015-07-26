@@ -46,7 +46,7 @@
 #include <ripple/rpc/handlers/CanDelete.cpp>
 #include <ripple/rpc/handlers/Connect.cpp>
 #include <ripple/rpc/handlers/ConsensusInfo.cpp>
-#include <ripple/rpc/handlers/Feature.cpp>
+#include <ripple/rpc/handlers/Feature1.cpp>
 #include <ripple/rpc/handlers/FetchInfo.cpp>
 #include <ripple/rpc/handlers/GatewayBalances.cpp>
 #include <ripple/rpc/handlers/GetCounts.cpp>

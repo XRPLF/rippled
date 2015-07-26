@@ -77,7 +77,7 @@ SField const sfIndex       = make::one(&sfIndex,       STI_HASH256,     258, "in
 
 // 8-bit integers
 SF_U8 const sfCloseResolution   = make::one<SF_U8::type>(&sfCloseResolution,   STI_UINT8, 1, "CloseResolution");
-SF_U8 const sfTemplateEntryType = make::one<SF_U8::type>(&sfTemplateEntryType, STI_UINT8, 2, "TemplateEntryType");
+SF_U8 const sfMethod            = make::one<SF_U8::type>(&sfMethod,            STI_UINT8, 2, "Method");
 SF_U8 const sfTransactionResult = make::one<SF_U8::type>(&sfTransactionResult, STI_UINT8, 3, "TransactionResult");
 
 // 16-bit integers
@@ -121,6 +121,8 @@ SF_U32 const sfReserveIncrement    = make::one<SF_U32::type>(&sfReserveIncrement
 SF_U32 const sfSetFlag             = make::one<SF_U32::type>(&sfSetFlag,             STI_UINT32, 33, "SetFlag");
 SF_U32 const sfClearFlag           = make::one<SF_U32::type>(&sfClearFlag,           STI_UINT32, 34, "ClearFlag");
 SF_U32 const sfSignerQuorum        = make::one<SF_U32::type>(&sfSignerQuorum,        STI_UINT32, 35, "SignerQuorum");
+SF_U32 const sfCancelAfter         = make::one<SF_U32::type>(&sfCancelAfter,         STI_UINT32, 36, "CancelAfter");
+SF_U32 const sfFinishAfter        = make::one<SF_U32::type>(&sfFinishAfter,        STI_UINT32, 37, "FinishAfter");
 
 // 64-bit integers
 SF_U64 const sfIndexNext     = make::one<SF_U64::type>(&sfIndexNext,     STI_UINT64, 1, "IndexNext");
@@ -194,7 +196,7 @@ SF_Blob const sfMemoFormat      = make::one<SF_Blob::type>(&sfMemoFormat,    STI
 
 // variable length (uncommon)
 SF_Blob const sfMultiSignature = make::one<SF_Blob::type>(&sfMultiSignature, STI_VL, 16, "MultiSignature");
-SF_Blob const sfInnerSig       = make::one<SF_Blob::type>(&sfInnerSig,       STI_VL, 17, "InnerSig");
+SF_Blob const sfProof          = make::one<SF_Blob::type>(&sfProof,          STI_VL, 17, "Proof");
 
 // account
 SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI_ACCOUNT, 1, "Account");

@@ -45,4 +45,6 @@ feature (const char* name)
     return feature(name, std::strlen(name));
 }
 
+uint256 const featureSusPay = feature("SusPay");
+
 } // ripple

@@ -17,25 +17,53 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-#define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_TAG_H_INCLUDED
+#define RIPPLE_TEST_JTX_TAG_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <string>
+#include <ripple/test/jtx/Env.h>
 
 namespace ripple {
+namespace test {
 
-/** Convert feature description to feature id. */
-/** @{ */
-uint256
-feature (std::string const& name);
+namespace jtx {
 
-uint256
-feature (const char* name);
-/** @} */
+/** Set the destination tag on a JTx*/
+struct dtag
+{
+private:
+    std::uint32_t value_;
 
-extern uint256 const featureSusPay;
+public:
+    explicit
+    dtag (std::uint32_t value)
+        : value_ (value)
+    {
+    }
 
+    void
+    operator()(Env const&, JTx& jt) const;
+};
+
+/** Set the source tag on a JTx*/
+struct stag
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit
+    stag (std::uint32_t value)
+        : value_ (value)
+    {
+    }
+
+    void
+    operator()(Env const&, JTx& jt) const;
+};
+
+} // jtx
+
+} // test
 } // ripple
 
 #endif

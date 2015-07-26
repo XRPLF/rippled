@@ -344,7 +344,7 @@ extern SField const sfMetadata;
 
 // 8-bit integers
 extern SF_U8 const sfCloseResolution;
-extern SF_U8 const sfTemplateEntryType;
+extern SF_U8 const sfMethod;
 extern SF_U8 const sfTransactionResult;
 
 // 16-bit integers
@@ -388,6 +388,8 @@ extern SF_U32 const sfReserveIncrement;
 extern SF_U32 const sfSetFlag;
 extern SF_U32 const sfClearFlag;
 extern SF_U32 const sfSignerQuorum;
+extern SF_U32 const sfCancelAfter;
+extern SF_U32 const sfFinishAfter;
 
 // 64-bit integers
 extern SF_U64 const sfIndexNext;
@@ -461,7 +463,7 @@ extern SF_Blob const sfMemoFormat;
 
 // variable length (uncommon)
 extern SF_Blob const sfMultiSignature;
-extern SF_Blob const sfInnerSig;
+extern SF_Blob const sfProof;
 
 // account
 extern SF_Account const sfAccount;

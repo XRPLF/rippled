@@ -17,24 +17,70 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-#define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
+#ifndef RIPPLE_TX_SUSPAY_H_INCLUDED
+#define RIPPLE_TX_SUSPAY_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <string>
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-/** Convert feature description to feature id. */
-/** @{ */
-uint256
-feature (std::string const& name);
+class SusPayCreate
+    : public Transactor
+{
+public:
+    explicit
+    SusPayCreate (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
 
-uint256
-feature (const char* name);
-/** @} */
+    static
+    TER
+    preflight (PreflightContext const& ctx);
 
-extern uint256 const featureSusPay;
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class SusPayFinish
+    : public Transactor
+{
+public:
+    explicit
+    SusPayFinish (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class SusPayCancel
+    : public Transactor
+{
+public:
+    explicit
+    SusPayCancel (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    TER
+    doApply() override;
+};
 
 } // ripple
 

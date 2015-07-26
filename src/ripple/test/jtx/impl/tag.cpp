@@ -17,25 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-#define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-
-#include <ripple/basics/base_uint.h>
-#include <string>
+#include <BeastConfig.h>
+#include <ripple/test/jtx/tag.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-/** Convert feature description to feature id. */
-/** @{ */
-uint256
-feature (std::string const& name);
+void
+dtag::operator()(Env const&, JTx& jt) const
+{
+    jt.jv["DestinationTag"] = value_;
+}
 
-uint256
-feature (const char* name);
-/** @} */
+void
+stag::operator()(Env const&, JTx& jt) const
+{
+    jt.jv["SourceTag"] = value_;
+}
 
-extern uint256 const featureSusPay;
-
+} // jtx
+} // test
 } // ripple
-
-#endif
