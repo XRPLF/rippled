@@ -51,6 +51,66 @@ public:
     }
 };
 
+struct PreflightResult
+{
+public:
+    PreflightContext const ctx;
+    TER const ter;
+
+    PreflightResult(PreflightContext const& ctx_,
+        TER ter_)
+        : ctx(ctx_)
+        , ter(ter_)
+    {
+    }
+};
+
+/** State information when determining if a tx is likely to claim a fee. */
+struct PreclaimContext
+{
+public:
+    Application& app;
+    ReadView const& view;
+    TER preflightResult;
+    STTx const& tx;
+    ApplyFlags flags;
+    beast::Journal j;
+
+    PreclaimContext(Application& app_, ReadView const& view_,
+        TER preflightResult_, STTx const& tx_,
+            ApplyFlags flags_, beast::Journal j_ = {})
+        : app(app_)
+        , view(view_)
+        , preflightResult(preflightResult_)
+        , tx(tx_)
+        , flags(flags_)
+        , j(j_)
+    {
+    }
+};
+
+struct PreclaimResult
+{
+public:
+    PreclaimContext const ctx;
+    TER const ter;
+    std::uint64_t const baseFee;
+
+    PreclaimResult(PreclaimContext const& ctx_,
+        TER ter_, std::uint64_t const& baseFee_)
+        : ctx(ctx_)
+        , ter(ter_)
+        , baseFee(baseFee_)
+    {
+    }
+
+    PreclaimResult(PreclaimContext const& ctx_,
+        std::pair<TER, std::uint64_t> const& result)
+        : PreclaimResult(ctx_, result.first, result.second)
+    {
+    }
+};
+
 class Transactor
 {
 protected:
@@ -61,7 +121,6 @@ protected:
     XRPAmount     mFeeDue;
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
-    bool          mHasAuthKey;
     bool          mSigMaster;
     RippleAddress mSigningPubKey;
 
@@ -82,11 +141,43 @@ public:
         return ctx_.view();
     }
 
-    STTx const&
-    tx() const
+    /////////////////////////////////////////////////////
+    /*
+    These static functions are called from invoke_preclaim<Tx>
+    using name hiding to accomplish compile-time polymorphism,
+    so derived classes can override for different or extra
+    functionality. Use with care, as these are not really
+    virtual and so don't have the compiler-time protection that
+    comes with it.
+    */
+
+    static
+    TER
+    checkSeq (PreclaimContext const& ctx);
+
+    static
+    TER
+    checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
+
+    static
+    TER
+    checkSign (PreclaimContext const& ctx);
+
+    // Returns the fee in fee units, not scaled for load.
+    static
+    std::uint64_t
+    calculateBaseFee (
+        PreclaimContext const& ctx);
+
+    static
+    TER
+    preclaim(PreclaimContext const &ctx)
     {
-        return ctx_.tx;
+        // Most transactors do nothing
+        // after checkSeq/Fee/Sign.
+        return tesSUCCESS;
     }
+    /////////////////////////////////////////////////////
 
 protected:
     TER
@@ -95,20 +186,21 @@ protected:
     explicit
     Transactor (ApplyContext& ctx);
 
-    // Returns the fee in fee units, not scaled for load.
-    virtual std::uint64_t calculateBaseFee ();
-
     virtual void preCompute();
 
     virtual TER doApply () = 0;
 
 private:
-    TER checkSeq ();
-    TER checkSign ();
+    void setSeq ();
     TER payFee ();
-    TER checkSingleSign ();
-    TER checkMultiSign ();
+    void checkMasterSign ();
+    static TER checkSingleSign (PreclaimContext const& ctx);
+    static TER checkMultiSign (PreclaimContext const& ctx);
 };
+
+/** Performs early sanity checks on the txid */
+TER
+preflight0(PreflightContext const& ctx);
 
 /** Performs early sanity checks on the account and fee fields */
 TER

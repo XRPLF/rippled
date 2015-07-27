@@ -24,7 +24,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
 
 namespace ripple {
@@ -104,13 +104,60 @@ SetAccount::preflight (PreflightContext const& ctx)
         }
     }
 
+    auto const messageKey = tx[~sfMessageKey];
+    if (messageKey && messageKey->size() > PUBLIC_BYTES_MAX)
+    {
+        JLOG(j.trace) << "message key too long";
+        return telBAD_PUBLIC_KEY;
+    }
+
+    auto const domain = tx[~sfDomain];
+    if (domain&& domain->size() > DOMAIN_BYTES_MAX)
+    {
+        JLOG(j.trace) << "domain too long";
+        return telBAD_DOMAIN;
+    }
+
     return preflight2(ctx);
+}
+
+TER
+SetAccount::preclaim(PreclaimContext const& ctx)
+{
+    auto const id = ctx.tx[sfAccount];
+
+    std::uint32_t const uTxFlags = ctx.tx.getFlags();
+
+    auto const sle = ctx.view.read(
+        keylet::account(id));
+
+    std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
+
+    std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
+
+    // legacy AccountSet flags
+    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+
+    //
+    // RequireAuth
+    //
+    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
+    {
+        if (!dirIsEmpty(ctx.view,
+            keylet::ownerDir(id)))
+        {
+            JLOG(ctx.j.trace) << "Retry: Owner directory not empty.";
+            return (ctx.flags & tapRETRY) ? terOWNERS : tecOWNERS;
+        }
+    }
+
+    return tesSUCCESS;
 }
 
 TER
 SetAccount::doApply ()
 {
-    std::uint32_t const uTxFlags = tx().getFlags ();
+    std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
     auto const sle = view().peek(
         keylet::account(account_));
@@ -118,8 +165,8 @@ SetAccount::doApply ()
     std::uint32_t const uFlagsIn = sle->getFieldU32 (sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    std::uint32_t const uSetFlag = tx().getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = tx().getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = ctx_.tx.getFieldU32 (sfSetFlag);
+    std::uint32_t const uClearFlag = ctx_.tx.getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
     bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
@@ -134,13 +181,6 @@ SetAccount::doApply ()
     //
     if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
     {
-        if (! dirIsEmpty (view(),
-            keylet::ownerDir(account_)))
-        {
-            j_.trace << "Retry: Owner directory not empty.";
-            return (view().flags() & tapRETRY) ? terOWNERS : tecOWNERS;
-        }
-
         j_.trace << "Set RequireAuth.";
         uFlagsOut |= lsfRequireAuth;
     }
@@ -199,8 +239,9 @@ SetAccount::doApply ()
 
             // Prevent transaction changes until we're ready.
             if (view().flags() & tapENABLE_TESTING ||
-                view().rules().enabled(featureMultiSign, ctx_.config.features))
-                    return tecNO_ALTERNATIVE_KEY;
+                    view().rules().enabled(featureMultiSign,
+                        ctx_.app.config().features))
+                return tecNO_ALTERNATIVE_KEY;
 
             return tecNO_REGULAR_KEY;
         }
@@ -277,9 +318,9 @@ SetAccount::doApply ()
     //
     // EmailHash
     //
-    if (tx().isFieldPresent (sfEmailHash))
+    if (ctx_.tx.isFieldPresent (sfEmailHash))
     {
-        uint128 const uHash = tx().getFieldH128 (sfEmailHash);
+        uint128 const uHash = ctx_.tx.getFieldH128 (sfEmailHash);
 
         if (!uHash)
         {
@@ -296,9 +337,9 @@ SetAccount::doApply ()
     //
     // WalletLocator
     //
-    if (tx().isFieldPresent (sfWalletLocator))
+    if (ctx_.tx.isFieldPresent (sfWalletLocator))
     {
-        uint256 const uHash = tx().getFieldH256 (sfWalletLocator);
+        uint256 const uHash = ctx_.tx.getFieldH256 (sfWalletLocator);
 
         if (!uHash)
         {
@@ -315,15 +356,9 @@ SetAccount::doApply ()
     //
     // MessageKey
     //
-    if (tx().isFieldPresent (sfMessageKey))
+    if (ctx_.tx.isFieldPresent (sfMessageKey))
     {
-        Blob const messageKey = tx().getFieldVL (sfMessageKey);
-
-        if (messageKey.size () > PUBLIC_BYTES_MAX)
-        {
-            j_.trace << "message key too long";
-            return telBAD_PUBLIC_KEY;
-        }
+        Blob const messageKey = ctx_.tx.getFieldVL (sfMessageKey);
 
         if (messageKey.empty ())
         {
@@ -340,15 +375,9 @@ SetAccount::doApply ()
     //
     // Domain
     //
-    if (tx().isFieldPresent (sfDomain))
+    if (ctx_.tx.isFieldPresent (sfDomain))
     {
-        Blob const domain = tx().getFieldVL (sfDomain);
-
-        if (domain.size () > DOMAIN_BYTES_MAX)
-        {
-            j_.trace << "domain too long";
-            return telBAD_DOMAIN;
-        }
+        Blob const domain = ctx_.tx.getFieldVL (sfDomain);
 
         if (domain.empty ())
         {
@@ -365,9 +394,9 @@ SetAccount::doApply ()
     //
     // TransferRate
     //
-    if (tx().isFieldPresent (sfTransferRate))
+    if (ctx_.tx.isFieldPresent (sfTransferRate))
     {
-        std::uint32_t uRate = tx().getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = ctx_.tx.getFieldU32 (sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {

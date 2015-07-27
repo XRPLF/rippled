@@ -45,15 +45,22 @@ public:
     TER doApply () override;
     void preCompute() override;
 
+    static
+    std::uint64_t
+    calculateBaseFee (
+        PreclaimContext const& ctx)
+    {
+        return 0;
+    }
+
+    static
+    TER
+    preclaim(PreclaimContext const &ctx);
+
 private:
     TER applyAmendment ();
 
     TER applyFee ();
-
-    std::uint64_t calculateBaseFee () override
-    {
-        return 0;
-    }
 };
 
 }

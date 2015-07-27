@@ -49,6 +49,10 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
+    static
+    TER
+    preclaim(PreclaimContext const& ctx);
+
     void
     preCompute() override;
 
@@ -60,8 +64,11 @@ public:
 
 private:
     /** Determine if we are authorized to hold the asset we want to get */
+    static
     TER
-    checkAcceptAsset(Issue const& issue) const;
+    checkAcceptAsset(ReadView const& view,
+        ApplyFlags const flags, AccountID const id,
+            beast::Journal const j, Issue const& issue);
 
     bool
     dry_offer (ApplyView& view, Offer const& offer);

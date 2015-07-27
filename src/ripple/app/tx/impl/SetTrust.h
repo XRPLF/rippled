@@ -41,6 +41,10 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
+    static
+    TER
+    preclaim(PreclaimContext const& ctx);
+
     TER doApply () override;
 };
 

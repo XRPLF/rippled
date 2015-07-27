@@ -26,19 +26,25 @@
 namespace ripple {
 
 std::uint64_t
-SetRegularKey::calculateBaseFee ()
+SetRegularKey::calculateBaseFee (
+    PreclaimContext const& ctx)
 {
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const pk =
+        RippleAddress::createAccountPublic(
+            ctx.tx.getSigningPubKey());
+
+    auto const sle = ctx.view.read(
+        keylet::account(id));
     if ( sle
             && (! (sle->getFlags () & lsfPasswordSpent))
-            && (calcAccountID(mSigningPubKey) == account_))
+            && (calcAccountID(pk) == id))
     {
         // flag is armed and they signed with the right account
         return 0;
     }
 
-    return Transactor::calculateBaseFee ();
+    return Transactor::calculateBaseFee (ctx);
 }
 
 TER
@@ -70,10 +76,10 @@ SetRegularKey::doApply ()
     if (mFeeDue == zero)
         sle->setFlag (lsfPasswordSpent);
 
-    if (tx().isFieldPresent (sfRegularKey))
+    if (ctx_.tx.isFieldPresent (sfRegularKey))
     {
         sle->setAccountID (sfRegularKey,
-            tx().getAccountID (sfRegularKey));
+            ctx_.tx.getAccountID (sfRegularKey));
     }
     else
     {

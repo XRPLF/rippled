@@ -23,7 +23,7 @@
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
 
 namespace ripple {
@@ -88,13 +88,56 @@ SetTrust::preflight (PreflightContext const& ctx)
 }
 
 TER
+SetTrust::preclaim(PreclaimContext const& ctx)
+{
+    auto const id = ctx.tx[sfAccount];
+
+    auto const sle = ctx.view.read(
+        keylet::account(id));
+
+    std::uint32_t const uTxFlags = ctx.tx.getFlags();
+
+    bool const bSetAuth = (uTxFlags & tfSetfAuth);
+
+    if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
+    {
+        JLOG(ctx.j.trace) <<
+            "Retry: Auth not required.";
+        return tefNO_AUTH_REQUIRED;
+    }
+
+    auto const saLimitAmount = ctx.tx[sfLimitAmount];
+
+    auto const currency = saLimitAmount.getCurrency();
+    auto const uDstAccountID = saLimitAmount.getIssuer();
+
+    if (id == uDstAccountID)
+    {
+        // Prevent trustline to self from being created,
+        // unless one has somehow already been created
+        // (in which case doApply will clean it up).
+        auto const sleDelete = ctx.view.read(
+            keylet::line(id, uDstAccountID, currency));
+
+        if (!sleDelete)
+        {
+            JLOG(ctx.j.trace) <<
+                "Malformed transaction: Can not extend credit to self.";
+            return temDST_IS_SRC;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 SetTrust::doApply ()
 {
     TER terResult = tesSUCCESS;
 
-    STAmount const saLimitAmount (tx().getFieldAmount (sfLimitAmount));
-    bool const bQualityIn (tx().isFieldPresent (sfQualityIn));
-    bool const bQualityOut (tx().isFieldPresent (sfQualityOut));
+    STAmount const saLimitAmount (ctx_.tx.getFieldAmount (sfLimitAmount));
+    bool const bQualityIn (ctx_.tx.isFieldPresent (sfQualityIn));
+    bool const bQualityOut (ctx_.tx.isFieldPresent (sfQualityOut));
 
     Currency const currency (saLimitAmount.getCurrency ());
     AccountID uDstAccountID (saLimitAmount.getIssuer ());
@@ -123,13 +166,13 @@ SetTrust::doApply ()
         ? XRPAmount (zero)
         : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn (bQualityIn ? tx().getFieldU32 (sfQualityIn) : 0);
-    std::uint32_t uQualityOut (bQualityOut ? tx().getFieldU32 (sfQualityOut) : 0);
+    std::uint32_t uQualityIn (bQualityIn ? ctx_.tx.getFieldU32 (sfQualityIn) : 0);
+    std::uint32_t uQualityOut (bQualityOut ? ctx_.tx.getFieldU32 (sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = tx().getFlags ();
+    std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
     bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
@@ -138,13 +181,6 @@ SetTrust::doApply ()
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
     auto viewJ = ctx_.app.journal ("View");
-
-    if (bSetAuth && !(sle->getFieldU32 (sfFlags) & lsfRequireAuth))
-    {
-        j_.trace <<
-            "Retry: Auth not required.";
-        return tefNO_AUTH_REQUIRED;
-    }
 
     if (account_ == uDstAccountID)
     {
@@ -155,20 +191,11 @@ SetTrust::doApply ()
         SLE::pointer sleDelete = view().peek (
             keylet::line(account_, uDstAccountID, currency));
 
-        if (sleDelete)
-        {
-            j_.warning <<
-                "Clearing redundant line.";
+        j_.warning <<
+            "Clearing redundant line.";
 
-            return trustDelete (view(),
-                sleDelete, account_, uDstAccountID, viewJ);
-        }
-        else
-        {
-            j_.trace <<
-                "Malformed transaction: Can not extend credit to self.";
-            return temDST_IS_SRC;
-        }
+        return trustDelete (view(),
+            sleDelete, account_, uDstAccountID, viewJ);
     }
 
     SLE::pointer sleDst =
@@ -405,7 +432,7 @@ SetTrust::doApply ()
         (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
         (! ((view().flags() & tapENABLE_TESTING) ||
             view().rules().enabled(featureTrustSetAuth,
-                ctx_.config.features)) || ! bSetAuth))
+                ctx_.app.config().features)) || ! bSetAuth))
     {
         j_.trace <<
             "Redundant: Setting non-existent ripple line to defaults.";

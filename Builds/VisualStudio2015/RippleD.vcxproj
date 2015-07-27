@@ -1745,6 +1745,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\ApplyContext.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\applyImpl.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>

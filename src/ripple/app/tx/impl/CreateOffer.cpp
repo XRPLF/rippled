@@ -22,7 +22,7 @@
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/st.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/Sandbox.h>
@@ -80,8 +80,8 @@ CreateOffer::preflight (PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = tx.getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = tx.getFieldAmount (sfTakerGets);
+    STAmount saTakerPays = tx[sfTakerPays];
+    STAmount saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
         return temBAD_AMOUNT;
@@ -131,33 +131,109 @@ CreateOffer::preflight (PreflightContext const& ctx)
 }
 
 TER
-CreateOffer::checkAcceptAsset(Issue const& issue) const
+CreateOffer::preclaim(PreclaimContext const& ctx)
+{
+    auto const id = ctx.tx[sfAccount];
+
+    auto saTakerPays = ctx.tx[sfTakerPays];
+    auto saTakerGets = ctx.tx[sfTakerGets];
+
+    auto const& uPaysIssuerID = saTakerPays.getIssuer();
+    auto const& uPaysCurrency = saTakerPays.getCurrency();
+
+    auto const& uGetsIssuerID = saTakerGets.getIssuer();
+
+    auto const cancelSequence = ctx.tx[~sfOfferSequence];
+
+    auto const sleCreator = ctx.view.read(keylet::account(id));
+
+    std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
+
+    auto viewJ = ctx.app.journal("View");
+
+    if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
+        isGlobalFrozen(ctx.view, uGetsIssuerID))
+    {
+        JLOG(ctx.j.warning) <<
+            "Offer involves frozen asset";
+
+        return tecFROZEN;
+    }
+    else if (accountFunds(ctx.view, id, saTakerGets,
+        fhZERO_IF_FROZEN, viewJ) <= zero)
+    {
+        JLOG(ctx.j.debug) <<
+            "delay: Offers must be at least partially funded.";
+
+        return tecUNFUNDED_OFFER;
+    }
+    // This can probably be simplified to make sure that you cancel sequences
+    // before the transaction sequence number.
+    else if (cancelSequence && (uAccountSequence <= *cancelSequence))
+    {
+        JLOG(ctx.j.debug) <<
+            "uAccountSequenceNext=" << uAccountSequence <<
+            " uOfferSequence=" << *cancelSequence;
+
+        return temBAD_SEQUENCE;
+    }
+
+    auto const expiration = ctx.tx[~sfExpiration];
+
+    // Expiration is defined in terms of the close time of the parent ledger,
+    // because we definitively know the time that it closed but we do not
+    // know the closing time of the ledger that is under construction.
+    if (expiration &&
+        (ctx.view.parentCloseTime() >= *expiration))
+    {
+        // Note that this will get checked again in applyGuts,
+        // but it saves us a call to checkAcceptAsset and
+        // possible false negative.
+        return tesSUCCESS;
+    }
+
+    // Make sure that we are authorized to hold what the taker will pay us.
+    if (!saTakerPays.native())
+    {
+        auto result = checkAcceptAsset(ctx.view, ctx.flags,
+            id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
+        if (result != tesSUCCESS)
+            return result;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+CreateOffer::checkAcceptAsset(ReadView const& view,
+    ApplyFlags const flags, AccountID const id,
+        beast::Journal const j, Issue const& issue)
 {
     // Only valid for custom currencies
     assert (!isXRP (issue.currency));
 
-    auto const issuerAccount = ctx_.view().read(
+    auto const issuerAccount = view.read(
         keylet::account(issue.account));
 
     if (!issuerAccount)
     {
-        if (j_.warning) j_.warning <<
+        JLOG(j.warning) <<
             "delay: can't receive IOUs from non-existent issuer: " <<
             to_string (issue.account);
 
-        return (view().flags() & tapRETRY)
+        return (flags & tapRETRY)
             ? terNO_ACCOUNT
             : tecNO_ISSUER;
     }
 
-    if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
+    if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
-        auto const trustLine = ctx_.view().read(
-            keylet::line(account_, issue.account, issue.currency));
+        auto const trustLine = view.read(
+            keylet::line(id, issue.account, issue.currency));
 
         if (!trustLine)
         {
-            return (view().flags() & tapRETRY)
+            return (flags & tapRETRY)
                 ? terNO_LINE
                 : tecNO_LINE;
         }
@@ -165,17 +241,17 @@ CreateOffer::checkAcceptAsset(Issue const& issue) const
         // Entries have a canonical representation, determined by a
         // lexicographical "greater than" comparison employing strict weak
         // ordering. Determine which entry we need to access.
-        bool const canonical_gt (account_ > issue.account);
+        bool const canonical_gt (id > issue.account);
 
-        bool const is_authorized (trustLine->getFieldU32 (sfFlags) &
+        bool const is_authorized ((*trustLine)[sfFlags] &
             (canonical_gt ? lsfLowAuth : lsfHighAuth));
 
         if (!is_authorized)
         {
-            if (j_.debug) j_.debug <<
+            JLOG(j.debug) <<
                 "delay: can't receive IOUs from issuer without auth.";
 
-            return (view().flags() & tapRETRY)
+            return (flags & tapRETRY)
                 ? terNO_AUTH
                 : tecNO_AUTH;
         }
@@ -513,7 +589,7 @@ CreateOffer::cross (
     beast::WrappedSink takerSink (j_, "Taker ");
 
     Taker taker (cross_type_, view, account_, taker_amount,
-        tx().getFlags(), beast::Journal (takerSink));
+        ctx_.tx.getFlags(), beast::Journal (takerSink));
 
     try
     {
@@ -548,9 +624,9 @@ CreateOffer::preCompute()
 {
     cross_type_ = CrossType::IouToIou;
     bool const pays_xrp =
-        tx().getFieldAmount (sfTakerPays).native ();
+        ctx_.tx.getFieldAmount (sfTakerPays).native ();
     bool const gets_xrp =
-        tx().getFieldAmount (sfTakerGets).native ();
+        ctx_.tx.getFieldAmount (sfTakerGets).native ();
     if (pays_xrp && !gets_xrp)
         cross_type_ = CrossType::IouToXrp;
     else if (gets_xrp && !pays_xrp)
@@ -562,29 +638,22 @@ CreateOffer::preCompute()
 std::pair<TER, bool>
 CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 {
-    std::uint32_t const uTxFlags = tx().getFlags ();
+    std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
     bool const bPassive (uTxFlags & tfPassive);
     bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill (uTxFlags & tfFillOrKill);
     bool const bSell (uTxFlags & tfSell);
 
-    STAmount saTakerPays = tx().getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = tx().getFieldAmount (sfTakerGets);
-
-    if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
-        return { temBAD_AMOUNT, true };
+    auto saTakerPays = ctx_.tx[sfTakerPays];
+    auto saTakerGets = ctx_.tx[sfTakerGets];
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer ();
     auto const& uPaysCurrency = saTakerPays.getCurrency ();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer ();
 
-    bool const bHaveExpiration (tx().isFieldPresent (sfExpiration));
-    bool const bHaveCancel (tx().isFieldPresent (sfOfferSequence));
-
-    std::uint32_t const uExpiration = tx().getFieldU32 (sfExpiration);
-    std::uint32_t const uCancelSequence = tx().getFieldU32 (sfOfferSequence);
+    auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer sequence
@@ -592,83 +661,48 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     auto const sleCreator = view.peek (keylet::account(account_));
 
-    deprecatedWrongOwnerCount_ = sleCreator->getFieldU32(sfOwnerCount);
+    deprecatedWrongOwnerCount_ = (*sleCreator)[sfOwnerCount];
 
-    std::uint32_t const uAccountSequenceNext = sleCreator->getFieldU32 (sfSequence);
-    std::uint32_t const uSequence = tx().getSequence ();
+    auto const uAccountSequenceNext = (*sleCreator)[sfSequence];
+    auto const uSequence = ctx_.tx.getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
     // end up on the books.
-    std::uint64_t const uRate = getRate (saTakerGets, saTakerPays);
+    auto const uRate = getRate (saTakerGets, saTakerPays);
 
-    auto viewJ = ctx_.app.journal ("View");
+    auto viewJ = ctx_.app.journal("View");
 
-    TER result = tesSUCCESS;
-
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
-
-    if (isGlobalFrozen (view, uPaysIssuerID) || isGlobalFrozen (view, uGetsIssuerID))
-    {
-        if (j_.warning) j_.warning <<
-            "Offer involves frozen asset";
-
-        result = tecFROZEN;
-    }
-    else if (accountFunds(view, account_, saTakerGets,
-        fhZERO_IF_FROZEN, viewJ) <= zero)
-    {
-        if (j_.debug) j_.debug <<
-            "delay: Offers must be at least partially funded.";
-
-        result = tecUNFUNDED_OFFER;
-    }
-    // This can probably be simplified to make sure that you cancel sequences
-    // before the transaction sequence number.
-    else if (bHaveCancel && (uAccountSequenceNext - 1 <= uCancelSequence))
-    {
-        if (j_.debug) j_.debug <<
-            "uAccountSequenceNext=" << uAccountSequenceNext <<
-            " uOfferSequence=" << uCancelSequence;
-
-        result = temBAD_SEQUENCE;
-    }
-
-    if (result != tesSUCCESS)
-    {
-        j_.debug << "final result: " << transToken (result);
-        return { result, true };
-    }
+    auto result = tesSUCCESS;
 
     // Process a cancellation request that's passed along with an offer.
-    if (bHaveCancel)
+    if (cancelSequence)
     {
         auto const sleCancel = view.peek(
-            keylet::offer(account_, uCancelSequence));
+            keylet::offer(account_, *cancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
         // to fail to delete it.
         if (sleCancel)
         {
-            j_.debug << "Create cancels order " << uCancelSequence;
+            JLOG(j_.debug) << "Create cancels order " << *cancelSequence;
             result = offerDelete (view, sleCancel, viewJ);
         }
     }
 
+    auto const expiration = ctx_.tx[~sfExpiration];
+
     // Expiration is defined in terms of the close time of the parent ledger,
     // because we definitively know the time that it closed but we do not
     // know the closing time of the ledger that is under construction.
-    if (bHaveExpiration &&
-        (ctx_.view().parentCloseTime() >= uExpiration))
+    if (expiration &&
+        (ctx_.view().parentCloseTime() >= *expiration))
     {
-        return { tesSUCCESS, true };
+        // If the offer has expired, the transaction has successfully
+        // done nothing, so short circuit from here.
+        return{ tesSUCCESS, true };
     }
-
-    // Make sure that we are authorized to hold what the taker will pay us.
-    if (result == tesSUCCESS && !saTakerPays.native ())
-        result = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
 
     bool const bOpenLedger =
         ctx_.view().open();
@@ -684,13 +718,13 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // empty (fully crossed), or something in-between.
         Amounts place_offer;
 
-        j_.debug << "Attempting cross: " <<
+        JLOG(j_.debug) << "Attempting cross: " <<
             to_string (taker_amount.in.issue ()) << " -> " <<
             to_string (taker_amount.out.issue ());
 
         if (j_.trace)
         {
-            j_.debug << "   mode: " <<
+            j_.trace << "   mode: " <<
                 (bPassive ? "passive " : "") <<
                 (bSell ? "sell" : "buy");
             j_.trace <<"     in: " << format_amount (taker_amount.in);
@@ -698,7 +732,9 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         }
 
         std::tie(result, place_offer) = cross (view, view_cancel, taker_amount);
-        assert (result != tefINTERNAL);
+        // We expect the implementation of cross to succeed
+        // or give a tec.
+        assert(result == tesSUCCESS || isTecClaim(result));
 
         if (j_.trace)
         {
@@ -855,8 +891,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
         sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
         sleOffer->setFieldU64 (sfBookNode, uBookNode);
-        if (uExpiration)
-            sleOffer->setFieldU32 (sfExpiration, uExpiration);
+        if (expiration)
+            sleOffer->setFieldU32 (sfExpiration, *expiration);
         if (bPassive)
             sleOffer->setFlag (lsfPassive);
         if (bSell)

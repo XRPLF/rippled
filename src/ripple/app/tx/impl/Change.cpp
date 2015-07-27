@@ -31,6 +31,10 @@ namespace ripple {
 TER
 Change::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight0(ctx);
+    if (!isTesSuccess(ret))
+        return ret;
+
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != zero)
     {
@@ -62,36 +66,45 @@ Change::preflight (PreflightContext const& ctx)
 }
 
 TER
-Change::doApply()
+Change::preclaim(PreclaimContext const &ctx)
 {
     // If tapOPEN_LEDGER is resurrected into ApplyFlags,
     // this block can be moved to preflight.
-    if (view().open())
+    if (ctx.view.open())
     {
-        j_.warning << "Change transaction against open ledger";
+        ctx.j.warning << "Change transaction against open ledger";
         return temINVALID;
     }
 
-    if (tx().getTxnType () == ttAMENDMENT)
+    if (ctx.tx.getTxnType() != ttAMENDMENT
+        && ctx.tx.getTxnType() != ttFEE)
+        return temUNKNOWN;
+
+    return tesSUCCESS;
+}
+
+
+TER
+Change::doApply()
+{
+    if (ctx_.tx.getTxnType () == ttAMENDMENT)
         return applyAmendment ();
 
-    if (tx().getTxnType () == ttFEE)
-        return applyFee ();
-
-    return temUNKNOWN;
+    assert(ctx_.tx.getTxnType() == ttFEE);
+    return applyFee ();
 }
 
 void
 Change::preCompute()
 {
-    account_ = tx().getAccountID(sfAccount);
+    account_ = ctx_.tx.getAccountID(sfAccount);
     assert(account_ == zero);
 }
 
 TER
 Change::applyAmendment()
 {
-    uint256 amendment (tx().getFieldH256 (sfAmendment));
+    uint256 amendment (ctx_.tx.getFieldH256 (sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -111,7 +124,7 @@ Change::applyAmendment()
             amendment) != amendments.end ())
         return tefALREADY;
 
-    auto flags = tx().getFlags ();
+    auto flags = ctx_.tx.getFlags ();
 
     const bool gotMajority = (flags & tfGotMajority) != 0;
     const bool lostMajority = (flags & tfLostMajority) != 0;
@@ -193,13 +206,13 @@ Change::applyFee()
     //     "Previous fee object: " << feeObject->getJson (0);
 
     feeObject->setFieldU64 (
-        sfBaseFee, tx().getFieldU64 (sfBaseFee));
+        sfBaseFee, ctx_.tx.getFieldU64 (sfBaseFee));
     feeObject->setFieldU32 (
-        sfReferenceFeeUnits, tx().getFieldU32 (sfReferenceFeeUnits));
+        sfReferenceFeeUnits, ctx_.tx.getFieldU32 (sfReferenceFeeUnits));
     feeObject->setFieldU32 (
-        sfReserveBase, tx().getFieldU32 (sfReserveBase));
+        sfReserveBase, ctx_.tx.getFieldU32 (sfReserveBase));
     feeObject->setFieldU32 (
-        sfReserveIncrement, tx().getFieldU32 (sfReserveIncrement));
+        sfReserveIncrement, ctx_.tx.getFieldU32 (sfReserveIncrement));
 
     view().update (feeObject);
 
