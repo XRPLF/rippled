@@ -74,6 +74,7 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , sanity_ (Sanity::unknown)
     , insaneTime_ (clock_type::now())
     , publicKey_(publicKey)
+    , creationTime_ (clock_type::now())
     , hello_(hello)
     , usage_(consumer)
     , fee_ (Resource::feeLightPeer)

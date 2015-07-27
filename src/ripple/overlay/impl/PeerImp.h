@@ -143,6 +143,7 @@ private:
     std::chrono::milliseconds latency_ = std::chrono::milliseconds (-1);
     std::uint64_t lastPingSeq_ = 0;
     clock_type::time_point lastPingTime_;
+    clock_type::time_point creationTime_;
 
     std::mutex mutable recentLock_;
     protocol::TMStatusChange last_status_;
@@ -278,6 +279,13 @@ public:
     /** Return the version of rippled that the peer is running, if reported. */
     std::string
     getVersion() const;
+
+    // Return the connection elapsed time.
+    clock_type::duration
+    uptime() const
+    {
+        return clock_type::now() - creationTime_;
+    }
 
     Json::Value
     json() override;
@@ -497,6 +505,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , sanity_ (Sanity::unknown)
     , insaneTime_ (clock_type::now())
     , publicKey_ (legacyPublicKey)
+    , creationTime_ (clock_type::now())
     , hello_ (std::move(hello))
     , usage_ (usage)
     , fee_ (Resource::feeLightPeer)
