@@ -695,6 +695,15 @@ public:
         if (isCurrent)
             mLedgerHistory.addLedger(ledger, true);
 
+        {
+            // Check the SQL database's entry for the sequence before this ledger,
+            // if it's not this ledger's parent, invalidate it
+            uint256 prevHash = Ledger::getHashByIndex (ledger->info().seq - 1);
+            if (prevHash.isNonZero () && (prevHash != ledger->info().parentHash))
+                clearLedger (ledger->info().seq - 1);
+        }
+
+
         ledger->pendSaveValidated (isSynchronous, isCurrent);
 
         {

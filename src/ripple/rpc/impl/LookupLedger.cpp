@@ -152,8 +152,21 @@ bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
         // comes before the last validated ledger (and thus has been
         // validated).
         auto hash = ledgerMaster.walkHashBySeq (seq);
+
         if (ledger.info().hash != hash)
+        {
+            // This ledger's hash is not the hash of the validated ledger
+            if (hash.isNonZero ())
+            {
+                uint256 valHash = Ledger::getHashByIndex (seq);
+                if (valHash == ledger.info().hash)
+                {
+                    // SQL database doesn't match ledger chain
+                    ledgerMaster.clearLedger (seq);
+                }
+            }
             return false;
+        }
     }
     catch (SHAMapMissingNode const&)
     {
