@@ -744,6 +744,7 @@ OverlayImpl::size()
 Json::Value
 OverlayImpl::crawl()
 {
+    using namespace std::chrono;
     Json::Value jv;
     auto& av = jv["active"] = Json::Value(Json::arrayValue);
     std::lock_guard <decltype(mutex_)> lock (mutex_);
@@ -752,12 +753,14 @@ OverlayImpl::crawl()
         if (auto const sp = e.second.lock())
         {
             auto& pv = av.append(Json::Value(Json::objectValue));
-            pv[jss::type] = "peer";
             pv[jss::public_key] = beast::base64_encode(
                 sp->getNodePublic().getNodePublic().data(),
                     sp->getNodePublic().getNodePublic().size());
             pv[jss::type] = sp->slot()->inbound() ?
                 "in" : "out";
+            pv[jss::uptime] =
+                static_cast<std::uint32_t>(duration_cast<seconds>(
+                    sp->uptime()).count());
             if (sp->crawl())
             {
                 pv[jss::ip] = sp->getRemoteAddress().address().to_string();
