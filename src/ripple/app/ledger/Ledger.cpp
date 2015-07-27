@@ -666,7 +666,7 @@ loadLedgerHelper(std::string const& sqlSuffix)
 
     if (!db->got_data ())
     {
-        WriteLog (lsINFO, Ledger) << "Ledger not found: " << sqlSuffix;
+        WriteLog (lsDEBUG, Ledger) << "Ledger not found: " << sqlSuffix;
         return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
     }
 
