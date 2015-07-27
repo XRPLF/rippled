@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/app/tx/impl/applyImpl.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CancelTicket.h>
@@ -55,7 +56,79 @@ invoke_preflight (PreflightContext const& ctx)
     case ttAMENDMENT:
     case ttFEE:             return Change           ::preflight(ctx);
     default:
+        assert(false);
         return temUNKNOWN;
+    }
+}
+
+/*
+    invoke_preclaim<T> uses name hiding to accomplish
+    compile-time polymorphism of (presumably) static
+    class functions for Transactor and derived classes.
+*/
+template<class T>
+static
+std::pair<TER, std::uint64_t>
+invoke_preclaim(PreclaimContext const& ctx)
+{
+    // If the transactor requires a valid account and the transaction doesn't
+    // list one, preflight will have already a flagged a failure.
+    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const baseFee = T::calculateBaseFee(ctx);
+    TER result;
+    if (id != zero)
+    {
+        result = T::checkSeq(ctx);
+
+        if (result != tesSUCCESS)
+            return { result, 0 };
+
+        result = T::checkFee(ctx, baseFee);
+
+        if (result != tesSUCCESS)
+            return { result, 0 };
+
+        result = T::checkSign(ctx);
+
+        if (result != tesSUCCESS)
+            return { result, 0 };
+
+        result = T::preclaim(ctx);
+
+        if (result != tesSUCCESS)
+            return{ result, 0 };
+    }
+    else
+    {
+        result = tesSUCCESS;
+    }
+
+    return { tesSUCCESS, baseFee };
+}
+
+static
+std::pair<TER, std::uint64_t>
+invoke_preclaim (PreclaimContext const& ctx)
+{
+    switch(ctx.tx.getTxnType())
+    {
+    case ttACCOUNT_SET:     return invoke_preclaim<SetAccount>(ctx);
+    case ttOFFER_CANCEL:    return invoke_preclaim<CancelOffer>(ctx);
+    case ttOFFER_CREATE:    return invoke_preclaim<CreateOffer>(ctx);
+    case ttPAYMENT:         return invoke_preclaim<Payment>(ctx);
+    case ttSUSPAY_CREATE:   return invoke_preclaim<SusPayCreate>(ctx);
+    case ttSUSPAY_FINISH:   return invoke_preclaim<SusPayFinish>(ctx);
+    case ttSUSPAY_CANCEL:   return invoke_preclaim<SusPayCancel>(ctx);
+    case ttREGULAR_KEY_SET: return invoke_preclaim<SetRegularKey>(ctx);
+    case ttSIGNER_LIST_SET: return invoke_preclaim<SetSignerList>(ctx);
+    case ttTICKET_CANCEL:   return invoke_preclaim<CancelTicket>(ctx);
+    case ttTICKET_CREATE:   return invoke_preclaim<CreateTicket>(ctx);
+    case ttTRUST_SET:       return invoke_preclaim<SetTrust>(ctx);
+    case ttAMENDMENT:
+    case ttFEE:             return invoke_preclaim<Change>(ctx);
+    default:
+        assert(false);
+        return { temUNKNOWN, 0 };
     }
 }
 
@@ -80,57 +153,108 @@ invoke_apply (ApplyContext& ctx)
     case ttAMENDMENT:
     case ttFEE:             { Change        p(ctx); return p(); }
     default:
+        assert(false);
         return { temUNKNOWN, false };
     }
 }
 
 //------------------------------------------------------------------------------
 
-TER
+PreflightResult
 preflight (Rules const& rules, STTx const& tx,
     ApplyFlags flags, SigVerify verify,
         Config const& config, beast::Journal j)
 {
+    PreflightContext const pfctx(tx,
+        rules, flags, verify, config, j);
     try
     {
-        PreflightContext pfctx(tx,
-            rules, flags, verify, config, j);
-        return invoke_preflight(pfctx);
+        return{ pfctx, invoke_preflight(pfctx) };
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal) <<
             "apply: " << e.what();
-        return tefEXCEPTION;
+        return{ pfctx, tefEXCEPTION };
     }
     catch (...)
     {
         JLOG(j.fatal) <<
             "apply: <unknown exception>";
-        return tefEXCEPTION;
+        return{ pfctx, tefEXCEPTION };
+    }
+}
+
+PreclaimResult
+preclaim (PreflightResult const& preflightResult,
+    Application& app, OpenView const& view)
+{
+    boost::optional<PreclaimContext const> ctx;
+    if (preflightResult.ctx.rules != view.rules())
+    {
+        auto secondFlight = preflight(view.rules(),
+            preflightResult.ctx.tx, preflightResult.ctx.flags,
+                preflightResult.ctx.verify, preflightResult.ctx.config,
+                    preflightResult.ctx.j);
+        ctx.emplace(app, view, secondFlight.ter, secondFlight.ctx.tx,
+            secondFlight.ctx.flags, secondFlight.ctx.j);
+    }
+    else
+    {
+        ctx.emplace(
+            app, view, preflightResult.ter, preflightResult.ctx.tx,
+                preflightResult.ctx.flags, preflightResult.ctx.j);
+    }
+    try
+    {
+        if (ctx->preflightResult != tesSUCCESS)
+            return { *ctx, ctx->preflightResult, 0 };
+        return{ *ctx, invoke_preclaim(*ctx) };
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(ctx->j.fatal) <<
+            "apply: " << e.what();
+        return{ *ctx, tefEXCEPTION, 0 };
+    }
+    catch (...)
+    {
+        JLOG(ctx->j.fatal) <<
+            "apply: <unknown exception>";
+        return{ *ctx, tefEXCEPTION, 0 };
     }
 }
 
 std::pair<TER, bool>
-doapply(Application& app, OpenView& view,
-    STTx const& tx, ApplyFlags flags,
-        Config const& config, beast::Journal j)
+doApply(PreclaimResult const& preclaimResult,
+    Application& app, OpenView& view)
 {
+    if (preclaimResult.ctx.view.seq() != view.seq())
+    {
+        // Logic error from the caller. Don't have enough
+        // info to recover.
+        return{ tefEXCEPTION, false };
+    }
     try
     {
-        ApplyContext ctx(app, view,
-            tx, flags, config, j);
+        if (preclaimResult.ter != tesSUCCESS
+                && !isTecClaim(preclaimResult.ter))
+            return{ preclaimResult.ter, false };
+        ApplyContext ctx(
+            app, view, preclaimResult.ctx.tx, preclaimResult.ter,
+            preclaimResult.baseFee, preclaimResult.ctx.flags,
+            preclaimResult.ctx.j);
         return invoke_apply(ctx);
     }
     catch (std::exception const& e)
     {
-        JLOG(j.fatal) <<
+        JLOG(preclaimResult.ctx.j.fatal) <<
             "apply: " << e.what();
         return { tefEXCEPTION, false };
     }
     catch (...)
     {
-        JLOG(j.fatal) <<
+        JLOG(preclaimResult.ctx.j.fatal) <<
             "apply: <unknown exception>";
         return { tefEXCEPTION, false };
     }
@@ -144,9 +268,8 @@ apply (Application& app, OpenView& view,
 {
     auto pfresult = preflight(view.rules(),
         tx, flags, verify, config, j);
-    if (pfresult != tesSUCCESS)
-        return { pfresult, false };
-    return doapply(app, view, tx, flags, config, j);
+    auto pcresult = preclaim(pfresult, app, view);
+    return doApply(pcresult, app, view);
 }
 
 } // ripple

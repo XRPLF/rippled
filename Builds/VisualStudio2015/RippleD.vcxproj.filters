@@ -2487,6 +2487,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\ApplyContext.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\applyImpl.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>

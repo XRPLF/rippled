@@ -134,7 +134,7 @@ void
 SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
-    auto result = determineOperation(tx(), view().flags(), j_);
+    auto result = determineOperation(ctx_.tx, view().flags(), j_);
     assert(std::get<0>(result) == tesSUCCESS);
     assert(std::get<3>(result) != unknown);
 

@@ -68,25 +68,25 @@ CreateTicket::doApply ()
 
     std::uint32_t expiration (0);
 
-    if (tx().isFieldPresent (sfExpiration))
+    if (ctx_.tx.isFieldPresent (sfExpiration))
     {
-        expiration = tx().getFieldU32 (sfExpiration);
+        expiration = ctx_.tx.getFieldU32 (sfExpiration);
 
         if (view().parentCloseTime() >= expiration)
             return tesSUCCESS;
     }
 
     SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
-        getTicketIndex (account_, tx().getSequence ()));
+        getTicketIndex (account_, ctx_.tx.getSequence ()));
     sleTicket->setAccountID (sfAccount, account_);
-    sleTicket->setFieldU32 (sfSequence, tx().getSequence ());
+    sleTicket->setFieldU32 (sfSequence, ctx_.tx.getSequence ());
     if (expiration != 0)
         sleTicket->setFieldU32 (sfExpiration, expiration);
     view().insert (sleTicket);
 
-    if (tx().isFieldPresent (sfTarget))
+    if (ctx_.tx.isFieldPresent (sfTarget))
     {
-        AccountID const target_account (tx().getAccountID (sfTarget));
+        AccountID const target_account (ctx_.tx.getAccountID (sfTarget));
 
         SLE::pointer sleTarget = view().peek (keylet::account(target_account));
 

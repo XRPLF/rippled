@@ -43,7 +43,7 @@ CancelTicket::preflight (PreflightContext const& ctx)
 TER
 CancelTicket::doApply ()
 {
-    uint256 const ticketId = tx().getFieldH256 (sfTicketID);
+    uint256 const ticketId = ctx_.tx.getFieldH256 (sfTicketID);
 
     // VFALCO This is highly suspicious, we're requiring that the
     //        transaction provide the return value of getTicketIndex?

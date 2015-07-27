@@ -20,8 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
 
 namespace ripple {
@@ -56,31 +55,46 @@ CancelOffer::preflight (PreflightContext const& ctx)
 //------------------------------------------------------------------------------
 
 TER
-CancelOffer::doApply ()
+CancelOffer::preclaim(PreclaimContext const& ctx)
 {
-    std::uint32_t const uOfferSequence = tx().getFieldU32 (sfOfferSequence);
+    auto const id = ctx.tx[sfAccount];
+    auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = view().read(
-        keylet::account(account_));
-    if (sle->getFieldU32 (sfSequence) - 1 <= uOfferSequence)
+    auto const sle = ctx.view.read(
+        keylet::account(id));
+
+    if ((*sle)[sfSequence] <= offerSequence)
     {
-        j_.trace << "Malformed transaction: " <<
-            "Sequence " << uOfferSequence << " is invalid.";
+        ctx.j.trace << "Malformed transaction: " <<
+            "Sequence " << offerSequence << " is invalid.";
         return temBAD_SEQUENCE;
     }
 
-    uint256 const offerIndex (getOfferIndex (account_, uOfferSequence));
+    return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+
+TER
+CancelOffer::doApply ()
+{
+    auto const offerSequence = ctx_.tx[sfOfferSequence];
+
+    auto const sle = view().read(
+        keylet::account(account_));
+
+    uint256 const offerIndex (getOfferIndex (account_, offerSequence));
 
     auto sleOffer = view().peek (
         keylet::offer(offerIndex));
 
     if (sleOffer)
     {
-        j_.debug << "Trying to cancel offer #" << uOfferSequence;
-        return offerDelete (view(), sleOffer, ctx_.app.journal ("View"));
+        JLOG(j_.debug) << "Trying to cancel offer #" << offerSequence;
+        return offerDelete (view(), sleOffer, ctx_.app.journal("View"));
     }
 
-    j_.debug << "Offer #" << uOfferSequence << " can't be found.";
+    JLOG(j_.debug) << "Offer #" << offerSequence << " can't be found.";
     return tesSUCCESS;
 }
 

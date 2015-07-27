@@ -32,33 +32,6 @@ namespace ripple {
 
 class Application;
 
-/** Gate a transaction based on static information.
-
-    The transaction is checked against all possible
-    validity constraints that do not require a ledger.
-
-    @return The TER code (a `tem` or tesSUCCESS)
-*/
-TER
-preflight (Rules const& rules, STTx const& tx,
-    ApplyFlags flags, SigVerify verify,
-        Config const& config, beast::Journal j);
-
-/** Apply a prechecked transaction to an OpenView.
-
-    See also: apply()
-
-    Precondition: The transaction has been checked
-    and validated using the above function(s).
-
-    @return A pair with the TER and a bool indicating
-            whether or not the transaction was applied.
-*/
-std::pair<TER, bool>
-doapply(Application& app, OpenView& view,
-    STTx const& tx, ApplyFlags flags,
-        Config const& config, beast::Journal j);
-
 /** Apply a transaction to a ReadView.
 
     Throws:
