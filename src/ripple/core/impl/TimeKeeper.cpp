@@ -49,6 +49,7 @@ public:
     explicit
     TimeKeeperImpl (beast::Journal j)
         : j_ (j)
+        , closeOffset_ {}
         , clock_ (make_SNTPClock(j))
     {
     }
