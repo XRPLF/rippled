@@ -63,8 +63,7 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
         *this, io_service, deprecatedLogs().journal("Server")))
-    , m_continuation (RPC::callbackOnJobQueue (
-        jobQueue, "RPC-Coroutine", jtCLIENT))
+    , m_jobQueue (jobQueue)
 {
     auto const& group (cm.group ("rpc"));
     rpc_requests_ = group->make_counter ("requests");
@@ -180,24 +179,15 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     auto detach = session.detach();
 
-    if (setup_.yieldStrategy.useCoroutines ==
-        RPC::YieldStrategy::UseCoroutines::yes)
-    {
-        RPC::SuspendCallback suspend (
+    // We can copy `this` because ServerHandlerImp is a long-lasting singleton.
+    auto job = [this, detach] (Job&) {
+        RPC::runOnCoroutine(
+            setup_.yieldStrategy.useCoroutines,
             [this, detach] (RPC::Suspend const& suspend) {
-                processSession (detach, suspend);
+                processSession(detach, suspend);
             });
-        RPC::Coroutine coroutine (suspend);
-        coroutine.run();
-    }
-    else
-    {
-        getApp().getJobQueue().addJob (
-            jtCLIENT, "RPC-Client",
-            [=] (Job&) {
-                processSession (detach, RPC::Suspend());
-            });
-    }
+    };
+    m_jobQueue.addJob(jtCLIENT, "RPC-Client", job);
 }
 
 void
@@ -240,14 +230,8 @@ ServerHandlerImp::processRequest (
     Output&& output,
     Suspend const& suspend)
 {
-    auto yield = RPC::suspendForContinuation (suspend, m_continuation);
-
     // Move off the webserver thread onto the JobQueue.
-    yield();
     assert (getApp().getJobQueue().getJobForThread());
-
-    if (auto count = setup_.yieldStrategy.byteYieldCount)
-        output = RPC::chunkedYieldingOutput (std::move (output), yield, count);
 
     Json::Value jsonRPC;
     {
@@ -267,7 +251,6 @@ ServerHandlerImp::processRequest (
     // VFALCO NOTE Except that "id" isn't included in the following errors.
     //
     Json::Value const& id = jsonRPC ["id"];
-
     Json::Value const& method = jsonRPC ["method"];
 
     if (! method) {
@@ -365,9 +348,11 @@ ServerHandlerImp::processRequest (
         << "doRpcCommand:" << strMethod << ":" << params;
 
     auto const start (std::chrono::high_resolution_clock::now ());
+
     RPC::Context context {
         params, loadType, m_networkOPs, getApp().getLedgerMaster(), role,
-        nullptr, std::move (suspend), std::move (yield)};
+                nullptr, {suspend, "RPC-Coroutine"}};
+
     std::string response;
 
     if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)
@@ -755,11 +740,12 @@ setup_Overlay (ServerHandler::Setup& setup)
 }
 
 ServerHandler::Setup
-setup_ServerHandler (BasicConfig const& config, std::ostream& log)
+setup_ServerHandler(BasicConfig const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
-    setup.ports = detail::parse_Ports (config, log);
-    setup.yieldStrategy = RPC::makeYieldStrategy (config["server"]);
+    setup.ports = detail::parse_Ports(config, log);
+    setup.yieldStrategy = RPC::makeYieldStrategy(config);
+
     detail::setup_Client(setup);
     detail::setup_Overlay(setup);
 

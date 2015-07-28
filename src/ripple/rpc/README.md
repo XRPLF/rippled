@@ -20,7 +20,7 @@ namespace:
     using Callback = std::function <void ()>;
     using Continuation = std::function <void (Callback const&)>;
     using Suspend = std::function <void (Continuation const&)>;
-    using SuspendCallback = std::function <void (Suspend const&)>;
+    using Coroutine = std::function <void (Suspend const&)>;
 
 A `Callback` is a generic 0-argument function. A given `Callback` might or might
 not block. Unless otherwise advised, do not hold locks or any resource that
@@ -36,7 +36,7 @@ A `Suspend` is a function belonging to a `Coroutine`.  A `Suspend` runs a
 `Continuation`, passing it a `Callback` that continues execution of the
 `Coroutine`.
 
-And finally, a `SuspendCallback` is a `std::function` which is given a
+And finally, a `Coroutine` is a `std::function` which is given a
 `Suspend`.  This is what the RPC handler gives to the coroutine manager,
 expecting to get called back with a `Suspend` and to be able to start execution.
 
@@ -47,10 +47,10 @@ straight-forward.
 
 1.  The instance of `ServerHandler` receives an RPC request.
 
-2.  It creates a `SuspendCallback` and gives it to the coroutine manager.
+2.  It creates a `Coroutine` and gives it to the coroutine manager.
 
 3.  The coroutine manager creates a `Coroutine`, starts it up, and then calls
-    the `SuspendCallback` with a `Suspend`.
+    the `Coroutine` with a `Suspend`.
 
 4.  Now the RPC response starts to be calculated.
 

@@ -82,8 +82,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (! context.suspend ||
-        getConfig().RUN_STANDALONE ||
+    if (getConfig().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
@@ -105,15 +104,13 @@ Json::Value doRipplePathFind (RPC::Context& context)
         lpLedger = context.ledgerMaster.getClosedLedger();
 
         PathRequest::pointer request;
-        suspend(context,
-                [&request, &context, &jvResult, &lpLedger]
-                (RPC::Callback const& callback)
+        context.suspend.suspend(
+            [&request, &context, &jvResult, &lpLedger]
+            (RPC::Callback const& callback)
         {
             jvResult = getApp().getPathRequests().makeLegacyPathRequest (
                 request, callback, lpLedger, context.params);
-            assert(callback);
-            if (! request && callback)
-                callback();
+            callback();
         });
 
         if (request)
