@@ -169,6 +169,17 @@ getCandidateLedger (LedgerIndex requested)
     return (requested + 255) & (~255);
 }
 
+/** Return false if the test ledger is provably incompatible
+    with the valid ledger, that is, they could not possibly
+    both be valid. Use the first form if you have both ledgers,
+    use the second form if you have not acquired the valid ledger yet
+*/
+bool areCompatible (ReadView const& validLedger, ReadView const& testLedger,
+    beast::Journal::Stream& s, const char* reason);
+
+bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
+    ReadView const& testLedger, beast::Journal::Stream& s, const char* reason);
+
 //------------------------------------------------------------------------------
 //
 // Modifiers

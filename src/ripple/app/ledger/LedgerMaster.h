@@ -64,6 +64,9 @@ public:
     virtual LedgerIndex getCurrentLedgerIndex () = 0;
     virtual LedgerIndex getValidLedgerIndex () = 0;
 
+    virtual bool isCompatible (Ledger::pointer,
+        beast::Journal::Stream, const char* reason) = 0;
+
     virtual LockType& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in

@@ -1038,6 +1038,14 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     // Tell directly connected peers that we have a new LCL
     statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
 
+    if (mValidating &&
+        ! ledgerMaster_.isCompatible (newLCL,
+            deprecatedLogs().journal("LedgerConsensus").warning,
+            "Not validating"))
+    {
+        mValidating = false;
+    }
+
     if (mValidating && !mConsensusFail)
     {
         // Build validation
