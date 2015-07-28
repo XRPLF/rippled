@@ -78,9 +78,14 @@ private:
 struct YieldStrategy
 {
     enum class Streaming {no, yes};
+    enum class UseCoroutines {no, yes};
 
     /** Is the data streamed, or generated monolithically? */
     Streaming streaming = Streaming::no;
+
+    /** Are results generated in a coroutine?  If this is no, then the code can
+        never yield. */
+    UseCoroutines useCoroutines = UseCoroutines::no;
 
     /** How many bytes do we emit before yielding?  0 means "never yield due to
         number of bytes sent". */

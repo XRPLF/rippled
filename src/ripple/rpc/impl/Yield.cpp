@@ -71,6 +71,9 @@ YieldStrategy makeYieldStrategy (Section const& s)
     ys.streaming = get<bool> (s, "streaming") ?
             YieldStrategy::Streaming::yes :
             YieldStrategy::Streaming::no;
+    ys.useCoroutines = get<bool> (s, "use_coroutines") ?
+            YieldStrategy::UseCoroutines::yes :
+            YieldStrategy::UseCoroutines::no;
     ys.byteYieldCount = get<std::size_t> (s, "byte_yield_count");
     ys.accountYieldCount = get<std::size_t> (s, "account_yield_count");
     ys.transactionYieldCount = get<std::size_t> (s, "transaction_yield_count");

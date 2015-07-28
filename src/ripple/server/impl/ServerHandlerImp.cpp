@@ -180,12 +180,24 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 
     auto detach = session.detach();
 
-    RPC::SuspendCallback suspend (
-        [this, detach] (RPC::Suspend const& suspend) {
-            processSession (detach, suspend);
-        });
-    RPC::Coroutine coroutine (suspend);
-    coroutine.run();
+    if (setup_.yieldStrategy.useCoroutines ==
+        RPC::YieldStrategy::UseCoroutines::yes)
+    {
+        RPC::SuspendCallback suspend (
+            [this, detach] (RPC::Suspend const& suspend) {
+                processSession (detach, suspend);
+            });
+        RPC::Coroutine coroutine (suspend);
+        coroutine.run();
+    }
+    else
+    {
+        getApp().getJobQueue().addJob (
+            jtCLIENT, "RPC-Client",
+            [=] (Job&) {
+                processSession (detach, RPC::Suspend());
+            });
+    }
 }
 
 void
