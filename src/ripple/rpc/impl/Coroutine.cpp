@@ -24,60 +24,56 @@
 
 namespace ripple {
 namespace RPC {
+namespace {
 
 using CoroutineType = Continuation;
-using CoroutinePull = boost::coroutines::coroutine <CoroutineType>::pull_type;
-using CoroutinePush = boost::coroutines::coroutine <CoroutineType>::push_type;
+using BoostCoroutine = boost::coroutines::asymmetric_coroutine<CoroutineType>;
+using Pull = BoostCoroutine::pull_type;
+using Push = BoostCoroutine::push_type;
 
-struct Coroutine::Impl : public std::enable_shared_from_this <Coroutine::Impl>
+void runOnCoroutineImpl(std::shared_ptr<Pull> pull)
 {
-    Impl (CoroutinePull&& pull_) : pull (std::move (pull_))
+    while (*pull)
     {
-    }
+        (*pull)();
 
-    CoroutinePull pull;
+        if (! *pull)
+            return;
 
-    void run()
-    {
-        while (pull)
+        if (auto continuation = pull->get())
         {
-            pull();
-
-            if (! pull)
-                return;
-
-            if (auto continuation = pull.get())
-            {
-                auto that = shared_from_this();
-                continuation ([that] () { that->run(); });
-                return;
-            }
+            continuation ([pull] () { runOnCoroutineImpl(pull); });
+            return;
         }
     }
-};
-
-Coroutine::Coroutine (SuspendCallback const& suspendCallback)
-{
-    CoroutinePull pull ([suspendCallback] (CoroutinePush& push)
-    {
-        Suspend suspend = [&push] (CoroutineType const& cbc) {
-            push (cbc);
-        };
-        suspend ({});
-        suspendCallback (suspend);
-    });
-
-    impl_ = std::make_shared<Impl> (std::move (pull));
 }
 
-Coroutine::~Coroutine() = default;
+} // namespace
 
-void Coroutine::run()
+void runOnCoroutine(Coroutine const& coroutine)
 {
-    assert (impl_);
-    if (impl_)
-        impl_->run();
-    impl_.reset();
+    auto pullFunction = [coroutine] (Push& push) {
+        Suspend suspend = [&push] (CoroutineType const& cbc) {
+            if (push)
+                push (cbc);
+        };
+
+        // Run once doing nothing, to get the other side started.
+        suspend([] (Callback const& callback) { callback(); });
+
+        // Now run the coroutine.
+        coroutine(suspend);
+    };
+
+    runOnCoroutineImpl(std::make_shared<Pull>(pullFunction));
+}
+
+void runOnCoroutine(UseCoroutines useCoroutines, Coroutine const& coroutine)
+{
+    if (useCoroutines == UseCoroutines::yes)
+        runOnCoroutine(coroutine);
+    else
+        coroutine(dontSuspend);
 }
 
 } // RPC

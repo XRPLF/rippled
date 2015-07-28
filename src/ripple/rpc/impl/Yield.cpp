@@ -18,12 +18,41 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/rpc/Yield.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
 
 namespace ripple {
 namespace RPC {
+
+static
+UseCoroutines defaultUseCoroutines = UseCoroutines::no;
+
+Suspend const dontSuspend = [] (Continuation const& continuation)
+{
+    continuation([] () {});
+};
+
+namespace {
+
+void runOnJobQueue(std::string const& name, Callback const& callback)
+{
+    boost::function <void (Job&)> cb([callback] (Job&) { callback(); });
+    getApp().getJobQueue().addJob(jtCLIENT, name, cb);
+};
+
+Callback suspendForJobQueue(Suspend const& suspend, std::string const& jobName)
+{
+    assert(suspend);
+    return Callback( [suspend, jobName] () {
+        suspend([jobName] (Callback const& callback) {
+            runOnJobQueue(jobName, callback);
+        });
+    });
+}
+
+} // namespace
 
 Json::Output chunkedYieldingOutput (
     Json::Output const& output, Callback const& yield, std::size_t chunkSize)
@@ -44,7 +73,6 @@ Json::Output chunkedYieldingOutput (
     };
 }
 
-
 CountedYield::CountedYield (std::size_t yieldCount, Callback const& yield)
         : yieldCount_ (yieldCount), yield_ (yield)
 {
@@ -52,10 +80,7 @@ CountedYield::CountedYield (std::size_t yieldCount, Callback const& yield)
 
 void CountedYield::yield()
 {
-    if (!yield_)
-        return;
-
-    if (yieldCount_)
+    if (yieldCount_ && yield_)
     {
         if (++count_ >= yieldCount_)
         {
@@ -65,28 +90,38 @@ void CountedYield::yield()
     }
 }
 
-YieldStrategy makeYieldStrategy (Section const& s)
+UseCoroutines useCoroutines(BasicConfig const& config)
 {
+    if (auto use = config["section"].get<bool>("use_coroutines"))
+        return *use ? UseCoroutines::yes : UseCoroutines::no;
+    return defaultUseCoroutines;
+}
+
+YieldStrategy makeYieldStrategy (BasicConfig const& config)
+{
+    auto s = config["section"];
     YieldStrategy ys;
     ys.streaming = get<bool> (s, "streaming") ?
             YieldStrategy::Streaming::yes :
             YieldStrategy::Streaming::no;
-    ys.useCoroutines = get<bool> (s, "use_coroutines") ?
-            YieldStrategy::UseCoroutines::yes :
-            YieldStrategy::UseCoroutines::no;
-    ys.byteYieldCount = get<std::size_t> (s, "byte_yield_count");
+    ys.useCoroutines = useCoroutines(config);
     ys.accountYieldCount = get<std::size_t> (s, "account_yield_count");
     ys.transactionYieldCount = get<std::size_t> (s, "transaction_yield_count");
 
     return ys;
 }
 
-Continuation callbackOnJobQueue (
-    JobQueue& jobQueue, std::string const& name, JobType jobType)
+JobQueueSuspender::JobQueueSuspender(
+    Suspend const& susp, std::string const& jobName)
+        : suspend(susp ? susp : dontSuspend),
+          yield(suspendForJobQueue(suspend, jobName))
 {
-    return Continuation ([name, jobType, &jobQueue] (Callback const& cb) {
-        jobQueue.addJob (jobType, name, [cb] (Job&) { cb(); });
-    });
+    // There's a non-empty jobName exactly if there's a non-empty Suspend.
+    assert(!(susp && jobName.empty()));
+}
+
+JobQueueSuspender::JobQueueSuspender() : JobQueueSuspender({}, {})
+{
 }
 
 } // RPC

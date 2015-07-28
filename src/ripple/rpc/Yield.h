@@ -28,6 +28,7 @@
 
 namespace ripple {
 
+class BasicConfig;
 class JobQueue;
 class Section;
 
@@ -37,18 +38,20 @@ namespace RPC {
     the RPC yield mechanism works.
  */
 
-/** Callback: do something and eventually return. */
+/** Callback: do something and eventually return. Can't be empty. */
 using Callback = std::function <void ()>;
 
-/** A non-empty callback that does nothing. */
-static
-Callback const doNothingCallback ([] () {});
-
-/** Continuation: do something, guarantee to eventually call Callback. */
+/** Continuation: do something, guarantee to eventually call Callback.
+    Can't be empty. */
 using Continuation = std::function <void (Callback const&)>;
 
-/** Suspend: suspend execution, pending completion of a Continuation. */
+/** Suspend: suspend execution, pending completion of a Continuation.
+    Can't be empty. */
 using Suspend = std::function <void (Continuation const&)>;
+
+/** A non-empty Suspend that immediately calls its callback. */
+extern
+Suspend const dontSuspend;
 
 /** Wrap an Output so it yields after approximately `chunkSize` bytes.
 
@@ -75,11 +78,12 @@ private:
     Callback const yield_;
 };
 
+enum class UseCoroutines {no, yes};
+
 /** When do we yield when performing a ledger computation? */
 struct YieldStrategy
 {
     enum class Streaming {no, yes};
-    enum class UseCoroutines {no, yes};
 
     /** Is the data streamed, or generated monolithically? */
     Streaming streaming = Streaming::no;
@@ -87,10 +91,6 @@ struct YieldStrategy
     /** Are results generated in a coroutine?  If this is no, then the code can
         never yield. */
     UseCoroutines useCoroutines = UseCoroutines::no;
-
-    /** How many bytes do we emit before yielding?  0 means "never yield due to
-        number of bytes sent". */
-    std::size_t byteYieldCount = 0;
 
     /** How many accounts do we process before yielding?  0 means "never yield
         due to number of accounts processed." */
@@ -101,23 +101,32 @@ struct YieldStrategy
     std::size_t transactionYieldCount = 0;
 };
 
-/** Create a yield strategy from a configuration Section. */
-YieldStrategy makeYieldStrategy (Section const&);
+/** Does a BasicConfig require the use of coroutines? */
+UseCoroutines useCoroutines(BasicConfig const&);
 
-/** Return a continuation that runs a Callback on a Job Queue with a given
-    name and JobType. */
-Continuation callbackOnJobQueue (
-    JobQueue&, std::string const& jobName, JobType);
+/** Create a yield strategy from a BasicConfig. */
+YieldStrategy makeYieldStrategy(BasicConfig const&);
 
-/** Return a Callback that will suspend and then run a continuation. */
-inline
-Callback suspendForContinuation (
-    Suspend const& suspend, Continuation const& continuation)
+/** JobQueueSuspender is a suspend, with a yield that reschedules the job
+    on the job queue. */
+struct JobQueueSuspender
 {
-    return suspend
-            ? Callback ([=] () { suspend (continuation); })
-            : Callback ([=] () { continuation (doNothingCallback); });
-}
+    /** Possibly suspend current execution. */
+    Suspend const suspend;
+
+    /** Possibly yield and restart on the job queue. */
+    Callback const yield;
+
+    /** Create a JobQueueSuspender where yield does nothing and the suspend
+        immediately executes the continuation. */
+    JobQueueSuspender();
+
+    /** Create a JobQueueSuspender with a Suspend.
+
+        When yield is called, it reschedules the current job on the JobQueue
+        with the given jobName. */
+    JobQueueSuspender(Suspend const&, std::string const& jobName);
+};
 
 } // RPC
 } // ripple
