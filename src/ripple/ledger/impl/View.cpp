@@ -308,6 +308,99 @@ rippleTransferRate (ReadView const& view,
 }
 
 bool
+areCompatible (ReadView const& validLedger, ReadView const& testLedger,
+    beast::Journal::Stream& s, const char* reason)
+{
+    bool ret = true;
+
+    if (validLedger.info().seq < testLedger.info().seq)
+    {
+        // valid -> ... -> test
+        auto hash = hashOfSeq (testLedger, validLedger.info().seq,
+            beast::Journal());
+        if (hash && (*hash != validLedger.info().hash))
+        {
+            JLOG(s) << reason << " incompatible with valid ledger";
+
+            JLOG(s) << "Hash(VSeq): " << to_string (*hash);
+
+            ret = false;
+        }
+    }
+    else if (validLedger.info().seq > testLedger.info().seq)
+    {
+        // test -> ... -> valid
+        auto hash = hashOfSeq (validLedger, testLedger.info().seq,
+            beast::Journal());
+        if (hash && (*hash != testLedger.info().hash))
+        {
+            JLOG(s) << reason << " incompatible preceding ledger";
+
+            JLOG(s) << "Hash(NSeq): " << to_string (*hash);
+
+            ret = false;
+        }
+    }
+    else if ((validLedger.info().seq == testLedger.info().seq) &&
+         (validLedger.info().hash != testLedger.info().hash))
+    {
+        // Same sequence number, different hash
+        JLOG(s) << reason << " incompatible ledger";
+
+        ret = false;
+    }
+
+    if (! ret)
+    {
+        JLOG(s) << "Val: " << validLedger.info().seq <<
+            " " << to_string (validLedger.info().hash);
+
+        JLOG(s) << "New: " << testLedger.info().seq <<
+            " " << to_string (testLedger.info().hash);
+    }
+
+    return ret;
+}
+
+bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
+    ReadView const& testLedger, beast::Journal::Stream& s, const char* reason)
+{
+    bool ret = true;
+
+    if (testLedger.info().seq > validIndex)
+    {
+        // Ledger we are testing follows last valid ledger
+        auto hash = hashOfSeq (testLedger, validIndex,
+            beast::Journal());
+        if (hash && (*hash != validHash))
+        {
+            JLOG(s) << reason << " incompatible following ledger";
+            JLOG(s) << "Hash(VSeq): " << to_string (*hash);
+
+            ret = false;
+        }
+    }
+    else if ((validIndex == testLedger.info().seq) &&
+        (testLedger.info().hash != validHash))
+    {
+        JLOG(s) << reason << " incompatible ledger";
+
+        ret = false;
+    }
+
+    if (! ret)
+    {
+        JLOG(s) << "Val: " << validIndex <<
+            " " << to_string (validHash);
+
+        JLOG(s) << "New: " << testLedger.info().seq <<
+            " " << to_string (testLedger.info().hash);
+    }
+
+    return ret;
+}
+
+bool
 dirIsEmpty (ReadView const& view,
     Keylet const& k)
 {

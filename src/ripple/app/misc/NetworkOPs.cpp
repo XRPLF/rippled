@@ -1262,18 +1262,27 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (!switchLedgers)
         return false;
 
+    Ledger::pointer consensus = m_ledgerMaster.getLedgerByHash (closedLedger);
+
+    if (!consensus)
+        consensus = getApp().getInboundLedgers().acquire (
+            closedLedger, 0, InboundLedger::fcCONSENSUS);
+
+    if (consensus &&
+        ! m_ledgerMaster.isCompatible (consensus, m_journal.debug,
+            "Not switching"))
+    {
+        // Don't switch to a ledger not on the validated chain
+        networkClosed = ourClosed->getHash ();
+        return false;
+    }
+
     m_journal.warning << "We are not running on the consensus ledger";
     m_journal.info << "Our LCL: " << getJson (*ourClosed);
     m_journal.info << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))
         setMode (omCONNECTED);
-
-    Ledger::pointer consensus = m_ledgerMaster.getLedgerByHash (closedLedger);
-
-    if (!consensus)
-        consensus = getApp().getInboundLedgers().acquire (
-            closedLedger, 0, InboundLedger::fcCONSENSUS);
 
     if (consensus)
     {

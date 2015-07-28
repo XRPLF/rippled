@@ -76,6 +76,9 @@ public:
     Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
     Ledger::pointer mHistLedger;        // The last ledger we handled fetching history
 
+    // Fully validated ledger, whether or not we have the ledger resident
+    std::pair <uint256, LedgerIndex> mLastValidLedger;
+
     LedgerHistory mLedgerHistory;
 
     CanonicalTXSet mHeldTransactions;
@@ -124,6 +127,7 @@ public:
         beast::insight::Collector::ptr const& collector, beast::Journal journal)
         : LedgerMaster (parent)
         , m_journal (journal)
+        , mLastValidLedger (std::make_pair (uint256(), 0))
         , mLedgerHistory (collector)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (make_LedgerCleaner (
@@ -162,6 +166,31 @@ public:
     LedgerIndex getValidLedgerIndex ()
     {
         return mValidLedgerSeq;
+    }
+
+    bool isCompatible (Ledger::pointer ledger,
+        beast::Journal::Stream s, const char* reason)
+    {
+        auto validLedger = getValidatedLedger();
+
+        if (validLedger &&
+            ! areCompatible (*validLedger, *ledger, s, reason))
+        {
+            return false;
+        }
+
+        {
+            ScopedLockType sl (m_mutex);
+
+            if ((mLastValidLedger.second != 0) &&
+                ! areCompatible (mLastValidLedger.first,
+                    mLastValidLedger.second, *ledger, s, reason))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     int getPublishedLedgerAge ()
@@ -748,10 +777,32 @@ public:
     void checkAccept (uint256 const& hash, std::uint32_t seq)
     {
 
+        int valCount;
+
         if (seq != 0)
         {
             // Ledger is too old
-            if (seq <= mValidLedgerSeq)
+            if (seq < mValidLedgerSeq)
+                return;
+
+            valCount =
+                getApp().getValidations().getTrustedValidationCount (hash);
+
+            if (valCount >= mMinValidations)
+            {
+                ScopedLockType ml (m_mutex);
+                if (seq > mLastValidLedger.second)
+                    mLastValidLedger = std::make_pair (hash, seq);
+
+                if (mMinValidations < (valCount/2 + 1))
+                {
+                    mMinValidations = (valCount/2 + 1);
+                    WriteLog (lsINFO, LedgerMaster)
+                        << "Raising minimum validations to " << mMinValidations;
+                }
+            }
+
+            if (seq == mValidLedgerSeq)
                 return;
 
             // Ledger could match the ledger we're already building
@@ -766,11 +817,8 @@ public:
             if ((seq != 0) && (getValidLedgerIndex() == 0))
             {
                 // Set peers sane early if we can
-                if (getApp().getValidations().getTrustedValidationCount (hash) >=
-                    mMinValidations)
-                {
+                if (valCount >= mMinValidations)
                     getApp().overlay().checkSanity (seq);
-                }
             }
 
             // FIXME: We may not want to fetch a ledger with just one
