@@ -46,10 +46,9 @@ public:
         };
 
         Strings result;
-        SuspendCallback suspendCallback ([&] (Suspend const& suspend)
+        Coroutine coroutine ([&] (Suspend const& suspend)
         {
-            Callback yield = suspendForContinuation (
-                suspend, makeContinuation ("*"));
+            Callback yield ([=] () { suspend (makeContinuation ("*")); });
             auto out = chunkedYieldingOutput (output, yield, chunkSize);
             out ("hello ");
             result.push_back (buffer);
@@ -70,7 +69,7 @@ public:
             result.push_back (buffer);
         });
 
-        Coroutine (suspendCallback).run();
+        runOnCoroutine(UseCoroutines::yes, coroutine);
         expectCollectionEquals (result, expected);
     }
 

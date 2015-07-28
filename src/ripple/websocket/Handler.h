@@ -56,6 +56,7 @@ beast::IP::Endpoint makeBeastEndpoint (beast::IP::Endpoint const& e)
     return e;
 }
 
+
 template <class WebSocket>
 class HandlerImpl
     : public WebSocket::Handler
@@ -293,7 +294,14 @@ public:
         getApp().getJobQueue ().addJob (
             jtCLIENT,
             "WSClient::destroy",
-            std::bind (&ConnectionImpl <WebSocket>::destroy, ptr));
+            [ptr] (Job&) { ConnectionImpl <WebSocket>::destroy(ptr); });
+    }
+
+    void message_job(std::string const& name,
+                     connection_ptr const& cpClient)
+    {
+        auto msgs = [this, cpClient] (Job& j) { do_messages(j, cpClient); };
+        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::" + name, msgs);
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage) override
@@ -327,9 +335,7 @@ public:
         }
 
         if (bRunQ)
-            getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
-                      std::bind (&HandlerImpl <WebSocket>::do_messages,
-                                 this, std::placeholders::_1, cpClient));
+            message_job("command", cpClient);
     }
 
     void do_messages (Job& job, connection_ptr const& cpClient)
@@ -364,17 +370,14 @@ public:
         }
 
         if (ptr->checkMessage ())
-            getApp().getJobQueue ().addJob (
-                jtCLIENT, "WSClient::more",
-                std::bind (&HandlerImpl <WebSocket>::do_messages, this,
-                           std::placeholders::_1, cpClient));
+            message_job("more", cpClient);
     }
 
     bool do_message (Job& job, const connection_ptr& cpClient,
                      const wsc_ptr& conn, const message_ptr& mpMessage)
     {
-        Json::Value     jvRequest;
-        Json::Reader    jrReader;
+        Json::Value jvRequest;
+        Json::Reader jrReader;
 
         try
         {
@@ -414,19 +417,38 @@ public:
             {
                 Json::Value& jCmd = jvRequest[jss::command];
                 if (jCmd.isString())
-                    job.rename (std::string ("WSClient::") + jCmd.asString());
+                    job.rename ("WSClient::" + jCmd.asString());
             }
 
-            auto const start (std::chrono::high_resolution_clock::now ());
-            Json::Value const jvObj (conn->invokeCommand (jvRequest));
-            std::string const buffer (to_string (jvObj));
+            auto const start = std::chrono::high_resolution_clock::now ();
+
+            struct HandlerCoroutineData
+            {
+                Json::Value jvRequest;
+                std::string buffer;
+                wsc_ptr conn;
+            };
+
+            auto data = std::make_shared<HandlerCoroutineData>();
+            data->jvRequest = std::move(jvRequest);
+            data->conn = conn;
+
+            auto coroutine = [data] (RPC::Suspend const& suspend) {
+                data->buffer = to_string(
+                    data->conn->invokeCommand(data->jvRequest, suspend));
+            };
+            static auto const disableWebsocketsCoroutines = true;
+            auto useCoroutines = disableWebsocketsCoroutines ?
+                    RPC::UseCoroutines::no : RPC::useCoroutines(desc_.config);
+            runOnCoroutine(useCoroutines, coroutine);
+
             rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
                 std::chrono::duration_cast <std::chrono::milliseconds> (
                     std::chrono::high_resolution_clock::now () - start)));
             ++rpc_requests_;
             rpc_size_.notify (static_cast <beast::insight::Event::value_type>
-                (buffer.size ()));
-            send (cpClient, buffer, false);
+                (data->buffer.size()));
+            send (cpClient, data->buffer, false);
         }
 
         return true;

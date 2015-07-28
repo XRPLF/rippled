@@ -25,27 +25,15 @@
 namespace ripple {
 namespace RPC {
 
-/** SuspendCallback: a function that a Coroutine gives to the coroutine
-    scheduler so that it gets a callback with a Suspend when it runs.
- */
-using SuspendCallback = std::function <void (Suspend const&)>;
+/** Coroutine is a function that is given to the coroutine scheduler which
+    later gets called with a Suspend.  A Coroutine can't be empty. */
+using Coroutine = std::function <void (Suspend const&)>;
 
-/** Runs a function that takes a SuspendCallback as a coroutine. */
-class Coroutine
-{
-public:
-    explicit Coroutine (SuspendCallback const&);
-    ~Coroutine();
+/** Run as a coroutine. */
+void runOnCoroutine(Coroutine const&);
 
-    /** Run the coroutine and guarantee completion. */
-    void run ();
-
-private:
-    struct Impl;
-    std::shared_ptr <Impl> impl_;
-
-    Coroutine (std::shared_ptr <Impl> const&);
-};
+/** Run as coroutine if UseCoroutines::yes, otherwise run immediately. */
+void runOnCoroutine(UseCoroutines, Coroutine const&);
 
 } // RPC
 } // ripple

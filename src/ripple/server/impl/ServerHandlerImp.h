@@ -39,8 +39,8 @@ private:
     beast::Journal m_journal;
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
-    RPC::Continuation m_continuation;
     Setup setup_;
+    JobQueue& m_jobQueue;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_io_;
     beast::insight::Event rpc_size_;
