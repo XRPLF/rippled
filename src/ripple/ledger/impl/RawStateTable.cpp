@@ -24,6 +24,134 @@
 namespace ripple {
 namespace detail {
 
+class RawStateTable::sles_iter_impl
+    : public ReadView::sles_type::iter_base
+{
+private:
+    std::shared_ptr<SLE const> sle0_;
+    ReadView::sles_type::iterator iter0_;
+    ReadView::sles_type::iterator end0_;
+    std::shared_ptr<SLE const> sle1_;
+    items_t::const_iterator iter1_;
+    items_t::const_iterator end1_;
+
+public:
+    sles_iter_impl (sles_iter_impl const&) = default;
+
+    sles_iter_impl (items_t::const_iterator iter1,
+        items_t::const_iterator end1,
+            ReadView::sles_type::iterator iter0,
+                ReadView::sles_type::iterator base0)
+        : iter0_ (iter0)
+        , end0_ (base0)
+        , iter1_ (iter1)
+        , end1_ (end1)
+    {
+        if (iter0_ != end0_)
+            sle0_ = *iter0_;
+        if (iter1_ != end1)
+        {
+            sle1_ = iter1_->second.second;
+            skip ();
+        }
+    }
+
+    std::unique_ptr<base_type>
+    copy() const override
+    {
+        return std::make_unique<sles_iter_impl>(*this);
+    }
+
+    bool
+    equal (base_type const& impl) const override
+    {
+        auto const& other = dynamic_cast<
+            sles_iter_impl const&>(impl);
+        assert(end1_ == other.end1_ &&
+            end0_ == other.end0_);
+        return iter1_ == other.iter1_ &&
+            iter0_ == other.iter0_;
+    }
+
+    void
+    increment() override
+    {
+        assert (sle1_ || sle0_);
+
+        if (sle1_ && !sle0_)
+        {
+            inc1();
+            return;
+        }
+
+        if (sle0_ && !sle1_)
+        {
+            inc0();
+            return;
+        }
+
+        if (sle1_->key () == sle0_->key())
+        {
+            inc1();
+            inc0();
+        }
+        else if (sle1_->key () < sle0_->key())
+        {
+            inc1();
+        }
+        else
+        {
+            inc0();
+        }
+        skip();
+    }
+
+    value_type
+    dereference() const override
+    {
+        if (! sle1_)
+            return sle0_;
+        else if (! sle0_)
+            return sle1_;
+        if (sle1_->key() <= sle0_->key())
+            return sle1_;
+        return sle0_;
+    }
+private:
+    void inc0()
+    {
+        ++iter0_;
+        if (iter0_ == end0_)
+            sle0_ = nullptr;
+        else
+            sle0_ = *iter0_;
+    }
+    
+    void inc1()
+    {
+        ++iter1_;
+        if (iter1_ == end1_)
+            sle1_ = nullptr;
+        else
+            sle1_ = iter1_->second.second;
+    }
+    
+    void skip()
+    {
+        while (iter1_ != end1_ &&
+            iter1_->second.first == Action::erase &&
+               sle0_->key() == sle1_->key())
+        {
+            inc1();
+            inc0();
+            if (! sle0_)
+                return;
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
+
 // Base invariants are checked by the base during apply()
 
 void
@@ -208,6 +336,22 @@ void
 RawStateTable::destroyXRP(std::uint64_t feeDrops)
 {
     dropsDestroyed_ += feeDrops;
+}
+
+std::unique_ptr<ReadView::sles_type::iter_base>
+RawStateTable::slesBegin (ReadView const& base) const
+{
+    return std::make_unique<sles_iter_impl>(
+        items_.begin(), items_.end(),
+            base.sles.begin(), base.sles.end());
+}
+
+std::unique_ptr<ReadView::sles_type::iter_base>
+RawStateTable::slesEnd (ReadView const& base) const
+{
+    return std::make_unique<sles_iter_impl>(
+        items_.end(), items_.end(),
+            base.sles.end(), base.sles.end());
 }
 
 } // detail

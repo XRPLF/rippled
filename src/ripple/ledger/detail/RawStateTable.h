@@ -77,6 +77,12 @@ public:
     void
     destroyXRP (std::uint64_t feeDrops);
 
+    std::unique_ptr<ReadView::sles_type::iter_base>
+    slesBegin (ReadView const& base) const;
+
+    std::unique_ptr<ReadView::sles_type::iter_base>
+    slesEnd (ReadView const& base) const;
+
 private:
     enum class Action
     {
@@ -84,6 +90,8 @@ private:
         insert,
         replace,
     };
+
+    class sles_iter_impl;
 
     using items_t = std::map<key_type,
         std::pair<Action, std::shared_ptr<SLE>>>;

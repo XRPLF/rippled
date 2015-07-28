@@ -25,8 +25,6 @@ namespace ripple {
 
 open_ledger_t const open_ledger {};
 
-//------------------------------------------------------------------------------
-
 class OpenView::txs_iter_impl
     : public txs_type::iter_base
 {
@@ -170,14 +168,14 @@ auto
 OpenView::slesBegin() const ->
     std::unique_ptr<sles_type::iter_base>
 {
-    return base_->slesBegin();
+    return items_.slesBegin(*base_);
 }
 
 auto
 OpenView::slesEnd() const ->
     std::unique_ptr<sles_type::iter_base>
 {
-    return base_->slesEnd();
+    return items_.slesEnd(*base_);
 }
 
 auto
