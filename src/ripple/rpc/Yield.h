@@ -40,8 +40,9 @@ namespace RPC {
 /** Callback: do something and eventually return. */
 using Callback = std::function <void ()>;
 
+/** A non-empty callback that does nothing. */
 static
-Callback const emptyCallback ([] () {});
+Callback const doNothingCallback ([] () {});
 
 /** Continuation: do something, guarantee to eventually call Callback. */
 using Continuation = std::function <void (Callback const&)>;
@@ -115,7 +116,7 @@ Callback suspendForContinuation (
 {
     return suspend
             ? Callback ([=] () { suspend (continuation); })
-            : emptyCallback;
+            : Callback ([=] () { continuation (doNothingCallback); });
 }
 
 } // RPC
