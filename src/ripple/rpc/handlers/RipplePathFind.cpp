@@ -104,13 +104,15 @@ Json::Value doRipplePathFind (RPC::Context& context)
         lpLedger = context.ledgerMaster.getClosedLedger();
 
         PathRequest::pointer request;
-        context.suspend ([&request, &context, &jvResult, &lpLedger]
-                         (RPC::Callback const& c)
+        suspend(context,
+                [&request, &context, &jvResult, &lpLedger]
+                (RPC::Callback const& callback)
         {
             jvResult = getApp().getPathRequests().makeLegacyPathRequest (
-                request, c, lpLedger, context.params);
-            if (! request)
-                c();
+                request, callback, lpLedger, context.params);
+            assert(callback);
+            if (! request && callback)
+                callback();
         });
 
         if (request)

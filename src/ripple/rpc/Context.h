@@ -47,6 +47,15 @@ struct Context
     NodeStore::ScopedMetrics metrics;
 };
 
+inline
+void suspend(Context const& context, Continuation const& continuation)
+{
+    if (context.suspend)
+        context.suspend(continuation);
+    else
+        continuation(doNothingCallback);
+}
+
 } // RPC
 } // ripple
 
