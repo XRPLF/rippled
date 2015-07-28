@@ -366,10 +366,8 @@ public:
 
     /** Iterable range of ledger state items.
 
-        Visiting each state entry in the ledger can be
-        quite expensive. This will only visit entries in
-        the base ledger. Entries in open views, apply
-        views, or sandboxes will not be visited.
+        @note Visiting each state entry in the ledger can
+              become quite expensive as the ledger grows.
     */
     sles_type sles;
 

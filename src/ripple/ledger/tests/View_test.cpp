@@ -146,8 +146,8 @@ class View_test
     void
     testLedger()
     {
-        Config const config;
         using namespace jtx;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
                 create_genesis, config);
@@ -385,6 +385,101 @@ class View_test
         }
     }
 
+    // Return a list of keys found via sles
+    static
+    std::vector<uint256>
+    sles (ReadView const& ledger)
+    {
+        std::vector<uint256> v;
+        v.reserve (32);
+        for(auto const& sle : ledger.sles)
+            v.push_back(sle->key());
+        return v;
+    }
+
+    template <class... Args>
+    static
+    std::vector<uint256>
+    list (Args... args)
+    {
+        return std::vector<uint256> ({uint256(args)...});
+    }
+
+    void
+    testSles()
+    {
+        using namespace jtx;
+        Config const config;
+        std::shared_ptr<Ledger const> const genesis =
+            std::make_shared<Ledger> (
+                create_genesis, config);
+        auto const ledger =
+            std::make_shared<Ledger> (
+                open_ledger, *genesis);
+        auto setup123 = [&ledger, this]()
+        {
+            // erase middle element
+            wipe (*ledger);
+            ledger->rawInsert (sle (1));
+            ledger->rawInsert (sle (2));
+            ledger->rawInsert (sle (3));
+            expect (sles (*ledger) == list (1, 2, 3));
+        };
+        {
+            setup123 ();
+            OpenView view (ledger.get ());
+            view.rawErase (sle (1));
+            view.rawInsert (sle (4));
+            view.rawInsert (sle (5));
+            expect (sles (view) == list (2, 3, 4, 5));
+        }
+        {
+            setup123 ();
+            OpenView view (ledger.get ());
+            view.rawErase (sle (1));
+            view.rawErase (sle (2));
+            view.rawInsert (sle (4));
+            view.rawInsert (sle (5));
+            expect (sles (view) == list (3, 4, 5));
+        }
+        {
+            setup123 ();
+            OpenView view (ledger.get ());
+            view.rawErase (sle (1));
+            view.rawErase (sle (2));
+            view.rawErase (sle (3));
+            view.rawInsert (sle (4));
+            view.rawInsert (sle (5));
+            expect (sles (view) == list (4, 5));
+        }
+        {
+            setup123 ();
+            OpenView view (ledger.get ());
+            view.rawErase (sle (3));
+            view.rawInsert (sle (4));
+            view.rawInsert (sle (5));
+            expect (sles (view) == list (1, 2, 4, 5));
+        }
+        {
+            setup123 ();
+            OpenView view (ledger.get ());
+            view.rawReplace (sle (1, 10));
+            view.rawReplace (sle (3, 30));
+            expect (sles (view) == list (1, 2, 3));
+            expect (seq (view.read(k (1))) == 10);
+            expect (seq (view.read(k (2))) == 1);
+            expect (seq (view.read(k (3))) == 30);
+
+            view.rawErase (sle (3));
+            expect (sles (view) == list (1, 2));
+
+            view.rawInsert (sle (5));
+            view.rawInsert (sle (4));
+            view.rawInsert (sle (3));
+            expect (sles (view) == list (1, 2, 3, 4, 5));
+        }
+    }
+
     void
     testRegressions()
     {
@@ -424,7 +519,7 @@ class View_test
         testMetaSucc();
         testStacked();
         testContext();
-
+        testSles();
         testRegressions();
     }
 };
