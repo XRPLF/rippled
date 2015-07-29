@@ -22,6 +22,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
 #include <beast/http/URL.h>
@@ -553,6 +554,12 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
         DEBUG_LOGFILE       = strTemp;
+
+    {
+        auto const part = section("features");
+        for(auto const& s : part.values())
+            features.insert(feature(s));
+    }
 }
 
 int Config::getSize (SizedItemName item) const

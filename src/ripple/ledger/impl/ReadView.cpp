@@ -86,11 +86,15 @@ Rules::Rules (DigestAwareReadView const& ledger)
 }
 
 bool
-Rules::enabled (uint256 const& feature) const
+Rules::enabled (uint256 const& id,
+    std::unordered_set<uint256,
+        beast::uhash<>> const& presets) const
 {
+    if (presets.count(id) > 0)
+        return true;
     if (! impl_)
         return false;
-    return impl_->enabled(feature);
+    return impl_->enabled(id);
 }
 
 bool

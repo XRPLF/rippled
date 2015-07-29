@@ -86,8 +86,8 @@ preflight (Rules const& rules, STTx const& tx,
 {
     try
     {
-        PreflightContext pfctx(
-            tx, rules, flags, verify, j);
+        PreflightContext pfctx(tx,
+            rules, flags, verify, config, j);
         return invoke_preflight(pfctx);
     }
     catch (std::exception const& e)
