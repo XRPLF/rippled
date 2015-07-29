@@ -40,7 +40,7 @@ struct varint;
 // possible size of T represented as varint.
 // T must be unsigned
 template <class T,
-    bool = std::is_unsigned<T>::value> 
+    bool = std::is_unsigned<T>::value>
 struct varint_traits;
 
 template <class T>

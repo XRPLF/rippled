@@ -21,7 +21,7 @@
 #define BEAST_UTILITY_DEBUG_H_INCLUDED
 
 #include <beast/strings/String.h>
-    
+
 namespace beast {
 
 // Auxiliary outines for debugging

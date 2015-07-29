@@ -136,7 +136,7 @@ private:
         AccountID const& account,
         Currency const& currency,
         AccountID const& issuer);
-    
+
     Json::Value getJson () const;
 
 private:
@@ -157,7 +157,7 @@ private:
     bool allLiquidityConsumed_ = false;
 
     TER terStatus;
-    
+
     path::Node::List nodes_;
 
     // When processing, don't want to complicate directory walking with

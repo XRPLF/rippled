@@ -175,7 +175,7 @@ public:
         /** Returns `true` if sink logs anything at this stream's severity. */
         /** @{ */
         bool active() const;
-        
+
         explicit
         operator bool() const
         {

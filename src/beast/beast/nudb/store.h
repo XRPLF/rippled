@@ -62,7 +62,7 @@ namespace nudb {
 /*
 
     TODO
-    
+
     - fingerprint / checksum on log records
 
     - size field at end of data records
@@ -550,7 +550,7 @@ store<Hasher, Codec, File>::fetch (
             if (item.hash != h)
                 break;
             // Data Record
-            auto const len = 
+            auto const len =
                 s_->kh.key_size +       // Key
                 item.size;              // Value
             buf0.reserve(len);

@@ -145,7 +145,7 @@ public:
     */
     inline explicit GenericScopedUnlock (LockType& lock) noexcept
         : lock_ (lock)
-    { 
+    {
         lock.unlock();
     }
 

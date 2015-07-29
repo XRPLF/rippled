@@ -24,7 +24,7 @@
 
 namespace beast {
 namespace insight {
-    
+
 /** A Collector which does not collect metrics. */
 class NullCollector : public Collector
 {

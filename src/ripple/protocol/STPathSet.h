@@ -268,7 +268,7 @@ public:
 
     bool
     isEquivalent (const STBase& t) const override;
-    
+
     bool
     isDefault () const override
     {

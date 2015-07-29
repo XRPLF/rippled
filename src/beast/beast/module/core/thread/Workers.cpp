@@ -129,7 +129,7 @@ void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
 
         if (worker != nullptr)
         {
-            // This call blocks until the thread orderly exits 
+            // This call blocks until the thread orderly exits
             delete worker;
         }
         else

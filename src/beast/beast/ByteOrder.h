@@ -194,7 +194,7 @@ namespace detail
 {
 
 /** Specialized helper class template for swapping bytes.
-    
+
     Normally you won't use this directly, use the helper function
     byteSwap instead. You can specialize this class for your
     own user defined types, as was done for uint24.
@@ -204,7 +204,7 @@ namespace detail
 template <typename IntegralType>
 struct SwapBytes
 {
-    inline IntegralType operator() (IntegralType value) const noexcept 
+    inline IntegralType operator() (IntegralType value) const noexcept
     {
         return ByteOrder::swap (value);
     }
@@ -215,7 +215,7 @@ struct SwapBytes
 template <>
 struct SwapBytes <std::int16_t>
 {
-    inline std::int16_t operator() (std::int16_t value) const noexcept 
+    inline std::int16_t operator() (std::int16_t value) const noexcept
     {
         return static_cast <std::int16_t> (ByteOrder::swap (static_cast <std::uint16_t> (value)));
     }
@@ -224,7 +224,7 @@ struct SwapBytes <std::int16_t>
 template <>
 struct SwapBytes <std::int32_t>
 {
-    inline std::int32_t operator() (std::int32_t value) const noexcept 
+    inline std::int32_t operator() (std::int32_t value) const noexcept
     {
         return static_cast <std::int32_t> (ByteOrder::swap (static_cast <std::uint32_t> (value)));
     }
@@ -233,7 +233,7 @@ struct SwapBytes <std::int32_t>
 template <>
 struct SwapBytes <std::int64_t>
 {
-    inline std::int64_t operator() (std::int64_t value) const noexcept 
+    inline std::int64_t operator() (std::int64_t value) const noexcept
     {
         return static_cast <std::int64_t> (ByteOrder::swap (static_cast <std::uint64_t> (value)));
     }

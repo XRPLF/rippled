@@ -206,7 +206,7 @@ class spooky
 private:
     SpookyHash state_;
 
-public: 
+public:
     static beast::endian const endian = beast::endian::native;
 
     spooky(std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
@@ -429,9 +429,9 @@ public:
     {
         auto const start (
             std::chrono::high_resolution_clock::now());
-        
+
         auto const hashes (make_hashes <Hasher> (keys));
-        
+
         results.elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (
             std::chrono::high_resolution_clock::now() - start);
 

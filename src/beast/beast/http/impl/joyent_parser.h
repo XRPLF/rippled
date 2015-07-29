@@ -25,7 +25,7 @@
 // TODO Use <system_error>
 #include <boost/system/error_code.hpp>
 
-// Wraps the C-language joyent http parser header in a namespace 
+// Wraps the C-language joyent http parser header in a namespace
 
 namespace beast {
 namespace joyent {

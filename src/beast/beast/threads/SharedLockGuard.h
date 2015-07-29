@@ -23,7 +23,7 @@
 namespace beast
 {
 
-/** A scoped container that acquires a shared lock. */   
+/** A scoped container that acquires a shared lock. */
 template <typename Mutex>
 class SharedLockGuard
 {

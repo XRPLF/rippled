@@ -70,7 +70,7 @@ bool chopUInt (int& value, int limit, std::string& input)
     auto left_iter = std::find_if_not (input.begin (), input.end (),
         [](std::string::value_type c)
         {
-            return std::isdigit (c, std::locale::classic()); 
+            return std::isdigit (c, std::locale::classic());
         });
 
     std::string item (input.begin (), left_iter);
@@ -163,7 +163,7 @@ bool SemanticVersion::parse (std::string const& input, bool debug)
     auto left_iter = std::find_if_not (input.begin (), input.end (),
         [](std::string::value_type c)
         {
-            return std::isspace (c, std::locale::classic()); 
+            return std::isspace (c, std::locale::classic());
         });
 
     auto right_iter = std::find_if_not (input.rbegin (), input.rend (),

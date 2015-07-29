@@ -60,7 +60,6 @@ doapply(OpenView& view, STTx const& tx,
 /** Apply a transaction to a ReadView.
 
     Throws:
-        
         Does not throw.
 
         For open ledgers, the Transactor will catch and

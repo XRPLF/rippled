@@ -66,7 +66,7 @@ public:
     {
         return STI_VECTOR256;
     }
-    
+
     void
     add (Serializer& s) const override;
 
@@ -75,7 +75,7 @@ public:
 
     bool
     isEquivalent (const STBase& t) const override;
-    
+
     bool
     isDefault () const override
     {

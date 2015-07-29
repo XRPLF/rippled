@@ -900,7 +900,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
 
     auto db = getApp().getWalletDB ().checkoutDb ();
 
-    
+
     std::vector<std::array<boost::optional<std::string>, 2>> columns;
     selectBlobsIntoStrings(*db,
                            "SELECT PublicKey, Comment FROM TrustedNodes;",
@@ -986,7 +986,7 @@ bool UniqueNodeListImp::miscLoad()
 
     if (!db->got_data() )
         return false;
-    
+
     mtpFetchUpdated = ptFromSeconds (fuO.value_or(-1));
     mtpScoreUpdated = ptFromSeconds (suO.value_or(-1));
 
@@ -1147,7 +1147,7 @@ void UniqueNodeListImp::scoreCompute()
             std::string const strSource = strArray[2].value_or("");
 
             assert (!strSource.empty ());
-            
+
             int         const iScore       = iSourceScore (static_cast<ValidatorSource> (strSource[0]));
             auto siOld   = umPulicIdx.find (strPublicKey);
 
@@ -1269,7 +1269,7 @@ void UniqueNodeListImp::scoreCompute()
         for(auto const& strArray : columns)
         {
             strReferral = strArray[0].value_or("");
-            
+
             int         iReferral;
 
             RippleAddress       na;
@@ -1372,7 +1372,7 @@ void UniqueNodeListImp::scoreCompute()
         for(auto const& col : columns)
         {
             pk = get<0>(col).value_or ("");
-            
+
             vsnNodes[umPulicIdx[pk]].iSeen   = get<1>(col).value_or (-1);
         }
     }

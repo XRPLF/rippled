@@ -186,7 +186,7 @@ private:
             ApplyFlags flags, IHashRouter& router,
                 Config const& config, beast::Journal j);
 
-public:    
+public:
     //--------------------------------------------------------------------------
     //
     // TEST CODE

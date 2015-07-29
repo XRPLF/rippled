@@ -66,7 +66,7 @@ struct api
             dat_path, key_path, log_path,
                 appnum, salt, key_size, block_size,
                     load_factor, args...);
-    }               
+    }
 
     template <class... Args>
     static
@@ -91,7 +91,7 @@ struct api
         return nudb::verify<Hasher>(
             dat_path, key_path, BufferSize);
     }
-    
+
     template <class Function>
     static
     bool

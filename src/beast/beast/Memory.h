@@ -25,7 +25,7 @@
 #define BEAST_MEMORY_H_INCLUDED
 
 #include <cstring>
-    
+
 #include <beast/Config.h>
 
 namespace beast {
@@ -86,7 +86,7 @@ Type* createCopyIfNotNull (const Type* pointer)
 
     ScopedAutoReleasePool(ScopedAutoReleasePool const&) = delete;
     ScopedAutoReleasePool& operator= (ScopedAutoReleasePool const&) = delete;
-    
+
  private:
      void* pool;
  };

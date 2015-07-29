@@ -196,7 +196,7 @@ public:
         log <<
             "_DEBUG                           = " <<
             String::fromNumber (envDebug ());
-        
+
         log <<
             "BEAST_DEBUG                      = " <<
             String::fromNumber (beastDebug ());

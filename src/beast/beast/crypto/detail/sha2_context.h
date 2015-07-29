@@ -34,7 +34,7 @@ namespace detail {
 /*
  * Updated to C++, zedwood.com 2012
  * Based on Olivier Gay's version
- * See Modified BSD License below: 
+ * See Modified BSD License below:
  *
  * FIPS 180-2 SHA-224/256/384/512 implementation
  * Issue date:  04/30/2005
@@ -83,7 +83,7 @@ struct sha512_context
 {
     static unsigned int const block_size = 128;
     static unsigned int const digest_size = 64;
- 
+
     unsigned int tot_len;
     unsigned int len;
     unsigned char block[2 * block_size];
@@ -369,7 +369,7 @@ void init (sha512_context& ctx) noexcept
     ctx.h[3] = 0xa54ff53a5f1d36f1ULL;
     ctx.h[4] = 0x510e527fade682d1ULL;
     ctx.h[5] = 0x9b05688c2b3e6c1fULL;
-    ctx.h[6] = 0x1f83d9abfb41bd6bULL; 
+    ctx.h[6] = 0x1f83d9abfb41bd6bULL;
     ctx.h[7] = 0x5be0cd19137e2179ULL;
 }
 

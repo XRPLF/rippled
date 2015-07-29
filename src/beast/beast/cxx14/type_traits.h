@@ -90,7 +90,7 @@ template <class T>
 using add_volatile_t    = typename add_volatile<T>::type;  // C++14
 template <class T>
 using add_cv_t          = typename add_cv<T>::type;  // C++14
-  
+
 // reference modifications:
 template <class T>
 using remove_reference_t     = typename remove_reference<T>::type;  // C++14
@@ -98,13 +98,13 @@ template <class T>
 using add_lvalue_reference_t = typename add_lvalue_reference<T>::type;  // C++14
 template <class T>
 using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;  // C++14
-  
+
 // sign modifications:
 template <class T>
 using make_signed_t   = typename make_signed<T>::type;  // C++14
 template <class T>
 using make_unsigned_t = typename make_unsigned<T>::type;  // C++14
-  
+
 // array modifications:
 template <class T>
 using remove_extent_t      = typename remove_extent<T>::type;  // C++14

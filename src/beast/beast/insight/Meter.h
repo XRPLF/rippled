@@ -29,7 +29,7 @@ namespace beast {
 namespace insight {
 
 /** A metric for measuring an integral value.
-    
+
     A meter may be thought of as an increment-only counter.
 
     This is a lightweight reference wrapper which is cheap to copy and assign.

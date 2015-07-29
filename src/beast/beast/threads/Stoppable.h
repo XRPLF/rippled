@@ -64,7 +64,7 @@ class RootStoppable;
         This override is called for all Stoppable objects in the hierarchy
         during the prepare stage. It is guaranteed that all child Stoppable
         objects have already been prepared when this is called.
-        
+
         Objects are called children first.
 
     4.  start()
@@ -127,7 +127,7 @@ class RootStoppable;
         funtion areChildrenStopped() can be used after children have stopped,
         but before the Stoppable logic itself has stopped, to determine if the
         stoppable's logic is a true stop.
-        
+
         Pseudo code for this process is as follows:
 
         @code
@@ -236,7 +236,7 @@ private:
         onStop and onChildrenStopped will never be called concurrently, across
         all Stoppable objects descended from the same root, inclusive of the
         root.
-        
+
         It is safe to call isStopping, isStopped, and  areChildrenStopped from
         within this function; The values returned will always be valid and never
         change during the callback.

@@ -29,7 +29,7 @@ namespace beast {
 namespace insight {
 
 /** A metric for measuring an integral value.
-    
+
     A counter is a gauge calculated at the server. The owner of the counter
     may increment and decrement the value by an amount.
 

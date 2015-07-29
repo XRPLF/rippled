@@ -70,7 +70,7 @@ struct WebSocket02
     HandlerPtr makeHandler (ServerDescription const&);
 
     /** Make a connection endpoint from a handler. */
-    static 
+    static
     EndpointPtr makeEndpoint (HandlerPtr&&);
 
     /** Get the ASIO strand that this connection lives on. */

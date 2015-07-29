@@ -97,7 +97,7 @@ public:
         @return `true` If the peer was added
     */
     bool insert (Peer::ptr const&);
-    
+
     virtual bool isDone () const
     {
         return mComplete || mFailed;

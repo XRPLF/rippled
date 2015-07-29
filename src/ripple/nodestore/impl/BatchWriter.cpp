@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/nodestore/impl/BatchWriter.h>
-    
+
 namespace ripple {
 namespace NodeStore {
 

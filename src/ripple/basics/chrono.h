@@ -40,7 +40,7 @@ using weeks = std::chrono::duration
         days::period, std::ratio<7>>>;
 
 /** Clock for measuring Ripple Network Time.
-  
+
     The epoch is January 1, 2000
 */
 // VFALCO TODO Finish the implementation and make

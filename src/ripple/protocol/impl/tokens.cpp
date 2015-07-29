@@ -157,7 +157,7 @@ encodeBase58(
         Wallet Seed
         Account Public Key
         Account ID
-    
+
     @param temp A pointer to storage of not
                 less than 2*(size+6) bytes
 */

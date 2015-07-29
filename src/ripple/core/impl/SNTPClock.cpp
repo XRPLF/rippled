@@ -183,7 +183,7 @@ public:
             return when;
         return when + std::chrono::seconds(offset_);
     }
-    
+
     duration
     offset() const override
     {
@@ -198,7 +198,7 @@ public:
         setCallingThreadName("SNTPClock");
         io_service_.run();
     }
-  
+
     void
     onTimer (error_code const& ec)
     {
