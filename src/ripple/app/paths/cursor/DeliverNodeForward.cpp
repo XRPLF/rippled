@@ -83,7 +83,7 @@ TER PathCursor::deliverNodeForward (
             bool noFee = isXRP (previousNode().issue_)
                 || uInAccountID == previousNode().issue_.account
                 || node().offerOwnerAccount_ == previousNode().issue_.account;
-            const STAmount saInFeeRate = noFee ? saOne
+            const STAmount saInFeeRate = noFee ? STAmount::saOne
                 : previousNode().transferRate_;  // Transfer rate of issuer.
 
             // First calculate assuming no output fees: saInPassAct,

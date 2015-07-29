@@ -43,7 +43,7 @@ void DeferredCredits::credit (AccountID const& sender,
     using std::get;
 
     assert (sender != receiver);
-    assert (!amount.negative ());
+    assert (!amount.negative());
 
     auto const k = makeKey (sender, receiver, amount.getCurrency ());
     auto i = map_.find (k);

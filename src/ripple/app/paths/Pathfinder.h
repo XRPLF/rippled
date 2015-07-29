@@ -37,23 +37,15 @@ namespace ripple {
 class Pathfinder
 {
 public:
-    /** Construct a pathfinder with an issuer.*/
-    Pathfinder (
-        RippleLineCache::ref cache,
-        AccountID const& srcAccount,
-        AccountID const& dstAccount,
-        Currency const& uSrcCurrency,
-        AccountID const& uSrcIssuer,
-        STAmount const& dstAmount);
-
     /** Construct a pathfinder without an issuer.*/
     Pathfinder (
         RippleLineCache::ref cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
         Currency const& uSrcCurrency,
-        STAmount const& dstAmount);
-
+        boost::optional<AccountID> const& uSrcIssuer,
+        STAmount const& dstAmount,
+        boost::optional<STAmount> const& srcAmount);
     ~Pathfinder();
 
     static void initPathTable ();
@@ -68,10 +60,11 @@ public:
        On return, if fullLiquidityPath is not empty, then it contains the best
        additional single path which can consume all the liquidity.
     */
-    STPathSet getBestPaths (
+    STPathSet
+    getBestPaths (
         int maxPaths,
         STPath& fullLiquidityPath,
-        STPathSet& extraPaths,
+        STPathSet const& extraPaths,
         AccountID const& srcIssuer);
 
     enum NodeType
@@ -184,6 +177,7 @@ private:
     /** The amount remaining from mSrcAccount after the default liquidity has
         been removed. */
     STAmount mRemainingAmount;
+    bool convert_all_;
 
     std::shared_ptr <ReadView const> mLedger;
     LoadEvent::pointer m_loadEvent;

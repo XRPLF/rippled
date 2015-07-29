@@ -144,7 +144,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Parse saDstAmount.
         !context.params.isMember (jss::destination_amount)
         || ! amountFromJsonNoThrow(saDstAmount, context.params[jss::destination_amount])
-        || saDstAmount <= zero
+        || (saDstAmount <= zero && saDstAmount !=
+                STAmount(saDstAmount.issue(), 1u, 0, true))
         || (!isXRP(saDstAmount.getCurrency ())
             && (!saDstAmount.getIssuer () ||
                 noAccount() == saDstAmount.getIssuer ())))
@@ -219,11 +220,34 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 level = rLev;
         }
 
+        auto const convert_all =
+            saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
+
+        boost::optional<STAmount> saSendMax;
+        if (context.params.isMember(jss::send_max))
+        {
+            // Send_max requires destination amount to be -1.
+            if (! convert_all)
+                return rpcError(rpcDST_AMT_MALFORMED);
+
+            saSendMax.emplace();
+            if (!amountFromJsonNoThrow(
+                *saSendMax, context.params[jss::send_max]) ||
+                (saSendMax->getCurrency().isZero() &&
+                    saSendMax->getIssuer().isNonZero()) ||
+                (saSendMax->getCurrency() == badCurrency()) ||
+                (*saSendMax <= zero &&
+                    *saSendMax != STAmount(saSendMax->issue(), 1u, 0, true)))
+            {
+                return rpcError(rpcSENDMAX_MALFORMED);
+            }
+        }
+
         auto contextPaths = context.params.isMember(jss::paths) ?
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
         auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount,
-            jvSrcCurrencies, contextPaths, level);
+            jvSrcCurrencies, contextPaths, level, saSendMax, convert_all);
         if (!pathFindResult.first)
             return pathFindResult.second;
 
@@ -241,13 +265,18 @@ std::pair<bool, Json::Value>
 ripplePathFind (RippleLineCache::pointer const& cache,
   AccountID const& raSrc, AccountID const& raDst,
     STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
-        boost::optional<Json::Value> const& contextPaths, int const& level)
+        boost::optional<Json::Value> const& contextPaths,
+            int const& level, boost::optional<STAmount> saSendMax,
+                bool convert_all)
 {
+    auto const sa = STAmount(saDstAmount.issue(),
+        STAmount::cMaxValue, STAmount::cMaxOffset);
     FindPaths fp(
         cache,
         raSrc,
         raDst,
-        saDstAmount,
+        convert_all ? sa : saDstAmount,
+        saSendMax,
         level,
         4); // max paths
 
@@ -269,7 +298,6 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             uSrcCurrencyID, jvSource[jss::currency].asString()))
         {
             WriteLog(lsINFO, RPCHandler) << "Bad currency.";
-
             return std::make_pair(false, rpcError(rpcSRC_CUR_MALFORMED));
         }
 
@@ -285,6 +313,30 @@ ripplePathFind (RippleLineCache::pointer const& cache,
         {
             WriteLog(lsINFO, RPCHandler) << "Bad issuer.";
             return std::make_pair(false, rpcError(rpcSRC_ISR_MALFORMED));
+        }
+
+        auto issue = Issue(uSrcCurrencyID, uSrcIssuerID);
+        if (saSendMax)
+        {
+            // If the currencies don't match, ignore the source currency.
+            if (uSrcCurrencyID != saSendMax->getCurrency())
+                continue;
+
+            // If neither is the source and they are not equal, then the
+            // source issuer is illegal.
+            if (uSrcIssuerID != raSrc && saSendMax->getIssuer() != raSrc &&
+                uSrcIssuerID != saSendMax->getIssuer())
+            {
+                return std::make_pair(false, rpcError(rpcSRC_ISR_MALFORMED));
+            }
+
+            // If both are the source, use the source.
+            // Otherwise, use the one that's not the source.
+            if (uSrcIssuerID == raSrc)
+            {
+                issue.account = saSendMax->getIssuer() != raSrc ?
+                    saSendMax->getIssuer() : raSrc;
+            }
         }
 
         STPathSet spsComputed;
@@ -304,11 +356,11 @@ ripplePathFind (RippleLineCache::pointer const& cache,
         }
 
         STPath fullLiquidityPath;
-        auto valid = fp.findPathsForIssue(
-            { uSrcCurrencyID, uSrcIssuerID },
+        auto result = fp.findPathsForIssue(
+            issue,
             spsComputed,
             fullLiquidityPath);
-        if (!valid)
+        if (! result)
         {
             WriteLog(lsWARNING, RPCHandler)
                 << "ripple_path_find: No paths found.";
@@ -321,22 +373,26 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                 xrpAccount() :
                 (raSrc)
                 : uSrcIssuerID;            // Use specifed issuer.
-
-            STAmount saMaxAmount({ uSrcCurrencyID, issuer }, 1);
-            saMaxAmount.negate();
+            STAmount saMaxAmount = saSendMax.value_or(
+                STAmount({uSrcCurrencyID, issuer}, 1u, 0, true));
 
             boost::optional<PaymentSandbox> sandbox;
             sandbox.emplace(&*cache->getLedger(), tapNONE);
             assert(sandbox->open());
 
+            path::RippleCalc::Input rcInput;
+            if (convert_all)
+                rcInput.partialPaymentAllowed = true;
+
             auto rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
-                saMaxAmount,            // --> Amount to send is unlimited
-                //     to get an estimate.
-                saDstAmount,            // --> Amount to deliver.
-                raDst,                  // --> Account to deliver to.
-                raSrc,                  // --> Account sending from.
-                spsComputed);           // --> Path set.
+                saMaxAmount,                    // --> Amount to send is unlimited
+                                                //     to get an estimate.
+                convert_all ? sa : saDstAmount, // --> Amount to deliver.
+                raDst,                          // --> Account to deliver to.
+                raSrc,                          // --> Account sending from.
+                *result,                        // --> Path set.
+                &rcInput);
 
             WriteLog(lsWARNING, RPCHandler)
                 << "ripple_path_find:"
@@ -345,23 +401,23 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                 << " saMaxAmountAct=" << rc.actualAmountIn
                 << " saDstAmountAct=" << rc.actualAmountOut;
 
-            if (fullLiquidityPath.size() > 0 &&
+            if (! convert_all &&
+                ! fullLiquidityPath.empty() &&
                 (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
             {
                 WriteLog(lsDEBUG, PathRequest)
                     << "Trying with an extra path element";
-
-                spsComputed.push_back(fullLiquidityPath);
+                result->push_back(fullLiquidityPath);
                 sandbox.emplace(&*cache->getLedger(), tapNONE);
                 assert(sandbox->open());
                 rc = path::RippleCalc::rippleCalculate(
                     *sandbox,
                     saMaxAmount,            // --> Amount to send is unlimited
-                    //     to get an estimate.
+                                            //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
                     raDst,                  // --> Account to deliver to.
                     raSrc,                  // --> Account sending from.
-                    spsComputed);           // --> Path set.
+                    *result);               // --> Path set.
                 WriteLog(lsDEBUG, PathRequest)
                     << "Extra path element gives "
                     << transHuman(rc.result());
@@ -379,7 +435,10 @@ ripplePathFind (RippleLineCache::pointer const& cache,
 
                 jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(0);
                 jvEntry[jss::paths_canonical] = Json::arrayValue;
-                jvEntry[jss::paths_computed] = spsComputed.getJson(0);
+                jvEntry[jss::paths_computed] = result->getJson(0);
+
+                if (convert_all)
+                    jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
 
                 jvArray.append(jvEntry);
             }
@@ -399,7 +458,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
         }
     }
 
-    return std::make_pair(true, jvArray);
+    return std::make_pair(true, std::move(jvArray));
 }
 
 } // ripple

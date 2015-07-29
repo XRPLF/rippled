@@ -140,21 +140,26 @@ void TxnSignApiFacade::processTransaction (
     netOPs_->processTransaction(transaction, bAdmin, bLocal, failType);
 }
 
-bool TxnSignApiFacade::findPathsForOneIssuer (
+boost::optional<STPathSet>
+TxnSignApiFacade::findPathsForOneIssuer (
     AccountID const& dstAccountID,
     Issue const& srcIssue,
     STAmount const& dstAmount,
     int searchLevel,
     unsigned int const maxPaths,
-    STPathSet& pathsOut,
+    STPathSet const& paths,
     STPath& fullLiquidityPath) const
 {
-    if (!ledger_) // Unit testing.
-        // Note that unit tests don't (yet) need pathsOut or fullLiquidityPath.
-        return true;
+    if (! ledger_) // Unit testing.
+    {
+        // Note that unit tests don't (yet) need paths or fullLiquidityPath.
+        boost::optional<STPathSet> result;
+        result.emplace();
+        return result;
+    }
 
     auto cache = std::make_shared<RippleLineCache> (ledger_);
-    return ripple::findPathsForOneIssuer (
+    return ripple::findPathsForOneIssuer(
         cache,
         accountID_,
         dstAccountID,
@@ -162,7 +167,7 @@ bool TxnSignApiFacade::findPathsForOneIssuer (
         dstAmount,
         searchLevel,
         maxPaths,
-        pathsOut,
+        paths,
         fullLiquidityPath);
 }
 
@@ -413,18 +418,17 @@ static Json::Value checkPayment(
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
-            STPathSet spsPaths;
             STPath fullLiquidityPath;
-            bool valid = apiFacade.findPathsForOneIssuer (
+            auto result = apiFacade.findPathsForOneIssuer (
                 *dstAccountID,
                 sendMax.issue (),
                 amount,
                 getConfig ().PATH_SEARCH_OLD,
                 4,  // iMaxPaths
-                spsPaths,
+                {},
                 fullLiquidityPath);
 
-            if (!valid)
+            if (! result)
             {
                 WriteLog (lsDEBUG, RPCHandler)
                     << "transactionSign: build_path: No paths found.";
@@ -432,10 +436,10 @@ static Json::Value checkPayment(
             }
             WriteLog (lsDEBUG, RPCHandler)
                 << "transactionSign: build_path: "
-                << spsPaths.getJson (0);
+                << result->getJson (0);
 
-            if (!spsPaths.empty ())
-                tx_json[jss::Paths] = spsPaths.getJson (0);
+            if (! result->empty ())
+                tx_json[jss::Paths] = result->getJson (0);
         }
     }
     return Json::Value();
