@@ -18,29 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/validators/impl/StoreSqdb.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/utility/Debug.h>
-#include <boost/regex.hpp>
+#include <ripple/unl/impl/BasicHorizon.h>
 
 namespace ripple {
-namespace Validators {
-
-StoreSqdb::StoreSqdb (beast::Journal journal)
-    : m_journal (journal)
-{
-}
-
-StoreSqdb::~StoreSqdb ()
-{
-}
-
-void
-StoreSqdb::open (SociConfig const& sociConfig)
-{
-    m_journal.info << "Opening " << sociConfig.connectionString ();
-    sociConfig.open (m_session);
-}
+namespace unl {
 
 }
 }

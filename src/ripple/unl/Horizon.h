@@ -17,11 +17,38 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/validators/impl/ConnectionImp.h>
+#ifndef RIPPLE_UNL_HORIZON_H_INCLUDED
+#define RIPPLE_UNL_HORIZON_H_INCLUDED
 
 namespace ripple {
-namespace Validators {
+namespace unl {
+
+/** Maintains validator horizon statistics on a connection. */
+class Horizon
+{
+public:
+    enum Kind
+    {
+        /*  Outbound made by autoconnect.
+            Can be dropped.
+        */
+        kindManaged,
+
+        /*  Inbound. */
+        kindUntrusted,
+
+        /* Fixed or cluster peer.
+            Can't be dropped.
+        */
+        kindTrusted
+    };
+
+    virtual ~Horizon() = default;
+
+    virtual bool shouldDrop() = 0;
+};
 
 }
 }
+
+#endif

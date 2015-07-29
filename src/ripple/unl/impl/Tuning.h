@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_TUNING_H_INCLUDED
-#define RIPPLE_VALIDATORS_TUNING_H_INCLUDED
+#ifndef RIPPLE_UNL_TUNING_H_INCLUDED
+#define RIPPLE_UNL_TUNING_H_INCLUDED
 
 namespace ripple {
-namespace Validators {
+namespace unl {
 
 }
 }

@@ -17,27 +17,30 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
-#define RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
-
-#include <ripple/validators/ValidatorManager.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/utility/Journal.h>
-#include <beast/module/core/files/File.h>
-#include <boost/asio/io_service.hpp>
-#include <memory>
+#include <BeastConfig.h>
+#include <ripple/unl/impl/StoreSqdb.h>
+#include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/Debug.h>
+#include <boost/regex.hpp>
 
 namespace ripple {
-class BasicConfig;
-namespace Validators {
+namespace unl {
 
-std::unique_ptr<Manager>
-make_Manager (beast::Stoppable& stoppableParent,
-    boost::asio::io_service& io_service,
-    beast::Journal journal,
-    BasicConfig const& config);
+StoreSqdb::StoreSqdb (beast::Journal journal)
+    : m_journal (journal)
+{
+}
+
+StoreSqdb::~StoreSqdb ()
+{
+}
+
+void
+StoreSqdb::open (SociConfig const& sociConfig)
+{
+    m_journal.info << "Opening " << sociConfig.connectionString ();
+    sociConfig.open (m_session);
+}
 
 }
 }
-
-#endif

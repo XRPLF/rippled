@@ -64,7 +64,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/shamap/Family.h>
-#include <ripple/validators/make_Manager.h>
+#include <ripple/unl/make_Manager.h>
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/RandomNumbers.h>
@@ -291,7 +291,7 @@ public:
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
-    std::unique_ptr <Validators::Manager> m_validators;
+    std::unique_ptr <unl::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
@@ -407,8 +407,8 @@ public:
         , serverHandler_ (make_ServerHandler (*m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
 
-        , m_validators (Validators::make_Manager(*this, get_io_service(),
-            m_logs.journal("UVL"), getConfig ()))
+        , m_validators (unl::make_Manager(*this, get_io_service(),
+            m_logs.journal("UNL"), getConfig ()))
 
         , m_amendmentTable (make_AmendmentTable
                             (weeks(2), MAJORITY_FRACTION,
@@ -570,7 +570,7 @@ public:
         return cachedSLEs_;
     }
 
-    Validators::Manager& getValidators ()
+    unl::Manager& getValidators ()
     {
         return *m_validators;
     }

@@ -33,7 +33,7 @@
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/validators/ValidatorManager.h>
+#include <ripple/unl/UNLManager.h>
 #include <beast/ByteOrder.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
@@ -160,10 +160,10 @@ private:
     int large_sendq_ = 0;
     int no_ping_ = 0;
     std::unique_ptr <LoadEvent> load_event_;
-    std::unique_ptr<Validators::Connection> validatorsConnection_;
+    std::unique_ptr<unl::Horizon> unlHorizon_;
     bool hopsAware_ = false;
 
-    //--------------------------------------------------------------------------
+    friend class OverlayImpl;
 
 public:
     PeerImp (PeerImp const&) = delete;
@@ -325,12 +325,12 @@ public:
     bool
     isHighLatency() const override;
 
+    void
+    fail(std::string const& reason);
+
 private:
     void
     close();
-
-    void
-    fail(std::string const& reason);
 
     void
     fail(std::string const& name, error_code ec);
@@ -436,6 +436,16 @@ private:
         state_ = new_state;
     }
 
+    unl::Horizon::Kind
+    slotToHorizonKind (PeerFinder::Slot const& slot)
+    {
+        if(slot.fixed())
+            return unl::Horizon::kindTrusted;
+        if(slot.inbound())
+            return unl::Horizon::kindUntrusted;
+        return unl::Horizon::kindManaged;
+    }
+
     //--------------------------------------------------------------------------
 
     void
@@ -511,7 +521,8 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
     , http_message_(std::move(response))
-    , validatorsConnection_(getApp().getValidators().newConnection(id))
+    , unlHorizon_(getApp().getValidators().insert(id,
+        slotToHorizonKind(*slot_)))
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

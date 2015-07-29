@@ -31,7 +31,7 @@ namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {
 
-namespace Validators { class Manager; }
+namespace unl { class Manager; }
 namespace Resource { class Manager; }
 namespace NodeStore { class Database; }
 
@@ -98,7 +98,7 @@ public:
     virtual JobQueue&               getJobQueue () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
-    virtual Validators::Manager&    getValidators () = 0;
+    virtual unl::Manager&           getValidators () = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
