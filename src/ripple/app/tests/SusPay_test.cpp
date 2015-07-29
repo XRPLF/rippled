@@ -146,7 +146,7 @@ struct SusPay_test : public beast::unit_test::suite
         using S = seconds;
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const c = cond("receipt");
@@ -169,7 +169,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto const alice = Account("alice");
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), alice, "bob");
             auto const c = cond("receipt");
@@ -190,7 +190,7 @@ struct SusPay_test : public beast::unit_test::suite
         using S = seconds;
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const c = cond("receipt");
@@ -222,7 +222,7 @@ struct SusPay_test : public beast::unit_test::suite
         using S = seconds;
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
@@ -244,7 +244,7 @@ struct SusPay_test : public beast::unit_test::suite
         using S = seconds;
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
@@ -270,7 +270,7 @@ struct SusPay_test : public beast::unit_test::suite
         }
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
@@ -287,7 +287,7 @@ struct SusPay_test : public beast::unit_test::suite
         }
         {
             Env env(*this);
-            auto const T = [&env](NetClock::duration const& d)
+            auto T = [&env](NetClock::duration const& d)
                 { return env.clock.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -306,6 +306,22 @@ struct SusPay_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testMeta()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+        using S = seconds;
+        Env env(*this);
+        auto T = [&env](NetClock::duration const& d)
+            { return env.clock.now() + d; };
+        env.fund(XRP(5000), "alice", "bob", "carol");
+        auto const c = cond("receipt");
+        env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));
+        auto const m = env.meta();
+        expect((*m)[sfTransactionResult] == tesSUCCESS);
+    }
+
     void run() override
     {
         testEnablement();
@@ -313,6 +329,7 @@ struct SusPay_test : public beast::unit_test::suite
         testFails();
         testLockup();
         testCondPay();
+        testMeta();
     }
 };
 

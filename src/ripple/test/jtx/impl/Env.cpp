@@ -258,6 +258,7 @@ Env::submit (JTx const& jt)
     auto const& stx = jt.stx;
     if (stx)
     {
+        txid_ = stx->getTransactionID();
         openLedger.modify(
             [&](OpenView& view, beast::Journal j)
             {
@@ -295,6 +296,14 @@ Env::submit (JTx const& jt)
     //if (isTerRetry(ter))
     //if (! isTesSuccess(ter))
     //    held.insert(stx);
+}
+
+std::shared_ptr<STObject const>
+Env::meta()
+{
+    close();
+    auto const item = closed()->txRead(txid_);
+    return item.second;
 }
 
 void

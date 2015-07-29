@@ -344,6 +344,17 @@ public:
     }
     /** @} */
 
+    /** Return metadata for the last JTx.
+
+        Effects:
+
+            The open ledger is closed as if by a call
+            to close(). The metadata for the last
+            transaction ID, if any, is returned.
+    */
+    std::shared_ptr<STObject const>
+    meta();
+
 private:
     void
     fund (bool setDefaultRipple,
@@ -446,6 +457,7 @@ protected:
     int trace_ = 0;
     bool testing_ = true;
     TestStopwatch stopwatch_;
+    uint256 txid_;
 
     void
     autofill_sig (JTx& jt);
