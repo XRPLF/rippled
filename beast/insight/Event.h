@@ -32,7 +32,7 @@ namespace beast {
 namespace insight {
 
 /** A metric for reporting event timing.
-    
+
     An event is an operation that has an associated millisecond time, or
     other integral value. Because events happen at a specific moment, the
     metric only supports a push-style interface.

@@ -146,7 +146,7 @@ public:
     class Node
     {
     public:
-        Node () 
+        Node ()
             : m_next (nullptr)
         { }
 
@@ -159,7 +159,7 @@ public:
 
     private:
         friend class LockFreeStack;
-        
+
         template <class Container, bool IsConst>
         friend class LockFreeStackIterator;
 
@@ -262,7 +262,7 @@ public:
     {
         return iterator (&m_end);
     }
-    
+
     const_iterator begin () const
     {
         return const_iterator (m_head.load ());
@@ -272,7 +272,7 @@ public:
     {
         return const_iterator (&m_end);
     }
-    
+
     const_iterator cbegin () const
     {
         return const_iterator (m_head.load ());

@@ -40,7 +40,7 @@ public:
 
     /** Create the dynamic buffer with the specified block size. */
     explicit DynamicBuffer (size_type blocksize = defaultBlocksize);
-    
+
     DynamicBuffer (DynamicBuffer const& other);
 
     ~DynamicBuffer ();

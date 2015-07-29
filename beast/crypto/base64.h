@@ -25,7 +25,7 @@
 
 namespace beast {
 
-/* 
+/*
    Portions from http://www.adp-gmbh.ch/cpp/common/base64.html
    Copyright notice:
 

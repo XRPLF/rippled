@@ -145,7 +145,7 @@ public:
             b.commit(10);
             expect(to_str(b.data()) == "567890ABCD");
         }
-        
+
         test_prepare();
         test_commit();
         test_consume();

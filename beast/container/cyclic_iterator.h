@@ -115,7 +115,7 @@ struct cyclic_iterator_base
 }
 
 //
-// cyclic_iterator_decl.hpp 
+// cyclic_iterator_decl.hpp
 //
 
 /**

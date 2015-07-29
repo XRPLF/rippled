@@ -49,7 +49,7 @@ public:
     virtual ~Collector() = 0;
 
     /** Create a hook.
-        
+
         A hook is called at each collection interval, on an implementation
         defined thread. This is a convenience facility for gathering metrics
         in the polling style. The typical usage is to update all the metrics
@@ -75,7 +75,7 @@ public:
     */
     /** @{ */
     virtual Counter make_counter (std::string const& name) = 0;
-    
+
     Counter make_counter (std::string const& prefix, std::string const& name)
     {
         if (prefix.empty ())
@@ -98,7 +98,7 @@ public:
     }
     /** @} */
 
-    /** Create a gauge with the specified name. 
+    /** Create a gauge with the specified name.
         @see Gauge
     */
     /** @{ */

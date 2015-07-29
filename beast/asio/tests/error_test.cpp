@@ -28,7 +28,7 @@ class error_test : public unit_test::suite
 {
 public:
     void run ()
-    {        
+    {
         {
             boost::system::error_code ec = boost::system::error_code (335544539,
                 boost::asio::error::get_ssl_category ());

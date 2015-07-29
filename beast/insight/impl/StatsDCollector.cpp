@@ -616,7 +616,7 @@ void StatsDGaugeImpl::flush ()
 void StatsDGaugeImpl::do_set (GaugeImpl::value_type value)
 {
     m_value = value;
-    
+
     if (m_value != m_last_value)
     {
         m_last_value = m_value;
@@ -641,7 +641,7 @@ void StatsDGaugeImpl::do_increment (GaugeImpl::difference_type amount)
     {
         GaugeImpl::value_type const d (
             static_cast <GaugeImpl::value_type> (-amount));
-        value = (d >= value) ? 0 : value - d; 
+        value = (d >= value) ? 0 : value - d;
     }
 
     do_set (value);

@@ -117,7 +117,7 @@ public:
     {
         return Gauge (std::make_shared <detail::NullGaugeImpl> ());
     }
-    
+
     Meter make_meter (std::string const&)
     {
         return Meter (std::make_shared <detail::NullMeterImpl> ());

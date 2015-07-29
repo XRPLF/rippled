@@ -28,7 +28,7 @@
 
 namespace beast {
 
-class tagged_integer_test 
+class tagged_integer_test
     : public unit_test::suite
 {
 private:
@@ -112,7 +112,7 @@ public:
 
         expect (zero >= zero, "Should be greater than or equal");
         expect (zero == zero, "Should be equal");
-        
+
         expect (one > zero, "Should be greater");
         expect (one >= zero, "Should be greater than or equal");
         expect (one != zero, "Should not be equal");
@@ -140,7 +140,7 @@ public:
         expect(++tmp == one, "Should be equal");
 
         tmp = zero;
-        
+
         tmp += 1u;
         expect(tmp == one, "Should be equal");
 

@@ -727,7 +727,7 @@ public:
 
         if (isPositiveAndBelow (indexToRemove, numUsed))
         {
-            bassert (data.elements != nullptr); 
+            bassert (data.elements != nullptr);
             ElementType removed (data.elements[indexToRemove]);
             removeInternal (indexToRemove);
             return removed;
