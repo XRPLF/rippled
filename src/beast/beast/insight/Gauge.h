@@ -29,7 +29,7 @@ namespace beast {
 namespace insight {
 
 /** A metric for measuring an integral value.
-    
+
     A gauge is an instantaneous measurement of a value, like the gas gauge
     in a car. The caller directly sets the value, or adjusts it by a
     specified amount. The value is kept in the client rather than the collector.

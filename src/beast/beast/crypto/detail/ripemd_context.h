@@ -71,12 +71,12 @@ struct ripemd160_context
 #define BEAST_RIPEMD_ROL(x, n)  (((x) << (n)) | ((x) >> (32-(n))))
 
 // the five basic functions F(), G() and H()
-#define BEAST_RIPEMD_F(x, y, z)  ((x) ^  (y) ^ (z)) 
-#define BEAST_RIPEMD_G(x, y, z) (((x) &  (y)) | (~(x) & (z))) 
+#define BEAST_RIPEMD_F(x, y, z)  ((x) ^  (y) ^ (z))
+#define BEAST_RIPEMD_G(x, y, z) (((x) &  (y)) | (~(x) & (z)))
 #define BEAST_RIPEMD_H(x, y, z) (((x) | ~(y)) ^ (z))
-#define BEAST_RIPEMD_I(x, y, z) (((x) &  (z)) | ((y) & ~(z))) 
+#define BEAST_RIPEMD_I(x, y, z) (((x) &  (z)) | ((y) & ~(z)))
 #define BEAST_RIPEMD_J(x, y, z)  ((x) ^  ((y) | ~(z)))
-  
+
 // the ten basic operations FF() through III()
 #define BEAST_RIPEMD_FF(a, b, c, d, e, x, s) {      \
       (a) += BEAST_RIPEMD_F((b), (c), (d)) + (x);   \
@@ -166,7 +166,7 @@ void ripemd_compress (ripemd160_context& ctx,
     BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[13],  7);
     BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[14],  9);
     BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[15],  8);
-                             
+
     // round 2
     BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[ 7],  7);
     BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[ 4],  6);
@@ -258,7 +258,7 @@ void ripemd_compress (ripemd160_context& ctx,
     BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[12],  6);
 
     // parallel round 2
-    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[ 6],  9); 
+    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[ 6],  9);
     BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[11], 13);
     BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[ 3], 15);
     BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[ 7],  7);

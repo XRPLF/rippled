@@ -67,7 +67,7 @@ public:
             OutputDebugStringA ((s + "\n").c_str());
             return;
         }
-        
+
         std::cout << s << std::endl;
     }
 };

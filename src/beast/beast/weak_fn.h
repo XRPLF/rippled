@@ -111,7 +111,7 @@ public:
         if(auto p = object_.lock())
             return ((*p).*member_)(args...);
         return this->member()();
-    }    
+    }
 };
 
 } // detail
@@ -120,11 +120,11 @@ public:
     When called, it tries to lock weak_ptr to get a shared_ptr. If successful,
     it calls given member function with given arguments. If not successful,
     the policy functor is called. Built-in policies are:
-    
+
     ignore_if_invalid           does nothing
     throw_if_invalid            throws `bad_weak_ptr`
     return_default_if_invalid   returns a chosen value
-    
+
     Example:
 
     struct Foo {
@@ -138,12 +138,12 @@ public:
             std::cout << "outdated reference" << std::endl;
         }
     };
-    
+
     int main()
     {
         std::shared_ptr<Foo> sp(new Foo());
         std::weak_ptr<Foo> wp(sp);
-    
+
         std::bind(weak_fn(&Foo::bar, wp), _1)(1);
         sp.reset();
         std::bind(weak_fn(&Foo::bar, wp), 1)();

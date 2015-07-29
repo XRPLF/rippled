@@ -46,12 +46,12 @@ public:
     }
 
     STLedgerEntry (const Serializer & s, uint256 const& index);
-    
+
     STLedgerEntry (SerialIter & sit, uint256 const& index);
     STLedgerEntry(SerialIter&& sit, uint256 const& index)
         : STLedgerEntry(sit, index) {}
-  
-        
+
+
     STLedgerEntry (const STObject & object, uint256 const& index);
 
     STBase*
@@ -72,9 +72,9 @@ public:
     }
 
     std::string getFullText () const override;
-    
+
     std::string getText () const override;
-    
+
     Json::Value getJson (int options) const override;
 
     /** Returns the 'key' (or 'index') of this item.
@@ -112,15 +112,15 @@ public:
     {
         return getFieldU16 (sfLedgerEntryType);
     }
-    
+
     bool isThreadedType() const; // is this a ledger entry that can be threaded
-    
+
     bool isThreaded () const;     // is this ledger entry actually threaded
-                
+
     uint256 getThreadedTransaction () const;
-    
+
     std::uint32_t getThreadedLedger () const;
-    
+
     bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
 

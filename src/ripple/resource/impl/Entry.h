@@ -33,7 +33,7 @@ using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list
-struct Entry 
+struct Entry
     : public beast::List <Entry>::Node
 {
     Entry () = delete;

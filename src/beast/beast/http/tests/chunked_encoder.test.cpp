@@ -55,7 +55,7 @@ public:
             log << encode (std::string(
                 boost::asio::buffer_cast<char const*>(buf),
                     boost::asio::buffer_size(buf)));
-    } 
+    }
 
     // Convert a ConstBufferSequence to a string
     template <class ConstBufferSequence>

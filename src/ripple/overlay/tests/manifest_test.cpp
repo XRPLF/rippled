@@ -126,7 +126,7 @@ public:
         testcase ("load/store");
 
         std::string const dbName("ManifestCacheTestDB");
-        { 
+        {
             // create a database, save the manifest to the db and reload and
             // check that the manifest caches are the same
             DatabaseCon::Setup setup;

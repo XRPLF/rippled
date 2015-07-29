@@ -141,7 +141,7 @@ using sha512_hasher = beast::sha512_hasher;
     representing a Ripple account, from a message. Typically the
     message is the public key of the account - which is not
     stored in the account root.
-    
+
     The same computation is used regardless of the cryptographic
     scheme implied by the public key. For example, the public key
     may be an ed25519 public key or a secp256k1 public key. Support
@@ -217,7 +217,7 @@ public:
     explicit
     operator result_type() noexcept
     {
-        auto const digest = 
+        auto const digest =
             sha512_hasher::result_type(h_);
         result_type result;
         std::copy(digest.begin(),

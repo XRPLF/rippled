@@ -140,7 +140,7 @@ convert_http_errno (joyent::http_errno err)
         {
             return default_error_condition (code) == condition;
         }
-        
+
         bool
         equivalent (error_code const& code, int condition
             ) const noexcept override
@@ -151,7 +151,7 @@ convert_http_errno (joyent::http_errno err)
     };
 
     static http_error_category_t http_error_category;
-    
+
     return boost::system::error_code (
         err, http_error_category);
 }

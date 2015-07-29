@@ -187,7 +187,7 @@ enum class ECDSACanonicality
 
     Therefore, to prevent malleability attacks we
     define a fully canonical signature as one where:
-    
+
         R < G - S
 
     where G is the curve order.

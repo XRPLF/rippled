@@ -329,7 +329,7 @@ public:
         env(noop("alice"), sig("bob"),                          ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster),                    ter(tecNEED_MASTER_KEY));
         env(fset("alice", asfDisableMaster), sig("eric"),       ter(tecNEED_MASTER_KEY));
-        env.require(nflags("alice", asfDisableMaster)); 
+        env.require(nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), sig("alice"));
         env.require(flags("alice", asfDisableMaster));
         env(regkey("alice", disabled),                          ter(tecMASTER_DISABLED));
@@ -381,13 +381,13 @@ public:
 
         env(noop("alice"), msig2(
         { { "bob", "david" } }),                                ter(tefBAD_QUORUM));
-        
+
         env(noop("alice"), msig2(
         { { "bob", "david" }, { "bob", "eric" } }),             ter(tefBAD_QUORUM));
 
         env(noop("alice"), msig2(
         { { "carol", "frank" } }),                              ter(tefBAD_QUORUM));
-        
+
         env(noop("alice"), msig2(
         { { "carol", "frank" }, { "carol", "greg" } }),         ter(tefBAD_QUORUM));
 

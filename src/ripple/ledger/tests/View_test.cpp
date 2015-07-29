@@ -361,7 +361,7 @@ class View_test
                 expect(v2.parentCloseTime() ==
                     v1.parentCloseTime());
                 expect(v2.seq() == v1.seq());
-                expect(v2.flags() == tapNO_CHECK_SIGN); 
+                expect(v2.flags() == tapNO_CHECK_SIGN);
 
                 Sandbox v3(&v2);
                 expect(v3.seq() == v2.seq());
@@ -375,7 +375,7 @@ class View_test
                 expect(v2.seq() == v0.seq());
                 expect(v2.parentCloseTime() ==
                     v0.parentCloseTime());
-                expect(v2.flags() == tapNO_CHECK_SIGN); 
+                expect(v2.flags() == tapNO_CHECK_SIGN);
                 PaymentSandbox v3(&v2);
                 expect(v3.seq() == v2.seq());
                 expect(v3.parentCloseTime() ==

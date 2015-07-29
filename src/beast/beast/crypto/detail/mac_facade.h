@@ -44,7 +44,7 @@ public:
         std::array<std::uint8_t,
             Context::digest_size>;
 
-    mac_facade() noexcept 
+    mac_facade() noexcept
     {
         init(ctx_);
     }

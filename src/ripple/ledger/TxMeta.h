@@ -94,7 +94,7 @@ public:
     STObject& getAffectedNode (SLE::ref node, SField const& type); // create if needed
     STObject& getAffectedNode (uint256 const& );
     const STObject& peekAffectedNode (uint256 const& ) const;
-    
+
     /** Return a list of accounts affected by this transaction */
     boost::container::flat_set<AccountID>
     getAffectedAccounts() const;

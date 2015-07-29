@@ -39,8 +39,8 @@ enum NodeObjectType
 
 /** A simple object that the Ledger uses to store entries.
     NodeObjects are comprised of a type, a hash, a ledger index and a blob.
-    They can be uniquely identified by the hash, which is a half-SHA512 of 
-    the blob. The blob is a variable length block of serialized data. The 
+    They can be uniquely identified by the hash, which is a half-SHA512 of
+    the blob. The blob is a variable length block of serialized data. The
     type identifies what the blob contains.
 
     @note No checking is performed to make sure the hash matches the data.

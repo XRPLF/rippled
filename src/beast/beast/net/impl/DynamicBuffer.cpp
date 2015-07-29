@@ -74,7 +74,7 @@ void DynamicBuffer::shrink_to_fit ()
     {
         free (m_buffers.back ());
         m_buffers.erase (m_buffers.end () - 1);
-    }   
+    }
 }
 
 std::string DynamicBuffer::to_string () const

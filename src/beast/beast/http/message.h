@@ -58,7 +58,7 @@ private:
     // request
     beast::http::method_t method_;
     std::string url_;
-    
+
     // response
     int status_;
     std::string reason_;
@@ -248,7 +248,7 @@ message::operator= (message&& other)
     keep_alive_ = other.keep_alive_;
     upgrade_ = other.upgrade_;
     headers = std::move(other.headers);
-    return *this;    
+    return *this;
 }
 #endif
 

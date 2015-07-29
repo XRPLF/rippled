@@ -47,7 +47,7 @@ public:
     result_type
     operator()();
 
-    static 
+    static
     result_type BEAST_CONSTEXPR
     min()
     {

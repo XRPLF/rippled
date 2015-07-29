@@ -134,7 +134,7 @@ TestAccount
 createAccount(std::string const& passphrase, KeyType keyType);
 
 TestAccount
-createAndFundAccount(TestAccount& from, std::string const& passphrase, 
+createAndFundAccount(TestAccount& from, std::string const& passphrase,
     KeyType keyType, std::uint64_t amountDrops,
     Ledger::pointer const& ledger, bool sign = true);
 
@@ -239,8 +239,8 @@ trust(TestAccount& from, TestAccount const& issuer,
 void
 close_and_advance(Ledger::pointer& ledger, std::shared_ptr<Ledger const>& LCL);
 
-Json::Value findPath(Ledger::pointer ledger, TestAccount const& src, 
-    TestAccount const& dest, std::vector<Currency> srcCurrencies, 
+Json::Value findPath(Ledger::pointer ledger, TestAccount const& src,
+    TestAccount const& dest, std::vector<Currency> srcCurrencies,
     Amount const& dstAmount, beast::abstract_ostream& log,
     boost::optional<Json::Value> contextPaths = boost::none);
 

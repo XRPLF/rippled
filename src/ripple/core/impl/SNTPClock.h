@@ -35,7 +35,7 @@ class SNTPClock
         std::chrono::system_clock>
 {
 public:
-    virtual 
+    virtual
     void
     run (std::vector <std::string> const& servers) = 0;
 

@@ -214,7 +214,7 @@ public:
         add (ss.str(), value);
     }
 
-    Proxy operator[] (std::string const& key);    
+    Proxy operator[] (std::string const& key);
 
     Proxy operator[] (char const* key)
         { return Proxy (*this, key); }
@@ -364,7 +364,7 @@ public:
 
     static bool peel_leading_slash (std::string* path);
     static bool peel_trailing_slashstar (std::string* path);
-    static std::string peel_name(std::string* path);    
+    static std::string peel_name(std::string* path);
 
 
     //--------------------------------------------------------------------------

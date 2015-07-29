@@ -146,7 +146,7 @@ public:
         return is_v4 () ? m_v4 == IP::AddressV4::any ()
             : false; // m_v6 == IP::AddressV6::any();
     }
-            
+
     template <class Hasher>
     friend
     void
@@ -198,21 +198,21 @@ public:
     {
         return ! (lhs == rhs);
     }
-    
+
     friend
     bool
     operator>  (Address const& lhs, Address const& rhs)
     {
         return rhs < lhs;
     }
-    
+
     friend
     bool
     operator<= (Address const& lhs, Address const& rhs)
     {
         return ! (lhs > rhs);
     }
-    
+
     friend
     bool
     operator>= (Address const& lhs, Address const& rhs)

@@ -70,7 +70,7 @@ private:
         std::chrono::steady_clock, hardened_hash<>> ledgers_;
     std::pair<LedgerHash, LedgerMeta> latest_; // last fully validated
     boost::container::flat_set<ConnectionImp*> connections_;
-    
+
     //boost::container::flat_set<
 
 public:

@@ -86,7 +86,7 @@ public:
             std::bind(weak_fn(&T::fi, p), 1)();
             expect(called);
         }
-    
+
         {
             bool called = false;
             auto p = std::make_shared<T>(called);

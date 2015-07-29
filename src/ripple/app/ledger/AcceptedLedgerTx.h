@@ -65,7 +65,7 @@ public:
     {
         return mMeta;
     }
-    
+
     boost::container::flat_set<AccountID> const&
     getAffected() const
     {

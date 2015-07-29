@@ -706,7 +706,7 @@ Transactor::operator()()
         // only claim the transaction fee
         JLOG(j_.debug) <<
             "Reprocessing tx " << txID << " to only claim fee";
-        
+
         ctx_.discard();
 
         auto const txnAcct = view().peek(

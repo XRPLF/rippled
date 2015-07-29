@@ -310,12 +310,12 @@ std::string PropertyStream::Source::peel_name (std::string* path)
 {
     if (path->empty())
         return "";
-    
+
     std::string::const_iterator first = (*path).begin();
     std::string::const_iterator last = (*path).end();
     std::string::const_iterator pos (std::find (first, last, '/'));
     std::string s (first, pos);
-    
+
     if (pos != last)
         *path = std::string (pos+1, last);
     else
@@ -352,7 +352,7 @@ PropertyStream::Source* PropertyStream::Source::find_path (std::string path)
             break;
         source = source->find_one(name);
     }
-    while (source != nullptr); 
+    while (source != nullptr);
     return source;
 }
 
@@ -636,7 +636,7 @@ public:
         }
     }
 
-    void test_peel_trailing_slashstar (std::string s, 
+    void test_peel_trailing_slashstar (std::string s,
         std::string const& expected_remainder, bool should_be_found)
     {
         try
@@ -648,7 +648,7 @@ public:
         catch (...)
         {
             fail ("unhandled exception");;
-        }  
+        }
     }
 
     void test_find_one (Source& root, Source* expected, std::string const& name)
@@ -692,7 +692,7 @@ public:
         }
     }
 
-    void test_find (Source& root, std::string path, Source* expected, 
+    void test_find (Source& root, std::string path, Source* expected,
         bool expected_star)
     {
         try
@@ -759,8 +759,8 @@ public:
         test_find_one (d, &f, "f");
 
         testcase ("find_path");
-        test_find_path (a, "a", nullptr); 
-        test_find_path (a, "e", nullptr); 
+        test_find_path (a, "a", nullptr);
+        test_find_path (a, "e", nullptr);
         test_find_path (a, "a/b", nullptr);
         test_find_path (a, "a/b/e", nullptr);
         test_find_path (a, "b/e/g", nullptr);
@@ -768,7 +768,7 @@ public:
         test_find_path (a, "b", &b);
         test_find_path (a, "b/e", &e);
         test_find_path (a, "b/d/f", &f);
-        
+
         testcase ("find_one_deep");
         test_find_one_deep (a, "z", nullptr);
         test_find_one_deep (a, "g", &g);

@@ -47,7 +47,7 @@ public:
     {
         if (m_lock_count > 0)
             unlock ();
-    }    
+    }
 
     inline void lock (char const* fileName, int lineNumber) noexcept
     {
@@ -233,7 +233,7 @@ public:
         m_mutex.unlock ();
         --m_lock_count;
     }
-  
+
 private:
     Mutex const& m_mutex;
     int m_lock_count;

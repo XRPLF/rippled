@@ -63,7 +63,7 @@ public:
             out.push_back ((hi*16)+lo);
         }
     }
-    
+
     blob
     sig (std::string const& hex)
     {

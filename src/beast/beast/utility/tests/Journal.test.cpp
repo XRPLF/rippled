@@ -62,7 +62,7 @@ public:
         sink.severity(Journal::kInfo);
 
         Journal j(sink);
-        
+
         j.trace << " ";
         expect(sink.count() == 0);
         j.debug << " ";
