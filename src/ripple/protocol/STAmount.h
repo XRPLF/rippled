@@ -54,6 +54,8 @@ private:
     bool mIsNegative;
 
 public:
+    using value_type = STAmount;
+
     static const int cMinOffset = -96;
     static const int cMaxOffset = 80;
 
@@ -165,6 +167,12 @@ public:
 
     void
     setJson (Json::Value&) const;
+
+    STAmount const&
+    value() const noexcept
+    {
+        return *this;
+    }
 
     //--------------------------------------------------------------------------
     //

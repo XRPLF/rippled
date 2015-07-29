@@ -262,8 +262,9 @@ Env::submit (JTx const& jt)
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, applyFlags(), config,
-                        beast::Journal{});
+                    view, *stx, applyFlags(), 
+                        directSigVerify, config,
+                            beast::Journal{});
                 return didApply;
             });
     }
@@ -369,7 +370,9 @@ Env::st (JTx const& jt)
 ApplyFlags
 Env::applyFlags() const
 {
-    return tapENABLE_TESTING;
+    if (testing_)
+        return tapENABLE_TESTING;
+    return tapNONE;
 }
 
 } // jtx

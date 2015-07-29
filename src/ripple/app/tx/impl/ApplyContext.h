@@ -88,7 +88,6 @@ public:
 private:
     OpenView& base_;
     ApplyFlags flags_;
-    beast::Journal j_;
     boost::optional<ApplyViewImpl> view_;
 };
 

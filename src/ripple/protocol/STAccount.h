@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 
+#include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/STBlob.h>
 #include <string>
@@ -30,6 +31,8 @@ class STAccount final
     : public STBlob
 {
 public:
+    using value_type = AccountID;
+
     STAccount (SField const& n, Buffer&& v)
             : STBlob (n, std::move(v))
     {
@@ -63,7 +66,23 @@ public:
     {
         return STI_ACCOUNT;
     }
+
     std::string getText () const override;
+
+    STAccount&
+    operator= (value_type const& value)
+    {
+        setValueH160(value);
+        return *this;
+    }
+
+    value_type
+    value() const noexcept
+    {
+        AccountID result;
+        getValueH160(result);
+        return result;
+    }
 
     template <typename Tag>
     void setValueH160 (base_uint<160, Tag> const& v)

@@ -77,6 +77,17 @@ public:
         return value_;
     }
 
+    STInteger& operator= (value_type const& v)
+    {
+        value_ = v;
+        return *this;
+    }
+
+    value_type value() const noexcept
+    {
+        return value_;
+    }
+
     void
     setValue (Integer v)
     {

@@ -1,4 +1,4 @@
-
+//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -27,33 +27,34 @@
 namespace ripple {
 
 TER
-CancelOffer::preCheck ()
+CancelOffer::preflight (PreflightContext const& ctx)
 {
-    std::uint32_t const uTxFlags (mTxn.getFlags ());
+    auto const uTxFlags = ctx.tx.getFlags();
 
     if (uTxFlags & tfUniversalMask)
     {
-        j_.trace << "Malformed transaction: " <<
+        JLOG(ctx.j.trace) << "Malformed transaction: " <<
             "Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
-
-    if (!uOfferSequence)
+    auto const seq = ctx.tx.getFieldU32 (sfOfferSequence);
+    if (! seq)
     {
-        j_.trace << "Malformed transaction: " <<
-            "No sequence specified.";
+        JLOG(ctx.j.trace) <<
+            "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
+
+//------------------------------------------------------------------------------
 
 TER
 CancelOffer::doApply ()
 {
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uOfferSequence = tx().getFieldU32 (sfOfferSequence);
 
     auto const sle = view().read(
         keylet::account(account_));

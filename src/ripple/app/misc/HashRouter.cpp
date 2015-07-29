@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/IHashRouter.h>
+#include <ripple/protocol/STTx.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/UptimeTimer.h>
@@ -95,15 +96,18 @@ public:
     {
     }
 
-    bool addSuppression (uint256 const& index);
+    bool addSuppression (uint256 const& index) override;
 
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags);
-    bool addSuppressionFlags (uint256 const& index, int flag);
-    bool setFlag (uint256 const& index, int flag);
-    int getFlags (uint256 const& index);
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer) override;
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags) override;
+    bool addSuppressionFlags (uint256 const& index, int flag) override;
+    bool setFlag (uint256 const& index, int flag) override;
+    int getFlags (uint256 const& index) override;
 
-    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag);
+    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) override;
+
+    std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
+    sigVerify() override;
 
 private:
     Entry getEntry (uint256 const& );
@@ -124,6 +128,28 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
+HashRouter::sigVerify()
+{
+    return
+    [&] (STTx const& tx, std::function<bool(STTx const&)> sigCheck)
+    {
+        auto const id = tx.getTransactionID();
+        auto const flags = getFlags(id);
+        if (flags & SF_SIGGOOD)
+            return true;
+        if (flags & SF_BAD)
+            return false;
+        if (! sigCheck(tx))
+        {
+            setFlag(id, SF_BAD);
+            return false;
+        }
+        setFlag(id, SF_SIGGOOD);
+        return true;
+    };
+}
 
 HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& created)
 {

@@ -17,37 +17,53 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
-#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_TAG_H_INCLUDED
+#define RIPPLE_TEST_JTX_TAG_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
+#include <ripple/test/jtx/Env.h>
 
 namespace ripple {
+namespace test {
 
-class SetAccount
-    : public Transactor
+namespace jtx {
+
+/** Set the destination tag on a JTx*/
+struct dtag
 {
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
+private:
+    std::uint32_t value_;
 
 public:
-    SetAccount (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit
+    dtag (std::uint32_t value)
+        : value_ (value)
     {
     }
 
-    static
-    TER
-    preflight (PreflightContext const& ctx);
-
-    TER doApply () override;
+    void
+    operator()(Env const&, JTx& jt) const;
 };
 
+/** Set the source tag on a JTx*/
+struct stag
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit
+    stag (std::uint32_t value)
+        : value_ (value)
+    {
+    }
+
+    void
+    operator()(Env const&, JTx& jt) const;
+};
+
+} // jtx
+
+} // test
 } // ripple
 
 #endif

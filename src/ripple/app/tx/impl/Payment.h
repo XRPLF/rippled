@@ -39,14 +39,15 @@ class Payment
     static std::size_t const MaxPathLength = 8;
 
 public:
-    template <class... Args>
-    Payment (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    Payment (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
-    TER preCheck () override;
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
     TER doApply () override;
 };
 

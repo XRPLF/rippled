@@ -17,37 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
-#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
-
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
+#include <BeastConfig.h>
+#include <ripple/test/jtx/tag.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class SetAccount
-    : public Transactor
+void
+dtag::operator()(Env const&, JTx& jt) const
 {
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
+    jt.jv["DestinationTag"] = value_;
+}
 
-public:
-    SetAccount (ApplyContext& ctx)
-        : Transactor(ctx)
-    {
-    }
+void
+stag::operator()(Env const&, JTx& jt) const
+{
+    jt.jv["SourceTag"] = value_;
+}
 
-    static
-    TER
-    preflight (PreflightContext const& ctx);
-
-    TER doApply () override;
-};
-
+} // jtx
+} // test
 } // ripple
-
-#endif

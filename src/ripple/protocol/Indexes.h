@@ -23,6 +23,7 @@
 #include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
@@ -233,6 +234,10 @@ Keylet page (uint256 const& key)
 {
     return { ltDIR_NODE, key };
 }
+
+/** A SuspendedPayment */
+Keylet
+susPay (AccountID const& source, std::uint32_t seq);
 
 } // keylet
 

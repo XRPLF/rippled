@@ -33,18 +33,20 @@ class Change
     : public Transactor
 {
 public:
-    template <class... Args>
-    Change (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    Change (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
 
     TER doApply () override;
     TER checkSign () override;
     TER checkSeq () override;
     TER payFee () override;
-    TER preCheck () override;
+    void preCompute() override;
 
 private:
     TER applyAmendment ();

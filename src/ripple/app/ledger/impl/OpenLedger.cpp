@@ -111,7 +111,8 @@ OpenLedger::accept(Rules const& rules,
     // Apply local tx
     for (auto const& item : locals)
         ripple::apply(*next, *item.second,
-            flags, config_, j_);
+            flags, router.sigVerify(),
+                config_, j_);
     // Switch to the new open view
     std::lock_guard<
         std::mutex> lock2(current_mutex_);
@@ -144,7 +145,8 @@ OpenLedger::apply_one (OpenView& view,
             SF_SIGGOOD)
         flags = flags | tapNO_CHECK_SIGN;
     auto const result = ripple::apply(
-        view, *tx, flags, config, j);
+        view, *tx, flags, router.
+            sigVerify(), config, j);
     if (result.second)
         return Result::success;
     if (isTefFailure (result.first) ||

@@ -19,28 +19,19 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/st.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
+#include <type_traits>
 
 namespace ripple {
 
-class SerializedObject_test : public beast::unit_test::suite
+class STObject_test : public beast::unit_test::suite
 {
 public:
-    void run()
-    {
-        testSerialization();
-        testParseJSONArray();
-        testParseJSONArrayWithInvalidChildrenObjects();
-    }
-
     bool parseJSONString (std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
@@ -192,8 +183,307 @@ public:
             unexpected (object3.getFieldVL (sfTestVL) != j, "STObject error");
         }
     }
+
+    // Exercise field accessors
+    void
+    testFields()
+    {
+        testcase ("fields");
+
+        auto const& sf1 = sfSequence;
+        auto const& sf2 = sfExpiration;
+        auto const& sf3 = sfQualityIn;
+        auto const& sf4 = sfSignature;
+        auto const& sf5 = sfPublicKey;
+
+        // read free object
+
+        {
+            auto const st = [&]()
+            {
+                STObject st(sfGeneric);
+                st.setFieldU32(sf1, 1);
+                st.setFieldU32(sf2, 2);
+                return st;
+            }();
+
+            expect(st[sf1] == 1);
+            expect(st[sf2] == 2);
+            except<missing_field_error>([&]()
+                { st[sf3]; });
+            expect(*st[~sf1] == 1);
+            expect(*st[~sf2] == 2);
+            expect(st[~sf3] == boost::none);
+            expect(!! st[~sf1]);
+            expect(!! st[~sf2]);
+            expect(! st[~sf3]);
+            expect(st[sf1] != st[sf2]);
+            expect(st[~sf1] != st[~sf2]);
+        }
+
+        // read templated object
+
+        auto const sot = [&]()
+        {
+            SOTemplate sot;
+            sot.push_back(SOElement(sf1, SOE_REQUIRED));
+            sot.push_back(SOElement(sf2, SOE_OPTIONAL));
+            sot.push_back(SOElement(sf3, SOE_DEFAULT));
+            sot.push_back(SOElement(sf4, SOE_OPTIONAL));
+            sot.push_back(SOElement(sf5, SOE_DEFAULT));
+            return sot;
+        }();
+
+        {
+            auto const st = [&]()
+            {
+                STObject st(sot, sfGeneric);
+                st.setFieldU32(sf1, 1);
+                st.setFieldU32(sf2, 2);
+                return st;
+            }();
+
+            expect(st[sf1] == 1);
+            expect(st[sf2] == 2);
+            expect(st[sf3] == 0);
+            expect(*st[~sf1] == 1);
+            expect(*st[~sf2] == 2);
+            expect(*st[~sf3] == 0);
+            expect(!! st[~sf1]);
+            expect(!! st[~sf2]);
+            expect(!! st[~sf3]);
+        }
+
+        // write free object
+
+        {
+            STObject st(sfGeneric);
+            unexcept([&]() { st[sf1]; });
+            except([&](){ return st[sf1] == 0; });
+            expect(st[~sf1] == boost::none);
+            expect(st[~sf1] == boost::optional<std::uint32_t>{});
+            expect(st[~sf1] != boost::optional<std::uint32_t>(1));
+            expect(! st[~sf1]);
+            st[sf1] = 2;
+            expect(st[sf1] == 2);
+            expect(st[~sf1] != boost::none);
+            expect(st[~sf1] == boost::optional<std::uint32_t>(2));
+            expect(!! st[~sf1]);
+            st[sf1] = 1;
+            expect(st[sf1] == 1);
+            expect(!! st[sf1]);
+            expect(!! st[~sf1]);
+            st[sf1] = 0;
+            expect(! st[sf1]);
+            expect(!! st[~sf1]);
+            st[~sf1] = boost::none;
+            expect(! st[~sf1]);
+            expect(st[~sf1] == boost::none);
+            expect(st[~sf1] == boost::optional<std::uint32_t>{});
+            st[~sf1] = boost::none;
+            expect(! st[~sf1]);
+            except([&]() { return st[sf1] == 0; });
+            except([&]() { return *st[~sf1]; });
+            st[sf1] = 1;
+            expect(st[sf1] == 1);
+            expect(!! st[sf1]);
+            expect(!! st[~sf1]);
+            st[sf1] = 3;
+            st[sf2] = st[sf1];
+            expect(st[sf1] == 3);
+            expect(st[sf2] == 3);
+            expect(st[sf2] == st[sf1]);
+            st[sf1] = 4;
+            st[sf2] = st[sf1];
+            expect(st[sf1] == 4);
+            expect(st[sf2] == 4);
+            expect(st[sf2] == st[sf1]);
+        }
+
+        // Write templated object
+
+        {
+            STObject st(sot, sfGeneric);
+            expect(!! st[~sf1]);
+            expect(st[~sf1] != boost::none);
+            expect(st[sf1] == 0);
+            expect(*st[~sf1] == 0);
+            expect(! st[~sf2]);
+            expect(st[~sf2] == boost::none);
+            except([&]() { return st[sf2] == 0; });
+            expect(!! st[~sf3]);
+            expect(st[~sf3] != boost::none);
+            expect(st[sf3] == 0);
+            except([&]() { st[~sf1] = boost::none; });
+            st[sf1] = 1;
+            expect(st[sf1] == 1);
+            expect(*st[~sf1] == 1);
+            expect(!! st[~sf1]);
+            st[sf1] = 0;
+            expect(st[sf1] == 0);
+            expect(*st[~sf1] == 0);
+            expect(!! st[~sf1]);
+            st[sf2] = 2;
+            expect(st[sf2] == 2);
+            expect(*st[~sf2] == 2);
+            expect(!! st[~sf2]);
+            st[~sf2] = boost::none;
+            except([&]() { return *st[~sf2]; });
+            expect(! st[~sf2]);
+            st[sf3] = 3;
+            expect(st[sf3] == 3);
+            expect(*st[~sf3] == 3);
+            expect(!! st[~sf3]);
+            st[sf3] = 2;
+            expect(st[sf3] == 2);
+            expect(*st[~sf3] == 2);
+            expect(!! st[~sf3]);
+            st[sf3] = 0;
+            expect(st[sf3] == 0);
+            expect(*st[~sf3] == 0);
+            expect(!! st[~sf3]);
+            except([&]() { st[~sf3] = boost::none; });
+            expect(st[sf3] == 0);
+            expect(*st[~sf3] == 0);
+            expect(!! st[~sf3]);
+        }
+
+        // coercion operator to boost::optional
+
+        {
+            STObject st(sfGeneric);
+            auto const v = ~st[~sf1];
+            static_assert(std::is_same<
+                std::decay_t<decltype(v)>,
+                    boost::optional<std::uint32_t>>::value, "");
+        }
+
+        // UDT scalar fields
+
+        {
+            STObject st(sfGeneric);
+            st[sfAmount] = STAmount{};
+            st[sfAccount] = AccountID{};
+            st[sfDigest] = uint256{};
+            [&](STAmount){}(st[sfAmount]);
+            [&](AccountID){}(st[sfAccount]);
+            [&](uint256){}(st[sfDigest]);
+        }
+
+        // STBlob and slice
+
+        {
+            {
+                STObject st(sfGeneric);
+                Buffer b(1);
+                expect(! b.empty());
+                st[sf4] = std::move(b);
+                expect(b.empty());
+                expect(Slice(st[sf4]).size() == 1);
+                st[~sf4] = boost::none;
+                expect(! ~st[~sf4]);
+                b = Buffer{2};
+                st[sf4] = Slice(b);
+                expect(b.size() == 2);
+                expect(Slice(st[sf4]).size() == 2);
+                st[sf5] = st[sf4];
+                expect(Slice(st[sf4]).size() == 2);
+                expect(Slice(st[sf5]).size() == 2);
+            }
+            {
+                STObject st(sot, sfGeneric);
+                expect(st[sf5] == Slice{});
+                expect(!! st[~sf5]);
+                expect(!! ~st[~sf5]);
+                Buffer b(1);
+                st[sf5] = std::move(b);
+                expect(b.empty());
+                expect(Slice(st[sf5]).size() == 1);
+                st[~sf4] = boost::none;
+                expect(! ~st[~sf4]);
+            }
+        }
+
+        // UDT blobs
+
+        {
+            STObject st(sfGeneric);
+            expect(! st[~sf5]);
+            auto const kp = generateKeyPair(
+                KeyType::secp256k1,
+                    generateSeed("masterpassphrase"));
+            st[sf5] = kp.first;
+            expect(st[sf5] != PublicKey{});
+            st[~sf5] = boost::none;
+#if 0
+            pk = st[sf5];
+            expect(pk.size() == 0);
+#endif
+        }
+
+        // By reference fields
+
+        {
+            auto const& sf = sfIndexes;
+            STObject st(sfGeneric);
+            std::vector<uint256> v;
+            v.emplace_back(1);
+            st[sf] = v;
+            st[sf] = std::move(v);
+            auto const& cst = st;
+            expect(cst[sf].size() == 1);
+            expect(cst[~sf]->size() == 1);
+            static_assert(std::is_same<decltype(cst[sfIndexes]),
+                std::vector<uint256> const&>::value, "");
+        }
+
+        // Default by reference field
+
+        {
+            auto const& sf1 = sfIndexes;
+            auto const& sf2 = sfHashes;
+            auto const& sf3 = sfAmendments;
+            auto const sot = [&]()
+            {
+                SOTemplate sot;
+                sot.push_back(SOElement(sf1, SOE_REQUIRED));
+                sot.push_back(SOElement(sf2, SOE_OPTIONAL));
+                sot.push_back(SOElement(sf3, SOE_DEFAULT));
+                return sot;
+            }();
+            STObject st(sot, sfGeneric);
+            auto const& cst(st);
+            expect(cst[sf1].size() == 0);
+            expect(! cst[~sf2]);
+            expect(cst[sf3].size() == 0);
+            std::vector<uint256> v;
+            v.emplace_back(1);
+            st[sf1] = v;
+            expect(cst[sf1].size() == 1);
+            expect(cst[sf1][0] == uint256{1});
+            st[sf2] = v;
+            expect(cst[sf2].size() == 1);
+            expect(cst[sf2][0] == uint256{1});
+            st[~sf2] = boost::none;
+            expect(! st[~sf2]);
+            st[sf3] = v;
+            expect(cst[sf3].size() == 1);
+            expect(cst[sf3][0] == uint256{1});
+            st[sf3] = std::vector<uint256>{};
+            expect(cst[sf3].size() == 0);
+        }
+    }
+
+    void
+    run()
+    {
+        testFields();
+        testSerialization();
+        testParseJSONArray();
+        testParseJSONArrayWithInvalidChildrenObjects();
+    }
 };
 
-BEAST_DEFINE_TESTSUITE(SerializedObject,ripple_data,ripple);
+BEAST_DEFINE_TESTSUITE(STObject,protocol,ripple);
 
 } // ripple

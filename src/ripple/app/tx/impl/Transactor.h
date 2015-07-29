@@ -25,10 +25,34 @@
 
 namespace ripple {
 
+/** State information when preflighting a tx. */
+struct PreflightContext
+{
+public:
+    STTx const& tx;
+    Rules const& rules;
+    ApplyFlags flags;
+    SigVerify verify;
+    Config const& config;
+    beast::Journal j;
+
+    PreflightContext(STTx const& tx_,
+        Rules const& rules_, ApplyFlags flags_,
+            SigVerify verify_, Config const& config_,
+                beast::Journal j_)
+        : tx(tx_)
+        , rules(rules_)
+        , flags(flags_)
+        , verify(verify_)
+        , config(config_)
+        , j(j_)
+    {
+    }
+};
+
 class Transactor
 {
 protected:
-    STTx const& mTxn;
     ApplyContext& ctx_;
     beast::Journal j_;
 
@@ -57,6 +81,16 @@ public:
         return ctx_.view();
     }
 
+    STTx const&
+    tx() const
+    {
+        return ctx_.tx;
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
 protected:
     TER
     apply();
@@ -64,8 +98,6 @@ protected:
     explicit
     Transactor (ApplyContext& ctx);
 
-    TER preCheckAccount ();
-    TER preCheckSigningKey ();
     void calculateFee ();
 
     // VFALCO This is the equivalent of dynamic_cast
@@ -81,7 +113,7 @@ protected:
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
     virtual std::uint64_t calculateBaseFee ();
 
-    virtual TER preCheck ();
+    virtual void preCompute();
     virtual TER checkSeq ();
     virtual TER payFee ();
     virtual TER checkSign ();

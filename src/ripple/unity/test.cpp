@@ -38,6 +38,7 @@
 #include <ripple/test/jtx/impl/sendmax.cpp>
 #include <ripple/test/jtx/impl/seq.cpp>
 #include <ripple/test/jtx/impl/sig.cpp>
+#include <ripple/test/jtx/impl/tag.cpp>
 #include <ripple/test/jtx/impl/ticket.cpp>
 #include <ripple/test/jtx/impl/trust.cpp>
 #include <ripple/test/jtx/impl/txflags.cpp>

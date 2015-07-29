@@ -30,14 +30,15 @@ class CancelTicket
     : public Transactor
 {
 public:
-    template <class... Args>
-    CancelTicket (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    CancelTicket (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
-    TER preCheck() override;
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
     TER doApply () override;
 };
 

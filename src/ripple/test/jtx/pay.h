@@ -31,8 +31,7 @@ namespace jtx {
 /** Create a payment. */
 Json::Value
 pay (Account const& account,
-    Account const& to,
-        AnyAmount amount);
+    Account const& to, AnyAmount amount);
 
 } // jtx
 } // test

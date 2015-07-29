@@ -17,37 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
-#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_ST_H_INCLUDED
+#define RIPPLE_PROTOCOL_ST_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
-
-namespace ripple {
-
-class SetAccount
-    : public Transactor
-{
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
-
-public:
-    SetAccount (ApplyContext& ctx)
-        : Transactor(ctx)
-    {
-    }
-
-    static
-    TER
-    preflight (PreflightContext const& ctx);
-
-    TER doApply () override;
-};
-
-} // ripple
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STBase.h>
+#include <ripple/protocol/STBitString.h>
+#include <ripple/protocol/STBlob.h>
+#include <ripple/protocol/STInteger.h>
+#include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/STVector256.h>
 
 #endif

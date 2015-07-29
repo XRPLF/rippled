@@ -17,37 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
-#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
-
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
+#include <BeastConfig.h>
+#include <ripple/protocol/digest.h>
+#include <ripple/protocol/Feature.h>
+#include <cstring>
 
 namespace ripple {
 
-class SetAccount
-    : public Transactor
+static
+uint256
+feature (char const* s, std::size_t n)
 {
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
+    sha512_half_hasher h;
+    h(s, n);
+    return static_cast<uint256>(h);
+}
 
-public:
-    SetAccount (ApplyContext& ctx)
-        : Transactor(ctx)
-    {
-    }
+uint256
+feature (std::string const& name)
+{
+    return feature(name.c_str(), name.size());
+}
 
-    static
-    TER
-    preflight (PreflightContext const& ctx);
+uint256
+feature (const char* name)
+{
+    return feature(name, std::strlen(name));
+}
 
-    TER doApply () override;
-};
+uint256 const featureSusPay = feature("SusPay");
 
 } // ripple
-
-#endif

@@ -17,26 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETACCOUNT_H_INCLUDED
-#define RIPPLE_TX_SETACCOUNT_H_INCLUDED
+#ifndef RIPPLE_TX_SUSPAY_H_INCLUDED
+#define RIPPLE_TX_SUSPAY_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
-class SetAccount
+class SusPayCreate
     : public Transactor
 {
-    static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
-
 public:
-    SetAccount (ApplyContext& ctx)
+    explicit
+    SusPayCreate (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
@@ -45,7 +38,48 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
-    TER doApply () override;
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class SusPayFinish
+    : public Transactor
+{
+public:
+    explicit
+    SusPayFinish (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class SusPayCancel
+    : public Transactor
+{
+public:
+    explicit
+    SusPayCancel (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    TER
+    doApply() override;
 };
 
 } // ripple

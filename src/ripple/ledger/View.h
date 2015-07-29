@@ -201,6 +201,9 @@ dirNext (ApplyView& view,
     unsigned int& uDirEntry,    // <-> next entry
     uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
 
+std::function<void (SLE::ref, bool)>
+describeOwnerDir(AccountID const& account);
+
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.

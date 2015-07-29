@@ -308,6 +308,17 @@ Keylet page(Keylet const& root,
     return page(root.key, index);
 }
 
+Keylet
+susPay (AccountID const& source, std::uint32_t seq)
+{
+    sha512_half_hasher h;
+    using beast::hash_append;
+    hash_append(h, spaceSusPay);
+    hash_append(h, source);
+    hash_append(h, seq);
+    return { ltSUSPAY, static_cast<uint256>(h) };
+}
+
 } // keylet
 
 } // ripple

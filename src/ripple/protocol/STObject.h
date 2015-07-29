@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
@@ -27,6 +28,10 @@
 #include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/optional.hpp>
+#include <cassert>
+#include <stdexcept>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <utility>
 
 #include <beast/streams/debug_ostream.h>
@@ -38,11 +43,213 @@ namespace ripple {
 
 class STArray;
 
+/** Thrown on illegal access to non-present SField. */
+struct missing_field_error : std::logic_error
+{
+    explicit
+    missing_field_error (SField const& f)
+        : logic_error(
+            "missing field '" + f.getName() + "'")
+    {
+    }
+};
+
+/** Thrown on a field template violation. */
+struct template_field_error : std::logic_error
+{
+    explicit
+    template_field_error (SField const& f)
+        : logic_error(
+            "template field error '" + f.getName() + "'")
+    {
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class STObject
     : public STBase
     , public CountedObject <STObject>
 {
 private:
+    // Proxy value for a STBase derived class
+    template <class T>
+    class Proxy
+    {
+    protected:
+        using value_type =
+            typename T::value_type;
+
+        STObject* st_;
+        SOE_Flags style_;
+        TypedField<T> const* f_;
+
+        Proxy (Proxy const&) = default;
+        Proxy (STObject* st, TypedField<T> const* f);
+        value_type value() const;
+        T const* find() const;
+
+        template <class U>
+        void assign (U&& u);
+    };
+
+    template <class T>
+    class ValueProxy : private Proxy<T>
+    {
+    private:
+        using value_type =
+            typename T::value_type;
+
+    public:
+        ValueProxy& operator= (ValueProxy const&) = delete;
+
+        template <class U>
+        std::enable_if_t<
+            std::is_assignable<T, U>::value,
+                ValueProxy&>
+        operator= (U&& u);
+
+        operator value_type() const;
+
+    private:
+        friend class STObject;
+
+        ValueProxy (STObject* st, TypedField<T> const* f);
+    };
+
+    template <class T>
+    class OptionalProxy : private Proxy<T>
+    {
+    private:
+        using value_type =
+            typename T::value_type;
+
+        using optional_type = boost::optional<
+            typename std::decay<value_type>::type>;
+
+    public:
+        OptionalProxy& operator= (OptionalProxy const&) = delete;
+
+        /** Returns `true` if the field is set.
+
+            Fields with SOE_DEFAULT and set to the
+            default value will return `true`
+        */
+        explicit operator bool() const noexcept;
+
+        /** Return the contained value
+
+            Throws:
+
+                missing_field_error if !engaged()
+        */
+        value_type operator*() const;
+
+        operator optional_type() const;
+
+        /** Explicit conversion to boost::optional */
+        optional_type
+        operator~() const;
+
+        friend bool operator==(
+            OptionalProxy const& lhs,
+                boost::none_t) noexcept
+        {
+            return ! lhs.engaged();
+        }
+
+        friend bool operator==(
+            boost::none_t,
+                OptionalProxy const& rhs) noexcept
+        {
+            return rhs == boost::none;
+        }
+
+        friend bool operator==(
+            OptionalProxy const& lhs,
+                optional_type const& rhs) noexcept
+        {
+            if (! lhs.engaged())
+                return ! rhs;
+            if (! rhs)
+                return false;
+            return *lhs == *rhs;
+        }
+
+        friend bool operator==(
+            optional_type const& lhs,
+                OptionalProxy const& rhs) noexcept
+        {
+            return rhs == lhs;
+        }
+
+        friend bool operator==(
+            OptionalProxy const& lhs,
+                OptionalProxy const& rhs) noexcept
+        {
+            if (lhs.engaged() != lhs.engaged())
+                return false;
+            return ! lhs.engaged() || *lhs == *rhs;
+        }
+
+        friend bool operator!=(
+            OptionalProxy const& lhs,
+                boost::none_t) noexcept
+        {
+            return ! (lhs == boost::none);
+        }
+
+        friend bool operator!=(boost::none_t,
+            OptionalProxy const& rhs) noexcept
+        {
+            return ! (rhs == boost::none);
+        }
+
+        friend bool operator!=(
+            OptionalProxy const& lhs,
+                optional_type const& rhs) noexcept
+        {
+            return ! (lhs == rhs);
+        }
+
+        friend bool operator!=(
+            optional_type const& lhs,
+                OptionalProxy const& rhs) noexcept
+        {
+            return ! (lhs == rhs);
+        }
+
+        friend bool operator!=(
+            OptionalProxy const& lhs,
+                OptionalProxy const& rhs) noexcept
+        {
+            return ! (lhs == rhs);
+        }
+
+        OptionalProxy& operator= (boost::none_t const&);
+        OptionalProxy& operator= (optional_type&& v);
+        OptionalProxy& operator= (optional_type const& v);
+
+        template <class U>
+        std::enable_if_t<
+            std::is_assignable<T, U>::value,
+                OptionalProxy&>
+        operator= (U&& u);
+
+    private:
+        friend class STObject;
+
+        OptionalProxy (STObject* st,
+            TypedField<T> const* f);
+
+        bool engaged() const noexcept;
+
+        void disengage();
+
+        optional_type
+        optional_value() const;
+    };
+
     struct Transform
     {
         using argument_type = detail::STVar;
@@ -275,6 +482,45 @@ public:
     const STArray& getFieldArray (SField const& field) const;
     const STObject& getFieldObject (SField const& field) const;
 
+    /** Return the value of a field.
+
+        Throws:
+
+            missing_field_error if the field is
+            not present.
+    */
+    template<class T>
+    typename T::value_type
+    operator[](TypedField<T> const& f) const;
+
+    /** Return the value of a field as boost::optional
+
+        @return boost::none if the field is not present.
+    */
+    template<class T>
+    boost::optional<std::decay_t<typename T::value_type>>
+    operator[](OptionaledField<T> const& of) const;
+
+    /** Return a modifiable field value.
+        
+        Throws:
+
+            missing_field_error if the field is
+            not present.
+    */
+    template<class T>
+    ValueProxy<T>
+    operator[](TypedField<T> const& f);
+
+    /** Return a modifiable field value as boost::optional
+
+        The return value equals boost::none if the
+        field is not present.
+    */
+    template<class T>
+    OptionalProxy<T>
+    operator[](OptionaledField<T> const& of);
+
     /** Set a field.
         if the field already exists, it is replaced.
     */
@@ -467,6 +713,277 @@ private:
         return *cf;
     }
 };
+
+//------------------------------------------------------------------------------
+
+template <class T>
+STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
+    : st_ (st)
+    , f_ (f)
+{
+    if (st_->mType)
+    {
+        // STObject has associated template
+        if (! st_->peekAtPField(*f_))
+            THROW(template_field_error, *f);
+        style_ = st_->mType->style(*f_);
+    }
+    else
+    {
+        style_ = SOE_INVALID;
+    }
+}
+
+template <class T>
+auto
+STObject::Proxy<T>::value() const ->
+    value_type
+{
+    auto const t = find();
+    if (t)
+        return t->value();
+    if (style_ != SOE_DEFAULT)
+        THROW(missing_field_error, *f_);
+    return value_type{};
+}
+
+template <class T>
+inline
+T const*
+STObject::Proxy<T>::find() const
+{
+    return dynamic_cast<T const*>(
+        st_->peekAtPField(*f_));
+}
+
+template <class T>
+template <class U>
+void
+STObject::Proxy<T>::assign(U&& u)
+{
+    if (style_ == SOE_DEFAULT &&
+        u == value_type{})
+    {
+        st_->makeFieldAbsent(*f_);
+        return;
+    }
+    T* t;
+    if (style_ == SOE_INVALID)
+        t = dynamic_cast<T*>(
+            st_->getPField(*f_, true));
+    else
+        t = dynamic_cast<T*>(
+            st_->makeFieldPresent(*f_));
+    assert(t);
+    *t = std::forward<U>(u);
+}
+
+//------------------------------------------------------------------------------
+
+template <class T>
+template <class U>
+std::enable_if_t<
+    std::is_assignable<T, U>::value,
+        STObject::ValueProxy<T>&>
+STObject::ValueProxy<T>::operator= (U&& u)
+{
+    this->assign(std::forward<U>(u));
+    return *this;
+}
+
+template <class T>
+STObject::ValueProxy<T>::operator value_type() const
+{
+    return this->value();
+}
+
+template <class T>
+STObject::ValueProxy<T>::ValueProxy(
+        STObject* st, TypedField<T> const* f)
+    : Proxy<T>(st, f)
+{
+}
+
+//------------------------------------------------------------------------------
+
+template <class T>
+STObject::OptionalProxy<T>::operator bool() const noexcept
+{
+    return engaged();
+}
+
+template <class T>
+auto
+STObject::OptionalProxy<T>::operator*() const ->
+    value_type
+{
+    return this->value();
+}
+
+template <class T>
+STObject::OptionalProxy<T>::operator
+    typename STObject::OptionalProxy<T>::optional_type() const
+{
+    return optional_value();
+}
+
+template <class T>
+typename STObject::OptionalProxy<T>::optional_type
+STObject::OptionalProxy<T>::operator~() const
+{
+    return optional_value();
+}
+
+template <class T>
+auto
+STObject::OptionalProxy<T>::operator=(boost::none_t const&) ->
+    OptionalProxy&
+{
+    disengage();
+    return *this;
+}
+
+template <class T>
+auto
+STObject::OptionalProxy<T>::operator=(optional_type&& v) ->
+        OptionalProxy&
+{
+    if (v)
+        this->assign(std::move(*v));
+    else
+        disengage();
+    return *this;
+}
+
+template <class T>
+auto
+STObject::OptionalProxy<T>::operator=(optional_type const& v) ->
+        OptionalProxy&
+{
+    if (v)
+        this->assign(*v);
+    else
+        disengage();
+    return *this;
+}
+
+template <class T>
+template <class U>
+std::enable_if_t<
+    std::is_assignable<T, U>::value,
+        STObject::OptionalProxy<T>&>
+STObject::OptionalProxy<T>::operator=(U&& u)
+{
+    this->assign(std::forward<U>(u));
+    return *this;
+}
+
+template <class T>
+STObject::OptionalProxy<T>::OptionalProxy(
+        STObject* st, TypedField<T> const* f)
+    : Proxy<T>(st, f)
+{
+}
+
+template <class T>
+bool
+STObject::OptionalProxy<T>::engaged() const noexcept
+{
+    return this->style_ == SOE_DEFAULT
+        || this->find() != nullptr;
+}
+
+template <class T>
+void
+STObject::OptionalProxy<T>::disengage()
+{
+    if (this->style_ == SOE_REQUIRED ||
+            this->style_ == SOE_DEFAULT)
+        THROW(template_field_error, *this->f_);
+    if (this->style_ == SOE_INVALID)
+        this->st_->delField(*this->f_);
+    else
+        this->st_->makeFieldAbsent(*this->f_);
+}
+
+template <class T>
+auto
+STObject::OptionalProxy<T>::optional_value() const ->
+    optional_type
+{
+    if (! engaged())
+        return boost::none;
+    return this->value();
+}
+
+//------------------------------------------------------------------------------
+
+template<class T>
+typename T::value_type
+STObject::operator[](TypedField<T> const& f) const
+{
+    auto const b = peekAtPField(f);
+    if (! b)
+        // This is a free object (no constraints)
+        // with no template
+        THROW(missing_field_error, f);
+    auto const u =
+        dynamic_cast<T const*>(b);
+    if (! u)
+    {
+        assert(mType);
+        assert(b->getSType() == STI_NOTPRESENT);
+        if(mType->style(f) == SOE_OPTIONAL)
+            THROW(missing_field_error, f);
+        assert(mType->style(f) == SOE_DEFAULT);
+        // Handle the case where value_type is a
+        // const reference, otherwise we return
+        // the address of a temporary.
+        static std::decay_t<
+            typename T::value_type> const dv{};
+        return dv;
+    }
+    return u->value();
+}
+
+template<class T>
+boost::optional<std::decay_t<typename T::value_type>>
+STObject::operator[](OptionaledField<T> const& of) const
+{
+    auto const b = peekAtPField(*of.f);
+    if (! b)
+        return boost::none;
+    auto const u =
+        dynamic_cast<T const*>(b);
+    if (! u)
+    {
+        assert(mType);
+        assert(b->getSType() == STI_NOTPRESENT);
+        if(mType->style(*of.f) == SOE_OPTIONAL)
+            return boost::none;
+        assert(mType->style(*of.f) == SOE_DEFAULT);
+        return typename T::value_type{};
+    }
+    return u->value();
+}
+
+template<class T>
+inline
+auto
+STObject::operator[](TypedField<T> const& f) ->
+    ValueProxy<T>
+{
+    return ValueProxy<T>(this, &f);
+}
+
+template<class T>
+inline
+auto
+STObject::operator[](OptionaledField<T> const& of) ->
+    OptionalProxy<T>
+{
+    return OptionalProxy<T>(this, of.f);
+}
 
 } // ripple
 

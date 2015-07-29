@@ -24,6 +24,7 @@
 #include <ripple/protocol/impl/ByteOrder.cpp>
 #include <ripple/protocol/impl/digest.cpp>
 #include <ripple/protocol/impl/ErrorCodes.cpp>
+#include <ripple/protocol/impl/Feature.cpp>
 #include <ripple/protocol/impl/HashPrefix.cpp>
 #include <ripple/protocol/impl/Indexes.cpp>
 #include <ripple/protocol/impl/Keylet.cpp>

@@ -71,6 +71,12 @@ public:
     */
     SOTemplate () = default;
 
+    SOTemplate(SOTemplate&& other)
+        : mTypes(std::move(other.mTypes))
+        , mIndex(std::move(other.mIndex))
+    {
+    }
+
     /* Provide for the enumeration of fields */
     iterator_range all () const
     {
@@ -88,6 +94,12 @@ public:
 
     /** Retrieve the position of a named field. */
     int getIndex (SField const&) const;
+
+    SOE_Flags
+    style(SField const& sf) const
+    {
+        return mTypes[mIndex[sf.getNum()]]->flags;
+    }
 
 private:
     list_type mTypes;
