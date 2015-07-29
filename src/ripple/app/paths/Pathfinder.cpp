@@ -383,6 +383,10 @@ TER Pathfinder::getPathLiquidity (
     try
     {
         // Compute a path that provides at least the minimum liquidity.
+        auto const ub_dst_amt = minDstAmount == STAmount(minDstAmount.issue(), 1u, 0, true);
+        if (ub_dst_amt)
+            rcInput.partialPaymentAllowed = true;
+
         auto rc = path::RippleCalc::rippleCalculate (
             sandbox,
             mSrcAmount,
@@ -399,20 +403,23 @@ TER Pathfinder::getPathLiquidity (
         qualityOut = getRate (rc.actualAmountOut, rc.actualAmountIn);
         amountOut = rc.actualAmountOut;
 
-        // Now try to compute the remaining liquidity.
-        rcInput.partialPaymentAllowed = true;
-        rc = path::RippleCalc::rippleCalculate (
-            sandbox,
-            mSrcAmount,
-            mDstAmount - amountOut,
-            mDstAccount,
-            mSrcAccount,
-            pathSet,
-            &rcInput);
+        if (!ub_dst_amt)
+        {
+            // Now try to compute the remaining liquidity.
+            rcInput.partialPaymentAllowed = true;
+            rc = path::RippleCalc::rippleCalculate(
+                sandbox,
+                mSrcAmount,
+                mDstAmount - amountOut,
+                mDstAccount,
+                mSrcAccount,
+                pathSet,
+                &rcInput);
 
-        // If we found further liquidity, add it into the result.
-        if (rc.result () == tesSUCCESS)
-            amountOut += rc.actualAmountOut;
+            // If we found further liquidity, add it into the result.
+            if (rc.result() == tesSUCCESS)
+                amountOut += rc.actualAmountOut;
+        }
 
         return tesSUCCESS;
     }
@@ -519,7 +526,8 @@ void Pathfinder::rankPaths (
     rankedPaths.reserve (paths.size());
 
     // Ignore paths that move only very small amounts.
-    auto saMinDstAmount = smallestUsefulAmount (mDstAmount, maxPaths);
+    auto saMinDstAmount = mDstAmount == STAmount(mDstAmount.issue(), 1u, 0, true)
+        ? mDstAmount : smallestUsefulAmount(mDstAmount, maxPaths);
 
     for (int i = 0; i < paths.size (); ++i)
     {

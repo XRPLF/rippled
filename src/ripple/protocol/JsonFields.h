@@ -309,6 +309,7 @@ JSS ( secret );                     // in: TransactionSign, WalletSeed,
 JSS ( seed );                       // in: WalletAccounts, out: WalletSeed
 JSS ( seed_hex );                   // in: WalletPropose, TransactionSign
 JSS ( send_currencies );            // out: AccountCurrencies
+JSS ( send_max );                   // in: PathRequest, RipplePathFind
 JSS ( seq );                        // in: LedgerEntry;
                                     // out: NetworkOPs, RPCSub, AccountOffers
 JSS ( seqNum );                     // out: LedgerToJson

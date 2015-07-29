@@ -144,7 +144,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Parse saDstAmount.
         !context.params.isMember (jss::destination_amount)
         || ! amountFromJsonNoThrow(saDstAmount, context.params[jss::destination_amount])
-        || saDstAmount <= zero
+        || (saDstAmount <= zero && saDstAmount != STAmount(saDstAmount.issue(), 1u, 0, true))
         || (!isXRP(saDstAmount.getCurrency ())
             && (!saDstAmount.getIssuer () ||
                 noAccount() == saDstAmount.getIssuer ())))

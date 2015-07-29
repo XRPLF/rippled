@@ -68,7 +68,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
         << " saOutAct=" << outAct()
         << " saOutReq=" << outReq();
 
-    assert (outAct() < outReq());
+    assert(outAct() < outReq() || outReq() == STAmount(outReq().issue(), 1u, 0, true));
     assert (nodes().size () >= 2);
 }
 

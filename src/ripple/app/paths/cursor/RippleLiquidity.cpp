@@ -68,7 +68,7 @@ void rippleLiquidity (
 
     // saCurAct was once zero in a production server.
     assert (saCurReq != zero);
-    assert (saCurReq > zero);
+    assert(saCurReq > zero || saCurReq == STAmount(saCurReq.issue(), 1u, 0, true));
 
     assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
     assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
