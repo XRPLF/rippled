@@ -39,7 +39,6 @@ namespace ripple {
 STTx::STTx (TxType type)
     : STObject (sfTransaction)
     , tx_type_ (type)
-    , sig_state_ (boost::indeterminate)
 {
     auto format = TxFormats::getInstance().findByType (type);
 
@@ -56,7 +55,6 @@ STTx::STTx (TxType type)
 
 STTx::STTx (STObject&& object)
     : STObject (std::move (object))
-    , sig_state_ (boost::indeterminate)
 {
     tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
@@ -79,7 +77,6 @@ STTx::STTx (STObject&& object)
 
 STTx::STTx (SerialIter& sit)
     : STObject (sfTransaction)
-    , sig_state_ (boost::indeterminate)
 {
     int length = sit.getBytesLeft ();
 
@@ -186,33 +183,27 @@ void STTx::sign (RippleAddress const& private_key)
 
 bool STTx::checkSign(bool allowMultiSign) const
 {
-    if (boost::indeterminate (sig_state_))
+    bool sigGood = false;
+    try
     {
-        try
+        if (allowMultiSign)
         {
-            if (allowMultiSign)
-            {
-                // Determine whether we're single- or multi-signing by looking
-                // at the SigningPubKey.  It it's empty we must be multi-signing.
-                // Otherwise we're single-signing.
-                Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-                sig_state_ = signingPubKey.empty () ?
-                    checkMultiSign () : checkSingleSign ();
-            }
-            else
-            {
-                sig_state_ = checkSingleSign ();
-            }
+            // Determine whether we're single- or multi-signing by looking
+            // at the SigningPubKey.  It it's empty we must be multi-signing.
+            // Otherwise we're single-signing.
+            Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
+            sigGood = signingPubKey.empty () ?
+                checkMultiSign () : checkSingleSign ();
         }
-        catch (...)
+        else
         {
-            sig_state_ = false;
+            sigGood = checkSingleSign ();
         }
     }
-
-    assert (!boost::indeterminate (sig_state_));
-
-    return static_cast<bool> (sig_state_);
+    catch (...)
+    {
+    }
+    return sigGood;
 }
 
 void STTx::setSigningPubKey (RippleAddress const& naSignPubKey)

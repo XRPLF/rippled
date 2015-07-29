@@ -42,7 +42,8 @@ convertBlobsToTxResult (
     STTx::pointer txn = std::make_shared<STTx> (it);
     std::string reason;
 
-    auto tr = std::make_shared<Transaction> (txn, Validate::NO, reason);
+    auto tr = std::make_shared<Transaction> (txn, Validate::NO,
+        directSigVerify, reason);
 
     tr->setStatus (Transaction::sqlTransactionStatus(status));
     tr->setLedger (ledger_index);

@@ -28,25 +28,28 @@
 namespace ripple {
 
 TER
-SetTrust::preCheck ()
+SetTrust::preflight (PreflightContext const& ctx)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    std::uint32_t const uTxFlags = tx.getFlags ();
 
     if (uTxFlags & tfTrustSetMask)
     {
-        j_.trace <<
+        JLOG(j.trace) <<
             "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
+    STAmount const saLimitAmount (tx.getFieldAmount (sfLimitAmount));
 
     if (!isLegalNet (saLimitAmount))
         return temBAD_AMOUNT;
 
     if (saLimitAmount.native ())
     {
-        if (j_.trace) j_.trace <<
+        JLOG(j.trace) <<
             "Malformed transaction: specifies native limit " <<
             saLimitAmount.getFullText ();
         return temBAD_LIMIT;
@@ -54,14 +57,14 @@ SetTrust::preCheck ()
 
     if (badCurrency() == saLimitAmount.getCurrency ())
     {
-        if (j_.trace) j_.trace <<
+        JLOG(j.trace) <<
             "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
     }
 
     if (saLimitAmount < zero)
     {
-        if (j_.trace) j_.trace <<
+        JLOG(j.trace) <<
             "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
     }
@@ -71,12 +74,12 @@ SetTrust::preCheck ()
 
     if (!issuer || issuer == noAccount())
     {
-        if (j_.trace) j_.trace <<
+        JLOG(j.trace) <<
             "Malformed transaction: no destination account.";
         return temDST_NEEDED;
     }
 
-    return Transactor::preCheck ();
+    return Transactor::preflight(ctx);
 }
 
 TER
@@ -84,9 +87,9 @@ SetTrust::doApply ()
 {
     TER terResult = tesSUCCESS;
 
-    STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
-    bool const bQualityIn (mTxn.isFieldPresent (sfQualityIn));
-    bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
+    STAmount const saLimitAmount (tx().getFieldAmount (sfLimitAmount));
+    bool const bQualityIn (tx().isFieldPresent (sfQualityIn));
+    bool const bQualityOut (tx().isFieldPresent (sfQualityOut));
 
     Currency const currency (saLimitAmount.getCurrency ());
     AccountID uDstAccountID (saLimitAmount.getIssuer ());
@@ -115,13 +118,13 @@ SetTrust::doApply ()
         ? 0
         : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
-    std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
+    std::uint32_t uQualityIn (bQualityIn ? tx().getFieldU32 (sfQualityIn) : 0);
+    std::uint32_t uQualityOut (bQualityOut ? tx().getFieldU32 (sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = tx().getFlags ();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
     bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);

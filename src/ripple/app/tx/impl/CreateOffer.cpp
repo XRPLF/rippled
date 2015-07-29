@@ -34,6 +34,99 @@
 namespace ripple {
 
 TER
+CreateOffer::preflight (PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    std::uint32_t const uTxFlags = tx.getFlags ();
+
+    if (uTxFlags & tfOfferCreateMask)
+    {
+        JLOG(j.debug) <<
+            "Malformed transaction: Invalid flags set.";
+        return temINVALID_FLAG;
+    }
+
+    bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
+    bool const bFillOrKill (uTxFlags & tfFillOrKill);
+
+    if (bImmediateOrCancel && bFillOrKill)
+    {
+        JLOG(j.debug) <<
+            "Malformed transaction: both IoC and FoK set.";
+        return temINVALID_FLAG;
+    }
+
+    bool const bHaveExpiration (tx.isFieldPresent (sfExpiration));
+
+    if (bHaveExpiration && (tx.getFieldU32 (sfExpiration) == 0))
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: bad expiration";
+        return temBAD_EXPIRATION;
+    }
+
+    bool const bHaveCancel (tx.isFieldPresent (sfOfferSequence));
+
+    if (bHaveCancel && (tx.getFieldU32 (sfOfferSequence) == 0))
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: bad cancel sequence";
+        return temBAD_SEQUENCE;
+    }
+
+    STAmount saTakerPays = tx.getFieldAmount (sfTakerPays);
+    STAmount saTakerGets = tx.getFieldAmount (sfTakerGets);
+
+    if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
+        return temBAD_AMOUNT;
+
+    if (saTakerPays.native () && saTakerGets.native ())
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: XRP for XRP";
+        return temBAD_OFFER;
+    }
+    if (saTakerPays <= zero || saTakerGets <= zero)
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: bad amount";
+        return temBAD_OFFER;
+    }
+
+    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
+    auto const& uPaysCurrency = saTakerPays.getCurrency ();
+
+    auto const& uGetsIssuerID = saTakerGets.getIssuer ();
+    auto const& uGetsCurrency = saTakerGets.getCurrency ();
+
+    if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: redundant offer";
+        return temREDUNDANT;
+    }
+    // We don't allow a non-native currency to use the currency code XRP.
+    if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
+    {
+        JLOG(j.debug) <<
+            "Malformed offer: Bad currency.";
+        return temBAD_CURRENCY;
+    }
+
+    if (saTakerPays.native () != !uPaysIssuerID ||
+        saTakerGets.native () != !uGetsIssuerID)
+    {
+        JLOG(j.warning) <<
+            "Malformed offer: bad issuer";
+        return temBAD_ISSUER;
+    }
+
+    return Transactor::preflight(ctx);
+}
+
+TER
 CreateOffer::checkAcceptAsset(IssueRef issue) const
 {
     // Only valid for custom currencies
@@ -388,7 +481,7 @@ CreateOffer::cross (
     beast::WrappedSink takerSink (j_, "Taker ");
 
     Taker taker (cross_type_, view, account_, taker_amount,
-        mTxn.getFlags(), ctx_.config, beast::Journal (takerSink));
+        tx().getFlags(), ctx_.config, beast::Journal (takerSink));
 
     try
     {
@@ -432,118 +525,34 @@ CreateOffer::getAccountReserve (SLE::pointer account)
         account->getFieldU32 (sfOwnerCount) + 1));
 }
 
-TER
-CreateOffer::preCheck ()
+void
+CreateOffer::preCompute()
 {
     cross_type_ = CrossType::IouToIou;
     bool const pays_xrp =
-        mTxn.getFieldAmount (sfTakerPays).native ();
+        tx().getFieldAmount (sfTakerPays).native ();
     bool const gets_xrp =
-        mTxn.getFieldAmount (sfTakerGets).native ();
+        tx().getFieldAmount (sfTakerGets).native ();
     if (pays_xrp && !gets_xrp)
         cross_type_ = CrossType::IouToXrp;
     else if (gets_xrp && !pays_xrp)
         cross_type_ = CrossType::XrpToIou;
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        if (j_.debug) j_.debug <<
-            "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill (uTxFlags & tfFillOrKill);
-
-    if (bImmediateOrCancel && bFillOrKill)
-    {
-        if (j_.debug) j_.debug <<
-            "Malformed transaction: both IoC and FoK set.";
-        return temINVALID_FLAG;
-    }
-
-    bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
-
-    if (bHaveExpiration && (mTxn.getFieldU32 (sfExpiration) == 0))
-    {
-        if (j_.debug) j_.warning <<
-            "Malformed offer: bad expiration";
-        return temBAD_EXPIRATION;
-    }
-
-    bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
-
-    if (bHaveCancel && (mTxn.getFieldU32 (sfOfferSequence) == 0))
-    {
-        if (j_.debug) j_.debug <<
-            "Malformed offer: bad cancel sequence";
-        return temBAD_SEQUENCE;
-    }
-
-    STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
-
-    if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
-        return temBAD_AMOUNT;
-
-    if (saTakerPays.native () && saTakerGets.native ())
-    {
-        if (j_.debug) j_.warning <<
-            "Malformed offer: XRP for XRP";
-        return temBAD_OFFER;
-    }
-    if (saTakerPays <= zero || saTakerGets <= zero)
-    {
-        if (j_.debug) j_.warning <<
-            "Malformed offer: bad amount";
-        return temBAD_OFFER;
-    }
-
-    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
-    auto const& uPaysCurrency = saTakerPays.getCurrency ();
-
-    auto const& uGetsIssuerID = saTakerGets.getIssuer ();
-    auto const& uGetsCurrency = saTakerGets.getCurrency ();
-
-    if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
-    {
-        if (j_.debug) j_.debug <<
-            "Malformed offer: redundant offer";
-        return temREDUNDANT;
-    }
-    // We don't allow a non-native currency to use the currency code XRP.
-    if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
-    {
-        if (j_.debug) j_.warning <<
-            "Malformed offer: Bad currency.";
-        return temBAD_CURRENCY;
-    }
-
-    if (saTakerPays.native () != !uPaysIssuerID ||
-        saTakerGets.native () != !uGetsIssuerID)
-    {
-        if (j_.warning) j_.warning <<
-            "Malformed offer: bad issuer";
-        return temBAD_ISSUER;
-    }
-
-    return Transactor::preCheck ();
+    return Transactor::preCompute();
 }
 
 std::pair<TER, bool>
 CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = tx().getFlags ();
 
     bool const bPassive (uTxFlags & tfPassive);
     bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill (uTxFlags & tfFillOrKill);
     bool const bSell (uTxFlags & tfSell);
 
-    STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
-    STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
+    STAmount saTakerPays = tx().getFieldAmount (sfTakerPays);
+    STAmount saTakerGets = tx().getFieldAmount (sfTakerGets);
 
     if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
         return { temBAD_AMOUNT, true };
@@ -553,11 +562,11 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer ();
 
-    bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
-    bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
+    bool const bHaveExpiration (tx().isFieldPresent (sfExpiration));
+    bool const bHaveCancel (tx().isFieldPresent (sfOfferSequence));
 
-    std::uint32_t const uExpiration = mTxn.getFieldU32 (sfExpiration);
-    std::uint32_t const uCancelSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uExpiration = tx().getFieldU32 (sfExpiration);
+    std::uint32_t const uCancelSequence = tx().getFieldU32 (sfOfferSequence);
 
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer sequence
@@ -568,7 +577,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     deprecatedWrongOwnerCount_ = sleCreator->getFieldU32(sfOwnerCount);
 
     std::uint32_t const uAccountSequenceNext = sleCreator->getFieldU32 (sfSequence);
-    std::uint32_t const uSequence = mTxn.getSequence ();
+    std::uint32_t const uSequence = tx().getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that

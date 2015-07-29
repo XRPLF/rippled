@@ -29,12 +29,34 @@
 namespace ripple {
 
 TER
+Change::preflight (PreflightContext const& ctx)
+{
+    auto account = ctx.tx.getAccountID(sfAccount);
+
+    if (account.isNonZero ())
+    {
+        JLOG(ctx.j.warning) << "Bad source id";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 Change::doApply()
 {
-    if (mTxn.getTxnType () == ttAMENDMENT)
+    // If tapOPEN_LEDGER is resurrected into ApplyFlags,
+    // this block can be moved to preflight.
+    if (view().open())
+    {
+        j_.warning << "Change transaction against open ledger";
+        return temINVALID;
+    }
+
+    if (tx().getTxnType () == ttAMENDMENT)
         return applyAmendment ();
 
-    if (mTxn.getTxnType () == ttFEE)
+    if (tx().getTxnType () == ttFEE)
         return applyFee ();
 
     return temUNKNOWN;
@@ -43,13 +65,7 @@ Change::doApply()
 TER
 Change::checkSign()
 {
-    if (mTxn.getAccountID (sfAccount).isNonZero ())
-    {
-        j_.warning << "Bad source account";
-        return temBAD_SRC_ACCOUNT;
-    }
-
-    if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
+    if (!tx().getSigningPubKey ().empty () || !tx().getSignature ().empty ())
     {
         j_.warning << "Bad signature";
         return temBAD_SIGNATURE;
@@ -61,7 +77,7 @@ Change::checkSign()
 TER
 Change::checkSeq()
 {
-    if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
+    if ((tx().getSequence () != 0) || tx().isFieldPresent (sfPreviousTxnID))
     {
         j_.warning << "Bad sequence";
         return temBAD_SEQUENCE;
@@ -73,7 +89,7 @@ Change::checkSeq()
 TER
 Change::payFee()
 {
-    if (mTxn.getTransactionFee () != STAmount ())
+    if (tx().getTransactionFee () != STAmount ())
     {
         j_.warning << "Non-zero fee";
         return temBAD_FEE;
@@ -82,30 +98,17 @@ Change::payFee()
     return tesSUCCESS;
 }
 
-TER
-Change::preCheck()
+void
+Change::preCompute()
 {
-    account_ = mTxn.getAccountID(sfAccount);
-
-    if (account_.isNonZero ())
-    {
-        j_.warning << "Bad source id";
-        return temBAD_SRC_ACCOUNT;
-    }
-
-    if (view().open())
-    {
-        j_.warning << "Change transaction against open ledger";
-        return temINVALID;
-    }
-
-    return tesSUCCESS;
+    account_ = tx().getAccountID(sfAccount);
+    assert(account_ == zero);
 }
 
 TER
 Change::applyAmendment()
 {
-    uint256 amendment (mTxn.getFieldH256 (sfAmendment));
+    uint256 amendment (tx().getFieldH256 (sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -125,7 +128,7 @@ Change::applyAmendment()
             amendment) != amendments.end ())
         return tefALREADY;
 
-    auto flags = mTxn.getFlags ();
+    auto flags = tx().getFlags ();
 
     const bool gotMajority = (flags & tfGotMajority) != 0;
     const bool lostMajority = (flags & tfLostMajority) != 0;
@@ -207,13 +210,13 @@ Change::applyFee()
     //     "Previous fee object: " << feeObject->getJson (0);
 
     feeObject->setFieldU64 (
-        sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
+        sfBaseFee, tx().getFieldU64 (sfBaseFee));
     feeObject->setFieldU32 (
-        sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
+        sfReferenceFeeUnits, tx().getFieldU32 (sfReferenceFeeUnits));
     feeObject->setFieldU32 (
-        sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
+        sfReserveBase, tx().getFieldU32 (sfReserveBase));
     feeObject->setFieldU32 (
-        sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
+        sfReserveIncrement, tx().getFieldU32 (sfReserveIncrement));
 
     view().update (feeObject);
 

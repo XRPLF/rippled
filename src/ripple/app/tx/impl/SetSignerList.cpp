@@ -32,6 +32,79 @@
 
 namespace ripple {
 
+std::tuple<TER, std::uint32_t,
+    std::vector<SignerEntries::SignerEntry>,
+        SetSignerList::Operation>
+SetSignerList::determineOperation(STTx const& tx,
+    ApplyFlags flags, beast::Journal j)
+{
+    // Check the quorum.  A non-zero quorum means we're creating or replacing
+    // the list.  A zero quorum means we're destroying the list.
+    auto const quorum = tx.getFieldU32(sfSignerQuorum);
+    std::vector<SignerEntries::SignerEntry> sign;
+    Operation op = unknown;
+
+    bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
+    if (quorum && hasSignerEntries)
+    {
+        SignerEntries::Decoded signers(
+            SignerEntries::deserialize(tx, j, "transaction"));
+
+        if (signers.ter != tesSUCCESS)
+            return std::make_tuple(signers.ter,
+                quorum, sign, op);
+
+        std::sort(signers.vec.begin(), signers.vec.end());
+
+        // Save deserialized list for later.
+        sign = std::move(signers.vec);
+        op = set;
+    }
+    else if ((quorum == 0) && !hasSignerEntries)
+    {
+        op = destroy;
+    }
+
+    return std::make_tuple(tesSUCCESS,
+        quorum, sign, op);
+}
+
+TER
+SetSignerList::preflight (PreflightContext const& ctx)
+{
+#if ! RIPPLE_ENABLE_MULTI_SIGN
+    if (! (ctx.flags & tapENABLE_TESTING))
+        return temDISABLED;
+#endif
+
+    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+    if (std::get<0>(result) != tesSUCCESS)
+        return std::get<0>(result);
+
+    if (std::get<3>(result) == unknown)
+    {
+        // Neither a set nor a destroy.  Malformed.
+        JLOG(ctx.j.trace) <<
+            "Malformed transaction: Invalid signer set list format.";
+        return temMALFORMED;
+    }
+
+    if (std::get<3>(result) == set)
+    {
+        // Validate our settings.
+        auto const account = ctx.tx.getAccountID(sfAccount);
+        TER const ter =
+            validateQuorumAndSignerEntries(std::get<1>(result),
+                std::get<2>(result), account, ctx.j);
+        if (ter != tesSUCCESS)
+        {
+            return ter;
+        }
+    }
+
+    return Transactor::preflight(ctx);
+}
+
 TER
 SetSignerList::doApply ()
 {
@@ -39,7 +112,7 @@ SetSignerList::doApply ()
     // to our handlers.
     uint256 const index = getSignerListIndex (account_);
 
-    // Perform the operation preCheck() decided on.
+    // Perform the operation preCompute() decided on.
     switch (do_)
     {
     case set:
@@ -56,60 +129,27 @@ SetSignerList::doApply ()
     return temMALFORMED;
 }
 
-TER
-SetSignerList::preCheck()
+void
+SetSignerList::preCompute()
 {
-#if ! RIPPLE_ENABLE_MULTI_SIGN
-    if (! (view().flags() & tapENABLE_TESTING))
-        return temDISABLED;
-#endif
+    // Get the quorum and operation info.
+    auto result = determineOperation(tx(), view().flags(), j_);
+    assert(std::get<0>(result) == tesSUCCESS);
+    assert(std::get<3>(result) != unknown);
 
-    // We need the account ID later, so do this check first.
-    preCheckAccount ();
+    quorum_ = std::get<1>(result);
+    signers_ = std::get<2>(result);
+    do_ = std::get<3>(result);
 
-    // Check the quorum.  A non-zero quorum means we're creating or replacing
-    // the list.  A zero quorum means we're destroying the list.
-    quorum_ = (mTxn.getFieldU32 (sfSignerQuorum));
-
-    bool const hasSignerEntries (mTxn.isFieldPresent (sfSignerEntries));
-    if (quorum_ && hasSignerEntries)
-    {
-        SignerEntries::Decoded signers (
-            SignerEntries::deserialize (mTxn, j_, "transaction"));
-
-        if (signers.ter != tesSUCCESS)
-            return signers.ter;
-
-        // Validate our settings.
-        if (TER const ter =
-            validateQuorumAndSignerEntries (quorum_, signers.vec))
-        {
-            return ter;
-        }
-
-        // Save deserialized and validated list for later.
-        signers_ = std::move (signers.vec);
-        do_ = set;
-    }
-    else if ((quorum_ == 0) && !hasSignerEntries)
-    {
-        do_ = destroy;
-    }
-    else
-    {
-        // Neither a set nor a destroy.  Malformed.
-        if (j_.trace) j_.trace <<
-            "Malformed transaction: Invalid signer set list format.";
-        return temMALFORMED;
-    }
-
-    return preCheckSigningKey ();
+    return Transactor::preCompute();
 }
 
 TER
 SetSignerList::validateQuorumAndSignerEntries (
     std::uint32_t quorum,
-    std::vector<SignerEntries::SignerEntry>& signers) const
+        std::vector<SignerEntries::SignerEntry> const& signers,
+            AccountID const& account,
+                beast::Journal j)
 {
     // Reject if there are too many or too few entries in the list.
     {
@@ -117,18 +157,18 @@ SetSignerList::validateQuorumAndSignerEntries (
         if ((signerCount < SignerEntries::minEntries)
             || (signerCount > SignerEntries::maxEntries))
         {
-            if (j_.trace) j_.trace <<
+            if (j.trace) j.trace <<
                 "Too many or too few signers in signer list.";
             return temMALFORMED;
         }
     }
 
     // Make sure there are no duplicate signers.
-    std::sort (signers.begin (), signers.end ());
+    assert(std::is_sorted(signers.begin(), signers.end()));
     if (std::adjacent_find (
         signers.begin (), signers.end ()) != signers.end ())
     {
-        if (j_.trace) j_.trace <<
+        if (j.trace) j.trace <<
             "Duplicate signers in signer list";
         return temBAD_SIGNER;
     }
@@ -140,9 +180,9 @@ SetSignerList::validateQuorumAndSignerEntries (
     {
         allSignersWeight += signer.weight;
 
-        if (signer.account == account_)
+        if (signer.account == account)
         {
-            if (j_.trace) j_.trace <<
+            if (j.trace) j.trace <<
                 "A signer may not self reference account.";
             return temBAD_SIGNER;
         }
@@ -152,7 +192,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     }
     if ((quorum <= 0) || (allSignersWeight < quorum))
     {
-        if (j_.trace) j_.trace <<
+        if (j.trace) j.trace <<
             "Quorum is unreachable";
         return temBAD_QUORUM;
     }

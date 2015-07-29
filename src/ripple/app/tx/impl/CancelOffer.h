@@ -31,14 +31,14 @@ class CancelOffer
     : public Transactor
 {
 public:
-    template <class... Args>
-    CancelOffer (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    CancelOffer (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
-    TER preCheck () override;
+    static
+    TER
+    preflight (PreflightContext const& ctx);
 
     TER doApply () override;
 };

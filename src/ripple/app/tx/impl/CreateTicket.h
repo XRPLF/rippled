@@ -31,15 +31,14 @@ class CreateTicket
     : public Transactor
 {
 public:
-    template <class... Args>
-    CreateTicket (Args&&... args)
-        : Transactor(std::forward<
-            Args>(args)...)
+    CreateTicket (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
+    static
     TER
-    preCheck () override;
+    preflight (PreflightContext const& ctx);
 
     /** Returns the reserve the account would have if an offer was added. */
     // VFALCO Not needed, just inline the behavior.
