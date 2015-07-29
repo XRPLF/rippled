@@ -26,10 +26,12 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
+#include <beast/hash/uhash.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -137,7 +139,9 @@ public:
 
     /** Returns `true` if a feature is enabled. */
     bool
-    enabled (uint256 const& feature) const;
+    enabled (uint256 const& id,
+        std::unordered_set<uint256,
+            beast::uhash<>> const& presets) const;
 
     /** Returns `true` if these rules don't match the ledger. */
     bool

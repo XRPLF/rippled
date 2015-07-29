@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/base_uint.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/json/json_value.h>
@@ -36,6 +37,7 @@
 #include <map>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 namespace ripple {
@@ -52,6 +54,8 @@ countSectionEntries (IniFileSections& secSource, std::string const& strSection);
 
 IniFileSections::mapped_type*
 getIniFileSection (IniFileSections& secSource, std::string const& strSection);
+
+class Rules;
 
 //------------------------------------------------------------------------------
 
@@ -256,6 +260,8 @@ public:
     // These override the command line client settings
     boost::optional<boost::asio::ip::address_v4> rpc_ip;
     boost::optional<std::uint16_t> rpc_port;
+
+    std::unordered_set<uint256, beast::uhash<>> features;
 
 public:
     Config ();

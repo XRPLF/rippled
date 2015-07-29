@@ -2751,6 +2751,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\ErrorCodes.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Feature.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\HashPrefix.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\protocol\impl\AccountID.cpp">
@@ -2770,6 +2772,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\ErrorCodes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Feature.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2944,6 +2950,8 @@
     <ClInclude Include="..\..\src\ripple\protocol\Sign.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\SOTemplate.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\st.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STAccount.h">
     </ClInclude>
