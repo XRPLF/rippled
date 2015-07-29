@@ -421,9 +421,9 @@ CreateOffer::format_amount (STAmount const& amount)
 STAmount
 CreateOffer::getAccountReserve (SLE::pointer account)
 {
-    // Mon Aug 3 11:00:00am PDT
+    // Mon Aug 10 11:00:00am PDT
     static NetClock::time_point const switchoverTime (
-        std::chrono::seconds (491940000));
+        std::chrono::seconds (492544800));
     if (ctx_.view().info().parentCloseTime <=
             switchoverTime.time_since_epoch().count())
         return STAmount (ctx_.view().fees().accountReserve(
