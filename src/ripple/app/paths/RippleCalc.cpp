@@ -335,7 +335,7 @@ TER RippleCalc::rippleCalculate ()
             actualAmountIn_ += pathState->inPass();
             actualAmountOut_ += pathState->outPass();
 
-            if (pathState->allLiquidityConsumed() || multiQuality)
+            if (multiQuality)
             {
                 ++iDry;
                 pathState->setQuality(0);

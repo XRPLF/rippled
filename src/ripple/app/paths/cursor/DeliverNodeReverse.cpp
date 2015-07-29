@@ -95,7 +95,7 @@ TER PathCursor::deliverNodeReverseImpl (
         // Issuer sending or receiving.
 
         const STAmount saOutFeeRate = hasFee
-            ? saOne             // No fee.
+            ? STAmount::saOne         // No fee.
             : node().transferRate_;   // Transfer rate of issuer.
 
         WriteLog (lsTRACE, RippleCalc)
@@ -342,7 +342,7 @@ TER PathCursor::deliverNodeReverseImpl (
         << " saOutAct=" << saOutAct
         << " saOutReq=" << saOutReq;
 
-    assert (saOutAct <= saOutReq);
+    assert(saOutAct <= saOutReq);
 
     if (resultCode == tesSUCCESS && !saOutAct)
         resultCode = tecPATH_DRY;

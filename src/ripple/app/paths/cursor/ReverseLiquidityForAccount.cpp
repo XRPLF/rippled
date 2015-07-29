@@ -462,17 +462,11 @@ TER PathCursor::reverseLiquidityForAccount () const
 
             if (saCurWantedReq <= zero)
             {
-                // TEMPORARY emergency fix
-                //
-                // TODO(tom): why can't saCurWantedReq be -1 if you want to
-                // compute maximum liquidity?  This might be unimplemented
-                // functionality.  TODO(tom): should the same check appear in
-                // other paths or even be pulled up?
+                assert(false);
                 WriteLog (lsFATAL, RippleCalc) << "CurWantReq was not positive";
                 return tefEXCEPTION;
             }
 
-            assert (saCurWantedReq > zero); // FIXME: We got one of these
             // The previous node is an offer; we are receiving our own currency.
 
             // The previous order book's entries might hold our issuances; might

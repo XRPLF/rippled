@@ -318,6 +318,12 @@ public:
         return value[n];
     }
 
+    std::vector<STPath>::reference
+    operator[] (std::vector<STPath>::size_type n)
+    {
+        return value[n];
+    }
+
     std::vector<STPath>::const_iterator
     begin () const
     {

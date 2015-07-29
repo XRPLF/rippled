@@ -70,13 +70,14 @@ public:
 
     std::uint32_t getSeq () const;
 
-    bool findPathsForOneIssuer (
+    boost::optional<STPathSet>
+    findPathsForOneIssuer (
         AccountID const& dstAccountID,
         Issue const& srcIssue,
         STAmount const& dstAmount,
         int searchLevel,
         unsigned int const maxPaths,
-        STPathSet& pathsOut,
+        STPathSet const& paths,
         STPath& fullLiquidityPath) const;
 
     void processTransaction (

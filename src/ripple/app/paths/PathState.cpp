@@ -36,7 +36,6 @@ class RippleCalc; // for logging
 
 void PathState::clear()
 {
-    allLiquidityConsumed_ = false;
     saInPass = saInReq.zeroed();
     saOutPass = saOutReq.zeroed();
     unfundedOffers_.clear ();
@@ -68,7 +67,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
         << " saOutAct=" << outAct()
         << " saOutReq=" << outReq();
 
-    assert (outAct() < outReq());
+    assert(outAct() < outReq());
     assert (nodes().size () >= 2);
 }
 
@@ -323,7 +322,8 @@ TER PathState::pushNode (
                             node.issue_.currency);
                         STAmount saLimit;
 
-                        if (saOwed <= zero) {
+                        if (saOwed <= zero)
+                        {
                             saLimit = creditLimit (view(),
                                 node.account_,
                                 backNode.account_,
@@ -361,7 +361,7 @@ TER PathState::pushNode (
         else
             node.issue_.account = backNode.issue_.account;
 
-        node.saRateMax = saZero;
+        node.saRateMax = STAmount::saZero;
         node.saRevDeliver = STAmount (node.issue_);
         node.saFwdDeliver = node.saRevDeliver;
 

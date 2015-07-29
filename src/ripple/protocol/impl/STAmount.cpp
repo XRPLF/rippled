@@ -39,9 +39,6 @@ static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
 static const std::uint64_t tenTo17 = tenTo14 * 1000;
 
-STAmount const saZero (noIssue(), 0);
-STAmount const saOne (noIssue(), 1);
-
 //------------------------------------------------------------------------------
 static
 std::int64_t
@@ -339,6 +336,9 @@ STAmount operator- (STAmount const& v1, STAmount const& v2)
 //------------------------------------------------------------------------------
 
 std::uint64_t const STAmount::uRateOne = getRate (STAmount (1), STAmount (1));
+
+STAmount const STAmount::saZero (noIssue (), 0u);
+STAmount const STAmount::saOne (noIssue (), 1u);
 
 void
 STAmount::setIssue (Issue const& issue)

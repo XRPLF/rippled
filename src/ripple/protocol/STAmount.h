@@ -71,6 +71,9 @@ public:
 
     static std::uint64_t const uRateOne;
 
+    static STAmount const saZero;
+    static STAmount const saOne;
+
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
 
@@ -381,10 +384,6 @@ inline bool isXRP(STAmount const& amount)
 {
     return isXRP (amount.issue().currency);
 }
-
-// VFALCO TODO Make static member accessors for these in STAmount
-extern const STAmount saZero;
-extern const STAmount saOne;
 
 } // ripple
 

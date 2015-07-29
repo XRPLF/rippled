@@ -37,16 +37,15 @@ paths::operator()(Env const& env, JTx& jt) const
     auto const amount = amountFromJson(
         sfAmount, jv[jss::Amount]);
     STPath fp;
-    STPathSet ps;
     auto const found = findPathsForOneIssuer(
         std::make_shared<RippleLineCache>(
             env.open()), from, to,
                 in_, amount,
-                    depth_, limit_, ps, fp);
+                    depth_, limit_, {}, fp);
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
-    if (found && ! ps.isDefault())
-        jv[jss::Paths] = ps.getJson(0);
+    if (found && ! found->isDefault())
+        jv[jss::Paths] = found->getJson(0);
 }
 
 //------------------------------------------------------------------------------

@@ -91,9 +91,6 @@ class PathState : public CountedObject <PathState>
     std::uint64_t quality() const { return uQuality; }
     void setQuality (std::uint64_t q) { uQuality = q; }
 
-    bool allLiquidityConsumed() const { return allLiquidityConsumed_; }
-    void consumeAllLiquidity () { allLiquidityConsumed_ = true; }
-
     void setIndex (int i) { mIndex  = i; }
     int index() const { return mIndex; }
 
@@ -152,9 +149,6 @@ private:
     STAmount const&             saOutReq;  // --> Amount to send.
     STAmount                    saOutAct;  // --> Amount actually sent so far.
     STAmount                    saOutPass; // <-- Amount actually sent.
-
-    // If true, all liquidity on this path has been consumed.
-    bool allLiquidityConsumed_ = false;
 
     TER terStatus;
 

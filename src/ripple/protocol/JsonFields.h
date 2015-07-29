@@ -130,6 +130,7 @@ JSS ( descending );                 // in: AccountTx*
 JSS ( destination_account );        // in: PathRequest, RipplePathFind
 JSS ( destination_amount );         // in: PathRequest, RipplePathFind
 JSS ( destination_currencies );     // in: PathRequest, RipplePathFind
+JSS ( destination_tag );            // in: PathRequest
 JSS ( dir_entry );                  // out: DirectoryEntryIterator
 JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
@@ -309,6 +310,7 @@ JSS ( secret );                     // in: TransactionSign, WalletSeed,
 JSS ( seed );                       // in: WalletAccounts, out: WalletSeed
 JSS ( seed_hex );                   // in: WalletPropose, TransactionSign
 JSS ( send_currencies );            // out: AccountCurrencies
+JSS ( send_max );                   // in: PathRequest, RipplePathFind
 JSS ( seq );                        // in: LedgerEntry;
                                     // out: NetworkOPs, RPCSub, AccountOffers
 JSS ( seqNum );                     // out: LedgerToJson

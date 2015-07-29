@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/InfoSub.h>
@@ -70,7 +71,6 @@ public:
 
     ~PathRequest ();
 
-    bool        isValid ();
     bool        isNew ();
     bool        needsUpdate (bool newOnly, LedgerIndex index);
     void        updateComplete ();
@@ -92,7 +92,13 @@ private:
     bool isValid (RippleLineCache::ref crCache);
     void setValid ();
     void resetLevel (int level);
-    int parseJson (Json::Value const&, bool complete);
+
+    bool
+    findPaths (RippleLineCache::ref,
+        FindPaths&, Issue const&,
+            Json::Value& jvArray);
+
+    int parseJson (Json::Value const&);
 
     beast::Journal m_journal;
 
@@ -112,11 +118,12 @@ private:
     boost::optional<AccountID> raSrcAccount;
     boost::optional<AccountID> raDstAccount;
     STAmount saDstAmount;
+    boost::optional<STAmount> saSendMax;
 
     std::set<Issue> sciSourceCurrencies;
     std::map<Issue, STPathSet> mContext;
 
-    bool bValid;
+    bool convert_all_;
 
     LockType mIndexLock;
     LedgerIndex mLastIndex;

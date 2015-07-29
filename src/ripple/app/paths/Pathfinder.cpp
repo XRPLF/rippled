@@ -66,32 +66,6 @@ namespace ripple {
 
 namespace {
 
-// We sort possible paths by:
-//    cost of path
-//    length of path
-//    width of path
-
-// Compare two PathRanks.  A better PathRank is lower, so the best are sorted to
-// the beginning.
-bool comparePathRank (
-    Pathfinder::PathRank const& a, Pathfinder::PathRank const& b)
-{
-    // 1) Higher quality (lower cost) is better
-    if (a.quality != b.quality)
-        return a.quality < b.quality;
-
-    // 2) More liquidity (higher volume) is better
-    if (a.liquidity != b.liquidity)
-        return a.liquidity > b.liquidity;
-
-    // 3) Shorter paths are better
-    if (a.length != b.length)
-        return a.length < b.length;
-
-    // 4) Tie breaker
-    return a.index > b.index;
-}
-
 struct AccountCandidate
 {
     int priority;
@@ -172,8 +146,9 @@ Pathfinder::Pathfinder (
     AccountID const& uSrcAccount,
     AccountID const& uDstAccount,
     Currency const& uSrcCurrency,
-    AccountID const& uSrcIssuer,
-    STAmount const& saDstAmount)
+    boost::optional<AccountID> const& uSrcIssuer,
+    STAmount const& saDstAmount,
+    boost::optional<STAmount> const& srcAmount)
     :   mSrcAccount (uSrcAccount),
         mDstAccount (uDstAccount),
         mEffectiveDst (isXRP(saDstAmount.getIssuer ()) ?
@@ -181,33 +156,15 @@ Pathfinder::Pathfinder (
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
         mSrcIssuer (uSrcIssuer),
-        mSrcAmount ({uSrcCurrency, uSrcIssuer}, 1u, 0, true),
+        mSrcAmount (srcAmount.value_or(STAmount({uSrcCurrency,
+            uSrcIssuer.value_or(isXRP(uSrcCurrency) ?
+                xrpAccount() : uSrcAccount)}, 1u, 0, true))),
+        convert_all_ (mDstAmount ==
+            STAmount(mDstAmount.issue(), STAmount::cMaxValue, STAmount::cMaxOffset)),
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
-    assert (isXRP(uSrcCurrency) == isXRP(uSrcIssuer));
-}
-
-Pathfinder::Pathfinder (
-    RippleLineCache::ref cache,
-    AccountID const& uSrcAccount,
-    AccountID const& uDstAccount,
-    Currency const& uSrcCurrency,
-    STAmount const& saDstAmount)
-    :   mSrcAccount (uSrcAccount),
-        mDstAccount (uDstAccount),
-        mEffectiveDst (isXRP(saDstAmount.getIssuer ()) ?
-            uDstAccount : saDstAmount.getIssuer ()),
-        mDstAmount (saDstAmount),
-        mSrcCurrency (uSrcCurrency),
-        mSrcAmount (
-        {
-            uSrcCurrency,
-            isXRP (uSrcCurrency) ? xrpAccount () : uSrcAccount
-        }, 1u, 0, true),
-        mLedger (cache->getLedger ()),
-        mRLCache (cache)
-{
+    assert (! uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.get()));
 }
 
 Pathfinder::~Pathfinder()
@@ -383,6 +340,9 @@ TER Pathfinder::getPathLiquidity (
     try
     {
         // Compute a path that provides at least the minimum liquidity.
+        if (convert_all_)
+            rcInput.partialPaymentAllowed = true;
+
         auto rc = path::RippleCalc::rippleCalculate (
             sandbox,
             mSrcAmount,
@@ -391,7 +351,6 @@ TER Pathfinder::getPathLiquidity (
             mSrcAccount,
             pathSet,
             &rcInput);
-
         // If we can't get even the minimum liquidity requested, we're done.
         if (rc.result () != tesSUCCESS)
             return rc.result ();
@@ -399,20 +358,23 @@ TER Pathfinder::getPathLiquidity (
         qualityOut = getRate (rc.actualAmountOut, rc.actualAmountIn);
         amountOut = rc.actualAmountOut;
 
-        // Now try to compute the remaining liquidity.
-        rcInput.partialPaymentAllowed = true;
-        rc = path::RippleCalc::rippleCalculate (
-            sandbox,
-            mSrcAmount,
-            mDstAmount - amountOut,
-            mDstAccount,
-            mSrcAccount,
-            pathSet,
-            &rcInput);
+        if (! convert_all_)
+        {
+            // Now try to compute the remaining liquidity.
+            rcInput.partialPaymentAllowed = true;
+            rc = path::RippleCalc::rippleCalculate (
+                sandbox,
+                mSrcAmount,
+                mDstAmount - amountOut,
+                mDstAccount,
+                mSrcAccount,
+                pathSet,
+                &rcInput);
 
-        // If we found further liquidity, add it into the result.
-        if (rc.result () == tesSUCCESS)
-            amountOut += rc.actualAmountOut;
+            // If we found further liquidity, add it into the result.
+            if (rc.result () == tesSUCCESS)
+                amountOut += rc.actualAmountOut;
+        }
 
         return tesSUCCESS;
     }
@@ -438,7 +400,10 @@ STAmount smallestUsefulAmount (STAmount const& amount, int maxPaths)
 
 void Pathfinder::computePathRanks (int maxPaths)
 {
-    mRemainingAmount = mDstAmount;
+    mRemainingAmount = convert_all_ ?
+        STAmount(mDstAmount.issue(), STAmount::cMaxValue,
+            STAmount::cMaxOffset)
+        : mDstAmount;
 
     // Must subtract liquidity in default path from remaining amount.
     try
@@ -450,7 +415,7 @@ void Pathfinder::computePathRanks (int maxPaths)
         auto rc = path::RippleCalc::rippleCalculate (
             sandbox,
             mSrcAmount,
-            mDstAmount,
+            mRemainingAmount,
             mDstAccount,
             mSrcAccount,
             STPathSet(),
@@ -514,47 +479,81 @@ void Pathfinder::rankPaths (
     STPathSet const& paths,
     std::vector <PathRank>& rankedPaths)
 {
-
     rankedPaths.clear ();
     rankedPaths.reserve (paths.size());
 
-    // Ignore paths that move only very small amounts.
-    auto saMinDstAmount = smallestUsefulAmount (mDstAmount, maxPaths);
+    STAmount saMinDstAmount;
+    if (convert_all_)
+    {
+        // On convert_all_ partialPaymentAllowed will be set to true
+        // and requiring a huge amount will find the highest liquidity.
+        saMinDstAmount = STAmount(mDstAmount.issue(),
+            STAmount::cMaxValue, STAmount::cMaxOffset);
+    }
+    else
+    {
+        // Ignore paths that move only very small amounts.
+        saMinDstAmount = smallestUsefulAmount(mDstAmount, maxPaths);
+    }
 
     for (int i = 0; i < paths.size (); ++i)
     {
         auto const& currentPath = paths[i];
-        STAmount liquidity;
-        uint64_t uQuality;
-
-        if (currentPath.empty ())
-            continue;
-
-        auto const resultCode = getPathLiquidity (
-            currentPath, saMinDstAmount, liquidity, uQuality);
-
-        if (resultCode != tesSUCCESS)
+        if (! currentPath.empty())
         {
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping : " << transToken (resultCode) <<
-                ": " << currentPath.getJson (0);
-        }
-        else
-        {
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: quality: " << uQuality <<
-                ": " << currentPath.getJson (0);
+            STAmount liquidity;
+            uint64_t uQuality;
+            auto const resultCode = getPathLiquidity (
+                currentPath, saMinDstAmount, liquidity, uQuality);
+            if (resultCode != tesSUCCESS)
+            {
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "findPaths: dropping : " <<
+                    transToken (resultCode) <<
+                    ": " << currentPath.getJson (0);
+            }
+            else
+            {
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "findPaths: quality: " << uQuality <<
+                    ": " << currentPath.getJson (0);
 
-            rankedPaths.push_back ({uQuality, currentPath.size (), liquidity, i});
+                rankedPaths.push_back ({uQuality,
+                    currentPath.size (), liquidity, i});
+            }
         }
     }
-    std::sort (rankedPaths.begin (), rankedPaths.end (), comparePathRank);
+
+    // Sort paths by:
+    //    cost of path (when considering quality)
+    //    width of path
+    //    length of path
+    // A better PathRank is lower, best are sorted to the beginning.
+    std::sort(rankedPaths.begin(), rankedPaths.end(),
+        [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b)
+    {
+        // 1) Higher quality (lower cost) is better
+        if (! convert_all_ && a.quality != b.quality)
+            return a.quality < b.quality;
+
+        // 2) More liquidity (higher volume) is better
+        if (a.liquidity != b.liquidity)
+            return a.liquidity > b.liquidity;
+
+        // 3) Shorter paths are better
+        if (a.length != b.length)
+            return a.length < b.length;
+
+        // 4) Tie breaker
+        return a.index > b.index;
+    });
 }
 
-STPathSet Pathfinder::getBestPaths (
+STPathSet
+Pathfinder::getBestPaths (
     int maxPaths,
     STPath& fullLiquidityPath,
-    STPathSet& extraPaths,
+    STPathSet const& extraPaths,
     AccountID const& srcIssuer)
 {
     WriteLog (lsDEBUG, Pathfinder) << "findPaths: " <<
@@ -607,7 +606,7 @@ STPathSet Pathfinder::getBestPaths (
 
         auto& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
 
-        auto& path = usePath ? mCompletePaths[pathRank.index] :
+        auto const& path = usePath ? mCompletePaths[pathRank.index] :
             extraPaths[pathRank.index];
 
         if (useExtraPath)
@@ -631,13 +630,12 @@ STPathSet Pathfinder::getBestPaths (
         if (! issuerIsSender && usePath)
         {
             // Need to make sure path matches issuer constraints
-
-            if (path.front ().getAccountID() != srcIssuer)
-                continue;
-            if (isDefaultPath (path))
+            if (isDefaultPath(path) ||
+                path.front().getAccountID() != srcIssuer)
             {
                 continue;
             }
+
             startsWithIssuer = true;
         }
 
