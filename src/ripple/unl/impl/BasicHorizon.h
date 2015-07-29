@@ -194,7 +194,7 @@ public:
 #endif
             if (result.second)
                 good_.insert(key);
-            // register a hit for slightly late validations 
+            // register a hit for slightly late validations
             if (ledger_ && ledger == ledger_)
                 if (result.first->second.onHit())
                     good_.insert(key);

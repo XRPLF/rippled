@@ -22,7 +22,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
-    
+
 namespace ripple {
 
 ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,

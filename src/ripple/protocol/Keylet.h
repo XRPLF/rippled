@@ -28,7 +28,7 @@ namespace ripple {
 class STLedgerEntry;
 
 /** A pair of SHAMap key and LedgerEntryType.
-    
+
     A Keylet identifies both a key in the state map
     and its ledger entry type.
 

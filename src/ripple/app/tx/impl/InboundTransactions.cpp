@@ -182,7 +182,7 @@ public:
         bool fromAcquire) override
     {
         bool isNew = true;
- 
+
         {
             ScopedLockType sl (mLock);
 

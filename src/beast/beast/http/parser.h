@@ -49,7 +49,7 @@ public:
             message& m, bool request)
         : beast::http::basic_parser (request)
         , message_(m)
-        , write_body_(std::move(write_body)) 
+        , write_body_(std::move(write_body))
     {
         message_.get().request(request);
     }

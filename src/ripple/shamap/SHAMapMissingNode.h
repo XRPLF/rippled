@@ -23,7 +23,7 @@
 #include <ripple/basics/base_uint.h>
 #include <iosfwd>
 #include <stdexcept>
-    
+
 namespace ripple {
 
 enum class SHAMapType

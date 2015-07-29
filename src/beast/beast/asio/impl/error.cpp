@@ -41,8 +41,8 @@ asio_message (boost::system::error_code const& ec)
             + ","
             + boost::lexical_cast<std::string> (ERR_GET_REASON (ec.value ()))
             + ") ";
-        
-        // 
+
+        //
         char buf[errorBufferSize];
         ::ERR_error_string_n (ec.value (), buf, errorBufferSize);
         error += buf;

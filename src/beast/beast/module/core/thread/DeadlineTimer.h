@@ -49,7 +49,7 @@ public:
 
     DeadlineTimer (DeadlineTimer const&) = delete;
     DeadlineTimer& operator= (DeadlineTimer const&) = delete;
-    
+
     ~DeadlineTimer ();
 
     /** Cancel all notifications.

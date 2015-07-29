@@ -182,7 +182,7 @@ OpenLedger::verify (Ledger const& ledger,
         return true;
     JLOG(j_.error) <<
         "verify ledger " << ledger.seq() << ": " <<
-        list1.size() << " / " << list2.size() << 
+        list1.size() << " / " << list2.size() <<
             " " << " MISMATCH " << suffix;
     return false;
 #else

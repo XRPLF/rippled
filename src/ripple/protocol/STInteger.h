@@ -32,7 +32,7 @@ public:
     using value_type = Integer;
 
     explicit
-    STInteger (Integer v) 
+    STInteger (Integer v)
         : value_ (v)
     { }
 

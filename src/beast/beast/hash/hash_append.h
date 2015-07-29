@@ -120,7 +120,7 @@ struct is_uniquely_represented<T const volatile>
 
 template <class T, class U>
 struct is_uniquely_represented<std::pair<T, U>>
-    : public std::integral_constant<bool, is_uniquely_represented<T>::value && 
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value &&
                                           is_uniquely_represented<U>::value &&
                                           sizeof(T) + sizeof(U) == sizeof(std::pair<T, U>)>
 {
@@ -131,7 +131,7 @@ struct is_uniquely_represented<std::pair<T, U>>
 template <class ...T>
 struct is_uniquely_represented<std::tuple<T...>>
     : public std::integral_constant<bool,
-            static_and<is_uniquely_represented<T>::value...>::value && 
+            static_and<is_uniquely_represented<T>::value...>::value &&
             static_sum<sizeof(T)...>::value == sizeof(std::tuple<T...>)>
 {
 };
@@ -148,7 +148,7 @@ struct is_uniquely_represented<T[N]>
 
 template <class T, std::size_t N>
 struct is_uniquely_represented<std::array<T, N>>
-    : public std::integral_constant<bool, is_uniquely_represented<T>::value && 
+    : public std::integral_constant<bool, is_uniquely_represented<T>::value &&
                                           sizeof(T)*N == sizeof(std::array<T, N>)>
 {
 };
@@ -159,7 +159,7 @@ struct is_uniquely_represented<std::array<T, N>>
     combination of possible values of `T` held in `x` and `y`,
     if `x == y`, then it must be true that `memcmp(&x, &y, sizeof(T))`
     return 0; i.e. that `x` and `y` are represented by the same bit pattern.
-   
+
     For example:  A two's complement `int` should be contiguously hashable.
     Every bit pattern produces a unique value that does not compare equal to
     any other bit pattern's value.  A IEEE floating point should not be
@@ -206,7 +206,7 @@ struct is_contiguously_hashable<T[N], HashAlgorithm>
             Never
         Effect:
             Returns the reslting hash of all the input data.
-*/  
+*/
 /** @{ */
 
 // scalars
@@ -271,21 +271,21 @@ hash_append(Hasher& h, T (&a)[N]) noexcept;
 template <class Hasher, class CharT, class Traits, class Alloc>
 std::enable_if_t
 <
-    !is_contiguously_hashable<CharT, Hasher>::value 
+    !is_contiguously_hashable<CharT, Hasher>::value
 >
 hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
 template <class Hasher, class CharT, class Traits, class Alloc>
 std::enable_if_t
 <
-    is_contiguously_hashable<CharT, Hasher>::value 
+    is_contiguously_hashable<CharT, Hasher>::value
 >
 hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept;
 
 template <class Hasher, class T, class U>
 std::enable_if_t
 <
-    !is_contiguously_hashable<std::pair<T, U>, Hasher>::value 
+    !is_contiguously_hashable<std::pair<T, U>, Hasher>::value
 >
 hash_append (Hasher& h, std::pair<T, U> const& p) noexcept;
 
@@ -348,7 +348,7 @@ template <class Hasher, class CharT, class Traits, class Alloc>
 inline
 std::enable_if_t
 <
-    !is_contiguously_hashable<CharT, Hasher>::value 
+    !is_contiguously_hashable<CharT, Hasher>::value
 >
 hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
 {
@@ -361,7 +361,7 @@ template <class Hasher, class CharT, class Traits, class Alloc>
 inline
 std::enable_if_t
 <
-    is_contiguously_hashable<CharT, Hasher>::value 
+    is_contiguously_hashable<CharT, Hasher>::value
 >
 hash_append(Hasher& h, std::basic_string<CharT, Traits, Alloc> const& s) noexcept
 {

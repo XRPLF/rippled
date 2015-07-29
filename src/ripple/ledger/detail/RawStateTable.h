@@ -84,7 +84,7 @@ private:
         insert,
         replace,
     };
-    
+
     using items_t = std::map<key_type,
         std::pair<Action, std::shared_ptr<SLE>>>;
 

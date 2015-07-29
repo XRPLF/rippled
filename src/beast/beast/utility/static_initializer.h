@@ -145,7 +145,7 @@ static_initializer <T, Tag>::static_initializer (Args&&... args)
             {
                 try
                 {
-                    ::new(t) T (std::forward<Args>(args)...);                   
+                    ::new(t) T (std::forward<Args>(args)...);
                     static destroyer on_exit (t);
                     _InterlockedIncrement(&_.state);
                 }
@@ -198,7 +198,7 @@ public:
     static_initializer (Args&&... args);
 
     static_initializer ();
-    
+
     T&
     get() noexcept
     {

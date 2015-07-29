@@ -37,7 +37,7 @@ public:
 
     void test_url_parsing ()
     {
-        char const* const urls[] = 
+        char const* const urls[] =
         {
             "http://en.wikipedia.org/wiki/URI#Examples_of_URI_references",
             "ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt"

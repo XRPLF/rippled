@@ -331,7 +331,7 @@ public:
                 "Missing parameter: buffer";
             usage = true;
         }
-        
+
         if (usage)
         {
             log <<
@@ -603,7 +603,7 @@ public:
                 "Missing parameter: buffer";
             usage = true;
         }
-        
+
         if (usage)
         {
             log <<
@@ -919,7 +919,7 @@ public:
                 "Missing parameter: path";
             usage = true;
         }
-        
+
         if (usage)
         {
             log <<

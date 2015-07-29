@@ -52,7 +52,7 @@ public:
         testcase ("add/traverse");
 
         beast::Journal const j;                            // debug journal
-        
+
         tests::TestFamily f(j);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)

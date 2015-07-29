@@ -136,7 +136,7 @@ selector::operator() (suite_info const& s)
     The predicate checks the suite, module, and library fields of the
     suite_info in that order. When it finds a match, it changes modes
     depending on what was found:
-    
+
         If a suite is matched first, then only the suite is selected. The
         suite may be marked manual.
 

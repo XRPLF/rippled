@@ -54,7 +54,7 @@ public:
         or paths used by the underlying backend.
     */
     virtual std::string getName () const = 0;
-    
+
     /** Close the database.
         This allows the caller to catch exceptions.
     */

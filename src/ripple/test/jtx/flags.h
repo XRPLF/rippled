@@ -102,7 +102,7 @@ class flags : private detail::flags_helper
 {
 private:
     Account account_;
-   
+
 public:
     template <class... Args>
     flags (Account const& account,
@@ -121,7 +121,7 @@ class nflags : private detail::flags_helper
 {
 private:
     Account account_;
-   
+
 public:
     template <class... Args>
     nflags (Account const& account,

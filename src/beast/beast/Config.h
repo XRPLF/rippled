@@ -56,5 +56,5 @@
 
 // Suffix
 #include <beast/config/Suffix.h>
-    
+
 #endif

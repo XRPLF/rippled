@@ -112,7 +112,7 @@ public:
     {
         gen_.seed(n+1);
         uint256 key;
-        auto const data = 
+        auto const data =
             static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy (data + 1, key.size() - 1, gen_);
@@ -508,7 +508,7 @@ public:
                 }
             }
         };
-        
+
         try
         {
             parallel_for_id<Body>(params.items, params.threads,

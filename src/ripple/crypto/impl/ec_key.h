@@ -44,7 +44,7 @@ public:
         destroy();
     }
 
-    bool valid() const 
+    bool valid() const
     {
         return ptr != nullptr;
     }

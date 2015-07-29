@@ -99,7 +99,7 @@ create (Account const& account,
 /** Cancel a ticket */
 //Json::Value
 //cancel (Account const& account,
-    
+
 } // ticket
 
 /** Match the number of tickets on the account. */

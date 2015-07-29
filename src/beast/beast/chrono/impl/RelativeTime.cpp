@@ -268,7 +268,7 @@ static double monotonicCurrentTimeInSeconds()
 {
     return GetTickCount64() / 1000.0;
 }
- 
+
 }
 }
 
@@ -279,7 +279,7 @@ static double monotonicCurrentTimeInSeconds()
 
 namespace beast {
 namespace detail {
-    
+
 static double monotonicCurrentTimeInSeconds()
 {
     struct StaticInitializer
@@ -291,7 +291,7 @@ static double monotonicCurrentTimeInSeconds()
 
             mach_timebase_info_data_t timebase;
             (void) mach_timebase_info (&timebase);
-            
+
             if (timebase.numer % 1000000 == 0)
             {
                 numerator   = timebase.numer / 1000000.0;
@@ -304,13 +304,13 @@ static double monotonicCurrentTimeInSeconds()
                 //denominator = timebase.denom * (std::uint64_t) 1000000 * 1000.0;
                 denominator = timebase.denom * 1000000000.0;
             }
-            
+
             ratio = numerator / denominator;
         }
 
         double ratio;
     };
-    
+
     static StaticInitializer const data;
 
     return mach_absolute_time() * data.ratio;
@@ -319,7 +319,7 @@ static double monotonicCurrentTimeInSeconds()
 }
 
 #else
-    
+
 #include <time.h>
 
 namespace beast {
@@ -334,7 +334,7 @@ static double monotonicCurrentTimeInSeconds()
 
 }
 }
-    
+
 #endif
 
 namespace beast {
@@ -349,7 +349,7 @@ static double getStartupTime()
         {
             when = detail::monotonicCurrentTimeInSeconds();
         }
-        
+
         double when;
     };
 
@@ -368,7 +368,7 @@ struct StartupTimeStaticInitializer
 };
 
 static StartupTimeStaticInitializer startupTimeStaticInitializer;
-    
+
 }
 
 RelativeTime RelativeTime::fromStartup ()

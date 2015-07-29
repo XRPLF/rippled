@@ -27,7 +27,7 @@
 
 namespace beast {
 namespace insight {
-    
+
 /** A reference to a handler for performing polled collection. */
 class Hook : public Base
 {

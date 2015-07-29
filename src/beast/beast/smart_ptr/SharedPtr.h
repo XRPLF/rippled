@@ -52,9 +52,9 @@ namespace beast {
     abbreviate the full templated name - e.g.
 
     @code
-    
+
     using MyClassPtr = SharedPtr <MyClass>;
-    
+
     @endcode
 
     @see SharedObject, SharedObjectArray

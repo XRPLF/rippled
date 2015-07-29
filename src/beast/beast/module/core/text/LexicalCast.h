@@ -73,7 +73,7 @@ parse_negative_integral (Int& num, FwdIt first, FwdIt last)
     if (limit_digit < 0)
         limit_digit = -limit_digit;
 
-    return parse_integral<Int> (num, first, last, 
+    return parse_integral<Int> (num, first, last,
         [limit_value, limit_digit](Int& value, Int digit)
         {
             assert ((digit >= 0) && (digit <= 9));

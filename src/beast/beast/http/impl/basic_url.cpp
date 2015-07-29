@@ -31,7 +31,7 @@ basic_url_base::parse_impl (string_ref s, boost::system::error_code& ec)
     joyent::http_parser_url p;
 
     value_type const* const data (s.data());
-    
+
     int const error (joyent::http_parser_parse_url (
         data, s.size(), false, &p));
 

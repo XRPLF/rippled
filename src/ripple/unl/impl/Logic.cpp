@@ -58,7 +58,7 @@ Most important thing that we do:
 
 namespace ripple {
 namespace unl {
-    
+
 Logic::Logic (Store& store, beast::Journal journal)
     : /*store_ (store)
     , */journal_ (journal)

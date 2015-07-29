@@ -62,7 +62,7 @@ public:
 
     /** Outputs all the HTTPMessage data excluding the body into a string. */
     String toString () const;
-        
+
 private:
     HTTPVersion m_version;
     HTTPHeaders m_headers;

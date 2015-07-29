@@ -72,7 +72,7 @@ public:
 
     };
 
-    static 
+    static
     Output
     rippleCalculate(
         PaymentSandbox& view,

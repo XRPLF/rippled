@@ -232,7 +232,7 @@ public:
             // There are too many issues when working with soci::row and boost::tuple. DO NOT USE
             // soci row! I had a set of workarounds to make soci row less error prone, I'm keeping
             // these tests in case I try to add soci::row and boost::tuple back into soci.
-#if 0            
+#if 0
             try
             {
                 std::int32_t ig = 0;
@@ -285,7 +285,7 @@ public:
             {
                 fail ();
             }
-#endif        
+#endif
         }
         {
             using namespace boost::filesystem;

@@ -187,7 +187,7 @@ to_string (URL const& url)
 
         s.append (url.scheme ());
         s.append ("://");
-        
+
         if (!url.userinfo ().empty ())
         {
             s.append (url.userinfo ());
