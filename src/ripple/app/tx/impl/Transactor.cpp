@@ -131,8 +131,6 @@ TER Transactor::payFee ()
         if ((mSourceBalance > zero) && ! view().open())
         {
             // Closed ledger, non-zero balance, less than fee
-            mSourceBalance.clear ();
-            sle->setFieldAmount (sfBalance, mSourceBalance);
             return tecINSUFF_FEE;
         }
 
@@ -532,6 +530,7 @@ Transactor::operator()()
     }
 
     bool didApply = isTesSuccess (terResult);
+    auto fee = tx().getTransactionFee ();
 
     if (isTecClaim (terResult) && !(view().flags() & tapRETRY))
     {
@@ -555,7 +554,6 @@ Transactor::operator()()
                 terResult = tefPAST_SEQ;
             else
             {
-                STAmount fee        = tx().getTransactionFee ();
                 STAmount balance    = txnAcct->getFieldAmount (sfBalance);
 
                 // We retry/reject the transaction if the account
@@ -600,7 +598,6 @@ Transactor::operator()()
             // encapsulation of STAmount here and use "special
             // knowledge" - namely that a native amount is
             // stored fully in the mantissa:
-            auto const fee = tx().getTransactionFee ();
 
             // The transactor guarantees these will never trigger
             if (!fee.native () || fee.negative ())
