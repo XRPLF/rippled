@@ -82,7 +82,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (getConfig().RUN_STANDALONE ||
+    if (! context.suspend ||
+        getConfig().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
