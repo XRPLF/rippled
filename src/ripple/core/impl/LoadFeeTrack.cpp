@@ -25,16 +25,39 @@
 
 namespace ripple {
 
-// TODO REMOVE!
-std::uint64_t mulDiv (std::uint64_t value,
-    std::uint32_t mul, std::uint64_t div)
+template <class T1, class T2>
+void lowestTerms(T1& a,  T2& b)
 {
-    static std::uint64_t boundary = (0x00000000FFFFFFFF);
+    std::uint64_t x = a, y = b;
+    while (y != 0)
+    {
+        auto t = x % y;
+        x = y;
+        y = t;
+    }
+    a /= x;
+    b /= x;
+}
 
-    if (value > boundary)                           // Large value, avoid overflow
-        return (value / div) * mul;
-    else                                            // Normal value, preserve accuracy
-        return (value * mul) / div;
+// TODO REMOVE!
+static
+std::uint64_t
+mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
+{
+    lowestTerms(value, div);
+    lowestTerms(mul, div);
+
+    if (value < mul)
+        std::swap(value, mul);
+    const auto max = std::numeric_limits<std::uint64_t>::max();
+    if (value > max / mul)
+    {
+        value /= div;
+        if (value > max / mul)
+            throw std::overflow_error("mulDiv");
+        return value * mul;
+    }
+    return value * mul / div;
 }
 
 // Scale from fee units to millionths of a ripple
@@ -50,32 +73,64 @@ std::uint64_t
 LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
     std::uint32_t referenceFeeUnits, bool bAdmin) const
 {
-    static std::uint64_t midrange (0x00000000FFFFFFFF);
-
-    bool big = (fee > midrange);
-
-    if (big)                // big fee, divide first to avoid overflow
-        fee /= referenceFeeUnits;
-    else                    // normal fee, multiply first for accuracy
-        fee *= baseFee;
-
-    std::uint32_t feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
-
-    // Let admins pay the normal fee until the local load exceeds four times the remote
-    std::uint32_t uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
+    if (fee == 0)
+        return fee;
+    std::uint32_t feeFactor;
+    std::uint32_t uRemFee;
+    {
+        // Collect the fee rates
+        std::lock_guard<std::mutex> sl(mLock);
+        feeFactor = std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee);
+        uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
+    }
+    // Let admins pay the normal fee until
+    //   the local load exceeds four times the remote.
     if (bAdmin && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
         feeFactor = uRemFee;
 
+    // Compute:
+    // fee = fee * baseFee * feeFactor / (referenceFeeUnits * lftNormalFee);
+    // without overflow, and as accurately as possible
+
+    // The denominator of the fraction we're trying to compute.
+    // referenceFeeUnits and lftNormalFee are both 32 bit,
+    //  so the multiplication can't overflow.
+    auto den = static_cast<std::uint64_t>(referenceFeeUnits)
+             * static_cast<std::uint64_t>(lftNormalFee);
+    // Reduce fee * baseFee * feeFactor / (referenceFeeUnits * lftNormalFee)
+    // to lowest terms.
+    lowestTerms(fee, den);
+    lowestTerms(baseFee, den);
+    lowestTerms(feeFactor, den);
+
+    // fee and baseFee are 64 bit, feeFactor is 32 bit
+    // Order fee and baseFee largest first
+    if (fee < baseFee)
+        std::swap(fee, baseFee);
+    // If baseFee * feeFactor overflows, the final result will overflow
+    const auto max = std::numeric_limits<std::uint64_t>::max();
+    if (baseFee > max / feeFactor)
+        throw std::overflow_error("scaleFeeLoad");
+    baseFee *= feeFactor;
+    // Reorder fee and baseFee
+    if (fee < baseFee)
+        std::swap(fee, baseFee);
+    // If fee * baseFee / den might overflow...
+    if (fee > max / baseFee)
     {
-        ScopedLockType sl (mLock);
-        fee = mulDiv (fee, feeFactor, lftNormalFee);
-    }
-
-    if (big)                // Fee was big to start, must now multiply
+        // Do the division first, on the larger of fee and baseFee
+        fee /= den;
+        if (fee > max / baseFee)
+            throw std::overflow_error("scaleFeeLoad");
         fee *= baseFee;
-    else                    // Fee was small to start, mst now divide
-        fee /= referenceFeeUnits;
-
+    }
+    else
+    {
+        // Otherwise fee * baseFee won't overflow,
+        //   so do it prior to the division.
+        fee *= baseFee;
+        fee /= den;
+    }
     return fee;
 }
 
