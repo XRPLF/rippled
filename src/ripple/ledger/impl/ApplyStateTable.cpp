@@ -22,6 +22,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/st.h>
 #include <cassert>
 
 namespace ripple {
@@ -475,27 +476,20 @@ ApplyStateTable::destroyXRP(std::uint64_t feeDrops)
 
 //------------------------------------------------------------------------------
 
-/*  Add a tx to the account root's thread
-    Preconditions:
-        `to` is an account root in newMods or items_
-*/
-bool
+// Insert this transaction to the SLE's threading list
+void
 ApplyStateTable::threadItem (TxMeta& meta,
-    std::shared_ptr<SLE> const& to)
+    std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID;
-    if (! to->thread(meta.getTxID(),
+    if (! sle->thread(meta.getTxID(),
             meta.getLgrSeq(), prevTxID, prevLgrID))
-        return false;
-    if (prevTxID.isZero () ||
-        TxMeta::thread(
-            meta.getAffectedNode(to,
-                sfModifiedNode), prevTxID,
-                    prevLgrID))
-        return true;
-    assert (false);
-    return false;
+        return;
+    if (prevTxID.isZero())
+        return;
+    TxMeta::thread(meta.getAffectedNode(
+        sle, sfModifiedNode), prevTxID, prevLgrID);
 }
 
 std::shared_ptr<SLE>
@@ -544,13 +538,13 @@ ApplyStateTable::getForMod (ReadView const& base,
     return sle;
 }
 
-bool
+void
 ApplyStateTable::threadTx (ReadView const& base,
     TxMeta& meta, AccountID const& to,
         Mods& mods, beast::Journal j)
 {
-    auto const sle = getForMod(
-        base, keylet::account(to).key, mods, j);
+    auto const sle = getForMod(base,
+        keylet::account(to).key, mods, j);
     assert(sle);
     if (! sle)
     {
@@ -559,37 +553,44 @@ ApplyStateTable::threadTx (ReadView const& base,
         JLOG(j.fatal) <<
             "Threading to non-existent account: " <<
                 toBase58(to);
-        return false;
+        return;
     }
-
-    return threadItem (meta, sle);
+    threadItem (meta, sle);
 }
 
-bool
+void
 ApplyStateTable::threadOwners (ReadView const& base,
     TxMeta& meta, std::shared_ptr<
         SLE const> const& sle, Mods& mods,
             beast::Journal j)
 {
-    // thread new or modified sle to owner or owners
-    // VFALCO Why not isFieldPresent?
-    if (sle->getType() != ltACCOUNT_ROOT &&
-        sle->getFieldIndex(sfAccount) != -1)
+    switch(sle->getType())
     {
-        // thread to owner's account
-        return threadTx (base, meta, sle->getAccountID(
-            sfAccount), mods, j);
-    }
-    else if (sle->getType() == ltRIPPLE_STATE)
+    case ltACCOUNT_ROOT:
     {
-        // thread to owner's accounts
-        return
-            threadTx (base, meta, sle->getFieldAmount(
-                sfLowLimit).getIssuer(), mods, j) &&
-            threadTx (base, meta, sle->getFieldAmount(
-                sfHighLimit).getIssuer(), mods, j);
+        // Nothing to do
+        break;
     }
-    return false;
+    case ltSUSPAY:
+    {
+        threadTx (base, meta, (*sle)[sfAccount], mods, j);
+        threadTx (base, meta, (*sle)[sfDestination], mods, j);
+        break;
+    }
+    case ltRIPPLE_STATE:
+    {
+        threadTx (base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
+        threadTx (base, meta, (*sle)[sfHighLimit].getIssuer(), mods, j);
+        break;
+    }
+    default:
+    {
+        // If sfAccount is present, thread to that account
+        if ((*sle)[~sfAccount])
+            threadTx (base, meta, (*sle)[sfAccount], mods, j);
+        break;
+    }
+    }
 }
 
 } // detail

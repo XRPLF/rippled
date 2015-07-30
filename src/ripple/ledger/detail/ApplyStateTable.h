@@ -23,11 +23,10 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/TER.h>
 #include <beast/utility/Journal.h>
 #include <memory>
-// VFALCO TODO Move TxMeta to ripple/ledger/
-#include <ripple/ledger/TxMeta.h>
 
 namespace ripple {
 namespace detail {
@@ -123,7 +122,7 @@ private:
         std::shared_ptr<SLE>>;
 
     static
-    bool
+    void
     threadItem (TxMeta& meta,
         std::shared_ptr<SLE> const& to);
 
@@ -132,12 +131,12 @@ private:
         key_type const& key, Mods& mods,
             beast::Journal j);
 
-    bool
+    void
     threadTx (ReadView const& base, TxMeta& meta,
         AccountID const& to, Mods& mods,
             beast::Journal j);
 
-    bool
+    void
     threadOwners (ReadView const& base,
         TxMeta& meta, std::shared_ptr<
             SLE const> const& sle, Mods& mods,
