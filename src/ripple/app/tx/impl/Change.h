@@ -43,9 +43,6 @@ public:
     preflight (PreflightContext const& ctx);
 
     TER doApply () override;
-    TER checkSign () override;
-    TER checkSeq () override;
-    TER payFee () override;
     void preCompute() override;
 
 private:
@@ -53,10 +50,9 @@ private:
 
     TER applyFee ();
 
-    // VFALCO TODO Can this be removed?
-    bool mustHaveValidAccount () override
+    std::uint64_t calculateBaseFee () override
     {
-        return false;
+        return 0;
     }
 };
 

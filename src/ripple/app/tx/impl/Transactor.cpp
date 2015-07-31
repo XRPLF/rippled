@@ -96,13 +96,6 @@ Transactor::Transactor(
 {
 }
 
-void Transactor::calculateFee ()
-{
-    mFeeDue = STAmount (getApp().getFeeTrack().scaleFeeLoad(
-        calculateBaseFee(), view().fees().base,
-            view().fees().units, view().flags() & tapADMIN));
-}
-
 std::uint64_t Transactor::calculateBaseFee ()
 {
     // Returns the fee in fee units
@@ -113,22 +106,18 @@ TER Transactor::payFee ()
 {
     STAmount saPaid = tx().getTransactionFee ();
 
-    if (!isLegalNet (saPaid))
-        return temBAD_AMOUNT;
+    if (!isLegalNet (saPaid) || saPaid < zero)
+        return temBAD_FEE;
 
     // Only check fee is sufficient when the ledger is open.
     if (view().open() && saPaid < mFeeDue)
     {
         JLOG(j_.trace) << "Insufficient fee paid: " <<
             saPaid.getText () << "/" << mFeeDue.getText ();
-
         return telINSUF_FEE_P;
     }
 
-    if (saPaid < zero || !saPaid.native ())
-        return temBAD_FEE;
-
-    if (!saPaid)
+    if (saPaid == zero)
         return tesSUCCESS;
 
     auto const sle = view().peek(
@@ -216,44 +205,41 @@ TER Transactor::apply ()
 {
     preCompute();
 
-    // Find source account
+    // If the transactor requires a valid account and the transaction doesn't
+    // list one, preflight will have already a flagged a failure.
     auto const sle = view().peek (keylet::account(account_));
 
-    calculateFee ();
-
-    // If are only forwarding, due to resource limitations, we might verifying
-    // only some transactions, this would be probabilistic.
-    if (!sle)
+    if (sle == nullptr && account_ != zero)
     {
-        if (mustHaveValidAccount ())
-        {
-            JLOG(j_.trace) <<
-                "applyTransaction: delay: source account does not exist " <<
-                toBase58(tx().getAccountID(sfAccount));
-            return terNO_ACCOUNT;
-        }
+        JLOG (j_.trace) <<
+            "apply: source account " << toBase58(account_) << " not found.";
+        return terNO_ACCOUNT;
     }
-    else
+
+    mFeeDue = STAmount (getApp().getFeeTrack().scaleFeeLoad(
+        calculateBaseFee(), view().fees().base,
+            view().fees().units, view().flags() & tapADMIN));
+
+    if (sle)
     {
         mPriorBalance   = sle->getFieldAmount (sfBalance);
         mSourceBalance  = mPriorBalance;
         mHasAuthKey     = sle->isFieldPresent (sfRegularKey);
-    }
 
-    auto terResult = checkSeq ();
+        auto terResult = checkSeq ();
 
-    if (terResult != tesSUCCESS) return terResult;
+        if (terResult != tesSUCCESS) return terResult;
 
-    terResult = payFee ();
+        terResult = payFee ();
 
-    if (terResult != tesSUCCESS) return terResult;
+        if (terResult != tesSUCCESS) return terResult;
 
-    terResult = checkSign ();
+        terResult = checkSign ();
 
-    if (terResult != tesSUCCESS) return terResult;
+        if (terResult != tesSUCCESS) return terResult;
 
-    if (sle)
         view().update (sle);
+    }
 
     return doApply ();
 }

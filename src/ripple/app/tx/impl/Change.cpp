@@ -34,15 +34,27 @@ Change::preflight (PreflightContext const& ctx)
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != zero)
     {
-        JLOG(ctx.j.warning) << "Bad source id";
+        JLOG(ctx.j.warning) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
     }
 
     auto const fee = ctx.tx.getTransactionFee ();
     if (!fee.native () || fee != beast::zero)
     {
-        JLOG(ctx.j.warning) << "Non-zero fee";
+        JLOG(ctx.j.warning) << "Change: Non-zero fee";
         return temBAD_FEE;
+    }
+
+    if (!ctx.tx.getSigningPubKey ().empty () || !ctx.tx.getSignature ().empty ())
+    {
+        JLOG(ctx.j.warning) << "Change: Bad signature";
+        return temBAD_SIGNATURE;
+    }
+
+    if (ctx.tx.getSequence () != 0 || ctx.tx.isFieldPresent (sfPreviousTxnID))
+    {
+        JLOG(ctx.j.warning) << "Change: Bad sequence";
+        return temBAD_SEQUENCE;
     }
 
     return tesSUCCESS;
@@ -66,42 +78,6 @@ Change::doApply()
         return applyFee ();
 
     return temUNKNOWN;
-}
-
-TER
-Change::checkSign()
-{
-    if (!tx().getSigningPubKey ().empty () || !tx().getSignature ().empty ())
-    {
-        j_.warning << "Bad signature";
-        return temBAD_SIGNATURE;
-    }
-
-    return tesSUCCESS;
-}
-
-TER
-Change::checkSeq()
-{
-    if ((tx().getSequence () != 0) || tx().isFieldPresent (sfPreviousTxnID))
-    {
-        j_.warning << "Bad sequence";
-        return temBAD_SEQUENCE;
-    }
-
-    return tesSUCCESS;
-}
-
-TER
-Change::payFee()
-{
-    if (tx().getTransactionFee () != beast::zero)
-    {
-        j_.warning << "Non-zero fee";
-        return temBAD_FEE;
-    }
-
-    return tesSUCCESS;
 }
 
 void
