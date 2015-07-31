@@ -17,6 +17,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx.h>
+#include <ripple/app/tx/apply.h>
 
 namespace ripple {
 namespace test {
@@ -37,9 +38,86 @@ struct Regression_test : public beast::unit_test::suite
             )raw"), require(owners("alice", 1)));
     }
 
+    void testLowBalanceDestroy()
+    {
+        testcase("Account balance < fee destroys correct amount of XRP");
+        using namespace jtx;
+        Env env(*this);
+        env.memoize("alice");
+
+        // The low balance scenario can not deterministically
+        // be reproduced against an open ledger. Make a local
+        // closed ledger and work with it directly.
+        auto closed = std::make_shared<Ledger>(
+            create_genesis, env.config);
+        auto expectedDrops = SYSTEM_CURRENCY_START;
+        expect(closed->info().drops == expectedDrops);
+
+        auto const aliceXRP = 400;
+        auto const aliceAmount = XRP(aliceXRP);
+
+        auto next = std::make_shared<Ledger>(
+            open_ledger, *closed);
+        next->setClosed();
+        {
+            // Fund alice
+            auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
+            OpenView accum(&*next);
+
+            auto const result = ripple::apply(
+                accum, *jt.stx, tapENABLE_TESTING,
+                    directSigVerify, env.config,
+                        env.journal);
+            expect(result.first == tesSUCCESS);
+            expect(result.second);
+
+            accum.apply(*next);
+        }
+        expectedDrops -= next->fees().base;
+        expect(next->info().drops == expectedDrops);
+        {
+            auto const sle = next->read(
+                keylet::account(Account("alice").id()));
+            expect(sle, "sle");
+            auto balance = sle->getFieldAmount(sfBalance);
+
+            expect(balance == aliceAmount );
+        }
+
+        {
+            // Specify the seq manually since the env's open ledger
+            // doesn't know about this account.
+            auto const jt = env.jt(noop("alice"), fee(expectedDrops),
+                seq(1));
+                
+            OpenView accum(&*next);
+
+            auto const result = ripple::apply(
+                accum, *jt.stx, tapENABLE_TESTING,
+                    directSigVerify, env.config,
+                        env.journal);
+            expect(result.first == tecINSUFF_FEE);
+            expect(result.second);
+
+            accum.apply(*next);
+        }
+        {
+            auto const sle = next->read(
+                keylet::account(Account("alice").id()));
+            expect(sle, "sle");
+            auto balance = sle->getFieldAmount(sfBalance);
+
+            expect(balance == XRP(0));
+        }
+        expectedDrops -= aliceXRP * dropsPerXRP<int>::value;
+        expect(next->info().drops == expectedDrops,
+            "next->info().drops == expectedDrops");
+    }
+
     void run() override
     {
         testOffer1();
+        testLowBalanceDestroy();
     }
 };
 
