@@ -17,18 +17,29 @@
 
 """
 Invocation:
-  ./Builds/Test.py - builds and tests all configurations
 
-#
-# The build must succeed without shell aliases for this to work.
-#
-# Common problems:
-# 1) Boost not found. Solution: export BOOST_ROOT=[path to boost folder]
-# 2) OpenSSL not found. Solution: export OPENSSL_ROOT=[path to OpenSSL folder]
-# 3) scons is an alias. Solution: Create a script named "scons" somewhere in
-#    your $PATH (eg. ~/bin/scons will often work).
-#       #!/bin/sh
-#       python /C/Python27/Scripts/scons.py "${@}"
+    ./Builds/Test.py - builds and tests all configurations
+
+The build must succeed without shell aliases for this to work.
+
+To pass flags to scons, put them at the very end of the command line, after
+the -- flag - like this:
+
+    ./Builds/Test.py -- -j4   # Pass -j4 to scons.
+
+
+Common problems:
+
+1) Boost not found. Solution: export BOOST_ROOT=[path to boost folder]
+
+2) OpenSSL not found. Solution: export OPENSSL_ROOT=[path to OpenSSL folder]
+
+3) scons is an alias. Solution: Create a script named "scons" somewhere in
+   your $PATH (eg. ~/bin/scons will often work).
+
+      #!/bin/sh
+      python /C/Python27/Scripts/scons.py "${@}"
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
