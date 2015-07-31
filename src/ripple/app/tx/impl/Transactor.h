@@ -94,28 +94,17 @@ protected:
     explicit
     Transactor (ApplyContext& ctx);
 
-    void calculateFee ();
-
-    // VFALCO This is the equivalent of dynamic_cast
-    //        to discover the type of the derived class,
-    //        and therefore bad.
-    virtual
-    bool
-    mustHaveValidAccount()
-    {
-        return true;
-    }
-
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
     virtual std::uint64_t calculateBaseFee ();
 
     virtual void preCompute();
-    virtual TER checkSeq ();
-    virtual TER payFee ();
-    virtual TER checkSign ();
+
     virtual TER doApply () = 0;
 
 private:
+    TER checkSeq ();
+    TER checkSign ();
+    TER payFee ();
     TER checkSingleSign ();
     TER checkMultiSign ();
 };
