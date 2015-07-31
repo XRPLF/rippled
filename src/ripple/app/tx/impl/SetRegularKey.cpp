@@ -44,6 +44,10 @@ SetRegularKey::calculateBaseFee ()
 TER
 SetRegularKey::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     std::uint32_t const uTxFlags = ctx.tx.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
@@ -54,7 +58,7 @@ SetRegularKey::preflight (PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2(ctx);
 }
 
 TER

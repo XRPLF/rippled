@@ -33,6 +33,10 @@ CreateTicket::preflight (PreflightContext const& ctx)
         return temDISABLED;
 #endif
 
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     if (ctx.tx.isFieldPresent (sfExpiration))
     {
         if (ctx.tx.getFieldU32 (sfExpiration) == 0)
@@ -43,7 +47,7 @@ CreateTicket::preflight (PreflightContext const& ctx)
         }
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 STAmount

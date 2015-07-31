@@ -87,10 +87,6 @@ public:
         return ctx_.tx;
     }
 
-    static
-    TER
-    preflight (PreflightContext const& ctx);
-
 protected:
     TER
     apply();
@@ -123,6 +119,14 @@ private:
     TER checkSingleSign ();
     TER checkMultiSign ();
 };
+
+/** Performs early sanity checks on the account and fee fields */
+TER
+preflight1 (PreflightContext const& ctx);
+
+/** Checks whether the signature appears valid */
+TER
+preflight2 (PreflightContext const& ctx);
 
 }
 
