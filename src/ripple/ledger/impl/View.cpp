@@ -313,9 +313,9 @@ areCompatible (ReadView const& validLedger, ReadView const& testLedger,
 {
     bool ret = true;
 
-    // valid -> ... -> test
     if (validLedger.info().seq < testLedger.info().seq)
     {
+        // valid -> ... -> test
         auto hash = hashOfSeq (testLedger, validLedger.info().seq,
             beast::Journal());
         if (hash && (*hash != validLedger.info().hash))
@@ -327,10 +327,9 @@ areCompatible (ReadView const& validLedger, ReadView const& testLedger,
             ret = false;
         }
     }
-
-    // test -> ... -> valid
-    if (validLedger.info().seq > testLedger.info().seq)
+    else if (validLedger.info().seq > testLedger.info().seq)
     {
+        // test -> ... -> valid
         auto hash = hashOfSeq (validLedger, testLedger.info().seq,
             beast::Journal());
         if (hash && (*hash != testLedger.info().hash))
@@ -342,11 +341,10 @@ areCompatible (ReadView const& validLedger, ReadView const& testLedger,
             ret = false;
         }
     }
-
-    // Same sequence number, different hash
-    if ((validLedger.info().seq == testLedger.info().seq) &&
+    else if ((validLedger.info().seq == testLedger.info().seq) &&
          (validLedger.info().hash != testLedger.info().hash))
     {
+        // Same sequence number, different hash
         JLOG(s) << reason << " incompatible ledger";
 
         ret = false;
@@ -382,8 +380,7 @@ bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
             ret = false;
         }
     }
-
-    if ((validIndex == testLedger.info().seq) &&
+    else if ((validIndex == testLedger.info().seq) &&
         (testLedger.info().hash != validHash))
     {
         JLOG(s) << reason << " incompatible ledger";
