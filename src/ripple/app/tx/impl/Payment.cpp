@@ -41,6 +41,10 @@ allowDeliverMin (ApplyView const& view)
 TER
 Payment::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -187,7 +191,7 @@ Payment::preflight (PreflightContext const& ctx)
         }
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 TER

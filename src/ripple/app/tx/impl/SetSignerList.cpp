@@ -80,6 +80,10 @@ SetSignerList::preflight (PreflightContext const& ctx)
         return temDISABLED;
 #endif
 
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
     if (std::get<0>(result) != tesSUCCESS)
         return std::get<0>(result);
@@ -105,7 +109,7 @@ SetSignerList::preflight (PreflightContext const& ctx)
         }
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 TER

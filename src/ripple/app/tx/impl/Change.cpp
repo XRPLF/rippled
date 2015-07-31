@@ -32,11 +32,17 @@ TER
 Change::preflight (PreflightContext const& ctx)
 {
     auto account = ctx.tx.getAccountID(sfAccount);
-
-    if (account.isNonZero ())
+    if (account != zero)
     {
         JLOG(ctx.j.warning) << "Bad source id";
         return temBAD_SRC_ACCOUNT;
+    }
+
+    auto const fee = ctx.tx.getTransactionFee ();
+    if (!fee.native () || fee != beast::zero)
+    {
+        JLOG(ctx.j.warning) << "Non-zero fee";
+        return temBAD_FEE;
     }
 
     return tesSUCCESS;
@@ -89,7 +95,7 @@ Change::checkSeq()
 TER
 Change::payFee()
 {
-    if (tx().getTransactionFee () != STAmount ())
+    if (tx().getTransactionFee () != beast::zero)
     {
         j_.warning << "Non-zero fee";
         return temBAD_FEE;

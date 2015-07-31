@@ -29,6 +29,10 @@ namespace ripple {
 TER
 CancelOffer::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     auto const uTxFlags = ctx.tx.getFlags();
 
     if (uTxFlags & tfUniversalMask)
@@ -46,7 +50,7 @@ CancelOffer::preflight (PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2(ctx);
 }
 
 //------------------------------------------------------------------------------

@@ -109,7 +109,7 @@ namespace ripple {
     SusPayCancel
 
         Any account may submit a SusPayCancel transaction.
-        
+
         If the SusPay ledger entry does not specify a
         sfCancelAfter, the cancel transaction will fail.
 
@@ -136,6 +136,10 @@ SusPayCreate::preflight (PreflightContext const& ctx)
             ctx.config.features))
         return temDISABLED;
 
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     if (! isXRP(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
@@ -150,7 +154,7 @@ SusPayCreate::preflight (PreflightContext const& ctx)
             ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 TER
@@ -187,12 +191,12 @@ SusPayCreate::doApply()
     auto const sle = ctx_.view().peek(
         keylet::account(account));
 
-    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) < 
+    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) <
         XRPAmount(ctx_.view().fees().accountReserve(
             (*sle)[sfOwnerCount] + 1)))
         return tecINSUFFICIENT_RESERVE;
 
-    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) < 
+    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) <
         amount + XRPAmount(ctx_.view().fees().accountReserve(
             (*sle)[sfOwnerCount] + 1)))
         return tecUNFUNDED;
@@ -239,7 +243,7 @@ SusPayCreate::doApply()
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] + 1;
     ctx_.view().update(sle);
-    
+
     return tesSUCCESS;
 }
 
@@ -252,6 +256,10 @@ SusPayFinish::preflight (PreflightContext const& ctx)
         ! ctx.rules.enabled(featureSusPay,
             ctx.config.features))
         return temDISABLED;
+
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
 
     if (ctx.tx[~sfMethod])
     {
@@ -291,7 +299,7 @@ SusPayFinish::preflight (PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 TER
@@ -362,7 +370,11 @@ SusPayCancel::preflight (PreflightContext const& ctx)
             ctx.config.features))
         return temDISABLED;
 
-    return Transactor::preflight(ctx);
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
+    return preflight2 (ctx);
 }
 
 TER

@@ -32,7 +32,12 @@ CancelTicket::preflight (PreflightContext const& ctx)
     if (! (ctx.flags & tapENABLE_TESTING))
         return temDISABLED;
 #endif
-    return Transactor::preflight(ctx);
+
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
+    return preflight2 (ctx);
 }
 
 TER

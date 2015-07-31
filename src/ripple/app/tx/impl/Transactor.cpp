@@ -30,30 +30,42 @@
 
 namespace ripple {
 
+/** Performs early sanity checks on the account and fee fields */
 TER
-Transactor::preflight (PreflightContext const& ctx)
+preflight1 (PreflightContext const& ctx)
 {
-    auto& tx = ctx.tx;
-    auto& j = ctx.j;
-
-    auto const id = tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getAccountID(sfAccount);
     if (id == zero)
     {
-        JLOG(j.warning) << "Transactor::preflight: bad account id";
+        JLOG(ctx.j.warning) << "preflight1: bad account id";
         return temBAD_SRC_ACCOUNT;
     }
 
+    // No point in going any further if the transaction fee is malformed.
+    auto const fee = ctx.tx.getTransactionFee ();
+    if (!fee.native () || fee < beast::zero || !isLegalNet (fee))
+    {
+        JLOG(ctx.j.debug) << "preflight1: invalid fee";
+        return temBAD_FEE;
+    }
+
+    return tesSUCCESS;
+}
+
+/** Checks whether the signature appears valid */
+TER
+preflight2 (PreflightContext const& ctx)
+{
     // Extract signing key
     // Transactions contain a signing key.  This allows us to trivially verify a
     // transaction has at least been properly signed without going to disk.
     // Each transaction also notes a source account id. This is used to verify
     // that the signing key is associated with the account.
     // XXX This could be a lot cleaner to prevent unnecessary copying.
-    auto const pk =
-        RippleAddress::createAccountPublic(
-            tx.getSigningPubKey());
+    auto const pk = RippleAddress::createAccountPublic(
+        ctx.tx.getSigningPubKey());
 
-    if(! ctx.verify(tx,
+    if(! ctx.verify(ctx.tx,
         [&, ctx] (STTx const& tx)
         {
             return (ctx.flags & tapNO_CHECK_SIGN) ||
@@ -66,7 +78,7 @@ Transactor::preflight (PreflightContext const& ctx)
                 );
         }))
     {
-        JLOG(j.debug) << "apply: Invalid transaction (bad signature)";
+        JLOG(ctx.j.debug) << "preflight2: bad signature";
         return temINVALID;
     }
 
@@ -202,12 +214,6 @@ void Transactor::preCompute ()
 
 TER Transactor::apply ()
 {
-    // No point in going any further if the transaction fee is malformed.
-    STAmount const saTxnFee = tx().getTransactionFee ();
-
-    if (!saTxnFee.native () || saTxnFee.negative () || !isLegalNet (saTxnFee))
-        return temBAD_FEE;
-
     preCompute();
 
     // Find source account

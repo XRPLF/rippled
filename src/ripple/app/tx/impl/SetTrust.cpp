@@ -30,6 +30,10 @@ namespace ripple {
 TER
 SetTrust::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -79,7 +83,7 @@ SetTrust::preflight (PreflightContext const& ctx)
         return temDST_NEEDED;
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2 (ctx);
 }
 
 TER

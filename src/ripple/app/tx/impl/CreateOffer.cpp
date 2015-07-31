@@ -36,6 +36,10 @@ namespace ripple {
 TER
 CreateOffer::preflight (PreflightContext const& ctx)
 {
+    auto const ret = preflight1 (ctx);
+    if (!isTesSuccess (ret))
+        return ret;
+
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -123,7 +127,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return Transactor::preflight(ctx);
+    return preflight2(ctx);
 }
 
 TER
