@@ -191,7 +191,7 @@ Payment::preflight (PreflightContext const& ctx)
         }
     }
 
-    return preflight1 (ctx);
+    return preflight2 (ctx);
 }
 
 TER
