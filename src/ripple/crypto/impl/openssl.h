@@ -130,13 +130,6 @@ public:
 
 bignum get_order (EC_GROUP const* group, bn_ctx& ctx);
 
-inline bignum get_order (EC_GROUP const* group)
-{
-    bn_ctx ctx;
-
-    return get_order (group, ctx);
-}
-
 inline void add_to (bignum const& a,
                     bignum& b,
                     bignum const& modulus,
