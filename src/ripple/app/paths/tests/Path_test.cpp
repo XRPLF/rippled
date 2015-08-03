@@ -83,14 +83,14 @@ public:
             {Account("alice")["USD"]}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
-		        "paths_canonical" : [],
-		        "paths_computed" : [],
-		        "source_amount" :
-		        {
-			        "currency" : "USD",
-			        "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
-			        "value" : "5"
-		        }
+                "paths_canonical" : [],
+                "paths_computed" : [],
+                "source_amount" :
+                {
+                    "currency" : "USD",
+                    "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
+                    "value" : "5"
+                }
             }])", jv);
         expect(jv == alternatives);
     }
@@ -130,14 +130,14 @@ public:
             {USD}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
-		        "paths_canonical" : [],
-		        "paths_computed" : [],
-		        "source_amount" :
-		        {
-			        "currency" : "USD",
-			        "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
-			        "value" : "5"
-		        }
+                "paths_canonical" : [],
+                "paths_computed" : [],
+                "source_amount" :
+                {
+                    "currency" : "USD",
+                    "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
+                    "value" : "5"
+                }
             }])", jv);
         expect(jv == alternatives);
     }
@@ -157,14 +157,14 @@ public:
             {USD}, Account("bob")["USD"](1));
         Json::Value jv;
         Json::Reader().parse(R"([{
-		        "paths_canonical" : [],
-		        "paths_computed" : [],
-		        "source_amount" :
-		        {
-			        "currency" : "USD",
-			        "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
-			        "value" : "1"
-		        }
+                "paths_canonical" : [],
+                "paths_computed" : [],
+                "source_amount" :
+                {
+                    "currency" : "USD",
+                    "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
+                    "value" : "1"
+                }
             }])", jv);
         expect(jv == alternatives);
     }
@@ -280,14 +280,14 @@ public:
             {USD}, Account("bob")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
-		        "paths_canonical" : [],
-		        "paths_computed" : [],
-		        "source_amount" :
-		        {
-			        "currency" : "USD",
-			        "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
-			        "value" : "5"
-		        }
+                "paths_canonical" : [],
+                "paths_computed" : [],
+                "source_amount" :
+                {
+                    "currency" : "USD",
+                    "issuer" : "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29",
+                    "value" : "5"
+                }
             }])", jv);
         expect(jv == alternatives);
     }
@@ -410,23 +410,23 @@ public:
             {Account("alice")["USD"]}, Account("carol")["USD"](5));
         Json::Value jv;
         Json::Reader().parse(R"([{
-		        "paths_canonical" : [],
-		        "paths_computed" :
-		        [
-			        [
-				        {
-					        "account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-					        "type" : 1,
-					        "type_hex" : "0000000000000001"
-				        }
-			        ]
-		        ],
-		        "source_amount" :
-		        {
-			        "currency" : "USD",
-			        "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
-			        "value" : "5"
-		        }
+                "paths_canonical" : [],
+                "paths_computed" :
+                [
+                    [
+                        {
+                            "account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+                            "type" : 1,
+                            "type_hex" : "0000000000000001"
+                        }
+                    ]
+                ],
+                "source_amount" :
+                {
+                    "currency" : "USD",
+                    "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
+                    "value" : "5"
+                }
             }])", jv);
         expect(jv == alternatives);
     }
@@ -463,7 +463,7 @@ public:
                     "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
                     "value" : "0"
                 },
-	            "LowNode" : "0000000000000000"
+                "LowNode" : "0000000000000000"
             })", jv);
 
         auto const jv_l = env.le(keylet::line(Account("bob").id(),
@@ -488,7 +488,7 @@ public:
                     "issuer" : "rrrrrrrrrrrrrrrrrrrrBZbvji",
                     "value" : "0"
                 },
-	            "Flags" : 196608,
+                "Flags" : 196608,
                 "HighLimit" : {
                     "currency" : "USD",
                     "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
@@ -529,24 +529,24 @@ public:
         Json::Reader().parse(R"({
                 "Balance" :
                 {
-	                "currency" : "USD",
-	                "issuer" : "rrrrrrrrrrrrrrrrrrrrBZbvji",
-	                "value" : "50"
+                    "currency" : "USD",
+                    "issuer" : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                    "value" : "50"
                 },
                 "Flags" : 65536,
                 "HighLimit" :
                 {
-	                "currency" : "USD",
-	                "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-	                "value" : "0"
+                    "currency" : "USD",
+                    "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+                    "value" : "0"
                 },
                 "HighNode" : "0000000000000000",
                 "LedgerEntryType" : "RippleState",
                 "LowLimit" :
                 {
-	                "currency" : "USD",
-	                "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
-	                "value" : "0"
+                    "currency" : "USD",
+                    "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
+                    "value" : "0"
                 },
                 "LowNode" : "0000000000000000"
             })", jv);
