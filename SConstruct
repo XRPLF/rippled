@@ -266,6 +266,7 @@ def config_base(env):
         'OPENSSL_NO_SSL2'
         ,'DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER'
         ,{'HAVE_USLEEP' : '1'}
+        ,{'SOCI_CXX_C11' : '1'}
         ])
 
     try:
@@ -553,6 +554,7 @@ base.Append(CPPPATH=[
     os.path.join('src', 'beast'),
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
+    os.path.join('src','soci','include'),
     ])
 
 base.Decider('MD5-timestamp')
@@ -634,6 +636,7 @@ def get_soci_sources(style):
     result = []
     cpp_path = [
         'src/soci/src/core',
+        'src/soci/include/private',
         'src/sqlite', ]
     append_sources(result,
                    'src/ripple/unity/soci.cpp',
