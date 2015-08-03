@@ -529,6 +529,18 @@
     <Filter Include="soci">
       <UniqueIdentifier>{E5334950-60C3-CE41-4DD7-535029F143F7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="soci\include">
+      <UniqueIdentifier>{326BC235-4389-131A-EFCF-B54C652509F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\include\private">
+      <UniqueIdentifier>{95BB48F7-02FF-05FA-0112-506B0BB188FE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\include\soci">
+      <UniqueIdentifier>{227F15C2-FEEE-AFD6-835C-989647DBEBE2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="soci\include\soci\sqlite3">
+      <UniqueIdentifier>{AEF95E82-C569-5213-CEFC-7546DD7CDD77}</UniqueIdentifier>
+    </Filter>
     <Filter Include="soci\src">
       <UniqueIdentifier>{5A1D8022-39F2-67E1-FFBE-EA7D5BF9FBDB}</UniqueIdentifier>
     </Filter>
@@ -5481,6 +5493,153 @@
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
       <Filter>snappy\snappy</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-compiler.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-cpp.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-cstrtod.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-dtocstr.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-exchange-cast.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-mktime.h">
+      <Filter>soci\include\private</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\backend-loader.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\bind-values.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\blob-exchange.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\blob.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-fusion.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-gregorian-date.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-optional.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-tuple.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\connection-parameters.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\connection-pool.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\error.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\exchange-traits.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\into-type.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\into.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\noreturn.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\once-temp-type.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\prepare-temp-type.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\procedure.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\query_transformation.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\ref-counted-prepare-info.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\ref-counted-statement.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\row-exchange.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\row.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowid-exchange.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowid.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowset.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\session.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-backend.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-platform.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-simple.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\sqlite3\soci-sqlite3.h">
+      <Filter>soci\include\soci\sqlite3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\statement.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\transaction.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-conversion-traits.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-conversion.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-holder.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-ptr.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\unsigned-types.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\use-type.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\use.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\values-exchange.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\values.h">
+      <Filter>soci\include\soci</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>
@@ -5490,6 +5649,9 @@
     <ClInclude Include="..\..\src\soci\src\backends\sqlite3\common.h">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\error.cpp">
+      <Filter>soci\src\backends\sqlite3</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\factory.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>
@@ -5499,9 +5661,6 @@
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\session.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\backends\sqlite3\soci-sqlite3.h">
-      <Filter>soci\src\backends\sqlite3</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\standard-into-type.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>
@@ -5517,186 +5676,60 @@
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\vector-use-type.cpp">
       <Filter>soci\src\backends\sqlite3</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\backend-loader.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\blob-exchange.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\blob.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\blob.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-fusion.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-gregorian-date.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-optional.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-tuple.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\connection-parameters.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\connection-parameters.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\connection-pool.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\connection-pool.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\error.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\error.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\exchange-traits.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\into-type.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\into-type.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\into.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\once-temp-type.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\once-temp-type.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\prepare-temp-type.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\prepare-temp-type.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\procedure.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\procedure.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\query_transformation.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\ref-counted-prepare-info.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\ref-counted-prepare-info.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\ref-counted-statement.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\ref-counted-statement.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\row-exchange.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\row.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\row.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\rowid-exchange.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\rowid.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\rowid.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\rowset.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\session.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\session.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-backend.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-config.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-platform.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\soci-simple.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\soci-simple.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\statement.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\statement.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\transaction.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\transaction.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-conversion-traits.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-conversion.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-holder.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-ptr.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\unsigned-types.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\use-type.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\use-type.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\use.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\values-exchange.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\values.cpp">
       <Filter>soci\src\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\values.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
-      <Filter>soci\src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
       <Filter>sqlite</Filter>
     </ClInclude>

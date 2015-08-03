@@ -32,7 +32,7 @@
 #include <ripple/core/JobQueue.h>
 #include <beast/threads/Thread.h>
 #define SOCI_USE_BOOST
-#include <core/soci.h>
+#include <soci/soci.h>
 #include <string>
 #include <cstdint>
 #include <vector>
