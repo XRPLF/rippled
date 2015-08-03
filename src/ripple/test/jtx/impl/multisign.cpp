@@ -103,7 +103,7 @@ msig::operator()(Env const& env, JTx& jt) const
             auto const sig = ripple::sign (
                 *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] =
-            	strHex(Slice{ sig.data(), sig.size() });
+                strHex(Slice{ sig.data(), sig.size() });
         }
     };
 }

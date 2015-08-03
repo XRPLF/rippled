@@ -90,9 +90,9 @@ maybe_reverse_bytes(T& t, Hasher&)
 // is_uniquely_represented<T>
 
 // A type T is contiguously hashable if for all combinations of two values of
-// 	a type, say x and y, if x == y, then it must also be true that
-// 	memcmp(addressof(x), addressof(y), sizeof(T)) == 0. I.e. if x == y,
-// 	then x and y have the same bit pattern representation.
+// a type, say x and y, if x == y, then it must also be true that
+// memcmp(addressof(x), addressof(y), sizeof(T)) == 0. I.e. if x == y,
+// then x and y have the same bit pattern representation.
 
 template <class T>
 struct is_uniquely_represented

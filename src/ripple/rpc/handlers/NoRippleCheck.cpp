@@ -184,7 +184,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                     return true;
                 }
             }
-	    return false;
+            return false;
         });
 
     return result;

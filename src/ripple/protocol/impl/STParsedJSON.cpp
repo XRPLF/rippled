@@ -836,10 +836,10 @@ static boost::optional <detail::STVar> parseArray (
             }
 
             if (ret->getFName().fieldType != STI_OBJECT)
-	    {
-	        error = non_object_in_array (ss.str(), i);
-	        return boost::none;
-	    }
+            {
+                error = non_object_in_array (ss.str(), i);
+                return boost::none;
+            }
 
             tail.push_back (std::move (*ret));
         }
