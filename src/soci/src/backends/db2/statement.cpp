@@ -7,16 +7,11 @@
 //
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
+#include "soci/db2/soci-db2.h"
 #include <cctype>
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
 
 using namespace soci;
 using namespace soci::details;
-
 
 db2_statement_backend::db2_statement_backend(db2_session_backend &session)
     : session_(session),hasVectorUseElements(false),use_binding_method_(details::db2::BOUND_BY_NONE)
@@ -102,7 +97,7 @@ void db2_statement_backend::prepare(std::string const &  query ,
             }
             else // end of name
             {
-                names.push_back(name);
+                names_.push_back(name);
                 name.clear();
                 std::ostringstream ss;
                 ss << '?';
@@ -117,7 +112,7 @@ void db2_statement_backend::prepare(std::string const &  query ,
 
     if (state == in_name)
     {
-        names.push_back(name);
+        names_.push_back(name);
         std::ostringstream ss;
         ss << '?';
         query_ += ss.str();
@@ -171,7 +166,7 @@ db2_statement_backend::fetch(int  number )
     numRowsFetched = 0;
 
     SQLSetStmtAttr(hStmt, SQL_ATTR_ROW_BIND_TYPE, SQL_BIND_BY_COLUMN, 0);
-    SQLSetStmtAttr(hStmt, SQL_ATTR_ROW_ARRAY_SIZE, (SQLPOINTER)number, 0);
+    SQLSetStmtAttr(hStmt, SQL_ATTR_ROW_ARRAY_SIZE, db2::int_as_ptr(number), 0);
     SQLSetStmtAttr(hStmt, SQL_ATTR_ROWS_FETCHED_PTR, &numRowsFetched, 0);
 
     SQLRETURN cliRC = SQLFetch(hStmt);
@@ -200,7 +195,7 @@ long long db2_statement_backend::get_affected_rows()
     }
     else if (rows == -1)
     {
-        throw soci_error("Error getting affected row count: statement did not perform an update, insert, delete, or merge"); 
+        throw soci_error("Error getting affected row count: statement did not perform an update, insert, delete, or merge");
     }
 
     return rows;
@@ -209,6 +204,11 @@ long long db2_statement_backend::get_affected_rows()
 int db2_statement_backend::get_number_of_rows()
 {
     return numRowsFetched;
+}
+
+std::string db2_statement_backend::get_parameter_name(int index) const
+{
+    return names_.at(index);
 }
 
 std::string db2_statement_backend::rewrite_for_procedure_call(
@@ -278,7 +278,7 @@ SQLCHAR colNameBuffer[2048];
     }
 }
 
-std::size_t db2_statement_backend::column_size(int col) {
+size_t db2_statement_backend::column_size(int col) {
     SQLCHAR colNameBuffer[2048];
     SQLSMALLINT colNameBufferOverflow;
     SQLSMALLINT dataType;
@@ -296,7 +296,7 @@ std::size_t db2_statement_backend::column_size(int col) {
         throw db2_soci_error(db2_soci_error::sqlState("Error while detecting column size",SQL_HANDLE_STMT,hStmt),cliRC);
     }
 
-    return colSize;    
+    return colSize;
 }
 
 db2_standard_into_type_backend * db2_statement_backend::make_into_type_backend()

@@ -6,8 +6,8 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include "common.h"
+#include "soci/firebird/soci-firebird.h"
+#include "firebird/common.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -201,7 +201,7 @@ void firebird_vector_into_type_backend::clean_up()
         delete [] buf_;
         buf_ = NULL;
     }
-    std::vector<void*>::iterator it = 
+    std::vector<void*>::iterator it =
         std::find(statement_.intos_.begin(), statement_.intos_.end(), this);
     if (it != statement_.intos_.end())
         statement_.intos_.erase(it);

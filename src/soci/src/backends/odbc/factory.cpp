@@ -6,8 +6,8 @@
 //
 
 #define SOCI_ODBC_SOURCE
-#include "soci-odbc.h"
-#include <backend-loader.h>
+#include "soci/odbc/soci-odbc.h"
+#include "soci/backend-loader.h"
 
 using namespace soci;
 using namespace soci::details;

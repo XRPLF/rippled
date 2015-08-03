@@ -6,8 +6,8 @@
 //
 
 #define SOCI_POSTGRESQL_SOURCE
-#include "soci-postgresql.h"
-#include <backend-loader.h>
+#include "soci/postgresql/soci-postgresql.h"
+#include "soci/backend-loader.h"
 #include <libpq/libpq-fs.h> // libpq
 
 #ifdef SOCI_POSTGRESQL_NOPARAMS

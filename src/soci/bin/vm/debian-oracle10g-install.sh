@@ -28,7 +28,7 @@ function free_restore()
 # Install fake free
 # http://www.axelog.de/2010/02/7-oracle-ee-refused-to-install-into-openvz/
 free_backup
-cat <<EOF >> /usr/bin/free 
+cat <<EOF >> /usr/bin/free
 #!/bin/sh
 cat <<__eof
              total       used       free     shared    buffers     cached

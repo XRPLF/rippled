@@ -1,7 +1,7 @@
 # The following variable is specific to this backend and its correct
 # values might depend on your environment - feel free to set it accordingly.
 
-FIREBIRDINCLUDEDIR = -I/usr/local/firebird/include 
+FIREBIRDINCLUDEDIR = -I/usr/local/firebird/include
 
 # The rest of the Makefile is indepentent of the target environment.
 
@@ -24,9 +24,9 @@ libsoci_firebird.a : ${OBJECTS}
 	ar rv $@ $?
 	rm *.o
 
-soci-firebird.o : soci-firebird.cpp 
+soci-firebird.o : soci-firebird.cpp
 	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
-	
+
 blob.o : blob.cpp
 	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
 

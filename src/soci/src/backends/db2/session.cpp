@@ -7,8 +7,8 @@
 //
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
-#include <connection-parameters.h>
+#include "soci/db2/soci-db2.h"
+#include "soci/connection-parameters.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)
@@ -74,7 +74,7 @@ void db2_session_backend::parseConnectString(std::string const &  connectString)
     }
     if (!processingString.empty()) {
         parseKeyVal(processingString);
-    }   
+    }
 }
 
 db2_session_backend::db2_session_backend(
@@ -89,7 +89,7 @@ db2_session_backend::db2_session_backend(
     if (cliRC != SQL_SUCCESS) {
         throw db2_soci_error("Error while allocating the enironment handle",cliRC);
     }
-    
+
     cliRC = SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc);
     if (cliRC != SQL_SUCCESS) {
         std::string msg=db2_soci_error::sqlState("Error while allocating the connection handle",SQL_HANDLE_ENV,hEnv);

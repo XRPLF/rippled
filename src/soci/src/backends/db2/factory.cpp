@@ -7,8 +7,8 @@
 //
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
-#include <backend-loader.h>
+#include "soci/db2/soci-db2.h"
+#include "soci/backend-loader.h"
 
 using namespace soci;
 using namespace soci::details;

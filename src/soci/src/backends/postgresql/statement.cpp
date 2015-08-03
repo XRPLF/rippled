@@ -6,10 +6,9 @@
 //
 
 #define SOCI_POSTGRESQL_SOURCE
-#include "soci-postgresql.h"
-#include <soci-platform.h>
+#include "soci/postgresql/soci-postgresql.h"
+#include "soci/soci-platform.h"
 #include <libpq/libpq-fs.h> // libpq
-#include <cassert>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -22,10 +21,6 @@
 #define SOCI_POSTGRESQL_NOBINDBYNAME
 #endif // SOCI_POSTGRESQL_NOBINDBYNAME
 #endif // SOCI_POSTGRESQL_NOPARAMS
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
 
 using namespace soci;
 using namespace soci::details;
@@ -64,10 +59,10 @@ void postgresql_statement_backend::alloc()
 
 void postgresql_statement_backend::clean_up()
 {
-    // 'reset' the value for a 
+    // 'reset' the value for a
     // potential new execution.
     rowsAffectedBulk_ = -1;
-    
+
     // nothing to do here
 }
 
@@ -181,10 +176,13 @@ void postgresql_statement_backend::prepare(std::string const & query,
 
     if (stType == st_repeatable_query)
     {
-        assert(statementName_.empty());
+        if (!statementName_.empty())
+        {
+            throw soci_error("Shouldn't already have a prepared statement.");
+        }
 
         // Holding the name temporarily in this var because
-        // if it fails to prepare it we can't DEALLOCATE it. 
+        // if it fails to prepare it we can't DEALLOCATE it.
         std::string statementName = session_.get_next_statement_name();
 
         postgresql_result result(
@@ -330,10 +328,10 @@ postgresql_statement_backend::execute(int number)
 
                     // preserve the number of rows affected so far.
                     rowsAffectedBulk_ = rowsAffectedBulkTemp;
-                    
+
                     result_.check_for_errors("Cannot execute query.");
-                    
-                    rowsAffectedBulkTemp += get_affected_rows();                    
+
+                    rowsAffectedBulkTemp += get_affected_rows();
                 }
             }
             rowsAffectedBulk_ = rowsAffectedBulkTemp;
@@ -473,6 +471,11 @@ int postgresql_statement_backend::get_number_of_rows()
     return numberOfRows_ - currentRow_;
 }
 
+std::string postgresql_statement_backend::get_parameter_name(int index) const
+{
+    return names_.at(index);
+}
+
 std::string postgresql_statement_backend::rewrite_for_procedure_call(
     std::string const & query)
 {
@@ -512,6 +515,7 @@ void postgresql_statement_backend::describe_column(int colNum, data_type & type,
     case 142: // xml
     case 114:  // json
     case 17: // bytea
+    case 2950: // uuid
         type = dt_string;
         break;
 
@@ -541,7 +545,7 @@ void postgresql_statement_backend::describe_column(int colNum, data_type & type,
     case 20:   // int8
         type = dt_long_long;
         break;
-    
+
     default:
     {
         int form = PQfformat(result_, pos);

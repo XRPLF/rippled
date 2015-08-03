@@ -6,8 +6,8 @@
 //
 
 #define SOCI_SQLITE3_SOURCE
-#include "soci-sqlite3.h"
-#include <backend-loader.h>
+#include "soci/sqlite3/soci-sqlite3.h"
+#include "soci/backend-loader.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)

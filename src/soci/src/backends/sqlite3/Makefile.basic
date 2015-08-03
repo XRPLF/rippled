@@ -11,7 +11,7 @@ CXXFLAGSSO = ${CXXFLAGS} -fPIC
 INCLUDEDIRS = -I../../core ${SQLITE3INCLUDEDIR}
 
 
-OBJECTS = blob.o factory.o row-id.o session.o standard-into-type.o \
+OBJECTS = blob.o error.o factory.o row-id.o session.o standard-into-type.o \
 	standard-use-type.o statement.o vector-into-type.o vector-use-type.o \
 	common.o
 
@@ -27,6 +27,9 @@ libsoci_sqlite3.a : ${OBJECTS}
 
 
 blob.o : blob.cpp
+	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
+
+error.o : error.cpp
 	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
 
 common.o : common.cpp
@@ -63,6 +66,9 @@ shared : ${OBJECTSSO}
 
 blob-s.o : blob.cpp
 	${COMPILER} -c -o $@ $? ${CXXFLAGSSO} ${INCLUDEDIRS}
+
+error-s.o : error.cpp
+	${COMPILER} -c -o $@ $? ${CXXFLAGS} ${INCLUDEDIRS}
 
 common-s.o : common.cpp
 	${COMPILER} -c -o $@ $? ${CXXFLAGSSO} ${INCLUDEDIRS}

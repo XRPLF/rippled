@@ -8,7 +8,7 @@
 #ifndef SOCI_POSTGRESQL_COMMON_H_INCLUDED
 #define SOCI_POSTGRESQL_COMMON_H_INCLUDED
 
-#include "soci-postgresql.h"
+#include "soci/postgresql/soci-postgresql.h"
 #include <limits>
 #include <cstdio>
 #include <cstring>
@@ -111,9 +111,6 @@ T string_to_unsigned_integer(char const * buf)
         }
     }
 }
-
-// helper function for parsing doubles
-double string_to_double(char const * buf);
 
 // helper function for parsing datetime values
 void parse_std_tm(char const * buf, std::tm & t);
