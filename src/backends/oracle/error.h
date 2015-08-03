@@ -8,7 +8,7 @@
 #ifndef SOCI_ORACLE_ERROR_H_INCLUDED
 #define SOCI_ORACLE_ERROR_H_INCLUDED
 
-#include "soci-oracle.h"
+#include "soci/oracle/soci-oracle.h"
 
 namespace soci
 {

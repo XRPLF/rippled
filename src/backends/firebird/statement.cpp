@@ -6,8 +6,8 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include "error-firebird.h"
+#include "soci/firebird/soci-firebird.h"
+#include "firebird/error-firebird.h"
 #include <cctype>
 #include <sstream>
 #include <iostream>
@@ -18,11 +18,11 @@ using namespace soci::details::firebird;
 
 firebird_statement_backend::firebird_statement_backend(firebird_session_backend &session)
     : session_(session), stmtp_(0), sqldap_(NULL), sqlda2p_(NULL),
-        boundByName_(false), boundByPos_(false), rowsFetched_(0), endOfRowSet_(false), rowsAffectedBulk_(-1LL), 
+        boundByName_(false), boundByPos_(false), rowsFetched_(0), endOfRowSet_(false), rowsAffectedBulk_(-1LL),
             intoType_(eStandard), useType_(eStandard), procedure_(false)
 {}
 
-void firebird_statement_backend::prepareSQLDA(XSQLDA ** sqldap, int size)
+void firebird_statement_backend::prepareSQLDA(XSQLDA ** sqldap, short size)
 {
     if (*sqldap != NULL)
     {
@@ -53,13 +53,13 @@ void firebird_statement_backend::clean_up()
 
     ISC_STATUS stat[stat_size];
 
-    if (stmtp_ != NULL)
+    if (stmtp_ != 0)
     {
         if (isc_dsql_free_statement(stat, &stmtp_, DSQL_drop))
         {
             throw_iscerror(stat);
         }
-        stmtp_ = NULL;
+        stmtp_ = 0;
     }
 
     if (sqldap_ != NULL)
@@ -165,7 +165,7 @@ namespace
         if (res_buffer[0] == isc_info_sql_stmt_type)
         {
             length = isc_vax_integer(res_buffer+1, 2);
-            stype = isc_vax_integer(res_buffer+3, length);
+            stype = isc_vax_integer(res_buffer+3, static_cast<short>(length));
         }
         else
         {
@@ -226,7 +226,7 @@ void firebird_statement_backend::rewriteQuery(
     }
 
     // prepare temporary statement
-    if (isc_dsql_prepare(stat, &(session_.trhp_), &tmpStmtp, 0,
+    if (isc_dsql_prepare(stat, session_.current_transaction(), &tmpStmtp, 0,
         &tmpQuery[0], SQL_DIALECT_V6, sqldap_))
     {
         throw_iscerror(stat);
@@ -302,7 +302,7 @@ void firebird_statement_backend::prepare(std::string const & query,
     ISC_STATUS stat[stat_size];
 
     // prepare real statement
-    if (isc_dsql_prepare(stat, &(session_.trhp_), &stmtp_, 0,
+    if (isc_dsql_prepare(stat, session_.current_transaction(), &stmtp_, 0,
         &queryBuffer[0], SQL_DIALECT_V6, sqldap_))
     {
         throw_iscerror(stat);
@@ -423,7 +423,7 @@ firebird_statement_backend::execute(int number)
             }
 
             // then execute query
-            if (isc_dsql_execute(stat, &session_.trhp_, &stmtp_, SQL_DIALECT_V6, t))
+            if (isc_dsql_execute(stat, session_.current_transaction(), &stmtp_, SQL_DIALECT_V6, t))
             {
                 // preserve the number of rows affected so far.
                 rowsAffectedBulk_ = rowsAffectedBulkTemp;
@@ -442,7 +442,7 @@ firebird_statement_backend::execute(int number)
     else
     {
         // use elements aren't vectors
-        if (isc_dsql_execute(stat, &session_.trhp_, &stmtp_, SQL_DIALECT_V6, t))
+        if (isc_dsql_execute(stat, session_.current_transaction(), &stmtp_, SQL_DIALECT_V6, t))
         {
             throw_iscerror(stat);
         }
@@ -492,7 +492,8 @@ firebird_statement_backend::fetch(int number)
     rowsFetched_ = 0;
     for (int i = 0; i < number; ++i)
     {
-        long fetch_stat = isc_dsql_fetch(stat, &stmtp_, SQL_DIALECT_V6, sqldap_);
+        ISC_STATUS const
+            fetch_stat = isc_dsql_fetch(stat, &stmtp_, SQL_DIALECT_V6, sqldap_);
 
         // there is more data to read
         if (fetch_stat == 0)
@@ -610,7 +611,7 @@ long long firebird_statement_backend::get_affected_rows()
                     int len = isc_vax_integer(p, 2);
                     p += 2;
 
-                    row_count += isc_vax_integer(p, len);
+                    row_count += isc_vax_integer(p, static_cast<short>(len));
                     p += len;
                 }
                 break;
@@ -629,6 +630,19 @@ long long firebird_statement_backend::get_affected_rows()
 int firebird_statement_backend::get_number_of_rows()
 {
     return rowsFetched_;
+}
+
+std::string firebird_statement_backend::get_parameter_name(int index) const
+{
+    for (std::map<std::string, int>::const_iterator i = names_.begin();
+         i != names_.end();
+         ++i)
+    {
+        if (i->second == index)
+            return i->first;
+    }
+
+    return std::string();
 }
 
 std::string firebird_statement_backend::rewrite_for_procedure_call(

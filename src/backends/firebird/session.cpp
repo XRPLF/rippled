@@ -6,9 +6,9 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include "error-firebird.h"
-#include "session.h"
+#include "soci/firebird/soci-firebird.h"
+#include "firebird/error-firebird.h"
+#include "soci/session.h"
 #include <locale>
 #include <map>
 #include <sstream>
@@ -196,6 +196,20 @@ bool getISCConnectParameter(std::map<std::string, std::string> const & m, std::s
     }
 }
 
+void setDPBOption(std::string& dpb, int const option, std::string const & value)
+{
+
+    if (dpb.empty())
+    {
+        dpb.append(1, static_cast<char>(isc_dpb_version1));
+    }
+
+    // now we are adding new option
+    dpb.append(1, static_cast<char>(option));
+    dpb.append(1, static_cast<char>(value.size()));
+    dpb.append(value);
+}
+
 } // namespace anonymous
 
 firebird_session_backend::firebird_session_backend(
@@ -210,24 +224,25 @@ firebird_session_backend::firebird_session_backend(
     std::string param;
 
     // preparing connection options
+    std::string dpb;
     if (getISCConnectParameter(params, "user", param))
     {
-        setDPBOption(isc_dpb_user_name, param);
+        setDPBOption(dpb, isc_dpb_user_name, param);
     }
 
     if (getISCConnectParameter(params, "password", param))
     {
-        setDPBOption(isc_dpb_password, param);
+        setDPBOption(dpb, isc_dpb_password, param);
     }
 
     if (getISCConnectParameter(params, "role", param))
     {
-        setDPBOption(isc_dpb_sql_role_name, param);
+        setDPBOption(dpb, isc_dpb_sql_role_name, param);
     }
 
     if (getISCConnectParameter(params, "charset", param))
     {
-        setDPBOption(isc_dpb_lc_ctype, param);
+        setDPBOption(dpb, isc_dpb_lc_ctype, param);
     }
 
     if (getISCConnectParameter(params, "service", param) == false)
@@ -238,7 +253,7 @@ firebird_session_backend::firebird_session_backend(
     // connecting data base
     if (isc_attach_database(stat, static_cast<short>(param.size()),
         const_cast<char*>(param.c_str()), &dbhp_,
-        static_cast<short>(dpb_.size()), const_cast<char*>(dpb_.c_str())))
+        static_cast<short>(dpb.size()), const_cast<char*>(dpb.c_str())))
     {
         throw_iscerror(stat);
     }
@@ -247,16 +262,11 @@ firebird_session_backend::firebird_session_backend(
     {
         decimals_as_strings_ = param == "1" || param == "Y" || param == "y";
     }
-    // starting transaction
-    begin();
 }
 
 
 void firebird_session_backend::begin()
 {
-    // Transaction is always started in ctor, because Firebird can't work
-    // without active transaction.
-    // Transaction will be automatically commited in cleanUp method.
     if (trhp_ == 0)
     {
         ISC_STATUS stat[stat_size];
@@ -272,20 +282,6 @@ firebird_session_backend::~firebird_session_backend()
     cleanUp();
 }
 
-void firebird_session_backend::setDPBOption(int const option, std::string const & value)
-{
-
-    if (dpb_.size() == 0)
-    {
-        dpb_.append(1, static_cast<char>(isc_dpb_version1));
-    }
-
-    // now we are adding new option
-    dpb_.append(1, static_cast<char>(option));
-    dpb_.append(1, static_cast<char>(value.size()));
-    dpb_.append(value);
-}
-
 void firebird_session_backend::commit()
 {
     ISC_STATUS stat[stat_size];
@@ -299,11 +295,6 @@ void firebird_session_backend::commit()
 
         trhp_ = 0;
     }
-
-#ifndef SOCI_FIREBIRD_NORESTARTTRANSACTION
-    begin();
-#endif
-
 }
 
 void firebird_session_backend::rollback()
@@ -319,11 +310,14 @@ void firebird_session_backend::rollback()
 
         trhp_ = 0;
     }
+}
 
-#ifndef SOCI_FIREBIRD_NORESTARTTRANSACTION
+isc_tr_handle* firebird_session_backend::current_transaction()
+{
+    // It will do nothing if we're already inside a transaction.
     begin();
-#endif
 
+    return &trhp_;
 }
 
 void firebird_session_backend::cleanUp()
@@ -364,9 +358,9 @@ firebird_statement_backend * firebird_session_backend::make_statement_backend()
     return new firebird_statement_backend(*this);
 }
 
-firebird_rowid_backend * firebird_session_backend::make_rowid_backend()
+details::rowid_backend* firebird_session_backend::make_rowid_backend()
 {
-    return new firebird_rowid_backend(*this);
+    throw soci_error("RowIDs are not supported");
 }
 
 firebird_blob_backend * firebird_session_backend::make_blob_backend()

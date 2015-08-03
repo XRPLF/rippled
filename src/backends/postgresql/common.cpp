@@ -5,8 +5,9 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <soci-platform.h>
-#include <soci-backend.h>
+#include "soci/soci-platform.h"
+#include "soci/soci-backend.h"
+#include "soci-mktime.h"
 #include <cstdlib>
 #include <ctime>
 #include "common.h"
@@ -81,31 +82,5 @@ void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
         }
     }
 
-    t.tm_isdst = -1;
-    t.tm_year = year - 1900;
-    t.tm_mon  = month - 1;
-    t.tm_mday = day;
-    t.tm_hour = hour;
-    t.tm_min  = minute;
-    t.tm_sec  = second;
-
-    std::mktime(&t);
-}
-
-double soci::details::postgresql::string_to_double(char const * buf)
-{
-    double t;
-    int n;
-    int const converted = sscanf(buf, "%lf%n", &t, &n);
-    if (converted == 1 && static_cast<std::size_t>(n) == strlen(buf))
-    {
-        // successfully converted to double
-        // and no other characters were found in the buffer
-
-        return t;
-    }
-    else
-    {
-        throw soci_error("Cannot convert data.");
-    }
+    details::mktime_from_ymdhms(t, year, month, day, hour, minute, second);
 }

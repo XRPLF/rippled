@@ -6,30 +6,18 @@
 //
 
 #define SOCI_SOURCE
-#include "statement.h"
-#include "session.h"
-#include "into-type.h"
-#include "use-type.h"
-#include "values.h"
+#include "soci/statement.h"
+#include "soci/session.h"
+#include "soci/into-type.h"
+#include "soci/use-type.h"
+#include "soci/values.h"
+#include "soci-compiler.h"
 #include <ctime>
 #include <cctype>
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
 
 using namespace soci;
 using namespace soci::details;
 
-void statement::exchange(into_type_ptr const & i)
-{
-    impl_->exchange(i);
-}
-
-void statement::exchange(use_type_ptr const & u)
-{
-    impl_->exchange(u);
-}
 
 statement_impl::statement_impl(session & s)
     : session_(s), refCount_(1), row_(0),
@@ -114,10 +102,10 @@ void statement_impl::bind(values & values)
                     // make sure we do not go out of range on the string
                     const char nextChar = (pos + placeholder.size()) < query_.size() ?
                                           query_[pos + placeholder.size()] : '\0';
-                    
+
                     if (std::isalnum(nextChar))
                     {
-                        // We got a partial match only, 
+                        // We got a partial match only,
                         // keep looking for the placeholder
                         pos = query_.find(placeholder, pos + placeholder.size());
                     }
@@ -147,45 +135,12 @@ void statement_impl::bind(values & values)
         {
             values.add_unused(values.uses_[i], values.indicators_[i]);
         }
-        throw;
+
+        rethrow_current_exception_with_context("binding parameters of");
     }
 }
 
-void statement_impl::exchange(into_type_ptr const & i)
-{
-    intos_.push_back(i.get());
-    i.release();
-}
-
-void statement_impl::exchange_for_row(into_type_ptr const & i)
-{
-    intosForRow_.push_back(i.get());
-    i.release();
-}
-
-void statement_impl::exchange_for_rowset(into_type_ptr const & i)
-{
-    if (intos_.empty() == false)
-    {
-        throw soci_error("Explicit into elements not allowed with rowset.");
-    }
-
-    into_type_base* p = i.get();
-    intos_.push_back(p);
-    i.release();
-
-    int definePosition = 1;
-    p->define(*this, definePosition);
-    definePositionForRow_ = definePosition;
-}
-
-void statement_impl::exchange(use_type_ptr const & u)
-{
-    uses_.push_back(u.get());
-    u.release();
-}
-
-void statement_impl::clean_up()
+void statement_impl::bind_clean_up()
 {
     // deallocate all bind and define objects
     std::size_t const isize = intos_.size();
@@ -219,6 +174,13 @@ void statement_impl::clean_up()
         indicators_[i] = NULL;
     }
 
+    row_ = NULL;
+    alreadyDescribed_ = false;
+}
+
+void statement_impl::clean_up()
+{
+    bind_clean_up();
     if (backEnd_ != NULL)
     {
         backEnd_->clean_up();
@@ -230,10 +192,17 @@ void statement_impl::clean_up()
 void statement_impl::prepare(std::string const & query,
     statement_type eType)
 {
-    query_ = query;
-    session_.log_query(query);
+    try
+    {
+        query_ = query;
+        session_.log_query(query);
 
-    backEnd_->prepare(query, eType);
+        backEnd_->prepare(query, eType);
+    }
+    catch (...)
+    {
+        rethrow_current_exception_with_context("preparing");
+    }
 }
 
 void statement_impl::define_and_bind()
@@ -291,163 +260,184 @@ void statement_impl::undefine_and_bind()
 
 bool statement_impl::execute(bool withDataExchange)
 {
-    initialFetchSize_ = intos_size();
-
-    if (intos_.empty() == false && initialFetchSize_ == 0)
+    try
     {
-        // this can happen only with into-vectors elements
-        // and is not allowed when calling execute
-        throw soci_error("Vectors of size 0 are not allowed.");
-    }
+        initialFetchSize_ = intos_size();
 
-    fetchSize_ = initialFetchSize_;
-
-    // pre-use should be executed before inspecting the sizes of use
-    // elements, as they can be resized in type conversion routines
-
-    pre_use();
-
-    std::size_t const bindSize = uses_size();
-
-    if (bindSize > 1 && fetchSize_ > 1)
-    {
-        throw soci_error(
-             "Bulk insert/update and bulk select not allowed in same query");
-    }
-
-    // looks like a hack and it is - row description should happen
-    // *after* the use elements were completely prepared
-    // and *before* the into elements are touched, so that the row
-    // description process can inject more into elements for
-    // implicit data exchange
-    if (row_ != NULL && alreadyDescribed_ == false)
-    {
-        describe();
-        define_for_row();
-    }
-
-    int num = 0;
-    if (withDataExchange)
-    {
-        num = 1;
-
-        pre_fetch();
-
-        if (static_cast<int>(fetchSize_) > num)
+        if (intos_.empty() == false && initialFetchSize_ == 0)
         {
-            num = static_cast<int>(fetchSize_);
+            // this can happen only with into-vectors elements
+            // and is not allowed when calling execute
+            throw soci_error("Vectors of size 0 are not allowed.");
         }
-        if (static_cast<int>(bindSize) > num)
+
+        fetchSize_ = initialFetchSize_;
+
+        // pre-use should be executed before inspecting the sizes of use
+        // elements, as they can be resized in type conversion routines
+
+        pre_use();
+
+        std::size_t const bindSize = uses_size();
+
+        if (bindSize > 1 && fetchSize_ > 1)
         {
-            num = static_cast<int>(bindSize);
+            throw soci_error(
+                 "Bulk insert/update and bulk select not allowed in same query");
         }
-    }
 
-    statement_backend::exec_fetch_result res = backEnd_->execute(num);
+        // looks like a hack and it is - row description should happen
+        // *after* the use elements were completely prepared
+        // and *before* the into elements are touched, so that the row
+        // description process can inject more into elements for
+        // implicit data exchange
+        if (row_ != NULL && alreadyDescribed_ == false)
+        {
+            describe();
+            define_for_row();
+        }
 
-    bool gotData = false;
+        int num = 0;
+        if (withDataExchange)
+        {
+            num = 1;
 
-    if (res == statement_backend::ef_success)
-    {
-        // the "success" means that the statement executed correctly
-        // and for select statement this also means that some rows were read
+            pre_fetch();
+
+            if (static_cast<int>(fetchSize_) > num)
+            {
+                num = static_cast<int>(fetchSize_);
+            }
+            if (static_cast<int>(bindSize) > num)
+            {
+                num = static_cast<int>(bindSize);
+            }
+        }
+
+        statement_backend::exec_fetch_result res = backEnd_->execute(num);
+
+        bool gotData = false;
+
+        if (res == statement_backend::ef_success)
+        {
+            // the "success" means that the statement executed correctly
+            // and for select statement this also means that some rows were read
+
+            if (num > 0)
+            {
+                gotData = true;
+
+                // ensure into vectors have correct size
+                resize_intos(static_cast<std::size_t>(num));
+            }
+        }
+        else // res == ef_no_data
+        {
+            // the "no data" means that the end-of-rowset condition was hit
+            // but still some rows might have been read (the last bunch of rows)
+            // it can also mean that the statement did not produce any results
+
+            gotData = fetchSize_ > 1 ? resize_intos() : false;
+        }
 
         if (num > 0)
         {
-            gotData = true;
-
-            // ensure into vectors have correct size
-            resize_intos(static_cast<std::size_t>(num));
+            post_fetch(gotData, false);
         }
+
+        post_use(gotData);
+
+        session_.set_got_data(gotData);
+        return gotData;
     }
-    else // res == ef_no_data
+    catch (...)
     {
-        // the "no data" means that the end-of-rowset condition was hit
-        // but still some rows might have been read (the last bunch of rows)
-        // it can also mean that the statement did not produce any results
-
-        gotData = fetchSize_ > 1 ? resize_intos() : false;
+        rethrow_current_exception_with_context("executing");
     }
-
-    if (num > 0)
-    {
-        post_fetch(gotData, false);
-    }
-    
-    post_use(gotData);
-
-    session_.set_got_data(gotData);
-    return gotData;
 }
 
 long long statement_impl::get_affected_rows()
 {
-    return backEnd_->get_affected_rows();
+    try
+    {
+        return backEnd_->get_affected_rows();
+    }
+    catch (...)
+    {
+        rethrow_current_exception_with_context("getting the number of rows affected by");
+    }
 }
 
 bool statement_impl::fetch()
 {
-    if (fetchSize_ == 0)
+    try
     {
-        truncate_intos();
-        session_.set_got_data(false);
-        return false;
-    }
-
-    bool gotData = false;
-
-    // vectors might have been resized between fetches
-    std::size_t const newFetchSize = intos_size();
-    if (newFetchSize > initialFetchSize_)
-    {
-        // this is not allowed, because most likely caused reallocation
-        // of the vector - this would require complete re-bind
-
-        throw soci_error(
-            "Increasing the size of the output vector is not supported.");
-    }
-    else if (newFetchSize == 0)
-    {
-        session_.set_got_data(false);
-        return false;
-    }
-    else
-    {
-        // the output vector was downsized or remains the same as before
-        fetchSize_ = newFetchSize;
-    }
-
-    statement_backend::exec_fetch_result const res = backEnd_->fetch(static_cast<int>(fetchSize_));
-    if (res == statement_backend::ef_success)
-    {
-        // the "success" means that some number of rows was read
-        // and that it is not yet the end-of-rowset (there are more rows)
-
-        gotData = true;
-
-        // ensure into vectors have correct size
-        resize_intos(fetchSize_);
-    }
-    else // res == ef_no_data
-    {
-        // end-of-rowset condition
-
-        if (fetchSize_ > 1)
+        if (fetchSize_ == 0)
         {
-            // but still the last bunch of rows might have been read
-            gotData = resize_intos();
-            fetchSize_ = 0;
+            truncate_intos();
+            session_.set_got_data(false);
+            return false;
+        }
+
+        bool gotData = false;
+
+        // vectors might have been resized between fetches
+        std::size_t const newFetchSize = intos_size();
+        if (newFetchSize > initialFetchSize_)
+        {
+            // this is not allowed, because most likely caused reallocation
+            // of the vector - this would require complete re-bind
+
+            throw soci_error(
+                "Increasing the size of the output vector is not supported.");
+        }
+        else if (newFetchSize == 0)
+        {
+            session_.set_got_data(false);
+            return false;
         }
         else
         {
-            truncate_intos();
-            gotData = false;
+            // the output vector was downsized or remains the same as before
+            fetchSize_ = newFetchSize;
         }
-    }
 
-    post_fetch(gotData, true);
-    session_.set_got_data(gotData);
-    return gotData;
+        statement_backend::exec_fetch_result const res = backEnd_->fetch(static_cast<int>(fetchSize_));
+        if (res == statement_backend::ef_success)
+        {
+            // the "success" means that some number of rows was read
+            // and that it is not yet the end-of-rowset (there are more rows)
+
+            gotData = true;
+
+            // ensure into vectors have correct size
+            resize_intos(fetchSize_);
+        }
+        else // res == ef_no_data
+        {
+            // end-of-rowset condition
+
+            if (fetchSize_ > 1)
+            {
+                // but still the last bunch of rows might have been read
+                gotData = resize_intos();
+                fetchSize_ = 0;
+            }
+            else
+            {
+                truncate_intos();
+                gotData = false;
+            }
+        }
+
+        post_fetch(gotData, true);
+        session_.set_got_data(gotData);
+        return gotData;
+    }
+    catch (...)
+    {
+        rethrow_current_exception_with_context("fetching data from");
+    }
 }
 
 std::size_t statement_impl::intos_size()
@@ -739,4 +729,55 @@ vector_use_type_backend *
 statement_impl::make_vector_use_type_backend()
 {
     return backEnd_->make_vector_use_type_backend();
+}
+
+SOCI_NORETURN
+statement_impl::rethrow_current_exception_with_context(char const* operation)
+{
+    try
+    {
+        throw;
+    }
+    catch (soci_error& e)
+    {
+        if (!query_.empty())
+        {
+            std::ostringstream oss;
+            oss << "while " << operation << " \"" << query_ << "\"";
+
+            if (!uses_.empty())
+            {
+                oss << " with ";
+
+                std::size_t const usize = uses_.size();
+                for (std::size_t i = 0; i != usize; ++i)
+                {
+                    if (i != 0)
+                        oss << ", ";
+
+                    details::use_type_base const& u = *uses_[i];
+
+                    // Use the name specified in the "use()" call if any,
+                    // otherwise get the name of the matching parameter from
+                    // the query itself, as parsed by the backend.
+                    std::string name = u.get_name();
+                    if (name.empty())
+                        name = backEnd_->get_parameter_name(static_cast<int>(i));
+
+                    oss << ":";
+                    if (!name.empty())
+                        oss << name;
+                    else
+                        oss << (i + 1);
+                    oss << "=";
+
+                    u.dump_value(oss);
+                }
+            }
+
+            e.add_context(oss.str());
+        }
+
+        throw;
+    }
 }

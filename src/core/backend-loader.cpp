@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "backend-loader.h"
-#include "error.h"
-#include <cassert>
+#include "soci/soci-platform.h"
+#include "soci/backend-loader.h"
+#include "soci/error.h"
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -243,7 +243,7 @@ void do_register_backend(std::string const & name, std::string const & shared_ob
     // unload the existing handler if it's already loaded
 
     do_unload(name);
-    
+
     backend_factory const* f = entry();
 
     info new_entry;
@@ -274,8 +274,6 @@ backend_factory const& dynamic_backends::get(std::string const& name)
 
     i = factories_.find(name);
 
-    assert(i != factories_.end());
-
     return *(i->second.factory_);
 }
 
@@ -300,7 +298,7 @@ SOCI_DECL void dynamic_backends::register_backend(
     // unload the existing handler if it's already loaded
 
     do_unload(name);
-    
+
     info new_entry;
     new_entry.factory_ = &factory;
 

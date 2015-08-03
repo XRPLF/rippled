@@ -7,7 +7,7 @@
 //
 
 #define SOCI_MYSQL_SOURCE
-#include "soci-mysql.h"
+#include "soci/mysql/soci-mysql.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)

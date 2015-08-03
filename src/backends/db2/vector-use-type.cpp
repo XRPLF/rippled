@@ -7,7 +7,8 @@
 //
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
+#include "soci/soci-platform.h"
+#include "soci/db2/soci-db2.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -195,7 +196,7 @@ void db2_vector_use_type_backend::bind_helper(int &position, void *data, details
     prepare_for_bind(data, size, sqlType, cType);
 
     SQLINTEGER arraySize = (SQLINTEGER)indVec.size();
-    SQLSetStmtAttr(statement_.hStmt, SQL_ATTR_PARAMSET_SIZE, (SQLPOINTER)arraySize, 0);
+    SQLSetStmtAttr(statement_.hStmt, SQL_ATTR_PARAMSET_SIZE, db2::int_as_ptr(arraySize), 0);
 
     SQLRETURN cliRC = SQLBindParameter(statement_.hStmt, static_cast<SQLUSMALLINT>(position++),
                                     SQL_PARAM_INPUT, cType, sqlType, size, 0,
@@ -231,8 +232,8 @@ void db2_vector_use_type_backend::bind_by_name(
     }
     statement_.use_binding_method_ = details::db2::BOUND_BY_NAME;
 
-    for (std::vector<std::string>::iterator it = statement_.names.begin();
-         it != statement_.names.end(); ++it)
+    for (std::vector<std::string>::iterator it = statement_.names_.begin();
+         it != statement_.names_.end(); ++it)
     {
         if (*it == name)
         {

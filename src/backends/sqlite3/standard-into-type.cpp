@@ -5,11 +5,13 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <soci-platform.h>
-#include "soci-sqlite3.h"
-#include "rowid.h"
+#include "soci/soci-platform.h"
+#include "soci/sqlite3/soci-sqlite3.h"
+#include "soci/rowid.h"
 #include "common.h"
-#include "blob.h"
+#include "soci/blob.h"
+#include "soci-cstrtod.h"
+#include "soci-exchange-cast.h"
 // std
 #include <cstdlib>
 #include <ctime>
@@ -68,94 +70,101 @@ void sqlite3_standard_into_type_backend::post_fetch(bool gotData,
             }
         }
 
-        const char *buf = reinterpret_cast<const char*>(
-            sqlite3_column_text(statement_.stmt_,pos));
-
-        if (buf == NULL)
-        {
-            buf = "";
-        }
-
         switch (type_)
         {
-        case x_char:
+            case x_char:
             {
-                char *dest = static_cast<char*>(data_);
-                *dest = *buf;
+                const char *buf = reinterpret_cast<const char*>(
+                    sqlite3_column_text(statement_.stmt_, pos)
+                );
+                const int bytes = sqlite3_column_bytes(statement_.stmt_, pos);
+                exchange_type_cast<x_char>(data_) = (bytes > 0 ? buf[0] : '\0');
+                break;
             }
-            break;
-        case x_stdstring:
+
+            case x_stdstring:
             {
-                std::string *dest = static_cast<std::string *>(data_);
-                dest->assign(buf);
+                const char *buf = reinterpret_cast<const char*>(
+                    sqlite3_column_text(statement_.stmt_, pos)
+                );
+                const int bytes = sqlite3_column_bytes(statement_.stmt_, pos);
+                exchange_type_traits<x_stdstring>::value_type &out
+                    = exchange_type_cast<x_stdstring>(data_);
+                out.assign(buf, bytes);
+                break;
             }
-            break;
-        case x_short:
+
+            case x_short:
+                exchange_type_cast<x_short>(data_)
+                    = static_cast<exchange_type_traits<x_short>::value_type >(
+                        sqlite3_column_int(statement_.stmt_, pos)
+                    );
+                break;
+
+            case x_integer:
+                exchange_type_cast<x_integer>(data_)
+                    = static_cast<exchange_type_traits<x_integer>::value_type >(
+                        sqlite3_column_int(statement_.stmt_, pos)
+                    );
+                break;
+
+            case x_long_long:
+                exchange_type_cast<x_long_long>(data_)
+                    = static_cast<exchange_type_traits<x_long_long>::value_type >(
+                        sqlite3_column_int64(statement_.stmt_, pos)
+                    );
+                break;
+
+            case x_unsigned_long_long:
+                exchange_type_cast<x_unsigned_long_long>(data_)
+                    = static_cast<exchange_type_traits<x_unsigned_long_long>::value_type >(
+                        sqlite3_column_int64(statement_.stmt_, pos)
+                    );
+                break;
+
+            case x_double:
+                exchange_type_cast<x_double>(data_)
+                    = static_cast<exchange_type_traits<x_double>::value_type >(
+                        sqlite3_column_double(statement_.stmt_, pos)
+                    );
+                break;
+
+            case x_stdtm:
             {
-                short *dest = static_cast<short*>(data_);
-                long val = std::strtol(buf, NULL, 10);
-                *dest = static_cast<short>(val);
+                const char *buf = reinterpret_cast<const char*>(
+                    sqlite3_column_text(statement_.stmt_, pos)
+                );
+                parse_std_tm((buf ? buf : ""), exchange_type_cast<x_stdtm>(data_));
+                break;
             }
-            break;
-        case x_integer:
-            {
-                int *dest = static_cast<int*>(data_);
-                long val = std::strtol(buf, NULL, 10);
-                *dest = static_cast<int>(val);
-            }
-            break;
-        case x_long_long:
-            {
-                long long* dest = static_cast<long long*>(data_);
-                *dest = std::strtoll(buf, NULL, 10);
-            }
-            break;
-        case x_unsigned_long_long:
-            {
-                unsigned long long* dest = static_cast<unsigned long long*>(data_);
-                *dest = string_to_unsigned_integer<unsigned long long>(buf);
-            }
-            break;
-        case x_double:
-            {
-                double *dest = static_cast<double*>(data_);
-                double val = strtod(buf, NULL);
-                *dest = static_cast<double>(val);
-            }
-            break;
-        case x_stdtm:
-            {
-                // attempt to parse the string and convert to std::tm
-                std::tm *dest = static_cast<std::tm *>(data_);
-                parse_std_tm(buf, *dest);
-            }
-            break;
-        case x_rowid:
+
+            case x_rowid:
             {
                 // RowID is internally identical to unsigned long
-
                 rowid *rid = static_cast<rowid *>(data_);
                 sqlite3_rowid_backend *rbe = static_cast<sqlite3_rowid_backend *>(rid->get_backend());
-                long long val = std::strtoll(buf, NULL, 10);
-                rbe->value_ = static_cast<unsigned long>(val);
+                rbe->value_ = static_cast<unsigned long>(sqlite3_column_int64(statement_.stmt_, pos));
+                break;
             }
-            break;
-        case x_blob:
+
+            case x_blob:
             {
                 blob *b = static_cast<blob *>(data_);
                 sqlite3_blob_backend *bbe =
                     static_cast<sqlite3_blob_backend *>(b->get_backend());
 
-                buf = reinterpret_cast<const char*>(sqlite3_column_blob(
-                    statement_.stmt_,
-                    pos));
+                const char *buf
+                    = reinterpret_cast<const char*>(
+                        sqlite3_column_blob(statement_.stmt_, pos)
+                    );
 
                 int len = sqlite3_column_bytes(statement_.stmt_, pos);
                 bbe->set_data(buf, len);
+                break;
             }
-            break;
-        default:
-            throw soci_error("Into element used with non-supported type.");
+
+            default:
+                throw soci_error("Into element used with non-supported type.");
         }
     }
 }

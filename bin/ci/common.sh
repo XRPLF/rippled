@@ -15,8 +15,6 @@ if [[ -f /sys/devices/system/cpu/online ]]; then
 	# Calculates 1.5 times physical threads
 	TCI_NUMTHREADS=$(( ( $(cut -f 2 -d '-' /sys/devices/system/cpu/online) + 1 ) * 15 / 10  ))
 fi
-export ORACLE_HOME=/opt/instantclient_11_2
-export LD_LIBRARY_PATH=${ORACLE_HOME}:${LD_LIBRARY_PATH}
 #
 # Functions
 #
@@ -27,10 +25,10 @@ tmstamp()
 
 run_make()
 {
-    [ $TCI_NUMTHREADS -gt 0 ] && make -j $TCI_NUMTHREADS ] || make 
+    [ $TCI_NUMTHREADS -gt 0 ] && make -j $TCI_NUMTHREADS || make
 }
 
 run_test()
 {
-    ctest -V --output-on-failure .
+    ctest -V --output-on-failure "$@" .
 }

@@ -14,15 +14,20 @@ services:
   - postgresql
 
 env:
-    matrix:
-        - SOCI_TRAVIS_BACKEND=db2
-        - SOCI_TRAVIS_BACKEND=empty
-        - SOCI_TRAVIS_BACKEND=firebird
-        - SOCI_TRAVIS_BACKEND=mysql
-        - SOCI_TRAVIS_BACKEND=odbc
-        - SOCI_TRAVIS_BACKEND=oracle
-        - SOCI_TRAVIS_BACKEND=postgresql
-        - SOCI_TRAVIS_BACKEND=sqlite3
+  - SOCI_TRAVIS_BACKEND=db2
+  - SOCI_TRAVIS_BACKEND=empty
+  - SOCI_TRAVIS_BACKEND=firebird
+  - SOCI_TRAVIS_BACKEND=mysql
+  - SOCI_TRAVIS_BACKEND=odbc
+  - SOCI_TRAVIS_BACKEND=oracle CFLAGS=-m32 CXXFLAGS=-m32 WITH_BOOST=OFF
+  - SOCI_TRAVIS_BACKEND=postgresql
+  - SOCI_TRAVIS_BACKEND=postgression
+  - SOCI_TRAVIS_BACKEND=sqlite3
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: SOCI_TRAVIS_BACKEND=postgression
 
 before_install: ./bin/ci/before_install.sh
 before_script: ./bin/ci/before_script.sh
@@ -32,8 +37,8 @@ notifications:
   email:
     recipients:
       - soci-devel@lists.sourceforge.net
-  on_success: change # [always|never|change] # default: change
-  on_failure: always # [always|never|change] # default: always
+    on_success: change # [always|never|change] # default: change
+    on_failure: always # [always|never|change] # default: always
 
   irc:
     channels:
