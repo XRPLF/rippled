@@ -64,13 +64,13 @@ HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& crea
     int expireTime = now - mHoldTime;
 
     // See if any supressions need to be expired
-    std::map< int, std::list<uint256> >::iterator it = mSuppressionTimes.begin ();
+    auto it = mSuppressionTimes.begin ();
 
-    if ((it != mSuppressionTimes.end ()) && (it->first <= expireTime))
+    while ((it != mSuppressionTimes.end ()) && (it->first <= expireTime))
     {
         for(auto const& lit : it->second)
             mSuppressionMap.erase (lit);
-        mSuppressionTimes.erase (it);
+        it = mSuppressionTimes.erase (it);
     }
 
     mSuppressionTimes[now].push_back (index);
