@@ -28,8 +28,8 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-// Mon Aug 10 11:00:00am PDT
-static std::uint32_t const deliverMinTime = 492544800;
+// Mon Aug 17 11:00:00am PDT
+static std::uint32_t const deliverMinTime = 493149600;
 
 bool
 allowDeliverMin (ApplyView const& view)
