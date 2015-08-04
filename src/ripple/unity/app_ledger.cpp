@@ -41,5 +41,3 @@
 #include <ripple/app/ledger/impl/OpenLedger.cpp>
 #include <ripple/app/ledger/impl/LedgerToJson.cpp>
 
-#include <ripple/app/ledger/tests/common_ledger.cpp>
-#include <ripple/app/ledger/tests/Ledger_test.cpp>
