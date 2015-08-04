@@ -231,7 +231,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
 
     WriteLog (lsDEBUG, RPCHandler)
-            << "ripple_path_find< %s" << jvResult;
+            << "ripple_path_find< " << jvResult;
 
     return jvResult;
 }
