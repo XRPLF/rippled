@@ -43,6 +43,7 @@
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/types.h>
+#include <ripple/protocol/Feature.h>
 #include <memory>
 
 namespace ripple {
@@ -84,7 +85,7 @@ Env::Env (beast::unit_test::suite& test_)
     , closed_ (std::make_shared<Ledger>(
         create_genesis, app().config(), app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
-    , openLedger (closed_, app().config(), cachedSLEs_, journal)
+    , openLedger (closed_, cachedSLEs_, journal)
 {
     memoize(master);
     Pathfinder::initPathTable();
@@ -122,7 +123,7 @@ Env::close(NetClock::time_point const& closeTime)
         OpenView accum(&*next);
         OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), *router,
-                app().config(), journal);
+                journal);
         accum.apply(*next);
     }
     // To ensure that the close time is exact and not rounded, we don't
@@ -278,8 +279,7 @@ Env::submit (JTx const& jt)
             {
                 std::tie(ter_, didApply) = ripple::apply(
                     app(), view, *stx, applyFlags(),
-                        directSigVerify, app().config(),
-                            beast::Journal{});
+                        beast::Journal{});
                 return didApply;
             });
     }

@@ -23,6 +23,7 @@
 #include <ripple/app/tests/AmendmentTable.test.cpp>
 #include <ripple/app/tests/CrossingLimits_test.cpp>
 #include <ripple/app/tests/DeliverMin.test.cpp>
+#include <ripple/app/tests/HashRouter_test.cpp>
 #include <ripple/app/tests/MultiSign.test.cpp>
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>

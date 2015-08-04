@@ -19,131 +19,85 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
-#include <ripple/protocol/STTx.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <map>
 #include <mutex>
 
 namespace ripple {
 
-std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
-HashRouter::sigVerify()
+auto
+HashRouter::emplace (uint256 const& index)
+    -> std::pair<Entry&, bool>
 {
-    return
-    [&] (STTx const& tx, std::function<bool(STTx const&)> sigCheck)
-    {
-        auto const id = tx.getTransactionID();
-        auto const flags = getFlags(id);
-        if (flags & SF_SIGGOOD)
-            return true;
-        if (flags & SF_BAD)
-            return false;
-        if (! sigCheck(tx))
-        {
-            setFlags(id, SF_BAD);
-            return false;
-        }
-        setFlags(id, SF_SIGGOOD);
-        return true;
-    };
-}
-
-HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& created)
-{
-    hash_map<uint256, Entry>::iterator fit = mSuppressionMap.find (index);
+    auto fit = mSuppressionMap.find (index);
 
     if (fit != mSuppressionMap.end ())
     {
-        created = false;
-        return fit->second;
+        return std::make_pair(
+            std::ref(fit->second), false);
     }
 
-    created = true;
-
-    int now = UptimeTimer::getInstance ().getElapsedSeconds ();
-    int expireTime = now - mHoldTime;
+    int elapsed = UptimeTimer::getInstance ().getElapsedSeconds ();
+    int expireCutoff = elapsed - mHoldTime;
 
     // See if any supressions need to be expired
     auto it = mSuppressionTimes.begin ();
 
-    while ((it != mSuppressionTimes.end ()) && (it->first <= expireTime))
+    while ((it != mSuppressionTimes.end ()) && (it->first <= expireCutoff))
     {
         for(auto const& lit : it->second)
             mSuppressionMap.erase (lit);
         it = mSuppressionTimes.erase (it);
     }
 
-    mSuppressionTimes[now].push_back (index);
-    return mSuppressionMap.emplace (index, Entry ()).first->second;
+    mSuppressionTimes[elapsed].push_back (index);
+    return std::make_pair(std::ref(
+        mSuppressionMap.emplace (
+            index, Entry ()).first->second),
+                true);
 }
 
-bool HashRouter::addSuppression (uint256 const& index)
+void HashRouter::addSuppression (uint256 const& index)
 {
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    findCreateEntry (index, created);
-    return created;
-}
-
-HashRouter::Entry HashRouter::getEntry (uint256 const& index)
-{
-    ScopedLockType lock (mMutex);
-
-    bool created;
-    return findCreateEntry (index, created);
+    emplace (index);
 }
 
 bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer)
 {
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    findCreateEntry (index, created).addPeer (peer);
-    return created;
+    auto result = emplace(index);
+    result.first.addPeer(peer);
+    return result.second;
 }
 
 bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags)
 {
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    Entry& s = findCreateEntry (index, created);
+    auto result = emplace(index);
+    auto& s = result.first;
     s.addPeer (peer);
     flags = s.getFlags ();
-    return created;
+    return result.second;
 }
 
 int HashRouter::getFlags (uint256 const& index)
 {
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    return findCreateEntry (index, created).getFlags ();
-}
-
-bool HashRouter::addSuppressionFlags (uint256 const& index, int flag)
-{
-    ScopedLockType lock (mMutex);
-
-    bool created;
-    findCreateEntry (index, created).setFlags (flag);
-    return created;
+    return emplace(index).first.getFlags ();
 }
 
 bool HashRouter::setFlags (uint256 const& index, int flags)
 {
-    // VFALCO NOTE Comments like this belong in the HEADER file,
-    //             and more importantly in a Javadoc comment so
-    //             they appear in the generated documentation.
-    //
-    // return: true = changed, false = unchanged
     assert (flags != 0);
 
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    Entry& s = findCreateEntry (index, created);
+    auto& s = emplace(index).first;
 
     if ((s.getFlags () & flags) == flags)
         return false;
@@ -154,10 +108,9 @@ bool HashRouter::setFlags (uint256 const& index, int flags)
 
 bool HashRouter::swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag)
 {
-    ScopedLockType lock (mMutex);
+    std::lock_guard <std::mutex> lock (mMutex);
 
-    bool created;
-    Entry& s = findCreateEntry (index, created);
+    auto& s = emplace(index).first;
 
     if ((s.getFlags () & flag) == flag)
         return false;

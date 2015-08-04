@@ -21,17 +21,17 @@
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/ledger/CachedView.h>
+#include <ripple/protocol/Feature.h>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 
 OpenLedger::OpenLedger(std::shared_ptr<
     Ledger const> const& ledger,
-        Config const& config, CachedSLEs& cache,
+        CachedSLEs& cache,
             beast::Journal journal)
     : j_ (journal)
     , cache_ (cache)
-    , config_ (config)
     , current_ (create(ledger->rules(), ledger))
 {
 }
@@ -89,7 +89,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
             std::vector<std::shared_ptr<
                 STTx const>>;
         apply (app, *next, *ledger, empty{},
-            retries, flags, router, config_, j_);
+            retries, flags, router, j_);
     }
     // Block calls to modify, otherwise
     // new tx going into the open ledger
@@ -107,12 +107,11 @@ OpenLedger::accept(Application& app, Rules const& rules,
             {
                 return p.first;
             }),
-                retries, flags, router, config_, j_);
+                retries, flags, router, j_);
     // Apply local tx
     for (auto const& item : locals)
-        ripple::apply(app, *next, *item.second,
-            flags, router.sigVerify(),
-                config_, j_);
+        ripple::apply(app, *next,
+            *item.second, flags, j_);
     // Switch to the new open view
     std::lock_guard<
         std::mutex> lock2(current_mutex_);
@@ -135,18 +134,12 @@ auto
 OpenLedger::apply_one (Application& app, OpenView& view,
     std::shared_ptr<STTx const> const& tx,
         bool retry, ApplyFlags flags,
-            HashRouter& router, Config const& config,
-                beast::Journal j) -> Result
+            HashRouter& router,beast::Journal j) -> Result
 {
     if (retry)
         flags = flags | tapRETRY;
-    if ((router.getFlags(
-        tx->getTransactionID()) & SF_SIGGOOD) ==
-            SF_SIGGOOD)
-        flags = flags | tapNO_CHECK_SIGN;
     auto const result = ripple::apply(
-        app, view, *tx, flags, router.
-            sigVerify(), config, j);
+        app, view, *tx, flags, j);
     if (result.second)
         return Result::success;
     if (isTefFailure (result.first) ||

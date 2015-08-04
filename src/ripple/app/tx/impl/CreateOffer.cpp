@@ -649,7 +649,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     auto saTakerGets = ctx_.tx[sfTakerGets];
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer ();
-    auto const& uPaysCurrency = saTakerPays.getCurrency ();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer ();
 
@@ -663,7 +662,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     deprecatedWrongOwnerCount_ = (*sleCreator)[sfOwnerCount];
 
-    auto const uAccountSequenceNext = (*sleCreator)[sfSequence];
     auto const uSequence = ctx_.tx.getSequence ();
 
     // This is the original rate of the offer, and is the rate at which

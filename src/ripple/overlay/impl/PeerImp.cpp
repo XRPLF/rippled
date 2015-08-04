@@ -28,6 +28,7 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
@@ -1052,6 +1053,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         p_journal_.debug <<
             "Got tx " << txID;
 
+        bool checkSignature = true;
         if (cluster())
         {
             if (! m->has_deferred () || ! m->deferred ())
@@ -1065,7 +1067,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
-                flags |= SF_SIGGOOD;
+                checkSignature = false;
             }
         }
 
@@ -1078,9 +1080,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue ().addJob (
                 jtTRANSACTION, "recvTransaction->checkTransaction",
-                [weak, flags, stx] (Job&) {
+                [weak, flags, checkSignature, stx] (Job&) {
                     if (auto peer = weak.lock())
-                        peer->checkTransaction(flags, stx);
+                        peer->checkTransaction(flags,
+                            checkSignature, stx);
                 });
         }
     }
@@ -1712,7 +1715,8 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
 }
 
 void
-PeerImp::checkTransaction (int flags, STTx::pointer stx)
+PeerImp::checkTransaction (int flags,
+    bool checkSignature, STTx::pointer stx)
 {
     // VFALCO TODO Rewrite to not use exceptions
     try
@@ -1727,11 +1731,36 @@ PeerImp::checkTransaction (int flags, STTx::pointer stx)
             return;
         }
 
-        auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
+        if (checkSignature)
+        {
+            // Check the signature before handing off to the job queue.
+            auto valid = checkValidity(app_.getHashRouter(), *stx,
+                app_.getLedgerMaster().getValidatedRules(),
+                    app_.config());
+            if (valid.first != Validity::Valid)
+            {
+                if (!valid.second.empty())
+                {
+                    JLOG(p_journal_.trace) <<
+                        "Exception checking transaction: " <<
+                            valid.second;
+                }
+
+                // Probably not necessary to set SF_BAD, but doesn't hurt.
+                app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
+                charge(Resource::feeInvalidSignature);
+                return;
+            }
+        }
+        else
+        {
+            forceValidity(app_.getHashRouter(),
+                stx->getTransactionID(), Validity::Valid);
+        }
+
         std::string reason;
-        auto tx = std::make_shared<Transaction> (stx, validate,
-            directSigVerify,
-            reason, app_);
+        auto tx = std::make_shared<Transaction> (
+            stx, reason, app_);
 
         if (tx->getStatus () == INVALID)
         {
@@ -1741,10 +1770,6 @@ PeerImp::checkTransaction (int flags, STTx::pointer stx)
             app_.getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
             charge (Resource::feeInvalidSignature);
             return;
-        }
-        else
-        {
-            app_.getHashRouter ().setFlags (stx->getTransactionID (), SF_SIGGOOD);
         }
 
         bool const trusted (flags & SF_TRUSTED);

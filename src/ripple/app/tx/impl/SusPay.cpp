@@ -133,7 +133,7 @@ SusPayCreate::preflight (PreflightContext const& ctx)
 {
     if (! (ctx.flags & tapENABLE_TESTING) &&
         ! ctx.rules.enabled(featureSusPay,
-            ctx.config.features))
+            ctx.app.config().features))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -253,7 +253,7 @@ SusPayFinish::preflight (PreflightContext const& ctx)
 {
     if (! (ctx.flags & tapENABLE_TESTING) &&
         ! ctx.rules.enabled(featureSusPay,
-            ctx.config.features))
+            ctx.app.config().features))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -373,7 +373,7 @@ SusPayCancel::preflight (PreflightContext const& ctx)
 {
     if (! (ctx.flags & tapENABLE_TESTING) &&
         ! ctx.rules.enabled(featureSusPay,
-            ctx.config.features))
+            ctx.app.config().features))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);

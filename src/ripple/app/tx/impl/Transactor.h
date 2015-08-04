@@ -30,25 +30,15 @@ namespace ripple {
 struct PreflightContext
 {
 public:
+    Application& app;
     STTx const& tx;
     Rules const& rules;
     ApplyFlags flags;
-    SigVerify verify;
-    Config const& config;
     beast::Journal j;
 
-    PreflightContext(STTx const& tx_,
+    PreflightContext(Application& app_, STTx const& tx_,
         Rules const& rules_, ApplyFlags flags_,
-            SigVerify verify_, Config const& config_,
-                beast::Journal j_)
-        : tx(tx_)
-        , rules(rules_)
-        , flags(flags_)
-        , verify(verify_)
-        , config(config_)
-        , j(j_)
-    {
-    }
+            beast::Journal j_);
 };
 
 struct PreflightResult

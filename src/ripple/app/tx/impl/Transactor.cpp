@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/basics/Log.h>
@@ -87,14 +88,10 @@ preflight2 (PreflightContext const& ctx)
     auto const pk = RippleAddress::createAccountPublic(
         ctx.tx.getSigningPubKey());
 
-    if(! ctx.verify(ctx.tx,
-        [&, ctx] (STTx const& tx)
-        {
-            return (ctx.flags & tapNO_CHECK_SIGN) ||
-                tx.checkSign(
-                    (ctx.flags & tapENABLE_TESTING) ||
-                    (ctx.rules.enabled(featureMultiSign, ctx.config.features)));
-        }))
+    if(!( ctx.flags & tapNO_CHECK_SIGN) &&
+        checkValidity(ctx.app.getHashRouter(),
+            ctx.tx, ctx.rules, ctx.app.config(),
+                ctx.flags).first == Validity::SigBad)
     {
         JLOG(ctx.j.debug) << "preflight2: bad signature";
         return temINVALID;
@@ -110,6 +107,19 @@ calculateFee(Application& app, std::uint64_t const baseFee,
 {
     return app.getFeeTrack().scaleFeeLoad(
         baseFee, fees.base, fees.units, flags & tapADMIN);
+}
+
+//------------------------------------------------------------------------------
+
+PreflightContext::PreflightContext(Application& app_, STTx const& tx_,
+    Rules const& rules_, ApplyFlags flags_,
+        beast::Journal j_)
+    : app(app_)
+    , tx(tx_)
+    , rules(rules_)
+    , flags(flags_)
+    , j(j_)
+{
 }
 
 //------------------------------------------------------------------------------
@@ -662,7 +672,6 @@ Transactor::operator()()
             keylet::account(ctx_.tx.getAccountID(sfAccount)));
 
         std::uint32_t t_seq = ctx_.tx.getSequence ();
-        std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
 
         auto const balance = txnAcct->getFieldAmount (sfBalance).xrp ();
 

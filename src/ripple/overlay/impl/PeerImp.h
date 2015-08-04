@@ -449,7 +449,7 @@ private:
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     void
-    checkTransaction (int flags, STTx::pointer stx);
+    checkTransaction (int flags, bool checkSignature, STTx::pointer stx);
 
     void
     checkPropose (Job& job,

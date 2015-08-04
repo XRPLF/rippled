@@ -42,8 +42,8 @@
 #include <ripple/json/to_string.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/protocol/STValidation.h>
-#include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/st.h>
+#include <ripple/protocol/Feature.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/utility/make_lock.h>
 #include <type_traits>
@@ -1820,10 +1820,6 @@ applyTransaction (Application& app, OpenView& view,
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    if ((app.getHashRouter ().getFlags (txn->getTransactionID ())
-            & SF_SIGGOOD) == SF_SIGGOOD)
-        flags = flags | tapNO_CHECK_SIGN;
-
     JLOG (j.debug) << "TXN "
         << txn->getTransactionID ()
         //<< (engine.view().open() ? " open" : " closed")
@@ -1833,9 +1829,8 @@ applyTransaction (Application& app, OpenView& view,
 
     try
     {
-        auto const result = apply(app, view, *txn, flags,
-            app.getHashRouter().sigVerify(),
-                app.config(), j);
+        auto const result = apply(app,
+            view, *txn, flags, j);
         if (result.second)
         {
             JLOG (j.debug)

@@ -2436,6 +2436,9 @@
     <ClCompile Include="..\..\src\ripple\app\tests\DeliverMin.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\HashRouter_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\MultiSign.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
