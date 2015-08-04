@@ -41,9 +41,9 @@ public:
         // would remove the first "taker gets" xrp offer, even though the offer is
         // still funded and not used for the payment.
 
-        // Mon Aug 10 11:00:00am PDT
+        // Mon Aug 17 11:00:00am PDT
         static NetClock::time_point const switchoverTime (
-            std::chrono::seconds (492544800));
+            std::chrono::seconds (493149600));
 
         for(int i=0; i<2; ++i)
         {

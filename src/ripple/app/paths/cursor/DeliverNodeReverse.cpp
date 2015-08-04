@@ -28,8 +28,8 @@ static
 bool enableDirRestartFix (
     std::uint32_t parentCloseTime)
 {
-    // Mon Aug 10 11:00:00am PDT
-    static std::uint32_t const enableAfter = 492544800;
+    // Mon Aug 17 11:00:00am PDT
+    static std::uint32_t const enableAfter = 493149600;
     return parentCloseTime > enableAfter;
 }
 
