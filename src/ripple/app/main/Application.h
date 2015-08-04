@@ -42,7 +42,7 @@ class CollectorManager;
 namespace shamap {
 class Family;
 } // shamap
-class IHashRouter;
+class HashRouter;
 class Logs;
 class LoadFeeTrack;
 class LocalCredentials;
@@ -99,7 +99,7 @@ public:
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
-    virtual IHashRouter&            getHashRouter () = 0;
+    virtual HashRouter&            getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;

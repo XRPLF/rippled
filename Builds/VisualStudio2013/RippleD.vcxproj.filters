@@ -2280,7 +2280,7 @@
     <ClCompile Include="..\..\src\ripple\app\misc\HashRouter.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\IHashRouter.h">
+    <ClInclude Include="..\..\src\ripple\app\misc\HashRouter.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.cpp">

@@ -23,7 +23,7 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
@@ -1702,7 +1702,7 @@ PeerImp::checkTransaction (Job&, int flags,
             (stx->getFieldU32 (sfLastLedgerSequence) <
             getApp().getLedgerMaster().getValidLedgerIndex()))
         {
-            getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
+            getApp().getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
             charge (Resource::feeUnwantedData);
             return;
         }
@@ -1718,13 +1718,13 @@ PeerImp::checkTransaction (Job&, int flags,
             if (! reason.empty ())
                 p_journal_.trace << "Exception checking transaction: " << reason;
 
-            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+            getApp().getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
             charge (Resource::feeInvalidSignature);
             return;
         }
         else
         {
-            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
+            getApp().getHashRouter ().setFlags (stx->getTransactionID (), SF_SIGGOOD);
         }
 
         bool const trusted (flags & SF_TRUSTED);
@@ -1733,7 +1733,7 @@ PeerImp::checkTransaction (Job&, int flags,
     }
     catch (...)
     {
-        getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+        getApp().getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
         charge (Resource::feeBadData);
     }
 }

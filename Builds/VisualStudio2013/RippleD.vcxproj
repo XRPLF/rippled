@@ -1529,7 +1529,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\IHashRouter.h">
+    <ClInclude Include="..\..\src\ripple\app\misc\HashRouter.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

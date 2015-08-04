@@ -77,7 +77,7 @@ OpenLedger::accept(Rules const& rules,
     std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
-                IHashRouter& router, std::string const& suffix)
+                HashRouter& router, std::string const& suffix)
 {
     JLOG(j_.error) <<
         "accept ledger " << ledger->seq() << " " << suffix;
@@ -135,7 +135,7 @@ auto
 OpenLedger::apply_one (OpenView& view,
     std::shared_ptr<STTx const> const& tx,
         bool retry, ApplyFlags flags,
-            IHashRouter& router, Config const& config,
+            HashRouter& router, Config const& config,
                 beast::Journal j) -> Result
 {
     if (retry)

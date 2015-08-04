@@ -18,116 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <map>
 #include <mutex>
 
 namespace ripple {
-
-// VFALCO TODO Inline the function definitions
-class HashRouter : public IHashRouter
-{
-private:
-    /** An entry in the routing table.
-    */
-    class Entry : public CountedObject <Entry>
-    {
-    public:
-        static char const* getCountedObjectName () { return "HashRouterEntry"; }
-
-        Entry ()
-            : mFlags (0)
-        {
-        }
-
-        std::set <PeerShortID> const& peekPeers () const
-        {
-            return mPeers;
-        }
-
-        void addPeer (PeerShortID peer)
-        {
-            if (peer != 0)
-                mPeers.insert (peer);
-        }
-
-        bool hasPeer (PeerShortID peer) const
-        {
-            return mPeers.count (peer) > 0;
-        }
-
-        int getFlags (void) const
-        {
-            return mFlags;
-        }
-
-        bool hasFlag (int mask) const
-        {
-            return (mFlags & mask) != 0;
-        }
-
-        void setFlag (int flagsToSet)
-        {
-            mFlags |= flagsToSet;
-        }
-
-        void clearFlag (int flagsToClear)
-        {
-            mFlags &= ~flagsToClear;
-        }
-
-        void swapSet (std::set <PeerShortID>& other)
-        {
-            mPeers.swap (other);
-        }
-
-    private:
-        int mFlags;
-        std::set <PeerShortID> mPeers;
-    };
-
-public:
-    explicit HashRouter (int holdTime)
-        : mHoldTime (holdTime)
-    {
-    }
-
-    bool addSuppression (uint256 const& index) override;
-
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer) override;
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags) override;
-    bool addSuppressionFlags (uint256 const& index, int flag) override;
-    bool setFlag (uint256 const& index, int flag) override;
-    int getFlags (uint256 const& index) override;
-
-    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) override;
-
-    std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
-    sigVerify() override;
-
-private:
-    Entry getEntry (uint256 const& );
-
-    Entry& findCreateEntry (uint256 const& , bool& created);
-
-    using MutexType = std::mutex;
-    using ScopedLockType = std::lock_guard <MutexType>;
-    MutexType mMutex;
-
-    // Stores all suppressed hashes and their expiration time
-    hash_map <uint256, Entry> mSuppressionMap;
-
-    // Stores all expiration times and the hashes indexed for them
-    std::map< int, std::list<uint256> > mSuppressionTimes;
-
-    int mHoldTime;
-};
-
-//------------------------------------------------------------------------------
 
 std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
 HashRouter::sigVerify()
@@ -143,10 +40,10 @@ HashRouter::sigVerify()
             return false;
         if (! sigCheck(tx))
         {
-            setFlag(id, SF_BAD);
+            setFlags(id, SF_BAD);
             return false;
         }
-        setFlag(id, SF_SIGGOOD);
+        setFlags(id, SF_SIGGOOD);
         return true;
     };
 }
@@ -230,28 +127,28 @@ bool HashRouter::addSuppressionFlags (uint256 const& index, int flag)
     ScopedLockType lock (mMutex);
 
     bool created;
-    findCreateEntry (index, created).setFlag (flag);
+    findCreateEntry (index, created).setFlags (flag);
     return created;
 }
 
-bool HashRouter::setFlag (uint256 const& index, int flag)
+bool HashRouter::setFlags (uint256 const& index, int flags)
 {
     // VFALCO NOTE Comments like this belong in the HEADER file,
     //             and more importantly in a Javadoc comment so
     //             they appear in the generated documentation.
     //
     // return: true = changed, false = unchanged
-    assert (flag != 0);
+    assert (flags != 0);
 
     ScopedLockType lock (mMutex);
 
     bool created;
     Entry& s = findCreateEntry (index, created);
 
-    if ((s.getFlags () & flag) == flag)
+    if ((s.getFlags () & flags) == flags)
         return false;
 
-    s.setFlag (flag);
+    s.setFlags (flags);
     return true;
 }
 
@@ -266,14 +163,9 @@ bool HashRouter::swapSet (uint256 const& index, std::set<PeerShortID>& peers, in
         return false;
 
     s.swapSet (peers);
-    s.setFlag (flag);
+    s.setFlags (flag);
 
     return true;
-}
-
-IHashRouter* IHashRouter::New (int holdTime)
-{
-    return new HashRouter (holdTime);
 }
 
 } // ripple

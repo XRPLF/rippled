@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
