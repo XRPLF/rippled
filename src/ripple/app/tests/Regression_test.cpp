@@ -67,8 +67,7 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapENABLE_TESTING,
-                    directSigVerify, env.app().config(),
-                        env.journal);
+                    env.journal);
             expect(result.first == tesSUCCESS);
             expect(result.second);
 
@@ -95,8 +94,7 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapENABLE_TESTING,
-                    directSigVerify, env.app().config(),
-                        env.journal);
+                    env.journal);
             expect(result.first == tecINSUFF_FEE);
             expect(result.second);
 

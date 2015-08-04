@@ -31,6 +31,54 @@
 namespace ripple {
 
 class Application;
+class HashRouter;
+
+enum class Validity
+{
+    SigBad,         // Signature is bad. Didn't do local checks.
+    SigGoodOnly,    // Signature is good, but local checks fail.
+    Valid           // Signature and local checks are good / passed.
+};
+
+/** Checks transaction signature and local checks. Returns
+    a Validity enum representing how valid the STTx is
+    and, if not Valid, a reason string.
+    Results are cached internally, so tests will not be
+    repeated over repeated calls, unless cache expires.
+
+    @return std::pair, where `.first` is the status, and
+            `.second` is the reason if appropriate.
+*/
+std::pair<Validity, std::string>
+checkValidity(HashRouter& router,
+    STTx const& tx,
+        bool allowMultiSign);
+
+/** Checks transaction signature and local checks. Returns
+    a Validity enum representing how valid the STTx is
+    and, if not Valid, a reason string.
+    Results are cached internally, so tests will not be
+    repeated over repeated calls, unless cache expires.
+
+    @return std::pair, where `.first` is the status, and
+            `.second` is the reason if appropriate.
+*/
+std::pair<Validity, std::string>
+checkValidity(HashRouter& router,
+    STTx const& tx, Rules const& rules,
+        Config const& config,
+            ApplyFlags const& flags = tapNONE);
+
+
+/** Sets the validity of a given transaction in the cache.
+    Use with extreme care.
+
+    @note Can only raise the validity to a more valid state,
+          and can not override anything cached bad.
+*/
+void
+forceValidity(HashRouter& router, uint256 const& txid,
+    Validity validity);
 
 /** Apply a transaction to a ReadView.
 
@@ -60,9 +108,7 @@ class Application;
 std::pair<TER, bool>
 apply (Application& app, OpenView& view,
     STTx const& tx, ApplyFlags flags,
-        SigVerify verify,
-            Config const& config,
-                beast::Journal journal);
+        beast::Journal journal);
 
 } // ripple
 

@@ -35,6 +35,7 @@ namespace ripple {
 
 class Application;
 class Database;
+class Rules;
 
 enum TransStatus
 {
@@ -48,8 +49,6 @@ enum TransStatus
     OBSOLETE    = 7, // a compatible transaction has taken precedence
     INCOMPLETE  = 8  // needs more signatures
 };
-
-enum class Validate {NO, YES};
 
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
@@ -65,11 +64,11 @@ public:
 
 public:
     Transaction (
-        STTx::ref, Validate, SigVerify, std::string&, Application&) noexcept;
+        STTx::ref, std::string&, Application&) noexcept;
 
     static
     Transaction::pointer
-    sharedTransaction (Blob const&, Validate, Application& app);
+    sharedTransaction (Blob const&, Rules const& rules, Application& app);
 
     static
     Transaction::pointer
@@ -77,14 +76,19 @@ public:
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,
         Blob const& rawTxn,
-        Validate validate,
+        Application& app);
+
+    static
+    Transaction::pointer
+    transactionFromSQLValidated (
+        boost::optional<std::uint64_t> const& ledgerSeq,
+        boost::optional<std::string> const& status,
+        Blob const& rawTxn,
         Application& app);
 
     static
     TransStatus
     sqlTransactionStatus(boost::optional<std::string> const& status);
-
-    bool checkSign (std::string&, SigVerify) const;
 
     STTx::ref getSTransaction ()
     {
@@ -160,8 +164,6 @@ public:
 
 private:
     uint256         mTransactionID;
-    RippleAddress   mFromPubKey;    // Sign transaction with this. mSignPubKey
-    RippleAddress   mSourcePrivate; // Sign transaction with this.
 
     LedgerIndex     mInLedger = 0;
     TransStatus     mStatus = INVALID;

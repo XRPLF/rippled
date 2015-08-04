@@ -50,7 +50,9 @@ Change::preflight (PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    if (!ctx.tx.getSigningPubKey ().empty () || !ctx.tx.getSignature ().empty ())
+    if (!ctx.tx.getSigningPubKey ().empty () ||
+        !ctx.tx.getSignature ().empty () ||
+        ctx.tx.isFieldPresent (sfSigners))
     {
         JLOG(ctx.j.warning) << "Change: Bad signature";
         return temBAD_SIGNATURE;

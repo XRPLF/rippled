@@ -29,17 +29,20 @@
 
 namespace ripple {
 
-class STTx;
-
 // VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
 // VFALCO TODO convert these macros to int constants
 #define SF_RELAYED      0x01    // Has already been relayed to other nodes
 // VFALCO NOTE How can both bad and good be set on a hash?
-#define SF_BAD          0x02    // Signature/format is bad
-#define SF_SIGGOOD      0x04    // Signature is good
-#define SF_SAVED        0x08
-#define SF_RETRY        0x10    // Transaction can be retried
-#define SF_TRUSTED      0x20    // comes from trusted source
+#define SF_BAD          0x02    // Temporarily bad
+#define SF_SAVED        0x04
+#define SF_RETRY        0x08    // Transaction can be retried
+#define SF_TRUSTED      0x10    // comes from trusted source
+// Private flags, used internally in apply.cpp.
+// Do not attempt to read, set, or reuse.
+#define SF_PRIVATE1     0x100
+#define SF_PRIVATE2     0x200
+#define SF_PRIVATE3     0x400
+#define SF_PRIVATE4     0x800
 
 /** Routing table for objects identified by hash.
 
@@ -62,54 +65,54 @@ private:
         static char const* getCountedObjectName () { return "HashRouterEntry"; }
 
         Entry ()
-            : mFlags (0)
+            : flags_ (0)
         {
         }
 
         std::set <PeerShortID> const& peekPeers () const
         {
-            return mPeers;
+            return peers_;
         }
 
         void addPeer (PeerShortID peer)
         {
             if (peer != 0)
-                mPeers.insert (peer);
+                peers_.insert (peer);
         }
 
         bool hasPeer (PeerShortID peer) const
         {
-            return mPeers.count (peer) > 0;
+            return peers_.count (peer) > 0;
         }
 
         int getFlags (void) const
         {
-            return mFlags;
+            return flags_;
         }
 
         bool hasFlag (int mask) const
         {
-            return (mFlags & mask) != 0;
+            return (flags_ & mask) != 0;
         }
 
         void setFlags (int flagsToSet)
         {
-            mFlags |= flagsToSet;
+            flags_ |= flagsToSet;
         }
 
         void clearFlag (int flagsToClear)
         {
-            mFlags &= ~flagsToClear;
+            flags_ &= ~flagsToClear;
         }
 
         void swapSet (std::set <PeerShortID>& other)
         {
-            mPeers.swap (other);
+            peers_.swap (other);
         }
 
     private:
-        int mFlags;
-        std::set <PeerShortID> mPeers;
+        int flags_;
+        std::set <PeerShortID> peers_;
     };
 
 public:
@@ -126,22 +129,22 @@ public:
     {
     }
 
+    HashRouter& operator= (HashRouter const&) = delete;
+
     virtual ~HashRouter() = default;
 
     // VFALCO TODO Replace "Supression" terminology with something more
     // semantically meaningful.
-    bool addSuppression (uint256 const& index);
+    void addSuppression(uint256 const& index);
 
     bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
 
     bool addSuppressionPeer (uint256 const& index, PeerShortID peer,
                              int& flags);
 
-    bool addSuppressionFlags (uint256 const& index, int flag);
-
     /** Set the flags on a hash.
 
-        @return `true` if the flags were changed.
+        @return `true` if the flags were changed. `false` if unchanged.
     */
     bool setFlags (uint256 const& index, int flags);
 
@@ -149,22 +152,11 @@ public:
 
     bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag);
 
-    /**
-        Function wrapper that will check the signature status
-        of a STTx before calling an expensive signature
-        checking function.
-    */
-    std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
-    sigVerify();
-
 private:
-    Entry getEntry (uint256 const& );
+    // pair.second indicates whether the entry was created
+    std::pair<Entry&, bool> emplace (uint256 const&);
 
-    Entry& findCreateEntry (uint256 const& , bool& created);
-
-    using MutexType = std::mutex;
-    using ScopedLockType = std::lock_guard <MutexType>;
-    MutexType mMutex;
+    std::mutex mutable mMutex;
 
     // Stores all suppressed hashes and their expiration time
     hash_map <uint256, Entry> mSuppressionMap;
@@ -172,7 +164,7 @@ private:
     // Stores all expiration times and the hashes indexed for them
     std::map< int, std::list<uint256> > mSuppressionTimes;
 
-    int mHoldTime;
+    int const mHoldTime;
 };
 
 } // ripple

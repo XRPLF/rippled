@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/Transaction.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -30,8 +31,8 @@
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref stx, Validate validate,
-    SigVerify sigVerify, std::string& reason, Application& app)
+Transaction::Transaction (STTx::ref stx,
+    std::string& reason, Application& app)
     noexcept
     : mTransaction (stx)
     , mApp (app)
@@ -39,7 +40,6 @@ Transaction::Transaction (STTx::ref stx, Validate validate,
 {
     try
     {
-        mFromPubKey.setAccountPublic (mTransaction->getSigningPubKey ());
         mTransactionID  = mTransaction->getTransactionID ();
     }
     catch (std::exception& e)
@@ -53,24 +53,26 @@ Transaction::Transaction (STTx::ref stx, Validate validate,
         return;
     }
 
-    if (validate == Validate::NO ||
-        (passesLocalChecks (*mTransaction, reason) &&
-            checkSign (reason, sigVerify)))
-    {
-        mStatus = NEW;
-    }
+    mStatus = NEW;
 }
 
 Transaction::pointer Transaction::sharedTransaction (
-    Blob const& vucTransaction, Validate validate, Application& app)
+    Blob const& vucTransaction, Rules const& rules, Application& app)
 {
     try
     {
         SerialIter sit (makeSlice(vucTransaction));
+        auto txn = std::make_shared<STTx>(sit);
         std::string reason;
-
-        return std::make_shared<Transaction> (std::make_shared<STTx> (sit),
-            validate, app.getHashRouter().sigVerify(), reason, app);
+        auto result = std::make_shared<Transaction> (
+            txn, reason, app);
+        if (checkValidity(app.getHashRouter(),
+            *txn, rules, app.config()).first
+                != Validity::Valid)
+        {
+            result->setStatus(INVALID);
+        }
+        return result;
     }
     catch (std::exception& e)
     {
@@ -82,32 +84,12 @@ Transaction::pointer Transaction::sharedTransaction (
         JLOG (app.journal ("Ledger").warning) << "Exception constructing transaction";
     }
 
-    return std::shared_ptr<Transaction> ();
+    return {};
 }
 
 //
 // Misc.
 //
-
-bool Transaction::checkSign (std::string& reason, SigVerify sigVerify) const
-{
-    bool const allowMultiSign = mApp.getLedgerMaster().
-        getValidatedRules().enabled (featureMultiSign,
-            mApp.config().features);
-
-    if (! mFromPubKey.isValid ())
-        reason = "Transaction has bad source public key";
-    else if (!sigVerify(*mTransaction, [allowMultiSign] (STTx const& tx)
-    {
-        return tx.checkSign(allowMultiSign);
-    }))
-        reason = "Transaction has bad signature";
-    else
-        return true;
-
-    JLOG (j_.warning) << reason;
-    return false;
-}
 
 void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 {
@@ -137,7 +119,6 @@ Transaction::pointer Transaction::transactionFromSQL (
     boost::optional<std::uint64_t> const& ledgerSeq,
     boost::optional<std::string> const& status,
     Blob const& rawTxn,
-    Validate validate,
     Application& app)
 {
     std::uint32_t const inLedger =
@@ -146,15 +127,33 @@ Transaction::pointer Transaction::transactionFromSQL (
     SerialIter it (makeSlice(rawTxn));
     auto txn = std::make_shared<STTx> (it);
     std::string reason;
-    auto tr = std::make_shared<Transaction> (txn, validate,
-        app.getHashRouter().sigVerify(), reason, app);
+    auto tr = std::make_shared<Transaction> (
+        txn, reason, app);
 
     tr->setStatus (sqlTransactionStatus (status));
     tr->setLedger (inLedger);
     return tr;
 }
 
-Transaction::pointer Transaction::load (uint256 const& id, Application& app)
+Transaction::pointer Transaction::transactionFromSQLValidated(
+    boost::optional<std::uint64_t> const& ledgerSeq,
+    boost::optional<std::string> const& status,
+    Blob const& rawTxn,
+    Application& app)
+{
+    auto ret = transactionFromSQL(ledgerSeq, status, rawTxn, app);
+
+    if (checkValidity(app.getHashRouter(),
+            *ret->getSTransaction(), app.
+                getLedgerMaster().getValidatedRules(),
+                    app.config()).first !=
+                        Validity::Valid)
+        return {};
+
+    return ret;
+}
+
+Transaction::pointer Transaction::load(uint256 const& id, Application& app)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
             "FROM Transactions WHERE TransID='";
@@ -177,8 +176,8 @@ Transaction::pointer Transaction::load (uint256 const& id, Application& app)
         convert(sociRawTxnBlob, rawTxn);
     }
 
-    return Transaction::transactionFromSQL (
-        ledgerSeq, status, rawTxn, Validate::YES, app);
+    return Transaction::transactionFromSQLValidated (
+        ledgerSeq, status, rawTxn, app);
 }
 
 // options 1 to include the date of the transaction
