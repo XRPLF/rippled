@@ -250,9 +250,6 @@
     <Filter Include="ripple\app\ledger\impl">
       <UniqueIdentifier>{0EF1A571-94CC-4D70-E004-48579DF8AF2B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\ledger\tests">
-      <UniqueIdentifier>{55A76B5B-A18E-E655-1A07-9492C6F8F356}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\main">
       <UniqueIdentifier>{91D5931B-D981-52BC-BC12-08DA9F7BF606}</UniqueIdentifier>
     </Filter>
@@ -2211,15 +2208,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\tests\common_ledger.cpp">
-      <Filter>ripple\app\ledger\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\tests\common_ledger.h">
-      <Filter>ripple\app\ledger\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\tests\Ledger_test.cpp">
-      <Filter>ripple\app\ledger\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>

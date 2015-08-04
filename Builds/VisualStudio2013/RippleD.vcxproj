@@ -1455,16 +1455,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\tests\common_ledger.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\tests\common_ledger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\tests\Ledger_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>

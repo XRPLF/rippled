@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/tests/common_ledger.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/tests/PathSet.h>
