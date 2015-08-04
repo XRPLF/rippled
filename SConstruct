@@ -67,6 +67,19 @@ The following extra options may be used:
                     (see: https://martine.github.io/ninja/). Only gcc and clang targets
                      are supported.
 
+GCC 5 support: There is transitional support for user-installed gcc 5. Setting
+    the environment variable: `RIPPLED_OLD_GCC_ABI` to one enables the transitional
+    support. Due to an ABI change between gcc 4 and gcc 5, it is assumed all
+    libraries are built with the old, gcc 4 ABI. Since no linux distro has upgraded
+    to gcc 5, this allows us to use the package manager to install rippled
+    dependencies and to easily switch between gcc 4 and gcc 5. It also means if the
+    user builds C++ dependencies themselves - such as boost - they must either be
+    built with gcc 4 or with the preprocessor flag `_GLIBCXX_USE_CXX11_ABI` set to
+    zero. When linux distros upgrade to gcc 5, the transitional support will be
+    removed. To enable C++-14 support, define the environment variable `RIPPLED_USE_CPP_14`
+    to one. This is also transitional and will be removed when we permanently enable C++ 14
+    support.
+
 '''
 #
 '''
@@ -110,6 +123,7 @@ BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
 OPENSSL_ERROR = ('Your openSSL was built on %s; '
                  'rippled needs a version built on or after %s.')
 UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
+USE_CPP_14 = os.getenv('RIPPLED_USE_CPP_14')
 
 def check_openssl():
     if Beast.system.platform in CHECK_PLATFORMS:
@@ -275,11 +289,18 @@ def config_base(env):
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
         ])
 
+    if USE_CPP_14:
+        env.Append(CPPDEFINES=[
+            '-DBEAST_NO_CXX14_COMPATIBILITY',
+            '-DBEAST_NO_CXX14_INTEGER_SEQUENCE',
+            '-DBEAST_NO_CXX14_MAKE_UNIQUE',
+            '-DBEAST_NO_CXX14_EQUAL',
+            '-DBOOST_NO_AUTO_PTR',
+            '-DBEAST_NO_CXX14_MAKE_REVERSE_ITERATOR',
+        ])
+
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
-        env.Append(CPPPATH=[
-            BOOST_ROOT,
-            ])
         env.Append(LIBPATH=[
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
@@ -314,6 +335,15 @@ def config_base(env):
         env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
         env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
 
+def gccStdLibDir():
+    try:
+        for l in subprocess.check_output(['gcc', '-v'], stderr=subprocess.STDOUT).split():
+            if l.startswith('--prefix'):
+                return l.split('=')[1] + '/lib64'
+    except:
+        pass
+    raise SCons.UserError('Could not find gccStdLibDir')
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     if is_debug_variant(variant):
@@ -321,6 +351,14 @@ def config_env(toolchain, variant, env):
 
     elif variant == 'release' or variant == 'profile':
         env.Append(CPPDEFINES=['NDEBUG'])
+
+    if 'BOOST_ROOT' in env:
+        if toolchain == 'gcc':
+            env.Append(CCFLAGS=['-isystem' + env['BOOST_ROOT']])
+        else:
+            env.Append(CPPPATH=[
+                env['BOOST_ROOT'],
+                ])
 
     if toolchain in Split('clang gcc'):
         if Beast.system.linux:
@@ -358,7 +396,7 @@ def config_env(toolchain, variant, env):
 
         env.Append(CXXFLAGS=[
             '-frtti',
-            '-std=c++11',
+            '-std=c++14' if USE_CPP_14 else '-std=c++11',
             '-Wno-invalid-offsetof'])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
@@ -378,8 +416,24 @@ def config_env(toolchain, variant, env):
                 ])
         else:
             if toolchain == 'gcc':
+                if os.getenv('RIPPLED_OLD_GCC_ABI'):
+                    gcc_ver = ''
+                    try:
+                        gcc_ver = subprocess.check_output(['gcc', '-dumpversion'],
+                                                        stderr=subprocess.STDOUT).strip()
+                    except:
+                        pass
+                    if gcc_ver.startswith('5'):
+                        # remove rpath and CXX11_ABI flag when distro uses
+                        # non-user installed gcc 5
+                        env.Append(CPPDEFINES={
+                            '-D_GLIBCXX_USE_CXX11_ABI' : 0
+                        })
+                        env.Append(LINKFLAGS=['-Wl,-rpath,' + gccStdLibDir()])
+
                 env.Append(CCFLAGS=[
-                    '-Wno-unused-but-set-variable'
+                    '-Wno-unused-but-set-variable',
+                    '-Wno-deprecated',
                     ])
 
         boost_libs = [
