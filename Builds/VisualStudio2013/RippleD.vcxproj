@@ -86,8 +86,8 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_USLEEP=1;_WIN32_WINNT=0x6000;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -123,8 +123,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_USLEEP=1;_WIN32_WINNT=0x6000;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -160,8 +160,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_USLEEP=1;_WIN32_WINNT=0x6000;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -195,8 +195,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_USLEEP=1;_WIN32_WINNT=0x6000;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -3869,16 +3869,16 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
@@ -4644,6 +4644,104 @@
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-compiler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-cpp.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-cstrtod.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-dtocstr.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-exchange-cast.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\private\soci-mktime.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\backend-loader.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\bind-values.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\blob-exchange.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\blob.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-fusion.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-gregorian-date.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-optional.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\boost-tuple.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\connection-parameters.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\connection-pool.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\error.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\exchange-traits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\into-type.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\into.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\noreturn.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\once-temp-type.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\prepare-temp-type.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\procedure.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\query_transformation.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\ref-counted-prepare-info.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\ref-counted-statement.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\row-exchange.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\row.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowid-exchange.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowid.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\rowset.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\session.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-backend.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-platform.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-simple.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\sqlite3\soci-sqlite3.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\statement.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\transaction.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-conversion-traits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-conversion.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-holder.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-ptr.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\unsigned-types.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\use-type.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\use.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\values-exchange.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\values.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4652,6 +4750,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\backends\sqlite3\common.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\error.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\factory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4661,8 +4762,6 @@
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\session.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\backends\sqlite3\soci-sqlite3.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\standard-into-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4678,144 +4777,60 @@
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\vector-use-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\backend-loader.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\blob-exchange.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\blob.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\blob.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-fusion.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-gregorian-date.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-optional.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\boost-tuple.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\connection-parameters.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\connection-parameters.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\connection-pool.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\connection-pool.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\error.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\error.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\exchange-traits.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\into-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\into-type.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\into.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\once-temp-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\once-temp-type.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\prepare-temp-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\prepare-temp-type.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\procedure.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\procedure.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\query_transformation.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\ref-counted-prepare-info.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\ref-counted-prepare-info.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\ref-counted-statement.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\ref-counted-statement.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\row-exchange.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\row.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\row.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\rowid-exchange.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\rowid.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\rowid.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\rowset.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\session.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\session.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-backend.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci-platform.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\soci-simple.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\soci-simple.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\soci.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\statement.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\statement.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\transaction.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\transaction.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-conversion-traits.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-conversion.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-holder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\type-ptr.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\unsigned-types.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\use-type.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\use-type.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\use.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\values-exchange.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\soci\src\core\values.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\soci\src\core\values.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\soci\src\core\version.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>
     <ClCompile Include="..\..\src\sqlite\sqlite.unity.c">

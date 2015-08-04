@@ -7,8 +7,8 @@
 //
 
 #define SOCI_MYSQL_SOURCE
-#include "soci-mysql.h"
-#include <backend-loader.h>
+#include "soci/mysql/soci-mysql.h"
+#include "soci/backend-loader.h"
 #include <ciso646>
 
 #ifdef _MSC_VER

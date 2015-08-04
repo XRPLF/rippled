@@ -28,24 +28,19 @@ if(SOCI_POSTGRESQL_NOPARAMS)
 endif()
 
 if(SOCI_POSTGRESQL_NOBINDBYNAME)
-message("X")
   add_definitions(-DSOCI_POSTGRESQL_NOBINDBYNAME=1)
 endif()
 
 if(SOCI_POSTGRESQL_NOPREPARE)
-message("Y")
   add_definitions(-DSOCI_POSTGRESQL_NOPREPARE=1)
 endif()
 
 soci_backend(PostgreSQL
   DEPENDS PostgreSQL
-  HEADERS soci-postgresql.h common.h
-  DESCRIPTION "SOCI backend for PostgreSQL database engine"
+  DESCRIPTION "SOCI backend for PostgreSQL"
   AUTHORS "Maciej Sobczak, Stephen Hutton"
   MAINTAINERS "Mateusz Loskot")
 
 boost_report_value(SOCI_POSTGRESQL_NOPARAMS)
 boost_report_value(SOCI_POSTGRESQL_NOBINDBYNAME)
 boost_report_value(SOCI_POSTGRESQL_NOPREPARE)
-
-add_subdirectory(test)

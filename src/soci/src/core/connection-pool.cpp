@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "connection-pool.h"
-#include "error.h"
-#include "session.h"
+#include "soci/connection-pool.h"
+#include "soci/error.h"
+#include "soci/session.h"
 #include <vector>
 #include <utility>
 
@@ -97,10 +97,8 @@ std::size_t connection_pool::lease()
 {
     std::size_t pos;
 
-    // no timeout
-    bool const success = try_lease(pos, -1);
-    (void)success;
-    assert(success);
+    // no timeout, so can't fail
+    try_lease(pos, -1);
 
     return pos;
 }
@@ -158,7 +156,18 @@ bool connection_pool::try_lease(std::size_t & pos, int timeout)
 
     pthread_mutex_unlock(&(pimpl_->mtx_));
 
-    return cc == 0;
+    if (cc != 0)
+    {
+        // we can only fail if timeout expired
+        if (timeout < 0)
+        {
+            throw soci_error("Getting connection from the pool unexpectedly failed");
+        }
+
+        return false;
+    }
+
+    return true;
 }
 
 void connection_pool::give_back(std::size_t pos)
@@ -271,13 +280,8 @@ std::size_t connection_pool::lease()
 {
     std::size_t pos;
 
-    // no timeout
-    bool const success = try_lease(pos, -1);
-    assert(success);    
-    if (!success)
-    {
-        // TODO: anything to report? --mloskot
-    }
+    // no timeout, allow unlimited blocking
+    try_lease(pos, -1);
 
     return pos;
 }
@@ -292,11 +296,10 @@ bool connection_pool::try_lease(std::size_t & pos, int timeout)
 
         EnterCriticalSection(&(pimpl_->mtx_));
 
-        bool const success = pimpl_->find_free(pos);
-        assert(success);
-        if (!success)
+        if (!pimpl_->find_free(pos))
         {
-            // TODO: anything to report? --mloskot
+            // this should be impossible
+            throw soci_error("Getting connection from the pool unexpectedly failed");
         }
 
         pimpl_->sessions_[pos].first = false;

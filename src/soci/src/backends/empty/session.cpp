@@ -6,7 +6,7 @@
 //
 
 #define SOCI_EMPTY_SOURCE
-#include "soci-empty.h"
+#include "soci/empty/soci-empty.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)

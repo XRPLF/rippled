@@ -38,6 +38,7 @@
 #include <core/values.cpp>
 
 #include <backends/sqlite3/common.cpp>
+#include <backends/sqlite3/error.cpp>
 #include <backends/sqlite3/factory.cpp>
 #include <backends/sqlite3/row-id.cpp>
 #include <backends/sqlite3/session.cpp>

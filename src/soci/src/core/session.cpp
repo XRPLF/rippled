@@ -6,15 +6,11 @@
 //
 
 #define SOCI_SOURCE
-#include "session.h"
-#include "connection-parameters.h"
-#include "connection-pool.h"
-#include "soci-backend.h"
-#include "query_transformation.h"
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
+#include "soci/session.h"
+#include "soci/connection-parameters.h"
+#include "soci/connection-pool.h"
+#include "soci/soci-backend.h"
+#include "soci/query_transformation.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -222,7 +218,7 @@ std::string session::get_query() const
     else
     {
         // preserve logical constness of get_query,
-        // stream used as read-only here, 
+        // stream used as read-only here,
         session* pthis = const_cast<session*>(this);
 
         // sole place where any user-defined query transformation is applied
@@ -234,8 +230,14 @@ std::string session::get_query() const
     }
 }
 
-void session::set_query_transformation_(
-        std::auto_ptr<details::query_transformation_function> qtf)
+
+#ifdef SOCI_CXX_C11
+void session::set_query_transformation_( std::unique_ptr<details::query_transformation_function> &qtf)
+#else
+void session::set_query_transformation_( std::auto_ptr<details::query_transformation_function> qtf)
+#endif
+
+
 {
     if (isFromPool_)
     {

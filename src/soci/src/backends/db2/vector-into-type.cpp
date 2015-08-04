@@ -7,7 +7,8 @@
 //
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
+#include "soci/db2/soci-db2.h"
+#include "soci-mktime.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -209,20 +210,10 @@ void db2_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
             std::size_t const vsize = v.size();
             for (std::size_t i = 0; i != vsize; ++i)
             {
-                std::tm t;
-
                 TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
-                t.tm_isdst = -1;
-                t.tm_year = ts->year - 1900;
-                t.tm_mon = ts->month - 1;
-                t.tm_mday = ts->day;
-                t.tm_hour = ts->hour;
-                t.tm_min = ts->minute;
-                t.tm_sec = ts->second;
-
-                // normalize and compute the remaining fields
-                std::mktime(&t);
-                v[i] = t;
+                details::mktime_from_ymdhms(v[i],
+                                            ts->year, ts->month, ts->day,
+                                            ts->hour, ts->minute, ts->second);
                 pos += colSize;
             }
         }

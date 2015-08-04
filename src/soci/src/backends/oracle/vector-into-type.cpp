@@ -6,10 +6,11 @@
 //
 
 #define soci_ORACLE_SOURCE
-#include "soci-oracle.h"
-#include "statement.h"
+#include "soci/oracle/soci-oracle.h"
+#include "soci/statement.h"
 #include "error.h"
-#include <soci-platform.h>
+#include "soci/soci-platform.h"
+#include "soci-mktime.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -83,7 +84,7 @@ void oracle_vector_into_type_backend::define_by_pos(
         break;
     case x_double:
         {
-            oracleType = SQLT_FLT;
+            oracleType = statement_.session_.get_double_sql_type();
             size = sizeof(double);
             std::vector<double> *vp = static_cast<std::vector<double> *>(data);
             std::vector<double> &v(*vp);
@@ -253,20 +254,15 @@ void oracle_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 }
                 else
                 {
-                    std::tm t;
-                    t.tm_isdst = -1;
+                    int year = (*pos++ - 100) * 100;
+                    year += *pos++ - 100;
+                    int const month = *pos++;
+                    int const day = *pos++;
+                    int const hour = *pos++ - 1;
+                    int const minute = *pos++ - 1;
+                    int const second = *pos++ - 1;
 
-                    t.tm_year = (*pos++ - 100) * 100;
-                    t.tm_year += *pos++ - 2000;
-                    t.tm_mon = *pos++ - 1;
-                    t.tm_mday = *pos++;
-                    t.tm_hour = *pos++ - 1;
-                    t.tm_min = *pos++ - 1;
-                    t.tm_sec = *pos++ - 1;
-
-                    // normalize and compute the remaining fields
-                    std::mktime(&t);
-                    v[i] = t;
+                    details::mktime_from_ymdhms(v[i], year, month, day, hour, minute, second);
                 }
             }
         }

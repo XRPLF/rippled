@@ -6,11 +6,7 @@
 //
 
 #define SOCI_EMPTY_SOURCE
-#include "soci-empty.h"
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
+#include "soci/empty/soci-empty.h"
 
 using namespace soci;
 using namespace soci::details;

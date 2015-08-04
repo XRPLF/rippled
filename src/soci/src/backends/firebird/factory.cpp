@@ -6,8 +6,8 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include <backend-loader.h>
+#include "soci/firebird/soci-firebird.h"
+#include "soci/backend-loader.h"
 
 using namespace soci;
 

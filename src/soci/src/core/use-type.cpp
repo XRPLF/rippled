@@ -6,8 +6,12 @@
 //
 
 #define SOCI_SOURCE
-#include "use-type.h"
-#include "statement.h"
+#include "soci/soci-platform.h"
+#include "soci/use-type.h"
+#include "soci/statement.h"
+#include "soci-exchange-cast.h"
+
+#include <cstdio>
 
 using namespace soci;
 using namespace soci::details;
@@ -33,7 +37,77 @@ void standard_use_type::bind(statement_impl & st, int & position)
     }
 }
 
-void standard_use_type::pre_use()   
+void standard_use_type::dump_value(std::ostream& os) const
+{
+    if (ind_ && *ind_ == i_null)
+    {
+        os << "NULL";
+        return;
+    }
+
+    switch (type_)
+    {
+        case x_char:
+            os << "'" << exchange_type_cast<x_char>(data_) << "'";
+            return;
+
+        case x_stdstring:
+            // TODO: Escape quotes?
+            os << "\"" << exchange_type_cast<x_stdstring>(data_) << "\"";
+            return;
+
+        case x_short:
+            os << exchange_type_cast<x_short>(data_);
+            return;
+
+        case x_integer:
+            os << exchange_type_cast<x_integer>(data_);
+            return;
+
+        case x_long_long:
+            os << exchange_type_cast<x_long_long>(data_);
+            return;
+
+        case x_unsigned_long_long:
+            os << exchange_type_cast<x_unsigned_long_long>(data_);
+            return;
+
+        case x_double:
+            os << exchange_type_cast<x_double>(data_);
+            return;
+
+        case x_stdtm:
+            {
+                std::tm const& t = exchange_type_cast<x_stdtm>(data_);
+
+                char buf[32];
+                snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d",
+                              t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+                              t.tm_hour, t.tm_min, t.tm_sec);
+
+                os << buf;
+            }
+            return;
+
+        case x_statement:
+            os << "<statement>";
+            return;
+
+        case x_rowid:
+            os << "<rowid>";
+            return;
+
+        case x_blob:
+            os << "<blob>";
+            return;
+    }
+
+    // This is normally unreachable, but avoid throwing from here as we're
+    // typically called from an exception handler.
+    os << "<unknown>";
+}
+
+void standard_use_type::pre_use()
 {
     // Handle IN direction of parameters of SQL statements and procedures
     convert_to_base();
@@ -47,8 +121,8 @@ void standard_use_type::post_use(bool gotData)
     convert_from_base();
 
     // IMPORTANT:
-    // This treatment of input ("use") parameter as output data sink may be 
-    // confusing, but it is necessary to store OUT data back in the same 
+    // This treatment of input ("use") parameter as output data sink may be
+    // confusing, but it is necessary to store OUT data back in the same
     // object as IN, of IN/OUT parameter.
     // As there is no symmetry for IN/OUT in SQL and there are no OUT/IN
     // we do not perform convert_to_base() for output ("into") parameter.
@@ -82,6 +156,12 @@ void vector_use_type::bind(statement_impl & st, int & position)
     {
         backEnd_->bind_by_name(name_, data_, type_);
     }
+}
+
+void vector_use_type::dump_value(std::ostream& os) const
+{
+    // TODO: Provide more information.
+    os << "<vector>";
 }
 
 void vector_use_type::pre_use()

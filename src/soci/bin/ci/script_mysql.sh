@@ -6,6 +6,7 @@
 source ${TRAVIS_BUILD_DIR}/bin/ci/common.sh
 
 cmake \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DSOCI_TESTS=ON \
     -DSOCI_STATIC=OFF \
     -DSOCI_DB2=OFF \
@@ -17,7 +18,7 @@ cmake \
     -DSOCI_POSTGRESQL=OFF \
     -DSOCI_SQLITE3=OFF \
     -DSOCI_MYSQL_TEST_CONNSTR:STRING="db=soci_test" \
-    ..  
+    ..
 
 run_make
 run_test

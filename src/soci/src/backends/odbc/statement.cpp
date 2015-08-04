@@ -6,17 +6,10 @@
 //
 
 #define SOCI_ODBC_SOURCE
-#include "soci-odbc.h"
+#include "soci/odbc/soci-odbc.h"
 #include <cctype>
 #include <sstream>
 #include <cstring>
-
-#ifdef _MSC_VER
-// disables the warning about converting int to void*.  This is a 64 bit compatibility
-// warning, but odbc requires the value to be converted on this line
-// SQLSetStmtAttr(hstmt_, SQL_ATTR_ROW_ARRAY_SIZE, (SQLPOINTER)number, 0);
-#pragma warning(disable:4312)
-#endif
 
 using namespace soci;
 using namespace soci::details;
@@ -38,7 +31,7 @@ void odbc_statement_backend::alloc()
     if (is_odbc_error(rc))
     {
         throw odbc_soci_error(SQL_HANDLE_DBC, session_.hdbc_,
-            "Allocating statement");
+                              "allocating statement");
     }
 }
 
@@ -131,11 +124,12 @@ void odbc_statement_backend::prepare(std::string const & query,
         query_ += "?";
     }
 
-    SQLRETURN rc = SQLPrepare(hstmt_, (SQLCHAR*)query_.c_str(), (SQLINTEGER)query_.size());
+    SQLRETURN rc = SQLPrepare(hstmt_, sqlchar_cast(query_), (SQLINTEGER)query_.size());
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                         query_.c_str());
+        std::ostringstream ss;
+        ss << "preparing query \"" << query_ << "\"";
+        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, ss.str());
     }
 }
 
@@ -148,15 +142,15 @@ odbc_statement_backend::execute(int number)
     {
         SQLSetStmtAttr(hstmt_, SQL_ATTR_PARAMS_PROCESSED_PTR, &rows_processed, 0);
     }
-    
+
     // if we are called twice for the same statement we need to close the open
     // cursor or an "invalid cursor state" error will occur on execute
     SQLCloseCursor(hstmt_);
-    
+
     SQLRETURN rc = SQLExecute(hstmt_);
     if (is_odbc_error(rc))
     {
-        // If executing bulk operation a partial 
+        // If executing bulk operation a partial
         // number of rows affected may be available.
         if (hasVectorUseElements_)
         {
@@ -177,12 +171,14 @@ odbc_statement_backend::execute(int number)
             // Move forward to the next result while there are rows processed.
             while (rows_processed > 0 && SQLMoreResults(hstmt_) == SQL_SUCCESS);
         }
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                         "Statement Execute");
+        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, "executing statement");
     }
-    // We should preserve the number of rows affected here 
-    // where we know for sure that a bulk operation was executed.
-    else
+    else if (hasVectorUseElements_)
+    {
+        // We already have the number of rows, no need to do anything.
+        rowsAffected_ = rows_processed;
+    }
+    else // We need to retrieve the number of rows affected explicitly.
     {
         rowsAffected_ = 0;
 
@@ -192,7 +188,7 @@ odbc_statement_backend::execute(int number)
             if (is_odbc_error(rc))
             {
                 throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                                  "Getting number of affected rows");
+                                      "getting number of affected rows");
             }
             rowsAffected_ += res;
         }
@@ -229,8 +225,7 @@ odbc_statement_backend::fetch(int number)
 
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                         "Statement Fetch");
+        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, "fetching data");
     }
 
     return ef_success;
@@ -243,7 +238,12 @@ long long odbc_statement_backend::get_affected_rows()
 
 int odbc_statement_backend::get_number_of_rows()
 {
-    return numRowsFetched_;
+    return static_cast<int>(numRowsFetched_);
+}
+
+std::string odbc_statement_backend::get_parameter_name(int index) const
+{
+    return names_.at(index);
 }
 
 std::string odbc_statement_backend::rewrite_for_procedure_call(
@@ -276,8 +276,9 @@ void odbc_statement_backend::describe_column(int colNum, data_type & type,
 
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                         "describe Column");
+        std::ostringstream ss;
+        ss << "getting description of column at position " << colNum;
+        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, ss.str());
     }
 
     char const *name = reinterpret_cast<char const *>(colNameBuffer);
@@ -330,8 +331,9 @@ std::size_t odbc_statement_backend::column_size(int colNum)
 
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                         "column size");
+        std::ostringstream ss;
+        ss << "getting size of column at position " << colNum;
+        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, ss.str());
     }
 
     return colSize;
