@@ -28,7 +28,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/SHAMapStore.h>

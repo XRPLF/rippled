@@ -100,8 +100,7 @@ Env::close(NetClock::time_point const& closeTime)
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
-    std::unique_ptr<IHashRouter> router(
-        IHashRouter::New(60));
+    auto router = std::make_unique<HashRouter>(60);
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);

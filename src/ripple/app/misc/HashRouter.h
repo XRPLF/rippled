@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_IHASHROUTER_H_INCLUDED
-#define RIPPLE_APP_MISC_IHASHROUTER_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_HASHROUTER_H_INCLUDED
+#define RIPPLE_APP_MISC_HASHROUTER_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -45,12 +47,72 @@ class STTx;
     It is used to manage the routing and broadcasting of messages in the peer
     to peer overlay.
 */
-class IHashRouter
+class HashRouter
 {
 public:
     // The type here *MUST* match the type of Peer::id_t
     using PeerShortID = std::uint32_t;
 
+private:
+    /** An entry in the routing table.
+    */
+    class Entry : public CountedObject <Entry>
+    {
+    public:
+        static char const* getCountedObjectName () { return "HashRouterEntry"; }
+
+        Entry ()
+            : mFlags (0)
+        {
+        }
+
+        std::set <PeerShortID> const& peekPeers () const
+        {
+            return mPeers;
+        }
+
+        void addPeer (PeerShortID peer)
+        {
+            if (peer != 0)
+                mPeers.insert (peer);
+        }
+
+        bool hasPeer (PeerShortID peer) const
+        {
+            return mPeers.count (peer) > 0;
+        }
+
+        int getFlags (void) const
+        {
+            return mFlags;
+        }
+
+        bool hasFlag (int mask) const
+        {
+            return (mFlags & mask) != 0;
+        }
+
+        void setFlags (int flagsToSet)
+        {
+            mFlags |= flagsToSet;
+        }
+
+        void clearFlag (int flagsToClear)
+        {
+            mFlags &= ~flagsToClear;
+        }
+
+        void swapSet (std::set <PeerShortID>& other)
+        {
+            mPeers.swap (other);
+        }
+
+    private:
+        int mFlags;
+        std::set <PeerShortID> mPeers;
+    };
+
+public:
     // VFALCO NOTE this preferred alternative to default parameters makes
     //         behavior clear.
     //
@@ -59,39 +121,56 @@ public:
         return 300;
     }
 
-    // VFALCO TODO rename the parameter to entryHoldTimeInSeconds
-    static IHashRouter* New (int holdTime);
+    explicit HashRouter (int entryHoldTimeInSeconds)
+        : mHoldTime (entryHoldTimeInSeconds)
+    {
+    }
 
-    virtual ~IHashRouter () { }
+    virtual ~HashRouter() = default;
 
     // VFALCO TODO Replace "Supression" terminology with something more semantically meaningful.
-    virtual bool addSuppression (uint256 const& index) = 0;
+    bool addSuppression (uint256 const& index);
 
-    virtual bool addSuppressionPeer (uint256 const& index, PeerShortID peer) = 0;
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
 
-    virtual bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags) = 0;
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags);
 
-    virtual bool addSuppressionFlags (uint256 const& index, int flag) = 0;
+    bool addSuppressionFlags (uint256 const& index, int flag);
 
     /** Set the flags on a hash.
 
         @return `true` if the flags were changed.
     */
-    // VFALCO TODO Rename to setFlags since it works with multiple flags.
-    virtual bool setFlag (uint256 const& index, int mask) = 0;
+    bool setFlags (uint256 const& index, int flags);
 
-    virtual int getFlags (uint256 const& index) = 0;
+    int getFlags (uint256 const& index);
 
-    virtual bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) = 0;
+    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag);
 
     /**
         Function wrapper that will check the signature status
         of a STTx before calling an expensive signature
         checking function.
     */
-    virtual
     std::function<bool(STTx const&, std::function<bool(STTx const&)>)>
-    sigVerify() = 0;
+    sigVerify();
+
+private:
+    Entry getEntry (uint256 const& );
+
+    Entry& findCreateEntry (uint256 const& , bool& created);
+
+    using MutexType = std::mutex;
+    using ScopedLockType = std::lock_guard <MutexType>;
+    MutexType mMutex;
+
+    // Stores all suppressed hashes and their expiration time
+    hash_map <uint256, Entry> mSuppressionMap;
+
+    // Stores all expiration times and the hashes indexed for them
+    std::map< int, std::list<uint256> > mSuppressionTimes;
+
+    int mHoldTime;
 };
 
 } // ripple

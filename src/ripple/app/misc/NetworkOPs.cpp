@@ -33,7 +33,7 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
@@ -679,11 +679,11 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
             {
                 m_journal.warning << "Submitted transaction " <<
                     (reason.empty () ? "has bad signature" : "error: " + reason);
-                getApp().getHashRouter ().setFlag (suppress, SF_BAD);
+                getApp().getHashRouter ().setFlags (suppress, SF_BAD);
                 return;
             }
 
-            getApp().getHashRouter ().setFlag (suppress, SF_SIGGOOD);
+            getApp().getHashRouter ().setFlags (suppress, SF_SIGGOOD);
         }
         catch (...)
         {
@@ -728,12 +728,12 @@ void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
             m_journal.info << "Transaction has bad signature: " << reason;
             transaction->setStatus (INVALID);
             transaction->setResult (temBAD_SIGNATURE);
-            getApp().getHashRouter ().setFlag (transaction->getID (), SF_BAD);
+            getApp().getHashRouter ().setFlags (transaction->getID (), SF_BAD);
             return;
         }
     }
 
-    getApp().getHashRouter ().setFlag (transaction->getID (), SF_SIGGOOD);
+    getApp().getHashRouter ().setFlags (transaction->getID (), SF_SIGGOOD);
 
     // canonicalize can change our pointer
     getApp().getMasterTransaction ().canonicalize (&transaction);
@@ -916,7 +916,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             e.transaction->setResult (e.result);
 
             if (isTemMalformed (e.result))
-                getApp().getHashRouter().setFlag (e.transaction->getID(), SF_BAD);
+                getApp().getHashRouter().setFlags (e.transaction->getID(), SF_BAD);
 
     #ifdef BEAST_DEBUG
             if (e.result != tesSUCCESS)

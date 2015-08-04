@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/net/RPCErr.h>

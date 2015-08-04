@@ -35,7 +35,7 @@
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/Validations.h>
@@ -294,7 +294,7 @@ public:
     std::unique_ptr <unl::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
-    std::unique_ptr <IHashRouter> mHashRouter;
+    std::unique_ptr <HashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     beast::DeadlineTimer m_sweepTimer;
@@ -416,7 +416,8 @@ public:
 
         , mFeeTrack (std::make_unique<LoadFeeTrack>(m_logs.journal("LoadManager")))
 
-        , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
+        , mHashRouter (std::make_unique<HashRouter>(
+            HashRouter::getDefaultHoldTime ()))
 
         , mValidations (make_Validations ())
 
@@ -585,7 +586,7 @@ public:
         return *mFeeTrack;
     }
 
-    IHashRouter& getHashRouter ()
+    HashRouter& getHashRouter ()
     {
         return *mHashRouter;
     }
@@ -1336,7 +1337,7 @@ bool ApplicationImp::loadOldLedger (
                 cur->rawTxInsert(item.key(),
                     std::make_shared<Serializer const>(
                         std::move(s)), nullptr);
-                getApp().getHashRouter().setFlag (item.key(), SF_SIGGOOD);
+                getApp().getHashRouter().setFlags (item.key(), SF_SIGGOOD);
             }
 
             // Switch to the mutable snapshot

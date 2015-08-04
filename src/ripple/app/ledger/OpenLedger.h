@@ -24,7 +24,7 @@
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <ripple/app/misc/IHashRouter.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
@@ -151,7 +151,7 @@ public:
         std::shared_ptr<Ledger const> const& ledger,
             OrderedTxs const& locals, bool retriesFirst,
                 OrderedTxs& retries, ApplyFlags flags,
-                    IHashRouter& router,
+                    HashRouter& router,
                         std::string const& suffix = "");
 
     /** Algorithm for applying transactions.
@@ -164,7 +164,7 @@ public:
     void
     apply (OpenView& view, ReadView const& check,
         FwdRange const& txs, OrderedTxs& retries,
-            ApplyFlags flags, IHashRouter& router,
+            ApplyFlags flags, HashRouter& router,
                 Config const& config, beast::Journal j);
 
 private:
@@ -183,7 +183,7 @@ private:
     Result
     apply_one (OpenView& view, std::shared_ptr<
         STTx const> const& tx, bool retry,
-            ApplyFlags flags, IHashRouter& router,
+            ApplyFlags flags, HashRouter& router,
                 Config const& config, beast::Journal j);
 
 public:
@@ -205,7 +205,7 @@ void
 OpenLedger::apply (OpenView& view,
     ReadView const& check, FwdRange const& txs,
         OrderedTxs& retries, ApplyFlags flags,
-            IHashRouter& router, Config const& config,
+            HashRouter& router, Config const& config,
                 beast::Journal j)
 {
     for (auto iter = txs.begin();
