@@ -1078,6 +1078,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         ledger->setClosed ();
+        ledger->setImmutable();
 
         if (getApp().getLedgerMaster ().haveLedger (ledgerSeq))
         {
