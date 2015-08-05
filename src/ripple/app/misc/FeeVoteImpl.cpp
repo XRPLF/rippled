@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/st.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Validations.h>
@@ -212,11 +213,11 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             "/" << incReserve;
 
         STTx trans (ttFEE);
-        trans.setAccountID (sfAccount, AccountID ());
-        trans.setFieldU64 (sfBaseFee, baseFee);
-        trans.setFieldU32 (sfReferenceFeeUnits, 10);
-        trans.setFieldU32 (sfReserveBase, baseReserve);
-        trans.setFieldU32 (sfReserveIncrement, incReserve);
+        trans[sfAccount] = AccountID();
+        trans[sfBaseFee] = baseFee;
+        trans[sfReferenceFeeUnits] = target_.reference_fee_units;
+        trans[sfReserveBase] = baseReserve;
+        trans[sfReserveIncrement] = incReserve;
 
         uint256 txID = trans.getTransactionID ();
 
