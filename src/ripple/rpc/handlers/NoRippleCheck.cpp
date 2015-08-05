@@ -41,11 +41,11 @@ static void fillTransaction (
 {
     txArray["Sequence"] = Json::UInt (sequence++);
     txArray["Account"] = getApp().accountIDCache().toBase58 (accountID);
-    // VFALCO Needs audit
-    // Why are we hard-coding 10?
     auto& fees = ledger.fees();
+    // Convert the reference transaction cost in fee units to drops
+    // scaled to represent the current fee load.
     txArray["Fee"] = Json::UInt (getApp().getFeeTrack().scaleFeeLoad(
-        10, fees.base, fees.units, false));
+        fees.units, fees.base, fees.units, false));
 }
 
 // {
