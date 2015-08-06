@@ -45,7 +45,7 @@ SetSignerList::determineOperation(STTx const& tx,
 {
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
-    auto const quorum = tx.getFieldU32(sfSignerQuorum);
+    auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
     Operation op = unknown;
 
@@ -68,8 +68,7 @@ SetSignerList::determineOperation(STTx const& tx,
         op = destroy;
     }
 
-    return std::make_tuple(tesSUCCESS,
-        quorum, sign, op);
+    return std::make_tuple(tesSUCCESS, quorum, sign, op);
 }
 
 TER
@@ -115,21 +114,16 @@ SetSignerList::preflight (PreflightContext const& ctx)
 TER
 SetSignerList::doApply ()
 {
-    // All operations require our ledger index.  Compute that once and pass it
-    // to our handlers.
-    uint256 const index = getSignerListIndex (account_);
-
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
     case set:
-        return replaceSignerList (index);
+        return replaceSignerList ();
 
     case destroy:
-        return destroySignerList (index);
+        return destroySignerList ();
 
     default:
-        // Fall through intentionally
         break;
     }
     assert (false); // Should not be possible to get here.
@@ -210,24 +204,27 @@ SetSignerList::validateQuorumAndSignerEntries (
 }
 
 TER
-SetSignerList::replaceSignerList (uint256 const& index)
+SetSignerList::replaceSignerList ()
 {
-    // This may be either a create or a replace.  Preemptively destroy any
+    auto const accountKeylet = keylet::account (account_);
+    auto const ownerDirKeylet = keylet::ownerDir (account_);
+    auto const signerListKeylet = keylet::signers (account_);
+
+    // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = destroySignerList (index))
-        return ter;
+    if (TER const ter = removeSignersFromLedger (
+        accountKeylet, ownerDirKeylet, signerListKeylet))
+            return ter;
 
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const sle = view().peek(accountKeylet);
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount = sle->getFieldU32 (sfOwnerCount);
+    auto const oldOwnerCount = (*sle)[sfOwnerCount];
     std::uint32_t const addedOwnerCount = ownerCountDelta (signers_.size ());
 
     auto const newReserve =
-        view().fees().accountReserve(
-            oldOwnerCount + addedOwnerCount);
+        view().fees().accountReserve(oldOwnerCount + addedOwnerCount);
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -236,20 +233,14 @@ SetSignerList::replaceSignerList (uint256 const& index)
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    auto signerList = std::make_shared<SLE>(ltSIGNER_LIST, index);
+    auto signerList = std::make_shared<SLE>(signerListKeylet);
     view().insert (signerList);
-    writeSignersToLedger (signerList);
-
-    // Lambda for call to dirAdd.
-    auto describer = [&] (SLE::ref sle, bool dummy)
-        {
-            ownerDirDescriber (sle, dummy, account_);
-        };
+    writeSignersToSLE (signerList);
 
     // Add the signer list to the account's directory.
     std::uint64_t hint;
-    TER result = dirAdd(ctx_.view (),
-        hint, getOwnerDirIndex (account_), index, describer);
+    TER result = dirAdd(ctx_.view (), hint, ownerDirKeylet.key,
+        signerListKeylet.key, describeOwnerDir (account_));
 
     JLOG(j_.trace) << "Create signer list for account " <<
         toBase58(account_) << ": " << transHuman (result);
@@ -260,57 +251,60 @@ SetSignerList::replaceSignerList (uint256 const& index)
     signerList->setFieldU64 (sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(),
-        sle, addedOwnerCount);
+    adjustOwnerCount(view(), sle, addedOwnerCount);
 
     return result;
 }
 
 TER
-SetSignerList::destroySignerList (uint256 const& index)
+SetSignerList::destroySignerList ()
 {
-    // See if there's an ltSIGNER_LIST for this account.
-    SLE::pointer signerList =
-        view().peek (keylet::signers(index));
+    auto const accountKeylet = keylet::account (account_);
+    // Destroying the signer list is only allowed if either the master key
+    // is enabled or there is a regular key.
+    SLE::pointer ledgerEntry = view().peek (accountKeylet);
+    if ((ledgerEntry->isFlag (lsfDisableMaster)) &&
+        (!ledgerEntry->isFieldPresent (sfRegularKey)))
+            return tecNO_ALTERNATIVE_KEY;
 
-    // If the signer list doesn't exist we've already succeeded in deleting it.
-    if (!signerList)
-        return tesSUCCESS;
+    auto const ownerDirKeylet = keylet::ownerDir (account_);
+    auto const signerListKeylet = keylet::signers (account_);
+    return removeSignersFromLedger(
+        accountKeylet, ownerDirKeylet, signerListKeylet);
+}
 
+TER
+SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
+        Keylet const& ownerDirKeylet, Keylet const& signerListKeylet)
+{
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    std::int32_t removeFromOwnerCount = 0;
-    auto const k = keylet::signers(account_);
-    SLE::pointer accountSignersList =
-        view().peek (k);
-    if (accountSignersList)
-    {
-        STArray const& actualList =
-            accountSignersList->getFieldArray (sfSignerEntries);
-        removeFromOwnerCount = ownerCountDelta (actualList.size ()) * -1;
-    }
+    SLE::pointer signers = view().peek (signerListKeylet);
+
+    // If the signer list doesn't exist we've already succeeded in deleting it.
+    if (!signers)
+        return tesSUCCESS;
+
+    STArray const& actualList = signers->getFieldArray (sfSignerEntries);
+    int const removeFromOwnerCount = ownerCountDelta (actualList.size()) * -1;
 
     // Remove the node from the account directory.
-    std::uint64_t const hint (signerList->getFieldU64 (sfOwnerNode));
+    auto const hint = (*signers)[sfOwnerNode];
 
-    TER const result  = dirDelete(ctx_.view (), false, hint,
-        getOwnerDirIndex (account_), index, false, (hint == 0));
+    TER const result  = dirDelete(ctx_.view(), false, hint,
+        ownerDirKeylet.key, signerListKeylet.key, false, (hint == 0));
 
     if (result == tesSUCCESS)
         adjustOwnerCount(view(),
-            view().peek(keylet::account(account_)),
-                removeFromOwnerCount);
+            view().peek(accountKeylet), removeFromOwnerCount);
 
-    ctx_.view ().erase (signerList);
+    ctx_.view().erase (signers);
 
     return result;
 }
 
-// VFALCO NOTE This name is misleading, the signers
-//             are not written to the ledger they are
-//             added to the SLE.
 void
-SetSignerList::writeSignersToLedger (SLE::pointer ledgerEntry)
+SetSignerList::writeSignersToSLE (SLE::pointer const& ledgerEntry) const
 {
     // Assign the quorum.
     ledgerEntry->setFieldU32 (sfSignerQuorum, quorum_);
@@ -333,7 +327,9 @@ SetSignerList::writeSignersToLedger (SLE::pointer ledgerEntry)
     ledgerEntry->setFieldArray (sfSignerEntries, toLedger);
 }
 
-std::size_t
+// The return type is signed so it is compatible with the 3rd argument
+// of adjustOwnerCount() (which must be signed).
+int
 SetSignerList::ownerCountDelta (std::size_t entryCount)
 {
     // We always compute the full change in OwnerCount, taking into account:
@@ -347,7 +343,12 @@ SetSignerList::ownerCountDelta (std::size_t entryCount)
     //  o And each signer in the list costs 1 more OwnerCount unit.
     // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
-   return 2 + entryCount;
+    //
+    // The static_cast should always be safe since entryCount should always
+    // be in the range from 1 to 8.  We've got a lot of room to grow.
+    assert (entryCount >= STTx::minMultiSigners);
+    assert (entryCount <= STTx::maxMultiSigners);
+    return 2 + static_cast<int>(entryCount);
 }
 
 } // namespace ripple

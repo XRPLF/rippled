@@ -48,7 +48,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tecNO_LINE_REDUNDANT,     "tecNO_LINE_REDUNDANT",     "Can't set non-existent line to default."                       },
         { tecPATH_DRY,              "tecPATH_DRY",              "Path could not send partial amount."                           },
         { tecPATH_PARTIAL,          "tecPATH_PARTIAL",          "Path could not send full amount."                              },
-        { tecMASTER_DISABLED,       "tecMASTER_DISABLED",       "Master key is disabled."                                       },
+        { tecNO_ALTERNATIVE_KEY,    "tecNO_ALTERNATIVE_KEY",    "The operation would remove the last way to sign a transaction."},
         { tecNO_REGULAR_KEY,        "tecNO_REGULAR_KEY",        "Regular key is not set."                                       },
 
         { tecUNFUNDED,              "tecUNFUNDED",              "One of _ADD, _OFFER, or _SEND. Deprecated."                    },

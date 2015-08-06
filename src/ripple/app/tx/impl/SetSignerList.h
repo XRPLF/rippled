@@ -76,12 +76,14 @@ private:
                 AccountID const& account,
                     beast::Journal j);
 
-    TER replaceSignerList (uint256 const& index);
-    TER destroySignerList (uint256 const& index);
+    TER replaceSignerList ();
+    TER destroySignerList ();
 
-    void writeSignersToLedger (SLE::pointer ledgerEntry);
+    TER removeSignersFromLedger (Keylet const& accountKeylet,
+        Keylet const& ownerDirKeylet, Keylet const& signerListKeylet);
+    void writeSignersToSLE (SLE::pointer const& ledgerEntry) const;
 
-    static std::size_t ownerCountDelta (std::size_t entryCount);
+    static int ownerCountDelta (std::size_t entryCount);
 };
 
 } // ripple
