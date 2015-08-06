@@ -1045,7 +1045,7 @@ void ApplicationImp::startGenesisLedger ()
     auto const next = std::make_shared<Ledger>(
         open_ledger, *genesis);
     next->setClosed ();
-    next->setAccepted ();
+    next->setImmutable ();
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, getConfig(),
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
@@ -1071,10 +1071,7 @@ ApplicationImp::getLastFullLedger()
         ledger->setImmutable();
 
         if (getApp().getLedgerMaster ().haveLedger (ledgerSeq))
-        {
-            ledger->setAccepted ();
             ledger->setValidated ();
-        }
 
         if (ledger->getHash () != ledgerHash)
         {

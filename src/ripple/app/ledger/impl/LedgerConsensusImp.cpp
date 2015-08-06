@@ -968,12 +968,19 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     std::uint32_t closeTime = roundCloseTime (
         mOurPosition->getCloseTime (), mCloseResolution);
-    bool closeTimeCorrect = true;
 
-    if (closeTime == 0)
+    // If we don't have a close time, then we just agree to disagree
+    bool const closeTimeCorrect = (closeTime != 0);
+
+    // Switch to new semantics on Sep 30, 2015 at 11:00:00am PDT
+    if (mPreviousLedger->info().closeTime > 497296800)
     {
-        // we agreed to disagree
-        closeTimeCorrect = false;
+        // Ledger close times should increase strictly monotonically
+        if (closeTime <= mPreviousLedger->info().closeTime)
+            closeTime = mPreviousLedger->info().closeTime + 1;
+    }
+    else if (!closeTimeCorrect)
+    {
         closeTime = mPreviousLedger->info().closeTime + 1;
     }
 

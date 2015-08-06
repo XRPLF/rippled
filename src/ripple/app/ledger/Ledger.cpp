@@ -191,7 +191,7 @@ Ledger::Ledger (create_genesis_t, Config const& config)
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
     updateHash();
     setClosed();
-    setAccepted();
+    setImmutable();
     setup(config);
 }
 
@@ -402,24 +402,10 @@ void Ledger::setAccepted (
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
     assert (closed());
-    info_.closeTime = correctCloseTime
-        ? roundCloseTime (closeTime, closeResolution)
-        : closeTime;
+
+    info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
     info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    setImmutable ();
-}
-
-void Ledger::setAccepted ()
-{
-    // used when we acquired the ledger
-    // TODO: re-enable a test like the following:
-    // assert(closed() && (info_.closeTime != 0) &&
-    // (info_.closeTimeResolution != 0));
-    if ((info_.closeFlags & sLCF_NoConsensusTime) == 0)
-        info_.closeTime = roundCloseTime(
-            info_.closeTime, info_.closeTimeResolution);
-
     setImmutable ();
 }
 
@@ -711,9 +697,6 @@ void finishLoadByIndexOrHash(Ledger::pointer& ledger)
 
     ledger->setClosed ();
     ledger->setImmutable ();
-
-    if (getApp ().getLedgerMaster ().haveLedger ((ledger->info().seq)))
-        ledger->setAccepted ();
 
     WriteLog (lsTRACE, Ledger)
         << "Loaded ledger: " << to_string (ledger->getHash ());

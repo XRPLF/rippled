@@ -230,8 +230,6 @@ public:
     void setAccepted (std::uint32_t closeTime,
         int closeResolution, bool correctCloseTime);
 
-    void setAccepted ();
-
     void setImmutable ();
 
     bool isImmutable () const
