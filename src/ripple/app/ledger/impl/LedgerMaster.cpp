@@ -372,7 +372,7 @@ public:
             ScopedLockType ml (m_mutex);
 
             lastClosed->setClosed ();
-            lastClosed->setAccepted ();
+            lastClosed->setImmutable ();
 
             mCurrentLedger.set (current);
             mClosedLedger.set (lastClosed);
