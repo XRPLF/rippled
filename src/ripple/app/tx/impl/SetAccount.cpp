@@ -191,8 +191,18 @@ SetAccount::doApply ()
             return tecNEED_MASTER_KEY;
         }
 
-        if (!sle->isFieldPresent (sfRegularKey))
+        if ((!sle->isFieldPresent (sfRegularKey)) &&
+            (!view().peek (keylet::signers (account_))))
+        {
+            // Account has no regular key or multi-signer signer list.
+
+            // Prevent transaction changes until we're ready.
+            if ((RIPPLE_ENABLE_MULTI_SIGN) ||
+                view().flags() & tapENABLE_TESTING)
+                    return tecNO_ALTERNATIVE_KEY;
+
             return tecNO_REGULAR_KEY;
+        }
 
         j_.trace << "Set lsfDisableMaster.";
         uFlagsOut |= lsfDisableMaster;
