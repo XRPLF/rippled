@@ -56,7 +56,8 @@ public:
     {
     }
 
-    Ledger::pointer acquire (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
+    Ledger::pointer acquire (
+        uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         bool isNew = true;
@@ -99,7 +100,8 @@ public:
         {
             ScopedLockType sl (mLock);
 
-            hash_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+            auto it = mLedgers.
+            find (hash);
             if (it != mLedgers.end ())
             {
                 ret = it->second;
@@ -147,15 +149,19 @@ public:
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        WriteLog (lsTRACE, InboundLedger) << "Got data (" << packet.nodes ().size () << ") for acquiring ledger: " << hash;
+        WriteLog (lsTRACE, InboundLedger)
+            << "Got data (" << packet.nodes ().size ()
+            << ") for acquiring ledger: " << hash;
 
         InboundLedger::pointer ledger = find (hash);
 
         if (!ledger)
         {
-            WriteLog (lsTRACE, InboundLedger) << "Got data for ledger we're no longer acquiring";
+            WriteLog (lsTRACE, InboundLedger)
+                << "Got data for ledger we're no longer acquiring";
 
-            // If it's state node data, stash it because it still might be useful
+            // If it's state node data, stash it because it still might be
+            // useful.
             if (packet.type () == protocol::liAS_NODE)
             {
                 getApp().getJobQueue().addJob(jtLEDGER_DATA, "gotStaleData",
@@ -225,9 +231,11 @@ public:
             ledger->runData ();
     }
 
-    /** We got some data for a ledger we are no longer acquiring
-        Since we paid the price to receive it, we might as well stash it in case we need it.
-        Nodes are received in wire format and must be stashed/hashed in prefix format
+    /** We got some data for a ledger we are no longer acquiring Since we paid
+        the price to receive it, we might as well stash it in case we need it.
+
+        Nodes are received in wire format and must be stashed/hashed in prefix
+        format
     */
     void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr)
     {
@@ -254,7 +262,8 @@ public:
 
                 auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
-                getApp().getLedgerMaster().addFetchPack (newNode->getNodeHash(), blob);
+                getApp().getLedgerMaster().addFetchPack(
+                    newNode->getNodeHash(), blob);
             }
         }
         catch (...)
@@ -317,12 +326,12 @@ public:
             // getJson is expensive, so call without the lock
             std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
-                ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
+                ret[std::to_string(seq)] = it.second->getJson(0);
             else
                 ret[to_string (it.first)] = it.second->getJson(0);
         }
 
-    return ret;
+        return ret;
     }
 
     void gotFetchPack (Job&)
@@ -365,7 +374,8 @@ public:
                     it->second->touch ();
                     ++it;
                 }
-                else if ((it->second->getLastAction () + std::chrono::minutes (1)) < now)
+                else if ((it->second->getLastAction () +
+                          std::chrono::minutes (1)) < now)
                 {
                     stuffToSweep.push_back (it->second);
                     // shouldn't cause the actual final delete
@@ -414,15 +424,17 @@ private:
 
 //------------------------------------------------------------------------------
 
-decltype(InboundLedgersImp::kReacquireInterval) InboundLedgersImp::kReacquireInterval{5};
+decltype(InboundLedgersImp::kReacquireInterval)
+InboundLedgersImp::kReacquireInterval{5};
 
 InboundLedgers::~InboundLedgers()
 {
 }
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers (InboundLedgers::clock_type& clock, beast::Stoppable& parent,
-                     beast::insight::Collector::ptr const& collector)
+make_InboundLedgers (
+    InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<InboundLedgersImp> (clock, parent, collector);
 }

@@ -81,7 +81,8 @@ public:
     // The validated ledger is the last fully validated ledger
     virtual Ledger::pointer getValidatedLedger () = 0;
 
-    // This is the last ledger we published to clients and can lag the validated ledger
+    // This is the last ledger we published to clients and can lag the validated
+    // ledger
     virtual Ledger::ref getPublishedLedger () = 0;
 
     virtual bool isValidLedger(LedgerInfo const&) = 0;
@@ -101,9 +102,11 @@ public:
     virtual bool storeLedger (Ledger::pointer) = 0;
     virtual void forceValid (Ledger::pointer) = 0;
 
-    virtual void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
+    virtual void setFullLedger (
+        Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
 
-    virtual void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
+    virtual void switchLedgers (
+        Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
 
     virtual void failedSave(std::uint32_t seq, uint256 const& hash) = 0;
 
@@ -118,23 +121,28 @@ public:
     /** Walk to a ledger's hash using the skip list
     */
     virtual uint256 walkHashBySeq (std::uint32_t index) = 0;
-    virtual uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger) = 0;
+    virtual uint256 walkHashBySeq (
+        std::uint32_t index, Ledger::ref referenceLedger) = 0;
 
     virtual Ledger::pointer getLedgerBySeq (std::uint32_t index) = 0;
 
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
 
-    virtual void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV) = 0;
+    virtual void setLedgerRangePresent (
+        std::uint32_t minV, std::uint32_t maxV) = 0;
 
-    virtual uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
+    virtual uint256 getLedgerHash(
+        std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
     virtual void addHeldTransaction (Transaction::ref trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
     virtual bool haveLedger (std::uint32_t seq) = 0;
     virtual void clearLedger (std::uint32_t seq) = 0;
-    virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
-    virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
+    virtual bool getValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
+    virtual bool getFullValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
 
     virtual void tune (int size, int age) = 0;
     virtual void sweep () = 0;
@@ -152,7 +160,8 @@ public:
     virtual bool isNewPathRequest () = 0;
     virtual void newOrderBookDB () = 0;
 
-    virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
+    virtual bool fixIndex (
+        LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
     virtual void doLedgerCleaner(Json::Value const& parameters) = 0;
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;

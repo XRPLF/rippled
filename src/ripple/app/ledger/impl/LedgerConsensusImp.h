@@ -344,8 +344,9 @@ private:
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
     int previousConvergeTime, InboundTransactions& inboundTransactions,
-    LocalTxs& localtx, LedgerMaster& ledgerMaster, LedgerHash const &prevLCLHash,
-    Ledger::ref previousLedger, std::uint32_t closeTime, FeeVote& feeVote);
+    LocalTxs& localtx, LedgerMaster& ledgerMaster,
+    LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
+    std::uint32_t closeTime, FeeVote& feeVote);
 
 } // ripple
 

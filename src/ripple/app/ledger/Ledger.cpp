@@ -276,11 +276,16 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger)
         getCloseAgree(prevLedger.info()), info_.seq);
     // VFALCO Remove this call to getApp
     if (prevLedger.info_.closeTime == 0)
+    {
         info_.closeTime = roundCloseTime (
-            getApp().timeKeeper().closeTime().time_since_epoch().count(), info_.closeTimeResolution);
+            getApp().timeKeeper().closeTime().time_since_epoch().count(),
+            info_.closeTimeResolution);
+    }
     else
+    {
         info_.closeTime =
             prevLedger.info_.closeTime + info_.closeTimeResolution;
+    }
 }
 
 Ledger::Ledger (void const* data,
@@ -409,7 +414,8 @@ void Ledger::setAccepted ()
 {
     // used when we acquired the ledger
     // TODO: re-enable a test like the following:
-    // assert(closed() && (info_.closeTime != 0) && (info_.closeTimeResolution != 0));
+    // assert(closed() && (info_.closeTime != 0) &&
+    // (info_.closeTimeResolution != 0));
     if ((info_.closeFlags & sLCF_NoConsensusTime) == 0)
         info_.closeTime = roundCloseTime(
             info_.closeTime, info_.closeTimeResolution);

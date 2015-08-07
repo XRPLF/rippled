@@ -56,7 +56,8 @@ bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
-    const bool alreadyHad = m_ledgers_by_hash.canonicalize (ledger->getHash(), ledger, true);
+    const bool alreadyHad = m_ledgers_by_hash.canonicalize (
+        ledger->getHash(), ledger, true);
     if (validated)
         mLedgersByIndex[ledger->info().seq] = ledger->getHash();
 
@@ -66,7 +67,7 @@ bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 LedgerHash LedgerHistory::getLedgerHash (LedgerIndex index)
 {
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-    std::map<std::uint32_t, uint256>::iterator it (mLedgersByIndex.find (index));
+    auto it = mLedgersByIndex.find (index);
 
     if (it != mLedgersByIndex.end ())
         return it->second;
@@ -78,7 +79,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
 {
     {
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-        std::map <std::uint32_t, uint256>::iterator it (mLedgersByIndex.find (index));
+        auto it = mLedgersByIndex.find (index);
 
         if (it != mLedgersByIndex.end ())
         {
@@ -151,8 +152,8 @@ log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 
 static
 void
-log_metadata_difference(Ledger::pointer builtLedger, Ledger::pointer validLedger,
-                        uint256 const& tx)
+log_metadata_difference(
+    Ledger::pointer builtLedger, Ledger::pointer validLedger, uint256 const& tx)
 {
     auto getMeta = [](Ledger const& ledger,
         uint256 const& txID) -> std::shared_ptr<TxMeta>
@@ -294,7 +295,8 @@ leaves (SHAMap const& sm)
 }
 
 
-void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash const& valid)
+void LedgerHistory::handleMismatch (
+    LedgerHash const& built, LedgerHash const& valid)
 {
     assert (built != valid);
     ++mismatch_counter_;
@@ -409,7 +411,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    std::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = std::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    auto entry = std::make_shared<std::pair<LedgerHash, LedgerHash>>();
     m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->second != hash)
@@ -428,10 +430,11 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
 
 /** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
 */
-bool LedgerHistory::fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
+bool LedgerHistory::fixIndex (
+    LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-    std::map<std::uint32_t, uint256>::iterator it (mLedgersByIndex.find (ledgerIndex));
+    auto it = mLedgersByIndex.find (ledgerIndex);
 
     if ((it != mLedgersByIndex.end ()) && (it->second != ledgerHash) )
     {

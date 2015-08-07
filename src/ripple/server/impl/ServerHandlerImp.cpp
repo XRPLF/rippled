@@ -300,7 +300,8 @@ ServerHandlerImp::processRequest (
     Resource::Consumer usage;
 
     if (role == Role::ADMIN)
-        usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
+        usage = m_resourceManager.newAdminEndpoint (
+            remoteIPAddress.to_string());
     else
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
@@ -542,8 +543,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             auto const ul = std::stoul(result.first);
             if (ul > std::numeric_limits<std::uint16_t>::max())
             {
-                log <<
-                    "Value '" << result.first << "' for key 'port' is out of range\n";
+                log << "Value '" << result.first
+                    << "' for key 'port' is out of range\n";
                 throw std::exception();
             }
             if (ul == 0)

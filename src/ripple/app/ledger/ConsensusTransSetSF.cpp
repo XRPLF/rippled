@@ -35,8 +35,9 @@ ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)
 {
 }
 
-void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint256 const& nodeHash,
-                                   Blob& nodeData, SHAMapTreeNode::TNType type)
+void ConsensusTransSetSF::gotNode (
+    bool fromFilter, const SHAMapNodeID& id, uint256 const& nodeHash,
+    Blob& nodeData, SHAMapTreeNode::TNType type)
 {
     if (fromFilter)
         return;
@@ -46,7 +47,8 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
         // this is a transaction, and we didn't have it
-        WriteLog (lsDEBUG, TransactionAcquire) << "Node on our acquiring TX set is TXN we may not have";
+        WriteLog (lsDEBUG, TransactionAcquire)
+                << "Node on our acquiring TX set is TXN we may not have";
 
         try
         {
@@ -62,24 +64,26 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint
         }
         catch (...)
         {
-            WriteLog (lsWARNING, TransactionAcquire) << "Fetched invalid transaction in proposed set";
+            WriteLog (lsWARNING, TransactionAcquire)
+                    << "Fetched invalid transaction in proposed set";
         }
     }
 }
 
-bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeHash,
-                                    Blob& nodeData)
+bool ConsensusTransSetSF::haveNode (
+    const SHAMapNodeID& id, uint256 const& nodeHash, Blob& nodeData)
 {
     if (m_nodeCache.retrieve (nodeHash, nodeData))
         return true;
 
     // VFALCO TODO Use a dependency injection here
-    Transaction::pointer txn = getApp().getMasterTransaction().fetch(nodeHash, false);
+    auto txn = getApp().getMasterTransaction().fetch(nodeHash, false);
 
     if (txn)
     {
         // this is a transaction, and we have it
-        WriteLog (lsTRACE, TransactionAcquire) << "Node in our acquiring TX set is TXN we have";
+        WriteLog (lsTRACE, TransactionAcquire)
+                << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s);

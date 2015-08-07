@@ -71,8 +71,8 @@ public:
         mOurVote = o;
     }
 
-    // VFALCO NOTE its not really a peer, its the 160 bit hash of the validator's public key
-    //
+    // VFALCO NOTE its not really a peer, its the 160 bit hash of the
+    // validator's public key.
     void setVote (NodeID const& peer, bool votesYes);
     void unVote (NodeID const& peer);
 

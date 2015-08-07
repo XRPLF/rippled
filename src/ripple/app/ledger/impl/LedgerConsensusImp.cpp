@@ -58,11 +58,14 @@ namespace ripple {
     @param anyTransactions indicates whether any transactions have been received
     @param previousProposers proposers in the last closing
     @param proposersClosed proposers who have currently closed this ledger
-    @param proposersValidated proposers who have validated the last closed ledger
+    @param proposersValidated proposers who have validated the last closed
+                             ledger
     @param previousMSeconds time, in milliseconds, for the previous ledger to
                             reach consensus (in milliseconds)
-    @param currentMSeconds time, in milliseconds since the previous ledger closed
-    @param openMSeconds time, in milliseconds, since the previous LCL was computed
+    @param currentMSeconds time, in milliseconds since the previous ledger
+                           closed
+    @param openMSeconds time, in milliseconds, since the previous LCL was
+                        computed
     @param idleInterval the network's desired idle interval
 */
 bool shouldCloseLedger (
@@ -81,7 +84,8 @@ bool shouldCloseLedger (
         WriteLog (lsWARNING, LedgerTiming) <<
             "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no") <<
             " Prop: " << previousProposers << "/" << proposersClosed <<
-            " Secs: " << currentMSeconds << " (last: " << previousMSeconds << ")";
+            " Secs: " << currentMSeconds << " (last: " <<
+            previousMSeconds << ")";
         return true;
     }
 
@@ -148,7 +152,8 @@ enum class ConsensusState
     @param currentFinished proposers who have validated a ledger after this one
     @param previousAgreeTime how long, in milliseconds, it took to agree on the
                              last ledger
-    @param currentAgreeTime how long, in milliseconds, we've been trying to agree
+    @param currentAgreeTime how long, in milliseconds, we've been trying to
+                            agree
 */
 ConsensusState checkConsensus (
     int previousProposers,
@@ -284,7 +289,9 @@ LedgerConsensusImp::LedgerConsensusImp (
                 << "Correct LCL is: " << prevLCLHash;
         }
     }
-    else  // update the network status table as to whether we're proposing/validating
+    else
+        // update the network status table as to whether we're
+        // proposing/validating
         consensus_.setProposing (mProposing, mValidating);
 }
 
@@ -381,7 +388,8 @@ Json::Value LedgerConsensusImp::getJson (bool full)
             Json::Value ctj (Json::objectValue);
             for (auto& ct : mCloseTimes)
             {
-                ctj[beast::lexicalCastThrow <std::string> (ct.first)] = ct.second;
+                ctj[std::to_string(ct.first)] = ct.
+                second;
             }
             ret["close_times"] = ctj;
         }
@@ -594,7 +602,8 @@ void LedgerConsensusImp::checkLCL ()
 
 void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 {
-    assert ((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash () != lclHash));
+    assert (lclHash != mPrevLedgerHash ||
+            mPreviousLedger->getHash () != lclHash);
 
     if (mPrevLedgerHash != lclHash)
     {
@@ -665,7 +674,7 @@ void LedgerConsensusImp::timerEntry ()
        if ((state_ != State::finished) && (state_ != State::accepted))
             checkLCL ();
 
-        mCurrentMSeconds = std::chrono::duration_cast <std::chrono::milliseconds>
+        mCurrentMSeconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - mConsensusStartTime).count ();
         mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
@@ -722,7 +731,8 @@ void LedgerConsensusImp::statePreClose ()
     if (mHaveCorrectLCL && getCloseAgree(mPreviousLedger->info()))
     {
         // we can use consensus timing
-        sinceClose = 1000 * (getApp().timeKeeper().closeTime().time_since_epoch().count()
+        sinceClose = 1000 * (
+            getApp().timeKeeper().closeTime().time_since_epoch().count()
             - mPreviousLedger->info().closeTime);
         idleInterval = 2 * mPreviousLedger->info().closeTimeResolution;
 
@@ -732,13 +742,15 @@ void LedgerConsensusImp::statePreClose ()
     else
     {
         // Use the time we saw the last ledger close
-        sinceClose = 1000 * (getApp().timeKeeper().closeTime().time_since_epoch().count()
+        sinceClose = 1000 * (
+            getApp().timeKeeper().closeTime().time_since_epoch().count()
             - consensus_.getLastCloseTime ());
         idleInterval = LEDGER_IDLE_INTERVAL;
     }
 
     idleInterval = std::max (idleInterval, LEDGER_IDLE_INTERVAL);
-    idleInterval = std::max (idleInterval, 2 * mPreviousLedger->info().closeTimeResolution);
+    idleInterval = std::max (
+        idleInterval, 2 * mPreviousLedger->info().closeTimeResolution);
 
     // Decide if we should close the ledger
     if (shouldCloseLedger (anyTransactions
@@ -849,7 +861,8 @@ bool LedgerConsensusImp::haveConsensus ()
     return true;
 }
 
-std::shared_ptr<SHAMap> LedgerConsensusImp::getTransactionTree (uint256 const& hash)
+std::shared_ptr<SHAMap> LedgerConsensusImp::getTransactionTree (
+    uint256 const& hash)
 {
     auto it = mAcquired.find (hash);
     if (it != mAcquired.end() && it->second)
@@ -1014,7 +1027,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         hotACCOUNT_NODE, newLCL->info().seq);
     int tmf = newLCL->txMap().flushDirty (
         hotTRANSACTION_NODE, newLCL->info().seq);
-    WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " accounts and " <<
+    WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " <<
+        asf << " accounts and " <<
         tmf << " transaction nodes";
 
     // Accept ledger
@@ -1050,7 +1064,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     {
         // Build validation
         auto v = std::make_shared<STValidation> (newLCLHash,
-            consensus_.validationTimestamp (getApp().timeKeeper().now().time_since_epoch().count()),
+            consensus_.validationTimestamp (
+                getApp().timeKeeper().now().time_since_epoch().count()),
             mValPublic, mProposing);
         v->setFieldU32 (sfLedgerSequence, newLCL->info().seq);
         addLoad(v);  // Our network load
@@ -1140,8 +1155,10 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     }
 
     {
-        auto lock = beast::make_lock(getApp().getMasterMutex(), std::defer_lock);
-        LedgerMaster::ScopedLockType sl (ledgerMaster_.peekMutex (), std::defer_lock);
+        auto lock = beast::make_lock(
+            getApp().getMasterMutex(), std::defer_lock);
+        LedgerMaster::ScopedLockType sl (
+            ledgerMaster_.peekMutex (), std::defer_lock);
         std::lock(lock, sl);
 
         auto const localTx = m_localTX.getTxSet();
@@ -1299,7 +1316,8 @@ void LedgerConsensusImp::addDisputedTransaction (
         protocol::TMTransaction msg;
         msg.set_rawtransaction (& (tx.front ()), tx.size ());
         msg.set_status (protocol::tsNEW);
-        msg.set_receivetimestamp (getApp().timeKeeper().now().time_since_epoch().count());
+        msg.set_receivetimestamp (
+            getApp().timeKeeper().now().time_since_epoch().count());
         getApp ().overlay ().foreach (send_always (
             std::make_shared<Message> (
                 msg, protocol::mtTRANSACTION)));
@@ -1364,7 +1382,8 @@ void LedgerConsensusImp::sendHaveTxSet (uint256 const& hash, bool direct)
             msg, protocol::mtHAVE_SET)));
 }
 
-void LedgerConsensusImp::statusChange (protocol::NodeEvent event, Ledger& ledger)
+void LedgerConsensusImp::statusChange (
+    protocol::NodeEvent event, Ledger& ledger)
 {
     protocol::TMStatusChange s;
 
@@ -1414,7 +1433,8 @@ void LedgerConsensusImp::takeInitialPosition (Ledger& initialLedger)
         ValidationSet parentSet = getApp().getValidations().getValidations (
             mPreviousLedger->info().parentHash);
         m_feeVote.doVoting (mPreviousLedger, parentSet, preSet);
-        getApp().getAmendmentTable ().doVoting (mPreviousLedger, parentSet, preSet);
+        getApp().getAmendmentTable ().doVoting (
+            mPreviousLedger, parentSet, preSet);
         initialSet = preSet->snapShot (false);
     }
     else
@@ -1511,7 +1531,8 @@ void LedgerConsensusImp::updateOurPositions ()
         else
         {
             // proposal is still fresh
-            ++closeTimes[roundCloseTime (it->second->getCloseTime (), mCloseResolution)];
+            ++closeTimes[roundCloseTime (
+                it->second->getCloseTime (), mCloseResolution)];
             ++it;
         }
     }
@@ -1563,14 +1584,16 @@ void LedgerConsensusImp::updateOurPositions ()
     {
         // no other times
         mHaveCloseTimeConsensus = true;
-        closeTime = roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution);
+        closeTime = roundCloseTime (
+            mOurPosition->getCloseTime (), mCloseResolution);
     }
     else
     {
         int participants = mPeerPositions.size ();
         if (mProposing)
         {
-            ++closeTimes[roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution)];
+            ++closeTimes[roundCloseTime (
+                mOurPosition->getCloseTime (), mCloseResolution)];
             ++participants;
         }
 
@@ -1620,7 +1643,8 @@ void LedgerConsensusImp::updateOurPositions ()
     }
 
     if (!changes &&
-            ((closeTime != roundCloseTime (mOurPosition->getCloseTime (), mCloseResolution))
+            ((closeTime != roundCloseTime (
+                mOurPosition->getCloseTime (), mCloseResolution))
             || mOurPosition->isStale (ourCutoff)))
     {
         // close time changed or our position is stale
@@ -1701,7 +1725,8 @@ void LedgerConsensusImp::checkOurValidation ()
     }
 
     auto v = std::make_shared<STValidation> (mPreviousLedger->getHash (),
-        consensus_.validationTimestamp (getApp().timeKeeper().now().time_since_epoch().count()),
+        consensus_.validationTimestamp (
+            getApp().timeKeeper().now().time_since_epoch().count()),
         mValPublic, false);
     addLoad(v);
     v->setTrusted ();
@@ -1728,14 +1753,16 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
         return;
     }
 
-    consensus_.newLCL (mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
+    consensus_.newLCL (
+        mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
 
     if (synchronous)
         accept (consensusSet);
     else
     {
         getApp().getJobQueue().addJob (jtACCEPT, "acceptLedger",
-            std::bind (&LedgerConsensusImp::accept, shared_from_this (), consensusSet));
+            std::bind (&LedgerConsensusImp::accept, shared_from_this (),
+                       consensusSet));
     }
 }
 
@@ -1758,7 +1785,8 @@ void LedgerConsensusImp::addLoad(STValidation::ref val)
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
     int previousConvergeTime, InboundTransactions& inboundTransactions,
-    LocalTxs& localtx, LedgerMaster& ledgerMaster, LedgerHash const &prevLCLHash,
+    LocalTxs& localtx, LedgerMaster& ledgerMaster,
+    LedgerHash const &prevLCLHash,
     Ledger::ref previousLedger, std::uint32_t closeTime, FeeVote& feeVote)
 {
     return std::make_shared <LedgerConsensusImp> (consensus, previousProposers,
@@ -1791,7 +1819,8 @@ applyTransaction (OpenView& view,
 
     WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
         << txn->getTransactionID ()
-        //<< (engine.view().open() ? " open" : " closed") // because of the optional in engine
+        //<< (engine.view().open() ? " open" : " closed")
+        // because of the optional in engine
         << (retryAssured ? "/retry" : "/final");
     WriteLog (lsTRACE, LedgerConsensus) << txn->getJson (0);
 
