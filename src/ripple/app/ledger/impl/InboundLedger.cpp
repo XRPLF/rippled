@@ -57,8 +57,8 @@ enum
     ,fetchSmallNodes = 32
 };
 
-InboundLedger::InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason,
-    clock_type& clock)
+InboundLedger::InboundLedger (
+    uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
         deprecatedLogs().journal("InboundLedger"))
     , mHaveHeader (false)
@@ -135,8 +135,12 @@ void InboundLedger::init (ScopedLockType& collectionLock)
             getApp ().getLedgerMaster ().storeLedger (mLedger);
 
         // Check if this could be a newer fully-validated ledger
-        if ((mReason == fcVALIDATION) || (mReason == fcCURRENT) || (mReason ==  fcCONSENSUS))
+        if (mReason == fcVALIDATION ||
+            mReason == fcCURRENT ||
+            mReason == fcCONSENSUS)
+        {
             getApp ().getLedgerMaster ().checkAccept (mLedger);
+        }
     }
 }
 
@@ -150,7 +154,7 @@ bool InboundLedger::tryLocal ()
     if (!mHaveHeader)
     {
         // Nothing we can do without the ledger header
-        std::shared_ptr<NodeObject> node = getApp().getNodeStore ().fetch (mHash);
+        auto node = getApp().getNodeStore ().fetch (mHash);
 
         if (!node)
         {
@@ -169,7 +173,8 @@ bool InboundLedger::tryLocal ()
         else
         {
             mLedger = std::make_shared<Ledger>(
-                node->getData().data(), node->getData().size(), true, getConfig());
+                node->getData().data(), node->getData().size(),
+                true, getConfig());
         }
 
         if (mLedger->getHash () != mHash)
@@ -466,8 +471,8 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 Message::pointer packet (std::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS));
                 {
-                    for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
-                            it != end; ++it)
+                    for (auto it = mPeers.begin (), end = mPeers .end ();
+                         it != end; ++it)
                     {
                         Peer::ptr iPeer (
                             getApp().overlay ().findPeerByShortID (it->first));
@@ -499,8 +504,9 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     if (!mHaveHeader && !mFailed)
     {
         tmGL.set_itype (protocol::liBASE);
-        if (m_journal.trace) m_journal.trace <<
-            "Sending header request to " << (peer ? "selected peer" : "all peers");
+        if (m_journal.trace) m_journal.trace
+             << "Sending header request to "
+             << (peer ? "selected peer" : "all peers");
         sendRequest (tmGL, peer);
         return;
     }
@@ -529,8 +535,9 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             // we need the root node
             tmGL.set_itype (protocol::liAS_NODE);
             *tmGL.add_nodeids () = SHAMapNodeID ().getRawString ();
-            if (m_journal.trace) m_journal.trace <<
-                "Sending AS root request to " << (peer ? "selected peer" : "all peers");
+            if (m_journal.trace) m_journal.trace
+                << "Sending AS root request to "
+                << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
             return;
         }
@@ -587,8 +594,8 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                             "Sending AS node " << nodeIDs.size () <<
                                 " request to " << (
                                     peer ? "selected peer" : "all peers");
-                        if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
-                            "AS node: " << nodeIDs[0];
+                        if (nodeIDs.size () == 1 && m_journal.trace)
+                            m_journal.trace << "AS node: " << nodeIDs[0];
                         sendRequest (tmGL, peer);
                         return;
                     }

@@ -35,7 +35,7 @@ namespace HTTP {
     read from the stream until there is enough to determine a result.
     No bytes are discarded from buf. Any additional bytes read are retained.
     buf must provide an interface compatible with boost::asio::streambuf
-        http://www.boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
+   http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
     See
         http://www.ietf.org/rfc/rfc2246.txt
         Section 7.4. Handshake protocol
