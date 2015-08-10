@@ -88,8 +88,8 @@ class PaymentSandbox_test : public beast::unit_test::suite
             json (paths.json ()),
             txflags (tfNoRippleDirect | tfPartialPayment));
 
-        require (balance ("rcv", USD_gw1 (0)));
-        require (balance ("rcv", USD_gw2 (2)));
+        env.require (balance ("rcv", USD_gw1 (0)));
+        env.require (balance ("rcv", USD_gw2 (2)));
     }
 
     void testSubtractCredits ()
