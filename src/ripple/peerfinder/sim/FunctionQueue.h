@@ -62,7 +62,9 @@ public:
     */
     template <typename Function>
     void post (Function f)
-        { m_work.emplace_back (new Work <Function> (f)); }
+    {
+        m_work.emplace_back (std::make_unique<Work <Function>>(f));
+    }
 
     /** Run all pending functions.
         The functions will be invoked in the order they were queued.

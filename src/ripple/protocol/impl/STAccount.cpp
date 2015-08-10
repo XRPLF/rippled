@@ -39,12 +39,6 @@ std::string STAccount::getText () const
     return toBase58(u);
 }
 
-STAccount*
-STAccount::construct (SerialIter& u, SField const& name)
-{
-    return new STAccount (name, u.getVLBuffer ());
-}
-
 STAccount::STAccount (SField const& n, AccountID const& v)
         : STBlob (n, v.data (), v.size ())
 {

@@ -21,6 +21,7 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
+#include <beast/cxx14/memory.h>
 #include <beast/module/asio/AsyncObject.h>
 #include <beast/threads/WaitableEvent.h>
 #include <boost/asio.hpp>
@@ -299,11 +300,11 @@ public:
 
 //-----------------------------------------------------------------------------
 
-ResolverAsio *ResolverAsio::New (
+std::unique_ptr<ResolverAsio> ResolverAsio::New (
     boost::asio::io_service& io_service,
     beast::Journal journal)
 {
-    return new ResolverAsioImpl (io_service, journal);
+    return std::make_unique<ResolverAsioImpl> (io_service, journal);
 }
 
 //-----------------------------------------------------------------------------

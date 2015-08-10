@@ -167,11 +167,10 @@ public:
     {
         WriteLog (lsTRACE, HTTPClient) << "Fetch: " << mDeqSites[0];
 
-        std::shared_ptr <boost::asio::ip::tcp::resolver::query> query (
-            new boost::asio::ip::tcp::resolver::query (
+        auto query = std::make_shared<boost::asio::ip::tcp::resolver::query>(
                 mDeqSites[0],
                 beast::lexicalCast <std::string> (mPort),
-                boost::asio::ip::resolver_query_base::numeric_service));
+                boost::asio::ip::resolver_query_base::numeric_service);
         mQuery  = query;
 
         mDeadline.expires_from_now (mTimeout, mShutdown);
@@ -528,9 +527,8 @@ void HTTPClient::get (
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete)
 {
-    std::shared_ptr <HTTPClientImp> client (
-        new HTTPClientImp (io_service, port, responseMax));
-
+    auto client = std::make_shared<HTTPClientImp> (
+        io_service, port, responseMax);
     client->get (bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -547,9 +545,8 @@ void HTTPClient::get (
 {
     std::deque<std::string> deqSites (1, strSite);
 
-    std::shared_ptr <HTTPClientImp> client (
-        new HTTPClientImp (io_service, port, responseMax));
-
+    auto client = std::make_shared<HTTPClientImp> (
+        io_service, port, responseMax);
     client->get (bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -566,9 +563,8 @@ void HTTPClient::request (
 {
     std::deque<std::string> deqSites (1, strSite);
 
-    std::shared_ptr <HTTPClientImp> client (
-        new HTTPClientImp (io_service, port, responseMax));
-
+    auto client = std::make_shared<HTTPClientImp> (
+        io_service, port, responseMax);
     client->request (bSSL, deqSites, setRequest, timeout, complete);
 }
 

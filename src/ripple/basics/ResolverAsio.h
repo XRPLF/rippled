@@ -29,9 +29,9 @@ namespace ripple {
 class ResolverAsio : public Resolver
 {
 public:
-    static ResolverAsio* New (
-        boost::asio::io_service& io_service,
-        beast::Journal journal);
+    static
+    std::unique_ptr<ResolverAsio> New (
+        boost::asio::io_service&, beast::Journal);
 };
 
 }

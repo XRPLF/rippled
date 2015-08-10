@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/CollectorManager.h>
+#include <beast/cxx14/memory.h>
 
 namespace ripple {
 
@@ -56,12 +57,12 @@ public:
     {
     }
 
-    beast::insight::Collector::ptr const& collector ()
+    beast::insight::Collector::ptr const& collector () override
     {
         return m_collector;
     }
 
-    beast::insight::Group::ptr const& group (std::string const& name)
+    beast::insight::Group::ptr const& group (std::string const& name) override
     {
         return m_groups->get (name);
     }
@@ -73,10 +74,10 @@ CollectorManager::~CollectorManager ()
 {
 }
 
-CollectorManager* CollectorManager::New (Section const& params,
+std::unique_ptr<CollectorManager> CollectorManager::New(Section const& params,
     beast::Journal journal)
 {
-    return new CollectorManagerImp (params, journal);
+    return std::make_unique<CollectorManagerImp>(params, journal);
 }
 
 }
