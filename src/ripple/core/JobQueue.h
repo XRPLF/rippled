@@ -36,15 +36,11 @@ protected:
     JobQueue (char const* name, Stoppable& parent);
 
 public:
+    using JobFunction = std::function <void (Job&)>;
     virtual ~JobQueue () { }
 
-    // VFALCO NOTE Using boost::function here because Visual Studio 2012
-    //             std::function doesn't swallow return types.
-    //
-    //        TODO Replace with std::function
-    //
-    virtual void addJob (JobType type,
-        std::string const& name, boost::function <void (Job&)> const& job) = 0;
+    virtual void addJob (
+        JobType, std::string const& name, JobFunction const&) = 0;
 
     // Jobs waiting at this priority
     virtual int getJobCount (JobType t) const = 0;
