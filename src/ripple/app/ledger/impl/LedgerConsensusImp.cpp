@@ -642,11 +642,14 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 
             // Tell the ledger acquire system that we need the consensus ledger
             mAcquiringLedger = mPrevLedgerHash;
-            getApp().getJobQueue().addJob (jtADVANCE, "getConsensusLedger",
-                std::bind (
-                    &InboundLedgers::acquire,
-                    &getApp().getInboundLedgers(),
-                    mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
+            auto& previousHash = mPrevLedgerHash;
+            auto acquire = [previousHash] (Job&) {
+                getApp().getInboundLedgers().acquire(
+                    previousHash, 0, InboundLedger::fcCONSENSUS);
+            };
+            getApp().getJobQueue().addJob (
+                jtADVANCE, "getConsensusLedger", acquire);
+;
             mHaveCorrectLCL = false;
         }
         return;

@@ -38,7 +38,7 @@ namespace {
 
 void runOnJobQueue(std::string const& name, Callback const& callback)
 {
-    boost::function <void (Job&)> cb([callback] (Job&) { callback(); });
+    auto cb = [callback] (Job&) { callback(); };
     getApp().getJobQueue().addJob(jtCLIENT, name, cb);
 };
 
