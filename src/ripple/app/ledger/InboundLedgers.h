@@ -56,7 +56,7 @@ public:
         std::shared_ptr<Peer>,
         std::shared_ptr <protocol::TMLedgerData>) = 0;
 
-    virtual void doLedgerData (Job&, LedgerHash hash) = 0;
+    virtual void doLedgerData (LedgerHash hash) = 0;
 
     virtual void gotStaleData (
         std::shared_ptr <protocol::TMLedgerData> packet) = 0;
@@ -77,7 +77,7 @@ public:
     /** Called when a complete ledger is obtained. */
     virtual void onLedgerFetched (InboundLedger::fcReason why) = 0;
 
-    virtual void gotFetchPack (Job&) = 0;
+    virtual void gotFetchPack () = 0;
     virtual void sweep () = 0;
 
     virtual void onStop() = 0;

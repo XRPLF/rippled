@@ -47,7 +47,7 @@ public:
     void onBatchWrite (NodeStore::BatchWriteReport const& report) override;
 
 private:
-    void doTask (NodeStore::Task& task, Job&);
+    void doTask (NodeStore::Task& task);
 
     JobQueue* m_jobQueue;
     std::atomic <int> m_taskCount;

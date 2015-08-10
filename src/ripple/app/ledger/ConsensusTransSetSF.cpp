@@ -59,8 +59,9 @@ void ConsensusTransSetSF::gotNode (
             assert (stx->getTransactionID () == nodeHash);
             getApp().getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
-                std::bind (&NetworkOPs::submitTransaction, &getApp().getOPs (),
-                           std::placeholders::_1, stx));
+                [stx] (Job&) {
+                    getApp().getOPs().submitTransaction(stx);
+                });
         }
         catch (...)
         {

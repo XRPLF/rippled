@@ -326,7 +326,6 @@ std::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
 /** Dispatch acquire completion
 */
 static void LADispatch (
-    Job& job,
     InboundLedger::pointer la,
     std::vector< std::function<void (InboundLedger::pointer)> > trig)
 {
@@ -371,9 +370,10 @@ void InboundLedger::done ()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
-        std::bind (LADispatch, std::placeholders::_1, shared_from_this (),
-                   triggers));
+    auto that = shared_from_this ();
+    getApp().getJobQueue ().addJob (
+        jtLEDGER_DATA, "triggers",
+        [that, triggers] (Job&) { LADispatch(that, triggers); });
 }
 
 bool InboundLedger::addOnComplete (

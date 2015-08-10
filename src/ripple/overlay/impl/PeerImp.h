@@ -456,7 +456,7 @@ private:
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     void
-    checkTransaction (Job&, int flags, STTx::pointer stx);
+    checkTransaction (int flags, STTx::pointer stx);
 
     void
     checkPropose (Job& job,
@@ -464,7 +464,7 @@ private:
             LedgerProposal::pointer proposal);
 
     void
-    checkValidation (Job&, STValidation::pointer val,
+    checkValidation (STValidation::pointer val,
         bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
@@ -472,7 +472,7 @@ private:
 
     // Called when we receive tx set data.
     void
-    peerTXData (Job&, uint256 const& hash,
+    peerTXData (uint256 const& hash,
         std::shared_ptr <protocol::TMLedgerData> const& pPacket,
             beast::Journal journal);
 };

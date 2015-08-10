@@ -223,8 +223,7 @@ private:
             running_ = true;
         }
 
-        jobQueue_.addJob (
-            jtWAL, "WAL", std::bind (&WALCheckpointer::checkpoint, this));
+        jobQueue_.addJob (jtWAL, "WAL", [this] (Job&) { checkpoint(); });
     }
 
     void checkpoint ()

@@ -451,13 +451,14 @@ void UniqueNodeListImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 {
     if (timer == m_scoreTimer)
     {
-        getApp().getJobQueue ().addJob (jtUNL, "UNL.score",
-            std::bind (&UniqueNodeListImp::doScore, this));
+        getApp().getJobQueue ().addJob (
+            jtUNL, "UNL.score",
+            [this] (Job&) { doScore(); });
     }
     else if (timer == m_fetchTimer)
     {
         getApp().getJobQueue ().addJob (jtUNL, "UNL.fetch",
-            std::bind (&UniqueNodeListImp::doFetch, this));
+            [this] (Job&) { doFetch(); });
     }
 }
 

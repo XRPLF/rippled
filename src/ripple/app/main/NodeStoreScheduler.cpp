@@ -50,11 +50,10 @@ void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
     m_jobQueue->addJob (
         jtWRITE,
         "NodeObject::store",
-        std::bind (&NodeStoreScheduler::doTask,
-            this, std::ref(task), std::placeholders::_1));
+        [this, &task] (Job&) { doTask(task); });
 }
 
-void NodeStoreScheduler::doTask (NodeStore::Task& task, Job&)
+void NodeStoreScheduler::doTask (NodeStore::Task& task)
 {
     task.performScheduledTask ();
     if ((--m_taskCount == 0) && isStopping())

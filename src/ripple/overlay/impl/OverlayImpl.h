@@ -253,7 +253,7 @@ public:
 
     // Called when TMManifests is received from a peer
     void
-    onManifests (Job&,
+    onManifests (
         std::shared_ptr<protocol::TMManifests> const& m,
             std::shared_ptr<PeerImp> const& from);
 

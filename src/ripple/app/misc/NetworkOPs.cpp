@@ -151,7 +151,7 @@ public:
     //
 
     // Must complete immediately.
-    void submitTransaction (Job&, STTx::pointer) override;
+    void submitTransaction (STTx::pointer) override;
 
     void processTransaction (
         Transaction::pointer& transaction,
@@ -514,12 +514,12 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
     if (timer == m_heartbeatTimer)
     {
         m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
-            std::bind (&NetworkOPsImp::processHeartbeatTimer, this));
+                            [this] (Job&) { processHeartbeatTimer(); });
     }
     else if (timer == m_clusterTimer)
     {
         m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
-            std::bind (&NetworkOPsImp::processClusterTimer, this));
+                            [this] (Job&) { processClusterTimer(); });
     }
 }
 
@@ -638,7 +638,7 @@ std::string NetworkOPsImp::strOperatingMode () const
     return paStatusToken[mMode];
 }
 
-void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
+void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
 {
     if (isNeedNetworkLedger ())
     {
@@ -694,14 +694,13 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
         }
     }
 
-    m_job_queue.addJob (jtTRANSACTION, "submitTxn",
-        std::bind (&NetworkOPsImp::processTransaction,
-                   this,
-                   std::make_shared<Transaction> (trans, Validate::NO,
-                    directSigVerify, reason),
-                   false,
-                   false,
-                   FailHard::no));
+    auto tx = std::make_shared<Transaction> (
+        trans, Validate::NO, directSigVerify, reason);
+
+    m_job_queue.addJob (jtTRANSACTION, "submitTxn", [this, tx] (Job&) {
+        auto t = tx;
+        processTransaction(t, false, false, FailHard::no);
+    });
 }
 
 void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
@@ -759,7 +758,7 @@ void NetworkOPsImp::doTransactionAsync (Transaction::pointer transaction,
     if (mDispatchState == DispatchState::none)
     {
         m_job_queue.addJob (jtBATCH, "transactionBatch",
-                std::bind (&NetworkOPsImp::transactionBatch, this));
+                            [this] (Job&) { transactionBatch(); });
         mDispatchState = DispatchState::scheduled;
     }
 }
@@ -791,7 +790,7 @@ void NetworkOPsImp::doTransactionSync (Transaction::pointer transaction,
             {
                 // More transactions need to be applied, but by another job.
                 m_job_queue.addJob (jtBATCH, "transactionBatch",
-                        std::bind (&NetworkOPsImp::transactionBatch, this));
+                                    [this] (Job&) { transactionBatch(); });
                 mDispatchState = DispatchState::scheduled;
             }
         }
@@ -2158,7 +2157,7 @@ void NetworkOPsImp::reportFeeChange ()
 
     m_job_queue.addJob (
         jtCLIENT, "reportFeeChange->pubServer",
-        std::bind (&NetworkOPsImp::pubServer, this));
+        [this] (Job&) { pubServer(); });
 }
 
 // This routine should only be used to publish accepted or validated

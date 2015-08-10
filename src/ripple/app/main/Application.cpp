@@ -997,13 +997,11 @@ public:
                 getApp().signalStop ();
             }
 
-            m_jobQueue->addJob(jtSWEEP, "sweep",
-                std::bind(&ApplicationImp::doSweep, this,
-                          std::placeholders::_1));
+            m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
         }
     }
 
-    void doSweep (Job& j)
+    void doSweep ()
     {
         // VFALCO NOTE Does the order of calls matter?
         // VFALCO TODO fix the dependency inversion using an observer,
