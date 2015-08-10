@@ -23,6 +23,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/server/Role.h>
 
@@ -40,9 +41,6 @@ namespace ripple {
 //     marker:       resume point, if any
 Json::Value doLedgerData (RPC::Context& context)
 {
-    static int const BINARY_PAGE_LENGTH = 2048;
-    static int const JSON_PAGE_LENGTH = 256;
-
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
@@ -61,8 +59,6 @@ Json::Value doLedgerData (RPC::Context& context)
     bool isBinary = params[jss::binary].asBool();
 
     int limit = -1;
-    int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
-
     if (params.isMember (jss::limit))
     {
         Json::Value const& jLimit = params[jss::limit];
@@ -72,6 +68,7 @@ Json::Value doLedgerData (RPC::Context& context)
         limit = jLimit.asInt ();
     }
 
+    auto maxLimit = RPC::Tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (context.role != Role::ADMIN)))
         limit = maxLimit;
 
