@@ -100,7 +100,7 @@ public:
             env (pay ("alice", "bob", USD (100)), json (paths.json ()),
                 sendmax (BTC (1000)), txflags (tfPartialPayment));
 
-            require (balance ("bob", USD (100)));
+            env.require (balance ("bob", USD (100)));
             if (enableFix)
                 expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
                     isOffer (env, "carol", BTC (49), XRP (49)));
