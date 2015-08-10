@@ -191,7 +191,7 @@ public:
 
     virtual
     void makeFetchPack (
-        Job&, std::weak_ptr<Peer> const& wPeer,
+        std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         uint256 haveLedgerHash,
         std::uint32_t uUptime) = 0;

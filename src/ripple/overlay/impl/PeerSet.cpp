@@ -71,7 +71,7 @@ bool PeerSet::insert (Peer::ptr const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now (boost::posix_time::milliseconds (mTimerInterval));
-    mTimer.async_wait (std::bind (&PeerSet::TimerEntry, pmDowncast (), beast::asio::placeholders::error));
+    mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (), beast::asio::placeholders::error));
 }
 
 void PeerSet::invokeOnTimer ()
@@ -98,7 +98,7 @@ void PeerSet::invokeOnTimer ()
         setTimer ();
 }
 
-void PeerSet::TimerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
+void PeerSet::timerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
     if (result == boost::asio::error::operation_aborted)
         return;
@@ -113,9 +113,10 @@ void PeerSet::TimerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
         //
         if (ptr->mTxnData)
         {
-            getApp().getJobQueue ().addJob (jtTXN_DATA, "timerEntryTxn",
-                std::bind (&PeerSet::TimerJobEntry, std::placeholders::_1,
-                           ptr));
+            getApp().getJobQueue ().addJob (
+                jtTXN_DATA, "timerEntryTxn", [ptr] (Job&) {
+                    timerJobEntry(ptr);
+                });
         }
         else
         {
@@ -127,14 +128,15 @@ void PeerSet::TimerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
                 ptr->setTimer ();
             }
             else
-                getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntryLgr",
-                    std::bind (&PeerSet::TimerJobEntry, std::placeholders::_1,
-                               ptr));
+                getApp().getJobQueue ().addJob (
+                    jtLEDGER_DATA, "timerEntryLgr", [ptr] (Job&) {
+                        timerJobEntry(ptr);
+                    });
         }
     }
 }
 
-void PeerSet::TimerJobEntry (Job&, std::shared_ptr<PeerSet> ptr)
+void PeerSet::timerJobEntry (std::shared_ptr<PeerSet> ptr)
 {
     ptr->invokeOnTimer ();
 }

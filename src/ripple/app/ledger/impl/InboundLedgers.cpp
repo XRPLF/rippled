@@ -164,8 +164,9 @@ public:
             // useful.
             if (packet.type () == protocol::liAS_NODE)
             {
-                getApp().getJobQueue().addJob(jtLEDGER_DATA, "gotStaleData",
-                    std::bind(&InboundLedgers::gotStaleData, this, packet_ptr));
+                getApp().getJobQueue().addJob(
+                    jtLEDGER_DATA, "gotStaleData",
+                    [this, packet_ptr] (Job&) { gotStaleData(packet_ptr); });
             }
 
             return false;
@@ -173,9 +174,9 @@ public:
 
         // Stash the data for later processing and see if we need to dispatch
         if (ledger->gotData(std::weak_ptr<Peer>(peer), packet_ptr))
-            getApp().getJobQueue().addJob (jtLEDGER_DATA, "processLedgerData",
-                std::bind (&InboundLedgers::doLedgerData, this,
-                           std::placeholders::_1, hash));
+            getApp().getJobQueue().addJob (
+                jtLEDGER_DATA, "processLedgerData",
+                [this, hash] (Job&) { doLedgerData(hash); });
 
         return true;
     }
@@ -223,7 +224,7 @@ public:
         return mRecentFailures.find (h) != mRecentFailures.end();
     }
 
-    void doLedgerData (Job&, LedgerHash hash)
+    void doLedgerData (LedgerHash hash)
     {
         InboundLedger::pointer ledger = find (hash);
 
@@ -334,7 +335,7 @@ public:
         return ret;
     }
 
-    void gotFetchPack (Job&)
+    void gotFetchPack ()
     {
         std::vector<InboundLedger::pointer> acquires;
         {

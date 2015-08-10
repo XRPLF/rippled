@@ -835,9 +835,10 @@ void
 PeerImp::onMessage (std::shared_ptr<protocol::TMManifests> const& m)
 {
     // VFALCO What's the right job type?
-    getApp().getJobQueue().addJob (jtVALIDATION_ut,
-        "receiveManifests", std::bind(&OverlayImpl::onManifests,
-            &overlay_, std::placeholders::_1, m, shared_from_this()));
+    auto that = shared_from_this();
+    getApp().getJobQueue().addJob (
+        jtVALIDATION_ut, "receiveManifests",
+        [this, that, m] (Job&) { overlay_.onManifests(m, that); });
 }
 
 void
@@ -1018,8 +1019,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 
     try
     {
-        STTx::pointer stx = std::make_shared <
-            STTx> (std::ref (sit));
+        auto stx = std::make_shared<STTx>(sit);
         uint256 txID = stx->getTransactionID ();
 
         int flags;
@@ -1063,10 +1063,15 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         else if (getApp().getLedgerMaster().getValidatedLedgerAge() > 240)
             p_journal_.trace << "No new transactions until synchronized";
         else
-            getApp().getJobQueue ().addJob (jtTRANSACTION,
-                "recvTransaction->checkTransaction",
-                std::bind(beast::weak_fn(&PeerImp::checkTransaction,
-                shared_from_this()), std::placeholders::_1, flags, stx));
+        {
+            std::weak_ptr<PeerImp> weak = shared_from_this();
+            getApp().getJobQueue ().addJob (
+                jtTRANSACTION, "recvTransaction->checkTransaction",
+                [weak, flags, stx] (Job&) {
+                    if (auto peer = weak.lock())
+                        peer->checkTransaction(flags, stx);
+                });
+        }
     }
     catch (...)
     {
@@ -1079,8 +1084,13 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMGetLedger> const& m)
 {
     fee_ = Resource::feeMediumBurdenPeer;
-    getApp().getJobQueue().addJob (jtLEDGER_REQ, "recvGetLedger", std::bind(
-        beast::weak_fn(&PeerImp::getLedger, shared_from_this()), m));
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    getApp().getJobQueue().addJob (
+        jtLEDGER_REQ, "recvGetLedger",
+        [weak, m] (Job&) {
+            if (auto peer = weak.lock())
+                peer->getLedger(m);
+        });
 }
 
 void
@@ -1125,9 +1135,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
     if (m->type () == protocol::liTS_CANDIDATE)
     {
         // got data for a candidate transaction set
-        getApp().getJobQueue().addJob(jtTXN_DATA, "recvPeerData", std::bind(
-            beast::weak_fn(&PeerImp::peerTXData, shared_from_this()),
-            std::placeholders::_1, hash, m, p_journal_));
+        std::weak_ptr<PeerImp> weak = shared_from_this();
+        auto& journal = p_journal_;
+        getApp().getJobQueue().addJob(
+            jtTXN_DATA, "recvPeerData",
+            [weak, hash, journal, m] (Job&) {
+                if (auto peer = weak.lock())
+                    peer->peerTXData(hash, m, journal);
+            });
         return;
     }
 
@@ -1223,10 +1238,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
             signerPublic, PublicKey(makeSlice(set.nodepubkey())),
                 suppression);
 
-    getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
-        "recvPropose->checkPropose", std::bind(beast::weak_fn(
-            &PeerImp::checkPropose, shared_from_this()), std::placeholders::_1,
-            m, proposal));
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    getApp().getJobQueue ().addJob (
+        isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
+        [weak, m, proposal] (Job& job) {
+            if (auto peer = weak.lock())
+                peer->checkPropose(job, m, proposal);
+        });
 }
 
 void
@@ -1457,11 +1475,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
         }
         if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
         {
-            getApp().getJobQueue ().addJob (isTrusted ?
-                jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
-                    std::bind(beast::weak_fn(&PeerImp::checkValidation,
-                        shared_from_this()), std::placeholders::_1, val,
-                            isTrusted, m));
+            std::weak_ptr<PeerImp> weak = shared_from_this();
+            getApp().getJobQueue ().addJob (
+                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+                "recvValidation->checkValidation",
+                [weak, val, isTrusted, m] (Job&) {
+                    if (auto peer = weak.lock())
+                        peer->checkValidation(val, isTrusted, m);
+                });
         }
         else
         {
@@ -1684,15 +1705,18 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
     uint256 hash;
     memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
-    getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-        std::bind (&LedgerMaster::makeFetchPack, &getApp().getLedgerMaster (),
-            std::placeholders::_1, std::weak_ptr<PeerImp> (shared_from_this ()),
-                packet, hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    auto elapsed = UptimeTimer::getInstance().getElapsedSeconds();
+    getApp().getJobQueue ().addJob (
+        jtPACK, "MakeFetchPack",
+        [weak, packet, hash, elapsed] (Job&) {
+            getApp().getLedgerMaster().makeFetchPack(
+                weak, packet, hash, elapsed);
+        });
 }
 
 void
-PeerImp::checkTransaction (Job&, int flags,
-    STTx::pointer stx)
+PeerImp::checkTransaction (int flags, STTx::pointer stx)
 {
     // VFALCO TODO Rewrite to not use exceptions
     try
@@ -1789,7 +1813,7 @@ PeerImp::checkPropose (Job& job,
 }
 
 void
-PeerImp::checkValidation (Job&, STValidation::pointer val,
+PeerImp::checkValidation (STValidation::pointer val,
     bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet)
 {
     try
@@ -2212,7 +2236,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 }
 
 void
-PeerImp::peerTXData (Job&, uint256 const& hash,
+PeerImp::peerTXData (uint256 const& hash,
     std::shared_ptr <protocol::TMLedgerData> const& pPacket,
         beast::Journal journal)
 {

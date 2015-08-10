@@ -631,7 +631,7 @@ OverlayImpl::onPeerDeactivate (Peer::id_t id,
 }
 
 void
-OverlayImpl::onManifests (Job&,
+OverlayImpl::onManifests (
     std::shared_ptr<protocol::TMManifests> const& m,
         std::shared_ptr<PeerImp> const& from)
 {
