@@ -50,11 +50,11 @@ Json::Value doLedgerData (RPC::Context& context)
     if (!lpLedger)
         return jvResult;
 
-    uint256 resumePoint;
+    boost::optional<ReadView::key_type> key = ReadView::key_type();
     if (params.isMember (jss::marker))
     {
         Json::Value const& jMarker = params[jss::marker];
-        if (! (jMarker.isString () && resumePoint.SetHex (jMarker.asString ())))
+        if (! (jMarker.isString () && key->SetHex (jMarker.asString ())))
             return RPC::expected_field_error (jss::marker, "valid");
     }
 
@@ -76,30 +76,32 @@ Json::Value doLedgerData (RPC::Context& context)
         limit = maxLimit;
 
     jvResult[jss::ledger_hash] = to_string (lpLedger->info().hash);
-    jvResult[jss::ledger_index] = std::to_string(lpLedger->info().seq);
+    jvResult[jss::ledger_index] = lpLedger->info().seq;
 
-    Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
+    Json::Value& nodes = jvResult[jss::state];
 
-    for(auto const& sle : lpLedger->sles)
+    while ((key = lpLedger->succ(*key)))
     {
-       if (limit-- <= 0)
-       {
-           auto marker = sle->key();
-           jvResult[jss::marker] = to_string (--marker);
-           break;
-       }
+        auto sle = lpLedger->read(keylet::unchecked(*key));
+        if (limit-- <= 0)
+        {
+            // Stop processing before the current key.
+            auto k = sle->key();
+            jvResult[jss::marker] = to_string(--k);
+            break;
+        }
 
-       if (isBinary)
-       {
-           Json::Value& entry = nodes.append (Json::objectValue);
-           entry[jss::data] = serializeHex(*sle);
-           entry[jss::index] = to_string (sle->key());
-       }
-       else
-       {
-           Json::Value& entry = nodes.append (sle->getJson (0));
-           entry[jss::index] = to_string (sle->key());
-       }
+        if (isBinary)
+        {
+            Json::Value& entry = nodes.append (Json::objectValue);
+            entry[jss::data] = serializeHex(*sle);
+            entry[jss::index] = to_string(sle->key());
+        }
+        else
+        {
+            Json::Value& entry = nodes.append (sle->getJson (0));
+            entry[jss::index] = to_string(sle->key());
+        }
     }
 
     return jvResult;
