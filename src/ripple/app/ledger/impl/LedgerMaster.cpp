@@ -1201,7 +1201,7 @@ public:
             mAdvanceThread = true;
             getApp().getJobQueue ().addJob (
                 jtADVANCE, "advanceLedger",
-                std::bind (&LedgerMasterImp::advanceThread, this));
+                [this] (Job&) { advanceThread(); });
         }
     }
 
@@ -1342,9 +1342,9 @@ public:
         if (mPathFindThread < 2)
         {
             ++mPathFindThread;
-            getApp().getJobQueue().addJob (jtUPDATE_PF, name,
-                std::bind (&LedgerMasterImp::updatePaths, this,
-                           std::placeholders::_1));
+            getApp().getJobQueue().addJob (
+                jtUPDATE_PF, name,
+                [this] (Job& j) { updatePaths(j); });
         }
     }
 
@@ -1642,7 +1642,7 @@ public:
         Blob& data) override;
 
     void makeFetchPack (
-        Job&, std::weak_ptr<Peer> const& wPeer,
+        std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         uint256 haveLedgerHash,
         std::uint32_t uUptime) override;
@@ -1751,9 +1751,10 @@ void LedgerMasterImp::doAdvance ()
                                     ScopedLockType lock (m_mutex);
                                     mFillInProgress = ledger->info().seq;
                                     getApp().getJobQueue().addJob(
-                                        jtADVANCE, "tryFill", std::bind (
-                                            &LedgerMasterImp::tryFill, this,
-                                            std::placeholders::_1, ledger));
+                                        jtADVANCE, "tryFill",
+                                        [this, ledger] (Job& j) {
+                                            tryFill(j, ledger);
+                                        });
                                 }
                                 progress = true;
                             }
@@ -1864,12 +1865,11 @@ void LedgerMasterImp::gotFetchPack (
 
     getApp().getJobQueue().addJob (
         jtLEDGER_DATA, "gotFetchPack",
-        std::bind (&InboundLedgers::gotFetchPack,
-                   &getApp().getInboundLedgers (), std::placeholders::_1));
+        [] (Job&) { getApp().getInboundLedgers().gotFetchPack(); });
 }
 
 void LedgerMasterImp::makeFetchPack (
-    Job&, std::weak_ptr<Peer> const& wPeer,
+    std::weak_ptr<Peer> const& wPeer,
     std::shared_ptr<protocol::TMGetObjectByHash> const& request,
     uint256 haveLedgerHash,
     std::uint32_t uUptime)

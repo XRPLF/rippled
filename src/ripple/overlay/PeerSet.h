@@ -104,8 +104,8 @@ public:
     }
 
 private:
-    static void TimerEntry (std::weak_ptr<PeerSet>, const boost::system::error_code& result);
-    static void TimerJobEntry (Job&, std::shared_ptr<PeerSet>);
+    static void timerEntry (std::weak_ptr<PeerSet>, const boost::system::error_code& result);
+    static void timerJobEntry (std::shared_ptr<PeerSet>);
 
 protected:
     // VFALCO TODO try to make some of these private

@@ -67,8 +67,9 @@ void OrderBookDB::setup(
     if (getConfig().RUN_STANDALONE)
         update(ledger);
     else
-        getApp().getJobQueue().addJob(jtUPDATE_PF, "OrderBookDB::update",
-            std::bind(&OrderBookDB::update, this, ledger));
+        getApp().getJobQueue().addJob(
+            jtUPDATE_PF, "OrderBookDB::update",
+            [this, ledger] (Job&) { update(ledger); });
 }
 
 void OrderBookDB::update(

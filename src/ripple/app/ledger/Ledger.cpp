@@ -1295,20 +1295,22 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     }
 
     if (isSynchronous)
-    {
         return saveValidatedLedger(isCurrent);
-    }
-    else if (isCurrent)
+
+    auto that = shared_from_this();
+    auto job = [that, isCurrent] (Job&) {
+        that->saveValidatedLedger(isCurrent);
+    };
+
+    if (isCurrent)
     {
-        getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pendSave",
-            std::bind (&Ledger::saveValidatedLedgerAsync, shared_from_this (),
-                       std::placeholders::_1, isCurrent));
+        getApp().getJobQueue().addJob(
+            jtPUBLEDGER, "Ledger::pendSave", job);
     }
     else
     {
-        getApp().getJobQueue ().addJob (jtPUBOLDLEDGER, "Ledger::pendOldSave",
-            std::bind (&Ledger::saveValidatedLedgerAsync, shared_from_this (),
-                       std::placeholders::_1, isCurrent));
+        getApp().getJobQueue ().addJob(
+            jtPUBOLDLEDGER, "Ledger::pendOldSave", job);
     }
 
     return true;

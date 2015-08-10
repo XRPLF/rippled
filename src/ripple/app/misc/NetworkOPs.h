@@ -110,7 +110,7 @@ public:
     //
 
     // must complete immediately
-    virtual void submitTransaction (Job&, STTx::pointer) = 0;
+    virtual void submitTransaction (STTx::pointer) = 0;
 
     /**
      * Process transactions as they arrive from the network or which are

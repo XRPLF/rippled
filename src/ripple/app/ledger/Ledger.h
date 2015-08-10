@@ -373,10 +373,6 @@ private:
     class sles_iter_impl;
     class txs_iter_impl;
 
-    void saveValidatedLedgerAsync(Job&, bool current)
-    {
-        saveValidatedLedger(current);
-    }
     bool saveValidatedLedger (bool current);
 
     void

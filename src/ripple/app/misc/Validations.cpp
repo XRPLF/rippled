@@ -435,12 +435,12 @@ private:
             return;
 
         mWriting = true;
-        getApp().getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
-                                       std::bind (&ValidationsImp::doWrite,
-                                                  this, std::placeholders::_1));
+        getApp().getJobQueue ().addJob (
+            jtWRITE, "Validations::doWrite",
+            [this] (Job&) { doWrite(); });
     }
 
-    void doWrite (Job&)
+    void doWrite ()
     {
         LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
         boost::format insVal ("INSERT INTO Validations "
