@@ -105,9 +105,6 @@ public:
     }
 
     bool isValueH160 () const;
-
-private:
-    static STAccount* construct (SerialIter&, SField const&);
 };
 
 } // ripple

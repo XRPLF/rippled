@@ -371,7 +371,7 @@ public:
 
         , m_orderBookDB (*m_jobQueue)
 
-        , m_pathRequests (new PathRequests (
+        , m_pathRequests (std::make_unique<PathRequests> (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
         , m_ledgerMaster (make_LedgerMaster (getConfig (), stopwatch (),

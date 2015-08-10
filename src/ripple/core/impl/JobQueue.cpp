@@ -257,10 +257,9 @@ public:
         assert (iter != m_jobData.end ());
 
         if (iter == m_jobData.end ())
-            return LoadEvent::autoptr ();
+            return {};
 
-        return LoadEvent::autoptr (
-            new LoadEvent (iter-> second.load (), name, true));
+        return std::make_unique<LoadEvent> (iter-> second.load (), name, true);
     }
 
     void addLoadEvents (JobType t,

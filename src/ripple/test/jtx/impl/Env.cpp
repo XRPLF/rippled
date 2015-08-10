@@ -262,7 +262,7 @@ Env::submit (JTx const& jt)
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, applyFlags(), 
+                    view, *stx, applyFlags(),
                         directSigVerify, config,
                             beast::Journal{});
                 return didApply;

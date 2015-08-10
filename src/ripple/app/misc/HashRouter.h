@@ -128,12 +128,14 @@ public:
 
     virtual ~HashRouter() = default;
 
-    // VFALCO TODO Replace "Supression" terminology with something more semantically meaningful.
+    // VFALCO TODO Replace "Supression" terminology with something more
+    // semantically meaningful.
     bool addSuppression (uint256 const& index);
 
     bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
 
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags);
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer,
+                             int& flags);
 
     bool addSuppressionFlags (uint256 const& index, int flag);
 
