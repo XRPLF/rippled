@@ -115,8 +115,8 @@ public:
         job_count = m_jobSet.size ();
     }
 
-    void addJob (JobType type, std::string const& name,
-        boost::function <void (Job&)> const& jobFunc) override
+    void addJob (
+        JobType type, std::string const& name, JobFunction const& func) override
     {
         assert (type != jtINVALID);
 
@@ -166,7 +166,7 @@ public:
 
             std::pair <std::set <Job>::iterator, bool> result (
                 m_jobSet.insert (Job (type, name, ++m_lastJob,
-                    data.load (), jobFunc, m_cancelCallback)));
+                    data.load (), func, m_cancelCallback)));
             queueJob (*result.first, lock);
         }
     }
