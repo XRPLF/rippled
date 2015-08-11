@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <boost/optional.hpp>
 
@@ -89,11 +90,14 @@ Transaction::pointer Transaction::sharedTransaction (
 
 bool Transaction::checkSign (std::string& reason, SigVerify sigVerify) const
 {
+    bool const allowMultiSign = getApp().getLedgerMaster().
+        getValidatedRules().enabled (featureMultiSign, getConfig().features);
+
     if (! mFromPubKey.isValid ())
         reason = "Transaction has bad source public key";
-    else if (!sigVerify(*mTransaction, [] (STTx const& tx)
+    else if (!sigVerify(*mTransaction, [allowMultiSign] (STTx const& tx)
     {
-        return tx.checkSign();
+        return tx.checkSign(allowMultiSign);
     }))
         reason = "Transaction has bad signature";
     else

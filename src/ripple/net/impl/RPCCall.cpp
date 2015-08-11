@@ -28,6 +28,7 @@
 #include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/types.h>
 #include <ripple/server/ServerHandler.h>
@@ -922,13 +923,9 @@ public:
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
-#if RIPPLE_ENABLE_MULTI_SIGN
             {   "sign_for",             &RPCParser::parseSignFor,               4,  4   },
-#endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
-#if RIPPLE_ENABLE_MULTI_SIGN
             {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
-#endif // RIPPLE_ENABLE_MULTI_SIGN
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },

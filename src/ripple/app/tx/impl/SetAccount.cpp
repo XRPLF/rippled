@@ -21,6 +21,7 @@
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/TxFlags.h>
@@ -197,8 +198,8 @@ SetAccount::doApply ()
             // Account has no regular key or multi-signer signer list.
 
             // Prevent transaction changes until we're ready.
-            if ((RIPPLE_ENABLE_MULTI_SIGN) ||
-                view().flags() & tapENABLE_TESTING)
+            if (view().flags() & tapENABLE_TESTING ||
+                view().rules().enabled(featureMultiSign, ctx_.config.features))
                     return tecNO_ALTERNATIVE_KEY;
 
             return tecNO_REGULAR_KEY;

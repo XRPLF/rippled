@@ -56,6 +56,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/resource/Fees.h>
@@ -675,7 +676,10 @@ void NetworkOPsImp::submitTransaction (Job&, STTx::pointer iTrans)
     {
         try
         {
-            if (! passesLocalChecks (*trans, reason) || ! trans->checkSign ())
+            // Tell the call to checkSign() whether multisign is enabled.
+            if (!passesLocalChecks (*trans, reason) ||
+                !trans->checkSign (m_ledgerMaster.getValidatedRules().enabled(
+                    featureMultiSign, getConfig().features)))
             {
                 m_journal.warning << "Submitted transaction " <<
                     (reason.empty () ? "has bad signature" : "error: " + reason);

@@ -146,14 +146,10 @@ void printHelp (const po::options_description& desc)
            "     version\n"
            "     server_info\n"
            "     sign <private_key> <json> [offline]\n"
-#if RIPPLE_ENABLE_MULTI_SIGN
            "     sign_for\n"
-#endif // RIPPLE_ENABLE_MULTI_SIGN
            "     stop\n"
            "     submit <tx_blob>|[<private_key> <json>]\n"
-#if RIPPLE_ENABLE_MULTI_SIGN
            "     submit_multisigned\n"
-#endif // RIPPLE_ENABLE_MULTI_SIGN
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
            "     validation_seed [<seed>|<pass_phrase>|<key>]\n"
