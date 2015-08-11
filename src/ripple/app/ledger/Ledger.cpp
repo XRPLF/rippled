@@ -894,9 +894,8 @@ boost::optional<uint256>
 Ledger::succ (uint256 const& key,
     boost::optional<uint256> last) const
 {
-    auto const item =
-        stateMap_->peekNextItem(key);
-    if (! item)
+    auto item = stateMap_->upper_bound(key);
+    if (item == stateMap_->end())
         return boost::none;
     if (last && item->key() >= last)
         return boost::none;
@@ -1146,16 +1145,6 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
         }
         throw;
     }
-}
-
-uint256 Ledger::getNextLedgerIndex (uint256 const& hash,
-    boost::optional<uint256> const& last) const
-{
-    auto const node =
-        stateMap_->peekNextItem(hash);
-    if ((! node) || (last && node->key() >= *last))
-        return {};
-    return node->key();
 }
 
 bool Ledger::walkLedger () const
