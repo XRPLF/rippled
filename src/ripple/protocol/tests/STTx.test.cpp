@@ -44,7 +44,7 @@ public:
         j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
         j.sign (privateAcct);
 
-        unexpected (!j.checkSign (), "Transaction fails signature test");
+        unexpected (!j.checkSign (true), "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);

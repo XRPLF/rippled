@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>
@@ -74,10 +75,10 @@ SetSignerList::determineOperation(STTx const& tx,
 TER
 SetSignerList::preflight (PreflightContext const& ctx)
 {
-#if ! RIPPLE_ENABLE_MULTI_SIGN
-    if (! (ctx.flags & tapENABLE_TESTING))
+    if (! (ctx.flags & tapENABLE_TESTING) &&
+        ! ctx.rules.enabled(featureMultiSign,
+            ctx.config.features))
         return temDISABLED;
-#endif
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))

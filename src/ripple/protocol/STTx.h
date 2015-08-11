@@ -122,13 +122,7 @@ public:
 
     void sign (RippleAddress const& private_key);
 
-    bool checkSign(bool allowMultiSign =
-#if RIPPLE_ENABLE_MULTI_SIGN
-        true
-#else
-        false
-#endif
-            ) const;
+    bool checkSign(bool allowMultiSign) const;
 
     // SQL Functions with metadata.
     static

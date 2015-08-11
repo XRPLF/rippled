@@ -58,9 +58,12 @@ Status handle (Context& context, Object& object)
 
 class HandlerTable {
   public:
-    HandlerTable (std::vector<Handler> const& entries) {
-        for (auto& entry: entries)
+    template<std::size_t N>
+    HandlerTable (const Handler(&entries)[N])
+    {
+        for (std::size_t i = 0; i < N; ++i)
         {
+            auto const& entry = entries[i];
             assert (table_.find(entry.name_) == table_.end());
             table_[entry.name_] = entry;
         }
@@ -70,7 +73,7 @@ class HandlerTable {
         addHandler<VersionHandler>();
     }
 
-    const Handler* getHandler(std::string name) {
+    const Handler* getHandler(std::string name) const {
         auto i = table_.find(name);
         return i == table_.end() ? nullptr : &i->second;
     }
@@ -94,7 +97,7 @@ class HandlerTable {
     };
 };
 
-HandlerTable HANDLERS({
+Handler handlerArray[] {
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
     {   "account_info",         byRef (&doAccountInfo),         Role::USER,  NO_CONDITION  },
@@ -133,13 +136,9 @@ HandlerTable HANDLERS({
     {   "random",               byRef (&doRandom),              Role::USER,  NO_CONDITION     },
     {   "ripple_path_find",     byRef (&doRipplePathFind),      Role::USER,  NO_CONDITION  },
     {   "sign",                 byRef (&doSign),                Role::USER,  NO_CONDITION     },
-#if RIPPLE_ENABLE_MULTI_SIGN
-    {   "sign_for",             byRef (&doSignFor),             Role::USER,    NO_CONDITION     },
-#endif // RIPPLE_ENABLE_MULTI_SIGN
+    {   "sign_for",             byRef (&doSignFor),             Role::USER,  NO_CONDITION     },
     {   "submit",               byRef (&doSubmit),              Role::USER,  NEEDS_CURRENT_LEDGER  },
-#if RIPPLE_ENABLE_MULTI_SIGN
     {   "submit_multisigned",   byRef (&doSubmitMultiSigned),   Role::USER,  NEEDS_CURRENT_LEDGER  },
-#endif // RIPPLE_ENABLE_MULTI_SIGN
     {   "server_info",          byRef (&doServerInfo),          Role::USER,  NO_CONDITION     },
     {   "server_state",         byRef (&doServerState),         Role::USER,  NO_CONDITION     },
     {   "stop",                 byRef (&doStop),                Role::ADMIN,   NO_CONDITION     },
@@ -161,12 +160,13 @@ HandlerTable HANDLERS({
     // Evented methods
     {   "subscribe",            byRef (&doSubscribe),           Role::USER,  NO_CONDITION     },
     {   "unsubscribe",          byRef (&doUnsubscribe),         Role::USER,  NO_CONDITION     },
-});
+};
 
 } // namespace
 
 const Handler* getHandler(std::string const& name) {
-    return HANDLERS.getHandler(name);
+    static beast::static_initializer<HandlerTable> const handlers(handlerArray);
+    return handlers->getHandler(name);
 }
 
 } // RPC

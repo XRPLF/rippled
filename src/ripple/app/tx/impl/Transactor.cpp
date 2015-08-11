@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
 
@@ -70,12 +71,8 @@ preflight2 (PreflightContext const& ctx)
         {
             return (ctx.flags & tapNO_CHECK_SIGN) ||
                 tx.checkSign(
-#if RIPPLE_ENABLE_MULTI_SIGN
-                    true
-#else
-                    ctx.flags & tapENABLE_TESTING
-#endif
-                );
+                    (ctx.flags & tapENABLE_TESTING) ||
+                    (ctx.rules.enabled(featureMultiSign, ctx.config.features)));
         }))
     {
         JLOG(ctx.j.debug) << "preflight2: bad signature";
@@ -258,12 +255,11 @@ TER Transactor::apply ()
 
 TER Transactor::checkSign ()
 {
-#if RIPPLE_ENABLE_MULTI_SIGN
-#else
-    if(view().flags() & tapENABLE_TESTING)
-#endif
+    // Make sure multisigning is enabled before we check for multisignatures.
+    if ((view().flags() & tapENABLE_TESTING) ||
+        (view().rules().enabled(featureMultiSign, ctx_.config.features)))
     {
-        // If the mSigningPubKey is empty, then we must be multi-signing.
+        // If the mSigningPubKey is empty, then we must be multisigning.
         if (mSigningPubKey.getAccountPublic ().empty ())
             return checkMultiSign ();
     }

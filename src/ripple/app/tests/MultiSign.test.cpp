@@ -219,7 +219,7 @@ public:
         expect (env.seq(alice) == aliceSeq + 1);
 
         // Make sure multisign is disabled in production.
-        // NOTE: THESE FOUR TESTS FAIL IF RIPPLE_ENABLE_MULTI_SIGN != 0
+        // NOTE: These four tests will fail when multisign is default enabled.
         env.disable_testing();
         aliceSeq = env.seq (alice);
         env(noop(alice), msig(bogie), fee(2 * baseFee), ter(temINVALID));

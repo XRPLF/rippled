@@ -34,6 +34,7 @@ uint256
 feature (const char* name);
 /** @} */
 
+extern uint256 const featureMultiSign;
 extern uint256 const featureSusPay;
 
 } // ripple
