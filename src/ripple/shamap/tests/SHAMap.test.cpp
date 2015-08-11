@@ -68,31 +68,32 @@ public:
         unexpected (!sMap.addItem (i2, true, false), "no add");
         unexpected (!sMap.addItem (i1, true, false), "no add");
 
-        std::shared_ptr<SHAMapItem const> i;
-        i = sMap.peekFirstItem ();
-        unexpected (!i || (*i != i1), "bad traverse");
-        i = sMap.peekNextItem (i->key());
-        unexpected (!i || (*i != i2), "bad traverse");
-        i = sMap.peekNextItem (i->key());
-        unexpected (i, "bad traverse");
+        auto i = sMap.begin();
+        auto e = sMap.end();
+        unexpected (i == e || (*i != i1), "bad traverse");
+        ++i;
+        unexpected (i == e || (*i != i2), "bad traverse");
+        ++i;
+        unexpected (i != e, "bad traverse");
         sMap.addItem (i4, true, false);
         sMap.delItem (i2.key());
         sMap.addItem (i3, true, false);
-        i = sMap.peekFirstItem ();
-        unexpected (!i || (*i != i1), "bad traverse");
-        i = sMap.peekNextItem (i->key());
-        unexpected (!i || (*i != i3), "bad traverse");
-        i = sMap.peekNextItem (i->key());
-        unexpected (!i || (*i != i4), "bad traverse");
-        i = sMap.peekNextItem (i->key());
-        unexpected (i, "bad traverse");
+        i = sMap.begin();
+        e = sMap.end();
+        unexpected (i == e || (*i != i1), "bad traverse");
+        ++i;
+        unexpected (i == e || (*i != i3), "bad traverse");
+        ++i;
+        unexpected (i == e || (*i != i4), "bad traverse");
+        ++i;
+        unexpected (i != e, "bad traverse");
 
         testcase ("snapshot");
         uint256 mapHash = sMap.getHash ();
         std::shared_ptr<SHAMap> map2 = sMap.snapShot (false);
         unexpected (sMap.getHash () != mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
-        unexpected (!sMap.delItem (sMap.peekFirstItem ()->key()), "bad mod");
+        unexpected (!sMap.delItem (sMap.begin()->key()), "bad mod");
         unexpected (sMap.getHash () == mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
 

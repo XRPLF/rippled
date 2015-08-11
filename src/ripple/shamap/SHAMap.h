@@ -165,16 +165,7 @@ public:
         peekItem (uint256 const& id, SHAMapTreeNode::TNType & type) const;
 
     // traverse functions
-    std::shared_ptr<SHAMapItem const> const& peekFirstItem () const;
-    std::shared_ptr<SHAMapItem const> const&
-        peekFirstItem (SHAMapTreeNode::TNType & type) const;
-    SHAMapItem const* peekFirstItem(NodeStack& stack) const;
-    std::shared_ptr<SHAMapItem const> const& peekLastItem () const;
-    std::shared_ptr<SHAMapItem const> const& peekNextItem (uint256 const& ) const;
-    std::shared_ptr<SHAMapItem const> const&
-        peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type) const;
-    SHAMapItem const* peekNextItem(uint256 const& id, NodeStack& stack) const;
-    std::shared_ptr<SHAMapItem const> const& peekPrevItem (uint256 const& ) const;
+    const_iterator upper_bound(uint256 const& id) const;
 
     void visitNodes (std::function<bool (SHAMapAbstractNode&)> const&) const;
     void
@@ -275,9 +266,7 @@ private:
         writeNode(NodeObjectType t, std::uint32_t seq,
                   std::shared_ptr<SHAMapAbstractNode> node) const;
 
-    SHAMapTreeNode* firstBelow (SHAMapAbstractNode*) const;
     SHAMapTreeNode* firstBelow (SHAMapAbstractNode*, NodeStack& stack) const;
-    SHAMapTreeNode* lastBelow (SHAMapAbstractNode*) const;
 
     // Simple descent
     // Get a child of the specified node
@@ -305,6 +294,8 @@ private:
     bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash) const;
     bool hasLeafNode (uint256 const& tag, uint256 const& hash) const;
 
+    SHAMapItem const* peekFirstItem(NodeStack& stack) const;
+    SHAMapItem const* peekNextItem(uint256 const& id, NodeStack& stack) const;
     bool walkBranch (SHAMapAbstractNode* node,
                      std::shared_ptr<SHAMapItem const> const& otherMapItem,
                      bool isFirstMap, Delta & differences, int & maxCount) const;
@@ -389,6 +380,7 @@ public:
 private:
     explicit const_iterator(SHAMap const* map);
     const_iterator(SHAMap const* map, pointer item);
+    const_iterator(SHAMap const* map, pointer item, NodeStack&& stack);
 
     friend bool operator==(const_iterator const& x, const_iterator const& y);
     friend class SHAMap;
@@ -404,6 +396,15 @@ SHAMap::const_iterator::const_iterator(SHAMap const* map)
 inline
 SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item)
     : map_(map)
+    , item_(item)
+{
+}
+
+inline
+SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item,
+                                       NodeStack&& stack)
+    : stack_(std::move(stack))
+    , map_(map)
     , item_(item)
 {
 }

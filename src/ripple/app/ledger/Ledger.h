@@ -317,10 +317,6 @@ public:
 
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
-    // first node >hash, <last
-    uint256 getNextLedgerIndex (uint256 const& hash,
-        boost::optional<uint256> const& last = boost::none) const;
-
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;
 
