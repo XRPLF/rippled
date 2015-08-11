@@ -96,6 +96,7 @@ JSS ( build_version );              // out: NetworkOPs
 JSS ( can_delete );                 // out: CanDelete
 JSS ( check_nodes );                // in: LedgerCleaner
 JSS ( clear );                      // in/out: FetchInfo
+JSS ( close_flags );                // out: LedgerToJson
 JSS ( close_time );                 // in: Application, out: NetworkOPs,
                                     //      LedgerProposal, LedgerToJson
 JSS ( close_time_estimated );       // in: Application, out: LedgerToJson
@@ -262,6 +263,7 @@ JSS ( open );                       // out: handlers/Ledger
 JSS ( owner );                      // in: LedgerEntry, out: NetworkOPs
 JSS ( owner_funds );                // out: NetworkOPs, AcceptedLedgerTx
 JSS ( params );                     // RPC
+JSS ( parent_close_time );          // out: LedgerToJson
 JSS ( parent_hash );                // out: LedgerToJson
 JSS ( partition );                  // in: LogLevel
 JSS ( passphrase );                 // in: WalletPropose

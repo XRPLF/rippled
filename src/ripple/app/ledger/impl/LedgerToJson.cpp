@@ -65,14 +65,17 @@ void fillJson(Object& json, LedgerInfo const& info, bool bFull)
     json[jss::hash] = to_string (info.hash);
     json[jss::totalCoins] = to_string (info.drops);
     json[jss::accepted] = ! info.open;
+    json[jss::close_flags] = info.closeFlags;
+
+    // Always show fields that contribute to the ledger hash
+    json[jss::parent_close_time] = info.parentCloseTime;
+    json[jss::close_time] = info.closeTime;
+    json[jss::close_time_resolution] = info.closeTimeResolution;
 
     if (auto closeTime = info.closeTime)
     {
-        json[jss::close_time] = closeTime;
         json[jss::close_time_human] = boost::posix_time::to_simple_string (
             ptFromSeconds (closeTime));
-        json[jss::close_time_resolution] = info.closeTimeResolution;
-
         if (! getCloseAgree(info))
             json[jss::close_time_estimated] = true;
     }
