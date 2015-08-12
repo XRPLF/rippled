@@ -50,8 +50,12 @@ bool
 isAdmin (HTTP::Port const& port, Json::Value const& params,
          beast::IP::Address const& remoteIp)
 {
-    return ipAllowed (remoteIp, port.admin_ip) &&
-        passwordUnrequiredOrSentCorrect (port, params);
+    bool ipOk = is_loopback (remoteIp);
+
+    if (!ipOk)
+        ipOk = ipAllowed (remoteIp, port.admin_ip);
+
+    return ipOk && passwordUnrequiredOrSentCorrect (port, params);
 }
 
 Role
