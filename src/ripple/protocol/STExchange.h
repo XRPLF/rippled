@@ -72,7 +72,7 @@ struct STExchange<STBlob, Slice>
     get (boost::optional<value_type>& t,
         STBlob const& u)
     {
-        t = boost::in_place(u.data(), u.size());
+        t.emplace (u.data(), u.size());
     }
 
     static
@@ -95,7 +95,7 @@ struct STExchange<STBlob, Buffer>
     get (boost::optional<Buffer>& t,
         STBlob const& u)
     {
-        t = boost::in_place(
+        t.emplace (
             u.data(), u.size());
     }
 

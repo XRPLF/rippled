@@ -24,6 +24,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <beast/threads/Thread.h>
 #include <cassert>
 #include <condition_variable>

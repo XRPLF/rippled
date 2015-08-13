@@ -145,7 +145,7 @@ struct STExchange<STBlob, PublicKey>
     get (boost::optional<value_type>& t,
         STBlob const& u)
     {
-        t = boost::in_place(Slice(u.data(), u.size()));
+        t.emplace (Slice(u.data(), u.size()));
     }
 
     static
