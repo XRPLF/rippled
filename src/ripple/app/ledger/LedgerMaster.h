@@ -81,6 +81,9 @@ public:
     // The validated ledger is the last fully validated ledger
     virtual Ledger::pointer getValidatedLedger () = 0;
 
+    // The Rules are in the last fully validated ledger if there is one.
+    virtual Rules getValidatedRules() = 0;
+
     // This is the last ledger we published to clients and can lag the validated
     // ledger
     virtual Ledger::ref getPublishedLedger () = 0;

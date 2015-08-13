@@ -1376,6 +1376,18 @@ public:
         return mValidLedger.get ();
     }
 
+    Rules getValidatedRules ()
+    {
+        // Once we have a guarantee that there's always a last validated
+        // ledger then we can dispense with the if.
+
+        // Return the Rules from the last validated ledger.
+        if (auto const ledger = getValidatedLedger())
+            return ledger->rules();
+
+        return Rules();
+   }
+
     // This is the last ledger we published to clients and can lag the validated
     // ledger.
     Ledger::ref getPublishedLedger ()
