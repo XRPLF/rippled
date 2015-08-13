@@ -24,6 +24,7 @@
 #include <beast/unit_test/suite.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <thread>

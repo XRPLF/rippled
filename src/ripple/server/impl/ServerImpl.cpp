@@ -22,6 +22,7 @@
 #include <ripple/server/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <cassert>
 #include <ctime>
 #include <iomanip>

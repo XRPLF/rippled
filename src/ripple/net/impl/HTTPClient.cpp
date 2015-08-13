@@ -81,7 +81,7 @@ boost::optional<HTTPClientSSLContext> httpClientSSLContext;
 
 void HTTPClient::initializeSSLContext ()
 {
-    httpClientSSLContext = boost::in_place();
+    httpClientSSLContext.emplace ();
 }
 
 //------------------------------------------------------------------------------

@@ -188,10 +188,10 @@ public:
         , m_sink (prefix(), journal.sink())
         , m_journal (Journal (m_sink, journal.severity()), Reporting::node)
         , m_next_port (m_config.listening_endpoint.port() + 1)
-        , m_logic (boost::in_place (
-            std::ref (clock), std::ref (*this), std::ref (*this), std::ref (*this), m_journal))
         , m_when_expire (m_network.now() + std::chrono::seconds (1))
     {
+        m_logic.emplace (
+            clock, *this, *this, *this, m_journal);
         logic().setConfig (m_config.config);
         logic().load ();
     }

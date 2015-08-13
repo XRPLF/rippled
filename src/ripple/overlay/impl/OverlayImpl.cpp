@@ -36,6 +36,8 @@
 #include <beast/utility/ci_char_traits.h>
 #include <beast/utility/WrappedSink.h>
 
+#include <boost/utility/in_place_factory.hpp>
+
 namespace ripple {
 
 /** A functor to visit all active peers and retrieve their JSON data */

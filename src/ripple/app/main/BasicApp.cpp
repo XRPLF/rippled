@@ -23,7 +23,7 @@
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
-    work_ = boost::in_place(std::ref(io_service_));
+    work_.emplace (io_service_);
     threads_.reserve(numberOfThreads);
     while(numberOfThreads--)
         threads_.emplace_back(

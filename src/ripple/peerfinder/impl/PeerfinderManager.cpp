@@ -26,6 +26,7 @@
 #include <ripple/core/SociDB.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 #include <thread>
 
