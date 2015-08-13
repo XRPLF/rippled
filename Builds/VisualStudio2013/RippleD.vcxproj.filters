@@ -4542,9 +4542,30 @@
     <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
       <Filter>ripple\unl\tests</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unl\tests\Consensus_test.cpp">
+      <Filter>ripple\unl\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\unl\tests\metrics.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unl\tests\Network_test.cpp">
       <Filter>ripple\unl\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\unl\tests\qalloc.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\unl\tests\Sim1.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\unl\tests\Sim2.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\unl\tests\Sim3.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\unl\tests\Sim4.h">
+      <Filter>ripple\unl\tests</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unl\tests\SlotPeer_test.cpp">
       <Filter>ripple\unl\tests</Filter>
     </ClCompile>

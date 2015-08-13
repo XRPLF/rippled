@@ -18,7 +18,31 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/unl/tests/metrics.h>
+#include <ripple/unl/tests/Sim1.h>
+#include <ripple/unl/tests/Sim2.h>
+#include <ripple/unl/tests/Sim3.h>
+#include <ripple/unl/tests/Sim4.h>
+#include <beast/unit_test/suite.h>
 
-#include <ripple/unl/tests/Consensus_test.cpp>
-#include <ripple/unl/tests/Network_test.cpp>
-#include <ripple/unl/tests/SlotPeer_test.cpp>
+namespace ripple {
+namespace test {
+
+class Consensus_test : public beast::unit_test::suite
+{
+public:
+    void
+    run()
+    {
+        Sim4<log_t>::run(log);
+        //Sim3<log_t>::run(log);
+        //Sim2<log_t>::run(log);
+        //Sim1::run(log);
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(Consensus,sim,ripple);
+
+}
+}

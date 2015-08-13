@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/unl/tests/BasicNetwork.h>
+#include <ripple/unl/tests/metrics.h>
 #include <beast/unit_test/suite.h>
 #include <boost/optional.hpp>
 #include <algorithm>
@@ -57,7 +58,7 @@ public:
         send (Net& net, Peer& from, Message&& m)
         {
             net.send (from, *this,
-                std::forward<Message>(m));
+                [&, m]() { receive(net, from, m); });
         }
 
         template <class Net>
@@ -69,8 +70,8 @@ public:
             ++p.hops;
             set = true;
             hops = p.hops;
-            for(auto& peer : net.peers(*this))
-                peer.send(net, *this, p);
+            for(auto& link : net.links(*this))
+                link.to.send(net, *this, p);
         }
     };
 
@@ -95,7 +96,7 @@ public:
         send (Net& net, Peer& from, Message&& m)
         {
             net.send (from, *this,
-                std::forward<Message>(m));
+                [&, m]() { receive(net, from, m); });
         }
 
         template <class Net>
@@ -107,14 +108,13 @@ public:
             ++p.hops;
             set = true;
             hops = p.hops;
-            for(auto& peer : net.peers(*this))
-                peer.send(net, *this, p);
+            for(auto& link : net.links(*this))
+                link.to.send(net, *this, p);
         }
     };
 
     template <class Peer>
-    struct Network
-        : BasicNetwork<Peer, Network<Peer>>
+    struct Network : BasicNetwork<Peer>
     {
         static std::size_t const nPeer = 10000;
         static std::size_t const nDegree = 10;
@@ -168,9 +168,9 @@ public:
         Net net;
         net.pv[0].set = true;
         net.pv[0].hops = 0;
-        for(auto& peer : net.peers(net.pv[0]))
-            peer.send(net, net.pv[0], Ping{});
-        net.run();
+        for(auto& link : net.links(net.pv[0]))
+            link.to.send(net, net.pv[0], Ping{});
+        net.step();
         std::size_t reach = 0;
         std::vector<int> dist;
         std::vector<int> hops;
@@ -182,7 +182,7 @@ public:
             ++hops[peer.hops];
         }
         net.bfs(net.pv[0],
-            [&](Net& net, std::size_t d, Peer& peer)
+            [&](std::size_t d, Peer& peer)
             {
                 ++reach;
                 dist.resize(std::max<std::size_t>(
