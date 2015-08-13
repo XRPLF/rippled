@@ -289,7 +289,7 @@ public:
     virtual
     boost::optional<key_type>
     succ (key_type const& key, boost::optional<
-        key_type> last = boost::none) const = 0;
+        key_type> const& last = boost::none) const = 0;
 
     /** Return the state item associated with a key.
 
