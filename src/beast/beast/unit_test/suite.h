@@ -62,6 +62,7 @@ private:
         }
     };
 
+public:
     // Memberspace
     class log_t
     {
@@ -80,6 +81,7 @@ private:
         abstract_ostream&
         stream();
     };
+private:
 
     class scoped_testcase;
 
