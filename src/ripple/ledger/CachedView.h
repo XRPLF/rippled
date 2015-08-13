@@ -85,7 +85,7 @@ public:
 
     boost::optional<key_type>
     succ (key_type const& key, boost::optional<
-        key_type> last = boost::none) const override
+        key_type> const& last = boost::none) const override
     {
         return base_.succ(key, last);
     }

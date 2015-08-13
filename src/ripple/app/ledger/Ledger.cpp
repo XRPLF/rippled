@@ -892,7 +892,7 @@ Ledger::exists (Keylet const& k) const
 
 boost::optional<uint256>
 Ledger::succ (uint256 const& key,
-    boost::optional<uint256> last) const
+    boost::optional<uint256> const& last) const
 {
     auto item = stateMap_->upper_bound(key);
     if (item == stateMap_->end())

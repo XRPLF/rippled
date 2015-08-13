@@ -152,7 +152,7 @@ OpenView::exists (Keylet const& k) const
 
 auto
 OpenView::succ (key_type const& key,
-    boost::optional<key_type> last) const ->
+    boost::optional<key_type> const& last) const ->
         boost::optional<key_type>
 {
     return items_.succ(*base_, key, last);

@@ -153,7 +153,7 @@ public:
 
     boost::optional<uint256>
     succ (uint256 const& key, boost::optional<
-        uint256> last = boost::none) const override;
+        uint256> const& last = boost::none) const override;
 
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
