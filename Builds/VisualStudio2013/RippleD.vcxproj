@@ -2709,10 +2709,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
