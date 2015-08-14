@@ -17,7 +17,7 @@
 
 # Ignore object files.
 *.o
-build
+/build
 tags
 TAGS
 bin/rippled
