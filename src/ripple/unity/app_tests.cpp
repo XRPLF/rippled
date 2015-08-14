@@ -29,3 +29,4 @@
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>
 #include <ripple/app/tests/Taker.test.cpp>
+#include <ripple/app/tests/SetAuth_test.cpp>
