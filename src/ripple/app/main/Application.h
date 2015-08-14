@@ -98,7 +98,6 @@ public:
     virtual JobQueue&               getJobQueue () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
-    virtual unl::Manager&           getValidators () = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;

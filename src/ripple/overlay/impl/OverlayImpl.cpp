@@ -111,18 +111,6 @@ OverlayImpl::Timer::on_timer (error_code ec)
     overlay_.sendEndpoints();
     overlay_.autoConnect();
 
-    {
-        std::lock_guard<
-            std::recursive_mutex> lock (overlay_.mutex_);
-        for (auto const& e : overlay_.m_publicKeyMap)
-        {
-            auto const sp = e.second.lock();
-            if (sp)
-                if (sp->unlHorizon_->shouldDrop())
-                    sp->fail("Poor UNL horizon");
-        }
-    }
-
     if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0)
         overlay_.check();
 

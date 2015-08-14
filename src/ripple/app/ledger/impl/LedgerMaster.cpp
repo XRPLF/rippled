@@ -45,7 +45,6 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/unl/UNLManager.h>
 #include <algorithm>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>
@@ -276,11 +275,6 @@ public:
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
         mLedgerHistory.validatedLedger (l);
         getApp().getAmendmentTable().doValidatedLedger (l);
-
-    #if RIPPLE_HOOK_VALIDATORS
-        getApp().getValidators().onLedgerClosed (l->info().seq,
-            l->getHash(), l->info().parentHash);
-    #endif
     }
 
     void setPubLedger(Ledger::ref l)

@@ -427,9 +427,6 @@
     <Filter Include="ripple\unl">
       <UniqueIdentifier>{843C622F-AA52-E6C5-D3EB-D4B6D564B395}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\unl\impl">
-      <UniqueIdentifier>{416459B4-BDA4-31D6-834A-88932E767F37}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\unl\tests">
       <UniqueIdentifier>{2C910562-8D0A-B115-B829-556779436F2F}</UniqueIdentifier>
     </Filter>
@@ -708,9 +705,6 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <Filter>beast\boost</Filter>
     </ClCompile>
@@ -4548,39 +4542,6 @@
     <ClCompile Include="..\..\src\ripple\unity\websocket04.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\Horizon.h">
-      <Filter>ripple\unl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\BasicHorizon.cpp">
-      <Filter>ripple\unl\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\BasicHorizon.h">
-      <Filter>ripple\unl\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\Logic.cpp">
-      <Filter>ripple\unl\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Logic.h">
-      <Filter>ripple\unl\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Store.h">
-      <Filter>ripple\unl\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\StoreSqdb.cpp">
-      <Filter>ripple\unl\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\StoreSqdb.h">
-      <Filter>ripple\unl\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Tuning.h">
-      <Filter>ripple\unl\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\UNLManager.cpp">
-      <Filter>ripple\unl\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\make_Manager.h">
-      <Filter>ripple\unl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
       <Filter>ripple\unl\tests</Filter>
     </ClInclude>
@@ -4590,9 +4551,6 @@
     <ClCompile Include="..\..\src\ripple\unl\tests\SlotPeer_test.cpp">
       <Filter>ripple\unl\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\UNLManager.h">
-      <Filter>ripple\unl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>

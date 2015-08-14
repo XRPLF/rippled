@@ -270,8 +270,6 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3896,36 +3894,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\Horizon.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\BasicHorizon.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\BasicHorizon.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\Logic.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Logic.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Store.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\StoreSqdb.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\impl\StoreSqdb.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\impl\Tuning.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\impl\UNLManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\make_Manager.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unl\tests\Network_test.cpp">
@@ -3936,8 +3904,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\UNLManager.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Config04.h">
