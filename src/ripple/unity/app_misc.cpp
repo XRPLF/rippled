@@ -29,6 +29,3 @@
 #include <ripple/app/misc/Validations.cpp>
 
 #include <ripple/app/misc/impl/AccountTxPaging.cpp>
-
-#include <ripple/app/misc/tests/AccountTxPaging.test.cpp>
-#include <ripple/app/misc/tests/AmendmentTable.test.cpp>
