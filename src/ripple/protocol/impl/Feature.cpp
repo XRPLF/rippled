@@ -47,5 +47,6 @@ feature (const char* name)
 
 uint256 const featureMultiSign = feature("MultiSign");
 uint256 const featureSusPay = feature("SusPay");
+uint256 const featureTrustSetAuth = feature("TrustSetAuth");
 
 } // ripple

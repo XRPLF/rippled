@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
@@ -397,9 +398,12 @@ SetTrust::doApply ()
         }
     }
     // Line does not exist.
-    else if (!saLimitAmount                       // Setting default limit.
-                && (!bQualityIn || !uQualityIn)      // Not setting quality in or setting default quality in.
-                && (!bQualityOut || !uQualityOut))   // Not setting quality out or setting default quality out.
+    else if (! saLimitAmount &&                          // Setting default limit.
+        (! bQualityIn || ! uQualityIn) &&           // Not setting quality in or setting default quality in.
+        (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
+        (! ((view().flags() & tapENABLE_TESTING) ||
+            view().rules().enabled(featureTrustSetAuth,
+                ctx_.config.features)) || ! bSetAuth))
     {
         j_.trace <<
             "Redundant: Setting non-existent ripple line to defaults.";
