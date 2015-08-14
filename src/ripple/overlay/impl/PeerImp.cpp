@@ -81,8 +81,6 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
     , http_message_(std::move(request))
-    , unlHorizon_(getApp().getValidators().insert(id,
-        slotToHorizonKind(*slot_)))
 {
 }
 
@@ -1805,11 +1803,6 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
             charge (Resource::feeInvalidRequest);
             return;
         }
-
-    #if RIPPLE_HOOK_VALIDATORS
-        getApp().getValidators().onMessage(
-            unlHorizon_, *packet, *val);
-    #endif
 
         if (getApp().getOPs ().recvValidation(
                 val, std::to_string(id())))
