@@ -39,7 +39,6 @@
 #include <ripple/peerfinder/sim/Message.h>
 #include <ripple/peerfinder/sim/NodeSnapshot.h>
 #include <ripple/peerfinder/sim/Params.h>
-#include <ripple/peerfinder/sim/Tests.cpp>
 
 #include <ripple/peerfinder/tests/Livecache.test.cpp>
 #include <ripple/peerfinder/tests/PeerFinder_test.cpp>
