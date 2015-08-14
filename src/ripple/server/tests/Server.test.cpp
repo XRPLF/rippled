@@ -37,7 +37,7 @@ class Server_test : public beast::unit_test::suite
 public:
     enum
     {
-        testPort = 1001
+        testPort = 1025
     };
 
     class TestThread
