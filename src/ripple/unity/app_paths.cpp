@@ -41,5 +41,3 @@
 #include <ripple/app/paths/cursor/ReverseLiquidity.cpp>
 #include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
 #include <ripple/app/paths/cursor/RippleLiquidity.cpp>
-
-#include <ripple/app/paths/tests/Path_test.cpp>

@@ -259,17 +259,11 @@
     <Filter Include="ripple\app\misc\impl">
       <UniqueIdentifier>{C4BDB9F8-7DB7-E304-D286-098085D5D16E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\app\misc\tests">
-      <UniqueIdentifier>{815DC1A2-E2EF-E6E3-D979-19AD1476A28B}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\app\paths">
       <UniqueIdentifier>{03533509-DAC6-636F-9F7E-288894549E95}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\app\paths\cursor">
       <UniqueIdentifier>{9AD8D049-10A8-704C-D51A-FAD55B1F235F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\paths\tests">
-      <UniqueIdentifier>{1025719B-6A8F-D9FB-A6BA-02B93756DE09}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\app\tests">
       <UniqueIdentifier>{2E791662-6ED0-D1E1-03A4-0CB35473EC56}</UniqueIdentifier>
@@ -279,9 +273,6 @@
     </Filter>
     <Filter Include="ripple\app\tx\impl">
       <UniqueIdentifier>{4849F8A8-26D5-8416-2D59-F4CA49F0100C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\app\tx\tests">
-      <UniqueIdentifier>{9F69C81C-840B-8296-2595-D669EC736BED}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\basics">
       <UniqueIdentifier>{B8720E2F-21B1-2847-F96C-4E00A45DC639}</UniqueIdentifier>
@@ -2322,12 +2313,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\tests\AccountTxPaging.test.cpp">
-      <Filter>ripple\app\misc\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\misc\tests\AmendmentTable.test.cpp">
-      <Filter>ripple\app\misc\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2445,19 +2430,40 @@
     <ClInclude Include="..\..\src\ripple\app\paths\RippleState.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\paths\tests\Path_test.cpp">
-      <Filter>ripple\app\paths\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\Tuning.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tests\AccountTxPaging.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\AmendmentTable.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\DeliverMin.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\MultiSign.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\Offer.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\OfferStream.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\Path_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\Regression_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\SusPay_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\Taker.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
@@ -2592,21 +2598,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\DeliverMin.test.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\MultiSign.test.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\Offer.test.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\OfferStream.test.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\tests\Taker.test.cpp">
-      <Filter>ripple\app\tx\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\Transaction.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
