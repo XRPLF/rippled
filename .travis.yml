@@ -19,12 +19,21 @@ env:
     # Env vars are not translated there.
     - GCC_VER=4.8
   matrix:
+    - TARGET=coverage
     - TARGET=debug
     - TARGET=debug.nounity
     # We can specify any combination of builds here, for example, to
     # include release builds, too, uncomment the following lines.
     #- TARGET=release
     #- TARGET=release.nounity
+matrix:
+  exclude:
+    # Because gcov won't work (easily) with clang
+    - env: TARGET=coverage
+      compiler: clang
+    # Because coverage target is basically debug + --coverage flags
+    - env: TARGET=debug
+      compiler: gcc
 
 addons:
   apt:
@@ -34,6 +43,7 @@ addons:
     - python-software-properties
     # See also GCC_VER.
     - g++-4.8
+    - gcc-4.8
     - protobuf-compiler
     - libprotobuf-dev
     - libssl-dev
@@ -48,55 +58,10 @@ cache:
   - $BOOST_ROOT
 
 before_install:
-  # Override gcc version to $GCC_VER.
-  # Put an appropriate symlink at the front of the path.
-  - mkdir -v $HOME/bin
-  - test -x $( type -p gcc-$GCC_VER )
-  - ln -sv $(type -p gcc-$GCC_VER) $HOME/bin/gcc
-  - test -x $( type -p g++-$GCC_VER )
-  - ln -sv $(type -p g++-$GCC_VER) $HOME/bin/g++
-  - export PATH=$PWD/bin:$PATH
-
-  # What versions are we ACTUALLY running?
-  - g++ -v
-  - clang -v
-  # Avoid `spurious errors` caused by ~/.npm permission issues
-  # Does it already exist? Who owns? What permissions?
-  - ls -lah ~/.npm || mkdir ~/.npm
-  # Make sure we own it
-  - chown -Rc $USER ~/.npm
-
-  - bash bin/sh/install-boost.sh
+  - bin/ci/ubuntu/install-dependencies.sh
 
 script:
-  # Set so any failing command will abort the build
-  - set -e
-  # Make sure vcxproj is up to date
-  - scons vcxproj
-  - git diff --exit-code
-  # $CC will be either `clang` or `gcc`
-  # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
-  #   indicates that 2 cores are available to containers.
-  - scons -j2 $CC.$TARGET
-  # We can be sure we're using the build/$CC.$TARGET variant (-f so never err)
-  - rm -f build/rippled 
-  - export RIPPLED_PATH="$PWD/build/$CC.$TARGET/rippled"
-  # See what we've actually built
-  - ldd $RIPPLED_PATH
-  # Run unittests (under gdb)
-  - | # create gdb script
-    echo "set env MALLOC_CHECK_=3" > script.gdb 
-    echo "run" >> script.gdb
-    echo "backtrace full" >> script.gdb 
-    # gdb --help
-  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args $RIPPLED_PATH --unittest
-  - npm install
-  # Use build/(gcc|clang).$TARGET/rippled
-  - |
-    echo "exports.default_server_config = {\"rippled_path\" : \"$RIPPLED_PATH\"};" > test/config.js
-
-  # Run integration tests
-  - npm test
+  - bin/ci/ubuntu/build-and-test.sh
 
 notifications:
   email:
