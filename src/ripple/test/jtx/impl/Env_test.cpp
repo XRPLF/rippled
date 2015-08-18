@@ -360,10 +360,12 @@ public:
             { { "bob", 1 }, { "carol", 2 } }));
         env(noop("alice"));
 
-        env(noop("alice"), msig("bob"));
-        env(noop("alice"), msig("carol"));
-        env(noop("alice"), msig("bob", "carol"));
-        env(noop("alice"), msig("bob", "carol", "dilbert"),     ter(tefBAD_SIGNATURE));
+        auto const baseFee = env.config.FEE_DEFAULT;
+        env(noop("alice"), msig("bob"), fee(2 * baseFee));
+        env(noop("alice"), msig("carol"), fee(2 * baseFee));
+        env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));
+        env(noop("alice"), msig("bob", "carol", "dilbert"),
+            fee(4 * baseFee),                                   ter(tefBAD_SIGNATURE));
 
         env(signers("alice", none));
     }
