@@ -6,8 +6,8 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include "error-firebird.h"
+#include "soci/firebird/soci-firebird.h"
+#include "firebird/error-firebird.h"
 
 using namespace soci;
 using namespace soci::details::firebird;
@@ -139,8 +139,8 @@ void firebird_blob_backend::open()
 
     ISC_STATUS stat[20];
 
-    if (isc_open_blob2(stat, &session_.dbhp_, &session_.trhp_, &bhp_,
-                       &bid_, 0, NULL))
+    if (isc_open_blob2(stat, &session_.dbhp_, session_.current_transaction(),
+                       &bhp_, &bid_, 0, NULL))
     {
         bhp_ = 0L;
         throw_iscerror(stat);
@@ -238,7 +238,7 @@ void firebird_blob_backend::save()
     }
 
     // create new blob
-    if (isc_create_blob(stat, &session_.dbhp_, &session_.trhp_,
+    if (isc_create_blob(stat, &session_.dbhp_, session_.current_transaction(),
                         &bhp_, &bid_))
     {
         throw_iscerror(stat);

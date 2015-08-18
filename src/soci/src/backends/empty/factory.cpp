@@ -6,8 +6,8 @@
 //
 
 #define SOCI_EMPTY_SOURCE
-#include "soci-empty.h"
-#include <backend-loader.h>
+#include "soci/empty/soci-empty.h"
+#include "soci/backend-loader.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)

@@ -6,7 +6,9 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #define SOCI_DB2_SOURCE
-#include "soci-db2.h"
+#include "soci/soci-platform.h"
+#include "soci/db2/soci-db2.h"
+#include "soci-exchange-cast.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -55,8 +57,7 @@ void *db2_standard_use_type_backend::prepare_for_bind(
             cType = SQL_C_CHAR;
             size = sizeof(char) + 1;
             buf = new char[size];
-            char *c = static_cast<char*>(data);
-            buf[0] = *c;
+            buf[0] = exchange_type_cast<x_char>(data);
             buf[1] = '\0';
             ind = SQL_NTS;
         }
@@ -65,12 +66,12 @@ void *db2_standard_use_type_backend::prepare_for_bind(
     {
         // TODO: No textual value is assigned here!
 
-        std::string* s = static_cast<std::string*>(data);
+        std::string const& s = exchange_type_cast<x_stdstring>(data);
         sqlType = SQL_LONGVARCHAR;
         cType = SQL_C_CHAR;
-        size = s->size() + 1;
+        size = static_cast<SQLINTEGER>(s.size()) + 1;
         buf = new char[size];
-        strncpy(buf, s->c_str(), size);
+        strncpy(buf, s.c_str(), size);
         ind = SQL_NTS;
     }
     break;
@@ -79,7 +80,7 @@ void *db2_standard_use_type_backend::prepare_for_bind(
             sqlType = SQL_TIMESTAMP;
             cType = SQL_C_TIMESTAMP;
             buf = new char[sizeof(TIMESTAMP_STRUCT)];
-            std::tm *t = static_cast<std::tm *>(data);
+            std::tm const& t = exchange_type_cast<x_stdtm>(data);
             data = buf;
             size = 19; // This number is not the size in bytes, but the number
                        // of characters in the date if it was written out
@@ -87,12 +88,12 @@ void *db2_standard_use_type_backend::prepare_for_bind(
 
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(buf);
 
-            ts->year = static_cast<SQLSMALLINT>(t->tm_year + 1900);
-            ts->month = static_cast<SQLUSMALLINT>(t->tm_mon + 1);
-            ts->day = static_cast<SQLUSMALLINT>(t->tm_mday);
-            ts->hour = static_cast<SQLUSMALLINT>(t->tm_hour);
-            ts->minute = static_cast<SQLUSMALLINT>(t->tm_min);
-            ts->second = static_cast<SQLUSMALLINT>(t->tm_sec);
+            ts->year = static_cast<SQLSMALLINT>(t.tm_year + 1900);
+            ts->month = static_cast<SQLUSMALLINT>(t.tm_mon + 1);
+            ts->day = static_cast<SQLUSMALLINT>(t.tm_mday);
+            ts->hour = static_cast<SQLUSMALLINT>(t.tm_hour);
+            ts->minute = static_cast<SQLUSMALLINT>(t.tm_min);
+            ts->second = static_cast<SQLUSMALLINT>(t.tm_sec);
             ts->fraction = 0;
         }
         break;
@@ -135,8 +136,8 @@ void db2_standard_use_type_backend::bind_by_name(
     int position = -1;
     int count = 1;
 
-    for (std::vector<std::string>::iterator it = statement_.names.begin();
-         it != statement_.names.end(); ++it)
+    for (std::vector<std::string>::iterator it = statement_.names_.begin();
+         it != statement_.names_.end(); ++it)
     {
         if (*it == name)
         {

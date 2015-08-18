@@ -6,7 +6,7 @@
 //
 
 #define SOCI_ODBC_SOURCE
-#include "soci-odbc.h"
+#include "soci/odbc/soci-odbc.h"
 
 using namespace soci;
 using namespace soci::details;

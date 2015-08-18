@@ -7,7 +7,7 @@
 //
 
 #define SOCI_ORACLE_SOURCE
-#include "soci-oracle.h"
+#include "soci/oracle/soci-oracle.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)

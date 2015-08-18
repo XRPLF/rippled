@@ -7,9 +7,9 @@
 
 #define soci_ORACLE_SOURCE
 
-#include "soci-oracle.h"
+#include "soci/oracle/soci-oracle.h"
 #include "error.h"
-#include <soci-backend.h>
+#include "soci/soci-backend.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -147,6 +147,12 @@ int oracle_statement_backend::get_number_of_rows()
     return rows;
 }
 
+std::string oracle_statement_backend::get_parameter_name(int /* index */) const
+{
+    // TODO: How to get the parameter names from the query we prepared?
+    return std::string();
+}
+
 std::string oracle_statement_backend::rewrite_for_procedure_call(
     std::string const &query)
 {
@@ -181,10 +187,6 @@ int oracle_statement_backend::prepare_for_describe()
 void oracle_statement_backend::describe_column(int colNum, data_type &type,
     std::string &columnName)
 {
-    int size;
-    int precision;
-    int scale;
-
     ub2 dbtype;
     text* dbname;
     ub4 nameLength;
@@ -266,9 +268,6 @@ void oracle_statement_backend::describe_column(int colNum, data_type &type,
     }
 
     columnName.assign(dbname, dbname + nameLength);
-    size = static_cast<int>(dbsize);
-    precision = static_cast<int>(dbprec);
-    scale = static_cast<int>(dbscale);
 
     switch (dbtype)
     {
@@ -277,14 +276,14 @@ void oracle_statement_backend::describe_column(int colNum, data_type &type,
         type = dt_string;
         break;
     case SQLT_NUM:
-        if (scale > 0)
+        if (dbscale > 0)
         {
             if (session_.get_option_decimals_as_strings())
                 type = dt_string;
             else
                 type = dt_double;
         }
-        else if (precision <= std::numeric_limits<int>::digits10)
+        else if (dbprec <= std::numeric_limits<int>::digits10)
         {
             type = dt_integer;
         }

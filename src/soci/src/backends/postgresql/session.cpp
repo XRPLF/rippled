@@ -6,9 +6,10 @@
 //
 
 #define SOCI_POSTGRESQL_SOURCE
-#include "soci-postgresql.h"
-#include "session.h"
-#include <connection-parameters.h>
+#include "soci/soci-platform.h"
+#include "soci/postgresql/soci-postgresql.h"
+#include "soci/session.h"
+#include "soci/connection-parameters.h"
 #include <libpq/libpq-fs.h> // libpq
 #include <cctype>
 #include <cstdio>
@@ -22,12 +23,19 @@
 #endif // SOCI_POSTGRESQL_NOBINDBYNAME
 #endif // SOCI_POSTGRESQL_NOPARAMS
 
-#ifdef _MSC_VER
-#pragma warning(disable:4355 4996)
-#endif
-
 using namespace soci;
 using namespace soci::details;
+
+namespace // unnamed
+{
+
+// helper function for hardcoded queries
+void hard_exec(PGconn * conn, char const * query, char const * errMsg)
+{
+    postgresql_result(PQexec(conn, query)).check_for_errors(errMsg);
+}
+
+} // namespace unnamed
 
 postgresql_session_backend::postgresql_session_backend(
     connection_parameters const& parameters)
@@ -47,6 +55,16 @@ postgresql_session_backend::postgresql_session_backend(
         throw soci_error(msg);
     }
 
+    // Increase the number of digits used for floating point values to ensure
+    // that the conversions to/from text round trip correctly, which is not the
+    // case with the default value of 0. Use the maximal supported value, which
+    // was 2 until 9.x and is 3 since it.
+    int const version = PQserverVersion(conn);
+    hard_exec(conn,
+        version >= 90000 ? "SET extra_float_digits = 3"
+                         : "SET extra_float_digits = 2",
+        "Cannot set extra_float_digits parameter");
+
     conn_ = conn;
 }
 
@@ -54,17 +72,6 @@ postgresql_session_backend::~postgresql_session_backend()
 {
     clean_up();
 }
-
-namespace // unnamed
-{
-
-// helper function for hardcoded queries
-void hard_exec(PGconn * conn, char const * query, char const * errMsg)
-{
-    postgresql_result(PQexec(conn, query)).check_for_errors(errMsg);
-}
-
-} // namespace unnamed
 
 void postgresql_session_backend::begin()
 {

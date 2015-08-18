@@ -6,8 +6,8 @@
 //
 
 #define SOCI_SOURCE
-#include "transaction.h"
-#include "error.h"
+#include "soci/transaction.h"
+#include "soci/error.h"
 
 using namespace soci;
 

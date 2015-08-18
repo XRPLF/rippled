@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "connection-parameters.h"
-#include "soci-backend.h"
-#include "backend-loader.h"
+#include "soci/connection-parameters.h"
+#include "soci/soci-backend.h"
+#include "soci/backend-loader.h"
 
 using namespace soci;
 
