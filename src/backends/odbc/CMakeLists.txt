@@ -10,9 +10,6 @@
 ###############################################################################
 soci_backend(ODBC
   DEPENDS ODBC
-  HEADERS soci-odbc.h utility.h
   DESCRIPTION "SOCI backend for ODBC"
   AUTHORS "Maciej Sobczak, Stephen Hutton, David Courtney"
   MAINTAINERS "Vadim Zeitlin, Mateusz Loskot, Maciej Sobczak")
-
-add_subdirectory(test)

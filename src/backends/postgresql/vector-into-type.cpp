@@ -6,11 +6,11 @@
 //
 
 #define SOCI_POSTGRESQL_SOURCE
-#include <soci-platform.h>
-#include "soci-postgresql.h"
+#include "soci/soci-platform.h"
+#include "soci/postgresql/soci-postgresql.h"
+#include "soci-cstrtod.h"
 #include "common.h"
 #include <libpq/libpq-fs.h> // libpq
-#include <cassert>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -131,7 +131,7 @@ void postgresql_vector_into_type_backend::post_fetch(bool gotData, indicator * i
                 break;
             case x_double:
                 {
-                    double const val = string_to_double(buf);
+                    double const val = cstring_to_double(buf);
                     set_invector_(data_, i, val);
                 }
                 break;
@@ -170,8 +170,6 @@ void resizevector_(void * p, std::size_t sz)
 
 void postgresql_vector_into_type_backend::resize(std::size_t sz)
 {
-    assert(sz < 10u*std::numeric_limits<unsigned short>::max()); // Not a strong constraint, for debugging only. Notice my fix is even worse
-
     switch (type_)
     {
         // simple cases

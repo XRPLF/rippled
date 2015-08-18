@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "backend-loader.h"
-#include "error.h"
-#include <cassert>
+#include "soci/soci-platform.h"
+#include "soci/backend-loader.h"
+#include "soci/error.h"
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -42,7 +42,11 @@ typedef HMODULE soci_handler_t;
 #define DLSYM(x, y) GetProcAddress(x, y)
 
 #ifdef SOCI_ABI_VERSION
-#define LIBNAME(x) (SOCI_LIB_PREFIX + x + "_" SOCI_ABI_VERSION SOCI_LIB_SUFFIX)
+  #ifndef NDEBUG
+    #define LIBNAME(x) (SOCI_LIB_PREFIX + x + "_" SOCI_ABI_VERSION SOCI_DEBUG_POSTFIX SOCI_LIB_SUFFIX)
+  #else
+    #define LIBNAME(x) (SOCI_LIB_PREFIX + x + "_" SOCI_ABI_VERSION SOCI_LIB_SUFFIX)
+  #endif
 #else
 #define LIBNAME(x) (SOCI_LIB_PREFIX + x + SOCI_LIB_SUFFIX)
 #endif // SOCI_ABI_VERSION
@@ -243,7 +247,7 @@ void do_register_backend(std::string const & name, std::string const & shared_ob
     // unload the existing handler if it's already loaded
 
     do_unload(name);
-    
+
     backend_factory const* f = entry();
 
     info new_entry;
@@ -274,8 +278,6 @@ backend_factory const& dynamic_backends::get(std::string const& name)
 
     i = factories_.find(name);
 
-    assert(i != factories_.end());
-
     return *(i->second.factory_);
 }
 
@@ -300,7 +302,7 @@ SOCI_DECL void dynamic_backends::register_backend(
     // unload the existing handler if it's already loaded
 
     do_unload(name);
-    
+
     info new_entry;
     new_entry.factory_ = &factory;
 

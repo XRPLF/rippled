@@ -6,9 +6,10 @@
 //
 
 #define SOCI_FIREBIRD_SOURCE
-#include "soci-firebird.h"
-#include "common.h"
-#include <soci.h>
+#include "soci/firebird/soci-firebird.h"
+#include "soci-exchange-cast.h"
+#include "firebird/common.h"
+#include "soci/soci.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -70,46 +71,36 @@ void firebird_standard_into_type_backend::exchangeData()
     {
             // simple cases
         case x_char:
-            *reinterpret_cast<char*>(data_) = getTextParam(var)[0];
+            exchange_type_cast<x_char>(data_) = getTextParam(var)[0];
             break;
         case x_short:
-            {
-                short t = from_isc<short>(var);
-                *reinterpret_cast<short*>(data_) = t;
-            }
+            exchange_type_cast<x_short>(data_) = from_isc<short>(var);
             break;
         case x_integer:
-            {
-                int t = from_isc<int>(var);
-                *reinterpret_cast<int *>(data_) = t;
-            }
+            exchange_type_cast<x_integer>(data_) = from_isc<int>(var);
             break;
         case x_long_long:
-            {
-                long long t = from_isc<long long>(var);
-                *reinterpret_cast<long long *>(data_) = t;
-            }
+            exchange_type_cast<x_long_long>(data_) = from_isc<long long>(var);
             break;
         case x_double:
-            {
-                double t = from_isc<double>(var);
-                *reinterpret_cast<double*>(data_) = t;
-            }
+            exchange_type_cast<x_double>(data_) = from_isc<double>(var);
             break;
 
             // cases that require adjustments and buffer management
         case x_stdstring:
-            *(reinterpret_cast<std::string*>(data_)) = getTextParam(var);
+            exchange_type_cast<x_stdstring>(data_) = getTextParam(var);
             break;
         case x_stdtm:
-            tmDecode(var->sqltype,
-                     buf_, static_cast<std::tm*>(data_));
+            {
+                std::tm& t = exchange_type_cast<x_stdtm>(data_);
+                tmDecode(var->sqltype, buf_, &t);
 
-            // isc_decode_timestamp() used by tmDecode() incorrectly sets
-            // tm_isdst to 0 in the struct that it creates, see
-            // http://tracker.firebirdsql.org/browse/CORE-3877, work around it
-            // by pretending the DST is actually unknown.
-            static_cast<std::tm*>(data_)->tm_isdst = -1;
+                // isc_decode_timestamp() used by tmDecode() incorrectly sets
+                // tm_isdst to 0 in the struct that it creates, see
+                // http://tracker.firebirdsql.org/browse/CORE-3877, work around it
+                // by pretending the DST is actually unknown.
+                t.tm_isdst = -1;
+            }
             break;
 
             // cases that require special handling
@@ -140,7 +131,7 @@ void firebird_standard_into_type_backend::clean_up()
         delete [] buf_;
         buf_ = NULL;
     }
-    std::vector<void*>::iterator it = 
+    std::vector<void*>::iterator it =
         std::find(statement_.intos_.begin(), statement_.intos_.end(), this);
     if (it != statement_.intos_.end())
         statement_.intos_.erase(it);

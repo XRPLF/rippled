@@ -7,8 +7,8 @@
 //
 
 #define SOCI_MYSQL_SOURCE
-#include "soci-mysql.h"
-#include <connection-parameters.h>
+#include "soci/mysql/soci-mysql.h"
+#include "soci/connection-parameters.h"
 // std
 #include <cctype>
 #include <cerrno>
@@ -199,7 +199,7 @@ void parse_connect_string(const string & connectString,
                 throw soci_error(err);
             }
             *port = std::atoi(val.c_str());
-            if (port < 0)
+            if (*port < 0)
             {
                 throw soci_error(err);
             }
@@ -272,6 +272,18 @@ void parse_connect_string(const string & connectString,
 
 } // namespace anonymous
 
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuninitialized"
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 6)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
+
 mysql_session_backend::mysql_session_backend(
     connection_parameters const & parameters)
 {
@@ -320,7 +332,11 @@ mysql_session_backend::mysql_session_backend(
             db_p ? db.c_str() : NULL,
             port_p ? port : 0,
             unix_socket_p ? unix_socket.c_str() : NULL,
+#ifdef CLIENT_MULTI_RESULTS
             CLIENT_FOUND_ROWS | CLIENT_MULTI_RESULTS) == NULL)
+#else
+            CLIENT_FOUND_ROWS) == NULL)
+#endif
     {
         string errMsg = mysql_error(conn_);
         unsigned int errNum = mysql_errno(conn_);
@@ -328,6 +344,16 @@ mysql_session_backend::mysql_session_backend(
         throw mysql_soci_error(errMsg, errNum);
     }
 }
+
+#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 6)
+#pragma GCC diagnostic pop
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+
 
 mysql_session_backend::~mysql_session_backend()
 {
@@ -362,6 +388,14 @@ void mysql_session_backend::commit()
 void mysql_session_backend::rollback()
 {
     hard_exec(conn_, "ROLLBACK");
+}
+
+bool mysql_session_backend::get_last_insert_id(
+    session & /* s */, std::string const & /* table */, long & value)
+{
+    value = static_cast<long>(mysql_insert_id(conn_));
+
+    return true;
 }
 
 void mysql_session_backend::clean_up()

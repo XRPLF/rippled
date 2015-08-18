@@ -6,9 +6,9 @@
 //
 
 #define soci_ORACLE_SOURCE
-#include "soci-oracle.h"
+#include "soci/oracle/soci-oracle.h"
 #include "error.h"
-#include <soci-platform.h>
+#include "soci/soci-platform.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -73,7 +73,7 @@ void oracle_vector_use_type_backend::prepare_for_bind(
         break;
     case x_double:
         {
-            oracleType = SQLT_FLT;
+            oracleType = statement_.session_.get_double_sql_type();
             size = sizeof(double);
             std::vector<double> *vp = static_cast<std::vector<double> *>(data);
             std::vector<double> &v(*vp);

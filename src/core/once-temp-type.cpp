@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "once-temp-type.h"
-#include "ref-counted-statement.h"
-#include "session.h"
+#include "soci/once-temp-type.h"
+#include "soci/ref-counted-statement.h"
+#include "soci/session.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -43,11 +43,5 @@ once_temp_type::~once_temp_type() SOCI_ONCE_TEMP_TYPE_NOEXCEPT
 once_temp_type & once_temp_type::operator,(into_type_ptr const & i)
 {
     rcst_->exchange(i);
-    return *this;
-}
-
-once_temp_type & once_temp_type::operator,(use_type_ptr const & u)
-{
-    rcst_->exchange(u);
     return *this;
 }

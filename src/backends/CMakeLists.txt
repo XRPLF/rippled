@@ -8,7 +8,7 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 #
 ###############################################################################
-colormsg(_HIBLUE_ "Configuring SOCI database backends:")
+colormsg(_HIBLUE_ "Configuring SOCI backend libraries:")
 
 # First, we'll investigate what can be found from database engines
 foreach(dep ${SOCI_BACKENDS_DB_DEPENDENCIES})

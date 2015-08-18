@@ -6,8 +6,9 @@
 //
 
 #define SOCI_ODBC_SOURCE
-#include "soci-odbc.h"
-#include "session.h"
+#include "soci/soci-platform.h"
+#include "soci/odbc/soci-odbc.h"
+#include "soci/session.h"
 
 #include <cstdio>
 
@@ -33,8 +34,7 @@ odbc_session_backend::odbc_session_backend(
     rc = SQLSetEnvAttr(henv_, SQL_ATTR_ODBC_VERSION, (void*)SQL_OV_ODBC3, 0);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_ENV, henv_,
-                         "Setting ODBC version");
+        throw odbc_soci_error(SQL_HANDLE_ENV, henv_, "setting ODBC version 3");
     }
 
     // Allocate connection handle
@@ -42,7 +42,7 @@ odbc_session_backend::odbc_session_backend(
     if (is_odbc_error(rc))
     {
         throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                         "Allocating connection handle");
+                              "allocating connection handle");
     }
 
     SQLCHAR outConnString[1024];
@@ -74,20 +74,66 @@ odbc_session_backend::odbc_session_backend(
 
     std::string const & connectString = parameters.get_connect_string();
     rc = SQLDriverConnect(hdbc_, hwnd_for_prompt,
-                          (SQLCHAR *)connectString.c_str(),
+                          sqlchar_cast(connectString),
                           (SQLSMALLINT)connectString.size(),
                           outConnString, 1024, &strLength,
                           static_cast<SQLUSMALLINT>(completion));
 
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                         "Error Connecting to database");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "connecting to database");
     }
 
     connection_string_.assign((const char*)outConnString, strLength);
 
     reset_transaction();
+
+    configure_connection();
+}
+
+void odbc_session_backend::configure_connection()
+{
+    if ( get_database_product() == prod_postgresql )
+    {
+        // Increase the number of digits used for floating point values to
+        // ensure that the conversions to/from text round trip correctly, which
+        // is not the case with the default value of 0. Use the maximal
+        // supported value, which was 2 until 9.x and is 3 since it.
+
+        char product_ver[1024];
+        SQLSMALLINT len = sizeof(product_ver);
+        SQLRETURN rc = SQLGetInfo(hdbc_, SQL_DBMS_VER, product_ver, len, &len);
+        if (is_odbc_error(rc))
+        {
+            throw odbc_soci_error(SQL_HANDLE_DBC, henv_,
+                                  "getting PostgreSQL ODBC driver version");
+        }
+
+        // The returned string is of the form "##.##.#### ...", but we don't
+        // need to parse it fully, we just need the major version which,
+        // conveniently, comes first.
+        unsigned major_ver = 0;
+        if (std::sscanf(product_ver, "%u", &major_ver) != 1)
+        {
+            throw soci_error("DBMS version \"" + std::string(product_ver) +
+                             "\" in unrecognizable format.");
+        }
+
+        odbc_statement_backend st(*this);
+        st.alloc();
+
+        std::string const q(major_ver >= 9 ? "SET extra_float_digits = 3"
+                                           : "SET extra_float_digits = 2");
+        rc = SQLExecDirect(st.hstmt_, sqlchar_cast(q), static_cast<SQLINTEGER>(q.size()));
+
+        st.clean_up();
+
+        if (is_odbc_error(rc))
+        {
+            throw odbc_soci_error(SQL_HANDLE_DBC, henv_,
+                                  "setting extra_float_digits for PostgreSQL");
+        }
+    }
 }
 
 odbc_session_backend::~odbc_session_backend()
@@ -101,8 +147,7 @@ void odbc_session_backend::begin()
                     (SQLPOINTER)SQL_AUTOCOMMIT_OFF, 0 );
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                         "Begin Transaction");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "beginning transaction");
     }
 }
 
@@ -111,8 +156,7 @@ void odbc_session_backend::commit()
     SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc_, SQL_COMMIT);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                         "Committing");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "committing transaction");
     }
     reset_transaction();
 }
@@ -122,8 +166,7 @@ void odbc_session_backend::rollback()
     SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc_, SQL_ROLLBACK);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                         "Rolling back");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "rolling back transaction");
     }
     reset_transaction();
 }
@@ -216,8 +259,7 @@ void odbc_session_backend::reset_transaction()
                     (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0 );
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                            "Set Auto Commit");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "enabling auto commit");
     }
 }
 
@@ -227,22 +269,19 @@ void odbc_session_backend::clean_up()
     SQLRETURN rc = SQLDisconnect(hdbc_);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                            "SQLDisconnect");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "disconnecting");
     }
 
     rc = SQLFreeHandle(SQL_HANDLE_DBC, hdbc_);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_,
-                            "SQLFreeHandle DBC");
+        throw odbc_soci_error(SQL_HANDLE_DBC, hdbc_, "freeing connection");
     }
 
     rc = SQLFreeHandle(SQL_HANDLE_ENV, henv_);
     if (is_odbc_error(rc))
     {
-        throw odbc_soci_error(SQL_HANDLE_ENV, henv_,
-                            "SQLFreeHandle ENV");
+        throw odbc_soci_error(SQL_HANDLE_ENV, henv_, "freeing environment");
     }
 }
 
@@ -274,7 +313,7 @@ odbc_session_backend::get_database_product()
     if (is_odbc_error(rc))
     {
         throw odbc_soci_error(SQL_HANDLE_DBC, henv_,
-                            "SQLGetInfo(SQL_DBMS_NAME)");
+                              "getting ODBC driver name");
     }
 
     if (strcmp(product_name, "Firebird") == 0)

@@ -6,8 +6,8 @@
 //
 
 #define SOCI_SOURCE
-#include "into-type.h"
-#include "statement.h"
+#include "soci/into-type.h"
+#include "soci/statement.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -67,7 +67,6 @@ void vector_into_type::post_fetch(bool gotData, bool /* calledFromFetch */)
 {
     if (indVec_ != NULL && indVec_->empty() == false)
     {
-        assert(indVec_->empty() == false);
         backEnd_->post_fetch(gotData, &(*indVec_)[0]);
     }
     else

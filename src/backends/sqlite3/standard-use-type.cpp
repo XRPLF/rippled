@@ -5,10 +5,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "soci-sqlite3.h"
-#include <soci-platform.h>
-#include "rowid.h"
-#include "blob.h"
+#include "soci/soci-platform.h"
+#include "soci/sqlite3/soci-sqlite3.h"
+#include "soci/rowid.h"
+#include "soci/blob.h"
+#include "soci-dtocstr.h"
+#include "soci-exchange-cast.h"
 // std
 #include <cstdio>
 #include <cstdlib>
@@ -18,13 +20,15 @@
 #include <sstream>
 #include <string>
 
-#ifdef _MSC_VER
-#pragma warning(disable:4355 4996)
-#define snprintf _snprintf // TODO: use soci-platform.h
-#endif
-
 using namespace soci;
 using namespace soci::details;
+
+sqlite3_standard_use_type_backend::sqlite3_standard_use_type_backend(
+        sqlite3_statement_backend &st)
+    : statement_(st), data_(NULL), type_(x_integer), position_(-1)
+{
+}
+
 
 void sqlite3_standard_use_type_backend::bind_by_pos(int& position, void* data,
     exchange_type type, bool /*readOnly*/)
@@ -77,129 +81,99 @@ void sqlite3_standard_use_type_backend::pre_use(indicator const * ind)
         statement_.useData_[0].resize(position_);
     }
 
+    sqlite3_column &col = statement_.useData_[0][pos];
+
     if (ind != NULL && *ind == i_null)
     {
-        statement_.useData_[0][pos].isNull_ = true;
-        statement_.useData_[0][pos].data_ = "";
-        statement_.useData_[0][pos].blobBuf_ = 0;
-        statement_.useData_[0][pos].blobSize_ = 0;
+        col.isNull_ = true;
+        return;
     }
-    else
+
+    col.isNull_ = false;
+
+    // allocate and fill the buffer with text-formatted client data
+    switch (type_)
     {
-        // allocate and fill the buffer with text-formatted client data
-        switch (type_)
-        {
         case x_char:
-            {
-                buf_ = new char[2];
-                buf_[0] = *static_cast<char*>(data_);
-                buf_[1] = '\0';
-            }
+            col.type_ = dt_string;
+            col.buffer_.constData_ = &exchange_type_cast<x_char>(data_);
+            col.buffer_.size_ = 1;
             break;
+
         case x_stdstring:
-            {
-                std::string *s = static_cast<std::string *>(data_);
-                buf_ = new char[s->size() + 1];
-                std::strcpy(buf_, s->c_str());
-            }
+        {
+            const std::string &s = exchange_type_cast<x_stdstring>(data_);
+            col.type_ = dt_string;
+            col.buffer_.constData_ = s.c_str();
+            col.buffer_.size_ = s.size();
             break;
+        }
+
         case x_short:
-            {
-                std::size_t const bufSize
-                    = std::numeric_limits<short>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%d",
-                    static_cast<int>(*static_cast<short*>(data_)));
-            }
+            col.type_ = dt_integer;
+            col.int32_ = exchange_type_cast<x_short>(data_);
             break;
+
         case x_integer:
-            {
-                std::size_t const bufSize
-                    = std::numeric_limits<int>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%d",
-                    *static_cast<int*>(data_));
-            }
+            col.type_ = dt_integer;
+            col.int32_ = exchange_type_cast<x_integer>(data_);
             break;
+
         case x_long_long:
-            {
-                std::size_t const bufSize
-                    = std::numeric_limits<long long>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%" LL_FMT_FLAGS "d",
-                    *static_cast<long long *>(data_));
-            }
+            col.type_ = dt_long_long;
+            col.int64_ = exchange_type_cast<x_long_long>(data_);
             break;
+
         case x_unsigned_long_long:
-            {
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long long>::digits10 + 2;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%" LL_FMT_FLAGS "u",
-                    *static_cast<unsigned long long *>(data_));
-            }
+            col.type_ = dt_long_long;
+            col.int64_ = exchange_type_cast<x_unsigned_long_long>(data_);
             break;
+
         case x_double:
-            {
-                // no need to overengineer it (KISS)...
-
-                std::size_t const bufSize = 100;
-                buf_ = new char[bufSize];
-
-                snprintf(buf_, bufSize, "%.20g",
-                    *static_cast<double*>(data_));
-            }
+            col.type_ = dt_double;
+            col.double_ = exchange_type_cast<x_double>(data_);
             break;
+
         case x_stdtm:
-            {
-                std::size_t const bufSize = 20;
-                buf_ = new char[bufSize];
+        {
+            col.type_ = dt_date;
+            static const size_t bufSize = 20;
+            std::tm &t = exchange_type_cast<x_stdtm>(data_);
 
-                std::tm *t = static_cast<std::tm *>(data_);
-                snprintf(buf_, bufSize, "%d-%02d-%02d %02d:%02d:%02d",
-                    t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-                    t->tm_hour, t->tm_min, t->tm_sec);
-            }
+            col.buffer_.data_ = new char[bufSize];
+            col.buffer_.size_
+                = snprintf(
+                    col.buffer_.data_, bufSize, "%d-%02d-%02d %02d:%02d:%02d",
+                    t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+                    t.tm_hour, t.tm_min, t.tm_sec
+                );
             break;
+        }
+
         case x_rowid:
-            {
-                // RowID is internally identical to unsigned long
+        {
+            col.type_ = dt_long_long;
+            // RowID is internally identical to unsigned long
+            rowid *rid = static_cast<rowid *>(data_);
+            sqlite3_rowid_backend *rbe = static_cast<sqlite3_rowid_backend *>(rid->get_backend());
 
-                rowid *rid = static_cast<rowid *>(data_);
-                sqlite3_rowid_backend *rbe = 
-static_cast<sqlite3_rowid_backend *>(rid->get_backend());
-
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long>::digits10 + 2;
-                buf_ = new char[bufSize];
-
-                snprintf(buf_, bufSize, "%lu", rbe->value_);
-            }
+            col.int64_ = rbe->value_;
             break;
+        }
+
         case x_blob:
-            {
-                blob *b = static_cast<blob *>(data_);
-                sqlite3_blob_backend *bbe =
-                    static_cast<sqlite3_blob_backend *>(b->get_backend());
+        {
+            col.type_ = dt_blob;
+            blob *b = static_cast<blob *>(data_);
+            sqlite3_blob_backend *bbe = static_cast<sqlite3_blob_backend *>(b->get_backend());
 
-                std::size_t len = bbe->get_len();
-                buf_ = new char[len];
-                bbe->read(0, buf_, len);
-                statement_.useData_[0][pos].blobBuf_ = buf_;
-                statement_.useData_[0][pos].blobSize_ = len;
-            }
+            col.buffer_.constData_ = bbe->get_buffer();
+            col.buffer_.size_ = bbe->get_len();
             break;
+        }
+
         default:
             throw soci_error("Use element used with non-supported type.");
-        }
-
-        statement_.useData_[0][pos].isNull_ = false;
-        if (type_ != x_blob)
-        {
-            statement_.useData_[0][pos].blobBuf_ = 0;
-            statement_.useData_[0][pos].blobSize_ = 0;
-            statement_.useData_[0][pos].data_ = buf_;
-        }
     }
 }
 
@@ -225,9 +199,14 @@ void sqlite3_standard_use_type_backend::post_use(
 
 void sqlite3_standard_use_type_backend::clean_up()
 {
-    if (buf_ != NULL)
-    {
-        delete [] buf_;
-        buf_ = NULL;
-    }
+    if (type_ != x_stdtm)
+        return;
+
+    sqlite3_column &col = statement_.useData_[0][position_ - 1];
+
+    if (col.isNull_ || !col.buffer_.data_)
+        return;
+
+    delete[] col.buffer_.data_;
+    col.buffer_.data_ = NULL;
 }

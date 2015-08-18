@@ -5,7 +5,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "soci-sqlite3.h"
+#include "soci/sqlite3/soci-sqlite3.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)

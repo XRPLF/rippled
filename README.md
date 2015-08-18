@@ -6,7 +6,7 @@ Website: http://soci.sourceforge.net
 GitHub hosts SOCI source code repository, issues tracker and wiki:
 https://github.com/SOCI
 
-Downloads and mailing lists at 
+Downloads and mailing lists at
 http://sourceforge.net/projects/soci/
 
 Travis CI service at https://travis-ci.org/SOCI/soci
@@ -23,18 +23,18 @@ Requirements
 
 Core:
 * C++ compiler
-* Boost C++ Libraries (optional, headers only)
+* Boost C++ Libraries (optional, headers and Boost.DateTime)
 
 Backend specific client libraries for:
 * DB2
 * Firebird
 * MySQL
-* ODBC andwith specific database driver
+* ODBC with specific database driver
 * Oracle
 * PostgreSQL
 * SQLite 3
 
-See documentation at http://soci.sourceforge.net for details  
+See documentation at http://soci.sourceforge.net for details
 
 Brief History
 -------------

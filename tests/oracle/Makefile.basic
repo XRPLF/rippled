@@ -1,0 +1,13 @@
+COMPILER = g++
+CXXFLAGS = -Wall -pedantic -Wno-long-long
+INCLUDEDIRS = -I../../include -I../../include/private -I.. \
+	-I${ORACLE_HOME}/rdbms/public
+LIBDIRS = -L../../src/core -L../../src/backends/oracle -L${ORACLE_HOME}/lib
+LIBS = -lsoci_core -lsoci_oracle -ldl -lclntsh -locci -lnnz11
+
+test-oracle : test-oracle.cpp
+	${COMPILER} $? -o $@ ${INCLUDEDIRS} ${LIBDIRS} ${LIBS}
+
+
+clean :
+	rm -f test-oracle

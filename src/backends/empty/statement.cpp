@@ -6,7 +6,7 @@
 //
 
 #define SOCI_EMPTY_SOURCE
-#include "soci-empty.h"
+#include "soci/empty/soci-empty.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)
@@ -61,6 +61,12 @@ int empty_statement_backend::get_number_of_rows()
 {
     // ...
     return 1;
+}
+
+std::string empty_statement_backend::get_parameter_name(int /* index */) const
+{
+    // ...
+    return std::string();
 }
 
 std::string empty_statement_backend::rewrite_for_procedure_call(

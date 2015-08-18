@@ -6,7 +6,7 @@
 //
 
 #define SOCI_SOURCE
-#include "row.h"
+#include "soci/row.h"
 
 #include <cstddef>
 #include <cctype>
@@ -79,8 +79,7 @@ void row::clean_up()
 
 indicator row::get_indicator(std::size_t pos) const
 {
-    assert(indicators_.size() >= static_cast<std::size_t>(pos + 1));
-    return *indicators_[pos];
+    return *indicators_.at(pos);
 }
 
 indicator row::get_indicator(std::string const &name) const
@@ -90,8 +89,7 @@ indicator row::get_indicator(std::string const &name) const
 
 column_properties const & row::get_properties(std::size_t pos) const
 {
-    assert(columns_.size() >= pos + 1);
-    return columns_[pos];
+    return columns_.at(pos);
 }
 
 column_properties const & row::get_properties(std::string const &name) const

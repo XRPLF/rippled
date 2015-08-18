@@ -7,20 +7,15 @@
 //
 
 #define SOCI_MYSQL_SOURCE
-#include "soci-mysql.h"
+#include "soci/mysql/soci-mysql.h"
 #include "common.h"
-#include <soci-platform.h>
+#include "soci/soci-platform.h"
 #include <ciso646>
 #include <cstdlib>
-
-#ifdef _MSC_VER
-#pragma warning(disable:4355)
-#endif
 
 using namespace soci;
 using namespace soci::details;
 using namespace soci::details::mysql;
-
 
 void mysql_vector_into_type_backend::define_by_pos(
     int &position, void *data, exchange_type type)
@@ -79,7 +74,7 @@ void mysql_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 }
 
                 ind[i] = i_null;
-                
+
                 // no need to convert data if it is null, go to next row
                 continue;
             }

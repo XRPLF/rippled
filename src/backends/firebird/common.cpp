@@ -5,8 +5,9 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "common.h"
-#include <soci-backend.h>
+#include "soci/soci-platform.h"
+#include "firebird/common.h"
+#include "soci/soci-backend.h"
 #include <ibase.h> // FireBird
 #include <cstddef>
 #include <cstring>
@@ -90,44 +91,49 @@ void tmDecode(short type, void * src, std::tm * dst)
 void setTextParam(char const * s, std::size_t size, char * buf_,
     XSQLVAR * var)
 {
-    //std::cerr << "setTextParam: var->sqltype=" << var->sqltype << std::endl;
-    short sz = 0;
-    if (size < static_cast<std::size_t>(var->sqllen))
-    {
-        sz = static_cast<short>(size);
-    }
-    else
-    {
-        sz = var->sqllen;
-    }
+    int const sqltype = var->sqltype & ~1;
 
-    if ((var->sqltype & ~1) == SQL_VARYING)
+    if (sqltype == SQL_VARYING || sqltype == SQL_TEXT)
     {
-        std::memcpy(buf_, &sz, sizeof(short));
-        std::memcpy(buf_ + sizeof(short), s, sz);
-    }
-    else if ((var->sqltype & ~1) == SQL_TEXT)
-    {
-        std::memcpy(buf_, s, sz);
-        if (sz < var->sqllen)
+        if (size > static_cast<std::size_t>(var->sqllen))
         {
-            std::memset(buf_+sz, ' ', var->sqllen - sz);
+            std::ostringstream msg;
+            msg << "Value \"" << s << "\" is too long ("
+                << size << " bytes) to be stored in column of size "
+                << var->sqllen << " bytes";
+            throw soci_error(msg.str());
+        }
+
+        short const sz = static_cast<short>(size);
+
+        if (sqltype == SQL_VARYING)
+        {
+            std::memcpy(buf_, &sz, sizeof(short));
+            std::memcpy(buf_ + sizeof(short), s, sz);
+        }
+        else // sqltype == SQL_TEXT
+        {
+            std::memcpy(buf_, s, sz);
+            if (sz < var->sqllen)
+            {
+                std::memset(buf_+sz, ' ', var->sqllen - sz);
+            }
         }
     }
-    else if ((var->sqltype & ~1) == SQL_SHORT)
+    else if (sqltype == SQL_SHORT)
     {
         parse_decimal<short, unsigned short>(buf_, var, s);
     }
-    else if ((var->sqltype & ~1) == SQL_LONG)
+    else if (sqltype == SQL_LONG)
     {
         parse_decimal<int, unsigned int>(buf_, var, s);
     }
-    else if ((var->sqltype & ~1) == SQL_INT64)
+    else if (sqltype == SQL_INT64)
     {
         parse_decimal<long long, unsigned long long>(buf_, var, s);
     }
-    else if ((var->sqltype & ~1) == SQL_TIMESTAMP
-            || (var->sqltype & ~1) == SQL_TYPE_DATE)
+    else if (sqltype == SQL_TIMESTAMP
+            || sqltype == SQL_TYPE_DATE)
     {
         unsigned short year, month, day, hour, min, sec;
         if (std::sscanf(s, "%hu-%hu-%hu %hu:%hu:%hu",
@@ -154,7 +160,7 @@ void setTextParam(char const * s, std::size_t size, char * buf_,
         std::memcpy(buf_, &t, sizeof(t));
         tmEncode(var->sqltype, &t, buf_);
     }
-    else if ((var->sqltype & ~1) == SQL_TYPE_TIME)
+    else if (sqltype == SQL_TYPE_TIME)
     {
         unsigned short hour, min, sec;
         if (std::sscanf(s, "%hu:%hu:%hu", &hour, &min, &sec) != 3)

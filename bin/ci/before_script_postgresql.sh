@@ -5,5 +5,5 @@
 #
 source ${TRAVIS_BUILD_DIR}/bin/ci/common.sh
 
-psql --version  
+psql --version
 psql -c 'create database soci_test;' -U postgres

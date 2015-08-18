@@ -6,9 +6,9 @@
 //
 
 #define SOCI_SOURCE
-#include "prepare-temp-type.h"
-#include "ref-counted-prepare-info.h"
-#include "session.h"
+#include "soci/prepare-temp-type.h"
+#include "soci/ref-counted-prepare-info.h"
+#include "soci/session.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -43,11 +43,5 @@ prepare_temp_type::~prepare_temp_type()
 prepare_temp_type & prepare_temp_type::operator,(into_type_ptr const & i)
 {
     rcpi_->exchange(i);
-    return *this;
-}
-
-prepare_temp_type & prepare_temp_type::operator,(use_type_ptr const & u)
-{
-    rcpi_->exchange(u);
     return *this;
 }
