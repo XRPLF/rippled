@@ -63,11 +63,20 @@ public:
         {
         }
 
-        LedgerIndex  minRange;    // The lowest ledger in the range we're checking
-        LedgerIndex  maxRange;    // The highest ledger in the range we're checking
-        bool         checkNodes;  // Check all state/transaction nodes
-        bool         fixTxns;     // Rewrite SQL databases
-        int          failures;    // Number of errors encountered since last success
+        // The lowest ledger in the range we're checking.
+        LedgerIndex  minRange;
+
+        // The highest ledger in the range we're checking
+        LedgerIndex  maxRange;
+
+        // Check all state/transaction nodes
+        bool checkNodes;
+
+        // Rewrite SQL databases
+        bool fixTxns;
+
+        // Number of errors encountered since last success
+        int failures;
     };
 
     using SharedState = beast::SharedData <State>;
@@ -174,7 +183,7 @@ public:
                     ledger numbers to clean. If unspecified, clean all ledgers.
 
                 "full"
-                    A boolean. When set to true, means clean everything possible.
+                    A boolean. When true, means clean everything possible.
 
                 "fix_txns"
                     A boolean value indicating whether or not to fix the
@@ -184,7 +193,7 @@ public:
                     A boolean, when set to true means check the nodes.
 
                 "stop"
-                    A boolean, when set to true informs the cleaner to gracefully
+                    A boolean, when true informs the cleaner to gracefully
                     stop its current activities if any cleaning is taking place.
             */
 
@@ -261,7 +270,8 @@ public:
             m_journal.warning <<
                 "Node missing from ledger " << ledger->info().seq;
             getApp().getInboundLedgers().acquire (
-                ledger->getHash(), ledger->info().seq, InboundLedger::fcGENERIC);
+                ledger->getHash(), ledger->info().seq,
+                InboundLedger::fcGENERIC);
         }
         return hash ? *hash : zero; // kludge
     }
@@ -301,7 +311,8 @@ public:
 
         if(! getApp().getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
-            m_journal.debug << "ledger " << ledgerIndex << " had wrong entry in history";
+            m_journal.debug << "ledger " << ledgerIndex
+                            << " had wrong entry in history";
             doTxns = true;
         }
 
@@ -349,8 +360,9 @@ public:
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
             if (ledgerHash.isZero())
             {
-                // No, Try to get another ledger that might have the hash we need
-                // Compute the index and hash of a ledger that will have the hash we need
+                // No. Try to get another ledger that might have the hash we
+                // need: compute the index and hash of a ledger that will have
+                // the hash we need.
                 LedgerIndex refIndex = getCandidateLedger (ledgerIndex);
                 LedgerHash refHash = getLedgerHash (referenceLedger, refIndex);
 
@@ -358,12 +370,14 @@ public:
                 assert (nonzero);
                 if (nonzero)
                 {
-                    // We found the hash and sequence of a better reference ledger
+                    // We found the hash and sequence of a better reference
+                    // ledger.
                     referenceLedger =
                         getApp().getInboundLedgers().acquire(
                             refHash, refIndex, InboundLedger::fcGENERIC);
                     if (referenceLedger)
-                        ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
+                        ledgerHash = getLedgerHash(
+                            referenceLedger, ledgerIndex);
                 }
             }
         }
@@ -411,7 +425,8 @@ public:
             bool fail = false;
             if (ledgerHash.isZero())
             {
-                m_journal.info << "Unable to get hash for ledger " << ledgerIndex;
+                m_journal.info << "Unable to get hash for ledger "
+                               << ledgerIndex;
                 fail = true;
             }
             else if (!doLedger(ledgerIndex, ledgerHash, doNodes, doTxns))

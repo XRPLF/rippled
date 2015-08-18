@@ -55,7 +55,7 @@ public:
         std::shared_ptr<ReadView const> const& ledger,
         std::shared_ptr<STTx const> const&,
         std::shared_ptr<STObject const> const&);
-    AcceptedLedgerTx (std::shared_ptr<ReadView const> const& ledger, STTx::ref, TER result);
+    AcceptedLedgerTx (std::shared_ptr<ReadView const> const&, STTx::ref, TER);
 
     std::shared_ptr <STTx const> const& getTxn () const
     {

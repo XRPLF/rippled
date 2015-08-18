@@ -37,7 +37,8 @@ public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
     using pointer = std::shared_ptr <InboundLedger>;
-    using PeerDataPairType = std::pair < std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> >;
+    using PeerDataPairType = std::pair<std::weak_ptr<Peer>,
+                                       std::shared_ptr<protocol::TMLedgerData>>;
 
     // These are the reasons we might acquire a ledger
     enum fcReason
@@ -50,7 +51,8 @@ public:
     };
 
 public:
-    InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock);
+    InboundLedger(
+        uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type&);
 
     ~InboundLedger ();
 
@@ -97,12 +99,14 @@ public:
 
     bool gotData (std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>);
 
-    using neededHash_t = std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using neededHash_t =
+        std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     std::vector<neededHash_t> getNeededHashes ();
 
     // VFALCO TODO Replace uint256 with something semanticallyh meaningful
-    void filterNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
+    void filterNodes (
+        std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
         int max, bool aggressive);
 
     /** Return a Json::objectValue. */
@@ -127,7 +131,8 @@ private:
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
     bool takeHeader (std::string const& data);
-    bool takeTxNode (const std::vector<SHAMapNodeID>& IDs, const std::vector<Blob>& data,
+    bool takeTxNode (const std::vector<SHAMapNodeID>& IDs,
+                     const std::vector<Blob>& data,
                      SHAMapAddNode&);
     bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
 
@@ -135,7 +140,8 @@ private:
     //             Don't use acronyms, but if we are going to use them at least
     //             capitalize them correctly.
     //
-    bool takeAsNode (const std::vector<SHAMapNodeID>& IDs, const std::vector<Blob>& data,
+    bool takeAsNode (const std::vector<SHAMapNodeID>& IDs,
+                     const std::vector<Blob>& data,
                      SHAMapAddNode&);
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
 

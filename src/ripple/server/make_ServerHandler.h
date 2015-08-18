@@ -32,8 +32,8 @@ namespace ripple {
 class NetworkOPs;
 
 std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent, boost::asio::io_service& io_service,
-    JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+make_ServerHandler (beast::Stoppable& parent, boost::asio::io_service&,
+    JobQueue&, NetworkOPs&, Resource::Manager&,
         CollectorManager& cm);
 
 } // ripple

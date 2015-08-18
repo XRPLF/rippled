@@ -115,7 +115,8 @@ public:
         return mTime <= cutoff;
     }
 
-    bool changePosition (uint256 const& newPosition, std::uint32_t newCloseTime);
+    bool changePosition (
+        uint256 const& newPosition, std::uint32_t newCloseTime);
     void bowOut ();
     Json::Value getJson () const;
 

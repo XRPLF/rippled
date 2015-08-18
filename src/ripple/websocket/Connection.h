@@ -259,7 +259,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (Json::Value& jvRequest)
     Json::Value jvResult (Json::objectValue);
 
     auto required = RPC::roleRequired (jvRequest[jss::command].asString());
-    Role const role = requestRole (required, m_port, jvRequest, m_remoteAddress);
+    auto role = requestRole (required, m_port, jvRequest, m_remoteAddress);
 
     if (Role::FORBID == role)
     {
@@ -339,9 +339,10 @@ void ConnectionImpl <WebSocket>::disconnect ()
     connection_ptr ptr = m_connection.lock ();
 
     if (ptr)
-        this->m_io_service.dispatch (WebSocket::getStrand (*ptr).wrap (std::bind (
-            &ConnectionImpl <WebSocket>::handle_disconnect,
-                m_connection)));
+        this->m_io_service.dispatch (
+            WebSocket::getStrand (*ptr).wrap (
+                std::bind(&ConnectionImpl <WebSocket>::handle_disconnect,
+                          m_connection)));
 }
 
 // static

@@ -84,8 +84,9 @@ public:
 };
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers (InboundLedgers::clock_type& clock, beast::Stoppable& parent,
-                     beast::insight::Collector::ptr const& collector);
+make_InboundLedgers (
+    InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector);
 
 
 } // ripple

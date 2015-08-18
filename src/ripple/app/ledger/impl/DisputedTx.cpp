@@ -58,8 +58,8 @@ void DisputedTx::setVote (NodeID const& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && res.first->second)
     {
-        WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer
-                                            << " now votes NO on " << mTransactionID;
+        WriteLog (lsDEBUG, LedgerConsensus)
+                << "Peer " << peer << " now votes NO on " << mTransactionID;
         ++mNays;
         --mYays;
         res.first->second = false;
