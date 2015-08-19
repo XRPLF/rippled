@@ -527,6 +527,81 @@ public:
         env.require (owners (alice, 0));
     }
 
+    // We want to always leave an account signable.  Make sure the that we
+    // disallow removing the last way a transaction may be signed.
+    void test_keyDisable()
+    {
+        using namespace jtx;
+        Env env(*this);
+        Account const alice {"alice", KeyType::ed25519};
+        env.fund(XRP(1000), alice);
+
+        // There are three negative tests we need to make:
+        //  M0. A lone master key cannot be disabled.
+        //  R0. A lone regular key cannot be removed.
+        //  L0. A lone signer list cannot be removed.
+        //
+        // Additionally, there are 6 positive tests we need to make:
+        //  M1. The master key can be disabled if there's a regular key.
+        //  M2. The master key can be disabled if there's a signer list.
+        //
+        //  R1. The regular key can be removed if there's a signer list.
+        //  R2. The regular key can be removed if the master key is enabled.
+        //
+        //  L1. The signer list can be removed if the master key is enabled.
+        //  L2. The signer list can be removed if there's a regular key.
+
+        // Master key tests.
+        // M0: A lone master key cannot be disabled.
+        env(fset (alice, asfDisableMaster),
+            sig(alice), ter(tecNO_ALTERNATIVE_KEY));
+
+        // Add a regular key.
+        Account const alie {"alie", KeyType::ed25519};
+        env(regkey (alice, alie));
+
+        // M1: The master key can be disabled if there's a regular key.
+        env(fset (alice, asfDisableMaster), sig(alice));
+
+        // R0: A lone regular key cannot be removed.
+        env(regkey (alice, disabled), sig(alie), ter(tecNO_ALTERNATIVE_KEY));
+
+        // Add a signer list.
+        env(signers(alice, 1, {{bogie, 1}}), sig (alie));
+
+        // R1: The regular key can be removed if there's a signer list.
+        env(regkey (alice, disabled), sig(alie));
+
+        // L0; A lone signer list cannot be removed.
+        auto const baseFee = env.config.FEE_DEFAULT;
+        env(signers(alice, jtx::none), msig(bogie),
+            fee(2 * baseFee), ter(tecNO_ALTERNATIVE_KEY));
+
+        // Enable the master key.
+        env(fclear (alice, asfDisableMaster), msig(bogie), fee(2 * baseFee));
+
+        // L1: The signer list can be removed if the master key is enabled.
+        env(signers(alice, jtx::none), msig(bogie), fee(2 * baseFee));
+
+        // Add a signer list.
+        env(signers(alice, 1, {{bogie, 1}}), sig (alice));
+
+        // M2: The master key can be disabled if there's a signer list.
+        env(fset (alice, asfDisableMaster), sig(alice));
+
+        // Add a regular key.
+        env(regkey (alice, alie), msig(bogie), fee(2 * baseFee));
+
+        // L2: The signer list can be removed if there's a regular key.
+        env(signers(alice, jtx::none), sig(alie));
+
+        // Enable the master key.
+        env(fclear (alice, asfDisableMaster), sig(alie));
+
+        // R2: The regular key can be removed if the master key is enabled.
+        env(regkey (alice, disabled), sig(alie));
+    }
+
     // See if every kind of transaction can be successfully multi-signed.
     void test_txTypes()
     {
@@ -621,6 +696,7 @@ public:
         test_masterSigners();
         test_regularSigners();
         test_heterogeneousSigners();
+        test_keyDisable();
         test_txTypes();
     }
 };

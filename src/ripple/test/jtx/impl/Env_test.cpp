@@ -332,7 +332,7 @@ public:
         env.require(nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), sig("alice"));
         env.require(flags("alice", asfDisableMaster));
-        env(regkey("alice", disabled),                          ter(tecMASTER_DISABLED));
+        env(regkey("alice", disabled),                          ter(tecNO_ALTERNATIVE_KEY));
         env(noop("alice"));
         env(noop("alice"), sig("alice"),                        ter(tefMASTER_DISABLED));
         env(noop("alice"), sig("eric"));
