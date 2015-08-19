@@ -425,12 +425,14 @@ Json::Value PathRequest::doClose (Json::Value const&)
 {
     m_journal.debug << iIdentifier << " closed";
     ScopedLockType sl (mLock);
+    jvStatus[jss::closed] = true;
     return jvStatus;
 }
 
 Json::Value PathRequest::doStatus (Json::Value const&)
 {
     ScopedLockType sl (mLock);
+    jvStatus[jss::status] = jss::success;
     return jvStatus;
 }
 
