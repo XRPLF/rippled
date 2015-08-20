@@ -267,6 +267,7 @@ def config_base(env):
         ,'DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER'
         ,{'HAVE_USLEEP' : '1'}
         ,{'SOCI_CXX_C11' : '1'}
+        ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
         ])
 
     try:
@@ -288,7 +289,7 @@ def config_base(env):
                 os.path.join(OPENSSL_ROOT, 'include'),
                 ])
             env.Append(LIBPATH=[
-                os.path.join(OPENSSL_ROOT, 'lib', 'VC', 'static'),
+                os.path.join(OPENSSL_ROOT, 'lib'),
                 ])
         except KeyError:
             pass
@@ -487,8 +488,8 @@ def config_env(toolchain, variant, env):
             'WIN32_CONSOLE',
             ])
         env.Append(LIBS=[
-            'ssleay32MT.lib',
-            'libeay32MT.lib',
+            'ssleay32.lib',
+            'libeay32.lib',
             'Shlwapi.lib',
             'kernel32.lib',
             'user32.lib',
@@ -933,7 +934,7 @@ for key, value in aliases.iteritems():
     env.Alias(key, value)
 
 vcxproj = base.VSProject(
-    os.path.join('Builds', 'VisualStudio2013', 'RippleD'),
+    os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
     VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
