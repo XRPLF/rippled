@@ -25,4 +25,11 @@
 #define USE_SCALAR_8X32
 #define USE_SCALAR_INV_BUILTIN
 
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#pragma warning ( push )
+#pragma warning ( disable: 4319 )
+#endif
 #include <secp256k1/src/secp256k1.c>
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#pragma warning ( pop )
+#endif
