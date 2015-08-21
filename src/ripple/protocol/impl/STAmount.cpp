@@ -248,10 +248,70 @@ STAmount::STAmount (Issue const& issue,
 {
 }
 
+// Legacy support for new-style amounts
+STAmount::STAmount (IOUAmount const& amount, Issue const& issue)
+    : mIssue (issue)
+    , mOffset (amount.exponent ())
+    , mIsNative (false)
+    , mIsNegative (amount < zero)
+{
+    if (mIsNegative)
+        mValue = static_cast<std::uint64_t> (-amount.mantissa ());
+    else
+        mValue = static_cast<std::uint64_t> (amount.mantissa ());
+
+    canonicalize ();
+}
+
+STAmount::STAmount (XRPAmount const& amount)
+    : mOffset (0)
+    , mIsNative (true)
+    , mIsNegative (amount < zero)
+{
+    if (mIsNegative)
+        mValue = static_cast<std::uint64_t> (-amount.drops ());
+    else
+        mValue = static_cast<std::uint64_t> (amount.drops ());
+
+    canonicalize ();
+}
+
 std::unique_ptr<STAmount>
 STAmount::construct (SerialIter& sit, SField const& name)
 {
     return std::make_unique<STAmount>(sit, name);
+}
+
+//------------------------------------------------------------------------------
+//
+// Conversion
+//
+//------------------------------------------------------------------------------
+XRPAmount STAmount::xrp () const
+{
+    if (!mIsNative)
+        throw std::logic_error ("Cannot return non-native STAmount as XRPAmount");
+
+    auto drops = static_cast<std::int64_t> (mValue);
+
+    if (mIsNegative)
+        drops = -drops;
+
+    return { drops };
+}
+
+IOUAmount STAmount::iou () const
+{
+    if (mIsNative)
+        throw std::logic_error ("Cannot return native STAmount as IOUAmount");
+
+    auto mantissa = static_cast<std::int64_t> (mValue);
+    auto exponent = mOffset;
+
+    if (mIsNegative)
+        mantissa = -mantissa;
+
+    return { mantissa, exponent };
 }
 
 //------------------------------------------------------------------------------
