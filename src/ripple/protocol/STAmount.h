@@ -24,6 +24,8 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/Issue.h>
+#include <ripple/protocol/IOUAmount.h>
+#include <ripple/protocol/XRPAmount.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
@@ -113,6 +115,10 @@ public:
     STAmount (Issue const& issue, std::int64_t mantissa, int exponent = 0);
 
     STAmount (Issue const& issue, int mantissa, int exponent = 0);
+
+    // Legacy support for new-style amounts
+    STAmount (IOUAmount const& amount, Issue const& issue);
+    STAmount (XRPAmount const& amount);
 
     STBase*
     copy (std::size_t n, void* buf) const override
@@ -271,6 +277,9 @@ public:
     {
         return (mValue == 0) && mIsNative;
     }
+
+    XRPAmount xrp () const;
+    IOUAmount iou () const;
 };
 
 //------------------------------------------------------------------------------

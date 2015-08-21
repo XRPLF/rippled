@@ -567,6 +567,70 @@ public:
 #endif
     }
 
+    void
+    testConvertXRP ()
+    {
+        testcase ("STAmount to XRPAmount conversions");
+
+        Issue const usd { Currency (0x5553440000000000), AccountID (0x4985601) };
+        Issue const xrp { xrpIssue () };
+
+        for (std::uint64_t drops = 100000000000000000; drops != 1; drops = drops / 10)
+        {
+            auto const t = amountFromString (xrp, std::to_string (drops));
+            auto const s = t.xrp ();
+            expect (s.drops() == drops);
+            expect (t == STAmount (XRPAmount (drops)));
+            expect (s == XRPAmount (drops));
+        }
+
+        try
+        {
+            auto const t = amountFromString (usd, "136500");
+            fail (to_string (t.xrp ()));
+        }
+        catch (std::logic_error const&)
+        {
+            pass ();
+        }
+        catch (...)
+        {
+            fail ("wrong exception");
+        }
+    }
+
+    void
+    testConvertIOU ()
+    {
+        testcase ("STAmount to IOUAmount conversions");
+
+        Issue const usd { Currency (0x5553440000000000), AccountID (0x4985601) };
+        Issue const xrp { xrpIssue () };
+
+        for (std::uint64_t dollars = 10000000000; dollars != 1; dollars = dollars / 10)
+        {
+            auto const t = amountFromString (usd, std::to_string (dollars));
+            auto const s = t.iou ();
+            expect (t == STAmount (s, usd));
+            expect (s.mantissa () == t.mantissa ());
+            expect (s.exponent () == t.exponent ());
+        }
+
+        try
+        {
+            auto const t = amountFromString (xrp, "136500");
+            fail (to_string (t.iou ()));
+        }
+        catch (std::logic_error const&)
+        {
+            pass ();
+        }
+        catch (...)
+        {
+            fail ("wrong exception");
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     void run ()
@@ -577,6 +641,8 @@ public:
         testArithmetic ();
         testUnderflow ();
         testRounding ();
+        testConvertXRP ();
+        testConvertIOU ();
     }
 };
 

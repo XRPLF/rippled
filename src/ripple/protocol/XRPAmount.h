@@ -25,6 +25,7 @@
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
+#include <beast/cxx14/type_traits.h>
 
 using beast::zero;
 
@@ -35,82 +36,94 @@ class XRPAmount
     , private boost::additive <XRPAmount>
 {
 private:
-    std::int64_t value_;
+    std::int64_t drops_;
 
 public:
-    /** @{ */
     XRPAmount () = default;
     XRPAmount (XRPAmount const& other) = default;
     XRPAmount& operator= (XRPAmount const& other) = default;
 
     XRPAmount (beast::Zero)
-        : value_ (0)
+        : drops_ (0)
     {
     }
 
     XRPAmount&
     operator= (beast::Zero)
     {
-        value_ = 0;
+        drops_ = 0;
         return *this;
     }
 
-    XRPAmount (std::int64_t value)
-        : value_ (value)
+    template <class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
+    XRPAmount (Integer drops)
+        : drops_ (static_cast<std::int64_t> (drops))
     {
     }
 
+    template <class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
     XRPAmount&
-    operator= (std::int64_t v)
+    operator= (Integer drops)
     {
-        value_ = v;
+        drops_ = static_cast<std::int64_t> (drops);
         return *this;
     }
 
     XRPAmount&
     operator+= (XRPAmount const& other)
     {
-        value_ += other.value_;
+        drops_ += other.drops_;
         return *this;
     }
 
     XRPAmount&
     operator-= (XRPAmount const& other)
     {
-        value_ -= other.value_;
+        drops_ -= other.drops_;
         return *this;
     }
 
     XRPAmount
     operator- () const
     {
-        return { -value_ };
+        return { -drops_ };
     }
 
     bool
     operator==(XRPAmount const& other) const
     {
-        return value_ == other.value_;
+        return drops_ == other.drops_;
     }
 
     bool
     operator<(XRPAmount const& other) const
     {
-        return value_ < other.value_;
+        return drops_ < other.drops_;
     }
 
     /** Returns true if the amount is not zero */
     explicit
     operator bool() const noexcept
     {
-        return value_ != 0;
+        return drops_ != 0;
     }
 
     /** Return the sign of the amount */
     int
     signum() const noexcept
     {
-        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+        return (drops_ < 0) ? -1 : (drops_ ? 1 : 0);
+    }
+
+    /** Returns the number of drops */
+    std::int64_t
+    drops () const
+    {
+        return drops_;
     }
 };
 
@@ -118,7 +131,7 @@ public:
 inline
 bool isLegalAmount (XRPAmount const& amount)
 {
-    return amount <= SYSTEM_CURRENCY_START;
+    return amount.drops () <= SYSTEM_CURRENCY_START;
 }
 
 }
