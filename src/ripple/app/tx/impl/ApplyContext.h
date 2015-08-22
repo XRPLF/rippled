@@ -23,6 +23,7 @@
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/XRPAmount.h>
 #include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <utility>
@@ -80,9 +81,9 @@ public:
     apply (TER);
 
     void
-    destroyXRP (std::uint64_t feeDrops)
+    destroyXRP (XRPAmount const& fee)
     {
-        view_->rawDestroyXRP(feeDrops);
+        view_->rawDestroyXRP(fee);
     }
 
 private:

@@ -38,10 +38,11 @@ Change::preflight (PreflightContext const& ctx)
         return temBAD_SRC_ACCOUNT;
     }
 
-    auto const fee = ctx.tx.getTransactionFee ();
+    // No point in going any further if the transaction fee is malformed.
+    auto const fee = ctx.tx.getFieldAmount (sfFee);
     if (!fee.native () || fee != beast::zero)
     {
-        JLOG(ctx.j.warning) << "Change: Non-zero fee";
+        JLOG(ctx.j.warning) << "Change: invalid fee";
         return temBAD_FEE;
     }
 

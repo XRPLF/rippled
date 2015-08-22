@@ -23,9 +23,11 @@
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/XRPAmount.h>
 #include <beast/hash/uhash.h>
 #include <boost/optional.hpp>
 #include <cassert>
@@ -56,10 +58,10 @@ struct Fees
         The reserve is calculated as the reserve base plus
         the reserve increment times the number of increments.
     */
-    std::uint64_t
+    XRPAmount
     accountReserve (std::size_t ownerCount) const
     {
-        return reserve + ownerCount * increment;
+        return { reserve + ownerCount * increment };
     }
 };
 
@@ -85,7 +87,8 @@ struct LedgerInfo
     uint256 txHash = zero;
     uint256 accountHash = zero;
     uint256 parentHash = zero;
-    std::uint64_t drops = 0;
+
+    XRPAmount drops = zero;
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.

@@ -200,9 +200,9 @@ public:
         SLE> const& sle) override;
 
     void
-    rawDestroyXRP (std::uint64_t feeDrops) override
+    rawDestroyXRP (XRPAmount const& fee) override
     {
-        info_.drops -= feeDrops;
+        info_.drops -= fee;
     }
 
     //

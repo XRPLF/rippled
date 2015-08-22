@@ -119,8 +119,8 @@ SetTrust::doApply ()
     // to fund accounts in a way where there's no incentive to trick them
     // into creating an account you have no intention of using.
 
-    STAmount const reserveCreate ((uOwnerCount < 2)
-        ? 0
+    XRPAmount const reserveCreate ((uOwnerCount < 2)
+        ? XRPAmount (zero)
         : view().fees().accountReserve(uOwnerCount + 1));
 
     std::uint32_t uQualityIn (bQualityIn ? tx().getFieldU32 (sfQualityIn) : 0);

@@ -183,23 +183,22 @@ SusPayCreate::doApply()
             return tecNO_PERMISSION;
     }
 
-    XRPAmount const amount =
-        STAmount(ctx_.tx[sfAmount]).mantissa();
-
     auto const account = ctx_.tx[sfAccount];
-
     auto const sle = ctx_.view().peek(
         keylet::account(account));
 
-    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) <
-        XRPAmount(ctx_.view().fees().accountReserve(
-            (*sle)[sfOwnerCount] + 1)))
-        return tecINSUFFICIENT_RESERVE;
+    // Check reserve and funds availability
+    {
+        auto const balance = STAmount((*sle)[sfBalance]).xrp();
+        auto const reserve = ctx_.view().fees().accountReserve(
+            (*sle)[sfOwnerCount] + 1);
 
-    if (XRPAmount(STAmount((*sle)[sfBalance]).mantissa()) <
-        amount + XRPAmount(ctx_.view().fees().accountReserve(
-            (*sle)[sfOwnerCount] + 1)))
-        return tecUNFUNDED;
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+
+        if (balance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
+            return tecUNFUNDED;
+    }
 
     // Check destination account
     {

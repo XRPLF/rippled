@@ -23,6 +23,7 @@
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/RawStateTable.h>
+#include <ripple/protocol/XRPAmount.h>
 
 namespace ripple {
 
@@ -209,7 +210,7 @@ public:
 
     void
     rawDestroyXRP(
-        std::uint64_t feeDrops) override;
+        XRPAmount const& fee) override;
 
     // TxsRawView
 
