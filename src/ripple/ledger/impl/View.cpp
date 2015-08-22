@@ -47,7 +47,7 @@ namespace ripple {
 void addRaw (LedgerInfo const& info, Serializer& s)
 {
     s.add32 (info.seq);
-    s.add64 (info.drops);
+    s.add64 (info.drops.drops ());
     s.add256 (info.parentHash);
     s.add256 (info.txHash);
     s.add256 (info.accountHash);
@@ -109,10 +109,10 @@ accountHolds (ReadView const& view,
         auto const sle = view.read(
             keylet::account(account));
         auto const reserve =
-            STAmount{view.fees().accountReserve(
-                sle->getFieldU32(sfOwnerCount))};
+            view.fees().accountReserve(
+                sle->getFieldU32(sfOwnerCount));
         auto const balance =
-            sle->getFieldAmount(sfBalance);
+            sle->getFieldAmount(sfBalance).xrp ();
         if (balance < reserve)
             amount.clear ();
         else
@@ -120,8 +120,8 @@ accountHolds (ReadView const& view,
         WriteLog (lsTRACE, View) << "accountHolds:" <<
             " account=" << to_string (account) <<
             " amount=" << amount.getFullText () <<
-            " balance=" << balance.getFullText () <<
-            " reserve=" << reserve.getFullText ();
+            " balance=" << to_string (balance) <<
+            " reserve=" << to_string (reserve);
     }
     else
     {

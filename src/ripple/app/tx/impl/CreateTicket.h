@@ -40,11 +40,6 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
-    /** Returns the reserve the account would have if an offer was added. */
-    // VFALCO Not needed, just inline the behavior.
-    STAmount
-    getAccountReserve (SLE::pointer account);
-
     TER doApply () override;
 };
 
