@@ -85,7 +85,7 @@ public:
     */
     virtual
     void
-    rawDestroyXRP (std::uint64_t feeDrops) = 0;
+    rawDestroyXRP (XRPAmount const& fee) = 0;
 };
 
 //------------------------------------------------------------------------------

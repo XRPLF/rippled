@@ -24,6 +24,7 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
+#include <ripple/protocol/XRPAmount.h>
 
 namespace ripple {
 namespace detail {
@@ -130,13 +131,13 @@ public:
 
     void
     rawDestroyXRP (
-        std::uint64_t feeDrops) override;
+        XRPAmount const& feeDrops) override;
 
 protected:
     ApplyFlags flags_;
     ReadView const* base_;
     detail::ApplyStateTable items_;
-    std::uint64_t dropsDestroyed_ = 0;
+    XRPAmount dropsDestroyed_ = 0;
 };
 
 } // detail

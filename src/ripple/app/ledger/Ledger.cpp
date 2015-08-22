@@ -359,7 +359,7 @@ void Ledger::updateHash()
     info_.hash = sha512Half(
         HashPrefix::ledgerMaster,
         std::uint32_t(info_.seq),
-        std::uint64_t(info_.drops),
+        std::uint64_t(info_.drops.drops ()),
         info_.parentHash,
         info_.txHash,
         info_.accountHash,
@@ -570,7 +570,7 @@ bool Ledger::saveValidatedLedger (bool current)
         *db << boost::str (
             addLedger %
             to_string (getHash ()) % info_.seq % to_string (info_.parentHash) %
-            std::to_string (info_.drops) % info_.closeTime %
+            to_string (info_.drops) % info_.closeTime %
             info_.parentCloseTime % info_.closeTimeResolution %
             info_.closeFlags % to_string (info_.accountHash) %
             to_string (info_.txHash));

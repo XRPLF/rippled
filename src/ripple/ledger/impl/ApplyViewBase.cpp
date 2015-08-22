@@ -173,9 +173,9 @@ ApplyViewBase::rawReplace(
 
 void
 ApplyViewBase::rawDestroyXRP(
-    std::uint64_t feeDrops)
+    XRPAmount const& fee)
 {
-    items_.destroyXRP(feeDrops);
+    items_.destroyXRP(fee);
 }
 
 } // detail

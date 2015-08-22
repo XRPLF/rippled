@@ -50,22 +50,21 @@ CreateTicket::preflight (PreflightContext const& ctx)
     return preflight2 (ctx);
 }
 
-STAmount
-CreateTicket::getAccountReserve (SLE::pointer account)
-{
-    return STAmount (view().fees().accountReserve(
-        account->getFieldU32 (sfOwnerCount) + 1));
-}
-
 TER
 CreateTicket::doApply ()
 {
+    auto const sle = view().peek(keylet::account(account_));
+
     // A ticket counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    if (mPriorBalance < STAmount(view().fees().accountReserve(
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount) + 1)))
-        return tecINSUFFICIENT_RESERVE;
+    {
+        auto const reserve = view().fees().accountReserve(
+            sle->getFieldU32(sfOwnerCount) + 1);
+        
+        if (mPriorBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
 
     std::uint32_t expiration (0);
 
@@ -124,8 +123,7 @@ CreateTicket::doApply ()
     sleTicket->setFieldU64(sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts agains the creator's reserve.
-    adjustOwnerCount(view(), view().peek(
-        keylet::account(account_)), 1);
+    adjustOwnerCount(view(), sle, 1);
 
     return result;
 }

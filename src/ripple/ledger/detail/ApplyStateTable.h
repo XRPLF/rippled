@@ -25,6 +25,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/TER.h>
+#include <ripple/protocol/XRPAmount.h>
 #include <beast/utility/Journal.h>
 #include <memory>
 
@@ -50,7 +51,7 @@ private:
         std::pair<Action, std::shared_ptr<SLE>>>;
 
     items_t items_;
-    std::uint64_t dropsDestroyed_ = 0;
+    XRPAmount dropsDestroyed_ = 0;
 
 public:
     ApplyStateTable() = default;
@@ -126,7 +127,7 @@ public:
         std::shared_ptr<SLE> const& sle);
 
     void
-    destroyXRP (std::uint64_t feeDrops);
+    destroyXRP (XRPAmount const& fee);
 
 private:
     using Mods = hash_map<key_type,

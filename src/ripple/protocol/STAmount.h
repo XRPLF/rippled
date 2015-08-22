@@ -203,6 +203,12 @@ public:
         return *this;
     }
 
+    STAmount& operator= (XRPAmount const& amount)
+    {
+        *this = STAmount (amount);
+        return *this;
+    }
+
     //--------------------------------------------------------------------------
     //
     // Modification

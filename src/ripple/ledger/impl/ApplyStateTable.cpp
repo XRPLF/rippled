@@ -521,9 +521,9 @@ ApplyStateTable::update (ReadView const& base,
 }
 
 void
-ApplyStateTable::destroyXRP(std::uint64_t feeDrops)
+ApplyStateTable::destroyXRP(XRPAmount const& fee)
 {
-    dropsDestroyed_ += feeDrops;
+    dropsDestroyed_ += fee;
 }
 
 //------------------------------------------------------------------------------

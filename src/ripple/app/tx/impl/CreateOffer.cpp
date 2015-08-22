@@ -539,20 +539,6 @@ CreateOffer::format_amount (STAmount const& amount)
     return txt;
 }
 
-STAmount
-CreateOffer::getAccountReserve (SLE::pointer account)
-{
-    // Mon Aug 17 11:00:00am PDT
-    static NetClock::time_point const switchoverTime (
-        std::chrono::seconds (493149600));
-    if (ctx_.view().info().parentCloseTime <=
-            switchoverTime.time_since_epoch().count())
-        return STAmount (ctx_.view().fees().accountReserve(
-            deprecatedWrongOwnerCount_+1));
-    return STAmount (ctx_.view().fees().accountReserve(
-        account->getFieldU32 (sfOwnerCount) + 1));
-}
-
 void
 CreateOffer::preCompute()
 {
@@ -784,18 +770,34 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         return { tesSUCCESS, true };
     }
 
-    if (mPriorBalance < getAccountReserve (sleCreator))
     {
-        // If we are here, the signing account had an insufficient reserve
-        // *prior* to our processing. If something actually crossed, then
-        // we allow this; otherwise, we just claim a fee.
-        if (!crossed)
-            result = tecINSUF_RESERVE_OFFER;
+        // Mon Aug 17 11:00:00am PDT
+        static NetClock::time_point const switchoverTime (
+            std::chrono::seconds (493149600));
 
-        if (result != tesSUCCESS)
-            j_.debug << "final result: " << transToken (result);
+        XRPAmount reserve;
 
-        return { result, true };
+        if (ctx_.view().info().parentCloseTime <=
+                switchoverTime.time_since_epoch().count())
+            reserve = ctx_.view().fees().accountReserve(
+                deprecatedWrongOwnerCount_+1);
+        else
+            reserve = ctx_.view().fees().accountReserve(
+                sleCreator->getFieldU32 (sfOwnerCount) + 1);
+
+        if (mPriorBalance < reserve)
+        {
+            // If we are here, the signing account had an insufficient reserve
+            // *prior* to our processing. If something actually crossed, then
+            // we allow this; otherwise, we just claim a fee.
+            if (!crossed)
+                result = tecINSUF_RESERVE_OFFER;
+
+            if (result != tesSUCCESS)
+                j_.debug << "final result: " << transToken (result);
+
+            return { result, true };
+        }
     }
 
     // We need to place the remainder of the offer into its order book.
