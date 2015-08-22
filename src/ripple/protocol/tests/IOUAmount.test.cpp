@@ -145,6 +145,21 @@ public:
         expect (n != -n);
     }
 
+    void testToString()
+    {
+        testcase("IOU strings");
+
+        expect(to_string(IOUAmount (-2, 0)) == "-2");
+        expect(to_string(IOUAmount (0, 0)) == "0");
+        expect(to_string(IOUAmount (2, 0)) == "2");
+        expect(to_string(IOUAmount (25, -3)) == "0.025");
+        expect(to_string(IOUAmount (-25, -3)) == "-0.025");
+        expect(to_string(IOUAmount (25, 1)) == "250");
+        expect(to_string(IOUAmount (-25, 1)) == "-250");
+        expect(to_string(IOUAmount (2, 20)) == "2000000000000000e5");
+        expect(to_string(IOUAmount (-2, -20)) == "-2000000000000000e-35");
+    }
+
     //--------------------------------------------------------------------------
 
     void run ()
@@ -153,6 +168,7 @@ public:
         testSigNum ();
         testBeastZero ();
         testComparisons ();
+        testToString ();
     }
 };
 

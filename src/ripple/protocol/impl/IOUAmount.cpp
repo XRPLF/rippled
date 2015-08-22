@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/IOUAmount.h>
+#include <algorithm>
+#include <beast/cxx14/iterator.h>
 #include <stdexcept>
 
 namespace ripple {
@@ -143,6 +145,102 @@ IOUAmount::operator<(IOUAmount const& other) const
 
     // If equal exponents, compare mantissas
     return mantissa_ < other.mantissa_;
+}
+
+std::string
+to_string (IOUAmount const& amount)
+{
+    // keep full internal accuracy, but make more human friendly if possible
+    if (amount == zero)
+        return "0";
+
+    int const exponent = amount.exponent ();
+    auto mantissa = amount.mantissa ();
+
+    // Use scientific notation for exponents that are too small or too large
+    if (((exponent != 0) && ((exponent < -25) || (exponent > -5))))
+    {
+        std::string ret = std::to_string (mantissa);
+        ret.append (1, 'e');
+        ret.append (std::to_string (exponent));
+        return ret;
+    }
+
+    bool negative = false;
+
+    if (mantissa < 0)
+    {
+        mantissa = -mantissa;
+        negative = true;
+    }
+
+    assert (exponent + 43 > 0);
+
+    size_t const pad_prefix = 27;
+    size_t const pad_suffix = 23;
+
+    std::string const raw_value (std::to_string (mantissa));
+    std::string val;
+
+    val.reserve (raw_value.length () + pad_prefix + pad_suffix);
+    val.append (pad_prefix, '0');
+    val.append (raw_value);
+    val.append (pad_suffix, '0');
+
+    size_t const offset (exponent + 43);
+
+    auto pre_from (val.begin ());
+    auto const pre_to (val.begin () + offset);
+
+    auto const post_from (val.begin () + offset);
+    auto post_to (val.end ());
+
+    // Crop leading zeroes. Take advantage of the fact that there's always a
+    // fixed amount of leading zeroes and skip them.
+    if (std::distance (pre_from, pre_to) > pad_prefix)
+        pre_from += pad_prefix;
+
+    assert (post_to >= post_from);
+
+    pre_from = std::find_if (pre_from, pre_to,
+        [](char c)
+        {
+            return c != '0';
+        });
+
+    // Crop trailing zeroes. Take advantage of the fact that there's always a
+    // fixed amount of trailing zeroes and skip them.
+    if (std::distance (post_from, post_to) > pad_suffix)
+        post_to -= pad_suffix;
+
+    assert (post_to >= post_from);
+
+    post_to = std::find_if(
+        std::make_reverse_iterator (post_to),
+        std::make_reverse_iterator (post_from),
+        [](char c)
+        {
+            return c != '0';
+        }).base();
+
+    std::string ret;
+
+    if (negative)
+        ret.append (1, '-');
+
+    // Assemble the output:
+    if (pre_from == pre_to)
+        ret.append (1, '0');
+    else
+        ret.append(pre_from, pre_to);
+
+    if (post_to != post_from)
+    {
+        ret.append (1, '.');
+        ret.append (post_from, post_to);
+    }
+
+    return ret;
 }
 
 }

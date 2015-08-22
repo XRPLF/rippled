@@ -24,6 +24,7 @@
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
+#include <string>
 #include <utility>
 
 using beast::zero;
@@ -136,6 +137,9 @@ public:
         return mantissa_;
     }
 };
+
+std::string
+to_string (IOUAmount const& amount);
 
 }
 
