@@ -25,6 +25,7 @@
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
+#include <string>
 #include <beast/cxx14/type_traits.h>
 
 using beast::zero;
@@ -126,6 +127,13 @@ public:
         return drops_;
     }
 };
+
+inline
+std::string
+to_string (XRPAmount const& amount)
+{
+    return std::to_string (amount.drops ());
+}
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */
 inline
