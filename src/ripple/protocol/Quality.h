@@ -74,7 +74,7 @@ operator!= (Amounts const& lhs, Amounts const& rhs) noexcept
 //------------------------------------------------------------------------------
 
 // Ripple specific constant used for parsing qualities and other things
-#define QUALITY_ONE         1000000000  // 10e9
+#define QUALITY_ONE 1000000000
 
 /** Represents the logical ratio of output currency to input currency.
     Internally this is stored using a custom floating point representation,

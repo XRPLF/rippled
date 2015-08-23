@@ -3501,6 +3501,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\Quality.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Rate2.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
@@ -3610,6 +3613,9 @@
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Quality.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Rate.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
     <None Include="..\..\src\ripple\protocol\README.md">
