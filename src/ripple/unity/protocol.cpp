@@ -31,6 +31,7 @@
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/PublicKey.cpp>
 #include <ripple/protocol/impl/Quality.cpp>
+#include <ripple/protocol/impl/Rate2.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/SecretKey.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
