@@ -187,17 +187,6 @@ private:
             bool retry, ApplyFlags flags,
                 HashRouter& router, Config const& config,
                     beast::Journal j);
-
-public:
-    //--------------------------------------------------------------------------
-    //
-    // TEST CODE
-    //
-    // Verify that the open ledger has the right contents
-    // This is called while holding the master and ledger master mutexes
-    bool
-    verify (Ledger const& ledger,
-        std::string const& suffix = "") const;
 };
 
 //------------------------------------------------------------------------------

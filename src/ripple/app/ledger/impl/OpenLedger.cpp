@@ -79,7 +79,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
             OrderedTxs& retries, ApplyFlags flags,
                 HashRouter& router, std::string const& suffix)
 {
-    JLOG(j_.error) <<
+    JLOG(j_.trace) <<
         "accept ledger " << ledger->seq() << " " << suffix;
     auto next = create(rules, ledger);
     if (retriesFirst)
@@ -154,40 +154,6 @@ OpenLedger::apply_one (Application& app, OpenView& view,
             isTelLocal (result.first))
         return Result::failure;
     return Result::retry;
-}
-
-//------------------------------------------------------------------------------
-
-static
-std::vector<uint256>
-txList (ReadView const& view)
-{
-    std::vector<uint256> v;
-    for (auto const& item : view.txs)
-        v.push_back(item.first->getTransactionID());
-    std::sort(v.begin(), v.end());
-    return v;
-}
-
-bool
-OpenLedger::verify (Ledger const& ledger,
-    std::string const& suffix) const
-{
-#if 1
-    std::lock_guard<
-        std::mutex> lock(modify_mutex_);
-    auto list1 = txList(ledger);
-    auto list2 = txList(*current_);
-    if (list1 == list2)
-        return true;
-    JLOG(j_.error) <<
-        "verify ledger " << ledger.seq() << ": " <<
-        list1.size() << " / " << list2.size() <<
-            " " << " MISMATCH " << suffix;
-    return false;
-#else
-    return true;
-#endif
 }
 
 //------------------------------------------------------------------------------

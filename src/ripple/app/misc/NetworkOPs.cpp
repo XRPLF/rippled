@@ -239,8 +239,7 @@ private:
         Ledger::pointer newLedger, bool duringConsensus);
     bool checkLastClosedLedger (
         const Overlay::PeerSequence&, uint256& networkClosed);
-    bool beginConsensus (
-        uint256 const& networkClosed, Ledger::pointer closingLedger);
+    bool beginConsensus (uint256 const& networkClosed);
     void tryStartConsensus ();
 
 public:
@@ -815,25 +814,6 @@ void NetworkOPsImp::transactionBatch()
     }
 }
 
-#if RIPPLE_OPEN_LEDGER
-static
-void
-mismatch (std::shared_ptr<SLE const> const& sle1, TER ter1,
-    std::shared_ptr<SLE const> const& sle2, TER ter2,
-        std::shared_ptr<STTx const> tx,
-            beast::Journal j)
-{
-    JLOG(j.error) <<
-    "TER " << (ter1 == ter2 ? "        " : "MISMATCH ") <<
-        transToken(ter1) << " vs " <<
-            transToken(ter2);
-    JLOG(j.error) <<
-        tx->getJson(0) << '\n' <<
-        (sle1 ? sle1->getJson(0) : "MISSING ACCOUNTROOT1") << '\n' <<
-        (sle2 ? sle2->getJson(0) : "MISSING ACCOUNTROOT2") << '\n';
-}
-#endif
-
 void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
     std::vector<TransactionStatus> transactions;
@@ -846,19 +826,11 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        std::shared_ptr<Ledger> newOL;
-        bool applied = false;
-        boost::optional<OpenView> accum;
         auto lock = beast::make_lock(app_.getMasterMutex());
         {
             std::lock_guard <std::recursive_mutex> lock (
                 m_ledgerMaster.peekMutex());
-        #if RIPPLE_OPEN_LEDGER
-            auto const oldOL = m_ledgerMaster.getCurrentLedgerHolder().get();
-            app_.openLedger().verify(*oldOL, "apply before");
-        #endif
-            newOL = m_ledgerMaster.getCurrentLedgerHolder().getMutable();
-            accum.emplace(&*newOL);
+
             for (TransactionStatus& e : transactions)
             {
                 ApplyFlags flags = tapNONE;
@@ -866,48 +838,22 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 if (e.admin)
                     flags = flags | tapADMIN;
 
-            #if RIPPLE_OPEN_LEDGER
-                auto const sle1 = accum->read(
-                    keylet::account(e.transaction->getSTransaction()->getAccountID(sfAccount)));
-            #endif
-
-                std::tie (e.result, e.applied) =
-                    ripple::apply (app_, *accum,
-                        *e.transaction->getSTransaction(), flags,
-                            app_.getHashRouter().sigVerify(),
-                                getConfig(), deprecatedLogs().journal(
-                                    "NetworkOPs"));
-                applied |= e.applied;
-
-            #if RIPPLE_OPEN_LEDGER
-                auto const sle2 = app_.openLedger().current()->read(keylet::account(e.transaction->getSTransaction()->getAccountID(sfAccount)));
                 // VFALCO Should do the loop inside modify()
                 app_.openLedger().modify(
                     [&](OpenView& view, beast::Journal j)
                     {
-                        auto const result = ripple::apply(
+                        auto const result = ripple::apply(app_,
                             view, *e.transaction->getSTransaction(), flags,
                                 app_.getHashRouter().sigVerify(),
                                     getConfig(), j);
-                        if (result.first != e.result)
-                            mismatch(sle1,  e.result, sle2, result.first,
-                                    e.transaction->getSTransaction(), j);
+                        e.result = result.first;
+                        e.applied = result.second;
                         return result.second;
                     });
-            #endif
             }
         }
 
-        if (applied)
-        {
-            accum->apply(*newOL);
-        #if RIPPLE_OPEN_LEDGER
-            app_.openLedger().verify(*newOL, "apply after");
-        #endif
-            newOL->setImmutable();
-            m_ledgerMaster.getCurrentLedgerHolder().set (newOL);
-        }
-
+        auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
         {
             if (e.applied)
@@ -1148,7 +1094,7 @@ void NetworkOPsImp::tryStartConsensus ()
     }
 
     if ((!mLedgerConsensus) && (mMode != omDISCONNECTED))
-        beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
+        beginConsensus (networkClosed);
 }
 
 bool NetworkOPsImp::checkLastClosedLedger (
@@ -1306,40 +1252,17 @@ void NetworkOPsImp::switchLastClosedLedger (
     // set the newLCL as our last closed ledger -- this is abnormal code
 
     auto msg = duringConsensus ? "JUMPdc" : "JUMP";
-#if RIPPLE_OPEN_LEDGER
-    m_journal.fatal
-#else
     m_journal.error
-#endif
         << msg << " last closed ledger to " << newLCL->getHash ();
 
     clearNeedNetworkLedger ();
     newLCL->setClosed ();
-    auto const newOL = std::make_shared<
-        Ledger>(open_ledger, std::ref (*newLCL),
-            app_.timeKeeper().closeTime());
     // Caller must own master lock
     {
-        auto const oldOL =
-            m_ledgerMaster.getCurrentLedger();
-    #if RIPPLE_OPEN_LEDGER
-        app_.openLedger().verify(
-            *oldOL, "jump before");
-    #endif
         // Apply tx in old open ledger to new
         // open ledger. Then apply local tx.
-        OpenView accum(&*newOL);
-        assert(accum.open());
-        auto const localTx = m_localTX->getTxSet();
-        {
-            auto retries = localTx;
-            applyTransactions (app_, &oldOL->txMap(),
-                accum, newLCL, retries, tapNONE);
-        }
-        accum.apply(*newOL);
 
-    #if RIPPLE_OPEN_LEDGER
-        auto retries = localTx;
+        auto retries = m_localTX->getTxSet();
         auto const lastVal =
             app_.getLedgerMaster().getValidatedLedger();
         boost::optional<Rules> rules;
@@ -1347,15 +1270,12 @@ void NetworkOPsImp::switchLastClosedLedger (
             rules.emplace(*lastVal);
         else
             rules.emplace();
-        app_.openLedger().accept(*rules,
+        app_.openLedger().accept(app_, *rules,
             newLCL, OrderedTxs({}), false, retries,
                 tapNONE, app_.getHashRouter(), "jump");
-        app_.openLedger().verify(
-            *newOL, "jump after");
-    #endif
     }
 
-    m_ledgerMaster.switchLedgers (newLCL, newOL);
+    m_ledgerMaster.switchLCL (newLCL);
 
     protocol::TMStatusChange s;
     s.set_newevent (protocol::neSWITCHED_LEDGER);
@@ -1370,15 +1290,18 @@ void NetworkOPsImp::switchLastClosedLedger (
         std::make_shared<Message> (s, protocol::mtSTATUS_CHANGE)));
 }
 
-bool NetworkOPsImp::beginConsensus (
-    uint256 const& networkClosed, Ledger::pointer closingLedger)
+bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 {
+    assert (networkClosed.isNonZero ());
+
+    auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
+
     if (m_journal.info) m_journal.info <<
-        "Consensus time for #" << closingLedger->info().seq <<
-        " with LCL " << closingLedger->info().parentHash;
+        "Consensus time for #" << closingInfo.seq <<
+        " with LCL " << closingInfo.parentHash;
 
     auto prevLedger = m_ledgerMaster.getLedgerByHash (
-        closingLedger->info().parentHash);
+        closingInfo.parentHash);
 
     if (!prevLedger)
     {
@@ -1392,8 +1315,8 @@ bool NetworkOPsImp::beginConsensus (
         return false;
     }
 
-    assert (prevLedger->getHash () == closingLedger->info().parentHash);
-    assert (closingLedger->info().parentHash ==
+    assert (prevLedger->getHash () == closingInfo.parentHash);
+    assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
     // Create a consensus object to get consensus on this ledger
@@ -1407,7 +1330,7 @@ bool NetworkOPsImp::beginConsensus (
         m_ledgerMaster,
         networkClosed,
         prevLedger,
-        m_ledgerMaster.getCurrentLedger ()->info().closeTime);
+        closingInfo.closeTime);
 
     m_journal.debug << "Initiating consensus engine";
     return true;
@@ -1435,7 +1358,7 @@ bool NetworkOPsImp::haveConsensusObject ()
             if ( ((mMode == omTRACKING) || (mMode == omSYNCING)) &&
                  (mConsensus->getLastCloseProposers() >= m_ledgerMaster.getMinValidations()) )
                 setMode (omFULL);
-            beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
+            beginConsensus (networkClosed);
         }
     }
 
@@ -2477,9 +2400,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
 
     // FIXME Could we improve on this and remove the need for a specialized
     // API in LedgerConsensus?
-    beginConsensus (
-        m_ledgerMaster.getClosedLedger ()->getHash (),
-        m_ledgerMaster.getCurrentLedger ());
+    beginConsensus (m_ledgerMaster.getClosedLedger ()->getHash ());
     mLedgerConsensus->simulate ();
     return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
