@@ -74,9 +74,6 @@ public:
 
     LockType m_mutex;
 
-    // The ledger we are currently processing.
-    LedgerHolder mCurrentLedger;
-
     // The ledger that most recently closed.
     LedgerHolder mClosedLedger;
 
@@ -181,7 +178,7 @@ public:
 
     LedgerIndex getCurrentLedgerIndex () override
     {
-        return mCurrentLedger.get ()->info().seq;
+        return getApp().openLedger().current()->info().seq;
     }
 
     LedgerIndex getValidLedgerIndex () override
@@ -313,78 +310,30 @@ public:
         mHeldTransactions.insert (transaction->getSTransaction ());
     }
 
-    void pushLedger (Ledger::pointer newLedger) override
+    void switchLCL (Ledger::pointer lastClosed)
     {
-        // Caller should already have properly assembled this ledger into
-        // "ready-to-close" form -- all candidate transactions must already be
-        // applied
-        WriteLog (lsINFO, LedgerMaster) << "PushLedger: "
-                                        << newLedger->getHash();
+        assert (lastClosed);
+
+        lastClosed->setClosed ();
 
         {
             ScopedLockType ml (m_mutex);
 
-            Ledger::pointer closedLedger = mCurrentLedger.getMutable ();
-            if (closedLedger)
-            {
-                closedLedger->setClosed ();
-                closedLedger->setImmutable ();
-                mClosedLedger.set (closedLedger);
-            }
-
-            mCurrentLedger.set (newLedger);
-        }
-
-        if (standalone_)
-        {
-            setFullLedger(newLedger, true, false);
-            tryAdvance();
-        }
-        else
-            checkAccept(newLedger);
-    }
-
-    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) override
-    {
-        assert (! newLCL->info().open);
-        assert (newOL->info().open);
-
-        {
-            ScopedLockType ml (m_mutex);
-            mClosedLedger.set (newLCL);
-            mCurrentLedger.set (newOL);
-        }
-
-        if (standalone_)
-        {
-            setFullLedger(newLCL, true, false);
-            tryAdvance();
-        }
-        else
-        {
-            mLedgerHistory.builtLedger (newLCL);
-        }
-    }
-
-    void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current) override
-    {
-        assert (lastClosed && current);
-
-        {
-            ScopedLockType ml (m_mutex);
-
-            lastClosed->setClosed ();
-            lastClosed->setImmutable ();
-
-            mCurrentLedger.set (current);
             mClosedLedger.set (lastClosed);
-
-            assert (current->info().open);
         }
-        checkAccept (lastClosed);
+
+        if (standalone_)
+        {
+            setFullLedger (lastClosed, true, false);
+            tryAdvance();
+        }
+        else
+        {
+            checkAccept (lastClosed);
+        }
     }
 
-    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) override
+    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
     {
         return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
     }
@@ -410,12 +359,6 @@ public:
     {
         ScopedLockType sl (m_mutex);
 
-        // Start with a mutable snapshot of the open ledger
-        auto const newOL =
-            mCurrentLedger.getMutable();
-        int recovers = 0;
-
-    #if RIPPLE_OPEN_LEDGER
         app_.openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
@@ -427,7 +370,7 @@ public:
                             it.first.getTXID (), SF_SIGGOOD))
                         flags = flags | tapNO_CHECK_SIGN;
 
-                    auto const result = apply(view,
+                    auto const result = apply(app_, view,
                         *it.second, flags, app_.getHashRouter(
                             ).sigVerify(), app_.config(), j);
                     if (result.second)
@@ -435,42 +378,13 @@ public:
                 }
                 return any;
             });
-    #endif
-
-        {
-            OpenView view(&*newOL);
-            for (auto const& it : mHeldTransactions)
-            {
-                ApplyFlags tepFlags = tapNONE;
-
-                if (app_.getHashRouter ().addSuppressionFlags (
-                        it.first.getTXID (), SF_SIGGOOD))
-                    tepFlags = static_cast<ApplyFlags> (
-                        tepFlags | tapNO_CHECK_SIGN);
-
-                auto const ret = apply(app_, view, *it.second,
-                    tepFlags, app_.getHashRouter().sigVerify(),
-                        app_.config(), deprecatedLogs().journal("LedgerMaster"));
-
-                if (ret.second)
-                    ++recovers;
-
-                // If a transaction is recovered but hasn't been relayed,
-                // it will become disputed in the consensus process, which
-                // will cause it to be relayed.
-            }
-            view.apply(*newOL);
-        }
-
-        CondLog (recovers != 0, lsINFO, LedgerMaster)
-                << "Recovered " << recovers << " held transactions";
 
         // VFALCO TODO recreate the CanonicalTxSet object instead of resetting
         // it.
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
-        mHeldTransactions.reset (newOL->info().hash);
-        mCurrentLedger.set (newOL);
+        mHeldTransactions.reset (
+            getApp().openLedger().current()->info().parentHash);
     }
 
     LedgerIndex getBuildingLedger () override
@@ -743,7 +657,7 @@ public:
     {
         // A new ledger has been accepted as part of the trusted chain
         WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->info().seq
-                                         << "accepted :" << ledger->getHash ();
+                                         << " accepted :" << ledger->getHash ();
         assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
@@ -1247,8 +1161,7 @@ public:
     {
         {
             ScopedLockType ml (m_mutex);
-            if (app_.getOPs().isNeedNetworkLedger() ||
-                mCurrentLedger.empty())
+            if (app_.getOPs().isNeedNetworkLedger())
             {
                 --mPathFindThread;
                 return;
@@ -1258,7 +1171,7 @@ public:
 
         while (! job.shouldCancel())
         {
-            Ledger::pointer lastLedger;
+            std::shared_ptr<ReadView const> lastLedger;
             {
                 ScopedLockType ml (m_mutex);
 
@@ -1271,7 +1184,7 @@ public:
                 }
                 else if (mPathFindNewRequest)
                 { // We have a new request but no new ledger
-                    lastLedger = mCurrentLedger.get ();
+                    lastLedger = getApp().openLedger().current();
                 }
                 else
                 { // Nothing to do
@@ -1303,9 +1216,20 @@ public:
             {
                 WriteLog (lsINFO, LedgerMaster)
                         << "Missing node detected during pathfinding";
-                app_.getInboundLedgers().acquire(
-                    lastLedger->getHash (), lastLedger->info().seq,
-                    InboundLedger::fcGENERIC);
+                if (lastLedger->info().open)
+                {
+                    // our parent is the problem
+                    app_.getInboundLedgers().acquire(
+                        lastLedger->info().parentHash, lastLedger->info().seq - 1,
+                        InboundLedger::fcGENERIC);
+                }
+                else
+                {
+                    // this ledger is the problem
+                    app_.getInboundLedgers().acquire(
+                        lastLedger->info().hash, lastLedger->info().seq,
+                        InboundLedger::fcGENERIC);
+                 }
             }
         }
     }
@@ -1356,14 +1280,9 @@ public:
     }
 
     // The current ledger is the ledger we believe new transactions should go in
-    Ledger::pointer getCurrentLedger () override
+    std::shared_ptr<ReadView const> getCurrentLedger ()
     {
-        return mCurrentLedger.get ();
-    }
-
-    LedgerHolder& getCurrentLedgerHolder() override
-    {
-        return mCurrentLedger;
+        return app_.openLedger().current();
     }
 
     // The finalized ledger is the last closed/accepted ledger
@@ -1552,10 +1471,6 @@ public:
         if (ret)
             return ret;
 
-        ret = mCurrentLedger.get ();
-        if (ret && (ret->info().seq == index))
-            return ret;
-
         ret = mClosedLedger.get ();
         if (ret && (ret->info().seq == index))
             return ret;
@@ -1566,15 +1481,8 @@ public:
 
     Ledger::pointer getLedgerByHash (uint256 const& hash) override
     {
-        if (hash.isZero ())
-            return mCurrentLedger.get ();
-
         Ledger::pointer ret = mLedgerHistory.getLedgerByHash (hash);
         if (ret)
-            return ret;
-
-        ret = mCurrentLedger.get ();
-        if (ret && (ret->getHash () == hash))
             return ret;
 
         ret = mClosedLedger.get ();

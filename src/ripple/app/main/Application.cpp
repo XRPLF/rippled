@@ -1075,19 +1075,22 @@ private:
 
 void ApplicationImp::startGenesisLedger ()
 {
-    std::shared_ptr<Ledger const> const genesis =
+    std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(
             create_genesis, config_, family());
+    m_ledgerMaster->storeLedger (genesis);
+
     auto const next = std::make_shared<Ledger>(
         open_ledger, *genesis, timeKeeper().closeTime());
+    next->updateSkipList ();
     next->setClosed ();
     next->setImmutable ();
+    m_ledgerMaster->storeLedger (next);
+
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, config_,
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
-    m_ledgerMaster->pushLedger (next,
-        std::make_shared<Ledger>(open_ledger, *next,
-            timeKeeper().closeTime()));
+    m_ledgerMaster->switchLCL (next);
 }
 
 Ledger::pointer
@@ -1332,9 +1335,8 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
 
         auto const openLedger =
-            std::make_shared<Ledger>(open_ledger, *loadLedger,
-                timeKeeper().closeTime());
-        m_ledgerMaster->switchLedgers (loadLedger, openLedger);
+            std::make_shared<Ledger>(open_ledger, *loadLedger, timeKeeper().closeTime());
+        m_ledgerMaster->switchLCL (loadLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, config_,
@@ -1345,27 +1347,20 @@ bool ApplicationImp::loadOldLedger (
             // inject transaction(s) from the replayLedger into our open ledger
             auto const& txns = replayLedger->txMap();
 
-            // Get a mutable snapshot of the open ledger
-            Ledger::pointer cur = getLedgerMaster().getCurrentLedger();
-            cur = std::make_shared <Ledger> (*cur, true);
-            assert (!cur->isImmutable());
-
             for (auto const& item : txns)
             {
-                auto const txn =
-                    replayLedger->txRead(item.key()).first;
-                if (m_journal.info) m_journal.info <<
-                    txn->getJson(0);
-                Serializer s;
-                txn->add(s);
-                cur->rawTxInsert(item.key(),
-                    std::make_shared<Serializer const>(
-                        std::move(s)), nullptr);
                 getHashRouter().setFlags (item.key(), SF_SIGGOOD);
+                openLedger_->modify(
+                    [&replayLedger, &item](OpenView& view, beast::Journal j)
+                    {
+                        auto s = std::make_shared <Serializer> ();
+                        replayLedger->txRead(item.key()).first->add(*s);
+                        view.rawTxInsert (item.key(), std::move (s), nullptr);
+                        return true;
+                    });
             }
 
-            // Switch to the mutable snapshot
-            m_ledgerMaster->switchLedgers (loadLedger, cur);
+            m_ledgerMaster->switchLCL (loadLedger);
         }
     }
     catch (SHAMapMissingNode&)

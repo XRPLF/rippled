@@ -81,6 +81,14 @@ Status ledgerFromRequest (T& ledger, Context& context)
     else if (indexValue.isNumeric())
     {
         ledger = ledgerMaster.getLedgerBySeq (indexValue.asInt ());
+
+        if (ledger == nullptr)
+        {
+            auto cur = ledgerMaster.getCurrentLedger();
+            if (cur->info().seq == indexValue.asInt())
+                ledger = cur;
+        }
+
         if (ledger == nullptr)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
@@ -140,11 +148,11 @@ Status ledgerFromRequest (T& ledger, Context& context)
 bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger,
     Application& app)
 {
-    if (ledger.info().validated)
-        return true;
-
     if (ledger.info().open)
         return false;
+
+    if (ledger.info().validated)
+        return true;
 
     auto seq = ledger.info().seq;
     try

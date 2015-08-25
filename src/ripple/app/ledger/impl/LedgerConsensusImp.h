@@ -261,7 +261,7 @@ private:
 
       @param initialLedger The ledger that contains our initial position.
     */
-    void takeInitialPosition (Ledger& initialLedger);
+    void takeInitialPosition (std::shared_ptr<ReadView const> const& initialLedger);
 
     /**
        Called while trying to avalanche towards consensus.
