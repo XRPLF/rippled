@@ -97,6 +97,7 @@ OpenView::OpenView (open_ledger_t,
     info_.open = true;
     info_.seq = base_->info().seq + 1;
     info_.parentCloseTime = base_->info().closeTime;
+    info_.parentHash = base_->info().hash;
 }
 
 OpenView::OpenView (ReadView const* base,

@@ -81,6 +81,14 @@ Status ledgerFromRequest (T& ledger, Context& context)
     else if (indexValue.isNumeric())
     {
         ledger = ledgerMaster.getLedgerBySeq (indexValue.asInt ());
+
+        if (ledger == nullptr)
+        {
+            auto cur = ledgerMaster.getCurrentLedger();
+            if (cur->info().seq == indexValue.asInt())
+                ledger = cur;
+        }
+
         if (ledger == nullptr)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
