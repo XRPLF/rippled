@@ -77,9 +77,10 @@ Json::Value doLedgerData (RPC::Context& context)
 
     Json::Value& nodes = jvResult[jss::state];
 
-    while ((key = lpLedger->succ(*key)))
+    auto e = lpLedger->sles.end();
+    for (auto i = lpLedger->sles.upper_bound(*key); i != e; ++i)
     {
-        auto sle = lpLedger->read(keylet::unchecked(*key));
+        auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
         {
             // Stop processing before the current key.

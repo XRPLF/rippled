@@ -86,6 +86,13 @@ ApplyViewBase::slesEnd() const ->
 }
 
 auto
+ApplyViewBase::slesUpperBound(uint256 const& key) const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return base_->slesUpperBound(key);
+}
+
+auto
 ApplyViewBase::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {
