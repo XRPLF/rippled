@@ -102,6 +102,12 @@ public:
         return base_.slesEnd();
     }
 
+    std::unique_ptr<sles_type::iter_base>
+    slesUpperBound(uint256 const& key) const override
+    {
+        return base_.slesUpperBound(key);
+    }
+
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const override
     {

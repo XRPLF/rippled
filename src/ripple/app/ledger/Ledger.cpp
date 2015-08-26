@@ -937,6 +937,15 @@ Ledger::slesEnd() const ->
 }
 
 auto
+Ledger::slesUpperBound(uint256 const& key) const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return std::make_unique<
+        sles_iter_impl>(
+            stateMap_->upper_bound(key), *this);
+}
+
+auto
 Ledger::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {

@@ -41,9 +41,9 @@ public:
     sles_iter_impl (items_t::const_iterator iter1,
         items_t::const_iterator end1,
             ReadView::sles_type::iterator iter0,
-                ReadView::sles_type::iterator base0)
+                ReadView::sles_type::iterator end0)
         : iter0_ (iter0)
-        , end0_ (base0)
+        , end0_ (end0)
         , iter1_ (iter1)
         , end1_ (end1)
     {
@@ -352,6 +352,14 @@ RawStateTable::slesEnd (ReadView const& base) const
     return std::make_unique<sles_iter_impl>(
         items_.end(), items_.end(),
             base.sles.end(), base.sles.end());
+}
+
+std::unique_ptr<ReadView::sles_type::iter_base>
+RawStateTable::slesUpperBound (ReadView const& base, uint256 const& key) const
+{
+    return std::make_unique<sles_iter_impl>(
+            items_.upper_bound(key), items_.end(),
+                base.sles.upper_bound(key), base.sles.end());
 }
 
 } // detail
