@@ -191,6 +191,7 @@ public:
         explicit sles_type (ReadView const& view);
         iterator begin() const;
         iterator const& end() const;
+        iterator upper_bound(key_type const& key) const;
     };
 
     struct txs_type
@@ -331,6 +332,11 @@ public:
     virtual
     std::unique_ptr<sles_type::iter_base>
     slesEnd() const = 0;
+
+    // used by the implementation
+    virtual
+    std::unique_ptr<sles_type::iter_base>
+    slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
     virtual

@@ -144,6 +144,13 @@ ReadView::sles_type::end() const ->
     return *end_;
 }
 
+auto
+ReadView::sles_type::upper_bound(key_type const& key) const ->
+    iterator
+{
+    return iterator(view_, view_->slesUpperBound(key));
+}
+
 ReadView::txs_type::txs_type(
         ReadView const& view)
     : ReadViewFwdRange(view)
