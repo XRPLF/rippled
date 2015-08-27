@@ -24,6 +24,8 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/UintTypes.h>
+#include <boost/optional.hpp>
+#include <cassert>
 #include <cstddef>
 
 namespace ripple {
@@ -48,6 +50,40 @@ private:
     get_hash (STPathElement const& element);
 
 public:
+    STPathElement(
+        boost::optional<AccountID> const& account,
+        boost::optional<Currency> const& currency,
+        boost::optional<AccountID> const& issuer)
+        : mType (typeNone)
+    {
+        if (! account)
+        {
+            is_offer_ = true;
+        }
+        else
+        {
+            is_offer_ = false;
+            mAccountID = *account;
+            mType |= typeAccount;
+            assert(mAccountID != noAccount());
+        }
+
+        if (currency)
+        {
+            mCurrencyID = *currency;
+            mType |= typeCurrency;
+        }
+
+        if (issuer)
+        {
+            mIssuerID = *issuer;
+            mType |= typeIssuer;
+            assert(mIssuerID != noAccount());
+        }
+
+        hash_value_ = get_hash (*this);
+    }
+
     STPathElement (
         AccountID const& account, Currency const& currency,
         AccountID const& issuer, bool forceCurrency = false)
