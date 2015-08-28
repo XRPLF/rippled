@@ -258,10 +258,13 @@ qalloc_impl<_>::allocate(
             return p;
         }
     }
-    // VFALCO Formula needs audit
-    auto const n = std::max<std::size_t>(
-        block_size, sizeof(block) +
-            sizeof(block*) + bytes + 2 * align);
+    std::size_t const max_align =
+        std::max(align, std::alignment_of<block*>::value);
+    assert(max_align <= std::alignment_of<std::max_align_t>::value);
+    std::size_t const min_alloc =  // align up
+        ((sizeof (block) + sizeof (block*) + bytes) + (max_align - 1)) &
+        ~(max_align - 1);
+    auto const n = std::max<std::size_t>(block_size, min_alloc);
     block* const b =
         new(std::malloc(n)) block(n);
     if (! b)
