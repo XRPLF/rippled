@@ -2030,16 +2030,17 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             if (std::abs (closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = closeOffset.count();
 
-            // VFALCO How do we fix this?
-            /*
-            std::uint32_t lCloseTime (lpClosed->info().closeTime);
+            std::uint32_t lCloseTime = lpClosed->info().closeTime;
+            std::uint32_t closeTime =
+                getApp().timeKeeper().closeTime().time_since_epoch().count();
             if (lCloseTime <= closeTime)
             {
                 std::uint32_t age = closeTime - lCloseTime;
                 if (age < 1000000)
                     l[jss::age] = Json::UInt (age);
+                else
+                    l[jss::age] = 0;
             }
-            */
         }
 
         if (valid)
