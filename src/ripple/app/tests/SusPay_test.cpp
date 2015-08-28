@@ -106,11 +106,12 @@ struct SusPay_test : public beast::unit_test::suite
         return jv;
     }
 
+    template <class Proof>
     static
     Json::Value
     finish (jtx::Account const& account,
         jtx::Account const& from, std::uint32_t seq,
-            uint256 const& digest, uint256 const& preimage)
+            uint256 const& digest, Proof const& proof)
     {
         Json::Value jv;
         jv[jss::TransactionType] = "SuspendedPaymentFinish";
@@ -120,7 +121,7 @@ struct SusPay_test : public beast::unit_test::suite
         jv["OfferSequence"] = seq;
         jv["Method"] = 1;
         jv["Digest"] = to_string(digest);
-        jv["Proof"] = to_string(preimage);
+        jv["Proof"] = to_string(proof);
         return jv;
     }
 
@@ -303,6 +304,31 @@ struct SusPay_test : public beast::unit_test::suite
             env(finish("bob", "alice", seq, c.first, c.second),             ter(tecNO_PERMISSION));
             expect((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("carol", XRP(5000)));
+        }
+        {
+            Env env(*this);
+            auto T = [&env](NetClock::duration const& d)
+                { return env.clock.now() + d; };
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            auto const c = cond("receipt");
+            auto const seq = env.seq("alice");
+            env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));
+            // wrong digest
+            auto const cx = cond("bad");
+            env(finish("bob", "alice", seq, cx.first, cx.second),           ter(tecNO_PERMISSION));
+        }
+        {
+            Env env(*this);
+            auto T = [&env](NetClock::duration const& d)
+                { return env.clock.now() + d; };
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            auto const p = from_hex_text<uint128>(
+                "0102030405060708090A0B0C0D0E0F");
+            auto const d = digest(p);
+            auto const seq = env.seq("alice");
+            env(condpay("alice", "carol", XRP(1000), d, T(S{1})));
+            // bad digest size
+            env(finish("bob", "alice", seq, d, p),                          ter(temMALFORMED));
         }
     }
 

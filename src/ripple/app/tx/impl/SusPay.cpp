@@ -272,6 +272,8 @@ SusPayFinish::preflight (PreflightContext const& ctx)
                 return temMALFORMED;
             if (! ctx.tx[~sfProof])
                 return temMALFORMED;
+            if (ctx.tx[~sfProof]->size() != 32)
+                return temMALFORMED;
             sha256_hasher h;
             using beast::hash_append;
             hash_append(h, ctx.tx[sfProof]);
@@ -322,6 +324,11 @@ SusPayFinish::doApply()
     if ((*slep)[~sfCancelAfter] &&
         (*slep)[sfCancelAfter] <=
             ctx_.view().info().parentCloseTime)
+        return tecNO_PERMISSION;
+
+    // Same digest?
+    if ((*slep)[~sfDigest] && (! ctx_.tx[~sfMethod] ||
+            (ctx_.tx[~sfDigest] != (*slep)[~sfDigest])))
         return tecNO_PERMISSION;
 
     AccountID const account = (*slep)[sfAccount];
