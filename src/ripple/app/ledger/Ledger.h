@@ -68,8 +68,9 @@ extern create_genesis_t const create_genesis;
     3) Mutable ledgers cannot be shared.
 
     @note Presented to clients as ReadView
+    @note Calls virtuals in the constructor, so marked as final
 */
-class Ledger
+class Ledger final
     : public std::enable_shared_from_this <Ledger>
     , public DigestAwareReadView
     , public TxsRawView
