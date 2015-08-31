@@ -261,7 +261,10 @@ qalloc_impl<_>::allocate(
     }
     std::size_t const adj_align =
         std::max(align, std::alignment_of<block*>::value);
-    assert(adj_align <= std::alignment_of<std::max_align_t>::value);
+    {
+        using namespace std;
+        assert(adj_align <= std::alignment_of<max_align_t>::value);
+    }
     std::size_t const min_alloc =  // align up
         ((sizeof (block) + sizeof (block*) + bytes) + (adj_align - 1)) &
         ~(adj_align - 1);
