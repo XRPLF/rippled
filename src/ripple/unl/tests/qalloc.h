@@ -21,6 +21,7 @@
 #define RIPPLE_SIM_QALLOC_H_INCLUDED
 
 #include <boost/intrusive/list.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
@@ -258,12 +259,12 @@ qalloc_impl<_>::allocate(
             return p;
         }
     }
-    std::size_t const max_align =
+    std::size_t const adj_align =
         std::max(align, std::alignment_of<block*>::value);
-    assert(max_align <= std::alignment_of<std::max_align_t>::value);
+    assert(adj_align <= std::alignment_of<std::max_align_t>::value);
     std::size_t const min_alloc =  // align up
-        ((sizeof (block) + sizeof (block*) + bytes) + (max_align - 1)) &
-        ~(max_align - 1);
+        ((sizeof (block) + sizeof (block*) + bytes) + (adj_align - 1)) &
+        ~(adj_align - 1);
     auto const n = std::max<std::size_t>(block_size, min_alloc);
     block* const b =
         new(std::malloc(n)) block(n);
