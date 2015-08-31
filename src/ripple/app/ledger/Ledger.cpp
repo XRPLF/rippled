@@ -626,7 +626,7 @@ std::tuple<Ledger::pointer, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix)
 {
     Ledger::pointer ledger;
-    uint256 ledgerHash;
+    uint256 ledgerHash{};
     std::uint32_t ledgerSeq{0};
 
     auto db = getApp ().getLedgerDB ().checkoutDb ();
@@ -665,11 +665,15 @@ loadLedgerHelper(std::string const& sqlSuffix)
     ledgerSeq =
         rangeCheckedCast<std::uint32_t>(ledgerSeq64.value_or (0));
 
-    uint256 prevHash, accountHash, transHash;
-    ledgerHash.SetHexExact (sLedgerHash.value_or(""));
-    prevHash.SetHexExact (sPrevHash.value_or(""));
-    accountHash.SetHexExact (sAccountHash.value_or(""));
-    transHash.SetHexExact (sTransHash.value_or(""));
+    uint256 prevHash{}, accountHash{}, transHash{};
+    if (sLedgerHash)
+        ledgerHash.SetHexExact (*sLedgerHash);
+    if (sPrevHash)
+        prevHash.SetHexExact (*sPrevHash);
+    if (sAccountHash)
+        accountHash.SetHexExact (*sAccountHash);
+    if (sTransHash)
+        transHash.SetHexExact (*sTransHash);
 
     bool loaded = false;
     ledger = std::make_shared<Ledger>(prevHash,
@@ -818,7 +822,10 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
         std::pair<uint256, uint256>& hashes =
                 ret[rangeCheckedCast<std::uint32_t>(ls)];
         hashes.first.SetHexExact (lh);
-        hashes.second.SetHexExact (ph.value_or (""));
+        if (ph)
+            hashes.second.SetHexExact (*ph);
+        else
+            hashes.second.zero ();
         if (!ph)
         {
             WriteLog (lsWARNING, Ledger)
