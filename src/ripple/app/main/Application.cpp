@@ -118,6 +118,10 @@ private:
     FullBelowCache fullbelow_;
     NodeStore::Database& db_;
 
+    // missing node handler
+    std::uint32_t maxSeq = 0;
+    std::mutex maxSeqLock;
+
 public:
     AppFamily (AppFamily const&) = delete;
     AppFamily& operator= (AppFamily const&) = delete;
@@ -173,18 +177,48 @@ public:
     void
     missing_node (std::uint32_t seq) override
     {
-        uint256 const hash = app_.getLedgerMaster ().getHashBySeq (seq);
-        if (hash.isZero())
-            app_.getInboundLedgers ().acquire (
-                hash, seq, InboundLedger::fcGENERIC);
+        WriteLog (lsERROR, Ledger) << "Missing node in " << seq;
+
+        // prevent recursive invocation
+        std::unique_lock <std::mutex> lock (maxSeqLock);
+
+        if (maxSeq == 0)
+        {
+            maxSeq = seq;
+
+            do
+            {
+                // Try to acquire the most recent missing ledger
+                seq = maxSeq;
+
+                lock.unlock();
+
+                // This can invoke the missing node handler
+                uint256 hash = app_.getLedgerMaster().getHashBySeq (seq);
+
+                if (hash.isNonZero())
+                    app_.getInboundLedgers().acquire (
+                        hash, seq, InboundLedger::fcGENERIC);
+
+                lock.lock();
+            }
+            while (maxSeq != seq);
+        }
+        else if (maxSeq < seq)
+        {
+            // We found a more recent ledger with a missing node
+            maxSeq = seq;
+        }
     }
 
-    virtual
     void
     missing_node (uint256 const& hash) override
     {
         if (hash.isNonZero())
         {
+            WriteLog (lsERROR, Ledger) << "Missing node in "
+                << to_string (hash);
+
             app_.getInboundLedgers ().acquire (
                 hash, 0, InboundLedger::fcGENERIC);
         }
@@ -1239,6 +1273,8 @@ bool ApplicationImp::loadOldLedger (
                          }
 
                          loadLedger->setClosed ();
+                         loadLedger->stateMap().flushDirty
+                             (hotACCOUNT_NODE, loadLedger->info().seq);
                          loadLedger->setAccepted (closeTime,
                              closeTimeResolution, ! closeTimeEstimated);
                      }

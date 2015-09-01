@@ -62,7 +62,7 @@ public:
 
     virtual
     void
-    missing_node (uint256 const& hash) = 0;
+    missing_node (uint256 const& refHash) = 0;
 };
 
 } // ripple

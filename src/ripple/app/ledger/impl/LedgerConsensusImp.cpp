@@ -1035,7 +1035,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         {
             // Special case, we are replaying a ledger close
             for (auto& tx : replay->txns_)
-                applyTransaction (accum, tx.second, false, tapNO_CHECK_SIGN);
+                applyTransaction (app_, accum, tx.second, false, tapNO_CHECK_SIGN);
         }
         else
         {

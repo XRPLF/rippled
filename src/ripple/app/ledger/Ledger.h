@@ -367,7 +367,9 @@ private:
     class sles_iter_impl;
     class txs_iter_impl;
 
-    void
+    bool saveValidatedLedger (bool current);
+
+    bool
     setup (Config const& config);
 
     std::shared_ptr<SLE>

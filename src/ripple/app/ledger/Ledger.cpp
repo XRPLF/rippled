@@ -240,7 +240,15 @@ Ledger::Ledger (uint256 const& parentHash,
 
     txMap_->setImmutable ();
     stateMap_->setImmutable ();
-    setup(config);
+
+    if (! setup(config))
+        loaded = false;
+
+    if (! loaded)
+    {
+        updateHash ();
+        getApp().family().missing_node (info_.hash);
+    }
 }
 
 // Create a new ledger that's a snapshot of this one
@@ -682,31 +690,61 @@ Ledger::rawTxInsert (uint256 const& key,
     }
 }
 
-void
+bool
 Ledger::setup (Config const& config)
 {
+    bool ret = true;
+
     fees_.base = config.FEE_DEFAULT;
     fees_.units = config.TRANSACTION_FEE_BASE;
     fees_.reserve = config.FEE_ACCOUNT_RESERVE;
     fees_.increment = config.FEE_OWNER_RESERVE;
-    auto const sle = read(keylet::fees());
-    if (sle)
+
+    try
     {
-        // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
+        auto const sle = read(keylet::fees());
 
-        if (sle->getFieldIndex (sfBaseFee) != -1)
-            fees_.base = sle->getFieldU64 (sfBaseFee);
+        if (sle)
+        {
+            // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
 
-        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-            fees_.units = sle->getFieldU32 (sfReferenceFeeUnits);
+            if (sle->getFieldIndex (sfBaseFee) != -1)
+                fees_.base = sle->getFieldU64 (sfBaseFee);
 
-        if (sle->getFieldIndex (sfReserveBase) != -1)
-            fees_.reserve = sle->getFieldU32 (sfReserveBase);
+            if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
+                fees_.units = sle->getFieldU32 (sfReferenceFeeUnits);
 
-        if (sle->getFieldIndex (sfReserveIncrement) != -1)
-            fees_.increment = sle->getFieldU32 (sfReserveIncrement);
+            if (sle->getFieldIndex (sfReserveBase) != -1)
+                fees_.reserve = sle->getFieldU32 (sfReserveBase);
+
+            if (sle->getFieldIndex (sfReserveIncrement) != -1)
+                fees_.increment = sle->getFieldU32 (sfReserveIncrement);
+        }
     }
-    rules_ = Rules(*this);
+    catch (SHAMapMissingNode &)
+    {
+        ret = false;
+    }
+    catch (...)
+    {
+        throw;
+    }
+
+
+    try
+    {
+        rules_ = Rules(*this);
+    }
+    catch (SHAMapMissingNode &)
+    {
+        ret = false;
+    }
+    catch (...)
+    {
+        throw;
+    }
+
+    return ret;
 }
 
 std::shared_ptr<SLE>
