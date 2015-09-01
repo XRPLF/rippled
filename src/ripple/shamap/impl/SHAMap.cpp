@@ -798,6 +798,13 @@ bool SHAMap::addItem (const SHAMapItem& i, bool isTransaction, bool hasMetaData)
     return addGiveItem(std::make_shared<SHAMapItem const>(i), isTransaction, hasMetaData);
 }
 
+bool
+SHAMap::addItem(SHAMapItem&& i, bool isTransaction, bool hasMetaData)
+{
+    return addGiveItem(std::make_shared<SHAMapItem const>(std::move(i)),
+                                                          isTransaction, hasMetaData);
+}
+
 uint256
 SHAMap::getHash () const
 {
