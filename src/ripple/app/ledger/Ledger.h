@@ -380,7 +380,7 @@ private:
     }
     bool saveValidatedLedger (bool current);
 
-    void
+    bool
     setup (Config const& config);
 
     std::shared_ptr<SLE>

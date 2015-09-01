@@ -74,6 +74,11 @@ public:
     void
     setLastCloseTime (std::uint32_t t) = 0;
 
+    /** Get the network time when the last ledger closed */
+    virtual
+    std::uint32_t
+    getLastCloseTime () const = 0;
+
     virtual
     void
     storeProposal (

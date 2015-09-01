@@ -60,6 +60,10 @@ public:
     virtual
     void
     missing_node (std::uint32_t refNum) = 0;
+
+    virtual
+    void
+    missing_node (uint256 const& refHash) = 0;
 };
 
 } // shamap
