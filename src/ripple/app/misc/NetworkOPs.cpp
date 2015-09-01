@@ -1376,6 +1376,25 @@ bool NetworkOPsImp::beginConsensus (
     auto prevLedger = m_ledgerMaster.getLedgerByHash (
         closingLedger->info().parentHash);
 
+    if (!prevLedger && (mConsensus->getLastCloseTime() == 0))
+    {
+        // On startup, not having the prior ledger is okay
+        // For example, if we loaded a ledger
+        bool loaded;
+        prevLedger = std::make_shared<Ledger> (
+            closingLedger->getHash(),
+            uint256(),
+            closingLedger->info().accountHash,
+            closingLedger->info().drops,
+            closingLedger->info().closeTime,
+            closingLedger->info().parentCloseTime,
+            0,
+            closingLedger->info().closeTimeResolution,
+            closingLedger->info().seq - 1,
+            loaded,
+            getConfig());
+    }
+
     if (!prevLedger)
     {
         // this shouldn't happen unless we jump ledgers
