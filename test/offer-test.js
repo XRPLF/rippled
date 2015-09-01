@@ -309,9 +309,11 @@ suite("Offer tests", function() {
 
           var alices_fees, alices_num_transactions, alices_tx_fee_units_total,
               alices_tx_fee_units_total, alices_final_balance,
+              alices_tx_fees_total,
 
               bobs_fees, bobs_num_transactions, bobs_tx_fee_units_total,
-                            bobs_tx_fee_units_total, bobs_final_balance;
+                            bobs_tx_fee_units_total, bobs_final_balance,
+                            bobs_tx_fees_total;
 
           alices_num_transactions = 3;
           alices_tx_fee_units_total = alices_num_transactions * Transaction.fee_units["default"]
@@ -1463,8 +1465,10 @@ suite("Offer tests 3", function() {
   });
 
   test("offer fee consumes funds", function (done) {
+      // $.remote.trace=true
       var self = this;
       var final_create;
+      var seq_carol;
 
       async.waterfall([
           function (callback) {
@@ -1475,6 +1479,7 @@ suite("Offer tests 3", function() {
             var max_owner_count = 3; //
             // We start off with a
             var reserve_amount = $.remote.reserve(max_owner_count);
+            // console.log('reserve', reserve_amount.to_json())
             // console.log("\n");
             // console.log("reserve_amount reserve(max_owner_count=%s): %s", max_owner_count,  reserve_amount.to_human());
 
@@ -1489,11 +1494,10 @@ suite("Offer tests 3", function() {
             var fee_units_for_all_txs = ( Transaction.fee_units["default"] *
                                           max_txs_per_user );
 
-            starting_xrp = reserve_amount.add($.remote.fee_tx(fee_units_for_all_txs))
+            var fees = $.remote.fee_tx(fee_units_for_all_txs);
+            var starting_xrp = reserve_amount.add(fees)
             // console.log("starting_xrp after %s fee units: ",  fee_units_for_all_txs, starting_xrp.to_human());
-
             starting_xrp = starting_xrp.add(Amount.from_json('100.0'));
-            // console.log("starting_xrp adding 100 xrp to sell", starting_xrp.to_human());
 
             testutils.create_accounts($.remote,
                 "root",
@@ -1579,6 +1583,7 @@ suite("Offer tests 3", function() {
   test("offer create then cross offer", function (done) {
       var self = this;
       var final_create;
+      var seq_carol;
 
       async.waterfall([
           function (callback) {
@@ -1900,6 +1905,7 @@ suite("Client Issue #535", function() {
   test("gateway cross currency", function (done) {
       var self = this;
       var final_create;
+      var seq_carol;
 
       async.waterfall([
           function (callback) {
