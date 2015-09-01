@@ -63,7 +63,7 @@ suite('Sending', function() {
       function (callback) {
         self.what = "Check a non-existent credit limit.";
 
-        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'current')
         .on('ripple_state', function (m) {
           callback(new Error(m));
         })
@@ -83,7 +83,7 @@ suite('Sending', function() {
       },
 
       function (callback) {
-        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'current')
         .on('ripple_state', function (m) {
           //                console.log("BALANCE: %s", JSON.stringify(m));
           //                console.log("account_balance: %s", m.account_balance.to_text_full());
@@ -106,7 +106,7 @@ suite('Sending', function() {
       },
 
       function (callback) {
-        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'current')
         .on('ripple_state', function (m) {
           assert(m.account_balance.equals("0/USD/alice"));
           assert(m.account_limit.equals("700/USD/mtgox"));
@@ -117,16 +117,16 @@ suite('Sending', function() {
         })
         .request();
       },
-      // Set negative limit.
-      function (callback) {
-        $.remote.transaction()
-        .ripple_line_set("alice", "-1/USD/mtgox")
-        .once('submitted', function (m) {
-          assert.strictEqual('temBAD_LIMIT', m.engine_result);
-          callback();
-        })
-        .submit();
-      },
+      // // Set negative limit.
+      // function (callback) {
+      //   $.remote.transaction()
+      //   .ripple_line_set("alice", "-1/USD/mtgox")
+      //   .once('submitted', function (m) {
+      //     assert.strictEqual('temBAD_LIMIT', m.engine_result);
+      //     callback();
+      //   })
+      //   .submit();
+      // },
 
       //          function (callback) {
       //            self.what = "Display ledger";
@@ -148,7 +148,7 @@ suite('Sending', function() {
       function (callback) {
         self.what = "Make sure line is deleted.";
 
-        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "mtgox", "USD", 'current')
         .on('ripple_state', function (m) {
           // Used to keep lines.
           // assert(m.account_balance.equals("0/USD/alice"));
@@ -180,7 +180,7 @@ suite('Sending', function() {
       function (callback) {
         self.what = "Check ripple_line's state from alice's pov.";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .on('ripple_state', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
@@ -197,7 +197,7 @@ suite('Sending', function() {
       function (callback) {
         self.what = "Check ripple_line's state from bob's pov.";
 
-        $.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("bob", "alice", "USD", 'current')
         .on('ripple_state', function (m) {
           assert(m.account_balance.equals("0/USD/bob"));
           assert(m.account_limit.equals("500/USD/alice"));
@@ -267,7 +267,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance.";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("-24/USD/alice"));
           assert(m.peer_balance.equals("24/USD/bob"));
@@ -295,7 +295,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance from bob's pov.";
 
-        $.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("bob", "alice", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("57/USD/bob"));
           assert(m.peer_balance.equals("-57/USD/alice"));
@@ -323,7 +323,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance from alice's pov: 1";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("33/USD/alice"));
 
@@ -350,7 +350,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance from alice's pov: 2";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("-700/USD/alice"));
 
@@ -377,7 +377,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance from alice's pov: 3";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("600/USD/alice"));
 
@@ -402,7 +402,7 @@ suite('Sending future', function() {
       function (callback) {
         self.what = "Verify balance from alice's pov: 4";
 
-        $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+        $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
         .once('ripple_state', function (m) {
           assert(m.account_balance.equals("600/USD/alice"));
 
@@ -425,7 +425,7 @@ suite('Sending future', function() {
       //        function (callback) {
       //          self.what = "Verify balance from alice's pov: 5";
       //
-      //          $.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+      //          $.remote.request_ripple_balance("alice", "bob", "USD", 'current')
       //            .once('ripple_state', function (m) {
       //                console.log("account_balance: %s", m.account_balance.to_text_full());
       //                console.log("account_limit: %s", m.account_limit.to_text_full());

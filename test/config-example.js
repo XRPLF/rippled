@@ -49,6 +49,7 @@ exports.servers = {
     'trace' : false,
     'trusted' : true,
 
+    'servers' : ['ws://127.0.0.1:5006'],
     'websocket_ip': "127.0.0.1",
     'websocket_port': 5006,
     'websocket_ssl': false,
@@ -85,6 +86,7 @@ exports.servers = {
     'websocket_ip': "127.0.0.1",
     'websocket_port': 6432,
     'websocket_ssl': false,
+    'servers' : ['ws://127.0.0.1:6432'],
     'trusted' : true,
 
   }

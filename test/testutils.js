@@ -4,6 +4,8 @@ var extend      = require('extend');
 var Amount      = require('ripple-lib').Amount;
 var Remote      = require('ripple-lib').Remote;
 var Transaction = require('ripple-lib').Transaction;
+var UInt160     = require('ripple-lib').UInt160;
+
 var Server      = require('./server').Server;
 var path        = require("path");
 var server      = { };
@@ -24,8 +26,7 @@ function init_config() {
   return require('ripple-lib').config.load(get_config());
 };
 
-exports.get_server_config =
-get_server_config =
+var get_server_config = exports.get_server_config =
 function(config, host) {
   config = config || init_config();
   host = host || config.server_default;
@@ -221,7 +222,7 @@ function build_teardown(host) {
         data.remote.once('error', function (m) {
           //console.log('server error: ', m);
         })
-        data.remote.connect(false);
+        data.remote.disconnect();
       },
 
       function stop_server(callback) {
@@ -283,8 +284,8 @@ function set_account_flag(remote, account, options, callback) {
   tx.once('proposed', function(){callback();});
 }
 
+var fund_account =
 exports.fund_account =
-fund_account =
 function(remote, src, account, amount, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
@@ -307,8 +308,8 @@ function(remote, src, account, amount, callback) {
     tx.submit();
 }
 
+var create_account =
 exports.create_account =
-create_account =
 function(remote, src, account, amount, options, callback) {
   if (typeof options === 'function') {
     callback = options;
@@ -384,9 +385,15 @@ function credit_limit(remote, src, amount, callback) {
   var account_limit = _m[1];
   var quality_in    = _m[2];
   var quality_out   = _m[3];
+  
+  if (quality_in) {
+    quality_in = Number(quality_in);
+  }
+  if (quality_out) {
+    quality_out = Number(quality_out);
+  }
 
   var tx = remote.transaction()
-
   tx.ripple_line_set(src, account_limit, quality_in, quality_out)
 
   tx.once('proposed', function (m) {
@@ -423,7 +430,7 @@ function verify_limit(remote, src, amount, callback) {
     account:   src,
     issuer:    limit.issuer().to_json(),
     currency:  limit.currency().to_json(),
-    ledger:    'CURRENT'
+    ledger:    'current'
   };
 
   remote.request_ripple_balance(options, function(err, m) {
@@ -531,9 +538,11 @@ function verify_balance(remote, src, amount_json, callback) {
   assert.strictEqual(arguments.length, 4);
 
   var amount_req  = Amount.from_json(amount_json);
+  src = UInt160.json_rewrite(src);
 
   if (amount_req.is_native()) {
-    remote.request_account_balance(src, 'CURRENT', function(err, amount_act) {
+    var options = {account: src, ledger: 'current'};
+    remote.request_account_balance(options, function(err, amount_act) {
       if (err) {
         return callback(err);
       }
@@ -548,7 +557,14 @@ function verify_balance(remote, src, amount_json, callback) {
   } else {
     var issuer = amount_req.issuer().to_json();
     var currency = amount_req.currency().to_json();
-    remote.request_ripple_balance(src, issuer, currency, 'CURRENT', function(err, m) {
+    var options = {
+      account: src,
+      issuer: issuer,
+      currency: currency,
+      ledger: 'current'
+    };
+    
+    remote.request_ripple_balance(options, function(err, m) {
       if (err) {
         return callback(err);
       }
@@ -638,7 +654,7 @@ function verify_offer_not_found(remote, owner, seq, callback) {
 
 function verify_owner_count(remote, account, count, callback) {
   assert(arguments.length === 4);
-  var options = { account: account, ledger: 'CURRENT' };
+  var options = { account: account, ledger: 'current' };
   remote.request_owner_count(options, function(err, owner_count) {
     //console.log('owner_count: %s/%d', owner_count, value);
     callback(owner_count === count ? null : new Error());

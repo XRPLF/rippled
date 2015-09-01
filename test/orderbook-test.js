@@ -45,16 +45,19 @@ suite('Order Book', function() {
         $.remote.ledger_accept();
       },
 
-      function verifyBalance(callback) {
-        self.what = 'Verify balance';
+       function verifyBalance(callback) {
+         self.what = 'Verify balance';
 
-        testutils.verify_balance(
-          $.remote,
-          [ 'mtgox', 'alice', 'bob' ],
-          '19999999988',
-          callback
-        );
-      },
+         testutils.verify_balances(
+           $.remote,
+           {
+             mtgox: '19999999988',
+             alice: '19999999988',
+             bob: '19999999988'
+           },
+           callback
+         );
+       },
 
       function (callback) {
         self.what = 'Set transfer rate';
@@ -144,6 +147,7 @@ suite('Order Book', function() {
               index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61',
               owner_funds: '100',
               is_fully_funded: true,
+              quality: "400",
               taker_gets_funded: '10',
               taker_pays_funded: '4000' }
           ]
@@ -192,12 +196,13 @@ suite('Order Book', function() {
               { currency: 'USD',
                 issuer: 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
                 value: '5' },
-                TakerPays: '2000',
-                index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61',
-                owner_funds: '94.5',
-                is_fully_funded: true,
-                taker_gets_funded: '5',
-                taker_pays_funded: '2000' }
+              quality: "400",
+              TakerPays: '2000',
+              index: '2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61',
+              owner_funds: '94.5',
+              is_fully_funded: true,
+              taker_gets_funded: '5',
+              taker_pays_funded: '2000' }
           ]
           assert.deepEqual(offers, expected);
 

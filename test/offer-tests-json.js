@@ -96,7 +96,7 @@ module.exports = {
                                               "offers": [["100/USD/G2", "100/USD/G1"]]}}}
   },
 
-  "Partially crossed via bridging + direct": {
+  "Partially crossed via bridging + direct 2": {
     "pre_ledger": {"accounts": {"G1": {"balance": ["1000.0"]},
                                 "G2": {"balance": ["1000.0"]},
                                 "alice": {"balance": ["500000.0", "500/USD/G1", "500/USD/G2"],

@@ -334,7 +334,13 @@ create_path_test = (pth) ->
     _amt = Amount.from_json(pth.send)
 
     # self.server.clear_logs() "TODO: need to patch ripple-lib"
-    pf = self.remote.path_find(_src, _dst, _amt, [{currency: pth.via}])
+    options = {
+      src_account: _src
+      dst_account: _dst
+      dst_amount: _amt,
+      src_currencies: [{currency: pth.via}]
+    }
+    pf = self.remote.path_find(options)
 
     updates  = 0
     max_seen = 0
@@ -394,6 +400,7 @@ create_path_test = (pth) ->
           assert pth.n_alternatives ==  m.alternatives.length,
                  "fail (wrong n_alternatives): #{error_info(m)}"
 
+        pf.close()
         done() if not pth.do_send?
 
 ################################ SUITE CREATION ################################

@@ -39,7 +39,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check account flags';
 
-        $.remote.requestAccountFlags('root', 'CURRENT', function(err, m) {
+        $.remote.requestAccountFlags('root', 'current', function(err, m) {
           assert.ifError(err);
           assert.strictEqual(m, 0);
           done();
@@ -79,7 +79,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check RequireDestTag';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('success', function (m) {
           var wrong = !(m.node.Flags & Remote.flags.account_root.RequireDestTag);
 
@@ -108,7 +108,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check No RequireDestTag';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('success', function (m) {
           var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireDestTag);
 
@@ -148,7 +148,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check RequireAuth';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('error', callback)
         .on('success', function (m) {
           var wrong = !(m.node.Flags & Remote.flags.account_root.RequireAuth);
@@ -179,7 +179,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check No RequireAuth';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('error', callback)
         .on('success', function (m) {
           var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireAuth);
@@ -221,7 +221,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check DisallowXRP';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('error', callback)
         .on('success', function (m) {
           var wrong = !(m.node.Flags & Remote.flags.account_root.DisallowXRP);
@@ -252,7 +252,7 @@ suite('Account set', function() {
       function (callback) {
         self.what = 'Check AllowXRP';
 
-        $.remote.request_account_flags('root', 'CURRENT')
+        $.remote.request_account_flags('root', 'current')
         .on('error', callback)
         .on('success', function (m) {
           var wrong = !!(m.node.Flags & Remote.flags.account_root.DisallowXRP);
