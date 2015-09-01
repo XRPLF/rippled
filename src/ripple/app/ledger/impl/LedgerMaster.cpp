@@ -174,12 +174,12 @@ public:
     {
     }
 
-    LedgerIndex getCurrentLedgerIndex ()
+    LedgerIndex getCurrentLedgerIndex () override
     {
         return getApp().openLedger().current()->info().seq;
     }
 
-    LedgerIndex getValidLedgerIndex ()
+    LedgerIndex getValidLedgerIndex () override
     {
         return mValidLedgerSeq;
     }
@@ -1213,20 +1213,20 @@ public:
             {
                 WriteLog (lsINFO, LedgerMaster)
                         << "Missing node detected during pathfinding";
-		if (lastLedger->info().open)
-		{
-		    // our parent is the problem
+                if (lastLedger->info().open)
+                {
+                    // our parent is the problem
                     getApp().getInboundLedgers().acquire(
                         lastLedger->info().parentHash, lastLedger->info().seq - 1,
                         InboundLedger::fcGENERIC);
-		}
-		else
-		{
-		    // this ledger is the problem
+                }
+                else
+                {
+                    // this ledger is the problem
                     getApp().getInboundLedgers().acquire(
                         lastLedger->info().hash, lastLedger->info().seq,
                         InboundLedger::fcGENERIC);
-		}
+                 }
             }
         }
     }
