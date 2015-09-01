@@ -138,6 +138,7 @@ public:
     bool hasItem (uint256 const& id) const;
     bool delItem (uint256 const& id);
     bool addItem (SHAMapItem const& i, bool isTransaction, bool hasMeta);
+    bool addItem (SHAMapItem&& i, bool isTransaction, bool hasMeta);
     uint256 getHash () const;
 
     // save a copy if you have a temporary anyway

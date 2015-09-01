@@ -37,4 +37,10 @@ SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
 {
 }
 
+SHAMapItem::SHAMapItem (uint256 const& tag, Serializer&& data)
+    : tag_ (tag)
+    , data_(std::move(data.modData()))
+{
+}
+
 } // ripple

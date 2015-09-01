@@ -40,6 +40,7 @@ private:
 public:
     SHAMapItem (uint256 const& tag, Blob const & data);
     SHAMapItem (uint256 const& tag, Serializer const& s);
+    SHAMapItem (uint256 const& tag, Serializer&& s);
 
     Slice slice() const;
 
