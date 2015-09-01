@@ -95,6 +95,7 @@ void applyTransactions (
   @return                       resultSuccess, resultFail or resultRetry
 */
 int applyTransaction (
+    Application& app,
     OpenView& view,
     std::shared_ptr<STTx const> const& txn,
     bool retryAssured,
