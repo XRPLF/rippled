@@ -18,18 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/strHex.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
-#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -53,7 +48,13 @@ Json::Value doSubmit (RPC::Context& context)
         auto const failType = getFailHard (context);
 
         return RPC::transactionSubmit (
-            context.params, failType, context.netOps, context.role);
+        context.params,
+        failType,
+        context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app.getFeeTrack(),
+        context.ledgerMaster.getCurrentLedger(),
+        RPC::getProcessTxnFn (context.netOps));
     }
 
     Json::Value jvResult;

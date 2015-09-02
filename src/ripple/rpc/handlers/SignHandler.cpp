@@ -18,11 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/json_value.h>
-#include <ripple/net/RPCErr.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
@@ -42,7 +39,12 @@ Json::Value doSign (RPC::Context& context)
             && context.params[jss::fail_hard].asBool ());
 
     return RPC::transactionSign (
-        context.params, failType, context.netOps, context.role);
+        context.params,
+        failType,
+        context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app.getFeeTrack(),
+        context.ledgerMaster.getCurrentLedger());
 }
 
 } // ripple
