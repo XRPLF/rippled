@@ -18,23 +18,19 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/core/LoadFeeTrack.h>
-#include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
-#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
@@ -99,109 +95,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-// TxnSignApiFacade methods
-
-void TxnSignApiFacade::snapshotAccountState (AccountID const& accountID)
-{
-    if (!netOPs_) // Unit testing.
-        return;
-
-    ledger_ = getApp().getLedgerMaster ().getCurrentLedger ();
-    accountID_ = accountID;
-    sle_ = cachedRead(*ledger_,
-        keylet::account(accountID_).key, ltACCOUNT_ROOT);
-}
-
-bool TxnSignApiFacade::isValidAccount () const
-{
-    if (!ledger_) // Unit testing.
-        return true;
-
-    return static_cast <bool> (sle_);
-}
-
-std::uint32_t TxnSignApiFacade::getSeq () const
-{
-    if (!ledger_) // Unit testing.
-        return 0;
-
-    return sle_->getFieldU32(sfSequence);
-}
-
-void TxnSignApiFacade::processTransaction (
-    Transaction::pointer& transaction,
-    bool bAdmin,
-    bool bLocal,
-    NetworkOPs::FailHard failType)
-{
-    if (!netOPs_) // Unit testing.
-        return;
-
-    netOPs_->processTransaction(transaction, bAdmin, bLocal, failType);
-}
-
-boost::optional<STPathSet>
-TxnSignApiFacade::findPathsForOneIssuer (
-    AccountID const& dstAccountID,
-    Issue const& srcIssue,
-    STAmount const& dstAmount,
-    int searchLevel,
-    unsigned int const maxPaths,
-    STPathSet const& paths,
-    STPath& fullLiquidityPath) const
-{
-    if (! ledger_) // Unit testing.
-    {
-        // Note that unit tests don't (yet) need paths or fullLiquidityPath.
-        boost::optional<STPathSet> result;
-        result.emplace();
-        return result;
-    }
-
-    auto cache = std::make_shared<RippleLineCache> (ledger_);
-    return ripple::findPathsForOneIssuer(
-        cache,
-        accountID_,
-        dstAccountID,
-        srcIssue,
-        dstAmount,
-        searchLevel,
-        maxPaths,
-        paths,
-        fullLiquidityPath);
-}
-
-std::uint64_t TxnSignApiFacade::scaleFeeBase (std::uint64_t fee) const
-{
-    if (!ledger_) // Unit testing.
-        return fee;
-
-    // VFALCO Audit
-    return getApp().getFeeTrack().scaleFeeBase(
-        fee, ledger_->fees().base, ledger_->fees().units);
-}
-
-std::uint64_t
-TxnSignApiFacade::scaleFeeLoad (std::uint64_t fee, bool bAdmin) const
-{
-    if (!ledger_) // Unit testing.
-        return fee;
-
-    // VFALCO Audit
-    return getApp().getFeeTrack().scaleFeeLoad(
-        fee, ledger_->fees().base, ledger_->fees().units,
-            bAdmin);
-}
-
-bool TxnSignApiFacade::hasAccountRoot () const
-{
-    if (!netOPs_) // Unit testing.
-        return true;
-    return ledger_->exists(
-        keylet::account(accountID_));
-}
-
-error_code_i acctMatchesPubKey (
+static error_code_i acctMatchesPubKey (
     std::shared_ptr<SLE const> accountState,
     AccountID const& accountID,
     RippleAddress const& publicKey)
@@ -236,134 +130,13 @@ error_code_i acctMatchesPubKey (
     return rpcBAD_SECRET;
 }
 
-error_code_i TxnSignApiFacade::singleAcctMatchesPubKey (
-    RippleAddress const& publicKey) const
-{
-    if (!netOPs_) // Unit testing.
-        return rpcSUCCESS;
-
-    return acctMatchesPubKey (sle_, accountID_, publicKey);
-}
-
-error_code_i TxnSignApiFacade::multiAcctMatchesPubKey (
-    AccountID const& accountID,
-    RippleAddress const& publicKey) const
-{
-    std::shared_ptr<SLE const> accountState;
-    // VFALCO Do we need to check netOPs_?
-    if (netOPs_ && ledger_)
-    {
-        // If it's available, get the account root for the multi-signer's
-        // accountID.  It's okay if the account root is not available,
-        // since they might be signing with a phantom (unfunded) account.
-        accountState = cachedRead(*ledger_,
-            keylet::account(accountID).key, ltACCOUNT_ROOT);
-    }
-
-    return acctMatchesPubKey (accountState, accountID, publicKey);
-}
-
-int TxnSignApiFacade::getValidatedLedgerAge () const
-{
-    if (!netOPs_) // Unit testing.
-        return 0;
-
-    return getApp().getLedgerMaster ().getValidatedLedgerAge ();
-}
-
-bool TxnSignApiFacade::isLoadedCluster () const
-{
-    if (!netOPs_) // Unit testing.
-        return false;
-
-    return getApp().getFeeTrack().isLoadedCluster();
-}
-
-//------------------------------------------------------------------------------
-
-/** Fill in the fee on behalf of the client.
-    This is called when the client does not explicitly specify the fee.
-    The client may also put a ceiling on the amount of the fee. This ceiling
-    is expressed as a multiplier based on the current ledger's fee schedule.
-
-    JSON fields
-
-    "Fee"   The fee paid by the transaction. Omitted when the client
-            wants the fee filled in.
-
-    "fee_mult_max"  A multiplier applied to the current ledger's transaction
-                    fee that caps the maximum the fee server should auto fill.
-                    If this optional field is not specified, then a default
-                    multiplier is used.
-
-    @param tx       The JSON corresponding to the transaction to fill in.
-    @param ledger   A ledger for retrieving the current fee schedule.
-    @param roll     Identifies if this is called by an administrative endpoint.
-
-    @return         A JSON object containing the error results, if any
-*/
-
-Json::Value checkFee (
-    Json::Value& request,
-    TxnSignApiFacade& apiFacade,
-    Role const role,
-    AutoFill const doAutoFill)
-{
-    Json::Value& tx (request[jss::tx_json]);
-    if (tx.isMember (jss::Fee))
-        return Json::Value();
-
-    if (doAutoFill == AutoFill::dont)
-        return RPC::missing_field_error ("tx_json.Fee");
-
-    int mult = Tuning::defaultAutoFillFeeMultiplier;
-    if (request.isMember (jss::fee_mult_max))
-    {
-        if (request[jss::fee_mult_max].isNumeric ())
-        {
-            mult = request[jss::fee_mult_max].asInt();
-        }
-        else
-        {
-            return RPC::make_error (rpcHIGH_FEE,
-                RPC::expected_field_message (jss::fee_mult_max, "a number"));
-        }
-    }
-
-    // Default fee in fee units.
-    std::uint64_t const feeDefault = getConfig().TRANSACTION_FEE_BASE;
-
-    // Administrative endpoints are exempt from local fees.
-    std::uint64_t const fee =
-        apiFacade.scaleFeeLoad (feeDefault, role == Role::ADMIN);
-
-    std::uint64_t const limit = mult * apiFacade.scaleFeeBase (feeDefault);
-
-    if (fee > limit)
-    {
-        std::stringstream ss;
-        ss << "Fee of " << fee
-            << " exceeds the requested tx limit of " << limit;
-        return RPC::make_error (rpcHIGH_FEE, ss.str());
-    }
-
-    tx [jss::Fee] = static_cast<int>(fee);
-    return Json::Value();
-}
-
-enum class PathFind : unsigned char
-{
-    dont,
-    might
-};
-
 static Json::Value checkPayment(
     Json::Value const& params,
     Json::Value& tx_json,
     AccountID const& srcAddressID,
-    TxnSignApiFacade const& apiFacade,
     Role const role,
-    PathFind const doPath)
+    std::shared_ptr<ReadView const>& ledger,
+    bool doPath)
 {
     // Only path find for Payments.
     if (tx_json[jss::TransactionType].asString () != "Payment")
@@ -385,7 +158,7 @@ static Json::Value checkPayment(
     if (! dstAccountID)
         return RPC::invalid_field_error ("tx_json.Destination");
 
-    if ((doPath == PathFind::dont) && params.isMember (jss::build_path))
+    if ((doPath == false) && params.isMember (jss::build_path))
         return RPC::make_error (rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
 
@@ -419,11 +192,14 @@ static Json::Value checkPayment(
                 return rpcError (rpcTOO_BUSY);
 
             STPath fullLiquidityPath;
-            auto result = apiFacade.findPathsForOneIssuer (
+            auto cache = std::make_shared<RippleLineCache> (ledger);
+            auto result = findPathsForOneIssuer (
+                cache,
+                srcAddressID,
                 *dstAccountID,
-                sendMax.issue (),
+                sendMax.issue(),
                 amount,
-                getConfig ().PATH_SEARCH_OLD,
+                getConfig().PATH_SEARCH_OLD,
                 4,  // iMaxPaths
                 {},
                 fullLiquidityPath);
@@ -458,9 +234,10 @@ static Json::Value checkPayment(
 static std::pair<Json::Value, AccountID>
 checkTxJsonFields (
     Json::Value const& tx_json,
-    TxnSignApiFacade const& apiFacade,
     Role const role,
-    bool const verify)
+    bool const verify,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack)
 {
     std::pair<Json::Value, AccountID> ret;
 
@@ -495,15 +272,14 @@ checkTxJsonFields (
 
     // Check for current ledger.
     if (verify && !getConfig ().RUN_STANDALONE &&
-        (apiFacade.getValidatedLedgerAge() >
-          Tuning::maxValidatedLedgerAge))
+        (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
         ret.first = rpcError (rpcNO_CURRENT);
         return ret;
     }
 
     // Check for load.
-    if (apiFacade.isLoadedCluster() && (role != Role::ADMIN))
+    if (feeTrack.isLoadedCluster() && (role != Role::ADMIN))
     {
         ret.first = rpcError (rpcTOO_BUSY);
         return ret;
@@ -550,9 +326,11 @@ static
 transactionPreProcessResult
 transactionPreProcessImpl (
     Json::Value& params,
-    TxnSignApiFacade& apiFacade,
     Role role,
-    SigningForParams& signingArgs)
+    SigningForParams& signingArgs,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const> ledger)
 {
     KeyPair keypair;
     {
@@ -571,7 +349,8 @@ transactionPreProcessImpl (
     Json::Value& tx_json (params [jss::tx_json]);
 
     // Check tx_json fields, but don't add any.
-    auto txJsonResult = checkTxJsonFields (tx_json, apiFacade, role, verify);
+    auto txJsonResult =
+        checkTxJsonFields (tx_json, role, verify, validatedLedgerAge, feeTrack);
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
@@ -583,27 +362,27 @@ transactionPreProcessImpl (
     if (!verify && !tx_json.isMember (jss::Sequence))
         return RPC::missing_field_error ("tx_json.Sequence");
 
-    apiFacade.snapshotAccountState (srcAddressID);
+    std::shared_ptr<SLE const> sle = cachedRead(*ledger,
+        keylet::account(srcAddressID).key, ltACCOUNT_ROOT);
 
-    if (verify) {
-        if (!apiFacade.isValidAccount())
-        {
-            // If not offline and did not find account, error.
-            WriteLog (lsDEBUG, RPCHandler)
-                << "transactionSign: Failed to find source account "
-                << "in current ledger: "
-                << toBase58(srcAddressID);
+    if (verify && !sle)
+    {
+        // If not offline and did not find account, error.
+        WriteLog (lsDEBUG, RPCHandler)
+            << "transactionSign: Failed to find source account "
+            << "in current ledger: "
+            << toBase58(srcAddressID);
 
-            return rpcError (rpcSRC_ACT_NOT_FOUND);
-        }
+        return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
     {
         Json::Value err = checkFee (
             params,
-            apiFacade,
             role,
-            signingArgs.editFields() ? AutoFill::might : AutoFill::dont);
+            signingArgs.editFields(),
+            feeTrack,
+            ledger);
 
         if (RPC::contains_error (err))
             return std::move (err);
@@ -612,9 +391,9 @@ transactionPreProcessImpl (
             params,
             tx_json,
             srcAddressID,
-            apiFacade,
             role,
-            signingArgs.editFields() ? PathFind::might : PathFind::dont);
+            ledger,
+            signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return std::move (err);
@@ -623,7 +402,18 @@ transactionPreProcessImpl (
     if (signingArgs.editFields())
     {
         if (!tx_json.isMember (jss::Sequence))
-            tx_json[jss::Sequence] = apiFacade.getSeq();
+        {
+            if (! sle)
+            {
+                WriteLog (lsDEBUG, RPCHandler)
+                << "transactionSign: Failed to find source account "
+                << "in current ledger: "
+                << toBase58(srcAddressID);
+
+                return rpcError (rpcSRC_ACT_NOT_FOUND);
+            }
+            tx_json[jss::Sequence] = (*sle)[sfSequence];
+        }
 
         if (!tx_json.isMember (jss::Flags))
             tx_json[jss::Flags] = tfFullyCanonicalSig;
@@ -631,7 +421,7 @@ transactionPreProcessImpl (
 
     if (verify)
     {
-        if (!apiFacade.hasAccountRoot())
+        if (! sle)
             // XXX Ignore transactions for accounts not created.
             return rpcError (rpcSRC_ACT_NOT_FOUND);
 
@@ -648,7 +438,7 @@ transactionPreProcessImpl (
         {
             // Make sure the account and secret belong together.
             error_code_i const err =
-                apiFacade.singleAcctMatchesPubKey (keypair.publicKey);
+                acctMatchesPubKey (sle, srcAddressID, keypair.publicKey);
 
             if (err != rpcSUCCESS)
                 return rpcError (err);
@@ -763,7 +553,7 @@ transactionConstructImpl (STTx::pointer stpTrans)
     return ret;
 }
 
-Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
+static Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
 {
     Json::Value jvResult;
     try
@@ -796,12 +586,67 @@ Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
 
 //------------------------------------------------------------------------------
 
+Json::Value checkFee (
+    Json::Value& request,
+    Role const role,
+    bool doAutoFill,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const>& ledger)
+{
+    Json::Value& tx (request[jss::tx_json]);
+    if (tx.isMember (jss::Fee))
+        return Json::Value();
+
+    if (! doAutoFill)
+        return RPC::missing_field_error ("tx_json.Fee");
+
+    int mult = Tuning::defaultAutoFillFeeMultiplier;
+    if (request.isMember (jss::fee_mult_max))
+    {
+        if (request[jss::fee_mult_max].isNumeric ())
+        {
+            mult = request[jss::fee_mult_max].asInt();
+        }
+        else
+        {
+            return RPC::make_error (rpcHIGH_FEE,
+                RPC::expected_field_message (jss::fee_mult_max, "a number"));
+        }
+    }
+
+    // Default fee in fee units.
+    std::uint64_t const feeDefault = getConfig().TRANSACTION_FEE_BASE;
+
+    // Administrative endpoints are exempt from local fees.
+    std::uint64_t const fee =
+        feeTrack.scaleFeeLoad (feeDefault,
+            ledger->fees().base, ledger->fees().units, role == Role::ADMIN);
+
+    std::uint64_t const limit = mult * feeTrack.scaleFeeBase (
+        feeDefault, ledger->fees().base, ledger->fees().units);
+
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss << "Fee of " << fee
+            << " exceeds the requested tx limit of " << limit;
+        return RPC::make_error (rpcHIGH_FEE, ss.str());
+    }
+
+    tx [jss::Fee] = static_cast<int>(fee);
+    return Json::Value();
+}
+
+//------------------------------------------------------------------------------
+
 /** Returns a Json::objectValue. */
 Json::Value transactionSign (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
-    detail::TxnSignApiFacade& apiFacade,
-    Role role)
+    Role role,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const> ledger)
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << jvRequest;
 
@@ -809,8 +654,8 @@ Json::Value transactionSign (
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
-        transactionPreProcessImpl (jvRequest, apiFacade, role, signForParams);
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl (
+        jvRequest, role, signForParams, validatedLedgerAge, feeTrack, ledger);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -829,8 +674,11 @@ Json::Value transactionSign (
 Json::Value transactionSubmit (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
-    detail::TxnSignApiFacade& apiFacade,
-    Role role)
+    Role role,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const> ledger,
+    ProcessTransactionFn const& processTransaction)
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSubmit: " << jvRequest;
 
@@ -838,8 +686,8 @@ Json::Value transactionSubmit (
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
-        transactionPreProcessImpl (jvRequest, apiFacade, role, signForParams);
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl (
+        jvRequest, role, signForParams, validatedLedgerAge, feeTrack, ledger);
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -855,7 +703,7 @@ Json::Value transactionSubmit (
     try
     {
         // FIXME: For performance, should use asynch interface
-        apiFacade.processTransaction (
+        processTransaction (
             txn.second, role == Role::ADMIN, true, failType);
     }
     catch (std::exception&)
@@ -900,8 +748,10 @@ Json::Value checkMultiSignFields (Json::Value const& jvRequest)
 Json::Value transactionSignFor (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
-    detail::TxnSignApiFacade& apiFacade,
-    Role role)
+    Role role,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const> ledger)
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSignFor: " << jvRequest;
 
@@ -935,20 +785,25 @@ Json::Value transactionSignFor (
     SigningForParams signForParams(
         *signerAccountID, multiSignPubKey, multiSignature);
 
-    transactionPreProcessResult preprocResult =
-        transactionPreProcessImpl (
-            jvRequest,
-            apiFacade,
-            role,
-            signForParams);
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl (
+        jvRequest,
+        role,
+        signForParams,
+        validatedLedgerAge,
+        feeTrack,
+        ledger);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
     // Make sure the multiSignAddrID can legitimately multi-sign.
     {
+        // Make sure the account and secret belong together.
+        std::shared_ptr<SLE const> sle = cachedRead(*ledger,
+            keylet::account(*signerAccountID).key, ltACCOUNT_ROOT);
+
         error_code_i const err =
-            apiFacade.multiAcctMatchesPubKey (*signerAccountID, multiSignPubKey);
+            acctMatchesPubKey (sle, *signerAccountID, multiSignPubKey);
 
         if (err != rpcSUCCESS)
             return rpcError (err);
@@ -993,8 +848,11 @@ Json::Value transactionSignFor (
 Json::Value transactionSubmitMultiSigned (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
-    detail::TxnSignApiFacade& apiFacade,
-    Role role)
+    Role role,
+    int validatedLedgerAge,
+    LoadFeeTrack const& feeTrack,
+    std::shared_ptr<ReadView const> ledger,
+    ProcessTransactionFn const& processTransaction)
 {
     WriteLog (lsDEBUG, RPCHandler)
         << "transactionSubmitMultiSigned: " << jvRequest;
@@ -1010,16 +868,19 @@ Json::Value transactionSubmitMultiSigned (
 
     Json::Value& tx_json (jvRequest ["tx_json"]);
 
-    auto const txJsonResult = checkTxJsonFields(tx_json, apiFacade, role, true);
+    auto const txJsonResult =
+        checkTxJsonFields (tx_json, role, true, validatedLedgerAge, feeTrack);
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
     auto const srcAddressID = txJsonResult.second;
 
-    apiFacade.snapshotAccountState (srcAddressID);
-    if (!apiFacade.isValidAccount ())
+    std::shared_ptr<SLE const> sle = cachedRead(*ledger,
+        keylet::account(srcAddressID).key, ltACCOUNT_ROOT);
+
+    if (!sle)
     {
-        // If not offline and did not find account, error.
+        // If did not find account, error.
         WriteLog (lsDEBUG, RPCHandler)
             << "transactionSubmitMultiSigned: Failed to find source account "
             << "in current ledger: "
@@ -1029,7 +890,8 @@ Json::Value transactionSubmitMultiSigned (
     }
 
     {
-        Json::Value err = checkFee (jvRequest, apiFacade, role, AutoFill::dont);
+        Json::Value err = checkFee (jvRequest, role, false, feeTrack, ledger);
+
         if (RPC::contains_error(err))
             return std::move (err);
 
@@ -1037,9 +899,9 @@ Json::Value transactionSubmitMultiSigned (
             jvRequest,
             tx_json,
             srcAddressID,
-            apiFacade,
             role,
-            PathFind::dont);
+            ledger,
+            false);
 
         if (RPC::contains_error(err))
             return std::move (err);
@@ -1121,7 +983,7 @@ Json::Value transactionSubmitMultiSigned (
         {
             std::ostringstream err;
             err << "Expected "
-                << signersArrayName << " to be an array";
+                << signersArrayName << " to be an array.";
             return RPC::make_param_error (err.str ());
         }
 
@@ -1160,8 +1022,7 @@ Json::Value transactionSubmitMultiSigned (
     {
         std::ostringstream err;
         err << "Duplicate Signers:Signer:Account entries ("
-            << getApp().accountIDCache().toBase58(
-                dupIter->getAccountID(sfAccount))
+            << toBase58(dupIter->getAccountID(sfAccount))
             << ") are not allowed.";
         return RPC::make_param_error(err.str ());
     }
@@ -1175,7 +1036,7 @@ Json::Value transactionSubmitMultiSigned (
     {
         std::ostringstream err;
         err << "A Signer may not be the transaction's Account ("
-            << getApp().accountIDCache().toBase58(srcAddressID) << ").";
+            << toBase58(srcAddressID) << ").";
         return RPC::make_param_error(err.str ());
     }
 
@@ -1193,7 +1054,7 @@ Json::Value transactionSubmitMultiSigned (
     try
     {
         // FIXME: For performance, should use asynch interface
-        apiFacade.processTransaction (
+        processTransaction (
             txn.second, role == Role::ADMIN, true, failType);
     }
     catch (std::exception&)
