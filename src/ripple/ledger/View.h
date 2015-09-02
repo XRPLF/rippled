@@ -65,13 +65,11 @@ isGlobalFrozen (ReadView const& view,
 STAmount
 accountHolds (ReadView const& view,
     AccountID const& account, Currency const& currency,
-        AccountID const& issuer, FreezeHandling zeroIfFrozen,
-            Config const& config);
+        AccountID const& issuer, FreezeHandling zeroIfFrozen);
 
 STAmount
 accountFunds (ReadView const& view, AccountID const& id,
-    STAmount const& saDefault, FreezeHandling freezeHandling,
-        Config const& config);
+    STAmount const& saDefault, FreezeHandling freezeHandling);
 
 /** Iterate all items in an account's owner directory. */
 void

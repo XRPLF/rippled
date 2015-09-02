@@ -94,7 +94,7 @@ void AcceptedLedgerTx::buildJson ()
         if (account != amount.issue ().account)
         {
             auto const ownerFunds = accountFunds(*mLedger,
-                account, amount, fhIGNORE_FREEZE, getConfig());
+                account, amount, fhIGNORE_FREEZE);
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
