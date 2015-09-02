@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -45,7 +45,13 @@ Json::Value doSubmitMultiSigned (RPC::Context& context)
     auto const failType = NetworkOPs::doFailHard (failHard);
 
     return RPC::transactionSubmitMultiSigned (
-        context.params, failType, context.netOps, context.role);
+        context.params,
+        failType,
+        context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app.getFeeTrack(),
+        context.ledgerMaster.getCurrentLedger(),
+        RPC::getProcessTxnFn (context.netOps));
 }
 
 } // ripple
