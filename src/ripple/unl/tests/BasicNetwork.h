@@ -43,6 +43,51 @@
 namespace ripple {
 namespace test {
 
+/** Peer to peer network simulator.
+
+    The network is formed from a set of Peer objects representing
+    vertices and configurable connections representing edges.
+    The caller is responsible for creating the Peer objects ahead
+    of time.
+   
+    Peer objects cannot be destroyed once the BasicNetwork is
+    constructed. To handle peers going online and offline,
+    callers can simply disconnect all links and reconnect them
+    later. Connections are directed, one end is the inbound
+    Peer and the other is the outbound Peer.
+
+    Peers may send messages along their connections. To simulate
+    the effects of latency, these messages can be delayed by a
+    configurable duration set when the link is established.
+    Messages always arrive in the order they were sent on a
+    particular connection.
+
+    A message is modeled using a lambda function. The caller
+    provides the code to execute upon delivery of the message.
+    If a Peer is disconnected, all messages pending delivery
+    at either end of the associated connection are discarded.
+
+    A timer may be set for a Peer. When the timer expires,
+    a caller provided lambda is invoked. Timers may be canceled
+    using a token returned when the timer is created.
+
+    After creating the Peer set, constructing the network,
+    and establishing connections, the caller uses one or more
+    of the step, step_one, step_for, and step_until functions
+    to iterate the network,
+
+    Peer Concept:
+
+        Expression      Type        Requirements
+        ----------      ----        ------------
+        P               Peer
+        u, v                        Values of type P
+        P u(v)                      CopyConstructible
+        u.~P()                      Destructible
+        u == v          bool        EqualityComparable
+        u < v           bool        LessThanComparable
+        std::hash<P>    class       std::hash is defined for P
+*/
 template <class Peer>
 class BasicNetwork
 {
@@ -142,12 +187,12 @@ private:
             boost::intrusive::make_list<msg,
                 boost::intrusive::base_hook<by_to_hook>,
                     boost::intrusive::constant_time_size<false>>::type;
-        
+
         using by_from_list = typename
             boost::intrusive::make_list<msg,
                 boost::intrusive::base_hook<by_from_hook>,
                     boost::intrusive::constant_time_size<false>>::type;
-        
+
         using by_when_set = typename
             boost::intrusive::make_multiset<msg,
                 boost::intrusive::constant_time_size<false>>::type;
@@ -251,7 +296,7 @@ public:
 
         Preconditions:
 
-            &from != &to (self connect disallowed).
+            from != to (self connect disallowed).
 
             A link between from and to does not
             already exist (duplicates disallowed).
