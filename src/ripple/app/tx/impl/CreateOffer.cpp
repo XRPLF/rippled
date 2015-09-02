@@ -190,7 +190,7 @@ CreateOffer::dry_offer (ApplyView& view, Offer const& offer)
     if (offer.fully_consumed ())
         return true;
     auto const amount = accountFunds(view, offer.owner(),
-        offer.amount().out, fhZERO_IF_FROZEN, ctx_.config);
+        offer.amount().out, fhZERO_IF_FROZEN);
     return (amount <= zero);
 }
 
@@ -239,13 +239,13 @@ CreateOffer::bridged_cross (
         throw std::logic_error ("Bridging with XRP and an endpoint.");
 
     OfferStream offers_direct (view, view_cancel,
-        Book (taker.issue_in (), taker.issue_out ()), when, ctx_.config, j_);
+        Book (taker.issue_in (), taker.issue_out ()), when, j_);
 
     OfferStream offers_leg1 (view, view_cancel,
-        Book (taker.issue_in (), xrpIssue ()), when, ctx_.config, j_);
+        Book (taker.issue_in (), xrpIssue ()), when, j_);
 
     OfferStream offers_leg2 (view, view_cancel,
-        Book (xrpIssue (), taker.issue_out ()), when, ctx_.config, j_);
+        Book (xrpIssue (), taker.issue_out ()), when, j_);
 
     TER cross_result = tesSUCCESS;
 
@@ -290,8 +290,7 @@ CreateOffer::bridged_cross (
                 j_.debug << "  funds: " << accountFunds(view,
                     offers_direct.tip ().owner (),
                     offers_direct.tip ().amount ().out,
-                    fhIGNORE_FREEZE,
-                    ctx_.config);
+                    fhIGNORE_FREEZE);
             }
 
             cross_result = taker.cross(offers_direct.tip ());
@@ -311,14 +310,12 @@ CreateOffer::bridged_cross (
                 auto const owner1_funds_before = accountFunds(view,
                     offers_leg1.tip ().owner (),
                     offers_leg1.tip ().amount ().out,
-                    fhIGNORE_FREEZE,
-                    ctx_.config);
+                    fhIGNORE_FREEZE);
 
                 auto const owner2_funds_before = accountFunds(view,
                     offers_leg2.tip ().owner (),
                     offers_leg2.tip ().amount ().out,
-                    fhIGNORE_FREEZE,
-                    ctx_.config);
+                    fhIGNORE_FREEZE);
 
                 j_.debug << count << " Bridge:";
                 j_.debug << " offer1: " << offers_leg1.tip ();
@@ -382,7 +379,7 @@ CreateOffer::direct_cross (
     OfferStream offers (
         view, view_cancel,
         Book (taker.issue_in (), taker.issue_out ()),
-        when, ctx_.config, j_);
+        when, j_);
 
     TER cross_result (tesSUCCESS);
     int count = 0;
@@ -410,7 +407,7 @@ CreateOffer::direct_cross (
             j_.debug << "    out: " << offer.amount ().out;
             j_.debug << "  owner: " << offer.owner ();
             j_.debug << "  funds: " << accountFunds(view,
-                offer.owner (), offer.amount ().out, fhIGNORE_FREEZE, ctx_.config);
+                offer.owner (), offer.amount ().out, fhIGNORE_FREEZE);
         }
 
         cross_result = taker.cross (offer);
@@ -485,7 +482,7 @@ CreateOffer::cross (
     beast::WrappedSink takerSink (j_, "Taker ");
 
     Taker taker (cross_type_, view, account_, taker_amount,
-        tx().getFlags(), ctx_.config, beast::Journal (takerSink));
+        tx().getFlags(), beast::Journal (takerSink));
 
     try
     {
@@ -601,7 +598,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         result = tecFROZEN;
     }
     else if (accountFunds(view, account_, saTakerGets,
-        fhZERO_IF_FROZEN, ctx_.config) <= zero)
+        fhZERO_IF_FROZEN) <= zero)
     {
         if (j_.debug) j_.debug <<
             "delay: Offers must be at least partially funded.";

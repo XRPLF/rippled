@@ -56,7 +56,6 @@ private:
     Clock::time_point const expire_;
     BookTip tip_;
     Offer offer_;
-    Config const& config_;
 
     void
     erase (ApplyView& view);
@@ -64,7 +63,6 @@ private:
 public:
     OfferStream (ApplyView& view, ApplyView& cancelView,
         BookRef book, Clock::time_point when,
-            Config const& config,
                 beast::Journal journal);
 
     /** Returns the offer at the tip of the order book.

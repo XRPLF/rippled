@@ -246,7 +246,7 @@ public:
 
     Taker (CrossType cross_type, ApplyView& view,
         AccountID const& account, Amounts const& offer,
-            std::uint32_t flags, Config const& config,
+            std::uint32_t flags,
                 beast::Journal journal);
     ~Taker () = default;
 
@@ -313,8 +313,6 @@ private:
 private:
     // The underlying ledger entry we are dealing with
     ApplyView& view_;
-
-    Config const& config_;
 
     // The amount of XRP that flowed if we were autobridging
     STAmount xrp_flow_;

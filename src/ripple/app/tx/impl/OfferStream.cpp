@@ -25,14 +25,13 @@ namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
     BookRef book, Clock::time_point when,
-        Config const& config, beast::Journal journal)
+        beast::Journal journal)
     : j_ (journal)
     , view_ (view)
     , cancelView_ (cancelView)
     , book_ (book)
     , expire_ (when)
     , tip_ (view, book_)
-    , config_ (config)
 {
 }
 
@@ -126,8 +125,7 @@ OfferStream::step ()
 
         // Calculate owner funds
         auto const owner_funds = accountFunds(view_,
-            offer_.owner(), amount.out, fhZERO_IF_FROZEN,
-                config_);
+            offer_.owner(), amount.out, fhZERO_IF_FROZEN);
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -136,8 +134,7 @@ OfferStream::step ()
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
             auto const original_funds = accountFunds(cancelView_,
-                offer_.owner(), amount.out, fhZERO_IF_FROZEN,
-                    config_);
+                offer_.owner(), amount.out, fhZERO_IF_FROZEN);
 
             if (original_funds == owner_funds)
             {

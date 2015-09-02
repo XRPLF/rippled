@@ -517,13 +517,12 @@ BasicTaker::do_cross (
 
 Taker::Taker (CrossType cross_type, ApplyView& view,
     AccountID const& account, Amounts const& offer,
-        std::uint32_t flags, Config const& config,
+        std::uint32_t flags,
             beast::Journal journal)
     : BasicTaker (cross_type, account, offer, Quality(offer), flags,
         calculateRate(view, offer.in.getIssuer(), account),
         calculateRate(view, offer.out.getIssuer(), account), journal)
     , view_ (view)
-    , config_ (config)
     , xrp_flow_ (0)
     , direct_crossings_ (0)
     , bridge_crossings_ (0)
@@ -574,12 +573,10 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
     offer.consume (view_, order);
 }
 
-// VFALCO This function should take a config parameter
 STAmount
 Taker::get_funds (AccountID const& account, STAmount const& amount) const
 {
-    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN,
-        config_);
+    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN);
 }
 
 TER Taker::transferXRP (

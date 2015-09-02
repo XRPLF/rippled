@@ -121,16 +121,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             accountSend (av, gw1, alice, toCredit);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount + toCredit);
 
             accountSend (av, alice, gw1, toDebit);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount + toCredit - toDebit);
         }
 
@@ -140,16 +140,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             rippleCredit (av, gw1, alice, toCredit, true);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount + toCredit);
 
             rippleCredit (av, alice, gw1, toDebit, true);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount + toCredit - toDebit);
         }
 
@@ -160,16 +160,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             accountSend (pv, gw1, alice, toCredit);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount);
 
             accountSend (pv, alice, gw1, toDebit);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount - toDebit);
         }
 
@@ -180,11 +180,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             rippleCredit (pv, gw1, alice, toCredit, true);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount);
         }
 
@@ -195,11 +195,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             redeemIOU (pv, alice, toDebit, iss);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount - toDebit);
         }
 
@@ -210,11 +210,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             issueIOU (pv, alice, toCredit, iss);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount);
         }
 
@@ -225,27 +225,27 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, getConfig ());
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
 
             accountSend (pv, gw1, alice, toCredit);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount);
 
             {
                 PaymentSandbox pv2(&pv);
                 expect (accountHolds (pv2, alice, iss.currency, iss.account,
-                            fhIGNORE_FREEZE, getConfig ()) ==
+                            fhIGNORE_FREEZE) ==
                         startingAmount);
                 accountSend (pv2, gw1, alice, toCredit);
                 expect (accountHolds (pv2, alice, iss.currency, iss.account,
-                            fhIGNORE_FREEZE, getConfig ()) ==
+                            fhIGNORE_FREEZE) ==
                         startingAmount);
             }
 
             accountSend (pv, alice, gw1, toDebit);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE, getConfig ()) ==
+                        fhIGNORE_FREEZE) ==
                     startingAmount - toDebit);
         }
     }

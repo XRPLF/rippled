@@ -100,8 +100,7 @@ isFrozen (ReadView const& view, AccountID const& account,
 STAmount
 accountHolds (ReadView const& view,
     AccountID const& account, Currency const& currency,
-        AccountID const& issuer, FreezeHandling zeroIfFrozen,
-            Config const& config)
+        AccountID const& issuer, FreezeHandling zeroIfFrozen)
 {
     STAmount amount;
     if (isXRP(currency))
@@ -159,8 +158,7 @@ accountHolds (ReadView const& view,
 
 STAmount
 accountFunds (ReadView const& view, AccountID const& id,
-    STAmount const& saDefault, FreezeHandling freezeHandling,
-        Config const& config)
+    STAmount const& saDefault, FreezeHandling freezeHandling)
 {
     STAmount saFunds;
 
@@ -177,7 +175,7 @@ accountFunds (ReadView const& view, AccountID const& id,
     {
         saFunds = accountHolds(view, id,
             saDefault.getCurrency(), saDefault.getIssuer(),
-                freezeHandling, config);
+                freezeHandling);
         WriteLog (lsTRACE, View) << "accountFunds:" <<
             " account=" << to_string (id) <<
             " saDefault=" << saDefault.getFullText () <<

@@ -131,8 +131,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 node().saOfferFunds = accountFunds(view(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
-                    fhZERO_IF_FROZEN,
-                    getConfig());
+                    fhZERO_IF_FROZEN);
                 node().bFundsDirty = false;
 
                 WriteLog (lsTRACE, RippleCalc)
@@ -331,8 +330,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 node().saOfferFunds = accountFunds(view(),
                     node().offerOwnerAccount_,
                     node().saTakerGets,
-                    fhZERO_IF_FROZEN,
-                    getConfig());
+                    fhZERO_IF_FROZEN);
                 // Funds held.
 
                 if (node().saOfferFunds <= zero)

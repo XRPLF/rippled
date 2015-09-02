@@ -2206,7 +2206,7 @@ Json::Value NetworkOPsImp::transJson(
         if (account != amount.issue ().account)
         {
             auto const ownerFunds = accountFunds(*lpCurrent,
-                account, amount, fhIGNORE_FREEZE, getConfig());
+                account, amount, fhIGNORE_FREEZE);
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
@@ -2720,8 +2720,7 @@ void NetworkOPsImp::getBookPage (
 
                         saOwnerFunds = accountHolds (view,
                             uOfferOwnerID, book.out.currency,
-                                book.out.account, fhZERO_IF_FROZEN,
-                                    getConfig());
+                                book.out.account, fhZERO_IF_FROZEN);
 
                         if (saOwnerFunds < zero)
                         {
