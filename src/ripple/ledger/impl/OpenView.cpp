@@ -95,6 +95,8 @@ OpenView::OpenView (open_ledger_t,
     , hold_ (std::move(hold))
 {
     info_.open = true;
+    info_.validated = false;
+    info_.accepted = false;
     info_.seq = base_->info().seq + 1;
     info_.parentCloseTime = base_->info().closeTime;
     info_.parentHash = base_->info().hash;

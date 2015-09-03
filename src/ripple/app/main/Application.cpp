@@ -1322,7 +1322,7 @@ bool ApplicationImp::loadOldLedger (
                     {
                         auto s = std::make_shared <Serializer> ();
                         replayLedger->txRead(item.key()).first->add(*s);
-                        view.rawTxInsert (item.key(), s, nullptr);
+                        view.rawTxInsert (item.key(), std::move (s), nullptr);
                         return true;
                     });
             }

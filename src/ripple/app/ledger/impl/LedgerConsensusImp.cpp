@@ -989,7 +989,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
     // Put failed transactions into a deterministic order
-    CanonicalTXSet retriableTransactions (set->getHash ());
+    CanonicalTXSet retriableTxs (set->getHash ());
 
     // Build the new last closed ledger
     auto newLCL = std::make_shared<Ledger>(
@@ -1006,11 +1006,11 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         OpenView accum(&*newLCL);
         assert(accum.closed());
         applyTransactions (set.get(), accum,
-            newLCL, retriableTransactions, tapNONE);
+            newLCL, retriableTxs, tapNONE);
         accum.apply(*newLCL);
     }
 
-    // retriableTransactions will include any transactions that
+    // retriableTxs will include any transactions that
     // made it into the consensus set but failed during application
     // to the ledger.
 
@@ -1124,7 +1124,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
                 auto txn = std::make_shared<STTx>(sit);
 
-                retriableTransactions.insert (txn);
+                retriableTxs.insert (txn);
 
                 anyDisputes = true;
             }
@@ -1154,7 +1154,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         else
             rules.emplace();
         getApp().openLedger().accept(*rules,
-            newLCL, localTx, anyDisputes, retriableTransactions, tapNONE,
+            newLCL, localTx, anyDisputes, retriableTxs, tapNONE,
                 getApp().getHashRouter(), "consensus");
     }
 
@@ -1396,7 +1396,7 @@ void LedgerConsensusImp::takeInitialPosition (
         Serializer s (2048);
         tx.first->add(s);
         initialSet->addItem (
-            SHAMapItem (tx.first->getTransactionID(), s), true, false);
+            SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
     }
 
     if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
@@ -1834,7 +1834,7 @@ void applyTransactions (
     SHAMap const* set,
     OpenView& view,
     Ledger::ref checkLedger,
-    CanonicalTXSet& retriableTransactions,
+    CanonicalTXSet& retriableTxs,
     ApplyFlags flags)
 {
     if (set)
@@ -1864,7 +1864,7 @@ void applyTransactions (
                 {
                     // On failure, stash the failed transaction for
                     // later retry.
-                    retriableTransactions.insert (txn);
+                    retriableTxs.insert (txn);
                 }
             }
         }
@@ -1875,13 +1875,13 @@ void applyTransactions (
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
         WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " << pass << " Txns: "
-            << retriableTransactions.size ()
+            << retriableTxs.size ()
             << (certainRetry ? " retriable" : " final");
         int changes = 0;
 
-        auto it = retriableTransactions.begin ();
+        auto it = retriableTxs.begin ();
 
-        while (it != retriableTransactions.end ())
+        while (it != retriableTxs.end ())
         {
             try
             {
@@ -1889,12 +1889,12 @@ void applyTransactions (
                     it->second, certainRetry, flags))
                 {
                 case LedgerConsensusImp::resultSuccess:
-                    it = retriableTransactions.erase (it);
+                    it = retriableTxs.erase (it);
                     ++changes;
                     break;
 
                 case LedgerConsensusImp::resultFail:
-                    it = retriableTransactions.erase (it);
+                    it = retriableTxs.erase (it);
                     break;
 
                 case LedgerConsensusImp::resultRetry:
@@ -1905,7 +1905,7 @@ void applyTransactions (
             {
                 WriteLog (lsWARNING, LedgerConsensus)
                     << "Transaction throws";
-                it = retriableTransactions.erase (it);
+                it = retriableTxs.erase (it);
             }
         }
 
@@ -1923,7 +1923,7 @@ void applyTransactions (
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert (retriableTransactions.empty() || !certainRetry);
+    assert (retriableTxs.empty() || !certainRetry);
 }
 
 } // ripple

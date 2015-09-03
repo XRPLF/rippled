@@ -1290,16 +1290,16 @@ void NetworkOPsImp::switchLastClosedLedger (
 
 bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 {
-    assert (networkClosed != uint256());
+    assert (networkClosed.isNonZero ());
 
-    auto closingLedger = m_ledgerMaster.getCurrentLedger ();
+    auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
 
     if (m_journal.info) m_journal.info <<
-        "Consensus time for #" << closingLedger->info().seq <<
-        " with LCL " << closingLedger->info().parentHash;
+        "Consensus time for #" << closingInfo.seq <<
+        " with LCL " << closingInfo.parentHash;
 
     auto prevLedger = m_ledgerMaster.getLedgerByHash (
-        closingLedger->info().parentHash);
+        closingInfo.parentHash);
 
     if (!prevLedger)
     {
@@ -1313,8 +1313,8 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         return false;
     }
 
-    assert (prevLedger->getHash () == closingLedger->info().parentHash);
-    assert (closingLedger->info().parentHash ==
+    assert (prevLedger->getHash () == closingInfo.parentHash);
+    assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
     // Create a consensus object to get consensus on this ledger
@@ -1327,7 +1327,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         m_ledgerMaster,
         networkClosed,
         prevLedger,
-        m_ledgerMaster.getCurrentLedger ()->info().closeTime);
+        closingInfo.closeTime);
 
     m_journal.debug << "Initiating consensus engine";
     return true;

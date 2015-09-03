@@ -147,11 +147,11 @@ Status ledgerFromRequest (T& ledger, Context& context)
 
 bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
 {
-    if (ledger.info().validated)
-        return true;
-
     if (ledger.info().open)
         return false;
+
+    if (ledger.info().validated)
+        return true;
 
     auto seq = ledger.info().seq;
     try
