@@ -965,8 +965,21 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         consensus_.peekStoredProposals ().clear ();
     }
 
-    std::uint32_t closeTime = roundCloseTime (
-        mOurPosition->getCloseTime (), mCloseResolution);
+    auto closeTime = mOurPosition->getCloseTime();
+
+    auto replay = ledgerMaster_.releaseReplay();
+
+    if (replay)
+    {
+        // If we're replaying a close, use the time the ledger
+        // we're replaying closed
+        closeTime = replay->closeTime_;
+
+        if ((replay->closeFlags_ & sLCF_NoConsensusTime) != 0)
+            closeTime = 0;
+    }
+
+    closeTime = roundCloseTime (closeTime, mCloseResolution);
     bool closeTimeCorrect = true;
 
     if (closeTime == 0)
@@ -1002,7 +1015,17 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << "Applying consensus set transactions to the"
         << " last closed ledger";
 
+    if (replay)
     {
+        // Special case, we are replaying a ledger close
+        OpenView accum(&*newLCL);
+        for (auto& tx : replay->txns_)
+            applyTransaction (accum, tx.second, false, tapNO_CHECK_SIGN);
+        accum.apply(*newLCL);
+    }
+    else
+    {
+        // Normal case, we are not replaying a ledger close
         OpenView accum(&*newLCL);
         assert(accum.closed());
         applyTransactions (set.get(), accum,
@@ -1769,14 +1792,6 @@ make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
 
 //------------------------------------------------------------------------------
 
-/** Apply a transaction to a ledger
-
-  @param engine       The transaction engine containing the ledger.
-  @param txn          The transaction to be applied to ledger.
-  @param retryAssured true if the transaction should be retried on failure.
-  @return             One of resultSuccess, resultFail or resultRetry.
-*/
-static
 int
 applyTransaction (OpenView& view,
     std::shared_ptr<STTx const> const& txn,

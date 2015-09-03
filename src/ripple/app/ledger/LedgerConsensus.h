@@ -85,6 +85,18 @@ void applyTransactions (
     CanonicalTXSet& retriableTransactions,
     ApplyFlags flags);
 
+/** Apply a single transaction to a ledger
+  @param view                   The open view to apply to
+  @param txn                    The transaction to apply
+  @param retryAssured           True if another pass is assured
+  @param flags                  Flags for transactor
+*/
+int applyTransaction (
+    OpenView& view,
+    std::shared_ptr<STTx const> const& txn,
+    bool retryAssured,
+    ApplyFlags flags);
+
 } // ripple
 
 #endif
