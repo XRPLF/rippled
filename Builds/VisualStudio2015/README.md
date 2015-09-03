@@ -136,7 +136,7 @@ affected by changes in outside files. Therefore, it is necessary to build the
 required boost static libraries using this command:
 
 ```powershell
-bjam --toolset=msvc-14.0 variant=debug,release link=static runtime-link=static address-model=64
+bjam --toolset=msvc-14.0 --build-type=complete variant=debug,release link=static runtime-link=static address-model=64
 ```
 
 Building the boost libraries may take considerable time. When the build process
