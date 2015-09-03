@@ -75,34 +75,10 @@ page, run the installer, and follow the directions.
 
 ### Install OpenSSL
 
-1. Download OpenSSL source https://www.openssl.org/source/
-2. Unpack into an appropriate folder.
-3. Apply this patch to e_os.h in the root folder:
-  ([Reference 1](http://openssl.6102.n7.nabble.com/Compiling-OpenSSl-Project-with-Visual-Studio-2015-td59416.html),
-  [Reference 2](https://github.com/openssl/openssl/pull/312))
-  
-    ```diff
-    diff --git a/e_os.h~ b/e_os.h
-    index 7584485..87f93d4 100644
-    --- a/e_os.h~
-    +++ b/e_os.h
-    @@ -315,7 +315,7 @@ static __inline unsigned int _strlen31(const char *str)
-     #    undef isxdigit
-     #   endif
-     #   if defined(_MSC_VER) && !defined(_DLL) && defined(stdin)
-    -#    if _MSC_VER>=1300
-    +#    if _MSC_VER>=1300 && _MSC_VER <= 1800
-     #     undef stdin
-     #     undef stdout
-     #     undef stderr
-    ```
-    
-4. **This step may not be necessary. Please try skipping it, and let me know if the build succeeds or not.**
-  1. Copy the ml64.exe executable from `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64`
-    or `amd64` to `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin` so it will be in the path for
-    the command prompt. You'll need admin permissions. I don't know why it's not there already.
-5. Open `cmd.exe`. Change the the folder where you unpacked OpenSSL.
-6. Build the 64-bit libraries: (
+1. Download OpenSSL *v1.0.2d or higher* source https://www.openssl.org/source/
+2. Unpack the source archive into a temporary folder.
+3. Open `cmd.exe`. Change the the folder where you unpacked OpenSSL.
+4. Build the 64-bit libraries: (
   [Reference 1](http://developer.covenanteyes.com/building-openssl-for-visual-studio/),
   [Reference 2](http://www.p-nand-q.com/programming/windows/building_openssl_with_visual_studio_2013.html))
 
@@ -115,6 +91,7 @@ page, run the installer, and follow the directions.
     nmake -f ms\nt.mak
     nmake -f ms\nt.mak install
     ```
+5. Optionally, delete the temporary folder.
 
 * NOTE: Since rippled links statically to OpenSSL, it does not matter where the OpenSSL
   .DLL files are placed, or what version they are. rippled does not use or require any
@@ -122,7 +99,7 @@ page, run the installer, and follow the directions.
 
 ### Build Boost
 
-After downloading boost and unpacking it, open a Developer Command Prompt for
+After downloading boost and unpacking it, open a **Developer Command Prompt** for
 Visual Studio, change to the directory containing boost, then bootstrap the build tools:
 
 ```powershell
