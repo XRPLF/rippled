@@ -54,6 +54,13 @@ install:
             7z x rippled_deps15.zip -oC:\ -y > $null
         }
 
+  # Newer DEPS include a versions file.
+  # Dump it so we can verify correct behavior.
+  - ps: |
+        if (Test-Path 'C:/rippled_deps15/versions.txt') {
+          cat 'C:/rippled_deps15/versions.txt'
+        }
+
 # TODO: This is giving me grief
 # artifacts:
 #   # Save rippled.exe in the cloud after each build.
