@@ -30,19 +30,19 @@ import SCons.Util
 
 UnicodeByteMarker = '\xEF\xBB\xBF'
 
-V12DSPHeader = """\
+V14DSPHeader = """\
 <?xml version="1.0" encoding="%(encoding)s"?>\r
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r
 """
 
-V12DSPProjectConfiguration = """\
+V14DSPProjectConfiguration = """\
     <ProjectConfiguration Include="%(variant)s|%(platform)s">\r
       <Configuration>%(variant)s</Configuration>\r
       <Platform>%(platform)s</Platform>\r
     </ProjectConfiguration>\r
 """
 
-V12DSPGlobals = """\
+V14DSPGlobals = """\
   <PropertyGroup Label="Globals">\r
     <ProjectGuid>%(project_guid)s</ProjectGuid>\r
     <Keyword>Win32Proj</Keyword>\r
@@ -51,11 +51,11 @@ V12DSPGlobals = """\
   </PropertyGroup>\r
 """
 
-V12DSPPropertyGroup = """\
+V14DSPPropertyGroup = """\
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'" Label="Configuration">\r
     <CharacterSet>MultiByte</CharacterSet>\r
     <ConfigurationType>Application</ConfigurationType>\r
-    <PlatformToolset>v120</PlatformToolset>\r
+    <PlatformToolset>v140</PlatformToolset>\r
     <LinkIncremental>False</LinkIncremental>\r
     <UseDebugLibraries>%(use_debug_libs)s</UseDebugLibraries>\r
     <UseOfMfc>False</UseOfMfc>\r
@@ -65,17 +65,17 @@ V12DSPPropertyGroup = """\
   </PropertyGroup>\r
 """
 
-V12DSPImportGroup= """\
+V14DSPImportGroup= """\
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'" Label="PropertySheets">\r
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />\r
   </ImportGroup>\r
 """
 
-V12DSPItemDefinitionGroup= """\
+V14DSPItemDefinitionGroup= """\
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'">\r
 """
 
-V12CustomBuildProtoc= """\
+V14CustomBuildProtoc= """\
       <FileType>Document</FileType>\r
       <Command Condition="'$(Configuration)|$(Platform)'=='%(name)s'">protoc --cpp_out=%(cpp_out)s --proto_path=%%(RelativeDir) %%(Identity)</Command>\r
       <Outputs Condition="'$(Configuration)|$(Platform)'=='%(name)s'">%(base_out)s.pb.h;%(base_out)s.pb.cc</Outputs>\r
@@ -83,7 +83,7 @@ V12CustomBuildProtoc= """\
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='%(name)s'">false</LinkObjects>\r
 """
 
-V12DSPFiltersHeader = (
+V14DSPFiltersHeader = (
 '''<?xml version="1.0" encoding="utf-8"?>\r
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r
 ''')
@@ -663,13 +663,13 @@ class _ProjectGenerator(object):
 
         f = self.project_file
         f.write(UnicodeByteMarker)
-        f.write(V12DSPHeader % locals())
-        f.write(V12DSPGlobals % locals())
+        f.write(V14DSPHeader % locals())
+        f.write(V14DSPGlobals % locals())
         f.write('  <ItemGroup Label="ProjectConfigurations">\r\n')
         for config in self.configs:
             variant = config.variant
             platform = config.platform           
-            f.write(V12DSPProjectConfiguration % locals())
+            f.write(V14DSPProjectConfiguration % locals())
         f.write('  </ItemGroup>\r\n')
 
         f.write('  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />\r\n')
@@ -681,20 +681,20 @@ class _ProjectGenerator(object):
                 config.target[0].get_abspath()), self.project_dir)
             out_dir = winpath(variant_dir) + ntpath.sep
             int_dir = winpath(ntpath.join(variant_dir, 'src')) + ntpath.sep
-            f.write(V12DSPPropertyGroup % locals())
+            f.write(V14DSPPropertyGroup % locals())
 
         f.write('  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />\r\n')
         f.write('  <ImportGroup Label="ExtensionSettings" />\r\n')
         for config in self.configs:
             variant = config.variant
             platform = config.platform
-            f.write(V12DSPImportGroup % locals())
+            f.write(V14DSPImportGroup % locals())
 
         f.write('  <PropertyGroup Label="UserMacros" />\r\n')
         for config in self.configs:
             variant = config.variant
             platform = config.platform
-            f.write(V12DSPItemDefinitionGroup % locals())
+            f.write(V14DSPItemDefinitionGroup % locals())
             # Cl options
             f.write('    <ClCompile>\r\n')
             f.write(
@@ -759,7 +759,7 @@ class _ProjectGenerator(object):
                     out_parts = out_dir.split(os.sep)
                     out_parts.append(os.path.splitext(os.path.basename(item.path()))[0])
                     base_out = ntpath.join(*out_parts)
-                    props += V12CustomBuildProtoc % locals()
+                    props += V14CustomBuildProtoc % locals()
  
             f.write('    <%(tag)s Include="%(path)s">\r\n' % locals())
             f.write(props)
@@ -783,7 +783,7 @@ class _ProjectGenerator(object):
 
         f = self.filters_file
         f.write(UnicodeByteMarker)
-        f.write(V12DSPFiltersHeader)
+        f.write(V14DSPFiltersHeader)
 
         f.write('  <ItemGroup>\r\n')
         groups = set()
