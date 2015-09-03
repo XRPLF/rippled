@@ -1307,17 +1307,24 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         // For example, if we loaded a ledger
         bool loaded;
         prevLedger = std::make_shared<Ledger> (
-            closingLedger->getHash(),
+            closingInfo.parentHash,
             uint256(),
-            closingLedger->info().accountHash,
-            closingLedger->info().drops,
-            closingLedger->info().closeTime,
-            closingLedger->info().parentCloseTime,
+            closingInfo.accountHash,
+            closingInfo.drops,
+            closingInfo.closeTime,
+            closingInfo.parentCloseTime,
             0,
-            closingLedger->info().closeTimeResolution,
-            closingLedger->info().seq - 1,
+            closingInfo.closeTimeResolution,
+            closingInfo.seq - 1,
             loaded,
             getConfig());
+    }
+    else
+    {
+        prevLedger->setImmutable ();
+        assert (prevLedger->getHash () == closingInfo.parentHash);
+        assert (closingInfo.parentHash ==
+            m_ledgerMaster.getClosedLedger ()->getHash ());
     }
 
     if (!prevLedger)
@@ -1332,13 +1339,8 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         return false;
     }
 
-    assert (prevLedger->getHash () == closingInfo.parentHash);
-    assert (closingInfo.parentHash ==
-            m_ledgerMaster.getClosedLedger ()->getHash ());
-
     // Create a consensus object to get consensus on this ledger
     assert (!mLedgerConsensus);
-    prevLedger->setImmutable ();
 
     mLedgerConsensus = mConsensus->startRound (
         getApp().getInboundTransactions(),
