@@ -50,7 +50,9 @@
 
 // Disables beast's std::equal safe iterator overloads
 #ifndef BEAST_NO_CXX14_EQUAL
-# ifdef _MSC_VER
+# if defined(_MSC_VER) && _MSC_VER >= 1900
+#  define BEAST_NO_CXX14_EQUAL 1
+# elif defined(_MSC_VER)
 #  define BEAST_NO_CXX14_EQUAL 0
 # elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
 #  define BEAST_NO_CXX14_EQUAL 1
@@ -61,7 +63,9 @@
 
 // Disables beast's std::integer_sequence
 #ifndef BEAST_NO_CXX14_INTEGER_SEQUENCE
-# ifdef _MSC_VER
+# if defined(_MSC_VER) && _MSC_VER >= 1900
+#  define BEAST_NO_CXX14_INTEGER_SEQUENCE 1
+# elif defined(_MSC_VER)
 #  define BEAST_NO_CXX14_INTEGER_SEQUENCE 0
 # elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
 #  define BEAST_NO_CXX14_INTEGER_SEQUENCE 1
@@ -72,7 +76,9 @@
 
 // Disables beast's std::make_reverse_iterator
 #ifndef BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR
-# ifdef _MSC_VER
+# if defined(_MSC_VER) && _MSC_VER >= 1900
+#  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 1
+# elif defined(_MSC_VER)
 #  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 0
 # elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201402
 #  define BEAST_NO_CXX14_MAKE_REVERSE_ITERATOR 1
