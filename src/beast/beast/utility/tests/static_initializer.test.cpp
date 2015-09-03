@@ -158,7 +158,7 @@ static_initializer_test::test (cxx11_tag)
         t(counts);
     });
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1900
     // Visual Studio 2013 and earlier can exhibit both double
     // construction, and access before construction when function
     // local statics are initialized concurrently.

@@ -25,10 +25,12 @@
 #define BEAST_UTILITY_NOEXCEPT_H_INCLUDED
 
 #ifdef _MSC_VER
-# ifdef noexcept
-#  undef noexcept
+# if _MSC_VER < 1900
+#  ifdef noexcept
+#   undef noexcept
+#  endif
+#  define noexcept throw()
 # endif
-# define noexcept throw()
 # if _MSC_VER > 1600 && ! _ALLOW_KEYWORD_MACROS
 #  define _ALLOW_KEYWORD_MACROS 1 // (to stop VC2012 complaining)
 # endif
