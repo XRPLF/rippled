@@ -90,6 +90,8 @@ page, run the installer, and follow the directions.
     ms\do_win64a
     nmake -f ms\nt.mak
     nmake -f ms\nt.mak install
+    
+    copy tmp32\lib.pdb C:\lib\openssl-VC-64\lib\
     ```
 5. Optionally, delete the temporary folder.
 
