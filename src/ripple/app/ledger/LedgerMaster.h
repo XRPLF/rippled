@@ -38,6 +38,14 @@ namespace ripple {
 
 class Peer;
 
+struct LedgerReplay
+{
+    std::map< int, std::shared_ptr<STTx const> > txns_;
+    std::uint32_t closeTime_;
+    int closeFlags_;
+    Ledger::pointer prevLedger_;
+};
+
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
@@ -166,6 +174,10 @@ public:
     virtual void clearPriorLedgers (LedgerIndex seq) = 0;
 
     virtual void clearLedgerCachePrior (LedgerIndex seq) = 0;
+
+    // ledger replay
+    virtual void takeReplay (std::unique_ptr<LedgerReplay> replay) = 0;
+    virtual std::unique_ptr<LedgerReplay> releaseReplay () = 0;
 
     // Fetch Packs
     virtual

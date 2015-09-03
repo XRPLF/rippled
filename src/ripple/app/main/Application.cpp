@@ -1345,22 +1345,36 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
+            // and build replay structure
             auto const& txns = replayLedger->txMap();
+            auto replayData = std::make_unique <LedgerReplay> ();
+
+            replayData->prevLedger_ = replayLedger;
+            replayData->closeTime_ = replayLedger->info().closeTime;
+            replayData->closeFlags_ = replayLedger->info().closeFlags;
 
             for (auto const& item : txns)
             {
-                getHashRouter().setFlags (item.key(), SF_SIGGOOD);
+                auto txID = item.key();
+                auto txPair = replayLedger->txRead (txID);
+                auto txIndex = (*txPair.second)[sfTransactionIndex];
+
+                auto s = std::make_shared <Serializer> ();
+                txPair.first->add(*s);
+
+                getHashRouter().setFlags (txID, SF_SIGGOOD);
+
+                replayData->txns_.emplace (txIndex, txPair.first);
+
                 openLedger_->modify(
-                    [&replayLedger, &item](OpenView& view, beast::Journal j)
+                    [&txID, &s](OpenView& view, beast::Journal j)
                     {
-                        auto s = std::make_shared <Serializer> ();
-                        replayLedger->txRead(item.key()).first->add(*s);
-                        view.rawTxInsert (item.key(), std::move (s), nullptr);
+                        view.rawTxInsert (txID, std::move (s), nullptr);
                         return true;
                     });
             }
 
-            m_ledgerMaster->switchLCL (loadLedger);
+            m_ledgerMaster->takeReplay (std::move (replayData));
         }
     }
     catch (SHAMapMissingNode&)
