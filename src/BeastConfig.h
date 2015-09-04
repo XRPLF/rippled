@@ -176,9 +176,4 @@
 #define RIPPLE_USE_OPENSSL 0
 #endif
 
-// Enables the experimental OpenLedger
-#ifndef RIPPLE_OPEN_LEDGER
-#define RIPPLE_OPEN_LEDGER 0
-#endif
-
 #endif
