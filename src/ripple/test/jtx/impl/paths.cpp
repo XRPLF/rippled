@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/test/jtx/paths.h>
-#include <ripple/app/paths/FindPaths.h>
 #include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
@@ -36,16 +36,22 @@ paths::operator()(Env& env, JTx& jt) const
         jv[jss::Destination].asString());
     auto const amount = amountFromJson(
         sfAmount, jv[jss::Amount]);
+    Pathfinder pf (
+        std::make_shared<RippleLineCache>(env.open()),
+            from, to, in_.currency, in_.account,
+                amount, boost::none, env.app());
+    if (! pf.findPaths(depth_))
+        return;
+
     STPath fp;
-    auto const found = findPathsForOneIssuer(
-        std::make_shared<RippleLineCache>(
-            env.open()), from, to,
-                in_, amount,
-                    depth_, limit_, {}, fp, env.app());
+    pf.computePathRanks (limit_);
+    auto const found = pf.getBestPaths(
+        limit_, fp, {}, in_.account);
+
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
-    if (found && ! found->isDefault())
-        jv[jss::Paths] = found->getJson(0);
+    if (! found.isDefault())
+        jv[jss::Paths] = found.getJson(0);
 }
 
 //------------------------------------------------------------------------------

@@ -20,7 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_writer.h>
@@ -192,33 +193,30 @@ static Json::Value checkPayment(
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
-            STPath fullLiquidityPath;
-            auto cache = std::make_shared<RippleLineCache> (ledger);
-            auto result = findPathsForOneIssuer (
-                cache,
-                srcAddressID,
-                *dstAccountID,
-                sendMax.issue(),
-                amount,
-                app.config().PATH_SEARCH_OLD,
-                4,  // iMaxPaths
-                {},
-                fullLiquidityPath,
-                app);
+            STPathSet result;
+            if (ledger)
+            {
+                Pathfinder pf(std::make_shared<RippleLineCache>(ledger),
+                    srcAddressID, *dstAccountID, sendMax.issue().currency,
+                        sendMax.issue().account, amount, boost::none, app);
+                if (pf.findPaths(app.config().PATH_SEARCH_OLD))
+                {
+                    // 4 is the maxium paths
+                    pf.computePathRanks(4);
+                    STPath fullLiquidityPath;
+                    STPathSet paths;
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths,
+                        sendMax.issue().account);
+                }
+            }
 
             auto j = app.journal ("RPCHandler");
-            if (! result)
-            {
-                JLOG (j.debug)
-                    << "transactionSign: build_path: No paths found.";
-                return rpcError (rpcNO_PATH);
-            }
             JLOG (j.debug)
                 << "transactionSign: build_path: "
-                << result->getJson (0);
+                << result.getJson (0);
 
-            if (! result->empty ())
-                tx_json[jss::Paths] = result->getJson (0);
+            if (! result.empty ())
+                tx_json[jss::Paths] = result.getJson (0);
         }
     }
     return Json::Value();

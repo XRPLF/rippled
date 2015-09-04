@@ -22,7 +22,6 @@
 #include <ripple/app/paths/RippleState.cpp>
 #include <ripple/app/paths/AccountCurrencies.cpp>
 #include <ripple/app/paths/Credit.cpp>
-#include <ripple/app/paths/FindPaths.cpp>
 #include <ripple/app/paths/Pathfinder.cpp>
 #include <ripple/app/paths/Node.cpp>
 #include <ripple/app/paths/PathRequest.cpp>
