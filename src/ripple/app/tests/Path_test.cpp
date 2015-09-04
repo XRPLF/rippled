@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
@@ -151,16 +150,17 @@ find_paths(jtx::Env& env,
         jvCurrency[jss::currency] = to_string(c);
         jvSrcCurrencies.append(jvCurrency);
     }
-
+    auto const convert_all =
+        saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
     auto result = ripplePathFind(cache, src.id(), dst.id(),
-        saDstAmount, jvSrcCurrencies, boost::none, level, saSendMax,
-            saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true), env.app ());
+        (convert_all ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
+            STAmount::cMaxOffset) : saDstAmount), jvSrcCurrencies, boost::none,
+                level, saSendMax, convert_all, env.app());
     if (! result.first)
     {
         throw std::runtime_error(
             "Path_test::findPath: ripplePathFind find failed");
     }
-
     auto const& jv = result.second[0u];
     Json::Value paths;
     paths["Paths"] = jv["paths_computed"];

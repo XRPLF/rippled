@@ -30,7 +30,7 @@
 #include <ripple/test/jtx/utility.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/ledger/LedgerTiming.h>
-#include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -87,7 +87,7 @@ Env::Env (beast::unit_test::suite& test_)
     , openLedger (closed_, app().config(), cachedSLEs_, journal)
 {
     memoize(master);
-    initializePathfinding();
+    Pathfinder::initPathTable();
 }
 
 std::shared_ptr<ReadView const>

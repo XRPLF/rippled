@@ -21,7 +21,7 @@
 #define RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/InfoSub.h>
@@ -98,10 +98,13 @@ private:
     void setValid ();
     void resetLevel (int level);
 
-    bool
-    findPaths (RippleLineCache::ref,
-        FindPaths&, Issue const&,
-            Json::Value& jvArray);
+    std::unique_ptr<Pathfinder> const&
+    getPathFinder(RippleLineCache::ref,
+        hash_map<Currency, std::unique_ptr<Pathfinder>>&, Currency const&,
+            STAmount const&, int const);
+
+    void
+    findPaths (RippleLineCache::ref, int const, Json::Value&);
 
     int parseJson (Json::Value const&);
 
@@ -141,6 +144,8 @@ private:
     boost::posix_time::ptime ptCreated;
     boost::posix_time::ptime ptQuickReply;
     boost::posix_time::ptime ptFullReply;
+
+    static unsigned int const max_paths_ = 4;
 };
 
 } // ripple

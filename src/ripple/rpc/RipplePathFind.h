@@ -31,7 +31,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
         STAmount const& saDstAmount,
             Json::Value const& jvSrcCurrencies,
                 boost::optional<Json::Value> const& contextPaths,
-                    int const& level, boost::optional<STAmount> saSendMax,
+                    int const level, boost::optional<STAmount> saSendMax,
                         bool convert_all, Application& app);
 
 }

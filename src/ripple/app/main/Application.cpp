@@ -39,7 +39,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/Validations.h>
-#include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
@@ -931,7 +931,7 @@ void ApplicationImp::setup()
 
     m_amendmentTable->addInitial (
         config_->section (SECTION_AMENDMENTS));
-    initializePathfinding ();
+    Pathfinder::initPathTable();
 
     m_ledgerMaster->setMinValidations (
         config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
