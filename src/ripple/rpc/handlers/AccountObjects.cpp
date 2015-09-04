@@ -31,6 +31,7 @@
 #include <ripple/rpc/impl/GetAccountObjects.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 #include <string>
 #include <sstream>
@@ -107,22 +108,9 @@ Json::Value doAccountObjects (RPC::Context& context)
         type = iter->second;
     }
 
-    auto limit = RPC::Tuning::defaultObjectsPerRequest;
-    if (params.isMember (jss::limit))
-    {
-        auto const& jvLimit = params[jss::limit];
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error (jss::limit, "unsigned integer");
-
-        limit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
-
-        if (context.role != Role::ADMIN)
-        {
-            limit = std::max (RPC::Tuning::minObjectsPerRequest,
-                std::min (limit, RPC::Tuning::maxObjectsPerRequest));
-        }
-    }
+    unsigned int limit;
+    if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
+        return *err;
 
     uint256 dirIndex;
     uint256 entryIndex;

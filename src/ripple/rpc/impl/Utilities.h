@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/app/tx/Transaction.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace Json {
 class Value;
@@ -51,6 +52,13 @@ addPaymentDeliveredAmount (
 void
 injectSLE (Json::Value& jv,
     SLE const& sle);
+
+/** Retrieve the limit value from a Context, or set a default -
+    then restrict the limit by max and min if not an ADMIN request.
+
+    If there is an error, return it as JSON. */
+boost::optional<Json::Value> readLimitField(
+    unsigned int& limit, Tuning::LimitRange const&, Context const&);
 
 } // RPC
 } // ripple

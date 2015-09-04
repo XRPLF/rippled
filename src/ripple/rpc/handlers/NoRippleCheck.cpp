@@ -30,6 +30,7 @@
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
 
@@ -74,20 +75,9 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         return RPC::invalid_field_message ("role");
     }
 
-    unsigned int limit = 300;
-    if (params.isMember (jss::limit))
-    {
-        auto const& jvLimit (params[jss::limit]);
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error ("limit", "unsigned integer");
-        limit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
-        if (context.role != Role::ADMIN)
-        {
-            limit = std::max (RPC::Tuning::minLinesPerRequest,
-                std::min (limit, RPC::Tuning::maxLinesPerRequest));
-        }
-    }
+    unsigned int limit;
+    if (auto err = readLimitField(limit, RPC::Tuning::noRippleCheck, context))
+        return *err;
 
     bool transactions = false;
     if (params.isMember (jss::transactions))
