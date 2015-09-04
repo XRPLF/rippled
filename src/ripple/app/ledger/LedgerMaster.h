@@ -38,6 +38,13 @@ namespace ripple {
 
 class Peer;
 
+struct LedgerReplay
+{
+    std::map< int, std::shared_ptr<STTx const> > txns_;
+    std::uint32_t closeTime_;
+    int closeFlags_;
+};
+
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
@@ -70,10 +77,7 @@ public:
     virtual LockType& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in
-    virtual Ledger::pointer getCurrentLedger () = 0;
-
-    // The holder for the current ledger
-    virtual LedgerHolder& getCurrentLedgerHolder() = 0;
+    virtual std::shared_ptr<ReadView const> getCurrentLedger () = 0;
 
     // The finalized ledger is the last closed/accepted ledger
     virtual Ledger::pointer getClosedLedger () = 0;
@@ -100,16 +104,13 @@ public:
 
     virtual std::uint32_t getEarliestFetch () = 0;
 
-    virtual void pushLedger (Ledger::pointer newLedger) = 0;
-    virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
     virtual bool storeLedger (Ledger::pointer) = 0;
     virtual void forceValid (Ledger::pointer) = 0;
 
     virtual void setFullLedger (
         Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
 
-    virtual void switchLedgers (
-        Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
+    virtual void switchLCL (Ledger::pointer lastClosed) = 0;
 
     virtual void failedSave(std::uint32_t seq, uint256 const& hash) = 0;
 
@@ -172,6 +173,10 @@ public:
     virtual void clearPriorLedgers (LedgerIndex seq) = 0;
 
     virtual void clearLedgerCachePrior (LedgerIndex seq) = 0;
+
+    // ledger replay
+    virtual void takeReplay (std::unique_ptr<LedgerReplay> replay) = 0;
+    virtual std::unique_ptr<LedgerReplay> releaseReplay () = 0;
 
     // Fetch Packs
     virtual

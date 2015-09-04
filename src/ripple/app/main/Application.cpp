@@ -117,6 +117,10 @@ private:
     FullBelowCache fullbelow_;
     NodeStore::Database& db_;
 
+    // missing node handler
+    std::uint32_t maxSeq = 0;
+    std::mutex maxSeqLock;
+
 public:
     AppFamily (AppFamily const&) = delete;
     AppFamily& operator= (AppFamily const&) = delete;
@@ -171,10 +175,49 @@ public:
     void
     missing_node (std::uint32_t seq) override
     {
-        uint256 const hash = getApp().getLedgerMaster ().getHashBySeq (seq);
-        if (hash.isZero())
+        WriteLog (lsERROR, Ledger) << "Missing node in " << seq;
+
+        // prevent recursive invocation
+        std::unique_lock <std::mutex> lock (maxSeqLock);
+
+        if (maxSeq == 0)
+        {
+            maxSeq = seq;
+
+            do
+            {
+                // Try to acquire the most recent missing ledger
+                seq = maxSeq;
+
+                lock.unlock();
+
+                // This can invoke the missing node handler
+                uint256 hash = getApp().getLedgerMaster().getHashBySeq (seq);
+
+                if (hash.isNonZero())
+                    getApp().getInboundLedgers().acquire (
+                        hash, seq, InboundLedger::fcGENERIC);
+
+                lock.lock();
+            }
+            while (maxSeq != seq);
+        }
+        else if (maxSeq < seq)
+        {
+            // We found a more recent ledger with a missing node
+            maxSeq = seq;
+        }
+    }
+
+    void
+    missing_node (uint256 const& hash) override
+    {
+        WriteLog (lsERROR, Ledger) << "Missing node in "
+            << to_string (hash);
+
+        if (hash.isNonZero())
             getApp().getInboundLedgers ().acquire (
-                hash, seq, InboundLedger::fcGENERIC);
+                hash, 0, InboundLedger::fcGENERIC);
     }
 };
 
@@ -1039,18 +1082,22 @@ private:
 
 void ApplicationImp::startGenesisLedger ()
 {
-    std::shared_ptr<Ledger const> const genesis =
+    std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(
             create_genesis, getConfig());
+    m_ledgerMaster->storeLedger (genesis);
+
     auto const next = std::make_shared<Ledger>(
         open_ledger, *genesis);
+    next->updateSkipList ();
     next->setClosed ();
     next->setAccepted ();
+    m_ledgerMaster->storeLedger (next);
+
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, getConfig(),
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
-    m_ledgerMaster->pushLedger (next,
-        std::make_shared<Ledger>(open_ledger, *next));
+    m_ledgerMaster->switchLCL (next);
 }
 
 Ledger::pointer
@@ -1202,6 +1249,8 @@ bool ApplicationImp::loadOldLedger (
                          }
 
                          loadLedger->setClosed ();
+                         loadLedger->stateMap().flushDirty
+                             (hotACCOUNT_NODE, loadLedger->info().seq);
                          loadLedger->setAccepted (closeTime,
                              closeTimeResolution, ! closeTimeEstimated);
                      }
@@ -1299,7 +1348,7 @@ bool ApplicationImp::loadOldLedger (
 
         auto const openLedger =
             std::make_shared<Ledger>(open_ledger, *loadLedger);
-        m_ledgerMaster->switchLedgers (loadLedger, openLedger);
+        m_ledgerMaster->switchLCL (loadLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, getConfig(),
@@ -1308,29 +1357,35 @@ bool ApplicationImp::loadOldLedger (
         if (replay)
         {
             // inject transaction(s) from the replayLedger into our open ledger
+            // and build replay structure
             auto const& txns = replayLedger->txMap();
+            auto replayData = std::make_unique <LedgerReplay> ();
 
-            // Get a mutable snapshot of the open ledger
-            Ledger::pointer cur = getLedgerMaster().getCurrentLedger();
-            cur = std::make_shared <Ledger> (*cur, true);
-            assert (!cur->isImmutable());
+            replayData->closeTime_ = replayLedger->info().closeTime;
+            replayData->closeFlags_ = replayLedger->info().closeFlags;
 
             for (auto const& item : txns)
             {
-                auto const txn =
-                    replayLedger->txRead(item.key()).first;
-                if (m_journal.info) m_journal.info <<
-                    txn->getJson(0);
-                Serializer s;
-                txn->add(s);
-                cur->rawTxInsert(item.key(),
-                    std::make_shared<Serializer const>(
-                        std::move(s)), nullptr);
-                getApp().getHashRouter().setFlags (item.key(), SF_SIGGOOD);
+                auto txID = item.key();
+                auto txPair = replayLedger->txRead (txID);
+                auto txIndex = (*txPair.second)[sfTransactionIndex];
+
+                auto s = std::make_shared <Serializer> ();
+                txPair.first->add(*s);
+
+                getApp().getHashRouter().setFlags (txID, SF_SIGGOOD);
+
+                replayData->txns_.emplace (txIndex, txPair.first);
+
+                openLedger_->modify(
+                    [&txID, &s](OpenView& view, beast::Journal j)
+                    {
+                        view.rawTxInsert (txID, std::move (s), nullptr);
+                        return true;
+                    });
             }
 
-            // Switch to the mutable snapshot
-            m_ledgerMaster->switchLedgers (loadLedger, cur);
+            m_ledgerMaster->takeReplay (std::move (replayData));
         }
     }
     catch (SHAMapMissingNode&)

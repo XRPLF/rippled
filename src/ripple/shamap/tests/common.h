@@ -105,6 +105,12 @@ public:
     {
         throw std::runtime_error("missing node");
     }
+
+    void
+    missing_node (uint256 const& refHash) override
+    {
+        throw std::runtime_error("missing node");
+    }
 };
 
 } // tests
