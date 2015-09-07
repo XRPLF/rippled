@@ -127,6 +127,18 @@ CreateOffer::select_path (
     return std::make_pair (false, bridged_quality);
 }
 
+bool
+CreateOffer::reachedOfferCrossingLimit (Taker const& taker) const
+{
+    auto const crossings =
+        taker.get_direct_crossings () +
+        (2 * taker.get_bridge_crossings ());
+
+    // The crossing limit is part of the Ripple protocol and
+    // changing it is a transaction-processing change.
+    return crossings >= 850;
+}
+
 std::pair<TER, Amounts>
 CreateOffer::bridged_cross (
     Taker& taker,
@@ -264,6 +276,12 @@ CreateOffer::bridged_cross (
             break;
         }
 
+        if (reachedOfferCrossingLimit (taker))
+        {
+            j_.debug << "The offer crossing limit has been exceeded!";
+            break;
+        }
+
         // Postcondition: If we aren't done, then we *must* have consumed at
         //                least one offer fully.
         assert (direct_consumed || leg1_consumed || leg2_consumed);
@@ -335,6 +353,12 @@ CreateOffer::direct_cross (
         if (taker.done())
         {
             j_.debug << "The taker reports he's done during crossing!";
+            break;
+        }
+
+        if (reachedOfferCrossingLimit (taker))
+        {
+            j_.debug << "The offer crossing limit has been exceeded!";
             break;
         }
 

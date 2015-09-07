@@ -95,6 +95,11 @@ private:
     bool
     step_account (OfferStream& stream, Taker const& taker);
 
+    // True if the number of offers that have been crossed
+    // exceeds the limit.
+    bool
+    reachedOfferCrossingLimit (Taker const& taker) const;
+
     // Fill offer as much as possible by consuming offers already on the books,
     // and adjusting account balances accordingly.
     //
