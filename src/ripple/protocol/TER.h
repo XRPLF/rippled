@@ -200,6 +200,7 @@ enum TER
     tecNEED_MASTER_KEY          = 142,
     tecDST_TAG_NEEDED           = 143,
     tecINTERNAL                 = 144,
+    tecOVERSIZE                 = 145,
 };
 
 inline bool isTelLocal(TER x)

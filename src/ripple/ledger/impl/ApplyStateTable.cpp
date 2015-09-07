@@ -53,6 +53,25 @@ ApplyStateTable::apply (RawView& to) const
     }
 }
 
+std::size_t
+ApplyStateTable::size ()
+{
+    std::size_t ret = 0;
+    for (auto& item : items_)
+    {
+        switch (item.second.first)
+        {
+        case Action::erase:
+        case Action::insert:
+        case Action::modify:
+            ++ret;
+        default:
+            break;
+        }
+    }
+    return ret;
+}
+
 void
 ApplyStateTable::apply (OpenView& to,
     STTx const& tx, TER ter,

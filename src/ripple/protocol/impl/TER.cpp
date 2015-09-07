@@ -50,6 +50,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tecPATH_PARTIAL,          "tecPATH_PARTIAL",          "Path could not send full amount."                              },
         { tecNO_ALTERNATIVE_KEY,    "tecNO_ALTERNATIVE_KEY",    "The operation would remove the last way to sign a transaction."},
         { tecNO_REGULAR_KEY,        "tecNO_REGULAR_KEY",        "Regular key is not set."                                       },
+        { tecOVERSIZE,              "tecOVERSIZE",              "Object exceeded serialization limits."                         },
 
         { tecUNFUNDED,              "tecUNFUNDED",              "One of _ADD, _OFFER, or _SEND. Deprecated."                    },
         { tecUNFUNDED_ADD,          "tecUNFUNDED_ADD",          "Insufficient XRP balance for WalletAdd."                       },

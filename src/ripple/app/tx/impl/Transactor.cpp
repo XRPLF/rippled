@@ -532,7 +532,11 @@ Transactor::operator()()
     bool didApply = isTesSuccess (terResult);
     auto fee = tx().getTransactionFee ();
 
-    if (isTecClaim (terResult) && !(view().flags() & tapRETRY))
+    if (view().size() > 5200)
+        terResult = tecOVERSIZE;
+
+    if ((terResult == tecOVERSIZE) ||
+        (isTecClaim (terResult) && !(view().flags() & tapRETRY)))
     {
         // only claim the transaction fee
         JLOG(j_.debug) <<

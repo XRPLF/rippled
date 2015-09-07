@@ -196,6 +196,12 @@ public:
     void
     update (std::shared_ptr<SLE> const& sle) = 0;
 
+    /** Get the number of modified entries
+    */
+    virtual
+    std::size_t
+    size () = 0;
+
     //--------------------------------------------------------------------------
 
     // Called when a credit is made to an account

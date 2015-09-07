@@ -132,6 +132,9 @@ public:
     rawDestroyXRP (
         std::uint64_t feeDrops) override;
 
+    std::size_t
+    size () override;
+
 protected:
     ApplyFlags flags_;
     ReadView const* base_;
