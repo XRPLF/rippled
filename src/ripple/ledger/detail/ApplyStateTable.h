@@ -95,6 +95,9 @@ public:
     peek (ReadView const& base,
         Keylet const& k);
 
+    std::size_t
+    size ();
+
     void
     erase (ReadView const& base,
         std::shared_ptr<SLE> const& sle);

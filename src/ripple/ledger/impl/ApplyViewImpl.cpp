@@ -38,4 +38,10 @@ ApplyViewImpl::apply (OpenView& to,
     items_.apply(to, tx, ter, deliver_, j);
 }
 
+std::size_t
+ApplyViewImpl::size ()
+{
+    return items_.size ();
+}
+
 } // ripple

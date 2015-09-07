@@ -80,6 +80,11 @@ public:
         deliver_ = amount;
     }
 
+    /** Get the number of modified entries
+    */
+    std::size_t
+    size ();
+
 private:
     boost::optional<STAmount> deliver_;
 };
