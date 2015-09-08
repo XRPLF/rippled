@@ -148,13 +148,6 @@ ApplyViewBase::update(
     items_.update(*base_, sle);
 }
 
-std::size_t
-ApplyViewBase::size ()
-{
-    return items_.size ();
-}
-
-
 //---
 
 void
