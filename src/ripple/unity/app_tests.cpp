@@ -28,4 +28,5 @@
 #include <ripple/app/tests/MultiSign.test.cpp>
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>
+#include <ripple/app/tests/OversizeMeta_test.cpp>
 #include <ripple/app/tests/Taker.test.cpp>
