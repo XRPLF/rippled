@@ -42,7 +42,7 @@ struct JTx
 {
     Json::Value jv;
     requires_t requires;
-    TER ter = tesSUCCESS;
+    boost::optional<TER> ter = tesSUCCESS;
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
