@@ -358,6 +358,13 @@ public:
     }
     /** @} */
 
+    /** Return the TER for the last JTx. */
+    TER
+    ter() const
+    {
+        return ter_;
+    }
+
     /** Return metadata for the last JTx.
 
         Effects:
@@ -473,6 +480,7 @@ protected:
     bool nosig_ = false;
     TestStopwatch stopwatch_;
     uint256 txid_;
+    TER ter_ = tesSUCCESS;
 
     void
     autofill_sig (JTx& jt);

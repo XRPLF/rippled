@@ -243,7 +243,6 @@ Env::trust (STAmount const& amount,
 void
 Env::submit (JTx const& jt)
 {
-    TER ter;
     bool didApply;
     auto const& stx = jt.stx;
     if (stx)
@@ -252,7 +251,7 @@ Env::submit (JTx const& jt)
         openLedger.modify(
             [&](OpenView& view, beast::Journal j)
             {
-                std::tie(ter, didApply) = ripple::apply(
+                std::tie(ter_, didApply) = ripple::apply(
                     app(), view, *stx, applyFlags(),
                         directSigVerify, config,
                             beast::Journal{});
@@ -263,12 +262,12 @@ Env::submit (JTx const& jt)
     {
         // Parsing failed or the JTx is
         // otherwise missing the stx field.
-        ter = temMALFORMED;
+        ter_ = temMALFORMED;
         didApply = false;
     }
-    if (! test.expect(ter == jt.ter,
-        "apply: " + transToken(ter) +
-            " (" + transHuman(ter) + ")"))
+    if (jt.ter && ! test.expect(ter_ == *jt.ter,
+        "apply: " + transToken(ter_) +
+            " (" + transHuman(ter_) + ")"))
     {
         test.log << pretty(jt.jv);
         // Don't check postconditions if
@@ -283,9 +282,6 @@ Env::submit (JTx const& jt)
     }
     for (auto const& f : jt.requires)
         f(*this);
-    //if (isTerRetry(ter))
-    //if (! isTesSuccess(ter))
-    //    held.insert(stx);
 }
 
 std::shared_ptr<STObject const>
