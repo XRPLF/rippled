@@ -226,9 +226,16 @@ public:
 
     /** Turn off testing. */
     void
-    disable_testing ()
+    disable_testing()
     {
         testing_ = false;
+    }
+
+    /** Turn off signature checks. */
+    void
+    disable_sigs()
+    {
+        nosig_ = true;
     }
 
     /** Associate AccountID with account. */
@@ -456,6 +463,7 @@ public:
 protected:
     int trace_ = 0;
     bool testing_ = true;
+    bool nosig_ = false;
     TestStopwatch stopwatch_;
     uint256 txid_;
 
