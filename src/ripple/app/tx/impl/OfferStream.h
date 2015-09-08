@@ -49,6 +49,35 @@ namespace ripple {
 */
 class OfferStream
 {
+public:
+    class StepCounter
+    {
+    private:
+        std::uint32_t const limit_;
+        std::uint32_t count_;
+        beast::Journal j_;
+
+    public:
+        StepCounter (std::uint32_t limit, beast::Journal j)
+            : limit_ (limit)
+            , count_ (0)
+            , j_ (j)
+        {
+        }
+
+        bool
+        step ()
+        {
+            if (count_ >= limit_)
+            {
+                j_.debug << "Exceeded " << limit_ << " step limit.";
+                return false;
+            }
+            count_++;
+            return true;
+        }
+    };
+
 private:
     beast::Journal j_;
     std::reference_wrapper <ApplyView> m_view;
@@ -58,15 +87,15 @@ private:
     BookTip m_tip;
     Offer m_offer;
     Config const& config_;
+    StepCounter& counter_;
 
     void
     erase (ApplyView& view);
 
 public:
     OfferStream (ApplyView& view, ApplyView& view_cancel,
-        BookRef book, Clock::time_point when,
-            Config const& config,
-                beast::Journal journal);
+        BookRef book, Clock::time_point when, StepCounter& counter,
+            Config const& config, beast::Journal journal);
 
     ApplyView&
     view () noexcept

@@ -23,7 +23,7 @@
 namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& view_cancel,
-    BookRef book, Clock::time_point when,
+    BookRef book, Clock::time_point when, StepCounter& counter,
         Config const& config, beast::Journal journal)
     : j_ (journal)
     , m_view (view)
@@ -32,6 +32,7 @@ OfferStream::OfferStream (ApplyView& view, ApplyView& view_cancel,
     , m_when (when)
     , m_tip (view, book)
     , config_ (config)
+    , counter_ (counter)
 {
 }
 
@@ -85,6 +86,10 @@ OfferStream::step ()
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
         if (! m_tip.step())
+            return false;
+
+        // If we exceed the maximum number of allowed steps, we're done.
+        if (!counter_.step ())
             return false;
 
         std::shared_ptr<SLE> entry = m_tip.entry();

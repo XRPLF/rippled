@@ -20,3 +20,4 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/tests/Regression_test.cpp>
+#include <ripple/app/tests/CrossingLimits_test.cpp>
