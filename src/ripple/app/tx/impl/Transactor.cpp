@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/to_string.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/types.h>
@@ -454,6 +455,25 @@ TER Transactor::checkMultiSign ()
 
 //------------------------------------------------------------------------------
 
+void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers)
+{
+    int removed = 0;
+
+    for (auto const& index : offers)
+    {
+        auto const sleOffer = view.peek (keylet::offer (index));
+        if (sleOffer)
+        {
+            // offer is unfunded
+            offerDelete (view, sleOffer);
+            if (++removed == 1000)
+                return;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
 static
 inline
 void
@@ -532,7 +552,7 @@ Transactor::operator()()
     bool didApply = isTesSuccess (terResult);
     auto fee = tx().getTransactionFee ();
 
-    if (view().size() > 5200)
+    if (ctx_.size() > 5200)
         terResult = tecOVERSIZE;
 
     if ((terResult == tecOVERSIZE) ||
@@ -541,6 +561,30 @@ Transactor::operator()()
         // only claim the transaction fee
         JLOG(j_.debug) <<
             "Reprocessing tx " << txID << " to only claim fee";
+
+        std::vector<uint256> removedOffers;
+        if (terResult == tecOVERSIZE)
+        {
+            ctx_.visit (
+                [&removedOffers](
+                    uint256 const& index,
+                    bool isDelete,
+                    std::shared_ptr <SLE const> const& before,
+                    std::shared_ptr <SLE const> const& after)
+                {
+                    if (isDelete)
+                    {
+                        assert (before && after);
+                        if (before && after &&
+                            (before->getType() == ltOFFER) &&
+                            (before->getFieldAmount(sfTakerPays) == after->getFieldAmount(sfTakerPays)))
+                        {
+                            // Removal of offer found or made unfunded
+                            removedOffers.push_back (index);
+                        }
+                    }
+                });
+        }
 
         ctx_.discard();
 
@@ -575,6 +619,10 @@ Transactor::operator()()
                         fee = balance;
                     txnAcct->setFieldAmount (sfBalance, balance - fee);
                     txnAcct->setFieldU32 (sfSequence, t_seq + 1);
+
+                    if (terResult == tecOVERSIZE)
+                       removeUnfundedOffers (view(), removedOffers);
+
                     view().update (txnAcct);
                     didApply = true;
                 }

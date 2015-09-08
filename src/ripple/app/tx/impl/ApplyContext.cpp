@@ -52,4 +52,19 @@ ApplyContext::apply(TER ter)
     view_->apply(base_, tx, ter, journal);
 }
 
+std::size_t
+ApplyContext::size()
+{
+    return view_->size();
+}
+
+void
+ApplyContext::visit (std::function <void (
+    uint256 const&, bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)> const& func)
+{
+    view_->visit(base_, func);
+}
+
 } // ripple
