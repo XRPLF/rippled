@@ -157,9 +157,9 @@ git checkout master
 ### Configure Library Paths
 
 Open the solution file located at **Builds/Visual Studio 2015/ripple.sln**
-and select the "View->Property Manager" to bring up the Property Manager.
+and select the "View->Other Windows->Property Manager" to bring up the Property Manager.
 Expand the *debug | x64* section (or similar section on 32-windows) and
-double click the *Microsoft.Cpp.Win32.user* property sheet to bring up the
+double click the *Microsoft.Cpp.x64.user* property sheet to bring up the
 *Property Pages* dialog (these sections will be called *Win32* instead of
 *x64* on 32-bit windows). These are global properties applied to all
 64-bit build targets:
@@ -205,14 +205,13 @@ the rippled server where that file is.
 3. Select the "Project->Properties" menu item to bring up RippleD's Properties Pages
 4. In "Configuration Properties" select "Debugging".
 5. In the upper-left Configurations drop down, select "All Configurations".
-6. In the upper-left Configurations drop down, select "All Configurations".
-7. In "Debugger to Launch" select "Local Windows Debugger".
+6. In "Debugger to Launch" select "Local Windows Debugger".
 
 ### Tell rippled where to find the configuration file.
 
 The `--conf` command-line switch to tell rippled where to find this file.
 In the "Command Arguments" field in the properties dialog (that you opened
-in the above section), add: `--conf="C:\\Users\\joe\\ripple\\config\\rippled.cfg"`
+in the above section), add: `--conf="C:/Users/joe/ripple/config/rippled.cfg"`
 (of course replacing that path with the path you set up above).
 
 ![Visual Studio 2013 Command Args Prop Page](images/VSCommandArgsPropPage.png)
