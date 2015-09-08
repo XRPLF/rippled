@@ -1,34 +1,62 @@
+sudo: false
 language: cpp
+
 compiler:
   - clang
   - gcc
+
 env:
-  - TARGET=debug
-  - TARGET=debug.nounity
-  # We can specify any combination of builds here, for example, to
-  # include release builds, too, uncomment the following lines.
-  #- TARGET=release
-  #- TARGET=release.nounity
+  global:
+    # Maintenance note: to move to a new version
+    # of boost, update both BOOST_ROOT and BOOST_URL.
+    # Note that for simplicity, BOOST_ROOT's final
+    # namepart must match the folder name internal
+    # to boost's .tar.gz.
+    - BOOST_ROOT=$HOME/boost_1_59_0
+    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.59.0%2Fboost_1_59_0.tar.gz%2Fdownload&ts=1441761349&use_mirror=skylineservers'
+    # We need gcc >= 4.8 for some c++11 features.
+    # To change, also change the packages: entry.
+    # Env vars are not translated there.
+    - GCC_VER=4.8
+  matrix:
+    - TARGET=debug
+    - TARGET=debug.nounity
+    # We can specify any combination of builds here, for example, to
+    # include release builds, too, uncomment the following lines.
+    #- TARGET=release
+    #- TARGET=release.nounity
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - python-software-properties
+    # See also GCC_VER.
+    - g++-4.8
+    - protobuf-compiler
+    - libprotobuf-dev
+    - libssl-dev
+    # Not available, but not needed
+    # - exuberant-ctags
+    - binutils-gold
+    # Provides a backtrace if the unittests crash
+    - gdb
+
+cache:
+  directories:
+  - $BOOST_ROOT
+
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq python-software-properties
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo add-apt-repository -y ppa:afrank/boost
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq g++-4.8
-  - sudo apt-get install -qq libboost1.57-all-dev
-  - sudo apt-get install -qq mlocate
-  - sudo updatedb
-  - sudo locate libboost | grep /lib | grep -e ".a$"
-  - sudo apt-get install -qq protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
-  # We need gcc >= 4.8 for some c++11 features
-  - sudo apt-get install -qq gcc-4.8
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-  - sudo update-alternatives --set gcc /usr/bin/gcc-4.8
-  # Stuff is gold. Nuff said ;)
-  - sudo apt-get -y install binutils-gold
-  # We can get a backtrace if the guy crashes
-  - sudo apt-get -y install gdb
+  # Override gcc version to $GCC_VER.
+  # Put an appropriate symlink at the front of the path.
+  - mkdir -v $HOME/bin
+  - test -x $( type -p gcc-$GCC_VER )
+  - ln -sv $(type -p gcc-$GCC_VER) $HOME/bin/gcc
+  - test -x $( type -p g++-$GCC_VER )
+  - ln -sv $(type -p g++-$GCC_VER) $HOME/bin/g++
+  - export PATH=$PWD/bin:$PATH
+
   # What versions are we ACTUALLY running?
   - g++ -v
   - clang -v
@@ -36,7 +64,9 @@ before_install:
   # Does it already exist? Who owns? What permissions?
   - ls -lah ~/.npm || mkdir ~/.npm
   # Make sure we own it
-  - sudo chown -R $USER ~/.npm
+  - chown -Rc $USER ~/.npm
+
+  - bash bin/sh/install-boost.sh
 
 script:
   # Set so any failing command will abort the build
@@ -44,8 +74,10 @@ script:
   # Make sure vcxproj is up to date
   - scons vcxproj
   - git diff --exit-code
-  # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
-  - scons $CC.$TARGET
+  # $CC will be either `clang` or `gcc`
+  # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
+  #   indicates that 2 cores are available to containers.
+  - scons -j2 $CC.$TARGET
   # We can be sure we're using the build/$CC.$TARGET variant (-f so never err)
   - rm -f build/rippled 
   - export RIPPLED_PATH="$PWD/build/$CC.$TARGET/rippled"
@@ -65,6 +97,7 @@ script:
 
   # Run integration tests
   - npm test
+
 notifications:
   email:
     false
