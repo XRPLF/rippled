@@ -86,17 +86,7 @@ Env::close(NetClock::time_point const& closeTime)
         open_ledger, *closed_,
         app().timeKeeper().closeTime());
     next->setClosed();
-#if 0
-    // Build a SHAMap, put all the transactions
-    // in it, and calculate the hash of the SHAMap
-    // to construct the OrderedTxs
-    SHAMap sm;
-    OrderedTxs txs(sm.getRootHash());
-    ...
-#else
-    std::vector<std::shared_ptr<
-        STTx const>> txs;
-#endif
+    std::vector<std::shared_ptr<STTx const>> txs;
     auto cur = openLedger.current();
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
@@ -311,18 +301,25 @@ Env::autofill_sig (JTx& jt)
 {
     auto& jv = jt.jv;
     if (jt.signer)
-        jt.signer(*this, jt);
-    else if(jt.fill_sig)
+        return jt.signer(*this, jt);
+    if (! jt.fill_sig)
+        return;
+    auto const account =
+        lookup(jv[jss::Account].asString());
+    if (nosig_)
     {
-        auto const account =
-            lookup(jv[jss::Account].asString());
-        auto const ar = le(account);
-        if (ar && ar->isFieldPresent(sfRegularKey))
-            jtx::sign(jv, lookup(
-                ar->getAccountID(sfRegularKey)));
-        else
-            jtx::sign(jv, account);
+        jv[jss::SigningPubKey] =
+            strHex(account.pk().slice());
+        // dummy sig otherwise STTx is invalid
+        jv[jss::TxnSignature] = "00";
+        return;
     }
+    auto const ar = le(account);
+    if (ar && ar->isFieldPresent(sfRegularKey))
+        jtx::sign(jv, lookup(
+            ar->getAccountID(sfRegularKey)));
+    else
+        jtx::sign(jv, account);
 }
 
 void
@@ -379,9 +376,12 @@ Env::st (JTx const& jt)
 ApplyFlags
 Env::applyFlags() const
 {
+    ApplyFlags flags = tapNONE;
     if (testing_)
-        return tapENABLE_TESTING;
-    return tapNONE;
+        flags = flags | tapENABLE_TESTING;
+    if (nosig_)
+        flags = flags | tapNO_CHECK_SIGN;
+    return flags;
 }
 
 } // jtx
