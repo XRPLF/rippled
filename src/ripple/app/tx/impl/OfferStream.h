@@ -48,6 +48,35 @@ namespace ripple {
 */
 class OfferStream
 {
+public:
+    class StepCounter
+    {
+    private:
+        std::uint32_t const limit_;
+        std::uint32_t count_;
+        beast::Journal j_;
+
+    public:
+        StepCounter (std::uint32_t limit, beast::Journal j)
+            : limit_ (limit)
+            , count_ (0)
+            , j_ (j)
+        {
+        }
+
+        bool
+        step ()
+        {
+            if (count_ >= limit_)
+            {
+                j_.debug << "Exceeded " << limit_ << " step limit.";
+                return false;
+            }
+            count_++;
+            return true;
+        }
+    };
+
 private:
     beast::Journal j_;
     ApplyView& view_;
@@ -56,6 +85,7 @@ private:
     Clock::time_point const expire_;
     BookTip tip_;
     Offer offer_;
+    StepCounter& counter_;
 
     void
     erase (ApplyView& view);
@@ -63,7 +93,7 @@ private:
 public:
     OfferStream (ApplyView& view, ApplyView& cancelView,
         BookRef book, Clock::time_point when,
-                beast::Journal journal);
+            StepCounter& counter, beast::Journal journal);
 
     /** Returns the offer at the tip of the order book.
         Offers are always presented in decreasing quality.

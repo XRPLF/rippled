@@ -251,13 +251,16 @@ CreateOffer::bridged_cross (
         throw std::logic_error ("Bridging with XRP and an endpoint.");
 
     OfferStream offers_direct (view, view_cancel,
-        Book (taker.issue_in (), taker.issue_out ()), when, j_);
+        Book (taker.issue_in (), taker.issue_out ()),
+            when, stepCounter_, j_);
 
     OfferStream offers_leg1 (view, view_cancel,
-        Book (taker.issue_in (), xrpIssue ()), when, j_);
+        Book (taker.issue_in (), xrpIssue ()),
+        when, stepCounter_, j_);
 
     OfferStream offers_leg2 (view, view_cancel,
-        Book (xrpIssue (), taker.issue_out ()), when, j_);
+        Book (xrpIssue (), taker.issue_out ()),
+        when, stepCounter_, j_);
 
     TER cross_result = tesSUCCESS;
 
@@ -397,7 +400,7 @@ CreateOffer::direct_cross (
     OfferStream offers (
         view, view_cancel,
         Book (taker.issue_in (), taker.issue_out ()),
-        when, j_);
+        when, stepCounter_, j_);
 
     TER cross_result (tesSUCCESS);
     int count = 0;
