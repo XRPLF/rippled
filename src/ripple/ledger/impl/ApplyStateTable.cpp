@@ -72,6 +72,39 @@ ApplyStateTable::size ()
 }
 
 void
+ApplyStateTable::visit (ReadView const& to,
+    std::function <void (
+        uint256 const& key,
+        bool isDelete,
+        std::shared_ptr <SLE const> const& before,
+        std::shared_ptr <SLE const> const& after)> const& func)
+{
+    for (auto& item : items_)
+    {
+        switch (item.second.first)
+        {
+        case Action::erase:
+            func (item.first, true,
+                to.read (keylet::unchecked (item.first)), item.second.second);
+            break;
+
+        case Action::insert:
+            func (item.first, false,
+                nullptr, item.second.second);
+            break;
+
+        case Action::modify:
+            func (item.first, false,
+                to.read (keylet::unchecked (item.first)), item.second.second);
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
+void
 ApplyStateTable::apply (OpenView& to,
     STTx const& tx, TER ter,
         boost::optional<STAmount> const& deliver,

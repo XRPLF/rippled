@@ -99,6 +99,14 @@ public:
     size ();
 
     void
+    visit (ReadView const& base,
+        std::function <void (
+            uint256 const& key,
+            bool isDelete,
+            std::shared_ptr <SLE const> const& before,
+            std::shared_ptr <SLE const> const& after)> const& func);
+
+    void
     erase (ReadView const& base,
         std::shared_ptr<SLE> const& sle);
 

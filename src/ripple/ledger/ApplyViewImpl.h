@@ -85,6 +85,16 @@ public:
     std::size_t
     size ();
 
+    /** Visit modified entries
+    */
+    void
+    visit (
+        OpenView& target,
+        std::function <void (
+            uint256 const& key,
+            bool isDelete,
+            std::shared_ptr <SLE const> const& before,
+            std::shared_ptr <SLE const> const& after)> const& func);
 private:
     boost::optional<STAmount> deliver_;
 };

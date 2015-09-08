@@ -79,6 +79,18 @@ public:
     void
     apply (TER);
 
+    /** Get the number of unapplied changes. */
+    std::size_t
+    size ();
+
+    /** Visit unapplied changes. */
+    void
+    visit (std::function <void (
+        uint256 const& key,
+        bool isDelete,
+        std::shared_ptr <SLE const> const& before,
+        std::shared_ptr <SLE const> const& after)> const& func);
+
     void
     destroyXRP (std::uint64_t feeDrops)
     {
