@@ -30,4 +30,5 @@
 #include <ripple/app/tests/Regression_test.cpp>
 #include <ripple/app/tests/SusPay_test.cpp>
 #include <ripple/app/tests/SetAuth_test.cpp>
+#include <ripple/app/tests/OversizeMeta_test.cpp>
 #include <ripple/app/tests/Taker.test.cpp>
