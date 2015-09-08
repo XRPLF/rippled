@@ -2436,6 +2436,9 @@
     <ClCompile Include="..\..\src\ripple\app\tests\AmendmentTable.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\CrossingLimits_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\DeliverMin.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>

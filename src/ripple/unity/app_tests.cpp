@@ -19,14 +19,15 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/tests/SusPay_test.cpp>
-#include <ripple/app/tests/Regression_test.cpp>
 #include <ripple/app/tests/AccountTxPaging.test.cpp>
 #include <ripple/app/tests/AmendmentTable.test.cpp>
-#include <ripple/app/tests/Path_test.cpp>
+#include <ripple/app/tests/CrossingLimits_test.cpp>
 #include <ripple/app/tests/DeliverMin.test.cpp>
 #include <ripple/app/tests/MultiSign.test.cpp>
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>
-#include <ripple/app/tests/Taker.test.cpp>
+#include <ripple/app/tests/Path_test.cpp>
+#include <ripple/app/tests/Regression_test.cpp>
+#include <ripple/app/tests/SusPay_test.cpp>
 #include <ripple/app/tests/SetAuth_test.cpp>
+#include <ripple/app/tests/Taker.test.cpp>

@@ -25,13 +25,14 @@ namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
     BookRef book, Clock::time_point when,
-        beast::Journal journal)
+        StepCounter& counter, beast::Journal journal)
     : j_ (journal)
     , view_ (view)
     , cancelView_ (cancelView)
     , book_ (book)
     , expire_ (when)
     , tip_ (view, book_)
+    , counter_ (counter)
 {
 }
 
@@ -88,6 +89,10 @@ OfferStream::step ()
             return false;
 
         std::shared_ptr<SLE> entry = tip_.entry();
+
+        // If we exceed the maximum number of allowed steps, we're done.
+        if (!counter_.step ())
+            return false;
 
         // Remove if missing
         if (! entry)
