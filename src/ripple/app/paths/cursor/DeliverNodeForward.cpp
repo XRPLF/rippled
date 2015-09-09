@@ -53,7 +53,10 @@ TER PathCursor::deliverNodeForward (
     while (resultCode == tesSUCCESS && saInAct + saInFees < saInReq)
     {
         // Did not spend all inbound deliver funds.
-        if (++loopCount > CALC_NODE_DELIVER_MAX_LOOPS)
+        if (++loopCount >
+            (multiQuality_ ?
+                CALC_NODE_DELIVER_MAX_LOOPS_MQ :
+                CALC_NODE_DELIVER_MAX_LOOPS))
         {
             WriteLog (lsWARNING, RippleCalc)
                 << "deliverNodeForward: max loops cndf";
