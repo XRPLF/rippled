@@ -22,6 +22,7 @@
 #include <ripple/ledger/impl/ApplyStateTable.cpp>
 #include <ripple/ledger/impl/ApplyViewBase.cpp>
 #include <ripple/ledger/impl/ApplyViewImpl.cpp>
+#include <ripple/ledger/impl/BookDirs.cpp>
 #include <ripple/ledger/impl/CachedSLEs.cpp>
 #include <ripple/ledger/impl/CachedView.cpp>
 #include <ripple/ledger/impl/Directory.cpp>
@@ -32,6 +33,7 @@
 #include <ripple/ledger/impl/TxMeta.cpp>
 #include <ripple/ledger/impl/View.cpp>
 
+#include <ripple/ledger/tests/BookDirs_test.cpp>
 #include <ripple/ledger/tests/Directory_test.cpp>
 #include <ripple/ledger/tests/PaymentSandbox_test.cpp>
 #include <ripple/ledger/tests/SkipList_test.cpp>
