@@ -3018,6 +3018,9 @@
     <ClInclude Include="..\..\src\ripple\ledger\ApplyViewImpl.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\ledger\BookDirs.h">
+      <Filter>ripple\ledger</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\CachedSLEs.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
@@ -3049,6 +3052,9 @@
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyViewImpl.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\BookDirs.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\CachedSLEs.cpp">
@@ -3093,6 +3099,9 @@
     <ClInclude Include="..\..\src\ripple\ledger\Sandbox.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\ledger\tests\BookDirs_test.cpp">
+      <Filter>ripple\ledger\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\tests\Directory_test.cpp">
       <Filter>ripple\ledger\tests</Filter>
     </ClCompile>

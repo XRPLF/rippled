@@ -17,43 +17,42 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_DIR_H_INCLUDED
-#define RIPPLE_LEDGER_DIR_H_INCLUDED
+#ifndef RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
+#define RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
 
 #include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-class Dir
+class BookDirs
 {
 private:
     ReadView const* view_ = nullptr;
-    Keylet root_;
-    std::shared_ptr<SLE const> sle_;
-    STVector256 const* indexes_ = nullptr;
+    uint256 const root_;
+    uint256 const next_quality_;
+    uint256 const key_;
+    std::shared_ptr<SLE const> sle_ = nullptr;
+    unsigned int entry_ = 0;
+    uint256 index_;
 
 public:
     class const_iterator;
     using value_type = std::shared_ptr<SLE const>;
 
-    Dir(ReadView const&, Keylet const&);
+    BookDirs(ReadView const&, Book const&);
 
     const_iterator
     begin() const;
 
     const_iterator
     end() const;
-
-    const_iterator
-    find(uint256 const& page_key, uint256 const& sle_key) const;
 };
 
-class Dir::const_iterator
+class BookDirs::const_iterator
 {
 public:
     using value_type =
-        Dir::value_type;
+        BookDirs::value_type;
     using pointer =
         value_type const*;
     using reference =
@@ -89,37 +88,29 @@ public:
     const_iterator
     operator++(int);
 
-    Keylet const&
-    page() const
-    {
-        return page_;
-    }
-
-    uint256
-    index() const
-    {
-        return index_;
-    }
-
 private:
-    friend class Dir;
+    friend class BookDirs;
 
     const_iterator(ReadView const& view,
-        Keylet const& root, Keylet const& page)
-    : view_(&view)
-    , root_(root)
-    , page_(page)
+        uint256 const& root, uint256 const& dir_key)
+        : view_(&view)
+        , root_(root)
+        , key_(dir_key)
+        , cur_key_(dir_key)
     {
     }
 
     ReadView const* view_ = nullptr;
-    Keylet root_;
-    Keylet page_;
+    uint256 root_;
+    uint256 next_quality_;
+    uint256 key_;
+    uint256 cur_key_;
+    std::shared_ptr<SLE const> sle_;
+    unsigned int entry_ = 0;
     uint256 index_;
     boost::optional<value_type> mutable cache_;
-    std::shared_ptr<SLE const> sle_;
-    STVector256 const* indexes_ = nullptr;
-    std::vector<uint256>::const_iterator it_;
+
+    static beast::Journal j_;
 };
 
 } // ripple

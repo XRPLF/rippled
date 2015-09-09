@@ -2295,6 +2295,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\ApplyViewImpl.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\ledger\BookDirs.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\CachedSLEs.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\CachedView.h">
@@ -2320,6 +2322,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyViewImpl.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\BookDirs.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2369,6 +2375,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\Sandbox.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\ledger\tests\BookDirs_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\tests\Directory_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
