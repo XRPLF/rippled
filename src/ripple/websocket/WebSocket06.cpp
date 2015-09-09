@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/websocket/WebSocket04.h>
+#include <ripple/websocket/WebSocket06.h>
 #include <ripple/websocket/Handler.h>
 #include <ripple/websocket/Server.h>
 
@@ -27,18 +27,18 @@
 namespace ripple {
 namespace websocket {
 
-char const* WebSocket04::versionName()
+char const* WebSocket06::versionName()
 {
     return "websocketpp 0.40";
 }
 
-void WebSocket04::handleDisconnect (Connection& connection)
+void WebSocket06::handleDisconnect (Connection& connection)
 {
     connection.close (websocketpp::close::status::protocol_error,
                       "overload");
 }
 
-void WebSocket04::closeTooSlowClient (
+void WebSocket06::closeTooSlowClient (
     Connection& connection,
     unsigned int timeout,
     std::string const& message)
@@ -47,20 +47,20 @@ void WebSocket04::closeTooSlowClient (
         websocketpp::close::status::value (timeout), message);
 }
 
-bool WebSocket04::isTextMessage (Message const& message)
+bool WebSocket06::isTextMessage (Message const& message)
 {
     return message.get_opcode () == websocketpp::frame::opcode::text;
 }
 
-using HandlerPtr04 = WebSocket04::HandlerPtr;
-using EndpointPtr04 = WebSocket04::EndpointPtr;
+using HandlerPtr04 = WebSocket06::HandlerPtr;
+using EndpointPtr04 = WebSocket06::EndpointPtr;
 
-HandlerPtr04 WebSocket04::makeHandler (ServerDescription const& desc)
+HandlerPtr04 WebSocket06::makeHandler (ServerDescription const& desc)
 {
-    return std::make_shared <HandlerImpl <WebSocket04>> (desc);
+    return std::make_shared <HandlerImpl <WebSocket06>> (desc);
 }
 
-EndpointPtr04  WebSocket04::makeEndpoint (HandlerPtr&& handler)
+EndpointPtr04  WebSocket06::makeEndpoint (HandlerPtr&& handler)
 {
     auto endpoint = std::make_shared <Endpoint> (std::move (handler));
 
@@ -115,7 +115,7 @@ EndpointPtr04  WebSocket04::makeEndpoint (HandlerPtr&& handler)
 }
 
 template <>
-void ConnectionImpl <WebSocket04>::setPingTimer ()
+void ConnectionImpl <WebSocket06>::setPingTimer ()
 {
     auto freq = getConfig ().WEBSOCKET_PING_FREQ;
     // VFALCO Disabled since it might cause hangs
@@ -129,19 +129,19 @@ void ConnectionImpl <WebSocket04>::setPingTimer ()
         con->set_timer (
             ms,
             std::bind (
-                beast::weak_fn (&ConnectionImpl <WebSocket04>::pingTimer,
+                beast::weak_fn (&ConnectionImpl <WebSocket06>::pingTimer,
                                 shared_from_this()),
                 beast::asio::placeholders::error));
     }
 }
 
-boost::asio::io_service::strand& WebSocket04::getStrand (Connection& con)
+boost::asio::io_service::strand& WebSocket06::getStrand (Connection& con)
 {
     return *con.get_strand();
 }
 
 template <>
-void Server <WebSocket04>::listen()
+void Server <WebSocket06>::listen()
 {
     m_endpoint->listen (desc_.port.ip, desc_.port.port);
     m_endpoint->start_accept();
@@ -153,7 +153,7 @@ void Server <WebSocket04>::listen()
 
 std::unique_ptr<beast::Stoppable> makeServer04 (ServerDescription const& desc)
 {
-    return std::make_unique <Server <WebSocket04>> (desc);
+    return std::make_unique <Server <WebSocket06>> (desc);
 }
 
 } // websocket
