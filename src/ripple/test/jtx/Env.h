@@ -226,9 +226,16 @@ public:
 
     /** Turn off testing. */
     void
-    disable_testing ()
+    disable_testing()
     {
         testing_ = false;
+    }
+
+    /** Turn off signature checks. */
+    void
+    disable_sigs()
+    {
+        nosig_ = true;
     }
 
     /** Associate AccountID with account. */
@@ -344,6 +351,13 @@ public:
     }
     /** @} */
 
+    /** Return the TER for the last JTx. */
+    TER
+    ter() const
+    {
+        return ter_;
+    }
+
     /** Return metadata for the last JTx.
 
         Effects:
@@ -456,8 +470,10 @@ public:
 protected:
     int trace_ = 0;
     bool testing_ = true;
+    bool nosig_ = false;
     TestStopwatch stopwatch_;
     uint256 txid_;
+    TER ter_ = tesSUCCESS;
 
     void
     autofill_sig (JTx& jt);

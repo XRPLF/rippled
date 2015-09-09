@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_TER_H_INCLUDED
 
 #include <ripple/test/jtx/Env.h>
+#include <tuple>
 
 namespace ripple {
 namespace test {
@@ -32,9 +33,14 @@ namespace jtx {
 class ter
 {
 private:
-    TER v_;
+    boost::optional<TER> v_;
 
 public:
+    explicit
+    ter (decltype(std::ignore))
+    {
+    }
+
     explicit
     ter (TER v)
         : v_(v)
