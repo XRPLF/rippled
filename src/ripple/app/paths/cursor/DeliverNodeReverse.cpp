@@ -77,7 +77,10 @@ TER PathCursor::deliverNodeReverseImpl (
     // While we did not deliver as much as requested:
     while (saOutAct < saOutReq)
     {
-        if (++loopCount > CALC_NODE_DELIVER_MAX_LOOPS)
+        if (++loopCount >
+            (multiQuality_ ?
+                CALC_NODE_DELIVER_MAX_LOOPS_MQ :
+                CALC_NODE_DELIVER_MAX_LOOPS))
         {
             WriteLog (lsFATAL, RippleCalc) << "loop count exceeded";
             return telFAILED_PROCESSING;
