@@ -101,11 +101,13 @@ EndpointPtr04  WebSocket04::makeEndpoint (HandlerPtr&& handler)
                 endpoint->handler()->on_message (conn, msg);
         });
 
+#ifdef WEBSOCKET_HAS_EMPTY_HANDLER
     endpoint->set_send_empty_handler (
         [endpoint] (websocketpp::connection_hdl hdl) {
             if (auto conn = endpoint->get_con_from_hdl(hdl))
                 endpoint->handler()->on_send_empty (conn);
         });
+#endif
 
     endpoint->init_asio();
 
