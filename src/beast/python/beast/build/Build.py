@@ -7,7 +7,7 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals)
 
 from .Files import files, directories
-from .Function import compose, for_tags, not_tags
+from .Function import compose, for_tags, not_tags, not_all_tags
 from .Module import Module
 from .State import State, run_build
 from .Target import Target

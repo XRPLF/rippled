@@ -39,3 +39,6 @@ def for_tags(*items):
 
 def not_tags(*items):
     return _tagger(items, lambda tags, t: not (tags & t))
+
+def not_all_tags(*items):
+    return _tagger(items, lambda tags, t: not (t - tags))
