@@ -18,90 +18,110 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/resource/ResourceManager.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/basics/Log.h>  // JLOG
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 namespace Resource {
 
-class ManagerImp
-    : public Manager
-    , public beast::Thread
+class ManagerImp : public Manager
 {
 private:
-    beast::Journal m_journal;
-    Logic m_logic;
+    beast::Journal journal_;
+    Logic logic_;
+    std::thread thread_;
+    std::atomic<bool> run_;
+
 public:
     ManagerImp (beast::insight::Collector::ptr const& collector,
         beast::Journal journal)
-        : Thread ("Resource::Manager")
-        , m_journal (journal)
-        , m_logic (collector, stopwatch(), journal)
+        : journal_ (journal)
+        , logic_ (collector, stopwatch(), journal)
+        , thread_ ()
+        , run_ (true)
     {
-        startThread ();
+        thread_ = std::thread {&ManagerImp::run, this};
     }
 
-    ~ManagerImp ()
+    ManagerImp () = delete;
+    ManagerImp (ManagerImp const&) = delete;
+    ManagerImp& operator= (ManagerImp const&) = delete;
+
+    ~ManagerImp () override
     {
-        stopThread ();
+        run_.store (false);
+        try
+        {
+            thread_.join();
+        }
+        catch (std::exception ex)
+        {
+            // Swallow the exception in a destructor.
+            JLOG(journal_.warning) << "std::exception in Resource::~Manager.  "
+                << ex.what();
+        }
     }
 
-    Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address) override
     {
-        return m_logic.newInboundEndpoint (address);
+        return logic_.newInboundEndpoint (address);
     }
 
-    Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)
+    Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) override
     {
-        return m_logic.newOutboundEndpoint (address);
+        return logic_.newOutboundEndpoint (address);
     }
 
-    Consumer newAdminEndpoint (std::string const& name)
+    Consumer newAdminEndpoint (std::string const& name) override
     {
-        return m_logic.newAdminEndpoint (name);
+        return logic_.newAdminEndpoint (name);
     }
 
-    Gossip exportConsumers ()
+    Gossip exportConsumers () override
     {
-        return m_logic.exportConsumers();
+        return logic_.exportConsumers();
     }
 
-    void importConsumers (std::string const& origin, Gossip const& gossip)
+    void importConsumers (
+        std::string const& origin, Gossip const& gossip) override
     {
-        m_logic.importConsumers (origin, gossip);
-    }
-
-    //--------------------------------------------------------------------------
-
-    Json::Value getJson ()
-    {
-        return m_logic.getJson ();
-    }
-
-    Json::Value getJson (int threshold)
-    {
-        return m_logic.getJson (threshold);
-    }
-
-    //--------------------------------------------------------------------------
-
-    void onWrite (beast::PropertyStream::Map& map)
-    {
-        m_logic.onWrite (map);
+        logic_.importConsumers (origin, gossip);
     }
 
     //--------------------------------------------------------------------------
 
+    Json::Value getJson () override
+    {
+        return logic_.getJson ();
+    }
+
+    Json::Value getJson (int threshold) override
+    {
+        return logic_.getJson (threshold);
+    }
+
+    //--------------------------------------------------------------------------
+
+    void onWrite (beast::PropertyStream::Map& map) override
+    {
+        logic_.onWrite (map);
+    }
+
+    //--------------------------------------------------------------------------
+
+private:
     void run ()
     {
+        beast::Thread::setCurrentThreadName ("Resource::Manager");
         do
         {
-            m_logic.periodicActivity();
-            wait (1000);
+            logic_.periodicActivity();
+            std::this_thread::sleep_for (std::chrono::seconds (1));
         }
-        while (! threadShouldExit ());
+        while (run_.load());
     }
 };
 
