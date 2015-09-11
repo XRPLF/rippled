@@ -247,9 +247,9 @@ OpenView::rawReplace(
 
 void
 OpenView::rawDestroyXRP(
-    std::uint64_t feeDrops)
+    XRPAmount const& fee)
 {
-    items_.destroyXRP(feeDrops);
+    items_.destroyXRP(fee);
     // VFALCO Deduct from info_.totalDrops ?
     //        What about child views?
 }

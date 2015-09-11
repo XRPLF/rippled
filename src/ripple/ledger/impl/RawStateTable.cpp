@@ -333,9 +333,9 @@ RawStateTable::read (ReadView const& base,
 }
 
 void
-RawStateTable::destroyXRP(std::uint64_t feeDrops)
+RawStateTable::destroyXRP(XRPAmount const& fee)
 {
-    dropsDestroyed_ += feeDrops;
+    dropsDestroyed_ += fee;
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>

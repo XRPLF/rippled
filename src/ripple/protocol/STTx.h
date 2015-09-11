@@ -88,14 +88,6 @@ public:
     {
         return tx_type_;
     }
-    STAmount getTransactionFee () const
-    {
-        return getFieldAmount (sfFee);
-    }
-    void setTransactionFee (const STAmount & fee)
-    {
-        setFieldAmount (sfFee, fee);
-    }
 
     Blob getSigningPubKey () const
     {

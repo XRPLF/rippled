@@ -380,6 +380,8 @@ Payment::doApply ()
     }
     else
     {
+        assert (saDstAmount.native ());
+
         // Direct XRP payment.
 
         // uOwnerCount is the number of entries in this legder for this
@@ -388,23 +390,22 @@ Payment::doApply ()
             keylet::account(account_))->getFieldU32 (sfOwnerCount);
 
         // This is the total reserve in drops.
-        auto const uReserve =
-            view().fees().accountReserve(uOwnerCount);
+        auto const reserve = view().fees().accountReserve(uOwnerCount);
 
         // mPriorBalance is the balance on the sending account BEFORE the
         // fees were charged. We want to make sure we have enough reserve
         // to send. Allow final spend to use reserve for fee.
-        auto const mmm = std::max(tx().getTransactionFee (),
-            STAmount (uReserve));
+        auto const mmm = std::max(reserve,
+            tx().getFieldAmount (sfFee).xrp ());
 
-        if (mPriorBalance < saDstAmount + mmm)
+        if (mPriorBalance < saDstAmount.xrp () + mmm)
         {
             // Vote no. However the transaction might succeed, if applied in
             // a different order.
             j_.trace << "Delay transaction: Insufficient funds: " <<
-                " " << mPriorBalance.getText () <<
-                " / " << (saDstAmount + mmm).getText () <<
-                " (" << uReserve << ")";
+                " " << to_string (mPriorBalance) <<
+                " / " << to_string (saDstAmount.xrp () + mmm) <<
+                " (" << to_string (reserve) << ")";
 
             terResult = tecUNFUNDED_PAYMENT;
         }

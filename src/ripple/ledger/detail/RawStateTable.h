@@ -75,7 +75,7 @@ public:
         Keylet const& k) const;
 
     void
-    destroyXRP (std::uint64_t feeDrops);
+    destroyXRP (XRPAmount const& fee);
 
     std::unique_ptr<ReadView::sles_type::iter_base>
     slesBegin (ReadView const& base) const;
@@ -97,7 +97,7 @@ private:
         std::pair<Action, std::shared_ptr<SLE>>>;
 
     items_t items_;
-    std::uint64_t dropsDestroyed_ = 0;
+    XRPAmount dropsDestroyed_ = 0;
 };
 
 } // detail

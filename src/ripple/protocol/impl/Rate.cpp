@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
+    Copyright (c) 2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,32 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CREATETICKET_H_INCLUDED
-#define RIPPLE_TX_CREATETICKET_H_INCLUDED
-
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
+#include <BeastConfig.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
 
 namespace ripple {
 
-class CreateTicket
-    : public Transactor
-{
-public:
-    CreateTicket (ApplyContext& ctx)
-        : Transactor(ctx)
-    {
-    }
-
-    static
-    TER
-    preflight (PreflightContext const& ctx);
-
-    TER doApply () override;
-};
+Rate const parityRate (QUALITY_ONE);
 
 }
-
-#endif

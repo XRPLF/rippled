@@ -1087,12 +1087,21 @@ Json::Value transactionSubmitMultiSigned (
             return RPC::make_error (rpcINVALID_PARAMS, err.str ());
         }
 
-        // The Fee field must be greater than zero.
-        if (stpTrans->getFieldAmount (sfFee) <= 0)
+        // The Fee field must be in XRP and greater than zero.
+        auto const fee = stpTrans->getFieldAmount (sfFee);
+
+        if (!isLegalNet (fee))
         {
             std::ostringstream err;
             err << "Invalid " << sfFee.fieldName
-                << " field.  Value must be greater than zero.";
+                << " field.  Fees must be specified in XRP.";
+            return RPC::make_error (rpcINVALID_PARAMS, err.str ());
+        }
+        if (fee <= 0)
+        {
+            std::ostringstream err;
+            err << "Invalid " << sfFee.fieldName
+                << " field.  Fees must be greater than zero.";
             return RPC::make_error (rpcINVALID_PARAMS, err.str ());
         }
     }

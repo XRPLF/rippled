@@ -21,6 +21,7 @@
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/protocol/XRPAmount.h>
 #include <beast/utility/Journal.h>
 
 namespace ripple {
@@ -57,9 +58,9 @@ protected:
     beast::Journal j_;
 
     AccountID     account_;
-    STAmount      mFeeDue;
-    STAmount      mPriorBalance;  // Balance before fees.
-    STAmount      mSourceBalance; // Balance after fees.
+    XRPAmount     mFeeDue;
+    XRPAmount     mPriorBalance;  // Balance before fees.
+    XRPAmount     mSourceBalance; // Balance after fees.
     bool          mHasAuthKey;
     bool          mSigMaster;
     RippleAddress mSigningPubKey;
