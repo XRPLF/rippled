@@ -1620,6 +1620,9 @@
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast.cpp">
+      <Filter>beast\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
@@ -4458,12 +4461,6 @@
     <ClCompile Include="..\..\src\ripple\unity\basics.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\beast.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\beastc.c">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4518,7 +4515,7 @@
     <ClInclude Include="..\..\src\ripple\unity\rocksdb.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\rpcx.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\rpc.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\secp256k1.cpp">
@@ -4537,6 +4534,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\sqlite.c">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\test.cpp">
