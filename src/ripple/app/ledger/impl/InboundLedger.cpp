@@ -227,7 +227,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            AccountStateSF filter;
+            AccountStateSF filter(getApp());
 
             if (mLedger->stateMap().fetchRoot (
                 mLedger->info().accountHash, &filter))
@@ -548,7 +548,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             // VFALCO Why 256? Make this a constant
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            AccountStateSF filter;
+            AccountStateSF filter(getApp());
 
             // Release the lock while we process the large state map
             sl.unlock();
@@ -890,7 +890,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    AccountStateSF tFilter;
+    AccountStateSF tFilter(getApp());
 
     while (nodeIDit != nodeIDs.cend ())
     {
@@ -954,7 +954,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    AccountStateSF tFilter;
+    AccountStateSF tFilter(getApp());
     san += mLedger->stateMap().addRootNode (
         mLedger->info().accountHash, data, snfWIRE, &tFilter);
     return san.isGood();
@@ -997,7 +997,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveState)
     {
-        AccountStateSF filter;
+        AccountStateSF filter(getApp());
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
         {
