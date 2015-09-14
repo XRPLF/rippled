@@ -31,11 +31,12 @@ namespace mao {
 
 struct Node
 {
+    Config config;
     Logs logs;
     std::unique_ptr<Application> app;
 
     Node()
-        : app(make_Application(logs))
+        : app(make_Application(config, logs))
     {
     }
 };
