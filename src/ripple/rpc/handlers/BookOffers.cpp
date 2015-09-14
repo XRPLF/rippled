@@ -37,7 +37,7 @@ Json::Value doBookOffers (RPC::Context& context)
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.
-    if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
+    if (context.app.getJobQueue ().getJobCountGE (jtCLIENT) > 200)
         return rpcError (rpcTOO_BUSY);
 
     std::shared_ptr<ReadView const> lpLedger;

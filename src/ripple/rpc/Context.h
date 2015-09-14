@@ -28,6 +28,7 @@
 
 namespace ripple {
 
+class Application;
 class NetworkOPs;
 class LedgerMaster;
 
@@ -37,6 +38,7 @@ namespace RPC {
 struct Context
 {
     Json::Value params;
+    Application& app;
     Resource::Charge& loadType;
     NetworkOPs& netOps;
     LedgerMaster& ledgerMaster;

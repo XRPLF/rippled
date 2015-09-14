@@ -350,7 +350,7 @@ ServerHandlerImp::processRequest (
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {
-        params, loadType, m_networkOPs, getApp().getLedgerMaster(), role,
+        params, getApp(), loadType, m_networkOPs, getApp().getLedgerMaster(), role,
                 nullptr, {suspend, "RPC-Coroutine"}};
 
     std::string response;

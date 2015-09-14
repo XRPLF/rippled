@@ -59,7 +59,7 @@ Json::Value doTxHistory (RPC::Context& context)
                     % startIndex);
 
     {
-        auto db = getApp().getTxnDB ().checkoutDb ();
+        auto db = context.app.getTxnDB ().checkoutDb ();
 
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
