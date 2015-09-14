@@ -23,6 +23,7 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/core/Config.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
@@ -90,7 +91,7 @@ public:
     Application ();
 
     virtual ~Application () = default;
-
+    virtual Config const& config() const = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual shamap::Family&         family() = 0;
@@ -145,7 +146,7 @@ public:
     to create more than one Application object at a time.
 */
 std::unique_ptr <Application>
-make_Application(Logs& logs);
+make_Application(Config const& config, Logs& logs);
 
 // VFALCO DEPRECATED
 //

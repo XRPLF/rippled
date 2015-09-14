@@ -180,7 +180,7 @@ static int runShutdownTests ()
     {
         std::cerr << "\n\nStarting server. Iteration: " << i << "\n"
                   << std::endl;
-        std::unique_ptr<Application> app (make_Application (deprecatedLogs()));
+        std::unique_ptr<Application> app (make_Application (getConfig(), deprecatedLogs()));
         auto shutdownApp = [&app](std::chrono::seconds sleepTime, int iteration)
         {
             std::this_thread::sleep_for (sleepTime);
@@ -202,7 +202,7 @@ static int runUnitTests (std::string const& pattern,
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
-    std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
+    std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -476,7 +476,7 @@ int run (int argc, char** argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
+            std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
             setupServer ();
             startServer ();
         }
