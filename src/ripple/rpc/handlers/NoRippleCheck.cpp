@@ -34,17 +34,18 @@
 namespace ripple {
 
 static void fillTransaction (
+    RPC::Context& context,
     Json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
     txArray["Sequence"] = Json::UInt (sequence++);
-    txArray["Account"] = getApp().accountIDCache().toBase58 (accountID);
+    txArray["Account"] = context.app.accountIDCache().toBase58 (accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
     // scaled to represent the current fee load.
-    txArray["Fee"] = Json::UInt (getApp().getFeeTrack().scaleFeeLoad(
+    txArray["Fee"] = Json::UInt (context.app.getFeeTrack().scaleFeeLoad(
         fees.units, fees.base, fees.units, false));
 }
 
@@ -135,7 +136,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
             Json::Value& tx = jvTransactions.append (Json::objectValue);
             tx["TransactionType"] = "AccountSet";
             tx["SetFlag"] = 8;
-            fillTransaction (tx, accountID, seq, *ledger);
+            fillTransaction (context, tx, accountID, seq, *ledger);
         }
     }
 
@@ -179,7 +180,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                     tx["TransactionType"] = "TrustSet";
                     tx["LimitAmount"] = limitAmount.getJson (0);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
-                    fillTransaction(tx, accountID, seq, *ledger);
+                    fillTransaction(context, tx, accountID, seq, *ledger);
 
                     return true;
                 }

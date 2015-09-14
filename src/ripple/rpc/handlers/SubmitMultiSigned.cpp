@@ -34,7 +34,7 @@ namespace ripple {
 Json::Value doSubmitMultiSigned (RPC::Context& context)
 {
     // Bail if multisign is not enabled.
-    if (! getApp().getLedgerMaster().getValidatedRules().
+    if (! context.app.getLedgerMaster().getValidatedRules().
         enabled (featureMultiSign, getConfig().features))
     {
         RPC::inject_error (rpcNOT_ENABLED, context.params);
