@@ -820,7 +820,7 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!config_.RUN_STANDALONE)
-        m_overlay = make_Overlay (setup_Overlay(config_), *m_jobQueue,
+        m_overlay = make_Overlay (*this, setup_Overlay(config_), *m_jobQueue,
             *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
             config_);
         add (*m_overlay); // add to PropertyStream
