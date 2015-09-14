@@ -28,6 +28,11 @@
 
 namespace ripple {
 
+TransactionStateSF::TransactionStateSF(Application& app)
+    : app_ (app)
+{
+}
+
 // VFALCO This might be better as Blob&&
 void TransactionStateSF::gotNode (bool fromFilter,
                                   SHAMapNodeID const& id,
@@ -40,7 +45,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
     //        and this should use that Database instad of getNodeStore
     assert(type !=
         SHAMapTreeNode::tnTRANSACTION_NM);
-    getApp().getNodeStore().store(
+    app_.getNodeStore().store(
         hotTRANSACTION_NODE,
             std::move (nodeData), nodeHash);
 }
@@ -49,7 +54,7 @@ bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
                                    uint256 const& nodeHash,
                                    Blob& nodeData)
 {
-    return getApp().getLedgerMaster ().getFetchPack (nodeHash, nodeData);
+    return app_.getLedgerMaster ().getFetchPack (nodeHash, nodeData);
 }
 
 } // ripple

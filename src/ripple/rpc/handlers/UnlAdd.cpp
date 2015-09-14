@@ -36,7 +36,7 @@ namespace ripple {
 // }
 Json::Value doUnlAdd (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
+    auto lock = beast::make_lock(context.app.getMasterMutex());
 
     std::string strNode = context.params.isMember (jss::node)
             ? context.params[jss::node].asString () : "";
@@ -47,13 +47,13 @@ Json::Value doUnlAdd (RPC::Context& context)
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        getApp().getUNL ().nodeAddPublic (
+        context.app.getUNL ().nodeAddPublic (
             raNodePublic, UniqueNodeList::vsManual, strComment);
         return RPC::makeObjectValue ("adding node by public key");
     }
     else
     {
-        getApp().getUNL ().nodeAddDomain (
+        context.app.getUNL ().nodeAddDomain (
             strNode, UniqueNodeList::vsManual, strComment);
         return RPC::makeObjectValue ("adding node by domain");
     }

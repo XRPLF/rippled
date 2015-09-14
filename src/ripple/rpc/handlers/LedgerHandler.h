@@ -95,7 +95,7 @@ void LedgerHandler::writeResult (Object& value)
     }
     else
     {
-        auto& master = getApp().getLedgerMaster ();
+        auto& master = context_.app.getLedgerMaster ();
         {
             auto&& closed = Json::addObject (value, jss::closed);
             addJson (closed, {*master.getClosedLedger(), 0, yield});

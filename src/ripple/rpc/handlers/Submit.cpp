@@ -82,7 +82,7 @@ Json::Value doSubmit (RPC::Context& context)
     Transaction::pointer            tpTrans;
     std::string reason;
     tpTrans = std::make_shared<Transaction> (stpTrans, Validate::YES,
-        getApp().getHashRouter().sigVerify(), reason);
+        context.app.getHashRouter().sigVerify(), reason);
     if (tpTrans->getStatus() != NEW)
     {
         jvResult[jss::error]            = "invalidTransaction";

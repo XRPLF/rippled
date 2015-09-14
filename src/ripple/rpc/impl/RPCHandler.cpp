@@ -116,7 +116,7 @@ error_code_i fillHandler (Context& context,
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
-        int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
+        int jc = context.app.getJobQueue ().getJobCountGE (jtCLIENT);
         if (jc > Tuning::maxJobQueueClients)
         {
             WriteLog (lsDEBUG, RPCHandler) << "Too busy for command: " << jc;
@@ -186,7 +186,7 @@ Status callMethod (
 {
     try
     {
-        auto v = getApp().getJobQueue().getLoadEventAP(
+        auto v = context.app.getJobQueue().getLoadEventAP(
             jtGENERIC, "cmd:" + name);
         return method (context, result);
     }

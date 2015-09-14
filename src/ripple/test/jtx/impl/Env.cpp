@@ -104,7 +104,7 @@ Env::close(NetClock::time_point const& closeTime)
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
-        OpenLedger::apply(accum, *closed_,
+        OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), *router,
                 config, journal);
         accum.apply(*next);
@@ -116,8 +116,8 @@ Env::close(NetClock::time_point const& closeTime)
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false);
     OrderedTxs locals({});
-    openLedger.accept(next->rules(), next, locals,
-        false, retries, applyFlags(), *router);
+    openLedger.accept(app(), next->rules(), next,
+        locals, false, retries, applyFlags(), *router);
     closed_ = next;
     cachedSLEs_.expire();
 }
@@ -262,7 +262,7 @@ Env::submit (JTx const& jt)
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, applyFlags(),
+                    app(), view, *stx, applyFlags(),
                         directSigVerify, config,
                             beast::Journal{});
                 return didApply;

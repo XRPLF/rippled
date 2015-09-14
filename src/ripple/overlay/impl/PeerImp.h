@@ -100,6 +100,7 @@ private:
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
 
+    Application& app_;
     id_t const id_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
@@ -169,7 +170,7 @@ public:
     PeerImp& operator= (PeerImp const&) = delete;
 
     /** Create an active incoming peer from an established ssl connection. */
-    PeerImp (id_t id, endpoint_type remote_endpoint,
+    PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
         PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
             protocol::TMHello const& hello, RippleAddress const& publicKey,
                 Resource::Consumer consumer,
@@ -179,7 +180,7 @@ public:
     /** Create outgoing, handshaked peer. */
     // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
-    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
             beast::http::message&& response, Resource::Consumer usage,
                 protocol::TMHello&& hello,
@@ -358,7 +359,6 @@ private:
     void
     doAccept();
 
-    static
     beast::http::message
     makeResponse (bool crawl, beast::http::message const& req,
         uint256 const& sharedValue);
@@ -480,13 +480,14 @@ private:
 //------------------------------------------------------------------------------
 
 template <class Buffers>
-PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
         beast::http::message&& response, Resource::Consumer usage,
             protocol::TMHello&& hello,
                 RippleAddress const& legacyPublicKey, id_t id,
                     OverlayImpl& overlay)
     : Child (overlay)
+    , app_ (app)
     , id_ (id)
     , sink_ (deprecatedLogs().journal("Peer"), makePrefix(id))
     , p_sink_ (deprecatedLogs().journal("Protocol"), makePrefix(id))

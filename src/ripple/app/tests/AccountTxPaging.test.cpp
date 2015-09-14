@@ -29,6 +29,7 @@ namespace ripple {
 struct AccountTxPaging_test : beast::unit_test::suite
 {
     std::unique_ptr<DatabaseCon> db_;
+    std::unique_ptr<AccountIDCache> idCache_;
     NetworkOPs::AccountTxs txs_;
     AccountID account_;
 
@@ -51,6 +52,8 @@ struct AccountTxPaging_test : beast::unit_test::suite
 
         db_ = std::make_unique <DatabaseCon> (
             dbConf, "account-tx-transactions.db", nullptr, 0);
+
+        idCache_ = std::make_unique<AccountIDCache>(128000);
 
         account_ = *parseBase58<AccountID>(
             "rfu6L5p3azwPzQZsbTafuVk884N9YoKvVG");
@@ -98,7 +101,7 @@ struct AccountTxPaging_test : beast::unit_test::suite
             convertBlobsToTxResult (txs, ledger_index, status, rawTxn, rawMeta);
         };
 
-        accountTxPage(*db_, [](std::uint32_t){}, bound, account_, minLedger,
+        accountTxPage(*db_, *idCache_, [](std::uint32_t){}, bound, account_, minLedger,
             maxLedger, forward, token, limit, admin, page_length);
 
         return txs_.size();

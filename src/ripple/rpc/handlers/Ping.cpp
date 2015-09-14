@@ -26,7 +26,7 @@ namespace RPC {
 struct Context;
 } // RPC
 
-Json::Value doPing (RPC::Context&)
+Json::Value doPing (RPC::Context& context)
 {
     return Json::Value (Json::objectValue);
 }

@@ -53,7 +53,7 @@ namespace po = boost::program_options;
 
 namespace ripple {
 
-void setupServer ()
+void setupServer (Application& app)
 {
 #ifdef RLIMIT_NOFILE
     struct rlimit rl;
@@ -67,7 +67,7 @@ void setupServer ()
     }
 #endif
 
-    getApp().setup ();
+    app.setup ();
 }
 
 boost::filesystem::path
@@ -77,7 +77,7 @@ getEntropyFile()
         getConfig().legacy("database_path")) / "random.seed";
 }
 
-void startServer ()
+void startServer (Application& app)
 {
     //
     // Execute start up rpc commands.
@@ -93,8 +93,8 @@ void startServer ()
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
             RPC::Context context {
-                jvCommand, loadType, getApp().getOPs (),
-                getApp().getLedgerMaster(), Role::ADMIN};
+                jvCommand, app, loadType, app.getOPs (),
+                app.getLedgerMaster(), Role::ADMIN};
 
             Json::Value jvResult;
             RPC::doCommand (context, jvResult);
@@ -105,7 +105,7 @@ void startServer ()
     }
 
     // Block until we get a stop RPC.
-    getApp().run ();
+    app.run ();
 
     // Try to write out some entropy to use the next time we start.
     stir_entropy (getEntropyFile ().string ());
@@ -180,7 +180,7 @@ static int runShutdownTests ()
     {
         std::cerr << "\n\nStarting server. Iteration: " << i << "\n"
                   << std::endl;
-        std::unique_ptr<Application> app (make_Application (deprecatedLogs()));
+        std::unique_ptr<Application> app (make_Application (getConfig(), deprecatedLogs()));
         auto shutdownApp = [&app](std::chrono::seconds sleepTime, int iteration)
         {
             std::this_thread::sleep_for (sleepTime);
@@ -189,8 +189,8 @@ static int runShutdownTests ()
             app->signalStop();
         };
         std::thread shutdownThread (shutdownApp, serverUptimePerIteration, i);
-        setupServer();
-        startServer();
+        setupServer(*app);
+        startServer(*app);
         shutdownThread.join();
     }
     return EXIT_SUCCESS;
@@ -202,7 +202,7 @@ static int runUnitTests (std::string const& pattern,
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
-    std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
+    std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -476,9 +476,9 @@ int run (int argc, char** argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
-            setupServer ();
-            startServer ();
+            std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
+            setupServer (*app);
+            startServer (*app);
         }
         else
         {

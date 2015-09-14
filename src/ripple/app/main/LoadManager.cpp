@@ -37,11 +37,11 @@ class LoadManagerImp
     , public beast::Thread
 {
 public:
-    //--------------------------------------------------------------------------
-
-    beast::Journal m_journal;
     using LockType = std::mutex;
     using ScopedLockType = std::lock_guard <LockType>;
+
+    Application& app_;
+    beast::Journal m_journal;
     LockType mLock;
 
     bool mArmed;
@@ -49,9 +49,11 @@ public:
     int mDeadLock;              // Detect server deadlocks
     //--------------------------------------------------------------------------
 
-    LoadManagerImp (Stoppable& parent, beast::Journal journal)
+    LoadManagerImp (Application& app,
+            Stoppable& parent, beast::Journal journal)
         : LoadManager (parent)
         , Thread ("loadmgr")
+        , app_ (app)
         , m_journal (journal)
         , mArmed (false)
         , mDeadLock (0)
@@ -166,21 +168,21 @@ public:
             // VFALCO TODO Eliminate the dependence on the Application object.
             //             Choices include constructing with the job queue / feetracker.
             //             Another option is using an observer pattern to invert the dependency.
-            if (getApp().getJobQueue ().isOverloaded ())
+            if (app_.getJobQueue ().isOverloaded ())
             {
                 if (m_journal.info)
-                    m_journal.info << getApp().getJobQueue ().getJson (0);
-                change = getApp().getFeeTrack ().raiseLocalFee ();
+                    m_journal.info << app_.getJobQueue ().getJson (0);
+                change = app_.getFeeTrack ().raiseLocalFee ();
             }
             else
             {
-                change = getApp().getFeeTrack ().lowerLocalFee ();
+                change = app_.getFeeTrack ().lowerLocalFee ();
             }
 
             if (change)
             {
                 // VFALCO TODO replace this with a Listener / observer and subscribe in NetworkOPs or Application
-                getApp().getOPs ().reportFeeChange ();
+                app_.getOPs ().reportFeeChange ();
             }
 
             t += std::chrono::seconds (1);
@@ -211,9 +213,10 @@ LoadManager::LoadManager (Stoppable& parent)
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager (beast::Stoppable& parent, beast::Journal journal)
+make_LoadManager (Application& app,
+    beast::Stoppable& parent, beast::Journal journal)
 {
-    return std::make_unique <LoadManagerImp> (parent, journal);
+    return std::make_unique<LoadManagerImp>(app, parent, journal);
 }
 
 } // ripple

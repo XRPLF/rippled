@@ -40,11 +40,12 @@ convertBlobsToTxResult (
     Blob const& rawMeta);
 
 void
-saveLedgerAsync (std::uint32_t seq);
+saveLedgerAsync (Application& app, std::uint32_t seq);
 
 void
 accountTxPage (
     DatabaseCon& database,
+    AccountIDCache const& idCache,
     std::function<void (std::uint32_t)> const& onUnsavedLedger,
     std::function<void (std::uint32_t,
                         std::string const&,

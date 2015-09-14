@@ -159,10 +159,10 @@ Change::applyAmendment()
         amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
 
-        getApp().getAmendmentTable ().enable (amendment);
+        ctx_.app.getAmendmentTable ().enable (amendment);
 
-        if (!getApp().getAmendmentTable ().isSupported (amendment))
-            getApp().getOPs ().setAmendmentBlocked ();
+        if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
+            ctx_.app.getOPs ().setAmendmentBlocked ();
     }
 
     if (newMajorities.empty ())
