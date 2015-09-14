@@ -51,6 +51,7 @@ class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
+class AcceptedLedger;
 class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
@@ -100,7 +101,7 @@ public:
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
-    virtual HashRouter&            getHashRouter () = 0;
+    virtual HashRouter&             getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
@@ -109,6 +110,8 @@ public:
     virtual NodeStore::Database&    getNodeStore () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual InboundTransactions&    getInboundTransactions () = 0;
+    virtual TaggedCache <uint256, AcceptedLedger>&
+                                    getAcceptedLedgerCache () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;

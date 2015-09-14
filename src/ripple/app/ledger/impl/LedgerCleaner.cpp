@@ -327,7 +327,7 @@ public:
             return false;
         }
 
-        if (doTxns && !nodeLedger->pendSaveValidated(true, false))
+        if (doTxns && !pendSaveValidated(app_, nodeLedger, true, false))
         {
             m_journal.debug << "Failed to save ledger " << ledgerIndex;
             return false;

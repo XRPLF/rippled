@@ -104,7 +104,7 @@ Json::Value doGetCounts (RPC::Context& context)
     ret[jss::SLE_hit_rate] = context.app.cachedSLEs().rate();
     ret[jss::node_hit_rate] = context.app.getNodeStore ().getCacheHitRate ();
     ret[jss::ledger_hit_rate] = context.app.getLedgerMaster ().getCacheHitRate ();
-    ret[jss::AL_hit_rate] = AcceptedLedger::getCacheHitRate ();
+    ret[jss::AL_hit_rate] = context.app.getAcceptedLedgerCache ().getHitRate ();
 
     ret[jss::fullbelow_size] = static_cast<int>(context.app.family().fullbelow().size());
     ret[jss::treenode_cache_size] = context.app.family().treecache().getCacheSize();

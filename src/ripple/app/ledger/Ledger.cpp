@@ -415,173 +415,6 @@ bool Ledger::addSLE (SLE const& sle)
     return stateMap_->addItem(item, false, false);
 }
 
-bool Ledger::saveValidatedLedger (bool current)
-{
-    // TODO(tom): Fix this hard-coded SQL!
-    WriteLog (lsTRACE, Ledger)
-        << "saveValidatedLedger "
-        << (current ? "" : "fromAcquire ") << info().seq;
-    static boost::format deleteLedger (
-        "DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-    static boost::format deleteTrans1 (
-        "DELETE FROM Transactions WHERE LedgerSeq = %u;");
-    static boost::format deleteTrans2 (
-        "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-    static boost::format deleteAcctTrans (
-        "DELETE FROM AccountTransactions WHERE TransID = '%s';");
-    static boost::format transExists (
-        "SELECT Status FROM Transactions WHERE TransID = '%s';");
-    static boost::format updateTx (
-        "UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s "
-        "WHERE TransID = '%s';");
-    static boost::format addLedger (
-        "INSERT OR REPLACE INTO Ledgers "
-        "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,"
-        "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
-        "('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
-
-    if (!info().accountHash.isNonZero ())
-    {
-        WriteLog (lsFATAL, Ledger) << "AH is zero: "
-                                   << getJson (*this);
-        assert (false);
-    }
-
-    if (info().accountHash != stateMap_->getHash ())
-    {
-        WriteLog (lsFATAL, Ledger) << "sAL: " << info().accountHash
-                                   << " != " << stateMap_->getHash ();
-        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
-                                   << info_.seq << ", current=" << current;
-        assert (false);
-    }
-
-    assert (info().txHash == txMap_->getHash ());
-
-    // Save the ledger header in the hashed object store
-    {
-        Serializer s (128);
-        s.add32 (HashPrefix::ledgerMaster);
-        addRaw (s);
-        getApp().getNodeStore ().store (
-            hotLEDGER, std::move (s.modData ()), info_.hash);
-    }
-
-    AcceptedLedger::pointer aLedger;
-    try
-    {
-        aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
-    }
-    catch (...)
-    {
-        WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
-        getApp().getLedgerMaster().failedSave(info_.seq, info_.hash);
-        // Clients can now trust the database for information about this
-        // ledger sequence.
-        getApp().pendingSaves().erase(info().seq);
-        return false;
-    }
-
-    {
-        auto db = getApp().getLedgerDB ().checkoutDb();
-        *db << boost::str (deleteLedger % info_.seq);
-    }
-
-    {
-        auto db = getApp().getTxnDB ().checkoutDb ();
-
-        soci::transaction tr(*db);
-
-        *db << boost::str (deleteTrans1 % info().seq);
-        *db << boost::str (deleteTrans2 % info().seq);
-
-        std::string const ledgerSeq (std::to_string (info().seq));
-
-        for (auto const& vt : aLedger->getMap ())
-        {
-            uint256 transactionID = vt.second->getTransactionID ();
-
-            getApp().getMasterTransaction ().inLedger (
-                transactionID, info().seq);
-
-            std::string const txnId (to_string (transactionID));
-            std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
-
-            *db << boost::str (deleteAcctTrans % transactionID);
-
-            auto const& accts = vt.second->getAffected ();
-
-            if (!accts.empty ())
-            {
-                std::string sql (
-                    "INSERT INTO AccountTransactions "
-                    "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
-
-                // Try to make an educated guess on how much space we'll need
-                // for our arguments. In argument order we have:
-                // 64 + 34 + 10 + 10 = 118 + 10 extra = 128 bytes
-                sql.reserve (sql.length () + (accts.size () * 128));
-
-                bool first = true;
-                for (auto const& account : accts)
-                {
-                    if (!first)
-                        sql += ", ('";
-                    else
-                    {
-                        sql += "('";
-                        first = false;
-                    }
-
-                    sql += txnId;
-                    sql += "','";
-                    sql += getApp().accountIDCache().toBase58(account);
-                    sql += "',";
-                    sql += ledgerSeq;
-                    sql += ",";
-                    sql += txnSeq;
-                    sql += ")";
-                }
-                sql += ";";
-                if (ShouldLog (lsTRACE, Ledger))
-                {
-                    WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
-                }
-                *db << sql;
-            }
-            else
-                WriteLog (lsWARNING, Ledger)
-                    << "Transaction in ledger " << info_.seq
-                    << " affects no accounts";
-
-            *db <<
-               (STTx::getMetaSQLInsertReplaceHeader () +
-                vt.second->getTxn ()->getMetaSQL (
-                    info().seq, vt.second->getEscMeta ()) + ";");
-        }
-
-        tr.commit ();
-    }
-
-    {
-        auto db (getApp().getLedgerDB ().checkoutDb ());
-
-        // TODO(tom): ARG!
-        *db << boost::str (
-            addLedger %
-            to_string (getHash ()) % info_.seq % to_string (info_.parentHash) %
-            to_string (info_.drops) % info_.closeTime %
-            info_.parentCloseTime % info_.closeTimeResolution %
-            info_.closeFlags % to_string (info_.accountHash) %
-            to_string (info_.txHash));
-    }
-
-    // Clients can now trust the database for
-    // information about this ledger sequence.
-    getApp().pendingSaves().erase(info().seq);
-    return true;
-}
-
 //------------------------------------------------------------------------------
 
 std::shared_ptr<STTx const>
@@ -1274,42 +1107,220 @@ void Ledger::updateSkipList ()
         rawReplace(sle);
 }
 
+static bool saveValidatedLedger (
+    Application& app, std::shared_ptr<Ledger> const& ledger, bool current)
+{
+    // TODO(tom): Fix this hard-coded SQL!
+    WriteLog (lsTRACE, Ledger)
+        << "saveValidatedLedger "
+        << (current ? "" : "fromAcquire ") << ledger->info().seq;
+    static boost::format deleteLedger (
+        "DELETE FROM Ledgers WHERE LedgerSeq = %u;");
+    static boost::format deleteTrans1 (
+        "DELETE FROM Transactions WHERE LedgerSeq = %u;");
+    static boost::format deleteTrans2 (
+        "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
+    static boost::format deleteAcctTrans (
+        "DELETE FROM AccountTransactions WHERE TransID = '%s';");
+    static boost::format transExists (
+        "SELECT Status FROM Transactions WHERE TransID = '%s';");
+    static boost::format updateTx (
+        "UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s "
+        "WHERE TransID = '%s';");
+    static boost::format addLedger (
+        "INSERT OR REPLACE INTO Ledgers "
+        "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,"
+        "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
+        "('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
+
+    auto seq = ledger->info().seq;
+
+    if (! ledger->info().accountHash.isNonZero ())
+    {
+        WriteLog (lsFATAL, Ledger) << "AH is zero: "
+                                   << getJson (*ledger);
+        assert (false);
+    }
+
+    if (ledger->info().accountHash != ledger->stateMap().getHash ())
+    {
+        WriteLog (lsFATAL, Ledger) << "sAL: " << ledger->info().accountHash
+                                   << " != " << ledger->stateMap().getHash ();
+        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
+                                   << seq << ", current=" << current;
+        assert (false);
+    }
+
+    assert (ledger->info().txHash == ledger->txMap().getHash ());
+
+    // Save the ledger header in the hashed object store
+    {
+        Serializer s (128);
+        s.add32 (HashPrefix::ledgerMaster);
+        ledger->addRaw (s);
+        app.getNodeStore ().store (
+            hotLEDGER, std::move (s.modData ()), ledger->info().hash);
+    }
+
+
+    AcceptedLedger::pointer aLedger;
+    try
+    {
+        aLedger = app.getAcceptedLedgerCache().fetch (ledger->info().hash);
+        if (! aLedger)
+        {
+            aLedger = std::make_shared<AcceptedLedger>(ledger);
+            app.getAcceptedLedgerCache().canonicalize(ledger->info().hash, aLedger);
+        }
+    }
+    catch (...)
+    {
+        WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
+        app.getLedgerMaster().failedSave(seq, ledger->info().hash);
+        // Clients can now trust the database for information about this
+        // ledger sequence.
+        app.pendingSaves().erase(seq);
+        return false;
+    }
+
+    {
+        auto db = app.getLedgerDB ().checkoutDb();
+        *db << boost::str (deleteLedger % seq);
+    }
+
+    {
+        auto db = app.getTxnDB ().checkoutDb ();
+
+        soci::transaction tr(*db);
+
+        *db << boost::str (deleteTrans1 % seq);
+        *db << boost::str (deleteTrans2 % seq);
+
+        std::string const ledgerSeq (std::to_string (seq));
+
+        for (auto const& vt : aLedger->getMap ())
+        {
+            uint256 transactionID = vt.second->getTransactionID ();
+
+            app.getMasterTransaction ().inLedger (
+                transactionID, seq);
+
+            std::string const txnId (to_string (transactionID));
+            std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
+
+            *db << boost::str (deleteAcctTrans % transactionID);
+
+            auto const& accts = vt.second->getAffected ();
+
+            if (!accts.empty ())
+            {
+                std::string sql (
+                    "INSERT INTO AccountTransactions "
+                    "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
+
+                // Try to make an educated guess on how much space we'll need
+                // for our arguments. In argument order we have:
+                // 64 + 34 + 10 + 10 = 118 + 10 extra = 128 bytes
+                sql.reserve (sql.length () + (accts.size () * 128));
+
+                bool first = true;
+                for (auto const& account : accts)
+                {
+                    if (!first)
+                        sql += ", ('";
+                    else
+                    {
+                        sql += "('";
+                        first = false;
+                    }
+
+                    sql += txnId;
+                    sql += "','";
+                    sql += app.accountIDCache().toBase58(account);
+                    sql += "',";
+                    sql += ledgerSeq;
+                    sql += ",";
+                    sql += txnSeq;
+                    sql += ")";
+                }
+                sql += ";";
+                if (ShouldLog (lsTRACE, Ledger))
+                {
+                    WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                }
+                *db << sql;
+            }
+            else
+                WriteLog (lsWARNING, Ledger)
+                    << "Transaction in ledger " << seq
+                    << " affects no accounts";
+
+            *db <<
+               (STTx::getMetaSQLInsertReplaceHeader () +
+                vt.second->getTxn ()->getMetaSQL (
+                    seq, vt.second->getEscMeta ()) + ";");
+        }
+
+        tr.commit ();
+    }
+
+    {
+        auto db (app.getLedgerDB ().checkoutDb ());
+
+        // TODO(tom): ARG!
+        *db << boost::str (
+            addLedger %
+            to_string (ledger->info().hash) % seq % to_string (ledger->info().parentHash) %
+            to_string (ledger->info().drops) % ledger->info().closeTime %
+            ledger->info().parentCloseTime % ledger->info().closeTimeResolution %
+            ledger->info().closeFlags % to_string (ledger->info().accountHash) %
+            to_string (ledger->info().txHash));
+    }
+
+    // Clients can now trust the database for
+    // information about this ledger sequence.
+    app.pendingSaves().erase(seq);
+    return true;
+}
+
 /** Save, or arrange to save, a fully-validated ledger
     Returns false on error
 */
-bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
+bool pendSaveValidated (Application& app,
+    std::shared_ptr<Ledger> const& ledger, bool isSynchronous, bool isCurrent)
 {
-    if (!getApp().getHashRouter ().setFlags (getHash (), SF_SAVED))
+    if (! app.getHashRouter ().setFlags (ledger->info().hash, SF_SAVED))
     {
-        WriteLog (lsDEBUG, Ledger) << "Double pend save for " << info().seq;
+        WriteLog (lsDEBUG, Ledger) << "Double pend save for "
+            << ledger->info().seq;
         return true;
     }
 
-    assert (isImmutable ());
+    assert (ledger->isImmutable ());
 
-    if (!getApp().pendingSaves().insert(info().seq))
+    if (! app.pendingSaves().insert (ledger->info().seq))
     {
         WriteLog (lsDEBUG, Ledger)
-            << "Pend save with seq in pending saves " << info().seq;
+            << "Pend save with seq in pending saves "
+            << ledger->info().seq;
         return true;
     }
 
     if (isSynchronous)
-        return saveValidatedLedger(isCurrent);
+        return saveValidatedLedger(app, ledger, isCurrent);
 
-    auto that = shared_from_this();
-    auto job = [that, isCurrent] (Job&) {
-        that->saveValidatedLedger(isCurrent);
+    auto job = [ledger, &app, isCurrent] (Job&) {
+        saveValidatedLedger(app, ledger, isCurrent);
     };
 
     if (isCurrent)
     {
-        getApp().getJobQueue().addJob(
+        app.getJobQueue().addJob(
             jtPUBLEDGER, "Ledger::pendSave", job);
     }
     else
     {
-        getApp().getJobQueue ().addJob(
+        app.getJobQueue ().addJob(
             jtPUBOLDLEDGER, "Ledger::pendOldSave", job);
     }
 

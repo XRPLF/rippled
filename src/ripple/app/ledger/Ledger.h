@@ -36,6 +36,7 @@
 
 namespace ripple {
 
+class Application;
 class Job;
 class TransactionMaster;
 
@@ -314,7 +315,6 @@ public:
 
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
-    bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
     std::vector<uint256> getNeededTransactionHashes (
         int max, SHAMapSyncFilter* filter) const;
@@ -373,8 +373,6 @@ private:
     class sles_iter_impl;
     class txs_iter_impl;
 
-    bool saveValidatedLedger (bool current);
-
     void
     setup (Config const& config);
 
@@ -417,6 +415,12 @@ private:
     // Reserve increment in drops
     std::uint32_t mutable mReserveIncrement = 0;
 };
+
+bool pendSaveValidated (
+    Application& app,
+    std::shared_ptr<Ledger> const& ledger,
+    bool isSynchronous,
+    bool isCurrent);
 
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
