@@ -377,7 +377,7 @@ public:
         , m_pathRequests (std::make_unique<PathRequests> (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
-        , m_ledgerMaster (make_LedgerMaster (config_, stopwatch (),
+        , m_ledgerMaster (make_LedgerMaster (*this, stopwatch (),
             *m_jobQueue, m_collectorManager->collector (),
             m_logs.journal("LedgerMaster")))
 
