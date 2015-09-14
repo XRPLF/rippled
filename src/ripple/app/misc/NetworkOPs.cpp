@@ -1755,7 +1755,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                                   << ", txn " << txn->getID();
                 Ledger::pointer ledger = m_ledgerMaster.getLedgerBySeq(seq);
                 if (ledger)
-                    ledger->pendSaveValidated(false, false);
+                    pendSaveValidated(getApp(), ledger, false, false);
             }
 
             ret.emplace_back (txn, std::make_shared<TxMeta> (
@@ -1834,8 +1834,9 @@ NetworkOPsImp::getTxsAccount (
         convertBlobsToTxResult (ret, ledger_index, status, rawTxn, rawMeta);
     };
 
-    accountTxPage(getApp().getTxnDB (), saveLedgerAsync, bound, account,
-        minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
+    accountTxPage(getApp().getTxnDB (), std::bind(saveLedgerAsync, std::ref(getApp()), std::placeholders::_1),
+        bound, account, minLedger, maxLedger, forward, token,
+        limit, bAdmin, page_length);
 
     return ret;
 }
@@ -1859,8 +1860,8 @@ NetworkOPsImp::getTxsAccountB (
         ret.emplace_back (strHex(rawTxn), strHex (rawMeta), ledgerIndex);
     };
 
-    accountTxPage(getApp().getTxnDB (), saveLedgerAsync, bound, account,
-        minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
+    accountTxPage(getApp().getTxnDB (), std::bind(saveLedgerAsync, std::ref(getApp()), std::placeholders::_1),
+        bound, account, minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
     return ret;
 }
 
@@ -2102,7 +2103,14 @@ void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
     // Ledgers are published only when they acquire sufficient validations
     // Holes are filled across connection loss or other catastrophe
 
-    auto alpAccepted = AcceptedLedger::makeAcceptedLedger (lpAccepted);
+    std::shared_ptr<AcceptedLedger> alpAccepted =
+        getApp().getAcceptedLedgerCache().fetch (lpAccepted->info().hash);
+    if (! alpAccepted)
+    {
+        alpAccepted = std::make_shared<AcceptedLedger> (lpAccepted);
+        getApp().getAcceptedLedgerCache().canonicalize (
+            lpAccepted->info().hash, alpAccepted);
+    }
 
     {
         ScopedLockType sl (mSubLock);

@@ -761,7 +761,7 @@ public:
         }
 
 
-        ledger->pendSaveValidated (isSynchronous, isCurrent);
+        pendSaveValidated (app_, ledger, isSynchronous, isCurrent);
 
         {
 
@@ -923,7 +923,7 @@ public:
         setValidLedger(ledger);
         if (!mPubLedger)
         {
-            ledger->pendSaveValidated(true, true);
+            pendSaveValidated(app_, ledger, true, true);
             setPubLedger(ledger);
             app_.getOrderBookDB().setup(ledger);
         }

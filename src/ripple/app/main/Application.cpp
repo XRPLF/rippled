@@ -288,6 +288,7 @@ public:
     std::unique_ptr <LedgerMaster> m_ledgerMaster;
     std::unique_ptr <InboundLedgers> m_inboundLedgers;
     std::unique_ptr <InboundTransactions> m_inboundTransactions;
+    TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
@@ -396,6 +397,9 @@ public:
             {
                 gotTXSet (setHash, set);
             }))
+
+        , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),
+            m_logs.journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (stopwatch(),
             config_.RUN_STANDALONE, config_.NETWORK_QUORUM,
@@ -521,6 +525,11 @@ public:
     InboundTransactions& getInboundTransactions ()
     {
         return *m_inboundTransactions;
+    }
+
+    TaggedCache <uint256, AcceptedLedger>& getAcceptedLedgerCache ()
+    {
+        return m_acceptedLedgerCache;
     }
 
     void gotTXSet (uint256 const& setHash, std::shared_ptr<SHAMap> const& set)
@@ -1023,7 +1032,7 @@ public:
         getTempNodeCache().sweep();
         getValidations().sweep();
         getInboundLedgers().sweep();
-        AcceptedLedger::sweep();
+        m_acceptedLedgerCache.sweep();
         family().treecache().sweep();
         cachedSLEs_.expire();
 
