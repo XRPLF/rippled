@@ -27,50 +27,25 @@ namespace RPC {
 /** @{ */
 namespace Tuning {
 
-/** Default account objects returned per request from the
-    account_objects command when no limit param is specified
-*/
-static unsigned int const defaultObjectsPerRequest (200);
+/** Represents RPC limit parameter values that have a min, default and max. */
+struct LimitRange {
+    unsigned int rmin, rdefault, rmax;
+};
 
-/** Minimum account objects returned per request from the
-    account_objects command. Specified in the limit param.
-*/
-static unsigned int const minObjectsPerRequest (10);
+/** Limits for the account_lines command. */
+static LimitRange const accountLines = {10, 200, 400};
 
-/** Maximum account objects returned per request from the
-    account_objects command. Specified in the limit param.
-*/
-static unsigned int const maxObjectsPerRequest (400);
+/** Limits for the account_objects command. */
+static LimitRange const accountObjects = {10, 200, 400};
 
-/** Default account lines returned per request from the
-    account_lines command when no limit param is specified
-*/
-static unsigned int const defaultLinesPerRequest (200);
+/** Limits for the account_offers command. */
+static LimitRange const accountOffers = {10, 200, 400};
 
-/** Minimum account lines returned per request from the
-    account_lines command. Specified in the limit param.
-*/
-static unsigned int const minLinesPerRequest (10);
+/** Limits for the book_offers command. */
+static LimitRange const bookOffers = {0, 0, 400};
 
-/** Maximum account lines returned per request from the
-    account_lines command. Specified in the limit param.
-*/
-static unsigned int const maxLinesPerRequest (400);
-
-/** Default offers returned per request from the
-    account_offers command when no limit param is specified.
-*/
-static unsigned int const defaultOffersPerRequest (200);
-
-/** Minimum offers returned per request from the
-    account_offers command. Specified in the limit param.
-*/
-static unsigned int const minOffersPerRequest (10);
-
-/** Maximum offers returned per request from the
-    account_lines command. Specified in the limit param.
-*/
-static unsigned int const maxOffersPerRequest (400);
+/** Limits for the no_ripple_check command. */
+static LimitRange const noRippleCheck = {10, 300, 400};
 
 static int const defaultAutoFillFeeMultiplier (10);
 static int const maxPathfindsInProgress (2);

@@ -20,6 +20,8 @@
 #include <ripple/rpc/impl/Utilities.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/rpc/Context.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
@@ -92,6 +94,24 @@ injectSLE (Json::Value& jv,
     {
         jv[jss::Invalid] = true;
     }
+}
+
+boost::optional<Json::Value> readLimitField(
+    unsigned int& limit,
+    Tuning::LimitRange const& range,
+    Context const& context)
+{
+    limit = range.rdefault;
+    if (auto const& jvLimit = context.params[jss::limit])
+    {
+        if (! (jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+            return RPC::expected_field_error (jss::limit, "unsigned integer");
+
+        limit = jvLimit.asUInt();
+        if (context.role != Role::ADMIN)
+            limit = std::max(range.rmin, std::min(range.rmax, limit));
+    }
+    return boost::none;
 }
 
 } // ripple
