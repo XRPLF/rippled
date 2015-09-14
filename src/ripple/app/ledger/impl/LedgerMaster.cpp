@@ -151,7 +151,7 @@ public:
         , mLedgerHistory (collector)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (make_LedgerCleaner (
-            *this, deprecatedLogs().journal("LedgerCleaner")))
+            app, *this, deprecatedLogs().journal("LedgerCleaner")))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
