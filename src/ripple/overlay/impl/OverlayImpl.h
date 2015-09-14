@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/impl/Manifest.h>
@@ -96,6 +97,7 @@ private:
         on_timer (error_code ec);
     };
 
+    Application& app_;
     boost::asio::io_service& io_service_;
     boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
@@ -121,7 +123,7 @@ private:
     //--------------------------------------------------------------------------
 
 public:
-    OverlayImpl (Setup const& setup, Stoppable& parent,
+    OverlayImpl (Application& app, Setup const& setup, Stoppable& parent,
         ServerHandler& serverHandler, Resource::Manager& resourceManager,
         Resolver& resolver, boost::asio::io_service& io_service,
         BasicConfig const& config);
