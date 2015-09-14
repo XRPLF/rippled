@@ -28,8 +28,9 @@
 
 namespace ripple {
 
-OrderBookDB::OrderBookDB (Stoppable& parent)
+OrderBookDB::OrderBookDB (Application& app, Stoppable& parent)
     : Stoppable ("OrderBookDB", parent)
+    , app_ (app)
     , mSeq (0)
 {
 }
@@ -67,7 +68,7 @@ void OrderBookDB::setup(
     if (getConfig().RUN_STANDALONE)
         update(ledger);
     else
-        getApp().getJobQueue().addJob(
+        app_.getJobQueue().addJob(
             jtUPDATE_PF, "OrderBookDB::update",
             [this, ledger] (Job&) { update(ledger); });
 }
@@ -134,7 +135,7 @@ void OrderBookDB::update(
         mSourceMap.swap(sourceMap);
         mDestMap.swap(destMap);
     }
-    getApp().getLedgerMaster().newOrderBookDB();
+    app_.getLedgerMaster().newOrderBookDB();
 }
 
 void OrderBookDB::addOrderBook(Book const& book)

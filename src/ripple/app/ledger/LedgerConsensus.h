@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/tx/InboundTransactions.h>
@@ -79,6 +80,7 @@ public:
   @param openLgr               true if applyLedger is open, else false.
 */
 void applyTransactions (
+    Application& app,
     SHAMap const* set,
     OpenView& view,
     Ledger::ref checkLedger,

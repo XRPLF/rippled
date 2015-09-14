@@ -49,7 +49,7 @@ Json::Value doPathFind (RPC::Context& context)
     {
         context.loadType = Resource::feeHighBurdenRPC;
         context.infoSub->clearPathRequest ();
-        return getApp().getPathRequests().makePathRequest (
+        return context.app.getPathRequests().makePathRequest (
             context.infoSub, lpLedger, context.params);
     }
 

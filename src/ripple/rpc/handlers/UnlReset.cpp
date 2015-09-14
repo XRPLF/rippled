@@ -29,10 +29,10 @@ namespace RPC {
 struct Context;
 }
 
-Json::Value doUnlReset (RPC::Context&)
+Json::Value doUnlReset (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
-    getApp().getUNL ().nodeReset ();
+    auto lock = beast::make_lock(context.app.getMasterMutex());
+    context.app.getUNL ().nodeReset ();
 
     return RPC::makeObjectValue ("removing nodes");
 }

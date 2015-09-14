@@ -183,7 +183,7 @@ private:
         if (! account)
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest[jss::account]= getApp().accountIDCache().toBase58(*account);
+        jvRequest[jss::account]= toBase58(*account);
 
         bool            bDone   = false;
 
@@ -253,7 +253,7 @@ private:
         if (! account)
             return rpcError (rpcACT_MALFORMED);
 
-        jvRequest[jss::account]    = getApp().accountIDCache().toBase58(*account);
+        jvRequest[jss::account]    = toBase58(*account);
 
         bool            bDone   = false;
 

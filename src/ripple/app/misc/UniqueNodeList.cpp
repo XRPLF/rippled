@@ -161,7 +161,8 @@ void selectBlobsIntoStrings (
     }
 }
 
-// VFALCO TODO move all function definitions inlined into the class.
+//------------------------------------------------------------------------------
+
 class UniqueNodeListImp
     : public UniqueNodeList
     , public beast::DeadlineTimer::Listener
@@ -202,6 +203,8 @@ private:
     };
 
 private:
+    Application& app_;
+
     typedef RippleMutex FetchLockType;
     typedef std::lock_guard <FetchLockType> ScopedFetchLockType;
     FetchLockType mFetchLock;
@@ -235,7 +238,7 @@ private:
     std::string node_file_path_;
 
 public:
-    explicit UniqueNodeListImp (Stoppable& parent);
+    UniqueNodeListImp (Application& app, Stoppable& parent);
 
     void onStop();
 
@@ -401,8 +404,9 @@ UniqueNodeList::UniqueNodeList (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-UniqueNodeListImp::UniqueNodeListImp (Stoppable& parent)
+UniqueNodeListImp::UniqueNodeListImp (Application& app, Stoppable& parent)
     : UniqueNodeList (parent)
+    , app_ (app)
     , m_scoreTimer (this)
     , mFetchActive (0)
     , m_fetchTimer (this)
@@ -451,13 +455,13 @@ void UniqueNodeListImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 {
     if (timer == m_scoreTimer)
     {
-        getApp().getJobQueue ().addJob (
+        app_.getJobQueue ().addJob (
             jtUNL, "UNL.score",
             [this] (Job&) { doScore(); });
     }
     else if (timer == m_fetchTimer)
     {
-        getApp().getJobQueue ().addJob (jtUNL, "UNL.fetch",
+        app_.getJobQueue ().addJob (jtUNL, "UNL.fetch",
             [this] (Job&) { doFetch(); });
     }
 }
@@ -577,7 +581,7 @@ void UniqueNodeListImp::nodeAddDomain (std::string strDomain, ValidatorSource vs
 void UniqueNodeListImp::nodeRemovePublic (RippleAddress const& naNodePublic)
 {
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         *db << str (
             boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s;") %
@@ -602,7 +606,7 @@ void UniqueNodeListImp::nodeRemoveDomain (std::string strDomain)
     boost::to_lower (strDomain);
 
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         *db << str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s;") % sqlEscape (strDomain));
     }
@@ -616,7 +620,7 @@ void UniqueNodeListImp::nodeRemoveDomain (std::string strDomain)
 void UniqueNodeListImp::nodeReset()
 {
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         *db << "DELETE FROM SeedDomains;";
         *db << "DELETE FROM SeedNodes;";
@@ -697,7 +701,7 @@ UniqueNodeListImp::getClusterStatus()
 
 std::uint32_t UniqueNodeListImp::getClusterFee()
 {
-    auto const thresh = getApp().timeKeeper().now().time_since_epoch().count() - 90;
+    auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
 
     std::vector<std::uint32_t> fees;
     {
@@ -725,14 +729,14 @@ void UniqueNodeListImp::addClusterStatus (Json::Value& obj)
     ScopedUNLLockType sl (mUNLLock);
     if (m_clusterNodes.size() > 1) // nodes other than us
     {
-        auto const now = getApp().timeKeeper().now().time_since_epoch().count();
-        std::uint32_t ref   = getApp().getFeeTrack().getLoadBase();
+        auto const now = app_.timeKeeper().now().time_since_epoch().count();
+        std::uint32_t ref   = app_.getFeeTrack().getLoadBase();
         Json::Value& nodes = (obj[jss::cluster] = Json::objectValue);
 
         for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
             end = m_clusterNodes.end(); it != end; ++it)
         {
-            if (it->first != getApp().getLocalCredentials().getNodePublic())
+            if (it->first != app_.getLocalCredentials().getNodePublic())
             {
                 Json::Value& node = nodes[it->first.humanNodePublic()];
 
@@ -758,8 +762,8 @@ void UniqueNodeListImp::nodeBootstrap()
 
 #if 0
     {
-        auto sl (getApp().getWalletDB ().lock ());
-        auto db = getApp().getWalletDB ().getDB ();
+        auto sl (app_.getWalletDB ().lock ());
+        auto db = app_.getWalletDB ().getDB ();
 
         if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
             iDomains    = db->getInt ("Count");
@@ -879,7 +883,7 @@ void UniqueNodeListImp::nodeNetwork()
     {
         HTTPClient::get (
             true,
-            getApp().getIOService (),
+            app_.getIOService (),
             getConfig ().VALIDATORS_SITE,
             443,
             getConfig ().VALIDATORS_URI,
@@ -899,7 +903,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
 
     Json::Value ret (Json::arrayValue);
 
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
 
     std::vector<std::array<boost::optional<std::string>, 2>> columns;
@@ -978,7 +982,7 @@ int UniqueNodeListImp::iSourceScore (ValidatorSource vsWhy)
 // Load information about when we last updated.
 bool UniqueNodeListImp::miscLoad()
 {
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     boost::optional<int> suO, fuO;
 
@@ -999,7 +1003,7 @@ bool UniqueNodeListImp::miscLoad()
 // Persist update information.
 bool UniqueNodeListImp::miscSave()
 {
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     *db << str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
                 % iToSeconds (mtpFetchUpdated)
@@ -1028,7 +1032,7 @@ void UniqueNodeListImp::trustedLoad()
             WriteLog (lsWARNING, UniqueNodeList) << "Entry in cluster list invalid: '" << c << "'";
     }
 
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
     ScopedUNLLockType slUNL (mUNLLock);
 
     mUNL.clear ();
@@ -1131,7 +1135,7 @@ void UniqueNodeListImp::scoreCompute()
     // For each entry in SeedDomains with a PublicKey:
     // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         std::vector<std::array<boost::optional<std::string>, 3>> columns;
         selectBlobsIntoStrings(*db,
@@ -1188,7 +1192,7 @@ void UniqueNodeListImp::scoreCompute()
     // For each entry in SeedNodes:
     // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         std::vector<std::array<boost::optional<std::string>, 2>> columns;
         selectBlobsIntoStrings(*db,
@@ -1257,7 +1261,7 @@ void UniqueNodeListImp::scoreCompute()
         std::string&        strValidator    = sn.strValidator;
         std::vector<int>&   viReferrals     = sn.viReferrals;
 
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         std::vector<std::array<boost::optional<std::string>, 1>> columns;
         selectBlobsIntoStrings(*db,
@@ -1339,7 +1343,7 @@ void UniqueNodeListImp::scoreCompute()
     }
 
     // Persist validator scores.
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     soci::transaction tr(*db);
     *db << "UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;";
@@ -1650,7 +1654,7 @@ void UniqueNodeListImp::fetchNext()
         boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
         boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
 
         {
@@ -1777,7 +1781,7 @@ void UniqueNodeListImp::fetchProcess (std::string strDomain)
 
     HTTPClient::get (
         true,
-        getApp().getIOService (),
+        app_.getIOService (),
         deqSites,
         443,
         node_file_path_,
@@ -1806,7 +1810,7 @@ void UniqueNodeListImp::getValidatorsUrl (RippleAddress const& naNodePublic,
     {
         HTTPClient::get (
             true,
-            getApp().getIOService (),
+            app_.getIOService (),
             strDomain,
             443,
             strPath,
@@ -1843,7 +1847,7 @@ void UniqueNodeListImp::getIpsUrl (RippleAddress const& naNodePublic, IniFileSec
     {
         HTTPClient::get (
             true,
-            getApp().getIOService (),
+            app_.getIOService (),
             strDomain,
             443,
             strPath,
@@ -1918,7 +1922,7 @@ void UniqueNodeListImp::processIps (std::string const& strSite, RippleAddress co
 
     // Remove all current Validator's entries in IpReferrals
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
         *db << str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic);
     }
 
@@ -1960,7 +1964,7 @@ void UniqueNodeListImp::processIps (std::string const& strSite, RippleAddress co
         {
             vstrValues.resize (iValues);
 
-            auto db = getApp().getWalletDB ().checkoutDb ();
+            auto db = app_.getWalletDB ().checkoutDb ();
             *db << str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
                         % strJoin (vstrValues.begin (), vstrValues.end (), ","));
             // XXX Check result.
@@ -1990,7 +1994,7 @@ int UniqueNodeListImp::processValidators (std::string const& strSite, std::strin
 
     // Remove all current Validator's entries in ValidatorReferrals
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         *db << str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic);
         // XXX Check result.
@@ -2061,7 +2065,7 @@ int UniqueNodeListImp::processValidators (std::string const& strSite, std::strin
             std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                        % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-            auto db = getApp().getWalletDB ().checkoutDb ();
+            auto db = app_.getWalletDB ().checkoutDb ();
 
             *db << strSql;
             // XXX Check result.
@@ -2116,7 +2120,7 @@ bool UniqueNodeListImp::getSeedDomains (std::string const& strDomain, seedDomain
             "Comment FROM SeedDomains WHERE Domain=%s;") %
         sqlEscape (strDomain));
 
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     // Iterate through the result rows with a fectch b/c putting a
     // column of type DATETIME into a boost::tuple can throw when the
@@ -2208,7 +2212,7 @@ void UniqueNodeListImp::setSeedDomains (const seedDomain& sdSource, bool bNext)
                                       % sqlEscape (sdSource.strComment)
                                      );
 
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     try
     {
@@ -2239,7 +2243,7 @@ bool UniqueNodeListImp::getSeedNodes (RippleAddress const& naNodePublic, seedNod
                 "Comment FROM SeedNodes WHERE PublicKey='%s';") %
                  naNodePublic.humanNodePublic ());
 
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     std::string                      strPublicKey;
     std::string                      strSource;
@@ -2319,7 +2323,7 @@ void UniqueNodeListImp::setSeedNodes (const seedNode& snSource, bool bNext)
                               );
 
     {
-        auto db = getApp().getWalletDB ().checkoutDb ();
+        auto db = app_.getWalletDB ().checkoutDb ();
 
         try
         {
@@ -2401,9 +2405,9 @@ void UniqueNodeListImp::nodeProcess (std::string const& strSite, std::string con
 //------------------------------------------------------------------------------
 
 std::unique_ptr<UniqueNodeList>
-make_UniqueNodeList (beast::Stoppable& parent)
+make_UniqueNodeList (Application& app, beast::Stoppable& parent)
 {
-    return std::make_unique<UniqueNodeListImp> (parent);
+    return std::make_unique<UniqueNodeListImp> (app, parent);
 }
 
 } // ripple

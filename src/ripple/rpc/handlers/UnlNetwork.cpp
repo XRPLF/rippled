@@ -30,10 +30,10 @@ struct Context;
 }
 
 // Populate the UNL from ripple.com's validators.txt file.
-Json::Value doUnlNetwork (RPC::Context&)
+Json::Value doUnlNetwork (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
-    getApp().getUNL ().nodeNetwork ();
+    auto lock = beast::make_lock(context.app.getMasterMutex());
+    context.app.getUNL ().nodeNetwork ();
 
     return RPC::makeObjectValue ("fetching");
 }

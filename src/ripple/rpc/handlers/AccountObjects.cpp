@@ -153,7 +153,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         return RPC::invalid_field_error (jss::marker);
     }
 
-    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }

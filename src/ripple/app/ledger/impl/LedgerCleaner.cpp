@@ -81,16 +81,19 @@ public:
 
     using SharedState = beast::SharedData <State>;
 
+    Application& app_;
     SharedState m_state;
     beast::Journal m_journal;
 
     //--------------------------------------------------------------------------
 
     LedgerCleanerImp (
+        Application& app,
         Stoppable& stoppable,
         beast::Journal journal)
         : LedgerCleaner (stoppable)
         , Thread ("LedgerCleaner")
+        , app_ (app)
         , m_journal (journal)
     {
     }
@@ -156,7 +159,7 @@ public:
     {
         LedgerIndex minRange;
         LedgerIndex maxRange;
-        getApp().getLedgerMaster().getFullValidatedRange (minRange, maxRange);
+        app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
 
         {
             SharedState::Access state (m_state);
@@ -269,7 +272,7 @@ public:
         {
             m_journal.warning <<
                 "Node missing from ledger " << ledger->info().seq;
-            getApp().getInboundLedgers().acquire (
+            app_.getInboundLedgers().acquire (
                 ledger->getHash(), ledger->info().seq,
                 InboundLedger::fcGENERIC);
         }
@@ -290,7 +293,7 @@ public:
         bool doTxns)
     {
         Ledger::pointer nodeLedger =
-            getApp().getInboundLedgers().acquire (
+            app_.getInboundLedgers().acquire (
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
         if (!nodeLedger)
         {
@@ -309,7 +312,7 @@ public:
             doTxns = true;
         }
 
-        if(! getApp().getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
+        if(! app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
             m_journal.debug << "ledger " << ledgerIndex
                             << " had wrong entry in history";
@@ -319,12 +322,12 @@ public:
         if (doNodes && !nodeLedger->walkLedger())
         {
             m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
-            getApp().getInboundLedgers().acquire(
+            app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
             return false;
         }
 
-        if (doTxns && !nodeLedger->pendSaveValidated(true, false))
+        if (doTxns && !pendSaveValidated(app_, nodeLedger, true, false))
         {
             m_journal.debug << "Failed to save ledger " << ledgerIndex;
             return false;
@@ -346,7 +349,7 @@ public:
 
         if (!referenceLedger || (referenceLedger->info().seq < ledgerIndex))
         {
-            referenceLedger = getApp().getLedgerMaster().getValidatedLedger();
+            referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
             {
                 m_journal.warning << "No validated ledger";
@@ -373,7 +376,7 @@ public:
                     // We found the hash and sequence of a better reference
                     // ledger.
                     referenceLedger =
-                        getApp().getInboundLedgers().acquire(
+                        app_.getInboundLedgers().acquire(
                             refHash, refIndex, InboundLedger::fcGENERIC);
                     if (referenceLedger)
                         ledgerHash = getLedgerHash(
@@ -399,7 +402,7 @@ public:
             bool doNodes;
             bool doTxns;
 
-            while (getApp().getFeeTrack().isLoadedLocal())
+            while (app_.getFeeTrack().isLoadedLocal())
             {
                 m_journal.debug << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -475,9 +478,10 @@ LedgerCleaner::~LedgerCleaner ()
 }
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner (beast::Stoppable& parent, beast::Journal journal)
+make_LedgerCleaner (Application& app,
+    beast::Stoppable& parent, beast::Journal journal)
 {
-    return std::make_unique <LedgerCleanerImp> (parent, journal);
+    return std::make_unique<LedgerCleanerImp>(app, parent, journal);
 }
 
 } // ripple

@@ -33,7 +33,7 @@ namespace ripple {
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 Json::Value doCanDelete (RPC::Context& context)
 {
-    if (! getApp().getSHAMapStore().advisoryDelete())
+    if (! context.app.getSHAMapStore().advisoryDelete())
         return RPC::make_error(rpcNOT_ENABLED);
 
     Json::Value ret (Json::objectValue);
@@ -68,7 +68,7 @@ Json::Value doCanDelete (RPC::Context& context)
             }
             else if (canDeleteStr == "now")
             {
-                canDeleteSeq = getApp().getSHAMapStore().getLastRotated();
+                canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
                 if (!canDeleteSeq)
                     return RPC::make_error (rpcNOT_READY);            }
                 else if (canDeleteStr.size() == 64 &&
@@ -90,11 +90,11 @@ Json::Value doCanDelete (RPC::Context& context)
         }
 
         ret[jss::can_delete] =
-                getApp().getSHAMapStore().setCanDelete (canDeleteSeq);
+                context.app.getSHAMapStore().setCanDelete (canDeleteSeq);
     }
     else
     {
-        ret[jss::can_delete] = getApp().getSHAMapStore().getCanDelete();
+        ret[jss::can_delete] = context.app.getSHAMapStore().getCanDelete();
     }
 
     return ret;

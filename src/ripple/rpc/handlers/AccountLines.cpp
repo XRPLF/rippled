@@ -115,7 +115,7 @@ Json::Value doAccountLines (RPC::Context& context)
     AccountID raPeerAccount;
     if (hasPeer)
     {
-        result[jss::peer] = getApp().accountIDCache().toBase58 (accountID);
+        result[jss::peer] = context.app.accountIDCache().toBase58 (accountID);
         result = RPC::accountFromString (raPeerAccount, strPeer);
 
         if (result)
@@ -217,7 +217,7 @@ Json::Value doAccountLines (RPC::Context& context)
         visitData.items.pop_back ();
     }
 
-    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
 
     for (auto const& item : visitData.items)
         addLine (jsonLines, *item.get ());

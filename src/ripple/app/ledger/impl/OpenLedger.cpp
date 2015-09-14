@@ -73,7 +73,7 @@ OpenLedger::modify (std::function<
 }
 
 void
-OpenLedger::accept(Rules const& rules,
+OpenLedger::accept(Application& app, Rules const& rules,
     std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
@@ -88,7 +88,7 @@ OpenLedger::accept(Rules const& rules,
         using empty =
             std::vector<std::shared_ptr<
                 STTx const>>;
-        apply (*next, *ledger, empty{},
+        apply (app, *next, *ledger, empty{},
             retries, flags, router, config_, j_);
     }
     // Block calls to modify, otherwise
@@ -98,7 +98,7 @@ OpenLedger::accept(Rules const& rules,
         std::mutex> lock1(modify_mutex_);
     // Apply tx from the current open view
     if (! current_->txs.empty())
-        apply (*next, *ledger,
+        apply (app, *next, *ledger,
             boost::adaptors::transform(
                 current_->txs,
             [](std::pair<std::shared_ptr<
@@ -110,7 +110,7 @@ OpenLedger::accept(Rules const& rules,
                 retries, flags, router, config_, j_);
     // Apply local tx
     for (auto const& item : locals)
-        ripple::apply(*next, *item.second,
+        ripple::apply(app, *next, *item.second,
             flags, router.sigVerify(),
                 config_, j_);
     // Switch to the new open view
@@ -132,7 +132,7 @@ OpenLedger::create (Rules const& rules,
 }
 
 auto
-OpenLedger::apply_one (OpenView& view,
+OpenLedger::apply_one (Application& app, OpenView& view,
     std::shared_ptr<STTx const> const& tx,
         bool retry, ApplyFlags flags,
             HashRouter& router, Config const& config,
@@ -145,7 +145,7 @@ OpenLedger::apply_one (OpenView& view,
             SF_SIGGOOD)
         flags = flags | tapNO_CHECK_SIGN;
     auto const result = ripple::apply(
-        view, *tx, flags, router.
+        app, view, *tx, flags, router.
             sigVerify(), config, j);
     if (result.second)
         return Result::success;

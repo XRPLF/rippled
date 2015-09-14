@@ -30,8 +30,9 @@
 
 namespace ripple {
 
-ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)
-    : m_nodeCache (nodeCache)
+ConsensusTransSetSF::ConsensusTransSetSF (Application& app, NodeCache& nodeCache)
+    : app_ (app)
+    , m_nodeCache (nodeCache)
 {
 }
 
@@ -57,10 +58,11 @@ void ConsensusTransSetSF::gotNode (
             SerialIter sit (s.slice());
             STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
-            getApp().getJobQueue ().addJob (
+            auto const pap = &app_;
+            app_.getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
-                [stx] (Job&) {
-                    getApp().getOPs().submitTransaction(stx);
+                [pap, stx] (Job&) {
+                    pap->getOPs().submitTransaction(stx);
                 });
         }
         catch (...)
@@ -77,8 +79,7 @@ bool ConsensusTransSetSF::haveNode (
     if (m_nodeCache.retrieve (nodeHash, nodeData))
         return true;
 
-    // VFALCO TODO Use a dependency injection here
-    auto txn = getApp().getMasterTransaction().fetch(nodeHash, false);
+    auto txn = app_.getMasterTransaction().fetch(nodeHash, false);
 
     if (txn)
     {
