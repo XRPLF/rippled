@@ -31,10 +31,12 @@ class AmendmentSet
 {
 public:
     std::uint32_t mCloseTime;
-    int mTrustedValidations;                    // number of trusted validations
+    int mTrustedValidations;       // number of trusted validations
+    int mThreshold;                // number of votes needed
     hash_map<uint256, int> mVotes; // yes votes by amendment
 
-    AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
+    AmendmentSet (std::uint32_t ct) :
+        mCloseTime (ct), mTrustedValidations (0), mThreshold (0)
     {
         ;
     }
@@ -174,6 +176,11 @@ public:
        @param section the config section of initial amendments
      */
     virtual void addInitial (Section const& section) = 0;
+
+    /**
+      @param section the config section of initial vetos
+     */
+    virtual void addVetos (Section const& section) = 0;
 
     /** Add an amendment to the AmendmentTable
 

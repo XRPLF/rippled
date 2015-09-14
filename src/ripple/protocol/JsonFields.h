@@ -224,6 +224,7 @@ JSS ( load_factor_net );            // out: NetworkOPs
 JSS ( load_fee );                   // out: LoadFeeTrackImp
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
+JSS ( majority );                   // out: RPC feature
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData

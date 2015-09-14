@@ -53,9 +53,11 @@ protected:
     int mMajorityFraction;  // 256 = 100%
     beast::Journal m_journal;
 
+    AmendmentSet m_lastVote;
+
     AmendmentState& getCreate (uint256 const& amendment);
     AmendmentState* getExisting (uint256 const& amendment);
-    void setJson (Json::Value& v, const AmendmentState&);
+    void setJson (Json::Value& v, uint256 const& amendment, const AmendmentState&);
 
 public:
     AmendmentTableImpl (
@@ -66,10 +68,13 @@ public:
         , m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
         , m_journal (journal)
+        , m_lastVote (0)
     {
     }
 
     void addInitial (Section const& section) override;
+
+    void addVetos (Section const& section) override;
 
     void addKnown (AmendmentName const& name) override;
 
@@ -124,6 +129,41 @@ std::vector<AmendmentName> const preEnabledAmendments;
 }
 
 void
+parseSection (std::vector<AmendmentName>& names, Section const& section)
+{
+    int const numExpectedToks = 2;
+    for (auto const& line : section.lines ())
+    {
+        boost::tokenizer<> tokenizer (line);
+        std::vector<std::string> tokens (tokenizer.begin (),
+                                         tokenizer.end ());
+        if (tokens.size () != numExpectedToks)
+        {
+            std::string const errorMsg =
+                (boost::format (
+                     "The %1% section in the config file expects %2% "
+                     "items. Found %3%. Line was: %4%") %
+                 SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
+                 line).str ();
+            throw std::runtime_error (errorMsg);
+        }
+
+        names.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
+        if (!names.back ().valid ())
+        {
+            std::string const errorMsg =
+                (boost::format (
+                     "%1% is not a valid hash. Expected a hex "
+                     "number. In config setcion: %2%. Line was: "
+                     "%3%") %
+                 names.back ().hexString () % SECTION_AMENDMENTS %
+                 line).str ();
+            throw std::runtime_error (errorMsg);
+        }
+    }
+}
+
+void
 AmendmentTableImpl::addInitial (Section const& section)
 {
     for (auto const& a : detail::preEnabledAmendments)
@@ -140,45 +180,25 @@ AmendmentTableImpl::addInitial (Section const& section)
     }
 
     std::vector<AmendmentName> toAdd (detail::preEnabledAmendments);
-
-    {
-        // add the amendments from the config file
-        int const numExpectedToks = 2;
-        for (auto const& line : section.lines ())
-        {
-            boost::tokenizer<> tokenizer (line);
-            std::vector<std::string> tokens (tokenizer.begin (),
-                                             tokenizer.end ());
-            if (tokens.size () != numExpectedToks)
-            {
-                std::string const errorMsg =
-                    (boost::format (
-                         "The %1% section in the config file expects %2% "
-                         "items. Found %3%. Line was: %4%") %
-                     SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
-                     line).str ();
-                throw std::runtime_error (errorMsg);
-            }
-
-            toAdd.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
-            if (!toAdd.back ().valid ())
-            {
-                std::string const errorMsg =
-                    (boost::format (
-                         "%1% is not a valid hash. Expected a hex "
-                         "number. In config setcion: %2%. Line was: "
-                         "%3%") %
-                     toAdd.back ().hexString () % SECTION_AMENDMENTS %
-                     line).str ();
-                throw std::runtime_error (errorMsg);
-            }
-        }
-    }
+    parseSection (toAdd, section);
 
     for (auto const& a : toAdd)
     {
         addKnown (a);
         enable (a.id ());
+    }
+}
+
+void AmendmentTableImpl::addVetos (Section const& section)
+{
+    std::vector<AmendmentName> names;
+    parseSection (names, section);
+    for (auto const& n : names)
+    {
+        // Unknown amendments are effectively vetoed already
+        auto const a = getExisting (n.id ());
+        if (a)
+            a->mVetoed = true;
     }
 }
 
@@ -428,13 +448,13 @@ AmendmentTableImpl::doVoting (
             }
         }
     }
-    int threshold =
+    amendmentSet.mThreshold =
         (amendmentSet.mTrustedValidations * mMajorityFraction + 255) / 256;
 
     if (m_journal.trace)
         m_journal.trace <<
             amendmentSet.mTrustedValidations << " trusted validations, threshold is "
-            << threshold;
+            << amendmentSet.mThreshold;
 
     // Map of amendments to the action to be taken
     // for each one. The action is the value of the
@@ -447,7 +467,8 @@ AmendmentTableImpl::doVoting (
         // process all amendments we know of
         for (auto const& entry : m_amendmentMap)
         {
-            bool const hasValMajority = amendmentSet.count (entry.first) >= threshold;
+            bool const hasValMajority = amendmentSet.count (entry.first) >=
+                amendmentSet.mThreshold;
 
             std::uint32_t majorityTime = 0;
             auto const it = majorityAmendments.find (entry.first);
@@ -477,6 +498,9 @@ AmendmentTableImpl::doVoting (
                 actions[entry.first] = 0;
             }
         }
+
+        // Stash last vote for reporting
+        m_lastVote = std::move (amendmentSet);
     }
 
     return actions;
@@ -511,14 +535,15 @@ AmendmentTableImpl::getJson (int)
         std::lock_guard <std::mutex> sl(mLock);
         for (auto const& e : m_amendmentMap)
         {
-            setJson (ret[to_string (e.first)] = Json::objectValue, e.second);
+            setJson (ret[to_string (e.first)] = Json::objectValue,
+                e.first, e.second);
         }
     }
     return ret;
 }
 
 void
-AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
+AmendmentTableImpl::setJson (Json::Value& v, const uint256& id, const AmendmentState& fs)
 {
     if (!fs.mFriendlyName.empty())
         v[jss::name] = fs.mFriendlyName;
@@ -526,6 +551,24 @@ AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
     v[jss::supported] = fs.mSupported;
     v[jss::vetoed] = fs.mVetoed;
     v[jss::enabled] = fs.mEnabled;
+
+    if (!fs.mEnabled)
+    {
+        int votesTotal = 0, votesNeeded = 0, votesFor = 0;
+        {
+            ScopedLockType sl (mLock);
+
+            votesTotal = m_lastVote.mTrustedValidations;
+            votesNeeded = m_lastVote.mThreshold;
+            auto j = m_lastVote.mVotes.find (id);
+            if (j != m_lastVote.mVotes.end ())
+                votesFor = j->second;
+        }
+        if (votesTotal != 0)
+        {
+            v[jss::vote] = votesFor * 256 / votesNeeded;
+        }
+    }
 }
 
 Json::Value
@@ -538,7 +581,7 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
         std::lock_guard <std::mutex> sl(mLock);
 
         AmendmentState& amendmentState = getCreate (amendmentID);
-        setJson (jAmendment, amendmentState);
+        setJson (jAmendment, amendmentID, amendmentState);
     }
 
     return ret;
