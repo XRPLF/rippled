@@ -53,11 +53,12 @@ ServerHandler::ServerHandler (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
+ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
     : ServerHandler (parent)
+    , app_ (app)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
     , m_networkOPs (networkOPs)
@@ -753,13 +754,13 @@ setup_ServerHandler(BasicConfig const& config, std::ostream& log)
 }
 
 std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent,
+make_ServerHandler (Application& app, beast::Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
 {
-    return std::make_unique <ServerHandlerImp> (parent, io_service,
-        jobQueue, networkOPs, resourceManager, cm);
+    return std::make_unique<ServerHandlerImp>(app, parent,
+        io_service, jobQueue, networkOPs, resourceManager, cm);
 }
 
 }
