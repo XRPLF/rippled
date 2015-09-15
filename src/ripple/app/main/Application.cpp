@@ -343,7 +343,7 @@ public:
 
         , m_nodeStoreScheduler (*this)
 
-        , m_shaMapStore (make_SHAMapStore (setup_SHAMapStore (
+        , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (
                 config_), *this, m_nodeStoreScheduler,
                 m_logs.journal ("SHAMapStore"), m_logs.journal ("NodeObject"),
                 m_txMaster, config_))

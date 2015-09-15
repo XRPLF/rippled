@@ -421,8 +421,6 @@ private:
     std::string getHostId (bool forAdmin);
 
 private:
-    clock_type& m_clock;
-
     using SubMapType = hash_map <std::uint64_t, InfoSub::wptr>;
     using SubInfoMapType = hash_map <AccountID, SubMapType>;
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
@@ -432,6 +430,7 @@ private:
     using ScopedLockType = std::lock_guard <LockType>;
 
     Application& app_;
+    clock_type& m_clock;
     beast::Journal m_journal;
 
     std::unique_ptr <LocalTxs> m_localTX;

@@ -218,8 +218,8 @@ LedgerConsensusImp::LedgerConsensusImp (
         Ledger::ref previousLedger,
         std::uint32_t closeTime,
         FeeVote& feeVote)
-    : consensus_ (consensus)
-    , app_ (app)
+    : app_ (app)
+    , consensus_ (consensus)
     , inboundTransactions_ (inboundTransactions)
     , m_localTX (localtx)
     , ledgerMaster_ (ledgerMaster)
