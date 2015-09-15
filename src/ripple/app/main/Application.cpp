@@ -405,7 +405,7 @@ public:
         , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),
             m_logs.journal("TaggedCache"))
 
-        , m_networkOPs (make_NetworkOPs (stopwatch(),
+        , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_.RUN_STANDALONE, config_.NETWORK_QUORUM,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             m_logs.journal("NetworkOPs")))
