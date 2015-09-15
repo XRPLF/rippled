@@ -411,7 +411,7 @@ public:
             m_logs.journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
-        , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
+        , m_deprecatedUNL (make_UniqueNodeList (*this, *m_jobQueue))
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
