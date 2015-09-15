@@ -425,7 +425,7 @@ public:
         , mHashRouter (std::make_unique<HashRouter>(
             HashRouter::getDefaultHoldTime ()))
 
-        , mValidations (make_Validations ())
+        , mValidations (make_Validations (*this))
 
         , m_loadManager (make_LoadManager (*this, *this, m_logs.journal("LoadManager")))
 
