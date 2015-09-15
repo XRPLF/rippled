@@ -123,7 +123,7 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
         return handoff;
     }
     if (session.port().protocol.count("peer") > 0)
-        return getApp().overlay().onHandoff (std::move(bundle),
+        return app_.overlay().onHandoff (std::move(bundle),
             std::move(request), remote_address);
     // Pass through to legacy onRequest
     return Handoff{};
@@ -232,7 +232,7 @@ ServerHandlerImp::processRequest (
     Suspend const& suspend)
 {
     // Move off the webserver thread onto the JobQueue.
-    assert (getApp().getJobQueue().getJobForThread());
+    assert (app_.getJobQueue().getJobForThread());
 
     Json::Value jsonRPC;
     {
@@ -351,7 +351,7 @@ ServerHandlerImp::processRequest (
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {
-        params, getApp(), loadType, m_networkOPs, getApp().getLedgerMaster(), role,
+        params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
                 nullptr, {suspend, "RPC-Coroutine"}};
 
     std::string response;
