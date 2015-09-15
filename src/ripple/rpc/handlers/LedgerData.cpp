@@ -23,6 +23,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/server/Role.h>
 
@@ -40,9 +41,6 @@ namespace ripple {
 //     marker:       resume point, if any
 Json::Value doLedgerData (RPC::Context& context)
 {
-    static int const BINARY_PAGE_LENGTH = 2048;
-    static int const JSON_PAGE_LENGTH = 256;
-
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
@@ -50,19 +48,17 @@ Json::Value doLedgerData (RPC::Context& context)
     if (!lpLedger)
         return jvResult;
 
-    uint256 resumePoint;
+    boost::optional<ReadView::key_type> key = ReadView::key_type();
     if (params.isMember (jss::marker))
     {
         Json::Value const& jMarker = params[jss::marker];
-        if (! (jMarker.isString () && resumePoint.SetHex (jMarker.asString ())))
+        if (! (jMarker.isString () && key->SetHex (jMarker.asString ())))
             return RPC::expected_field_error (jss::marker, "valid");
     }
 
     bool isBinary = params[jss::binary].asBool();
 
     int limit = -1;
-    int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
-
     if (params.isMember (jss::limit))
     {
         Json::Value const& jLimit = params[jss::limit];
@@ -72,34 +68,38 @@ Json::Value doLedgerData (RPC::Context& context)
         limit = jLimit.asInt ();
     }
 
+    auto maxLimit = RPC::Tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (context.role != Role::ADMIN)))
         limit = maxLimit;
 
     jvResult[jss::ledger_hash] = to_string (lpLedger->info().hash);
-    jvResult[jss::ledger_index] = std::to_string(lpLedger->info().seq);
+    jvResult[jss::ledger_index] = lpLedger->info().seq;
 
-    Json::Value& nodes = (jvResult[jss::state] = Json::arrayValue);
+    Json::Value& nodes = jvResult[jss::state];
 
-    for(auto const& sle : lpLedger->sles)
+    auto e = lpLedger->sles.end();
+    for (auto i = lpLedger->sles.upper_bound(*key); i != e; ++i)
     {
-       if (limit-- <= 0)
-       {
-           auto marker = sle->key();
-           jvResult[jss::marker] = to_string (--marker);
-           break;
-       }
+        auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
+        if (limit-- <= 0)
+        {
+            // Stop processing before the current key.
+            auto k = sle->key();
+            jvResult[jss::marker] = to_string(--k);
+            break;
+        }
 
-       if (isBinary)
-       {
-           Json::Value& entry = nodes.append (Json::objectValue);
-           entry[jss::data] = serializeHex(*sle);
-           entry[jss::index] = to_string (sle->key());
-       }
-       else
-       {
-           Json::Value& entry = nodes.append (sle->getJson (0));
-           entry[jss::index] = to_string (sle->key());
-       }
+        if (isBinary)
+        {
+            Json::Value& entry = nodes.append (Json::objectValue);
+            entry[jss::data] = serializeHex(*sle);
+            entry[jss::index] = to_string(sle->key());
+        }
+        else
+        {
+            Json::Value& entry = nodes.append (sle->getJson (0));
+            entry[jss::index] = to_string(sle->key());
+        }
     }
 
     return jvResult;

@@ -432,6 +432,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (2, 3, 4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -441,6 +447,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (3, 4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b);
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -451,6 +463,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b);
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -459,6 +477,13 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (1, 2, 4, 5));
+            auto b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -472,11 +497,25 @@ class View_test
 
             view.rawErase (sle (3));
             expect (sles (view) == list (1, 2));
+            auto b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b);
+            expect (view.sles.upper_bound(uint256(4)) == b);
+            expect (view.sles.upper_bound(uint256(5)) == b);
 
             view.rawInsert (sle (5));
             view.rawInsert (sle (4));
             view.rawInsert (sle (3));
             expect (sles (view) == list (1, 2, 3, 4, 5));
+            b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
     }
 

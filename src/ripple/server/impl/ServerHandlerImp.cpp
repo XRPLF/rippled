@@ -32,6 +32,7 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Coroutine.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <beast/crypto/base64.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
@@ -236,7 +237,7 @@ ServerHandlerImp::processRequest (
     Json::Value jsonRPC;
     {
         Json::Reader reader;
-        if ((request.size () > 1000000) ||
+        if ((request.size () > RPC::Tuning::maxRequestSize) ||
             ! reader.parse (request, jsonRPC) ||
             ! jsonRPC ||
             ! jsonRPC.isObject ())

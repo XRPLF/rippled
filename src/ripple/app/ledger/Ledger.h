@@ -165,6 +165,9 @@ public:
     std::unique_ptr<sles_type::iter_base>
     slesEnd() const override;
 
+    std::unique_ptr<sles_type::iter_base>
+    slesUpperBound(uint256 const& key) const override;
+
     std::unique_ptr<txs_type::iter_base>
     txsBegin() const override;
 
