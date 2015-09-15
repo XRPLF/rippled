@@ -24,6 +24,11 @@ bin/rippled
 Debug/*.*
 Release/*.*
 
+# Ignore coverage files.
+*.gcno
+*.gcda
+*.gcov
+
 # Ignore locally installed node_modules
 /node_modules
 
