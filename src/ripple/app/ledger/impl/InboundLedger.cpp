@@ -199,7 +199,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            TransactionStateSF filter;
+            TransactionStateSF filter(getApp());
 
             if (mLedger->txMap().fetchRoot (
                 mLedger->info().txHash, &filter))
@@ -632,7 +632,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             std::vector<uint256> nodeHashes;
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            TransactionStateSF filter;
+            TransactionStateSF filter(getApp());
             mLedger->txMap().getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
 
@@ -823,7 +823,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    TransactionStateSF tFilter;
+    TransactionStateSF tFilter(getApp());
 
     while (nodeIDit != nodeIDs.cend ())
     {
@@ -978,7 +978,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    TransactionStateSF tFilter;
+    TransactionStateSF tFilter(getApp());
     san += mLedger->txMap().addRootNode (
         mLedger->info().txHash, data, snfWIRE, &tFilter);
     return san.isGood();
@@ -1008,7 +1008,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveTransactions)
     {
-        TransactionStateSF filter;
+        TransactionStateSF filter(getApp());
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
         {
