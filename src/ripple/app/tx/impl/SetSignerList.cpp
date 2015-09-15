@@ -25,7 +25,6 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/basics/Log.h>
 #include <cstdint>
