@@ -113,6 +113,7 @@ namespace detail {
 class AppFamily : public shamap::Family
 {
 private:
+    Application& app_;
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;
     NodeStore::Database& db_;
@@ -121,9 +122,10 @@ public:
     AppFamily (AppFamily const&) = delete;
     AppFamily& operator= (AppFamily const&) = delete;
 
-    AppFamily (NodeStore::Database& db,
+    AppFamily (Application& app, NodeStore::Database& db,
             CollectorManager& collectorManager)
-        : treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
+        : app_ (app)
+        , treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
             deprecatedLogs().journal("TaggedCache"))
         , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
@@ -171,9 +173,9 @@ public:
     void
     missing_node (std::uint32_t seq) override
     {
-        uint256 const hash = getApp().getLedgerMaster ().getHashBySeq (seq);
+        uint256 const hash = app_.getLedgerMaster ().getHashBySeq (seq);
         if (hash.isZero())
-            getApp().getInboundLedgers ().acquire (
+            app_.getInboundLedgers ().acquire (
                 hash, seq, InboundLedger::fcGENERIC);
     }
 };
@@ -356,7 +358,7 @@ public:
         , m_collectorManager (CollectorManager::New (
             config_.section (SECTION_INSIGHT), m_logs.journal("Collector")))
 
-        , family_ (*m_nodeStore, *m_collectorManager)
+        , family_ (*this, *m_nodeStore, *m_collectorManager)
 
         , cachedSLEs_ (std::chrono::minutes(1), stopwatch())
 
@@ -663,6 +665,8 @@ public:
         return isStopped();
     }
 
+    bool serverOkay (std::string& reason) override;
+
     //--------------------------------------------------------------------------
     bool initSqliteDbs ()
     {
@@ -743,11 +747,11 @@ public:
             exitWithCode(3);
         }
 
-        getApp ().getLedgerDB ().getSession ()
+        getLedgerDB ().getSession ()
             << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                            (config_.getSize (siLgrDBCache) * 1024));
 
-        getApp().getTxnDB ().getSession ()
+        getTxnDB ().getSession ()
                 << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                                (config_.getSize (siTxnDBCache) * 1024));
 
@@ -796,7 +800,7 @@ public:
             startGenesisLedger ();
         }
 
-        m_orderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
+        m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
 
         // Begin validation and ip maintenance.
         //
@@ -963,7 +967,7 @@ public:
                 // VFALCO NOTE This seems unnecessary. If we properly refactor the load
                 //             manager then the deadlock detector can just always be "armed"
                 //
-                getApp().getLoadManager ().activateDeadlockDetector ();
+                getLoadManager ().activateDeadlockDetector ();
             }
         }
 
@@ -1012,7 +1016,7 @@ public:
             if (space.available < (512 * 1024 * 1024))
             {
                 m_journal.fatal << "Remaining free disk space is less than 512MB";
-                getApp().signalStop ();
+                signalStop ();
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
@@ -1042,6 +1046,7 @@ public:
 
 
 private:
+    void addTxnSeqField();
     void updateTables ();
     void startGenesisLedger ();
     Ledger::pointer getLastFullLedger();
@@ -1086,7 +1091,7 @@ ApplicationImp::getLastFullLedger()
         ledger->setClosed ();
         ledger->setImmutable();
 
-        if (getApp().getLedgerMaster ().haveLedger (ledgerSeq))
+        if (getLedgerMaster ().haveLedger (ledgerSeq))
             ledger->setValidated ();
 
         if (ledger->getHash () != ledgerHash)
@@ -1146,7 +1151,7 @@ bool ApplicationImp::loadOldLedger (
 
 
                      std::uint32_t seq = 1;
-                     auto closeTime = getApp().timeKeeper().closeTime().time_since_epoch().count();
+                     auto closeTime = timeKeeper().closeTime().time_since_epoch().count();
                      std::uint32_t closeTimeResolution = 30;
                      bool closeTimeEstimated = false;
                      std::uint64_t totalDrops = 0;
@@ -1339,7 +1344,7 @@ bool ApplicationImp::loadOldLedger (
                 cur->rawTxInsert(item.key(),
                     std::make_shared<Serializer const>(
                         std::move(s)), nullptr);
-                getApp().getHashRouter().setFlags (item.key(), SF_SIGGOOD);
+                getHashRouter().setFlags (item.key(), SF_SIGGOOD);
             }
 
             // Switch to the mutable snapshot
@@ -1360,39 +1365,39 @@ bool ApplicationImp::loadOldLedger (
     return true;
 }
 
-bool serverOkay (std::string& reason)
+bool ApplicationImp::serverOkay (std::string& reason)
 {
-    if (! getApp().config().ELB_SUPPORT)
+    if (! config().ELB_SUPPORT)
         return true;
 
-    if (getApp().isShutdown ())
+    if (isShutdown ())
     {
         reason = "Server is shutting down";
         return false;
     }
 
-    if (getApp().getOPs ().isNeedNetworkLedger ())
+    if (getOPs ().isNeedNetworkLedger ())
     {
         reason = "Not synchronized with network yet";
         return false;
     }
 
-    if (getApp().getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
+    if (getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
     {
         reason = "Not synchronized with network";
         return false;
     }
 
-    if (!getApp().getLedgerMaster().isCaughtUp(reason))
+    if (!getLedgerMaster().isCaughtUp(reason))
         return false;
 
-    if (getApp().getFeeTrack ().isLoadedLocal ())
+    if (getFeeTrack ().isLoadedLocal ())
     {
         reason = "Too much load";
         return false;
     }
 
-    if (getApp().getOPs ().isAmendmentBlocked ())
+    if (getOPs ().isAmendmentBlocked ())
     {
         reason = "Server version too old";
         return false;
@@ -1437,14 +1442,14 @@ static bool schemaHas (DatabaseCon& dbc, std::string const& dbName, int line, st
     return schema[line].find (content) != std::string::npos;
 }
 
-static void addTxnSeqField ()
+void ApplicationImp::addTxnSeqField ()
 {
-    if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
+    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
         return;
 
     WriteLog (lsWARNING, Application) << "Transaction sequence field is missing";
 
-    auto& session = getApp().getTxnDB ().getSession ();
+    auto& session = getTxnDB ().getSession ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
@@ -1529,11 +1534,11 @@ void ApplicationImp::updateTables ()
     }
 
     // perform any needed table updates
-    assert (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TransID"));
-    assert (!schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "foobar"));
+    assert (schemaHas (getTxnDB (), "AccountTransactions", 0, "TransID"));
+    assert (!schemaHas (getTxnDB (), "AccountTransactions", 0, "foobar"));
     addTxnSeqField ();
 
-    if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
+    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
     {
         WriteLog (lsFATAL, Application) << "AccountTransactions database should not have a primary key";
         exitWithCode(1);
@@ -1549,9 +1554,9 @@ void ApplicationImp::updateTables ()
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"
-                                 << getApp().getNodeStore().getName () << "'.";
+                                 << getNodeStore().getName () << "'.";
 
-        getApp().getNodeStore().import (*source);
+        getNodeStore().import (*source);
     }
 }
 

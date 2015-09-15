@@ -128,6 +128,8 @@ public:
 
     virtual std::chrono::milliseconds getIOLatency () = 0;
 
+    virtual bool serverOkay (std::string& reason) = 0;
+
     /** Retrieve the "wallet database"
 
         It looks like this is used to store the unique node list.
