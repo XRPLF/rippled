@@ -35,8 +35,7 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 public:
     using NodeCache = TaggedCache <uint256, Blob>;
 
-    // VFALCO TODO Use a dependency injection to get the temp node cache
-    ConsensusTransSetSF (NodeCache& nodeCache);
+    ConsensusTransSetSF (Application& app, NodeCache& nodeCache);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -50,6 +49,7 @@ public:
                    Blob& nodeData) override;
 
 private:
+    Application& app_;
     NodeCache& m_nodeCache;
 };
 
