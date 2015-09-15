@@ -68,10 +68,11 @@ void TransactionAcquire::done ()
 
         uint256 const& hash (mHash);
         std::shared_ptr <SHAMap> const& map (mMap);
+        auto const pap = &app_;
         app_.getJobQueue().addJob (jtTXN_DATA, "completeAcquire",
-            [&, hash, map](Job&)
+            [pap, hash, map](Job&)
             {
-                app_.getInboundTransactions().giveSet (
+                pap->getInboundTransactions().giveSet (
                     hash, map, true);
             });
     }

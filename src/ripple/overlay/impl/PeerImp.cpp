@@ -1708,10 +1708,11 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     auto elapsed = UptimeTimer::getInstance().getElapsedSeconds();
+    auto const pap = &app_;
     app_.getJobQueue ().addJob (
         jtPACK, "MakeFetchPack",
-        [&] (Job&) {
-            app_.getLedgerMaster().makeFetchPack(
+        [pap, weak, packet, hash, elapsed] (Job&) {
+            pap->getLedgerMaster().makeFetchPack(
                 weak, packet, hash, elapsed);
         });
 }
