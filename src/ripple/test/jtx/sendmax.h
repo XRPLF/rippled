@@ -40,7 +40,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jtx) const;
+    operator()(Env&, JTx& jtx) const;
 };
 
 } // jtx

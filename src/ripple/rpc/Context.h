@@ -43,8 +43,8 @@ struct Context
     NetworkOPs& netOps;
     LedgerMaster& ledgerMaster;
     Role role;
-    InfoSub::pointer infoSub;
     JobQueueSuspender suspend;
+    InfoSub::pointer infoSub;
     NodeStore::ScopedMetrics metrics;
 };
 

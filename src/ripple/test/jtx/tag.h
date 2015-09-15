@@ -41,7 +41,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 /** Set the source tag on a JTx*/
@@ -58,7 +58,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 } // jtx

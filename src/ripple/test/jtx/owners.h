@@ -38,7 +38,7 @@ owned_count_of (ReadView const& view,
         LedgerEntryType type);
 
 void
-owned_count_helper(Env const& env,
+owned_count_helper(Env& env,
     AccountID const& id,
         LedgerEntryType type,
             std::uint32_t value);
@@ -62,7 +62,7 @@ public:
     }
 
     void
-    operator()(Env const& env) const
+    operator()(Env& env) const
     {
         detail::owned_count_helper(
             env, account_.id(), Type, value_);
@@ -84,7 +84,7 @@ public:
     }
 
     void
-    operator()(Env const& env) const;
+    operator()(Env& env) const;
 };
 
 /** Match the number of trust lines in the account's owner directory */

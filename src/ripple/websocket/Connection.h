@@ -68,6 +68,7 @@ public:
     using handler_type = HandlerImpl <WebSocket>;
 
     ConnectionImpl (
+        Application& app,
         Resource::Manager& resourceManager,
         InfoSub::Source& source,
         handler_type& handler,
@@ -101,6 +102,7 @@ public:
     void setPingTimer ();
 
 private:
+    Application& app_;
     HTTP::Port const& m_port;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
@@ -121,6 +123,7 @@ private:
 
 template <class WebSocket>
 ConnectionImpl <WebSocket>::ConnectionImpl (
+    Application& app,
     Resource::Manager& resourceManager,
     InfoSub::Source& source,
     handler_type& handler,
@@ -129,10 +132,11 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
     boost::asio::io_service& io_service)
         : InfoSub (source, // usage
                    resourceManager.newInboundEndpoint (remoteAddress))
+        , app_(app)
         , m_port (handler.port ())
         , m_resourceManager (resourceManager)
         , m_remoteAddress (remoteAddress)
-        , m_netOPs (getApp ().getOPs ())
+        , m_netOPs (app_.getOPs ())
         , m_io_service (io_service)
         , m_pingTimer (io_service)
         , m_handler (handler)
@@ -270,9 +274,9 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     else
     {
         RPC::Context context {
-            jvRequest, getApp(), loadType, m_netOPs, getApp().getLedgerMaster(), role,
-            this->shared_from_this (),
-            {suspend, "WSClient::command"}};
+            jvRequest, app_, loadType, m_netOPs, app_.getLedgerMaster(),
+            role, {app_, suspend, "WSClient::command"},
+            this->shared_from_this ()};
         RPC::doCommand (context, jvResult[jss::result]);
     }
 

@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
+#include <ripple/protocol/AccountID.h>
 
 namespace ripple {
 
@@ -67,11 +68,11 @@ public:
 
     AcceptedLedgerTx::pointer getTxn (int) const;
 
-    explicit AcceptedLedger (std::shared_ptr<ReadView const> const& ledger);
-
+    AcceptedLedger (
+        std::shared_ptr<ReadView const> const& ledger,
+        AccountIDCache const& accountCache);
 
 private:
-
     void insert (AcceptedLedgerTx::ref);
 
     std::shared_ptr<ReadView const> mLedger;

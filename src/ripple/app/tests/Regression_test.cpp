@@ -49,7 +49,7 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis, env.config);
+            create_genesis, env.config, env.app().family());
         auto expectedDrops = SYSTEM_CURRENCY_START;
         expect(closed->info().drops == expectedDrops);
 
@@ -57,7 +57,8 @@ struct Regression_test : public beast::unit_test::suite
         auto const aliceAmount = XRP(aliceXRP);
 
         auto next = std::make_shared<Ledger>(
-            open_ledger, *closed);
+            open_ledger, *closed,
+            env.app().timeKeeper().closeTime());
         next->setClosed();
         {
             // Fund alice
@@ -89,7 +90,7 @@ struct Regression_test : public beast::unit_test::suite
             // doesn't know about this account.
             auto const jt = env.jt(noop("alice"), fee(expectedDrops),
                 seq(1));
-                
+
             OpenView accum(&*next);
 
             auto const result = ripple::apply(env.app(),

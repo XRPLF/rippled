@@ -36,18 +36,20 @@ Suspend const dontSuspend = [] (Continuation const& continuation)
 
 namespace {
 
-void runOnJobQueue(std::string const& name, Callback const& callback)
+void runOnJobQueue(
+    Application& app, std::string const& name, Callback const& callback)
 {
     auto cb = [callback] (Job&) { callback(); };
-    getApp().getJobQueue().addJob(jtCLIENT, name, cb);
+    app.getJobQueue().addJob(jtCLIENT, name, cb);
 };
 
-Callback suspendForJobQueue(Suspend const& suspend, std::string const& jobName)
+Callback suspendForJobQueue(
+    Application& app, Suspend const& suspend, std::string const& jobName)
 {
     assert(suspend);
-    return Callback( [suspend, jobName] () {
-        suspend([jobName] (Callback const& callback) {
-            runOnJobQueue(jobName, callback);
+    return Callback( [suspend, jobName, &app] () {
+        suspend([jobName, &app] (Callback const& callback) {
+            runOnJobQueue(app, jobName, callback);
         });
     });
 }
@@ -112,15 +114,16 @@ YieldStrategy makeYieldStrategy (BasicConfig const& config)
 }
 
 JobQueueSuspender::JobQueueSuspender(
-    Suspend const& susp, std::string const& jobName)
+    Application& app, Suspend const& susp, std::string const& jobName)
         : suspend(susp ? susp : dontSuspend),
-          yield(suspendForJobQueue(suspend, jobName))
+          yield(suspendForJobQueue(app, suspend, jobName))
 {
     // There's a non-empty jobName exactly if there's a non-empty Suspend.
     assert(!(susp && jobName.empty()));
 }
 
-JobQueueSuspender::JobQueueSuspender() : JobQueueSuspender({}, {})
+JobQueueSuspender::JobQueueSuspender(Application &app)
+        : JobQueueSuspender(app, {}, {})
 {
 }
 

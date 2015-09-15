@@ -318,7 +318,7 @@ public:
     */
     template <class... Args>
     void
-    require (Args const&... args) const
+    require (Args const&... args)
     {
         jtx::required(args...)(*this);
     }

@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/insight/Collector.h>
 #include <beast/insight/Event.h>
@@ -33,8 +34,8 @@ namespace ripple {
 class LedgerHistory
 {
 public:
-    explicit
-    LedgerHistory (beast::insight::Collector::ptr const& collector);
+    LedgerHistory (beast::insight::Collector::ptr const& collector,
+        Application& app);
 
     /** Track a ledger
         @return `true` if the ledger was already tracked
@@ -106,6 +107,7 @@ private:
     */
     void handleMismatch (LedgerHash const& built, LedgerHash const& valid);
 
+    Application& app_;
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 

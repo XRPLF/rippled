@@ -1396,9 +1396,10 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
+        test::jtx::Env env(*this);
         Config const config;
         std::shared_ptr<const ReadView> ledger =
-            std::make_shared<Ledger>(create_genesis, config);
+            std::make_shared<Ledger>(create_genesis, config, env.app().family());
         LoadFeeTrack const feeTrack;
 
         {
@@ -1451,8 +1452,6 @@ public:
 
         auto const ledger = env.open();
 
-        LoadFeeTrack const feeTrack;
-
         ProcessTransactionFn processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
@@ -1461,7 +1460,7 @@ public:
             NetworkOPs::FailHard failType,
             Role role,
             int validatedLedgerAge,
-            LoadFeeTrack const& feeTrack,
+            Application& app,
             std::shared_ptr<ReadView const> ledger);
 
         using submitFunc = Json::Value (*) (
@@ -1469,7 +1468,7 @@ public:
             NetworkOPs::FailHard failType,
             Role role,
             int validatedLedgerAge,
-            LoadFeeTrack const& feeTrack,
+            Application& app,
             std::shared_ptr<ReadView const> ledger,
             ProcessTransactionFn const& processTransaction);
 
@@ -1510,7 +1509,7 @@ public:
                             NetworkOPs::FailHard::yes,
                             testRole,
                             1,
-                            feeTrack,
+                            env.app(),
                             ledger);
                     }
                     else
@@ -1522,7 +1521,7 @@ public:
                             NetworkOPs::FailHard::yes,
                             testRole,
                             1,
-                            feeTrack,
+                            env.app(),
                             ledger,
                             processTxn);
                     }

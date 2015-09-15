@@ -37,7 +37,8 @@ convertBlobsToTxResult (
     std::uint32_t ledger_index,
     std::string const& status,
     Blob const& rawTxn,
-    Blob const& rawMeta);
+    Blob const& rawMeta,
+    Application& app);
 
 void
 saveLedgerAsync (Application& app, std::uint32_t seq);

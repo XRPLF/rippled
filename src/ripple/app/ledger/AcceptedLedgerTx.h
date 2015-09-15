@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/protocol/AccountID.h>
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {
@@ -54,8 +55,13 @@ public:
     AcceptedLedgerTx (
         std::shared_ptr<ReadView const> const& ledger,
         std::shared_ptr<STTx const> const&,
-        std::shared_ptr<STObject const> const&);
-    AcceptedLedgerTx (std::shared_ptr<ReadView const> const&, STTx::ref, TER);
+        std::shared_ptr<STObject const> const&,
+        AccountIDCache const&);
+    AcceptedLedgerTx (
+        std::shared_ptr<ReadView const> const&,
+        STTx::ref,
+        TER,
+        AccountIDCache const&);
 
     std::shared_ptr <STTx const> const& getTxn () const
     {
@@ -111,6 +117,7 @@ private:
     boost::container::flat_set<AccountID> mAffected;
     Blob        mRawMeta;
     Json::Value                     mJson;
+    AccountIDCache const& accountCache_;
 
     void buildJson ();
 };

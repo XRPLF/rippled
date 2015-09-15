@@ -1006,7 +1006,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     // Build the new last closed ledger
     auto newLCL = std::make_shared<Ledger>(
-        open_ledger, *mPreviousLedger);
+        open_ledger, *mPreviousLedger,
+        app_.timeKeeper().closeTime());
     newLCL->setClosed (); // so applyTransactions sees a closed ledger
 
     // Set up to write SHAMap changes to our database,
@@ -1113,7 +1114,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     // Build new open ledger
     auto newOL = std::make_shared<Ledger>(
-        open_ledger, *newLCL);
+        open_ledger, *newLCL, app_.timeKeeper().closeTime());
     OpenView accum(&*newOL);
     assert(accum.open());
 

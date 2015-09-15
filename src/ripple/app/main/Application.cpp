@@ -110,7 +110,7 @@ Application* ApplicationImpBase::s_instance;
 
 namespace detail {
 
-class AppFamily : public shamap::Family
+class AppFamily : public Family
 {
 private:
     Application& app_;
@@ -177,6 +177,17 @@ public:
         if (hash.isZero())
             app_.getInboundLedgers ().acquire (
                 hash, seq, InboundLedger::fcGENERIC);
+    }
+
+    virtual
+    void
+    missing_node (uint256 const& hash) override
+    {
+        if (hash.isNonZero())
+        {
+            app_.getInboundLedgers ().acquire (
+                hash, 0, InboundLedger::fcGENERIC);
+        }
     }
 };
 
@@ -341,6 +352,8 @@ public:
         , timeKeeper_ (make_TimeKeeper(
             deprecatedLogs().journal("TimeKeeper")))
 
+        , m_txMaster (*this)
+
         , m_nodeStoreScheduler (*this)
 
         , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (
@@ -471,7 +484,7 @@ public:
         return *m_collectorManager;
     }
 
-    shamap::Family&
+    Family&
     family()
     {
         return family_;
@@ -1064,16 +1077,17 @@ void ApplicationImp::startGenesisLedger ()
 {
     std::shared_ptr<Ledger const> const genesis =
         std::make_shared<Ledger>(
-            create_genesis, config_);
+            create_genesis, config_, family());
     auto const next = std::make_shared<Ledger>(
-        open_ledger, *genesis);
+        open_ledger, *genesis, timeKeeper().closeTime());
     next->setClosed ();
     next->setImmutable ();
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, config_,
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
     m_ledgerMaster->pushLedger (next,
-        std::make_shared<Ledger>(open_ledger, *next));
+        std::make_shared<Ledger>(open_ledger, *next,
+            timeKeeper().closeTime()));
 }
 
 Ledger::pointer
@@ -1085,7 +1099,7 @@ ApplicationImp::getLastFullLedger()
         std::uint32_t ledgerSeq;
         uint256 ledgerHash;
         std::tie (ledger, ledgerSeq, ledgerHash) =
-                loadLedgerHelper ("order by LedgerSeq desc limit 1");
+                loadLedgerHelper ("order by LedgerSeq desc limit 1", *this);
 
         if (!ledger)
             return ledger;
@@ -1192,7 +1206,7 @@ bool ApplicationImp::loadOldLedger (
                      }
                      else
                      {
-                         loadLedger = std::make_shared<Ledger> (seq, closeTime, config_);
+                         loadLedger = std::make_shared<Ledger> (seq, closeTime, config_, family());
                          loadLedger->setTotalDrops(totalDrops);
 
                          for (Json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1237,7 +1251,7 @@ bool ApplicationImp::loadOldLedger (
             // by hash
             uint256 hash;
             hash.SetHex (ledgerID);
-            loadLedger = Ledger::loadByHash (hash);
+            loadLedger = loadByHash (hash, *this);
 
             if (!loadLedger)
             {
@@ -1250,8 +1264,8 @@ bool ApplicationImp::loadOldLedger (
 
         }
         else // assume by sequence
-            loadLedger = Ledger::loadByIndex (
-                beast::lexicalCastThrow <std::uint32_t> (ledgerID));
+            loadLedger = loadByIndex (
+                beast::lexicalCastThrow <std::uint32_t> (ledgerID), *this);
 
         if (!loadLedger)
         {
@@ -1269,7 +1283,7 @@ bool ApplicationImp::loadOldLedger (
 
             m_journal.info << "Loading parent ledger";
 
-            loadLedger = Ledger::loadByHash (replayLedger->info().parentHash);
+            loadLedger = loadByHash (replayLedger->info().parentHash, *this);
             if (!loadLedger)
             {
                 m_journal.info << "Loading parent ledger from node store";
@@ -1318,7 +1332,8 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
 
         auto const openLedger =
-            std::make_shared<Ledger>(open_ledger, *loadLedger);
+            std::make_shared<Ledger>(open_ledger, *loadLedger,
+                timeKeeper().closeTime());
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);

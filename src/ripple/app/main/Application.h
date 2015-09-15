@@ -40,9 +40,7 @@ namespace NodeStore { class Database; }
 class AmendmentTable;
 class CachedSLEs;
 class CollectorManager;
-namespace shamap {
 class Family;
-} // shamap
 class HashRouter;
 class Logs;
 class LoadFeeTrack;
@@ -95,7 +93,7 @@ public:
     virtual Config const& config() const = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
-    virtual shamap::Family&         family() = 0;
+    virtual Family&                 family() = 0;
     virtual TimeKeeper&             timeKeeper() = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;

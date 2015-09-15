@@ -104,7 +104,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 
 private:
     template <class AccountType>

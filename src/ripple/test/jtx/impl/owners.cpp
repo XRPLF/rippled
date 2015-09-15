@@ -42,7 +42,7 @@ owned_count_of(ReadView const& view,
 }
 
 void
-owned_count_helper(Env const& env,
+owned_count_helper(Env& env,
     AccountID const& id,
         LedgerEntryType type,
             std::uint32_t value)
@@ -54,7 +54,7 @@ owned_count_helper(Env const& env,
 } // detail
 
 void
-owners::operator()(Env const& env) const
+owners::operator()(Env& env) const
 {
     env.test.expect(env.le(
         account_)->getFieldU32(sfOwnerCount) ==

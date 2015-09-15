@@ -1737,7 +1737,7 @@ PeerImp::checkTransaction (int flags, STTx::pointer stx)
         std::string reason;
         auto tx = std::make_shared<Transaction> (stx, validate,
             directSigVerify,
-            reason);
+            reason, app_);
 
         if (tx->getStatus () == INVALID)
         {

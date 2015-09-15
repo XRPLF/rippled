@@ -135,6 +135,7 @@ static Json::Value checkPayment(
     Json::Value& tx_json,
     AccountID const& srcAddressID,
     Role const role,
+    Application& app,
     std::shared_ptr<ReadView const>& ledger,
     bool doPath)
 {
@@ -187,7 +188,7 @@ static Json::Value checkPayment(
                 "Cannot build XRP to XRP paths.");
 
         {
-            LegacyPathFind lpf (role == Role::ADMIN);
+            LegacyPathFind lpf (role == Role::ADMIN, app);
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
@@ -202,7 +203,8 @@ static Json::Value checkPayment(
                 getConfig().PATH_SEARCH_OLD,
                 4,  // iMaxPaths
                 {},
-                fullLiquidityPath);
+                fullLiquidityPath,
+                app);
 
             if (! result)
             {
@@ -329,7 +331,7 @@ transactionPreProcessImpl (
     Role role,
     SigningForParams& signingArgs,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
     KeyPair keypair;
@@ -349,8 +351,9 @@ transactionPreProcessImpl (
     Json::Value& tx_json (params [jss::tx_json]);
 
     // Check tx_json fields, but don't add any.
-    auto txJsonResult =
-        checkTxJsonFields (tx_json, role, verify, validatedLedgerAge, feeTrack);
+    auto txJsonResult = checkTxJsonFields (
+        tx_json, role, verify, validatedLedgerAge, app.getFeeTrack());
+
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
@@ -381,7 +384,7 @@ transactionPreProcessImpl (
             params,
             role,
             signingArgs.editFields(),
-            feeTrack,
+            app.getFeeTrack(),
             ledger);
 
         if (RPC::contains_error (err))
@@ -392,6 +395,7 @@ transactionPreProcessImpl (
             tx_json,
             srcAddressID,
             role,
+            app,
             ledger,
             signingArgs.editFields());
 
@@ -498,7 +502,7 @@ transactionPreProcessImpl (
 
 static
 std::pair <Json::Value, Transaction::pointer>
-transactionConstructImpl (STTx::pointer stpTrans)
+transactionConstructImpl (STTx::pointer stpTrans, Application& app)
 {
     std::pair <Json::Value, Transaction::pointer> ret;
 
@@ -507,7 +511,7 @@ transactionConstructImpl (STTx::pointer stpTrans)
     {
         std::string reason;
         tpTrans = std::make_shared<Transaction>(stpTrans, Validate::NO,
-            directSigVerify, reason);
+            directSigVerify, reason, app);
         if (tpTrans->getStatus () != NEW)
         {
             ret.first = RPC::make_error (rpcINTERNAL,
@@ -526,7 +530,7 @@ transactionConstructImpl (STTx::pointer stpTrans)
             tpTrans->getSTransaction ()->add (s);
 
             Transaction::pointer tpTransNew =
-                Transaction::sharedTransaction (s.getData (), Validate::YES);
+                Transaction::sharedTransaction(s.getData(), Validate::YES, app);
 
             if (tpTransNew && (
                 !tpTransNew->getSTransaction ()->isEquivalent (
@@ -645,7 +649,7 @@ Json::Value transactionSign (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << jvRequest;
@@ -655,14 +659,15 @@ Json::Value transactionSign (
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
-        jvRequest, role, signForParams, validatedLedgerAge, feeTrack, ledger);
+        jvRequest, role, signForParams,
+        validatedLedgerAge, app, ledger);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second);
+        transactionConstructImpl (preprocResult.second, app);
 
     if (!txn.second)
         return txn.first;
@@ -676,7 +681,7 @@ Json::Value transactionSubmit (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction)
 {
@@ -687,14 +692,14 @@ Json::Value transactionSubmit (
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
     transactionPreProcessResult preprocResult = transactionPreProcessImpl (
-        jvRequest, role, signForParams, validatedLedgerAge, feeTrack, ledger);
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second);
+        transactionConstructImpl (preprocResult.second, app);
 
     if (!txn.second)
         return txn.first;
@@ -750,7 +755,7 @@ Json::Value transactionSignFor (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSignFor: " << jvRequest;
@@ -790,7 +795,7 @@ Json::Value transactionSignFor (
         role,
         signForParams,
         validatedLedgerAge,
-        feeTrack,
+        app,
         ledger);
 
     if (!preprocResult.second)
@@ -811,7 +816,7 @@ Json::Value transactionSignFor (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second);
+        transactionConstructImpl (preprocResult.second, app);
 
     if (!txn.second)
         return txn.first;
@@ -850,7 +855,7 @@ Json::Value transactionSubmitMultiSigned (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction)
 {
@@ -868,8 +873,9 @@ Json::Value transactionSubmitMultiSigned (
 
     Json::Value& tx_json (jvRequest ["tx_json"]);
 
-    auto const txJsonResult =
-        checkTxJsonFields (tx_json, role, true, validatedLedgerAge, feeTrack);
+    auto const txJsonResult = checkTxJsonFields (
+        tx_json, role, true, validatedLedgerAge, app.getFeeTrack());
+
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
 
@@ -890,7 +896,8 @@ Json::Value transactionSubmitMultiSigned (
     }
 
     {
-        Json::Value err = checkFee (jvRequest, role, false, feeTrack, ledger);
+        Json::Value err = checkFee (
+            jvRequest, role, false, app.getFeeTrack(), ledger);
 
         if (RPC::contains_error(err))
             return std::move (err);
@@ -900,6 +907,7 @@ Json::Value transactionSubmitMultiSigned (
             tx_json,
             srcAddressID,
             role,
+            app,
             ledger,
             false);
 
@@ -1045,7 +1053,7 @@ Json::Value transactionSubmitMultiSigned (
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (stpTrans);
+        transactionConstructImpl (stpTrans, app);
 
     if (!txn.second)
         return txn.first;

@@ -25,6 +25,7 @@
 #include <ripple/ledger/CachedView.h>
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/Serializer.h>
@@ -98,14 +99,15 @@ public:
         starts in this account can ever exist, with amounts
         used to pay fees being destroyed.
     */
-    Ledger (create_genesis_t, Config const& config);
+    Ledger (create_genesis_t, Config const& config, Family& family);
 
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
             uint256 const& accountHash,
             std::uint64_t totDrops, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
-            std::uint32_t ledgerSeq, bool & loaded, Config const& config);
+            std::uint32_t ledgerSeq, bool & loaded, Config const& config,
+            Family& family);
 
     // Create a new ledger that's a snapshot of this one
     Ledger (Ledger const& target, bool isMutable);
@@ -116,15 +118,17 @@ public:
         follows previous, and have
         parentCloseTime == previous.closeTime.
     */
-    Ledger (open_ledger_t, Ledger const& previous);
+    Ledger (open_ledger_t, Ledger const& previous,
+        NetClock::time_point closeTime);
 
     Ledger (void const* data,
         std::size_t size, bool hasPrefix,
-            Config const& config);
+            Config const& config, Family& family);
 
     // used for database ledgers
     Ledger (std::uint32_t ledgerSeq,
-        std::uint32_t closeTime, Config const& config);
+        std::uint32_t closeTime, Config const& config,
+            Family& family);
 
     ~Ledger();
 
@@ -250,7 +254,7 @@ public:
 
     // ledger signature operations
     void addRaw (Serializer& s) const;
-    void setRaw (SerialIter& sit, bool hasPrefix);
+    void setRaw (SerialIter& sit, bool hasPrefix, Family& family);
 
     // DEPRECATED
     // Remove contract.h include
@@ -356,19 +360,6 @@ public:
 
     bool assertSane ();
 
-    // database functions (low-level)
-    static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
-
-    static Ledger::pointer loadByHash (uint256 const& ledgerHash);
-
-    static uint256 getHashByIndex (std::uint32_t index);
-
-    static bool getHashesByIndex (
-        std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
-
-    static std::map< std::uint32_t, std::pair<uint256, uint256> >
-                  getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
-
 private:
     class sles_iter_impl;
     class txs_iter_impl;
@@ -416,12 +407,6 @@ private:
     std::uint32_t mutable mReserveIncrement = 0;
 };
 
-bool pendSaveValidated (
-    Application& app,
-    std::shared_ptr<Ledger> const& ledger,
-    bool isSynchronous,
-    bool isCurrent);
-
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 
@@ -430,6 +415,43 @@ using CachedLedger = CachedView<Ledger>;
 // API
 //
 //------------------------------------------------------------------------------
+
+extern
+bool
+pendSaveValidated(
+    Application& app,
+    std::shared_ptr<Ledger> const& ledger,
+    bool isSynchronous,
+    bool isCurrent);
+
+extern
+Ledger::pointer
+loadByIndex (std::uint32_t ledgerIndex,
+    Application& app);
+
+extern
+std::tuple<Ledger::pointer, std::uint32_t, uint256>
+loadLedgerHelper(std::string const& sqlSuffix,
+    Application& app);
+
+extern
+Ledger::pointer
+loadByHash (uint256 const& ledgerHash, Application& app);
+
+extern
+uint256
+getHashByIndex(std::uint32_t index, Application& app);
+
+extern
+bool
+getHashesByIndex(std::uint32_t index,
+    uint256 &ledgerHash, uint256& parentHash,
+        Application& app);
+
+extern
+std::map< std::uint32_t, std::pair<uint256, uint256>>
+getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq,
+    Application& app);
 
 /** Deserialize a SHAMapItem containing a single STTx
 
@@ -454,9 +476,6 @@ std::pair<std::shared_ptr<
         STObject const>>
 deserializeTxPlusMeta (SHAMapItem const& item);
 
-std::tuple<Ledger::pointer, std::uint32_t, uint256>
-loadLedgerHelper(std::string const& sqlSuffix);
-
 // DEPRECATED
 inline
 std::shared_ptr<SLE const>
@@ -479,7 +498,7 @@ qualityDirDescriber (
     SLE::ref, bool,
     Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
     Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t & uRate);
+    const std::uint64_t & uRate, Application& app);
 
 } // ripple
 

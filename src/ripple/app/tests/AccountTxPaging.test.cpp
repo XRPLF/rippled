@@ -19,6 +19,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/types.h>
+#include <ripple/test/jtx.h>
 #include <beast/cxx14/memory.h>  // <memory>
 #include <beast/unit_test/suite.h>
 #include <cstdlib>
@@ -90,15 +91,18 @@ struct AccountTxPaging_test : beast::unit_test::suite
         std::int32_t const page_length = 200;
         bool const admin = true;
 
+        test::jtx::Env env(*this);
+        Application& app = env.app();
         auto& txs = txs_;
 
-        auto bound = [&txs](
+        auto bound = [&txs, &app](
             std::uint32_t ledger_index,
             std::string const& status,
             Blob const& rawTxn,
             Blob const& rawMeta)
         {
-            convertBlobsToTxResult (txs, ledger_index, status, rawTxn, rawMeta);
+            convertBlobsToTxResult (
+                txs, ledger_index, status, rawTxn, rawMeta, app);
         };
 
         accountTxPage(*db_, *idCache_, [](std::uint32_t){}, bound, account_, minLedger,

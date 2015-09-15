@@ -454,7 +454,7 @@ PathRequest::findPaths (
 {
     STPath fullLiquidityPath;
     auto result = fp.findPathsForIssue(issue,
-        mContext[issue], fullLiquidityPath);
+        mContext[issue], fullLiquidityPath, app_);
     if (! result)
     {
         m_journal.debug << iIdentifier << " No paths found";

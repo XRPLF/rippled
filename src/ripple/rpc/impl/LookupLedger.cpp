@@ -137,7 +137,8 @@ Status ledgerFromRequest (T& ledger, Context& context)
     return Status::OK;
 }
 
-bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
+bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger,
+    Application& app)
 {
     if (ledger.info().validated)
         return true;
@@ -158,7 +159,7 @@ bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger)
             // This ledger's hash is not the hash of the validated ledger
             if (hash.isNonZero ())
             {
-                uint256 valHash = Ledger::getHashByIndex (seq);
+                uint256 valHash = getHashByIndex (seq, app);
                 if (valHash == ledger.info().hash)
                 {
                     // SQL database doesn't match ledger chain
@@ -220,7 +221,7 @@ Status lookupLedger (
         result[jss::ledger_current_index] = info.seq;
     }
 
-    result[jss::validated] = isValidated (context.ledgerMaster, *ledger);
+    result[jss::validated] = isValidated (context.ledgerMaster, *ledger, context.app);
     return Status::OK;
 }
 
