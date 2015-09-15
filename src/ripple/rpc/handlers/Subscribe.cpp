@@ -75,7 +75,7 @@ Json::Value doSubscribe (RPC::Context& context)
                 << "doSubscribe: building: " << strUrl;
 
             RPCSub::pointer rspSub = RPCSub::New (context.app.getOPs (),
-                context.app.getIOService (), getApp ().getJobQueue (),
+                context.app.getIOService (), context.app.getJobQueue (),
                     strUrl, strUsername, strPassword);
             ispSub  = context.netOps.addRpcSub (
                 strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
