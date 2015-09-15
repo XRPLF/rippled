@@ -78,7 +78,6 @@ bool ConsensusTransSetSF::haveNode (
     if (m_nodeCache.retrieve (nodeHash, nodeData))
         return true;
 
-    // VFALCO TODO Use a dependency injection here
     auto txn = app_.getMasterTransaction().fetch(nodeHash, false);
 
     if (txn)
