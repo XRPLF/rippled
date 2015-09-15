@@ -82,7 +82,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (getConfig().RUN_STANDALONE ||
+    if (true || // TODO MPORTILLA temp fix to disable broken websocket coroutines
+        getConfig().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
@@ -110,7 +111,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
         {
             jvResult = context.app.getPathRequests().makeLegacyPathRequest (
                 request, callback, lpLedger, context.params);
-            callback();
+            assert(callback);
+            if (! request && callback)
+                callback();
         });
 
         if (request)
