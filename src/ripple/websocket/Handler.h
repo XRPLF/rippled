@@ -33,8 +33,6 @@
 
 namespace ripple {
 
-extern bool serverOkay (std::string& reason);
-
 namespace websocket {
 
 // CAUTION: on_* functions are called by the websocket code while holding a lock
@@ -475,7 +473,7 @@ public:
     {
         std::string reason;
 
-        if (!serverOkay (reason))
+        if (! getApp().serverOkay (reason))
         {
             cpClient->set_body (
                 "<HTML><BODY>Server cannot accept clients: " +
