@@ -448,11 +448,11 @@ public:
         //  put it in setup (but everything in setup should be moved to onStart
         //  anyway.
         //
-        //  The reason is that the unit tests require the Application object to
-        //  be created (since so much code calls getApp()). But we don't actually
-        //  start all the threads, sockets, and services when running the unit
-        //  tests. Therefore anything which needs to be stopped will not get
-        //  stopped correctly if it is started in this constructor.
+        //  The reason is that the unit tests require an Application object to
+        //  be created. But we don't actually start all the threads, sockets,
+        //  and services when running the unit tests. Therefore anything which
+        //  needs to be stopped will not get stopped correctly if it is
+        //  started in this constructor.
         //
 
         // VFALCO HACK
