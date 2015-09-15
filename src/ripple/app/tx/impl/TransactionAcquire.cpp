@@ -39,13 +39,13 @@ enum
     MAX_TIMEOUTS = 20,
 };
 
-TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
-    : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true, clock,
+TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, clock_type& clock)
+    : PeerSet (app, hash, TX_ACQUIRE_TIMEOUT, true, clock,
         deprecatedLogs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
     mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
-        getApp().family(), deprecatedLogs().journal("SHAMap"));
+        app_.family(), deprecatedLogs().journal("SHAMap"));
     mMap->setUnbacked ();
 }
 
@@ -68,10 +68,10 @@ void TransactionAcquire::done ()
 
         uint256 const& hash (mHash);
         std::shared_ptr <SHAMap> const& map (mMap);
-        getApp().getJobQueue().addJob (jtTXN_DATA, "completeAcquire",
-            [hash, map](Job&)
+        app_.getJobQueue().addJob (jtTXN_DATA, "completeAcquire",
+            [&, hash, map](Job&)
             {
-                getApp().getInboundTransactions().giveSet (
+                app_.getInboundTransactions().giveSet (
                     hash, map, true);
             });
     }
@@ -141,7 +141,7 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
     {
         std::vector<SHAMapNodeID> nodeIDs;
         std::vector<uint256> nodeHashes;
-        ConsensusTransSetSF sf (getApp(), getApp().getTempNodeCache ());
+        ConsensusTransSetSF sf (app_, app_.getTempNodeCache ());
         mMap->getMissingNodes (nodeIDs, nodeHashes, 256, &sf);
 
         if (nodeIDs.empty ())
@@ -194,7 +194,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& node
 
         std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
         std::list< Blob >::const_iterator nodeDatait = data.begin ();
-        ConsensusTransSetSF sf (getApp(), getApp().getTempNodeCache ());
+        ConsensusTransSetSF sf (app_, app_.getTempNodeCache ());
 
         while (nodeIDit != nodeIDs.end ())
         {
@@ -232,7 +232,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& node
 
 void TransactionAcquire::addPeers (int numPeers)
 {
-    getApp().overlay().selectPeers (*this, numPeers, ScoreHasTxSet (getHash()));
+    app_.overlay().selectPeers (*this, numPeers, ScoreHasTxSet (getHash()));
 }
 
 void TransactionAcquire::init (int numPeers)

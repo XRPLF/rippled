@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/shamap/SHAMap.h>
 
@@ -38,7 +39,7 @@ public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
 public:
-    TransactionAcquire (uint256 const& hash, clock_type& clock);
+    TransactionAcquire (Application& app, uint256 const& hash, clock_type& clock);
     ~TransactionAcquire ();
 
     std::shared_ptr<SHAMap> const& getMap ()

@@ -123,7 +123,7 @@ public:
             if (!acquire || isStopping ())
                 return std::shared_ptr <SHAMap> ();
 
-            ta = std::make_shared <TransactionAcquire> (hash, m_clock);
+            ta = std::make_shared <TransactionAcquire> (app_, hash, m_clock);
 
             auto &obj = m_map[hash];
             obj.mAcquire = ta;
