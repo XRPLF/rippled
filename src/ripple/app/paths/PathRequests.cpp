@@ -190,13 +190,14 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
 }
 
 // Make a new-style path_find request
-Json::Value PathRequests::makePathRequest(
+Json::Value
+PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
 {
     PathRequest::pointer req = std::make_shared<PathRequest> (
-        subscriber, ++mLastIdentifier, *this, mJournal);
+        app_, subscriber, ++mLastIdentifier, *this, mJournal);
 
     RippleLineCache::pointer cache;
 
@@ -218,7 +219,8 @@ Json::Value PathRequests::makePathRequest(
 }
 
 // Make an old-style ripple_path_find request
-Json::Value PathRequests::makeLegacyPathRequest(
+Json::Value
+PathRequests::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function <void (void)> completion,
     std::shared_ptr<ReadView const> const& inLedger,
@@ -227,7 +229,7 @@ Json::Value PathRequests::makeLegacyPathRequest(
     // This assignment must take place before the
     // completion function is called
     req = std::make_shared<PathRequest> (
-        completion, ++mLastIdentifier, *this, mJournal);
+        app_, completion, ++mLastIdentifier, *this, mJournal);
 
     RippleLineCache::pointer cache;
 
