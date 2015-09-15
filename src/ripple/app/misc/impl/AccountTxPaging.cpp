@@ -57,7 +57,7 @@ convertBlobsToTxResult (
 void
 saveLedgerAsync (Application& app, std::uint32_t seq)
 {
-    Ledger::pointer ledger = getApp().getLedgerMaster().getLedgerBySeq(seq);
+    Ledger::pointer ledger = app.getLedgerMaster().getLedgerBySeq(seq);
     if (ledger)
         pendSaveValidated(app, ledger, false, false);
 }
@@ -65,6 +65,7 @@ saveLedgerAsync (Application& app, std::uint32_t seq)
 void
 accountTxPage (
     DatabaseCon& connection,
+    AccountIDCache const& idCache,
     std::function<void (std::uint32_t)> const& onUnsavedLedger,
     std::function<void (std::uint32_t,
                         std::string const&,
@@ -135,7 +136,7 @@ accountTxPage (
              ORDER BY AccountTransactions.LedgerSeq ASC,
              AccountTransactions.TxnSeq ASC
              LIMIT %u;)"))
-            % getApp().accountIDCache().toBase58(account)
+            % idCache.toBase58(account)
             % minLedger
             % maxLedger
             % queryLimit);
@@ -152,7 +153,7 @@ accountTxPage (
             AccountTransactions.TxnSeq ASC
             LIMIT %u;
             )"))
-        % getApp().accountIDCache().toBase58(account)
+        % idCache.toBase58(account)
         % (findLedger + 1)
         % maxLedger
         % findLedger
@@ -167,7 +168,7 @@ accountTxPage (
              ORDER BY AccountTransactions.LedgerSeq DESC,
              AccountTransactions.TxnSeq DESC
              LIMIT %u;)"))
-            % getApp().accountIDCache().toBase58(account)
+            % idCache.toBase58(account)
             % minLedger
             % maxLedger
             % queryLimit);
@@ -182,7 +183,7 @@ accountTxPage (
              ORDER BY AccountTransactions.LedgerSeq DESC,
              AccountTransactions.TxnSeq DESC
              LIMIT %u;)"))
-            % getApp().accountIDCache().toBase58(account)
+            % idCache.toBase58(account)
             % minLedger
             % (findLedger - 1)
             % findLedger

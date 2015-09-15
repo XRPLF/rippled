@@ -1835,9 +1835,11 @@ NetworkOPsImp::getTxsAccount (
         convertBlobsToTxResult (ret, ledger_index, status, rawTxn, rawMeta);
     };
 
-    accountTxPage(app_.getTxnDB (), std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),
-        bound, account, minLedger, maxLedger, forward, token,
-        limit, bAdmin, page_length);
+    accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
+        std::bind(saveLedgerAsync, std::ref(app_),
+            std::placeholders::_1), bound, account, minLedger,
+                maxLedger, forward, token, limit, bAdmin,
+                    page_length);
 
     return ret;
 }
@@ -1861,8 +1863,11 @@ NetworkOPsImp::getTxsAccountB (
         ret.emplace_back (strHex(rawTxn), strHex (rawMeta), ledgerIndex);
     };
 
-    accountTxPage(app_.getTxnDB (), std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),
-        bound, account, minLedger, maxLedger, forward, token, limit, bAdmin, page_length);
+    accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
+        std::bind(saveLedgerAsync, std::ref(app_),
+            std::placeholders::_1), bound, account, minLedger,
+                maxLedger, forward, token, limit, bAdmin,
+                    page_length);
     return ret;
 }
 
