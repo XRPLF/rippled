@@ -94,7 +94,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
-        if (getApp().getLedgerMaster().getValidatedLedgerAge() >
+        if (context.app.getLedgerMaster().getValidatedLedgerAge() >
             RPC::Tuning::maxValidatedLedgerAge)
         {
             return rpcError (rpcNO_NETWORK);
@@ -108,7 +108,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             [&request, &context, &jvResult, &lpLedger]
             (RPC::Callback const& callback)
         {
-            jvResult = getApp().getPathRequests().makeLegacyPathRequest (
+            jvResult = context.app.getPathRequests().makeLegacyPathRequest (
                 request, callback, lpLedger, context.params);
             callback();
         });
@@ -176,7 +176,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             // The closed ledger is recent and any nodes made resident
             // have the best chance to persist
             lpLedger = context.ledgerMaster.getClosedLedger();
-            cache = getApp().getPathRequests().getLineCache(lpLedger, false);
+            cache = context.app.getPathRequests().getLineCache(lpLedger, false);
         }
 
         Json::Value     jvSrcCurrencies;
@@ -200,11 +200,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 jvDestCur.append (to_string (uCurrency));
 
         jvResult[jss::destination_currencies] = jvDestCur;
-        jvResult[jss::destination_account] = getApp().accountIDCache().toBase58(raDst);
+        jvResult[jss::destination_account] = context.app.accountIDCache().toBase58(raDst);
 
         int level = getConfig().PATH_SEARCH_OLD;
-        if ((getConfig().PATH_SEARCH_MAX > level)
-            && !getApp().getFeeTrack().isLoadedLocal())
+        if ((context.app.config().PATH_SEARCH_MAX > level)
+            && !context.app.getFeeTrack().isLoadedLocal())
         {
             ++level;
         }

@@ -25,12 +25,13 @@
 
 namespace ripple {
 
-ConnectAttempt::ConnectAttempt (boost::asio::io_service& io_service,
+ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_service,
     endpoint_type const& remote_endpoint, Resource::Consumer usage,
         beast::asio::ssl_bundle::shared_context const& context,
             std::uint32_t id, PeerFinder::Slot::ptr const& slot,
                 beast::Journal journal, OverlayImpl& overlay)
     : Child (overlay)
+    , app_ (app)
     , id_ (id)
     , sink_ (journal, OverlayImpl::makePrefix(id))
     , journal_ (sink_)
@@ -217,7 +218,7 @@ ConnectAttempt::onHandshake (error_code ec)
     beast::http::message req = makeRequest(
         ! overlay_.peerFinder().config().peerPrivate,
             remote_endpoint_.address());
-    auto const hello = buildHello (sharedValue, getApp());
+    auto const hello = buildHello (sharedValue, app_);
     appendHello (req, hello);
 
     using beast::http::write;
@@ -398,7 +399,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
 
     RippleAddress publicKey;
     std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue, journal_, getApp());
+        sharedValue, journal_, app_);
     if(! success)
         return close(); // verifyHello logs
     if(journal_.info) journal_.info <<
@@ -411,7 +412,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
 
     std::string name;
     bool const clusterNode =
-        getApp().getUNL().nodeInCluster(publicKey, name);
+        app_.getUNL().nodeInCluster(publicKey, name);
     if (clusterNode)
         if (journal_.info) journal_.info <<
             "Cluster name: " << name;
@@ -421,7 +422,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
-    auto const peer = std::make_shared<PeerImp>(
+    auto const peer = std::make_shared<PeerImp>(app_,
         std::move(ssl_bundle_), read_buf_.data(),
             std::move(slot_), std::move(response_),
                 usage_, std::move(hello), publicKey, id_, overlay_);

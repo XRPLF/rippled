@@ -53,11 +53,12 @@ ServerHandler::ServerHandler (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
+ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
     : ServerHandler (parent)
+    , app_ (app)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
     , m_networkOPs (networkOPs)
@@ -122,7 +123,7 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
         return handoff;
     }
     if (session.port().protocol.count("peer") > 0)
-        return getApp().overlay().onHandoff (std::move(bundle),
+        return app_.overlay().onHandoff (std::move(bundle),
             std::move(request), remote_address);
     // Pass through to legacy onRequest
     return Handoff{};
@@ -231,7 +232,7 @@ ServerHandlerImp::processRequest (
     Suspend const& suspend)
 {
     // Move off the webserver thread onto the JobQueue.
-    assert (getApp().getJobQueue().getJobForThread());
+    assert (app_.getJobQueue().getJobForThread());
 
     Json::Value jsonRPC;
     {
@@ -350,7 +351,7 @@ ServerHandlerImp::processRequest (
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {
-        params, loadType, m_networkOPs, getApp().getLedgerMaster(), role,
+        params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
                 nullptr, {suspend, "RPC-Coroutine"}};
 
     std::string response;
@@ -753,13 +754,13 @@ setup_ServerHandler(BasicConfig const& config, std::ostream& log)
 }
 
 std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent,
+make_ServerHandler (Application& app, beast::Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
 {
-    return std::make_unique <ServerHandlerImp> (parent, io_service,
-        jobQueue, networkOPs, resourceManager, cm);
+    return std::make_unique<ServerHandlerImp>(app, parent,
+        io_service, jobQueue, networkOPs, resourceManager, cm);
 }
 
 }

@@ -53,6 +53,7 @@ public:
 
     std::shared_ptr<LedgerConsensus>
     startRound (
+        Application& app,
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
         LedgerMaster& ledgerMaster,

@@ -39,7 +39,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
     auto const hasHash = context.params.isMember (jss::ledger_hash);
     auto const hasIndex = context.params.isMember (jss::ledger_index);
 
-    auto& ledgerMaster = getApp().getLedgerMaster();
+    auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
 
     if ((hasHash && hasIndex) || !(hasHash || hasIndex))
@@ -87,11 +87,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
                 // We don't have the ledger we need to figure out which ledger
                 // they want. Try to get it.
 
-                if (auto il = getApp().getInboundLedgers().acquire (
+                if (auto il = context.app.getInboundLedgers().acquire (
                         *refHash, refIndex, InboundLedger::fcGENERIC))
                     return getJson (LedgerFill (*il));
 
-                if (auto il = getApp().getInboundLedgers().find (*refHash))
+                if (auto il = context.app.getInboundLedgers().find (*refHash))
                 {
                     Json::Value jvResult = il->getJson (0);
 
@@ -121,11 +121,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
     else
     {
         // Try to get the desired ledger
-        if (auto il = getApp ().getInboundLedgers ().acquire (
+        if (auto il = context.app.getInboundLedgers ().acquire (
                 ledgerHash, 0, InboundLedger::fcGENERIC))
             return getJson (LedgerFill (*il));
 
-        if (auto il = getApp().getInboundLedgers().find (ledgerHash))
+        if (auto il = context.app.getInboundLedgers().find (ledgerHash))
             return il->getJson (0);
 
         return RPC::make_error (

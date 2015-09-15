@@ -21,7 +21,6 @@
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STAccount.h>
 #include <cstdint>
 
 namespace ripple {

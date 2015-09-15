@@ -29,10 +29,10 @@ namespace RPC {
 struct Context;
 }
 
-Json::Value doStop (RPC::Context&)
+Json::Value doStop (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
-    getApp().signalStop ();
+    auto lock = beast::make_lock(context.app.getMasterMutex());
+    context.app.signalStop ();
 
     return RPC::makeObjectValue (systemName () + " server stopping");
 }

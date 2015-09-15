@@ -31,10 +31,10 @@ namespace ripple {
 // Populate the UNL from a local validators.txt file.
 Json::Value doUnlLoad (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
+    auto lock = beast::make_lock(context.app.getMasterMutex());
 
     if (getConfig ().VALIDATORS_FILE.empty ()
-        || !getApp().getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
+        || !context.app.getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
     {
         return rpcError (rpcLOAD_FAILED);
     }

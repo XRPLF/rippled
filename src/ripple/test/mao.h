@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,30 +17,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/json/JsonPropertyStream.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/Context.h>
+#ifndef RIPPLE_TEST_MAO_H_INCLUDED
+#define RIPPLE_TEST_MAO_H_INCLUDED
 
-namespace ripple {
+// Convenience header that includes everything
 
-Json::Value doPrint (RPC::Context& context)
-{
-    JsonPropertyStream stream;
-    if (context.params.isObject()
-        && context.params[jss::params].isArray()
-        && context.params[jss::params][0u].isString ())
-    {
-        context.app.write (stream, context.params[jss::params][0u].asString());
-    }
-    else
-    {
-        context.app.write (stream);
-    }
+#include <ripple/test/mao/Network.h>
 
-    return stream.top();
-}
-
-} // ripple
+#endif

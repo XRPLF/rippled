@@ -51,12 +51,6 @@ public:
     using const_iterator = map_t::const_iterator;
 
 public:
-    static pointer makeAcceptedLedger (std::shared_ptr<ReadView const> const&);
-    static void sweep ()
-    {
-        s_cache.sweep ();
-    }
-
     std::shared_ptr<ReadView const> const& getLedger () const
     {
         return mLedger;
@@ -71,20 +65,14 @@ public:
         return mMap.size ();
     }
 
-    static float getCacheHitRate ()
-    {
-        return s_cache.getHitRate ();
-    }
-
     AcceptedLedgerTx::pointer getTxn (int) const;
 
-private:
     explicit AcceptedLedger (std::shared_ptr<ReadView const> const& ledger);
 
-    void insert (AcceptedLedgerTx::ref);
 
 private:
-    static TaggedCache <uint256, AcceptedLedger> s_cache;
+
+    void insert (AcceptedLedgerTx::ref);
 
     std::shared_ptr<ReadView const> mLedger;
     map_t mMap;

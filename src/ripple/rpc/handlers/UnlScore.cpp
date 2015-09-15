@@ -32,8 +32,8 @@ namespace ripple {
 // unl_score
 Json::Value doUnlScore (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
-    getApp().getUNL ().nodeScore ();
+    auto lock = beast::make_lock(context.app.getMasterMutex());
+    context.app.getUNL ().nodeScore ();
 
     return RPC::makeObjectValue ("scoring requested");
 }

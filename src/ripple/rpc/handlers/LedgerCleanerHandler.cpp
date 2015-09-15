@@ -28,7 +28,7 @@ namespace ripple {
 
 Json::Value doLedgerCleaner (RPC::Context& context)
 {
-    getApp().getLedgerMaster().doLedgerCleaner (context.params);
+    context.app.getLedgerMaster().doLedgerCleaner (context.params);
     return RPC::makeObjectValue ("Cleaner configured");
 }
 
