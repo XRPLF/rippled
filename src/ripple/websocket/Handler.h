@@ -71,6 +71,7 @@ public:
     };
 
 private:
+    Application& app_;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_io_;
     beast::insight::Event rpc_size_;
@@ -86,7 +87,9 @@ protected:
     MapType mMap;
 
 public:
-    HandlerImpl (ServerDescription const& desc) : desc_ (desc)
+    HandlerImpl (ServerDescription const& desc)
+        : app_ (desc.app)
+        , desc_ (desc)
     {
         auto const& group (desc_.collectorManager.group ("rpc"));
         rpc_requests_ = group->make_counter ("requests");
@@ -289,7 +292,7 @@ public:
         }
 
         // Must be done without holding the websocket send lock
-        getApp().getJobQueue ().addJob (
+        app_.getJobQueue ().addJob (
             jtCLIENT,
             "WSClient::destroy",
             [ptr] (Job&) { ConnectionImpl <WebSocket>::destroy(ptr); });
@@ -299,7 +302,7 @@ public:
                      connection_ptr const& cpClient)
     {
         auto msgs = [this, cpClient] (Job& j) { do_messages(j, cpClient); };
-        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::" + name, msgs);
+        app_.getJobQueue ().addJob (jtCLIENT, "WSClient::" + name, msgs);
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage) override
@@ -473,7 +476,7 @@ public:
     {
         std::string reason;
 
-        if (! getApp().serverOkay (reason))
+        if (! app_.serverOkay (reason))
         {
             cpClient->set_body (
                 "<HTML><BODY>Server cannot accept clients: " +
