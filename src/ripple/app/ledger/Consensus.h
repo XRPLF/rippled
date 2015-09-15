@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
 
@@ -62,6 +63,7 @@ public:
     virtual
     std::shared_ptr<LedgerConsensus>
     startRound (
+        Application& app,
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
         LedgerMaster& ledgerMaster,

@@ -1332,7 +1332,7 @@ void NetworkOPsImp::switchLastClosedLedger (
         auto const localTx = m_localTX->getTxSet();
         {
             auto retries = localTx;
-            applyTransactions (&oldOL->txMap(),
+            applyTransactions (getApp(), &oldOL->txMap(),
                 accum, newLCL, retries, tapNONE);
         }
         accum.apply(*newOL);
@@ -1400,6 +1400,7 @@ bool NetworkOPsImp::beginConsensus (
     prevLedger->setImmutable ();
 
     mLedgerConsensus = mConsensus->startRound (
+        getApp(),
         getApp().getInboundTransactions(),
         *m_localTX,
         m_ledgerMaster,
