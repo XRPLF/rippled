@@ -48,7 +48,7 @@ PeerSet::PeerSet (Application& app, uint256 const& hash, int interval, bool txnD
     , mAggressive (false)
     , mTxnData (txnData)
     , mProgress (false)
-    , mTimer (getApp().getIOService ())
+    , mTimer (app_.getIOService ())
 {
     mLastAction = m_clock.now();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
@@ -114,14 +114,14 @@ void PeerSet::timerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
         //
         if (ptr->mTxnData)
         {
-            getApp().getJobQueue ().addJob (
+            ptr->app_.getJobQueue ().addJob (
                 jtTXN_DATA, "timerEntryTxn", [ptr] (Job&) {
                     timerJobEntry(ptr);
                 });
         }
         else
         {
-            int jc = getApp().getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
+            int jc = ptr->app_.getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
 
             if (jc > 4)
             {
@@ -129,7 +129,7 @@ void PeerSet::timerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
                 ptr->setTimer ();
             }
             else
-                getApp().getJobQueue ().addJob (
+                ptr->app_.getJobQueue ().addJob (
                     jtLEDGER_DATA, "timerEntryLgr", [ptr] (Job&) {
                         timerJobEntry(ptr);
                     });
@@ -168,7 +168,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 
     for (auto const& p : mPeers)
     {
-        Peer::ptr peer (getApp().overlay ().findPeerByShortID (p.first));
+        Peer::ptr peer (app_.overlay ().findPeerByShortID (p.first));
 
         if (peer)
             peer->send (packet);
@@ -181,7 +181,7 @@ std::size_t PeerSet::getPeerCount () const
 
     for (auto const& p : mPeers)
     {
-        if (getApp ().overlay ().findPeerByShortID (p.first))
+        if (app_.overlay ().findPeerByShortID (p.first))
             ++ret;
     }
 

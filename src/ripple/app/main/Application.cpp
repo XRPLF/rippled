@@ -391,7 +391,7 @@ public:
             *m_jobQueue, m_collectorManager->collector ()))
 
         , m_inboundTransactions (make_InboundTransactions
-            ( stopwatch()
+            ( *this, stopwatch()
             , *m_jobQueue
             , m_collectorManager->collector ()
             , [this](uint256 const& setHash,
