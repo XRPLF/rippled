@@ -362,6 +362,8 @@ public:
 
         , cachedSLEs_ (std::chrono::minutes(1), stopwatch())
 
+        , m_localCredentials (*this)
+
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), m_logs.journal("Resource")))
 
@@ -378,7 +380,7 @@ public:
         , m_orderBookDB (*this, *m_jobQueue)
 
         , m_pathRequests (std::make_unique<PathRequests> (
-            m_logs.journal("PathRequest"), m_collectorManager->collector ()))
+            *this, m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
         , m_ledgerMaster (make_LedgerMaster (*this, stopwatch (),
             *m_jobQueue, m_collectorManager->collector (),
@@ -425,7 +427,7 @@ public:
 
         , mValidations (make_Validations ())
 
-        , m_loadManager (make_LoadManager (*this, m_logs.journal("LoadManager")))
+        , m_loadManager (make_LoadManager (*this, *this, m_logs.journal("LoadManager")))
 
         , m_sweepTimer (this)
 
