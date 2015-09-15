@@ -58,10 +58,11 @@ void ConsensusTransSetSF::gotNode (
             SerialIter sit (s.slice());
             STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
+            auto const pap = &app_;
             app_.getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
-                [&, stx] (Job&) {
-                    app_.getOPs().submitTransaction(stx);
+                [pap, stx] (Job&) {
+                    pap->getOPs().submitTransaction(stx);
                 });
         }
         catch (...)
