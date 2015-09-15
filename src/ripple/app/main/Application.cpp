@@ -375,7 +375,7 @@ public:
         // Anything which calls addJob must be a descendant of the JobQueue
         //
 
-        , m_orderBookDB (*m_jobQueue)
+        , m_orderBookDB (*this, *m_jobQueue)
 
         , m_pathRequests (std::make_unique<PathRequests> (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
