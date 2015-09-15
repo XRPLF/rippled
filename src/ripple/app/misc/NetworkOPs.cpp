@@ -873,7 +873,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             #endif
 
                 std::tie (e.result, e.applied) =
-                    ripple::apply (*accum,
+                    ripple::apply (app_, *accum,
                         *e.transaction->getSTransaction(), flags,
                             app_.getHashRouter().sigVerify(),
                                 getConfig(), deprecatedLogs().journal(

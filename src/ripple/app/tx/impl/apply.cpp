@@ -112,14 +112,14 @@ preflight (Rules const& rules, STTx const& tx,
 }
 
 std::pair<TER, bool>
-doapply(OpenView& view, STTx const& tx,
-    ApplyFlags flags, Config const& config,
-        beast::Journal j)
+doapply(Application& app, OpenView& view,
+    STTx const& tx, ApplyFlags flags,
+        Config const& config, beast::Journal j)
 {
     try
     {
-        ApplyContext ctx(
-            view, tx, flags, config, j);
+        ApplyContext ctx(app, view,
+            tx, flags, config, j);
         return invoke_apply(ctx);
     }
     catch (std::exception const& e)
@@ -137,15 +137,16 @@ doapply(OpenView& view, STTx const& tx,
 }
 
 std::pair<TER, bool>
-apply (OpenView& view, STTx const& tx,
-    ApplyFlags flags, SigVerify verify,
-        Config const& config, beast::Journal j)
+apply (Application& app, OpenView& view,
+    STTx const& tx, ApplyFlags flags,
+        SigVerify verify, Config const& config,
+            beast::Journal j)
 {
     auto pfresult = preflight(view.rules(),
         tx, flags, verify, config, j);
     if (pfresult != tesSUCCESS)
         return { pfresult, false };
-    return doapply(view, tx, flags, config, j);
+    return doapply(app, view, tx, flags, config, j);
 }
 
 } // ripple

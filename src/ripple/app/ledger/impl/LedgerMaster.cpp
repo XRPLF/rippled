@@ -448,7 +448,7 @@ public:
                     tepFlags = static_cast<ApplyFlags> (
                         tepFlags | tapNO_CHECK_SIGN);
 
-                auto const ret = apply(view, *it.second,
+                auto const ret = apply(app_, view, *it.second,
                     tepFlags, app_.getHashRouter().sigVerify(),
                         app_.config(), deprecatedLogs().journal("LedgerMaster"));
 

@@ -1187,7 +1187,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 newLCL, retriableTransactions, tapNONE);
         }
         for (auto const& item : localTx)
-            apply (accum, *item.second, tapNONE,
+            apply (app_, accum, *item.second, tapNONE,
                 app_.getHashRouter().sigVerify(),
                     getConfig(), deprecatedLogs().
                         journal("LedgerConsensus"));
@@ -1838,7 +1838,7 @@ applyTransaction (Application& app, OpenView& view,
 
     try
     {
-        auto const result = apply(view, *txn, flags,
+        auto const result = apply(app, view, *txn, flags,
             app.getHashRouter().sigVerify(),
                 getConfig(), deprecatedLogs().
                     journal("LedgerConsensus"));
