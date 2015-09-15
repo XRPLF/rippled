@@ -387,7 +387,7 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , m_inboundLedgers (make_InboundLedgers (stopwatch(),
+        , m_inboundLedgers (make_InboundLedgers (*this, stopwatch(),
             *m_jobQueue, m_collectorManager->collector ()))
 
         , m_inboundTransactions (make_InboundTransactions
@@ -1240,8 +1240,8 @@ bool ApplicationImp::loadOldLedger (
             if (!loadLedger)
             {
                 // Try to build the ledger from the back end
-                auto il = std::make_shared <InboundLedger> (hash, 0, InboundLedger::fcGENERIC,
-                    stopwatch());
+                auto il = std::make_shared <InboundLedger> (
+                    *this, hash, 0, InboundLedger::fcGENERIC, stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
             }
@@ -1274,7 +1274,7 @@ bool ApplicationImp::loadOldLedger (
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
-                    replayLedger->info().parentHash, 0, InboundLedger::fcGENERIC,
+                    *this, replayLedger->info().parentHash, 0, InboundLedger::fcGENERIC,
                     stopwatch());
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();

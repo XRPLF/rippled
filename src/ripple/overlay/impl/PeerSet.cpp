@@ -35,9 +35,10 @@ class InboundLedger;
 //             derived class. Why not just make the timer callback
 //             function pure virtual?
 //
-PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
+PeerSet::PeerSet (Application& app, uint256 const& hash, int interval, bool txnData,
     clock_type& clock, beast::Journal journal)
-    : m_journal (journal)
+    : app_ (app)
+    , m_journal (journal)
     , m_clock (clock)
     , mHash (hash)
     , mTimerInterval (interval)
