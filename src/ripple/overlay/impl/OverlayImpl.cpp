@@ -459,7 +459,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         s = beast::base64_decode(s);
         if (auto mo = make_Manifest (std::move (s)))
         {
-            manifestCache_.configManifest (std::move (*mo), journal_);
+            manifestCache_.configManifest (std::move (*mo), app_.getUNL (), journal_);
         }
         else
         {
@@ -472,7 +472,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
             journal_.warning << "No [validation_manifest] section in config";
     }
 
-    manifestCache_.load (db, journal_);
+    manifestCache_.load (db, app_.getUNL(), journal_);
 }
 
 void
@@ -657,7 +657,7 @@ OverlayImpl::onManifests (
 
             auto const serialized = mo->serialized;
             auto const result =
-                manifestCache_.applyManifest (std::move(*mo), journal);
+                manifestCache_.applyManifest (std::move(*mo), app_.getUNL(), journal);
 
             if (result == ManifestDisposition::accepted)
             {

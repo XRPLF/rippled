@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-fee::operator()(Env const&, JTx& jt) const
+fee::operator()(Env&, JTx& jt) const
 {
     if (! manual_)
         return;

@@ -39,8 +39,10 @@ namespace ripple {
 // FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory (
-    beast::insight::Collector::ptr const& collector)
-    : collector_ (collector)
+    beast::insight::Collector::ptr const& collector,
+        Application& app)
+    : app_ (app)
+    , collector_ (collector)
     , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
     , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
         stopwatch(), deprecatedLogs().journal("TaggedCache"))
@@ -89,7 +91,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
         }
     }
 
-    Ledger::pointer ret (Ledger::loadByIndex (index));
+    Ledger::pointer ret = loadByIndex (index, app_);
 
     if (!ret)
         return ret;
@@ -118,7 +120,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
         return ret;
     }
 
-    ret = Ledger::loadByHash (hash);
+    ret = loadByHash (hash, app_);
 
     if (!ret)
         return ret;

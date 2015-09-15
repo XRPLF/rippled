@@ -94,7 +94,7 @@ void startServer (Application& app)
             Resource::Charge loadType = Resource::feeReferenceRPC;
             RPC::Context context {
                 jvCommand, app, loadType, app.getOPs (),
-                app.getLedgerMaster(), Role::ADMIN};
+                app.getLedgerMaster(), Role::ADMIN, app};
 
             Json::Value jvResult;
             RPC::doCommand (context, jvResult);

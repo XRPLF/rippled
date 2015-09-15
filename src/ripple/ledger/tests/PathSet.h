@@ -30,7 +30,7 @@ namespace test {
  */
 inline
 bool
-isOffer (jtx::Env const& env,
+isOffer (jtx::Env& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)

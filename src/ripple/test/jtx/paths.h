@@ -46,7 +46,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ public:
     path (T const& t, Args const&... args);
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 
 private:
     Json::Value&

@@ -52,7 +52,7 @@ Json::Value doSubmit (RPC::Context& context)
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app.getFeeTrack(),
+        context.app,
         context.ledgerMaster.getCurrentLedger(),
         RPC::getProcessTxnFn (context.netOps));
     }
@@ -83,7 +83,7 @@ Json::Value doSubmit (RPC::Context& context)
     Transaction::pointer            tpTrans;
     std::string reason;
     tpTrans = std::make_shared<Transaction> (stpTrans, Validate::YES,
-        context.app.getHashRouter().sigVerify(), reason);
+        context.app.getHashRouter().sigVerify(), reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
         jvResult[jss::error]            = "invalidTransaction";

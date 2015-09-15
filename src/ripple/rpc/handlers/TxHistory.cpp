@@ -81,7 +81,7 @@ Json::Value doTxHistory (RPC::Context& context)
                 rawTxn.clear ();
 
             if (auto trans = Transaction::transactionFromSQL (
-                    ledgerSeq, status, rawTxn, Validate::NO))
+                    ledgerSeq, status, rawTxn, Validate::NO, context.app))
                 txs.append (trans->getJson (0));
         }
     }

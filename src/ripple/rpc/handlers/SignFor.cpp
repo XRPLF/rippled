@@ -50,7 +50,7 @@ Json::Value doSignFor (RPC::Context& context)
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app.getFeeTrack(),
+        context.app,
         context.ledgerMaster.getCurrentLedger());
 }
 

@@ -113,7 +113,7 @@ public:
     }
 
     void
-    operator()(Env const& env) const;
+    operator()(Env& env) const;
 };
 
 /** Match clear account flags */
@@ -132,7 +132,7 @@ public:
     }
 
     void
-    operator()(Env const& env) const;
+    operator()(Env& env) const;
 };
 
 } // jtx

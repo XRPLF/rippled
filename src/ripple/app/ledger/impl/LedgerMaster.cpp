@@ -148,7 +148,7 @@ public:
         , app_ (app)
         , m_journal (journal)
         , mLastValidLedger (std::make_pair (uint256(), 0))
-        , mLedgerHistory (collector)
+        , mLedgerHistory (collector, app)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (make_LedgerCleaner (
             app, *this, deprecatedLogs().journal("LedgerCleaner")))
@@ -617,9 +617,9 @@ public:
                     mCompleteLedgers.setRange (minHas, maxHas);
                 }
                 maxHas = minHas;
-                ledgerHashes = Ledger::getHashesByIndex ((seq < 500)
+                ledgerHashes = getHashesByIndex ((seq < 500)
                     ? 0
-                    : (seq - 499), seq);
+                    : (seq - 499), seq, app_);
                 it = ledgerHashes.find (seq);
 
                 if (it == ledgerHashes.end ())
@@ -755,7 +755,7 @@ public:
         {
             // Check the SQL database's entry for the sequence before this
             // ledger, if it's not this ledger's parent, invalidate it
-            uint256 prevHash = Ledger::getHashByIndex (ledger->info().seq - 1);
+            uint256 prevHash = getHashByIndex (ledger->info().seq - 1, app_);
             if (prevHash.isNonZero () && prevHash != ledger->info().parentHash)
                 clearLedger (ledger->info().seq - 1);
         }
@@ -1451,7 +1451,7 @@ public:
         if (hash.isNonZero ())
             return hash;
 
-        return Ledger::getHashByIndex (index);
+        return getHashByIndex (index, app_);
     }
 
     // VFALCO NOTE This should return boost::optional<uint256>
@@ -1747,7 +1747,7 @@ void LedgerMasterImp::doAdvance ()
                                 mHistLedger = ledger;
                                 auto& parent = ledger->info().parentHash;
                                 if (mFillInProgress == 0 &&
-                                    Ledger::getHashByIndex(seq - 1) == parent)
+                                    getHashByIndex(seq - 1, app_) == parent)
                                 {
                                     // Previous ledger is in DB
                                     ScopedLockType lock (m_mutex);

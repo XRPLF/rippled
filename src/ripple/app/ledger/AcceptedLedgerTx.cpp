@@ -29,12 +29,14 @@ namespace ripple {
 AcceptedLedgerTx::AcceptedLedgerTx (
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& txn,
-    std::shared_ptr<STObject const> const& met)
+    std::shared_ptr<STObject const> const& met,
+    AccountIDCache const& accountCache)
     : mLedger (ledger)
     , mTxn (txn)
     , mMeta (std::make_shared<TxMeta> (
         txn->getTransactionID(), ledger->seq(), *met))
     , mAffected (mMeta->getAffectedAccounts ())
+    , accountCache_ (accountCache)
 {
     assert (! ledger->info().open);
 
@@ -49,11 +51,14 @@ AcceptedLedgerTx::AcceptedLedgerTx (
 
 AcceptedLedgerTx::AcceptedLedgerTx (
     std::shared_ptr<ReadView const> const& ledger,
-    STTx::ref txn, TER result)
+    STTx::ref txn,
+    TER result,
+    AccountIDCache const& accountCache)
     : mLedger (ledger)
     , mTxn (txn)
     , mResult (result)
     , mAffected (txn->getMentionedAccounts ())
+    , accountCache_ (accountCache)
 {
     assert (ledger->info().open);
     buildJson ();
@@ -82,7 +87,7 @@ void AcceptedLedgerTx::buildJson ()
     {
         Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
         for (auto const& account: mAffected)
-            affected.append (getApp().accountIDCache().toBase58(account));
+            affected.append (accountCache_.toBase58(account));
     }
 
     if (mTxn->getTxnType () == ttOFFER_CREATE)

@@ -156,14 +156,15 @@ ManifestCache::configValidatorKey(
 }
 
 void
-ManifestCache::configManifest(Manifest m, beast::Journal const& journal)
+ManifestCache::configManifest (
+    Manifest m, UniqueNodeList& unl, beast::Journal const& journal)
 {
     if (!m.verify())
     {
         throw std::runtime_error("Unverifiable manifest in config");
     }
 
-    auto const result = applyManifest (std::move(m), journal);
+    auto const result = applyManifest (std::move(m), unl, journal);
 
     if (result != ManifestDisposition::accepted)
     {
@@ -225,7 +226,8 @@ ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
 
 
 ManifestDisposition
-ManifestCache::applyManifest (Manifest m, beast::Journal const& journal)
+ManifestCache::applyManifest (
+    Manifest m, UniqueNodeList& unl, beast::Journal const& journal)
 {
     {
         std::lock_guard<std::mutex> lock (mutex_);
@@ -252,8 +254,6 @@ ManifestCache::applyManifest (Manifest m, beast::Journal const& journal)
             logMftAct(journal.warning, "Invalid", m.masterKey, m.sequence);
         return ManifestDisposition::invalid;
     }
-
-    auto& unl = getApp().getUNL();
 
     std::lock_guard<std::mutex> lock (mutex_);
 
@@ -334,7 +334,7 @@ ManifestCache::applyManifest (Manifest m, beast::Journal const& journal)
 }
 
 void ManifestCache::load (
-    DatabaseCon& dbCon, beast::Journal const& journal)
+    DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal const& journal)
 {
     static const char* const sql =
         "SELECT RawData FROM ValidatorManifests;";
@@ -358,7 +358,7 @@ void ManifestCache::load (
             map_[mo->masterKey];
 
             // OK if not accepted (may have been loaded from the config file)
-            applyManifest (std::move(*mo), journal);
+            applyManifest (std::move(*mo), unl, journal);
         }
         else
         {

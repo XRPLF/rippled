@@ -43,7 +43,7 @@ struct prop
     }
 
     void
-    operator()(Env const& env, JTx& jt) const
+    operator()(Env& env, JTx& jt) const
     {
         jt.set(p_->clone());
     }

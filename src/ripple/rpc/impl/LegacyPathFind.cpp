@@ -28,7 +28,7 @@
 namespace ripple {
 namespace RPC {
 
-LegacyPathFind::LegacyPathFind (bool isAdmin) : m_isOk (false)
+LegacyPathFind::LegacyPathFind (bool isAdmin, Application& app) : m_isOk (false)
 {
     if (isAdmin)
     {
@@ -37,8 +37,8 @@ LegacyPathFind::LegacyPathFind (bool isAdmin) : m_isOk (false)
         return;
     }
 
-    auto const& jobCount = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
-    if (jobCount > Tuning::maxPathfindJobCount || getApp().getFeeTrack().isLoadedLocal ())
+    auto const& jobCount = app.getJobQueue ().getJobCountGE (jtCLIENT);
+    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal ())
         return;
 
     while (true)

@@ -45,7 +45,8 @@ public:
         Currency const& uSrcCurrency,
         boost::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
-        boost::optional<STAmount> const& srcAmount);
+        boost::optional<STAmount> const& srcAmount,
+        Application& app);
     ~Pathfinder();
 
     static void initPathTable ();
@@ -189,6 +190,8 @@ private:
     std::map<PathType, STPathSet> mPaths;
 
     hash_map<Issue, int> mPathsOutCountMap;
+
+    Application& app_;
 
     // Add ripple paths
     static std::uint32_t const afADD_ACCOUNTS = 0x001;

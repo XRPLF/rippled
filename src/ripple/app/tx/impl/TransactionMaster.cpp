@@ -25,8 +25,9 @@
 
 namespace ripple {
 
-TransactionMaster::TransactionMaster ()
-    : mCache ("TransactionCache", 65536, 1800, stopwatch(),
+TransactionMaster::TransactionMaster (Application& app)
+    : mApp (app)
+    , mCache ("TransactionCache", 65536, 1800, stopwatch(),
         deprecatedLogs().journal("TaggedCache"))
 {
 }
@@ -49,7 +50,7 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
     if (!checkDisk || txn)
         return txn;
 
-    txn = Transaction::load (txnID);
+    txn = Transaction::load (txnID, mApp);
 
     if (!txn)
         return txn;
@@ -64,7 +65,7 @@ STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
     STTx::pointer  txn;
-    auto iTx = getApp().getMasterTransaction ().fetch (item->key(), false);
+    auto iTx = fetch (item->key(), false);
 
     if (!iTx)
     {

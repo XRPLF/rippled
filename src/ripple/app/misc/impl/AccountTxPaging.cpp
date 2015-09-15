@@ -36,14 +36,15 @@ convertBlobsToTxResult (
     std::uint32_t ledger_index,
     std::string const& status,
     Blob const& rawTxn,
-    Blob const& rawMeta)
+    Blob const& rawMeta,
+    Application& app)
 {
     SerialIter it (makeSlice(rawTxn));
     STTx::pointer txn = std::make_shared<STTx> (it);
     std::string reason;
 
     auto tr = std::make_shared<Transaction> (txn, Validate::NO,
-        directSigVerify, reason);
+        directSigVerify, reason, app);
 
     tr->setStatus (Transaction::sqlTransactionStatus(status));
     tr->setLedger (ledger_index);

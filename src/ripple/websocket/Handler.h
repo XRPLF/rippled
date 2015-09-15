@@ -199,6 +199,7 @@ public:
         {
             auto remoteEndpoint = cpClient->get_socket ().remote_endpoint ();
             auto connection = std::make_shared <ConnectionImpl <WebSocket> > (
+                desc_.app,
                 desc_.resourceManager,
                 desc_.source,
                 *this,

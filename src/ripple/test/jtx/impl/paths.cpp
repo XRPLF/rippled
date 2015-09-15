@@ -27,7 +27,7 @@ namespace test {
 namespace jtx {
 
 void
-paths::operator()(Env const& env, JTx& jt) const
+paths::operator()(Env& env, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto const from = env.lookup(
@@ -41,7 +41,7 @@ paths::operator()(Env const& env, JTx& jt) const
         std::make_shared<RippleLineCache>(
             env.open()), from, to,
                 in_, amount,
-                    depth_, limit_, {}, fp);
+                    depth_, limit_, {}, fp, env.app());
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (found && ! found->isDefault())
@@ -80,7 +80,7 @@ path::append_one(BookSpec const& book)
 }
 
 void
-path::operator()(Env const& env, JTx& jt) const
+path::operator()(Env& env, JTx& jt) const
 {
     jt.jv["Paths"].append(jv_);
 }

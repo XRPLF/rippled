@@ -57,7 +57,7 @@ Env::Env (beast::unit_test::suite& test_)
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
     , closed_ (std::make_shared<Ledger>(
-        create_genesis, config))
+        create_genesis, config, app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {
@@ -83,7 +83,8 @@ Env::close(NetClock::time_point const& closeTime)
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        open_ledger, *closed_);
+        open_ledger, *closed_,
+        app().timeKeeper().closeTime());
     next->setClosed();
 #if 0
     // Build a SHAMap, put all the transactions

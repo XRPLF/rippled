@@ -835,7 +835,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 &qualityDirDescriber, std::placeholders::_1,
                 std::placeholders::_2, saTakerPays.getCurrency (),
                 uPaysIssuerID, saTakerGets.getCurrency (),
-                uGetsIssuerID, uRate));
+                uGetsIssuerID, uRate, std::ref(ctx_.app)));
     }
 
     if (result == tesSUCCESS)
