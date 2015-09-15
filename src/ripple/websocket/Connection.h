@@ -270,9 +270,9 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     else
     {
         RPC::Context context {
-            jvRequest, getApp(), loadType, m_netOPs, getApp().getLedgerMaster(), role,
-            this->shared_from_this (),
-            {suspend, "WSClient::command"}};
+            jvRequest, getApp(), loadType, m_netOPs, getApp().getLedgerMaster(),
+            role, {getApp(), suspend, "WSClient::command"},
+            this->shared_from_this ()};
         RPC::doCommand (context, jvResult[jss::result]);
     }
 

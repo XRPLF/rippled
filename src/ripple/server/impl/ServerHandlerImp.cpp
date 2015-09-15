@@ -352,7 +352,7 @@ ServerHandlerImp::processRequest (
 
     RPC::Context context {
         params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
-                nullptr, {suspend, "RPC-Coroutine"}};
+        {app_, suspend, "RPC-Coroutine"}};
 
     std::string response;
 
