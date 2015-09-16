@@ -699,7 +699,7 @@ void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
     }
 
     auto tx = std::make_shared<Transaction> (
-        trans, Validate::NO, directSigVerify, reason);
+        trans, Validate::NO, directSigVerify, reason, app_);
 
     m_job_queue.addJob (jtTRANSACTION, "submitTxn", [this, tx] (Job&) {
         auto t = tx;
@@ -1746,7 +1746,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                 txnMeta.clear ();
 
             auto txn = Transaction::transactionFromSQL (
-                ledgerSeq, status, rawTxn, Validate::NO);
+                ledgerSeq, status, rawTxn, Validate::NO, app_);
 
             if (txnMeta.empty ())
             { // Work around a bug that could leave the metadata missing
@@ -1824,15 +1824,17 @@ NetworkOPsImp::getTxsAccount (
 {
     static std::uint32_t const page_length (200);
 
+    Application& app = app_;
     NetworkOPsImp::AccountTxs ret;
 
-    auto bound = [&ret](
+    auto bound = [&ret, &app](
         std::uint32_t ledger_index,
         std::string const& status,
         Blob const& rawTxn,
         Blob const& rawMeta)
     {
-        convertBlobsToTxResult (ret, ledger_index, status, rawTxn, rawMeta);
+        convertBlobsToTxResult (
+            ret, ledger_index, status, rawTxn, rawMeta, app);
     };
 
     accountTxPage(app_.getTxnDB (), app_.accountIDCache(),

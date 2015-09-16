@@ -26,12 +26,16 @@
 
 namespace ripple {
 
+class Application;
+
 // Tracks all transactions in memory
 
 class TransactionMaster
 {
 public:
-    TransactionMaster ();
+    TransactionMaster (Application& app);
+    TransactionMaster (TransactionMaster const&) = delete;
+    TransactionMaster& operator= (TransactionMaster const&) = delete;
 
     Transaction::pointer            fetch (uint256 const& , bool checkDisk);
     STTx::pointer  fetch (std::shared_ptr<SHAMapItem> const& item, SHAMapTreeNode:: TNType type,
@@ -44,6 +48,7 @@ public:
     TaggedCache <uint256, Transaction>& getCache();
 
 private:
+    Application& mApp;
     TaggedCache <uint256, Transaction> mCache;
 };
 

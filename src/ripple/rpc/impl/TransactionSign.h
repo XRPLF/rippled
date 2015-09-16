@@ -26,6 +26,7 @@
 namespace ripple {
 
 // Forward declarations
+class Application;
 class LoadFeeTrack;
 
 namespace RPC {
@@ -78,7 +79,7 @@ Json::Value transactionSign (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger);
 
 /** Returns a Json::objectValue. */
@@ -87,7 +88,7 @@ Json::Value transactionSubmit (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction);
 
@@ -97,7 +98,7 @@ Json::Value transactionSignFor (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger);
 
 /** Returns a Json::objectValue. */
@@ -106,7 +107,7 @@ Json::Value transactionSubmitMultiSigned (
     NetworkOPs::FailHard failType,
     Role role,
     int validatedLedgerAge,
-    LoadFeeTrack const& feeTrack,
+    Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction);
 

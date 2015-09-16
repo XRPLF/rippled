@@ -49,7 +49,7 @@ Json::Value doSubmitMultiSigned (RPC::Context& context)
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app.getFeeTrack(),
+        context.app,
         context.ledgerMaster.getCurrentLedger(),
         RPC::getProcessTxnFn (context.netOps));
 }

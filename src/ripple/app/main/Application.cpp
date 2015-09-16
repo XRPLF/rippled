@@ -341,6 +341,8 @@ public:
         , timeKeeper_ (make_TimeKeeper(
             deprecatedLogs().journal("TimeKeeper")))
 
+        , m_txMaster (*this)
+
         , m_nodeStoreScheduler (*this)
 
         , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (

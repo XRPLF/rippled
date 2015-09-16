@@ -31,15 +31,15 @@
 namespace ripple {
 
 Transaction::Transaction (STTx::ref stx, Validate validate,
-    SigVerify sigVerify, std::string& reason)
+    SigVerify sigVerify, std::string& reason, Application& app)
     noexcept
     : mTransaction (stx)
+    , mApp (app)
 {
     try
     {
         mFromPubKey.setAccountPublic (mTransaction->getSigningPubKey ());
         mTransactionID  = mTransaction->getTransactionID ();
-        mAccountFrom    = mTransaction->getAccountID(sfAccount);
     }
     catch (std::exception& e)
     {
@@ -61,7 +61,7 @@ Transaction::Transaction (STTx::ref stx, Validate validate,
 }
 
 Transaction::pointer Transaction::sharedTransaction (
-    Blob const& vucTransaction, Validate validate)
+    Blob const& vucTransaction, Validate validate, Application& app)
 {
     try
     {
@@ -69,7 +69,7 @@ Transaction::pointer Transaction::sharedTransaction (
         std::string reason;
 
         return std::make_shared<Transaction> (std::make_shared<STTx> (sit),
-            validate, getApp().getHashRouter().sigVerify(), reason);
+            validate, app.getHashRouter().sigVerify(), reason, app);
     }
     catch (std::exception& e)
     {
@@ -90,7 +90,7 @@ Transaction::pointer Transaction::sharedTransaction (
 
 bool Transaction::checkSign (std::string& reason, SigVerify sigVerify) const
 {
-    bool const allowMultiSign = getApp().getLedgerMaster().
+    bool const allowMultiSign = mApp.getLedgerMaster().
         getValidatedRules().enabled (featureMultiSign, getConfig().features);
 
     if (! mFromPubKey.isValid ())
@@ -135,7 +135,8 @@ Transaction::pointer Transaction::transactionFromSQL (
     boost::optional<std::uint64_t> const& ledgerSeq,
     boost::optional<std::string> const& status,
     Blob const& rawTxn,
-    Validate validate)
+    Validate validate,
+    Application& app)
 {
     std::uint32_t const inLedger =
         rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
@@ -144,14 +145,14 @@ Transaction::pointer Transaction::transactionFromSQL (
     auto txn = std::make_shared<STTx> (it);
     std::string reason;
     auto tr = std::make_shared<Transaction> (txn, validate,
-        getApp().getHashRouter().sigVerify(), reason);
+        app.getHashRouter().sigVerify(), reason, app);
 
     tr->setStatus (sqlTransactionStatus (status));
     tr->setLedger (inLedger);
     return tr;
 }
 
-Transaction::pointer Transaction::load (uint256 const& id)
+Transaction::pointer Transaction::load (uint256 const& id, Application& app)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
             "FROM Transactions WHERE TransID='";
@@ -162,7 +163,7 @@ Transaction::pointer Transaction::load (uint256 const& id)
     boost::optional<std::string> status;
     Blob rawTxn;
     {
-        auto db = getApp().getTxnDB ().checkoutDb ();
+        auto db = app.getTxnDB ().checkoutDb ();
         soci::blob sociRawTxnBlob (*db);
         soci::indicator rti;
 
@@ -175,7 +176,7 @@ Transaction::pointer Transaction::load (uint256 const& id)
     }
 
     return Transaction::transactionFromSQL (
-        ledgerSeq, status, rawTxn, Validate::YES);
+        ledgerSeq, status, rawTxn, Validate::YES, app);
 }
 
 // options 1 to include the date of the transaction
@@ -190,7 +191,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
         if (options == 1)
         {
-            auto ledger = getApp().getLedgerMaster ().
+            auto ledger = mApp.getLedgerMaster ().
                     getLedgerBySeq (mInLedger);
             if (ledger)
                 ret[jss::date] = ledger->info().closeTime;
