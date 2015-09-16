@@ -23,6 +23,7 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/core/Config.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
@@ -50,6 +51,7 @@ class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
+class AcceptedLedger;
 class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
@@ -90,7 +92,7 @@ public:
     Application ();
 
     virtual ~Application () = default;
-
+    virtual Config const& config() const = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual shamap::Family&         family() = 0;
@@ -99,7 +101,7 @@ public:
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual CachedSLEs&             cachedSLEs() = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;
-    virtual HashRouter&            getHashRouter () = 0;
+    virtual HashRouter&             getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
@@ -108,6 +110,8 @@ public:
     virtual NodeStore::Database&    getNodeStore () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual InboundTransactions&    getInboundTransactions () = 0;
+    virtual TaggedCache <uint256, AcceptedLedger>&
+                                    getAcceptedLedgerCache () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
@@ -123,6 +127,8 @@ public:
     virtual DatabaseCon& getLedgerDB () = 0;
 
     virtual std::chrono::milliseconds getIOLatency () = 0;
+
+    virtual bool serverOkay (std::string& reason) = 0;
 
     /** Retrieve the "wallet database"
 
@@ -140,27 +146,10 @@ public:
     virtual void signalStop () = 0;
 };
 
-/** Create an instance of the Application object.
-    As long as there are legacy calls to getApp it is not safe
-    to create more than one Application object at a time.
-*/
 std::unique_ptr <Application>
-make_Application(Logs& logs);
+make_Application(Config const& config, Logs& logs);
 
-// VFALCO DEPRECATED
-//
-//        Please do not write new code that calls getApp(). Instead,
-//        Use dependency injection to construct your class with a
-//        reference to the desired interface (Application in this case).
-//        Or better yet, instead of relying on the entire Application
-//        object, construct with just the interfaces that you need.
-//
-//        When working in existing code, try to clean it up by rewriting
-//        calls to getApp to use a data member instead, and inject the
-//        needed interfaces in the constructor.
-//
-//        http://en.wikipedia.org/wiki/Dependency_injection
-//
+// DEPRECATED
 extern Application& getApp ();
 
 }

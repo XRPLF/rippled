@@ -37,7 +37,7 @@ namespace ripple {
 // XXX Might allow domain for manual connections.
 Json::Value doConnect (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
+    auto lock = beast::make_lock(context.app.getMasterMutex());
     if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
@@ -61,7 +61,7 @@ Json::Value doConnect (RPC::Context& context)
         context.params[jss::ip].asString ());
 
     if (! is_unspecified (ip))
-        getApp().overlay ().connect (ip.at_port(iPort));
+        context.app.overlay ().connect (ip.at_port(iPort));
 
     return RPC::makeObjectValue ("connecting");
 }

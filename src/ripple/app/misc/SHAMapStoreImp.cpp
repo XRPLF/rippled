@@ -160,7 +160,11 @@ SHAMapStoreImp::SavedStateDB::setLastRotated (LedgerIndex seq)
             ;
 }
 
-SHAMapStoreImp::SHAMapStoreImp (Setup const& setup,
+//------------------------------------------------------------------------------
+
+SHAMapStoreImp::SHAMapStoreImp (
+        Application& app,
+        Setup const& setup,
         Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
@@ -168,6 +172,7 @@ SHAMapStoreImp::SHAMapStoreImp (Setup const& setup,
         TransactionMaster& transactionMaster,
         BasicConfig const& config)
     : SHAMapStore (parent)
+    , app_ (app)
     , setup_ (setup)
     , scheduler_ (scheduler)
     , journal_ (journal)
@@ -262,12 +267,12 @@ void
 SHAMapStoreImp::run()
 {
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
-    netOPs_ = &getApp().getOPs();
-    ledgerMaster_ = &getApp().getLedgerMaster();
-    fullBelowCache_ = &getApp().family().fullbelow();
-    treeNodeCache_ = &getApp().family().treecache();
-    transactionDb_ = &getApp().getTxnDB();
-    ledgerDb_ = &getApp().getLedgerDB();
+    netOPs_ = &app_.getOPs();
+    ledgerMaster_ = &app_.getLedgerMaster();
+    fullBelowCache_ = &app_.family().fullbelow();
+    treeNodeCache_ = &app_.family().treecache();
+    transactionDb_ = &app_.getTxnDB();
+    ledgerDb_ = &app_.getLedgerDB();
 
     if (setup_.advisoryDelete)
         canDelete_ = state_db_.getCanDelete ();
@@ -684,7 +689,8 @@ setup_SHAMapStore (Config const& c)
 }
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore (SHAMapStore::Setup const& s,
+make_SHAMapStore (Application& app,
+        SHAMapStore::Setup const& s,
         beast::Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
@@ -692,7 +698,7 @@ make_SHAMapStore (SHAMapStore::Setup const& s,
         TransactionMaster& transactionMaster,
         BasicConfig const& config)
 {
-    return std::make_unique<SHAMapStoreImp>(s, parent, scheduler,
+    return std::make_unique<SHAMapStoreImp>(app, s, parent, scheduler,
             journal, nodeStoreJournal, transactionMaster,
             config);
 }

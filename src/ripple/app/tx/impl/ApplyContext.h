@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 #define RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STTx.h>
@@ -37,11 +38,12 @@ class ApplyContext
 {
 public:
     explicit
-    ApplyContext (OpenView& base,
+    ApplyContext (Application& app, OpenView& base,
         STTx const& tx, ApplyFlags flags,
             Config const& config,
                 beast::Journal = {});
 
+    Application& app;
     STTx const& tx;
     Config const& config;
     beast::Journal const journal;

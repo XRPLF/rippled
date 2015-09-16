@@ -54,7 +54,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 {
     std::vector<PathRequest::wptr> requests;
 
-    LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
+    LoadEvent::autoptr event (app_.getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
 
     // Get the ledger and cache we should be using
     RippleLineCache::pointer cache;
@@ -64,7 +64,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
         cache = getLineCache (inLedger, true);
     }
 
-    bool newRequests = getApp().getLedgerMaster().isNewPathRequest();
+    bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
     mJournal.trace << "updateAll seq=" << cache->getLedger()->seq() << ", " <<
@@ -132,7 +132,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
                 }
             }
 
-            mustBreak = !newRequests && getApp().getLedgerMaster().isNewPathRequest();
+            mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
             if (mustBreak) // We weren't handling new requests and then there was a new request
                 break;
 
@@ -144,11 +144,11 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
         }
         else if (newRequests)
         { // we only did new requests, so we always need a last pass
-            newRequests = getApp().getLedgerMaster().isNewPathRequest();
+            newRequests = app_.getLedgerMaster().isNewPathRequest();
         }
         else
         { // check if there are any new requests, otherwise we are done
-            newRequests = getApp().getLedgerMaster().isNewPathRequest();
+            newRequests = app_.getLedgerMaster().isNewPathRequest();
             if (!newRequests) // We did a full pass and there are no new requests
                 return;
         }
@@ -212,7 +212,7 @@ Json::Value PathRequests::makePathRequest(
     {
         subscriber->setPathRequest (req);
         insertPathRequest (req);
-        getApp().getLedgerMaster().newPathRequest();
+        app_.getLedgerMaster().newPathRequest();
     }
     return result;
 }
@@ -246,7 +246,7 @@ Json::Value PathRequests::makeLegacyPathRequest(
     else
     {
         insertPathRequest (req);
-        getApp().getLedgerMaster().newPathRequest();
+        app_.getLedgerMaster().newPathRequest();
     }
 
     return result;

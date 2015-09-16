@@ -64,7 +64,7 @@ struct Regression_test : public beast::unit_test::suite
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
             OpenView accum(&*next);
 
-            auto const result = ripple::apply(
+            auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapENABLE_TESTING,
                     directSigVerify, env.config,
                         env.journal);
@@ -92,7 +92,7 @@ struct Regression_test : public beast::unit_test::suite
                 
             OpenView accum(&*next);
 
-            auto const result = ripple::apply(
+            auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapENABLE_TESTING,
                     directSigVerify, env.config,
                         env.journal);

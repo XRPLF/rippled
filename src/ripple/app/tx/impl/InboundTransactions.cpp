@@ -62,16 +62,19 @@ class InboundTransactionsImp
     , public beast::Stoppable
 {
 public:
+    Application& app_;
 
     using u256_acq_pair = std::pair<uint256, TransactionAcquire::pointer>;
 
     InboundTransactionsImp (
+            Application& app,
             clock_type& clock,
             Stoppable& parent,
             beast::insight::Collector::ptr const& collector,
             std::function <void (uint256 const&,
                 std::shared_ptr <SHAMap> const&)> gotSet)
         : Stoppable ("InboundTransactions", parent)
+        , app_ (app)
         , m_clock (clock)
         , m_seq (0)
         , m_zeroSet (m_map[uint256()])
@@ -79,7 +82,7 @@ public:
     {
         m_zeroSet.mSet = std::make_shared<SHAMap> (
             SHAMapType::TRANSACTION, uint256(),
-            getApp().family(), deprecatedLogs().journal("SHAMap"));
+            app_.family(), deprecatedLogs().journal("SHAMap"));
         m_zeroSet.mSet->setUnbacked();
     }
 
@@ -123,7 +126,7 @@ public:
             if (!acquire || isStopping ())
                 return std::shared_ptr <SHAMap> ();
 
-            ta = std::make_shared <TransactionAcquire> (hash, m_clock);
+            ta = std::make_shared <TransactionAcquire> (app_, hash, m_clock);
 
             auto &obj = m_map[hash];
             obj.mAcquire = ta;
@@ -293,6 +296,7 @@ InboundTransactions::~InboundTransactions() = default;
 
 std::unique_ptr <InboundTransactions>
 make_InboundTransactions (
+    Application& app,
     InboundLedgers::clock_type& clock,
     beast::Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
@@ -300,7 +304,7 @@ make_InboundTransactions (
         std::shared_ptr <SHAMap> const&)> gotSet)
 {
     return std::make_unique <InboundTransactionsImp>
-        (clock, parent, collector, std::move (gotSet));
+        (app, clock, parent, collector, std::move (gotSet));
 }
 
 } // ripple

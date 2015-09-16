@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,30 +17,46 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_TEST_NETWORK_H_INCLUDED
+#define RIPPLE_TEST_NETWORK_H_INCLUDED
+
 #include <ripple/app/main/Application.h>
-#include <ripple/json/JsonPropertyStream.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/Context.h>
+#include <ripple/basics/Log.h>
+#include <memory>
+#include <vector>
 
 namespace ripple {
+namespace test {
+namespace mao {
 
-Json::Value doPrint (RPC::Context& context)
+struct Node
 {
-    JsonPropertyStream stream;
-    if (context.params.isObject()
-        && context.params[jss::params].isArray()
-        && context.params[jss::params][0u].isString ())
-    {
-        context.app.write (stream, context.params[jss::params][0u].asString());
-    }
-    else
-    {
-        context.app.write (stream);
-    }
+    Config config;
+    Logs logs;
+    std::unique_ptr<Application> app;
 
-    return stream.top();
-}
+    Node()
+        : app(make_Application(config, logs))
+    {
+    }
+};
 
+class Network
+{
+private:
+    std::vector<std::unique_ptr<Node>> node_;
+
+public:
+    explicit
+    Network (std::size_t n)
+    {
+        while(n--)
+            node_.push_back(std::make_unique<Node>());
+    }
+};
+
+} // mao
+} // test
 } // ripple
+
+#endif

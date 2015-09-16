@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_LOCALCREDENTIALS_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOCALCREDENTIALS_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <mutex>
 #include <string>
@@ -30,7 +31,7 @@ namespace ripple {
 class LocalCredentials
 {
 public:
-    LocalCredentials () = default;
+    LocalCredentials (Application& app);
     LocalCredentials (LocalCredentials const&) = delete;
     LocalCredentials& operator= (LocalCredentials const&) = delete;
 
@@ -53,6 +54,7 @@ private:
     bool nodeIdentityCreate ();
 
 private:
+    Application& app_;
     std::recursive_mutex mLock;
 
     RippleAddress mNodePublicKey;

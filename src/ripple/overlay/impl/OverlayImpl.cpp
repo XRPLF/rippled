@@ -125,6 +125,7 @@ OverlayImpl::Timer::on_timer (error_code ec)
 //------------------------------------------------------------------------------
 
 OverlayImpl::OverlayImpl (
+    Application& app,
     Setup const& setup,
     Stoppable& parent,
     ServerHandler& serverHandler,
@@ -133,6 +134,7 @@ OverlayImpl::OverlayImpl (
     boost::asio::io_service& io_service,
     BasicConfig const& config)
     : Overlay (parent)
+    , app_ (app)
     , io_service_ (io_service)
     , work_ (boost::in_place(std::ref(io_service_)))
     , strand_ (io_service_)
@@ -242,12 +244,12 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     RippleAddress publicKey;
     std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue, journal, getApp());
+        sharedValue, journal, app_);
     if(! success)
         return handoff;
 
     std::string name;
-    bool const cluster = getApp().getUNL().nodeInCluster(
+    bool const cluster = app_.getUNL().nodeInCluster(
         publicKey, name);
 
     auto const result = m_peerFinder->activate (slot,
@@ -263,7 +265,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto const peer = std::make_shared<PeerImp>(id,
+    auto const peer = std::make_shared<PeerImp>(app_, id,
         remote_endpoint, slot, std::move(request), hello, publicKey,
             consumer, std::move(ssl_bundle), *this);
     {
@@ -351,7 +353,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
         return;
     }
 
-    auto const p = std::make_shared<ConnectAttempt>(
+    auto const p = std::make_shared<ConnectAttempt>(app_,
         io_service_, beast::IPAddressConversion::to_asio_endpoint(remote_endpoint),
             usage, setup_.context, next_id_++, slot,
                 deprecatedLogs().journal("Peer"), *this);
@@ -635,7 +637,7 @@ OverlayImpl::onManifests (
     std::shared_ptr<protocol::TMManifests> const& m,
         std::shared_ptr<PeerImp> const& from)
 {
-    auto& hashRouter = getApp().getHashRouter();
+    auto& hashRouter = app_.getHashRouter();
     auto const n = m->list_size();
     auto const& journal = from->pjournal();
 
@@ -659,7 +661,7 @@ OverlayImpl::onManifests (
 
             if (result == ManifestDisposition::accepted)
             {
-                auto db = getApp ().getWalletDB ().checkoutDb ();
+                auto db = app_.getWalletDB ().checkoutDb ();
 
                 soci::transaction tr(*db);
                 static const char* const sql =
@@ -893,7 +895,7 @@ OverlayImpl::relay (protocol::TMProposeSet& m,
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
     std::set<Peer::id_t> skip;
-    if (! getApp().getHashRouter().swapSet (
+    if (! app_.getHashRouter().swapSet (
             uid, skip, SF_RELAYED))
         return;
     auto const sm = std::make_shared<Message>(
@@ -914,7 +916,7 @@ OverlayImpl::relay (protocol::TMValidation& m,
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
     std::set<Peer::id_t> skip;
-    if (! getApp().getHashRouter().swapSet (
+    if (! app_.getHashRouter().swapSet (
             uid, skip, SF_RELAYED))
         return;
     auto const sm = std::make_shared<Message>(
@@ -1031,6 +1033,7 @@ setup_Overlay (BasicConfig const& config)
 
 std::unique_ptr <Overlay>
 make_Overlay (
+    Application& app,
     Overlay::Setup const& setup,
     beast::Stoppable& parent,
     ServerHandler& serverHandler,
@@ -1039,7 +1042,7 @@ make_Overlay (
     boost::asio::io_service& io_service,
     BasicConfig const& config)
 {
-    return std::make_unique <OverlayImpl> (setup, parent, serverHandler,
+    return std::make_unique<OverlayImpl>(app, setup, parent, serverHandler,
         resourceManager, resolver, io_service, config);
 }
 

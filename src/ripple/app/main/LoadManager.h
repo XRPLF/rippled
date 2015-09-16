@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -71,7 +72,8 @@ public:
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager (beast::Stoppable& parent, beast::Journal journal);
+make_LoadManager (Application& app,
+    beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

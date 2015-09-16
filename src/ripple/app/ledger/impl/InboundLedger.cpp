@@ -58,8 +58,8 @@ enum
 };
 
 InboundLedger::InboundLedger (
-    uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
-    : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
+    Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
+    : PeerSet (app, hash, ledgerAcquireTimeoutMillis, false, clock,
         deprecatedLogs().journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)
@@ -109,7 +109,7 @@ InboundLedger::~InboundLedger ()
     for (auto& entry : mReceivedData)
     {
         if (entry.second->type () == protocol::liAS_NODE)
-            getApp().getInboundLedgers().gotStaleData(entry.second);
+            app_.getInboundLedgers().gotStaleData(entry.second);
     }
 
 }
@@ -132,14 +132,14 @@ void InboundLedger::init (ScopedLockType& collectionLock)
         mLedger->setImmutable ();
 
         if (mReason != fcHISTORY)
-            getApp ().getLedgerMaster ().storeLedger (mLedger);
+            app_.getLedgerMaster ().storeLedger (mLedger);
 
         // Check if this could be a newer fully-validated ledger
         if (mReason == fcVALIDATION ||
             mReason == fcCURRENT ||
             mReason == fcCONSENSUS)
         {
-            getApp ().getLedgerMaster ().checkAccept (mLedger);
+            app_.getLedgerMaster ().checkAccept (mLedger);
         }
     }
 }
@@ -154,20 +154,20 @@ bool InboundLedger::tryLocal ()
     if (!mHaveHeader)
     {
         // Nothing we can do without the ledger header
-        auto node = getApp().getNodeStore ().fetch (mHash);
+        auto node = app_.getNodeStore ().fetch (mHash);
 
         if (!node)
         {
             Blob data;
 
-            if (!getApp().getLedgerMaster ().getFetchPack (mHash, data))
+            if (!app_.getLedgerMaster ().getFetchPack (mHash, data))
                 return false;
 
             if (m_journal.trace) m_journal.trace <<
                 "Ledger header found in fetch pack";
             mLedger = std::make_shared<Ledger> (
                 data.data(), data.size(), true, getConfig());
-            getApp().getNodeStore ().store (
+            app_.getNodeStore ().store (
                 hotLEDGER, std::move (data), mHash);
         }
         else
@@ -199,7 +199,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            TransactionStateSF filter;
+            TransactionStateSF filter(app_);
 
             if (mLedger->txMap().fetchRoot (
                 mLedger->info().txHash, &filter))
@@ -227,7 +227,7 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            AccountStateSF filter;
+            AccountStateSF filter(app_);
 
             if (mLedger->stateMap().fetchRoot (
                 mLedger->info().accountHash, &filter))
@@ -313,7 +313,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 /** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    getApp().overlay().selectPeers (*this,
+    app_.overlay().selectPeers (*this,
         (getPeerCount() > 0) ? peerCountStart : peerCountAdd,
         ScoreHasLedger (getHash(), mSeq));
 }
@@ -331,11 +331,11 @@ static void LADispatch (
 {
     if (la->isComplete() && !la->isFailed())
     {
-        getApp().getLedgerMaster().checkAccept(la->getLedger());
-        getApp().getLedgerMaster().tryAdvance();
+        la->app().getLedgerMaster().checkAccept(la->getLedger());
+        la->app().getLedgerMaster().tryAdvance();
     }
     else
-        getApp().getInboundLedgers().logFailure (la->getHash(), la->getSeq());
+        la->app().getInboundLedgers().logFailure (la->getHash(), la->getSeq());
 
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
@@ -365,13 +365,13 @@ void InboundLedger::done ()
         mLedger->setClosed ();
         mLedger->setImmutable ();
         if (mReason != fcHISTORY)
-            getApp().getLedgerMaster ().storeLedger (mLedger);
-        getApp().getInboundLedgers().onLedgerFetched(mReason);
+            app_.getLedgerMaster ().storeLedger (mLedger);
+        app_.getInboundLedgers().onLedgerFetched(mReason);
     }
 
     // We hold the PeerSet lock, so must dispatch
     auto that = shared_from_this ();
-    getApp().getJobQueue ().addJob (
+    app_.getJobQueue ().addJob (
         jtLEDGER_DATA, "triggers",
         [that, triggers] (Job&) { LADispatch(that, triggers); });
 }
@@ -475,7 +475,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                          it != end; ++it)
                     {
                         Peer::ptr iPeer (
-                            getApp().overlay ().findPeerByShortID (it->first));
+                            app_.overlay ().findPeerByShortID (it->first));
 
                         if (iPeer)
                         {
@@ -548,7 +548,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             // VFALCO Why 256? Make this a constant
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            AccountStateSF filter;
+            AccountStateSF filter(app_);
 
             // Release the lock while we process the large state map
             sl.unlock();
@@ -632,7 +632,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             std::vector<uint256> nodeHashes;
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
-            TransactionStateSF filter;
+            TransactionStateSF filter(app_);
             mLedger->txMap().getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
 
@@ -786,7 +786,7 @@ bool InboundLedger::takeHeader (std::string const& data)
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data.data(), data.size());
-    getApp().getNodeStore ().store (
+    app_.getNodeStore ().store (
         hotLEDGER, std::move (s.modData ()), mHash);
 
     progress ();
@@ -823,7 +823,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    TransactionStateSF tFilter;
+    TransactionStateSF tFilter(app_);
 
     while (nodeIDit != nodeIDs.cend ())
     {
@@ -890,7 +890,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    AccountStateSF tFilter;
+    AccountStateSF tFilter(app_);
 
     while (nodeIDit != nodeIDs.cend ())
     {
@@ -954,7 +954,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    AccountStateSF tFilter;
+    AccountStateSF tFilter(app_);
     san += mLedger->stateMap().addRootNode (
         mLedger->info().accountHash, data, snfWIRE, &tFilter);
     return san.isGood();
@@ -978,7 +978,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
     }
 
-    TransactionStateSF tFilter;
+    TransactionStateSF tFilter(app_);
     san += mLedger->txMap().addRootNode (
         mLedger->info().txHash, data, snfWIRE, &tFilter);
     return san.isGood();
@@ -997,7 +997,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveState)
     {
-        AccountStateSF filter;
+        AccountStateSF filter(app_);
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
         {
@@ -1008,7 +1008,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveTransactions)
     {
-        TransactionStateSF filter;
+        TransactionStateSF filter(app_);
         // VFALCO NOTE What's the number 4?
         for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
         {
