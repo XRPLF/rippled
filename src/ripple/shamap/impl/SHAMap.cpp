@@ -501,7 +501,11 @@ SHAMap::peekFirstItem(NodeStack& stack) const
     stack.push({root_.get(), SHAMapNodeID{}});
     SHAMapTreeNode* node = firstBelow(root_.get(), stack);
     if (!node)
+    {
+        while (!stack.empty())
+            stack.pop();
         return nullptr;
+    }
     return node->peekItem().get();
 }
 
@@ -604,11 +608,9 @@ SHAMap::upper_bound(uint256 const& id) const
             auto leaf = static_cast<SHAMapTreeNode*>(node);
             if (leaf->peekItem()->key() > id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
-            stack.pop();
         }
         else
         {
-            stack.pop();
             auto inner = static_cast<SHAMapInnerNode*>(node);
             for (auto branch = nodeID.selectBranch(id) + 1; branch < 16; ++branch)
             {
@@ -625,6 +627,7 @@ SHAMap::upper_bound(uint256 const& id) const
                 }
             }
         }
+        stack.pop();
     }
     return end();
 }
