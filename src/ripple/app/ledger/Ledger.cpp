@@ -1119,7 +1119,8 @@ qualityDirDescriber (
     SLE::ref sle, bool isNew,
     Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
     Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t& uRate)
+    const std::uint64_t& uRate,
+    Application& app)
 {
     sle->setFieldH160 (sfTakerPaysCurrency, uTakerPaysCurrency);
     sle->setFieldH160 (sfTakerPaysIssuer, uTakerPaysIssuer);
@@ -1129,7 +1130,7 @@ qualityDirDescriber (
     if (isNew)
     {
         // VFALCO NO! This shouldn't be done here!
-        getApp().getOrderBookDB().addOrderBook(
+        app.getOrderBookDB().addOrderBook(
             {{uTakerPaysCurrency, uTakerPaysIssuer},
                 {uTakerGetsCurrency, uTakerGetsIssuer}});
     }

@@ -1396,9 +1396,10 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
+        test::jtx::Env env(*this);
         Config const config;
         std::shared_ptr<const ReadView> ledger =
-            std::make_shared<Ledger>(create_genesis, config, getApp().family());
+            std::make_shared<Ledger>(create_genesis, config, env.app().family());
         LoadFeeTrack const feeTrack;
 
         {

@@ -496,7 +496,7 @@ qualityDirDescriber (
     SLE::ref, bool,
     Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
     Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t & uRate);
+    const std::uint64_t & uRate, Application& app);
 
 } // ripple
 
