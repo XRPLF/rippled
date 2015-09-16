@@ -33,10 +33,9 @@
 #include <beast/chrono/manual_clock.h>
 
 namespace ripple {
-namespace shamap {
 namespace tests {
 
-class TestFamily : public shamap::Family
+class TestFamily : public Family
 {
 private:
     TestStopwatch clock_;
@@ -108,7 +107,6 @@ public:
 };
 
 } // tests
-} // shamap
 } // ripple
 
 #endif

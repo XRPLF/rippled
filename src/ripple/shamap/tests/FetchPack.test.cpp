@@ -30,7 +30,6 @@
 #include <stdexcept>
 
 namespace ripple {
-namespace shamap {
 namespace tests {
 
 class FetchPack_test : public beast::unit_test::suite
@@ -164,6 +163,5 @@ public:
 BEAST_DEFINE_TESTSUITE(FetchPack,shamap,ripple);
 
 } // tests
-} // shamap
 } // ripple
 

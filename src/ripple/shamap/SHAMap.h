@@ -79,7 +79,6 @@ using MissingNodeHandler = std::function <void (std::uint32_t refNum)>;
 class SHAMap
 {
 private:
-    using Family = shamap::Family;
     using NodeStack = std::stack<std::pair<SHAMapAbstractNode*, SHAMapNodeID>,
                     std::vector<std::pair<SHAMapAbstractNode*, SHAMapNodeID>>>;
 
@@ -114,6 +113,12 @@ public:
         uint256 const& hash,
         Family& f,
         beast::Journal journal);
+
+    Family&
+    family()
+    {
+        return f_;
+    }
 
     //--------------------------------------------------------------------------
 

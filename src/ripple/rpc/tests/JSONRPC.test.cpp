@@ -1398,7 +1398,7 @@ public:
     {
         Config const config;
         std::shared_ptr<const ReadView> ledger =
-            std::make_shared<Ledger>(create_genesis, config);
+            std::make_shared<Ledger>(create_genesis, config, getApp().family());
         LoadFeeTrack const feeTrack;
 
         {

@@ -26,7 +26,6 @@
 #include <cstdint>
 
 namespace ripple {
-namespace shamap {
 
 class Family
 {
@@ -62,7 +61,6 @@ public:
     missing_node (std::uint32_t refNum) = 0;
 };
 
-} // shamap
 } // ripple
 
 #endif

@@ -36,7 +36,7 @@ class SkipList_test : public beast::unit_test::suite
         {
             Config const config;
             auto prev =
-                std::make_shared<Ledger>(create_genesis, config);
+                std::make_shared<Ledger>(create_genesis, config, getApp().family());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {

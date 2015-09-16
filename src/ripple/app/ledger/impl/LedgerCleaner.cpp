@@ -301,7 +301,7 @@ public:
             return false;
         }
 
-        Ledger::pointer dbLedger = Ledger::loadByIndex(ledgerIndex);
+        Ledger::pointer dbLedger = loadByIndex(ledgerIndex, app_);
         if (! dbLedger ||
             (dbLedger->getHash() != ledgerHash) ||
             (dbLedger->info().parentHash != nodeLedger->info().parentHash))

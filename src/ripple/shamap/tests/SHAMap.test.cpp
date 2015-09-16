@@ -26,7 +26,6 @@
 #include <beast/utility/Journal.h>
 
 namespace ripple {
-namespace shamap {
 namespace tests {
 
 inline bool operator== (SHAMapItem const& a, SHAMapItem const& b) { return a.key() == b.key(); }
@@ -141,5 +140,4 @@ public:
 BEAST_DEFINE_TESTSUITE(SHAMap,ripple_app,ripple);
 
 } // tests
-} // shamap
 } // ripple
