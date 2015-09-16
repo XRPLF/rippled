@@ -147,10 +147,11 @@ class View_test
     testLedger()
     {
         using namespace jtx;
+        Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
-                create_genesis, config);
+                create_genesis, config, env.app().family());
         auto const ledger =
             std::make_shared<Ledger>(
                 open_ledger, *genesis);
@@ -409,13 +410,13 @@ class View_test
     testSles()
     {
         using namespace jtx;
+        Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger> (
-                create_genesis, config);
-        auto const ledger =
-            std::make_shared<Ledger> (
-                open_ledger, *genesis);
+                create_genesis, config, env.app().family());
+        auto const ledger = std::make_shared<Ledger>(
+            open_ledger, *genesis);
         auto setup123 = [&ledger, this]()
         {
             // erase middle element
@@ -489,10 +490,11 @@ class View_test
         // ApplyView on that, then another ApplyView,
         // erase the item, apply.
         {
+            Env env(*this);
             Config const config;
             std::shared_ptr<Ledger const> const genesis =
                 std::make_shared<Ledger>(
-                    create_genesis, config);
+                    create_genesis, config, env.app().family());
             auto const ledger =
                 std::make_shared<Ledger>(
                     open_ledger, *genesis);

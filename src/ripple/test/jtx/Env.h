@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/basics/chrono.h>
@@ -146,6 +147,12 @@ public:
     Env& operator= (Env const&) = delete;
 
     Env (beast::unit_test::suite& test_);
+
+    Application&
+    app()
+    {
+        return getApp();
+    }
 
     /** Returns the open ledger.
 

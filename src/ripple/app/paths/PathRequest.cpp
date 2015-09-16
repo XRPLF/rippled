@@ -37,11 +37,13 @@
 namespace ripple {
 
 PathRequest::PathRequest (
+    Application& app,
     const std::shared_ptr<InfoSub>& subscriber,
     int id,
     PathRequests& owner,
     beast::Journal journal)
-        : m_journal (journal)
+        : app_ (app)
+        , m_journal (journal)
         , mOwner (owner)
         , wpSubscriber (subscriber)
         , jvStatus (Json::objectValue)
@@ -57,11 +59,13 @@ PathRequest::PathRequest (
 }
 
 PathRequest::PathRequest (
+    Application& app,
     std::function <void(void)> const& completion,
     int id,
     PathRequests& owner,
     beast::Journal journal)
-        : m_journal (journal)
+        : app_ (app)
+        , m_journal (journal)
         , mOwner (owner)
         , fCompletion (completion)
         , jvStatus (Json::objectValue)
@@ -568,8 +572,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             destCurrencies.append (to_string (c));
     }
 
-    jvStatus[jss::source_account] = getApp().accountIDCache().toBase58(*raSrcAccount);
-    jvStatus[jss::destination_account] = getApp().accountIDCache().toBase58(*raDstAccount);
+    jvStatus[jss::source_account] = app_.accountIDCache().toBase58(*raSrcAccount);
+    jvStatus[jss::destination_account] = app_.accountIDCache().toBase58(*raDstAccount);
     jvStatus[jss::destination_amount] = saDstAmount.getJson (0);
     jvStatus[jss::full_reply] = ! fast;
 
@@ -577,7 +581,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         jvStatus["id"] = jvId;
 
     int iLevel = iLastLevel;
-    bool loaded = getApp().getFeeTrack().isLoadedLocal();
+    bool loaded = app_.getFeeTrack().isLoadedLocal();
 
     if (iLevel == 0)
     {

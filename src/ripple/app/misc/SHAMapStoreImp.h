@@ -71,6 +71,8 @@ private:
         void setLastRotated (LedgerIndex seq);
     };
 
+    Application& app_;
+
     // name of state database
     std::string const dbName_ = "state";
     // prefix of on-disk nodestore backend instances
@@ -105,7 +107,8 @@ private:
     DatabaseCon* ledgerDb_ = nullptr;
 
 public:
-    SHAMapStoreImp (Setup const& setup,
+    SHAMapStoreImp (Application& app,
+            Setup const& setup,
             Stoppable& parent,
             NodeStore::Scheduler& scheduler,
             beast::Journal journal,

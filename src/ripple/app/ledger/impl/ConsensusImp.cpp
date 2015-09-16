@@ -65,6 +65,7 @@ ConsensusImp::getLastCloseDuration () const
 
 std::shared_ptr<LedgerConsensus>
 ConsensusImp::startRound (
+    Application& app,
     InboundTransactions& inboundTransactions,
     LocalTxs& localtx,
     LedgerMaster& ledgerMaster,
@@ -72,7 +73,7 @@ ConsensusImp::startRound (
     Ledger::ref previousLedger,
     std::uint32_t closeTime)
 {
-    return make_LedgerConsensus (*this, lastCloseProposers_,
+    return make_LedgerConsensus (app, *this, lastCloseProposers_,
         lastCloseConvergeTook_, inboundTransactions, localtx, ledgerMaster,
         prevLCLHash, previousLedger, closeTime, *feeVote_);
 }

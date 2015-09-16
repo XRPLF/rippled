@@ -32,6 +32,7 @@ namespace ripple {
 // obtain a binary version.
 //
 
+class Application;
 class Database;
 
 enum TransStatus
@@ -62,11 +63,12 @@ public:
     using ref = const pointer&;
 
 public:
-    Transaction (STTx::ref, Validate, SigVerify, std::string&) noexcept;
+    Transaction (
+        STTx::ref, Validate, SigVerify, std::string&, Application&) noexcept;
 
     static
     Transaction::pointer
-    sharedTransaction (Blob const&, Validate);
+    sharedTransaction (Blob const&, Validate, Application& app);
 
     static
     Transaction::pointer
@@ -74,7 +76,8 @@ public:
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,
         Blob const& rawTxn,
-        Validate validate);
+        Validate validate,
+        Application& app);
 
     static
     TransStatus
@@ -152,12 +155,10 @@ public:
 
     Json::Value getJson (int options, bool binary = false) const;
 
-    static Transaction::pointer load (uint256 const& id);
+    static Transaction::pointer load (uint256 const& id, Application& app);
 
 private:
     uint256         mTransactionID;
-    // VFALCO NOTE This member appears unused
-    AccountID       mAccountFrom;
     RippleAddress   mFromPubKey;    // Sign transaction with this. mSignPubKey
     RippleAddress   mSourcePrivate; // Sign transaction with this.
 
@@ -166,7 +167,8 @@ private:
     TER             mResult = temUNCERTAIN;
     bool            mApplying = false;
 
-    STTx::pointer mTransaction;
+    STTx::pointer   mTransaction;
+    Application&    mApp;
 };
 
 } // ripple

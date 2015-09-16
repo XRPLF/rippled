@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
-#include <ripple/core/Config.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
@@ -202,7 +202,7 @@ public:
 
 std::unique_ptr <LedgerMaster>
 make_LedgerMaster (
-    Config const& config,
+    Application& app,
     Stopwatch& stopwatch,
     beast::Stoppable& parent,
     beast::insight::Collector::ptr const& collector,

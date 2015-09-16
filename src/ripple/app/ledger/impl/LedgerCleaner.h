@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/json/json_value.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
@@ -53,8 +54,9 @@ public:
     virtual void doClean (Json::Value const& parameters) = 0;
 };
 
-std::unique_ptr<LedgerCleaner> make_LedgerCleaner (beast::Stoppable& parent,
-    beast::Journal journal);
+std::unique_ptr<LedgerCleaner>
+make_LedgerCleaner (Application& app,
+    beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

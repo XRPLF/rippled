@@ -35,6 +35,7 @@ class ServerHandlerImp
     , public HTTP::Handler
 {
 private:
+    Application& app_;
     Resource::Manager& m_resourceManager;
     beast::Journal m_journal;
     NetworkOPs& m_networkOPs;
@@ -47,9 +48,10 @@ private:
     beast::insight::Event rpc_time_;
 
 public:
-    ServerHandlerImp (Stoppable& parent, boost::asio::io_service& io_service,
-        JobQueue& jobQueue, NetworkOPs& networkOPs,
-            Resource::Manager& resourceManager, CollectorManager& cm);
+    ServerHandlerImp (Application& app, Stoppable& parent,
+        boost::asio::io_service& io_service, JobQueue& jobQueue,
+            NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+                CollectorManager& cm);
 
     ~ServerHandlerImp();
 

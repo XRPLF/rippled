@@ -37,6 +37,7 @@ class InboundLedgersImp
     , public beast::Stoppable
 {
 private:
+    Application& app_;
     std::mutex fetchRateMutex_;
     // measures ledgers per second, constants are important
     DecayWindow<30, clock_type> fetchRate_;
@@ -46,9 +47,10 @@ public:
     // How long before we try again to acquire the same ledger
     static const std::chrono::minutes kReacquireInterval;
 
-    InboundLedgersImp (clock_type& clock, Stoppable& parent,
+    InboundLedgersImp (Application& app, clock_type& clock, Stoppable& parent,
                        beast::insight::Collector::ptr const& collector)
         : Stoppable ("InboundLedgers", parent)
+        , app_ (app)
         , fetchRate_(clock.now())
         , m_clock (clock)
         , mRecentFailures (clock)
@@ -75,7 +77,7 @@ public:
                 }
                 else
                 {
-                    inbound = std::make_shared <InboundLedger> (
+                    inbound = std::make_shared <InboundLedger> (app_,
                         hash, seq, reason, std::ref (m_clock));
                     mLedgers.emplace (hash, inbound);
                     inbound->init (sl);
@@ -164,7 +166,7 @@ public:
             // useful.
             if (packet.type () == protocol::liAS_NODE)
             {
-                getApp().getJobQueue().addJob(
+                app_.getJobQueue().addJob(
                     jtLEDGER_DATA, "gotStaleData",
                     [this, packet_ptr] (Job&) { gotStaleData(packet_ptr); });
             }
@@ -174,7 +176,7 @@ public:
 
         // Stash the data for later processing and see if we need to dispatch
         if (ledger->gotData(std::weak_ptr<Peer>(peer), packet_ptr))
-            getApp().getJobQueue().addJob (
+            app_.getJobQueue().addJob (
                 jtLEDGER_DATA, "processLedgerData",
                 [this, hash] (Job&) { doLedgerData(hash); });
 
@@ -263,7 +265,7 @@ public:
 
                 auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
-                getApp().getLedgerMaster().addFetchPack(
+                app_.getLedgerMaster().addFetchPack(
                     newNode->getNodeHash(), blob);
             }
         }
@@ -433,11 +435,11 @@ InboundLedgers::~InboundLedgers()
 }
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers (
+make_InboundLedgers (Application& app,
     InboundLedgers::clock_type& clock, beast::Stoppable& parent,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp> (clock, parent, collector);
+    return std::make_unique<InboundLedgersImp> (app, clock, parent, collector);
 }
 
 } // ripple

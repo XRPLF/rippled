@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-Json::Value doLogRotate (RPC::Context&)
+Json::Value doLogRotate (RPC::Context& context)
 {
     return RPC::makeObjectValue (deprecatedLogs().rotate());
 }

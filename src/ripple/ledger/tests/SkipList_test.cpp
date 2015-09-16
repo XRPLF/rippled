@@ -19,8 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/ledger/View.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/View.h>
+#include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
@@ -34,9 +35,10 @@ class SkipList_test : public beast::unit_test::suite
         beast::Journal const j;
         std::vector<std::shared_ptr<Ledger>> history;
         {
+            jtx::Env env(*this);
             Config const config;
             auto prev =
-                std::make_shared<Ledger>(create_genesis, config);
+                std::make_shared<Ledger>(create_genesis, config, env.app().family());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {

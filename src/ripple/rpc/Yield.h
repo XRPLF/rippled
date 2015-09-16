@@ -28,6 +28,7 @@
 
 namespace ripple {
 
+class Application;
 class BasicConfig;
 class JobQueue;
 class Section;
@@ -119,13 +120,13 @@ struct JobQueueSuspender
 
     /** Create a JobQueueSuspender where yield does nothing and the suspend
         immediately executes the continuation. */
-    JobQueueSuspender();
+    JobQueueSuspender(Application&);
 
     /** Create a JobQueueSuspender with a Suspend.
 
         When yield is called, it reschedules the current job on the JobQueue
         with the given jobName. */
-    JobQueueSuspender(Suspend const&, std::string const& jobName);
+    JobQueueSuspender(Application&, Suspend const&, std::string const& jobName);
 };
 
 } // RPC

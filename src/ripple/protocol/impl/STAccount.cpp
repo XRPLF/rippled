@@ -34,8 +34,6 @@ std::string STAccount::getText () const
     RippleAddress a;
     if (! getValueH160 (u))
         return STBlob::getText ();
-    // VFALCO This should use getApp().accountIDCache()
-    //        Maybe pass the cache in?
     return toBase58(u);
 }
 

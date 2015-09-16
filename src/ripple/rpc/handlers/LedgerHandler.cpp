@@ -36,7 +36,7 @@ LedgerHandler::LedgerHandler (Context& context) : context_ (context)
 {
 }
 
-Status LedgerHandler::check ()
+Status LedgerHandler::check()
 {
     auto const& params = context_.params;
     bool needsLedger = params.isMember (jss::ledger) ||
@@ -67,7 +67,7 @@ Status LedgerHandler::check ()
         if (context_.role != Role::ADMIN)
             return rpcNO_PERMISSION;
 
-        if (getApp().getFeeTrack().isLoadedLocal() &&
+        if (context_.app.getFeeTrack().isLoadedLocal() &&
             context_.role != Role::ADMIN)
         {
             return rpcTOO_BUSY;

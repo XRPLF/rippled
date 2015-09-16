@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 #define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Peer.h>
@@ -103,6 +104,12 @@ public:
         return mComplete || mFailed;
     }
 
+    Application&
+    app()
+    {
+        return app_;
+    }
+
 private:
     static void timerEntry (std::weak_ptr<PeerSet>, const boost::system::error_code& result);
     static void timerJobEntry (std::shared_ptr<PeerSet>);
@@ -112,10 +119,10 @@ protected:
     using LockType = RippleRecursiveMutex;
     using ScopedLockType = std::unique_lock <LockType>;
 
-    PeerSet (uint256 const& hash, int interval, bool txnData,
+    PeerSet (Application& app, uint256 const& hash, int interval, bool txnData,
         clock_type& clock, beast::Journal journal);
 
-    virtual ~PeerSet () = 0;
+    virtual ~PeerSet() = 0;
 
     virtual void newPeer (Peer::ptr const&) = 0;
 
@@ -148,6 +155,7 @@ protected:
     std::size_t getPeerCount () const;
 
 protected:
+    Application& app_;
     beast::Journal m_journal;
     clock_type& m_clock;
 

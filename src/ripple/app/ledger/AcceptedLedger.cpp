@@ -24,13 +24,6 @@
 
 namespace ripple {
 
-// VFALCO TODO Remove this global and make it a member of the App
-//             Use a dependency injection to give AcceptedLedger access.
-//
-TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
-    "AcceptedLedger", 4, 60, stopwatch(),
-        deprecatedLogs().journal("TaggedCache"));
-
 AcceptedLedger::AcceptedLedger (std::shared_ptr<ReadView const> const& ledger)
     : mLedger (ledger)
 {
@@ -39,27 +32,6 @@ AcceptedLedger::AcceptedLedger (std::shared_ptr<ReadView const> const& ledger)
         insert (std::make_shared<AcceptedLedgerTx>(
             ledger, item.first, item.second));
     }
-}
-
-AcceptedLedger::pointer AcceptedLedger::makeAcceptedLedger (
-    std::shared_ptr<ReadView const> const& ledger)
-{
-    AcceptedLedger::pointer ret;
-
-    if (ledger->closed ())
-    {
-        ret = s_cache.fetch (ledger->info().hash);
-
-        if (ret)
-            return ret;
-    }
-
-    ret = AcceptedLedger::pointer (new AcceptedLedger (ledger));
-
-    if (ledger->closed ())
-        s_cache.canonicalize (ledger->info().hash, ret);
-
-    return ret;
 }
 
 void AcceptedLedger::insert (AcceptedLedgerTx::ref at)

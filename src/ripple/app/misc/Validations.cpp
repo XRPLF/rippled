@@ -42,6 +42,8 @@ private:
     using LockType = std::mutex;
     using ScopedLockType = std::lock_guard <LockType>;
     using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
+
+    Application& app_;
     std::mutex mutable mLock;
 
     TaggedCache<uint256, ValidationSet> mValidations;
@@ -70,8 +72,9 @@ private:
     }
 
 public:
-    ValidationsImp ()
-        : mValidations ("Validations", 128, 600, stopwatch(),
+    ValidationsImp (Application& app)
+        : app_ (app)
+        , mValidations ("Validations", 128, 600, stopwatch(),
             deprecatedLogs().journal("TaggedCache"))
         , mWriting (false)
     {
@@ -84,10 +87,10 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (!val->isTrusted() && getApp().getUNL().nodeInUNL (signer))
+        if (!val->isTrusted() && app_.getUNL().nodeInUNL (signer))
             val->setTrusted();
 
-        auto const now = getApp().timeKeeper().closeTime().time_since_epoch().count();
+        auto const now = app_.timeKeeper().closeTime().time_since_epoch().count();
         std::uint32_t valClose = val->getSignTime();
 
         if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
@@ -143,7 +146,7 @@ private:
 
         if (val->isTrusted () && isCurrent)
         {
-            getApp().getLedgerMaster ().checkAccept (hash, val->getFieldU32 (sfLedgerSequence));
+            app_.getLedgerMaster ().checkAccept (hash, val->getFieldU32 (sfLedgerSequence));
             return true;
         }
 
@@ -178,7 +181,7 @@ private:
         if (set)
         {
             auto const now =
-                getApp().timeKeeper().now().time_since_epoch().count();
+                app_.timeKeeper().now().time_since_epoch().count();
             for (auto& it: *set)
             {
                 bool isTrusted = it.second->isTrusted ();
@@ -307,7 +310,7 @@ private:
     std::list<STValidation::pointer> getCurrentTrustedValidations ()
     {
         // VFALCO LEDGER_VAL_INTERVAL should be a NetClock::duration
-        auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
+        auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
 
         std::list<STValidation::pointer> ret;
 
@@ -342,7 +345,7 @@ private:
     LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 priorLedger)
     {
-        auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
+        auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
@@ -435,14 +438,14 @@ private:
             return;
 
         mWriting = true;
-        getApp().getJobQueue ().addJob (
+        app_.getJobQueue ().addJob (
             jtWRITE, "Validations::doWrite",
             [this] (Job&) { doWrite(); });
     }
 
     void doWrite ()
     {
-        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
+        LoadEvent::autoptr event (app_.getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
         boost::format insVal ("INSERT INTO Validations "
                               "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
@@ -458,7 +461,7 @@ private:
             {
                 ScopedUnlockType sul (mLock);
                 {
-                    auto db = getApp().getLedgerDB ().checkoutDb ();
+                    auto db = app_.getLedgerDB ().checkoutDb ();
 
                     Serializer s (1024);
                     soci::transaction tr(*db);
@@ -487,9 +490,9 @@ private:
     }
 };
 
-std::unique_ptr <Validations> make_Validations ()
+std::unique_ptr <Validations> make_Validations (Application& app)
 {
-    return std::make_unique <ValidationsImp> ();
+    return std::make_unique <ValidationsImp> (app);
 }
 
 } // ripple
