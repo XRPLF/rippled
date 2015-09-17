@@ -96,6 +96,12 @@ BasicConfig::exists (std::string const& name) const
     return map_.find(name) != map_.end();
 }
 
+Section&
+BasicConfig::section (std::string const& name)
+{
+    return map_[name];
+}
+
 Section const&
 BasicConfig::section (std::string const& name) const
 {

@@ -162,9 +162,7 @@ public:
     beast::File getModuleDatabasePath () const;
 
     bool doImport = false;
-
     bool                        QUIET = false;
-
     bool                        ELB_SUPPORT = false;
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.

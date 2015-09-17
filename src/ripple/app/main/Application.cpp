@@ -79,33 +79,6 @@ namespace ripple {
 // 204/256 about 80%
 static int const MAJORITY_FRACTION (204);
 
-// This hack lets the s_instance variable remain set during
-// the call to ~Application
-class ApplicationImpBase : public Application
-{
-public:
-    ApplicationImpBase ()
-    {
-        assert (s_instance == nullptr);
-        s_instance = this;
-    }
-
-    ~ApplicationImpBase ()
-    {
-        s_instance = nullptr;
-    }
-
-    static Application* s_instance;
-
-    static Application& getInstance ()
-    {
-        bassert (s_instance != nullptr);
-        return *s_instance;
-    }
-};
-
-Application* ApplicationImpBase::s_instance;
-
 //------------------------------------------------------------------------------
 
 namespace detail {
@@ -239,7 +212,7 @@ public:
 
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
-    : public ApplicationImpBase
+    : public Application
     , public beast::RootStoppable
     , public beast::DeadlineTimer::Listener
     , public BasicApp
@@ -523,6 +496,25 @@ public:
 
     //--------------------------------------------------------------------------
 
+    void setup() override;
+    void run() override;
+    bool isShutdown() override;
+    void signalStop() override;
+
+    //--------------------------------------------------------------------------
+
+    Logs&
+    logs() override
+    {
+        return *logs_;
+    }
+
+    Config const&
+    config() const override
+    {
+        return *config_;
+    }
+
     CollectorManager& getCollectorManager () override
     {
         return *m_collectorManager;
@@ -553,18 +545,6 @@ public:
     NetworkOPs& getOPs () override
     {
         return *m_networkOPs;
-    }
-
-    Config const&
-    config() const override
-    {
-        return *config_;
-    }
-
-    Logs&
-    logs() override
-    {
-        return *logs_;
     }
 
     boost::asio::io_service& getIOService () override
@@ -702,12 +682,6 @@ public:
         return *m_overlay;
     }
 
-    // VFALCO TODO Move these to the .cpp
-    bool running () override
-    {
-        return mTxnDB != nullptr;
-    }
-
     DatabaseCon& getTxnDB () override
     {
         assert (mTxnDB.get() != nullptr);
@@ -722,12 +696,6 @@ public:
     {
         assert (mWalletDB.get() != nullptr);
         return *mWalletDB;
-    }
-
-    bool isShutdown () override
-    {
-        // from Stoppable mixin
-        return isStopped();
     }
 
     bool serverOkay (std::string& reason) override;
@@ -771,185 +739,6 @@ public:
         {
             m_journal.debug << "Received signal: " << signal_number;
             signalStop();
-        }
-    }
-
-    // VFALCO TODO Break this function up into many small initialization segments.
-    //             Or better yet refactor these initializations into RAII classes
-    //             which are members of the Application object.
-    //
-    void setup () override
-    {
-        // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-        m_jobQueue->setThreadCount (0, config_->RUN_STANDALONE);
-
-        // We want to intercept and wait for CTRL-C to terminate the process
-        m_signals.add (SIGINT);
-
-        m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
-            std::placeholders::_1, std::placeholders::_2));
-
-        assert (mTxnDB == nullptr);
-
-        auto debug_log = config_->getDebugLogFile ();
-
-        if (!debug_log.empty ())
-        {
-            // Let debug messages go to the file but only WARNING or higher to
-            // regular output (unless verbose)
-
-            if (!logs_->open(debug_log))
-                std::cerr << "Can't open log file " << debug_log << '\n';
-
-            if (logs_->severity() > beast::Journal::kDebug)
-                logs_->severity (beast::Journal::kDebug);
-        }
-
-        if (!config_->RUN_STANDALONE)
-            timeKeeper_->run(config_->SNTP_SERVERS);
-
-        if (!initSqliteDbs ())
-        {
-            m_journal.fatal << "Can not create database connections!";
-            exitWithCode(3);
-        }
-
-        getLedgerDB ().getSession ()
-            << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                           (config_->getSize (siLgrDBCache) * 1024));
-
-        getTxnDB ().getSession ()
-                << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                               (config_->getSize (siTxnDBCache) * 1024));
-
-        mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
-        mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
-
-        if (!config_->RUN_STANDALONE)
-            updateTables ();
-
-        m_amendmentTable->addInitial (
-            config_->section (SECTION_AMENDMENTS));
-        initializePathfinding ();
-
-        m_ledgerMaster->setMinValidations (
-            config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
-
-        auto const startUp = config_->START_UP;
-        if (startUp == Config::FRESH)
-        {
-            m_journal.info << "Starting new Ledger";
-
-            startGenesisLedger ();
-        }
-        else if (startUp == Config::LOAD ||
-                 startUp == Config::LOAD_FILE ||
-                 startUp == Config::REPLAY)
-        {
-            m_journal.info << "Loading specified Ledger";
-
-            if (!loadOldLedger (config_->START_LEDGER,
-                                startUp == Config::REPLAY,
-                                startUp == Config::LOAD_FILE))
-            {
-                exitWithCode(-1);
-            }
-        }
-        else if (startUp == Config::NETWORK)
-        {
-            // This should probably become the default once we have a stable network.
-            if (!config_->RUN_STANDALONE)
-                m_networkOPs->needNetworkLedger ();
-
-            startGenesisLedger ();
-        }
-        else
-        {
-            startGenesisLedger ();
-        }
-
-        m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
-
-        // Begin validation and ip maintenance.
-        //
-        // - LocalCredentials maintains local information: including identity
-        // - and network connection persistence information.
-        //
-        // VFALCO NOTE this starts the UNL
-        m_localCredentials.start ();
-
-        //
-        // Set up UNL.
-        //
-        if (!config_->RUN_STANDALONE)
-            getUNL ().nodeBootstrap ();
-
-        mValidations->tune (config_->getSize (siValidationsSize), config_->getSize (siValidationsAge));
-        m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
-        m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
-        family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
-        family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
-
-        //----------------------------------------------------------------------
-        //
-        // Server
-        //
-        //----------------------------------------------------------------------
-
-        // VFALCO NOTE Unfortunately, in stand-alone mode some code still
-        //             foolishly calls overlay(). When this is fixed we can
-        //             move the instantiation inside a conditional:
-        //
-        //             if (!config_.RUN_STANDALONE)
-        m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
-            *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
-            *config_);
-        add (*m_overlay); // add to PropertyStream
-
-        m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
-
-        {
-            auto setup = setup_ServerHandler(*config_, std::cerr);
-            setup.makeContexts();
-            serverHandler_->setup (setup, m_journal);
-        }
-
-        // Create websocket servers.
-        for (auto const& port : serverHandler_->setup().ports)
-        {
-            if (! port.websockets())
-                continue;
-            auto server = websocket::makeServer (
-                {*this, port, *m_resourceManager, getOPs(), m_journal, *config_,
-                 *m_collectorManager});
-            if (!server)
-            {
-                m_journal.fatal << "Could not create Websocket for [" <<
-                    port.name << "]";
-                throw std::exception();
-            }
-            websocketServers_.emplace_back (std::move (server));
-        }
-
-        //----------------------------------------------------------------------
-
-        // Begin connecting to network.
-        if (!config_->RUN_STANDALONE)
-        {
-            // Should this message be here, conceptually? In theory this sort
-            // of message, if displayed, should be displayed from PeerFinder.
-            if (config_->PEER_PRIVATE && config_->IPS.empty ())
-                m_journal.warning << "No outbound peer connections will be made";
-
-            // VFALCO NOTE the state timer resets the deadlock detector.
-            //
-            m_networkOPs->setStateTimer ();
-        }
-        else
-        {
-            m_journal.warning << "Running in standalone mode";
-
-            m_networkOPs->setStandAlone ();
         }
     }
 
@@ -1018,50 +807,12 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void run () override
-    {
-        // VFALCO NOTE I put this here in the hopes that when unit tests run (which
-        //             tragically require an Application object to exist or else they
-        //             crash), the run() function will not get called and we will
-        //             avoid doing silly things like contacting the SNTP server, or
-        //             running the various logic threads like Validators, PeerFinder, etc.
-        prepare ();
-        start ();
-
-
-        {
-            if (!config_->RUN_STANDALONE)
-            {
-                // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-                //             manager then the deadlock detector can just always be "armed"
-                //
-                getLoadManager ().activateDeadlockDetector ();
-            }
-        }
-
-        m_stop.wait ();
-
-        // Stop the server. When this returns, all
-        // Stoppable objects should be stopped.
-        m_journal.info << "Received shutdown request";
-        stop (m_journal);
-        m_journal.info << "Done.";
-        StopSustain();
-    }
-
     void exitWithCode(int code)
     {
         StopSustain();
         // VFALCO This breaks invariants: automatic objects
         //        will not have destructors called.
         std::exit(code);
-    }
-
-    void signalStop () override
-    {
-        // Unblock the main thread (which is sitting in run()).
-        //
-        m_stop.signal();
     }
 
     void onDeadlineTimer (beast::DeadlineTimer& timer) override
@@ -1124,7 +875,236 @@ private:
 
 //------------------------------------------------------------------------------
 
-void ApplicationImp::startGenesisLedger ()
+// VFALCO TODO Break this function up into many small initialization segments.
+//             Or better yet refactor these initializations into RAII classes
+//             which are members of the Application object.
+//
+void ApplicationImp::setup()
+{
+    // VFALCO NOTE: 0 means use heuristics to determine the thread count.
+    m_jobQueue->setThreadCount (0, config_->RUN_STANDALONE);
+
+    // We want to intercept and wait for CTRL-C to terminate the process
+    m_signals.add (SIGINT);
+
+    m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
+        std::placeholders::_1, std::placeholders::_2));
+
+    assert (mTxnDB == nullptr);
+
+    auto debug_log = config_->getDebugLogFile ();
+
+    if (!debug_log.empty ())
+    {
+        // Let debug messages go to the file but only WARNING or higher to
+        // regular output (unless verbose)
+
+        if (!logs_->open(debug_log))
+            std::cerr << "Can't open log file " << debug_log << '\n';
+
+        if (logs_->severity() > beast::Journal::kDebug)
+            logs_->severity (beast::Journal::kDebug);
+    }
+
+    if (!config_->RUN_STANDALONE)
+        timeKeeper_->run(config_->SNTP_SERVERS);
+
+    if (!initSqliteDbs ())
+    {
+        m_journal.fatal << "Can not create database connections!";
+        exitWithCode(3);
+    }
+
+    getLedgerDB ().getSession ()
+        << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                        (config_->getSize (siLgrDBCache) * 1024));
+
+    getTxnDB ().getSession ()
+            << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+                            (config_->getSize (siTxnDBCache) * 1024));
+
+    mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
+    mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
+
+    if (!config_->RUN_STANDALONE)
+        updateTables ();
+
+    m_amendmentTable->addInitial (
+        config_->section (SECTION_AMENDMENTS));
+    initializePathfinding ();
+
+    m_ledgerMaster->setMinValidations (
+        config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
+
+    auto const startUp = config_->START_UP;
+    if (startUp == Config::FRESH)
+    {
+        m_journal.info << "Starting new Ledger";
+
+        startGenesisLedger ();
+    }
+    else if (startUp == Config::LOAD ||
+                startUp == Config::LOAD_FILE ||
+                startUp == Config::REPLAY)
+    {
+        m_journal.info << "Loading specified Ledger";
+
+        if (!loadOldLedger (config_->START_LEDGER,
+                            startUp == Config::REPLAY,
+                            startUp == Config::LOAD_FILE))
+        {
+            exitWithCode(-1);
+        }
+    }
+    else if (startUp == Config::NETWORK)
+    {
+        // This should probably become the default once we have a stable network.
+        if (!config_->RUN_STANDALONE)
+            m_networkOPs->needNetworkLedger ();
+
+        startGenesisLedger ();
+    }
+    else
+    {
+        startGenesisLedger ();
+    }
+
+    m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
+
+    // Begin validation and ip maintenance.
+    //
+    // - LocalCredentials maintains local information: including identity
+    // - and network connection persistence information.
+    //
+    // VFALCO NOTE this starts the UNL
+    m_localCredentials.start ();
+
+    //
+    // Set up UNL.
+    //
+    if (!config_->RUN_STANDALONE)
+        getUNL ().nodeBootstrap ();
+
+    mValidations->tune (config_->getSize (siValidationsSize), config_->getSize (siValidationsAge));
+    m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
+    m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
+    family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
+    family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
+
+    //----------------------------------------------------------------------
+    //
+    // Server
+    //
+    //----------------------------------------------------------------------
+
+    // VFALCO NOTE Unfortunately, in stand-alone mode some code still
+    //             foolishly calls overlay(). When this is fixed we can
+    //             move the instantiation inside a conditional:
+    //
+    //             if (!config_.RUN_STANDALONE)
+    m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
+        *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
+        *config_);
+    add (*m_overlay); // add to PropertyStream
+
+    m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
+
+    {
+        auto setup = setup_ServerHandler(*config_, std::cerr);
+        setup.makeContexts();
+        serverHandler_->setup (setup, m_journal);
+    }
+
+    // Create websocket servers.
+    for (auto const& port : serverHandler_->setup().ports)
+    {
+        if (! port.websockets())
+            continue;
+        auto server = websocket::makeServer (
+            {*this, port, *m_resourceManager, getOPs(), m_journal, *config_,
+                *m_collectorManager});
+        if (!server)
+        {
+            m_journal.fatal << "Could not create Websocket for [" <<
+                port.name << "]";
+            throw std::exception();
+        }
+        websocketServers_.emplace_back (std::move (server));
+    }
+
+    //----------------------------------------------------------------------
+
+    // Begin connecting to network.
+    if (!config_->RUN_STANDALONE)
+    {
+        // Should this message be here, conceptually? In theory this sort
+        // of message, if displayed, should be displayed from PeerFinder.
+        if (config_->PEER_PRIVATE && config_->IPS.empty ())
+            m_journal.warning << "No outbound peer connections will be made";
+
+        // VFALCO NOTE the state timer resets the deadlock detector.
+        //
+        m_networkOPs->setStateTimer ();
+    }
+    else
+    {
+        m_journal.warning << "Running in standalone mode";
+
+        m_networkOPs->setStandAlone ();
+    }
+}
+
+void
+ApplicationImp::run()
+{
+    // VFALCO NOTE I put this here in the hopes that when unit tests run (which
+    //             tragically require an Application object to exist or else they
+    //             crash), the run() function will not get called and we will
+    //             avoid doing silly things like contacting the SNTP server, or
+    //             running the various logic threads like Validators, PeerFinder, etc.
+    prepare ();
+    start ();
+
+
+    {
+        if (!config_->RUN_STANDALONE)
+        {
+            // VFALCO NOTE This seems unnecessary. If we properly refactor the load
+            //             manager then the deadlock detector can just always be "armed"
+            //
+            getLoadManager ().activateDeadlockDetector ();
+        }
+    }
+
+    m_stop.wait ();
+
+    // Stop the server. When this returns, all
+    // Stoppable objects should be stopped.
+    m_journal.info << "Received shutdown request";
+    stop (m_journal);
+    m_journal.info << "Done.";
+    StopSustain();
+}
+
+void
+ApplicationImp::signalStop()
+{
+    // Unblock the main thread (which is sitting in run()).
+    //
+    m_stop.signal();
+}
+
+bool
+ApplicationImp::isShutdown()
+{
+    // from Stoppable mixin
+    return isStopped();
+}
+
+//------------------------------------------------------------------------------
+
+void
+ApplicationImp::startGenesisLedger()
 {
     std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(
@@ -1485,14 +1465,17 @@ bool ApplicationImp::serverOkay (std::string& reason)
     return true;
 }
 
-beast::Journal ApplicationImp::journal (std::string const& name)
+beast::Journal
+ApplicationImp::journal (std::string const& name)
 {
     return logs_->journal (name);
 }
 
 //VFALCO TODO clean this up since it is just a file holding a single member function definition
 
-static std::vector<std::string> getSchema (DatabaseCon& dbc, std::string const& dbName)
+static
+std::vector<std::string>
+getSchema (DatabaseCon& dbc, std::string const& dbName)
 {
     std::vector<std::string> schema;
     schema.reserve(32);
@@ -1653,6 +1636,8 @@ Application::Application ()
 {
 }
 
+//------------------------------------------------------------------------------
+
 std::unique_ptr<Application>
 make_Application (
     std::unique_ptr<Config const> config,
@@ -1662,9 +1647,14 @@ make_Application (
         std::move(config), std::move(logs));
 }
 
-Application& getApp ()
+void
+setupConfigForUnitTests (Config& config)
 {
-    return ApplicationImpBase::getInstance ();
+    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
+
+    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
+    config.legacy("database_path", "DummyForUnitTests");
 }
 
 }
