@@ -142,7 +142,7 @@ public:
         env.require (owners (alice, 4));
 
         // This should work.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         std::uint32_t aliceSeq = env.seq (alice);
         env(noop(alice), msig(bogie, demon), fee(3 * baseFee));
         env.close();
@@ -232,7 +232,7 @@ public:
 
         // alice multisigns a transaction.  Should succeed.
         std::uint32_t aliceSeq = env.seq (alice);
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         env(noop(alice), msig(bogie), fee(2 * baseFee));
         env.close();
         expect (env.seq(alice) == aliceSeq + 1);
@@ -265,7 +265,7 @@ public:
         env.require (owners (alice, 10));
 
         // This should work.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         std::uint32_t aliceSeq = env.seq (alice);
         env(noop(alice), msig(bogie), fee(2 * baseFee));
         env.close();
@@ -348,7 +348,7 @@ public:
         env.require (owners (alice, 4));
 
         // Attempt a multisigned transaction that meets the quorum.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         aliceSeq = env.seq (alice);
         env(noop(alice), msig(cheri), fee(2 * baseFee));
         env.close();
@@ -401,7 +401,7 @@ public:
         env.close();
 
         // Attempt a multisigned transaction that meets the quorum.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         std::uint32_t aliceSeq = env.seq (alice);
         env(noop(alice), msig(msig::Reg{cheri, cher}), fee(2 * baseFee));
         env.close();
@@ -468,7 +468,7 @@ public:
         env.require (owners (alice, 6));
 
         // Each type of signer should succeed individually.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         std::uint32_t aliceSeq = env.seq (alice);
         env(noop(alice), msig(becky), fee(2 * baseFee));
         env.close();
@@ -592,7 +592,7 @@ public:
         env(regkey (alice, disabled), sig(alie));
 
         // L0; A lone signer list cannot be removed.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         env(signers(alice, jtx::none), msig(bogie),
             fee(2 * baseFee), ter(tecNO_ALTERNATIVE_KEY));
 
@@ -645,7 +645,7 @@ public:
         env.require (owners (alice, 4));
 
         // Multisign a ttPAYMENT.
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         std::uint32_t aliceSeq = env.seq (alice);
         env(pay(alice, env.master, XRP(1)),
             msig(becky, bogie), fee(3 * baseFee));

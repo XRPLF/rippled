@@ -421,6 +421,12 @@
     <Filter Include="ripple\test\jtx\impl">
       <UniqueIdentifier>{27D70888-7145-691C-0E0A-E511EB3A80A2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\test\mao">
+      <UniqueIdentifier>{94B5035A-6D4A-E4FC-DB50-E7E804DC9F13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\test\mao\impl">
+      <UniqueIdentifier>{23DE6C05-81D2-7471-D9BB-3AA1D49DE429}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
     </Filter>
@@ -4436,6 +4442,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\utility.h">
       <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\mao\impl\Net.cpp">
+      <Filter>ripple\test\mao\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\mao\impl\Net_test.cpp">
+      <Filter>ripple\test\mao\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\test\mao\Net.h">
+      <Filter>ripple\test\mao</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>

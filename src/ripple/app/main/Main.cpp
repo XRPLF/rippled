@@ -162,17 +162,6 @@ void printHelp (const po::options_description& desc)
 
 //------------------------------------------------------------------------------
 
-static
-void
-setupConfigForUnitTests (Config& config)
-{
-    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
-    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
-
-    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
-    config.legacy("database_path", "DummyForUnitTests");
-}
-
 static int runShutdownTests (std::unique_ptr<Config> config)
 {
     // Shutdown tests can not be part of the normal unit tests in 'runUnitTests'
@@ -204,18 +193,10 @@ static int runShutdownTests (std::unique_ptr<Config> config)
     return EXIT_SUCCESS;
 }
 
-static int runUnitTests (
-    std::unique_ptr<Config> config,
+static int runUnitTests(
     std::string const& pattern,
     std::string const& argument)
 {
-    // Config needs to be set up before creating Application
-    setupConfigForUnitTests (*config);
-
-    auto app = make_Application (
-        std::move(config),
-        std::make_unique<Logs>());
-
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -363,9 +344,7 @@ int run (int argc, char** argv)
             argument = vm["unittest-arg"].as<std::string>();
 
         return runUnitTests(
-            std::make_unique<Config> (),
-            vm["unittest"].as<std::string>(),
-            argument);
+            vm["unittest"].as<std::string>(), argument);
     }
 
     auto config = std::make_unique<Config>();
