@@ -137,7 +137,7 @@ public:
         }
 
         void
-        onStopped (Server& server)
+        onStopped (Server& server) override
         {
         }
     };

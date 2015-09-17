@@ -37,7 +37,7 @@ public:
     }
 
     std::string
-    getName()
+    getName() override
     {
         return std::string ();
     }
@@ -48,7 +48,7 @@ public:
     }
 
     Status
-    fetch (void const*, std::shared_ptr<NodeObject>*)
+    fetch (void const*, std::shared_ptr<NodeObject>*) override
     {
         return notFound;
     }
@@ -67,22 +67,22 @@ public:
     }
 
     void
-    store (std::shared_ptr<NodeObject> const& object)
+    store (std::shared_ptr<NodeObject> const& object) override
     {
     }
 
     void
-    storeBatch (Batch const& batch)
+    storeBatch (Batch const& batch) override
     {
     }
 
     void
-    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
     }
 
     int
-    getWriteLoad ()
+    getWriteLoad () override
     {
         return 0;
     }

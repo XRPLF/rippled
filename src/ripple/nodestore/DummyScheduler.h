@@ -31,7 +31,7 @@ class DummyScheduler : public Scheduler
 public:
     DummyScheduler ();
     ~DummyScheduler ();
-    void scheduleTask (Task& task);
+    void scheduleTask (Task& task) override;
     void scheduledTasksStopped ();
     void onFetch (FetchReport const& report) override;
     void onBatchWrite (BatchWriteReport const& report) override;
