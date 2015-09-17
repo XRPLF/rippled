@@ -79,7 +79,7 @@ public:
     }
 
 private:
-    bool addValidation (STValidation::ref val, std::string const& source)
+    bool addValidation (STValidation::ref val, std::string const& source) override
     {
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
@@ -151,13 +151,13 @@ private:
         return false;
     }
 
-    void tune (int size, int age)
+    void tune (int size, int age) override
     {
         mValidations.setTargetSize (size);
         mValidations.setTargetAge (age);
     }
 
-    ValidationSet getValidations (uint256 const& ledger)
+    ValidationSet getValidations (uint256 const& ledger) override
     {
         {
             ScopedLockType sl (mLock);
@@ -169,7 +169,8 @@ private:
         return ValidationSet ();
     }
 
-    void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted)
+    void getValidationCount (uint256 const& ledger, bool currentOnly,
+                             int& trusted, int& untrusted) override
     {
         trusted = untrusted = 0;
         ScopedLockType sl (mLock);
@@ -205,7 +206,7 @@ private:
         WriteLog (lsTRACE, Validations) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
     }
 
-    void getValidationTypes (uint256 const& ledger, int& full, int& partial)
+    void getValidationTypes (uint256 const& ledger, int& full, int& partial) override
     {
         full = partial = 0;
         ScopedLockType sl (mLock);
@@ -229,7 +230,7 @@ private:
     }
 
 
-    int getTrustedValidationCount (uint256 const& ledger)
+    int getTrustedValidationCount (uint256 const& ledger) override
     {
         int trusted = 0;
         ScopedLockType sl (mLock);
@@ -270,7 +271,7 @@ private:
         return result;
     }
 
-    int getNodesAfter (uint256 const& ledger)
+    int getNodesAfter (uint256 const& ledger) override
     {
         // Number of trusted nodes that have moved past this ledger
         int count = 0;
@@ -283,7 +284,7 @@ private:
         return count;
     }
 
-    int getLoadRatio (bool overLoaded)
+    int getLoadRatio (bool overLoaded) override
     {
         // how many trusted nodes are able to keep up, higher is better
         int goodNodes = overLoaded ? 1 : 0;
@@ -304,7 +305,7 @@ private:
         return (goodNodes * 100) / (goodNodes + badNodes);
     }
 
-    std::list<STValidation::pointer> getCurrentTrustedValidations ()
+    std::list<STValidation::pointer> getCurrentTrustedValidations () override
     {
         // VFALCO LEDGER_VAL_INTERVAL should be a NetClock::duration
         auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
@@ -340,7 +341,7 @@ private:
     }
 
     LedgerToValidationCounter getCurrentValidations (
-        uint256 currentLedger, uint256 priorLedger)
+        uint256 currentLedger, uint256 priorLedger) override
     {
         auto const cutoff = getApp().timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
@@ -391,7 +392,7 @@ private:
     }
 
     std::vector<uint32_t>
-    getValidationTimes (uint256 const& hash)
+    getValidationTimes (uint256 const& hash) override
     {
         std::vector <std::uint32_t> times;
         ScopedLockType sl (mLock);
@@ -402,7 +403,7 @@ private:
         return times;
     }
 
-    void flush ()
+    void flush () override
     {
         bool anyNew = false;
 
@@ -480,7 +481,7 @@ private:
         mWriting = false;
     }
 
-    void sweep ()
+    void sweep () override
     {
         ScopedLockType sl (mLock);
         mValidations.sweep ();

@@ -48,6 +48,9 @@ struct WebSocket04
         virtual void on_message (ConnectionPtr, MessagePtr) = 0;
         // This is a new method added by Ripple.
         virtual void on_send_empty (ConnectionPtr) = 0;
+        virtual boost::asio::ssl::context& get_ssl_context() = 0;
+        virtual bool plain_only() = 0;
+        virtual bool secure_only() = 0;
     };
 
     using HandlerPtr = std::shared_ptr<Handler>;

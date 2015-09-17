@@ -22,6 +22,14 @@
 
 #include <beast/Config.h>
 
+#ifdef __clang_major__
+#if __clang_major__ >= 7
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Winconsistent-missing-override"
+# pragma clang diagnostic ignored "-Wuninitialized"
+#endif
+#endif
+
 #ifndef RIPPLE_ROCKSDB_AVAILABLE
 #if BEAST_WIN32
 # define ROCKSDB_PLATFORM_WINDOWS

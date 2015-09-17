@@ -98,7 +98,7 @@ public:
     }
 
     std::string
-    getName ()
+    getName () override
     {
         return name_;
     }
@@ -112,7 +112,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch (void const* key, std::shared_ptr<NodeObject>* pObject)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
         uint256 const hash (uint256::fromVoid (key));
 
@@ -142,28 +142,28 @@ public:
     }
 
     void
-    store (std::shared_ptr<NodeObject> const& object)
+    store (std::shared_ptr<NodeObject> const& object) override
     {
         std::lock_guard<std::mutex> _(db_->mutex);
         db_->table.emplace (object->getHash(), object);
     }
 
     void
-    storeBatch (Batch const& batch)
+    storeBatch (Batch const& batch) override
     {
         for (auto const& e : batch)
             store (e);
     }
 
     void
-    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
         for (auto const& e : db_->table)
             f (e.second);
     }
 
     int
-    getWriteLoad()
+    getWriteLoad() override
     {
         return 0;
     }

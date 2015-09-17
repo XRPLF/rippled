@@ -69,17 +69,17 @@ public:
     }
 
     beast::Journal::Severity
-    severity() const
+    severity() const override
     {
         return sink_.severity();
     }
 
-    void severity (beast::Journal::Severity level)
+    void severity (beast::Journal::Severity level) override
     {
         sink_.severity (level);
     }
 
-    void write (beast::Journal::Severity level, std::string const& text)
+    void write (beast::Journal::Severity level, std::string const& text) override
     {
         using beast::Journal;
         sink_.write (level, prefix_ + text);

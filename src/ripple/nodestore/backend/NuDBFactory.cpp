@@ -107,7 +107,7 @@ public:
     }
 
     std::string
-    getName()
+    getName() override
     {
         return name_;
     }
@@ -126,7 +126,7 @@ public:
     }
 
     Status
-    fetch (void const* key, std::shared_ptr<NodeObject>* pno)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pno) override
     {
         Status status;
         pno->reset();
@@ -201,7 +201,7 @@ public:
     }
 
     void
-    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
@@ -224,7 +224,7 @@ public:
     }
 
     int
-    getWriteLoad ()
+    getWriteLoad () override
     {
         return 0;
     }
