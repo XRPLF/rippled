@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -85,7 +86,7 @@ public:
 };
 
 std::unique_ptr<UniqueNodeList>
-make_UniqueNodeList (beast::Stoppable& parent);
+make_UniqueNodeList (Application& app, beast::Stoppable& parent);
 
 } // ripple
 

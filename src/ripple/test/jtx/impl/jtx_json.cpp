@@ -42,7 +42,7 @@ json::json (Json::Value jv)
 }
 
 void
-json::operator()(Env const&, JTx& jt) const
+json::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     for (auto iter = jv_.begin();

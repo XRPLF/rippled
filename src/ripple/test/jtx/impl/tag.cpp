@@ -26,13 +26,13 @@ namespace test {
 namespace jtx {
 
 void
-dtag::operator()(Env const&, JTx& jt) const
+dtag::operator()(Env&, JTx& jt) const
 {
     jt.jv["DestinationTag"] = value_;
 }
 
 void
-stag::operator()(Env const&, JTx& jt) const
+stag::operator()(Env&, JTx& jt) const
 {
     jt.jv["SourceTag"] = value_;
 }

@@ -55,7 +55,7 @@ required (Args const&... args)
 {
     requires_t vec;
     detail::require_args(vec, args...);
-    return [vec](Env const& env)
+    return [vec](Env& env)
     {
         for(auto const& f : vec)
             f(env);
@@ -81,7 +81,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const
+    operator()(Env&, JTx& jt) const
     {
         jt.requires.emplace_back(cond_);
     }

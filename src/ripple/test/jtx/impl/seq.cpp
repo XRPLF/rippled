@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-seq::operator()(Env const&, JTx& jt) const
+seq::operator()(Env&, JTx& jt) const
 {
     if (! manual_)
         return;

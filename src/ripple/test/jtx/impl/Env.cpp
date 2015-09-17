@@ -57,7 +57,7 @@ Env::Env (beast::unit_test::suite& test_)
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
     , closed_ (std::make_shared<Ledger>(
-        create_genesis, config))
+        create_genesis, config, app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {
@@ -83,7 +83,8 @@ Env::close(NetClock::time_point const& closeTime)
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        open_ledger, *closed_);
+        open_ledger, *closed_,
+        app().timeKeeper().closeTime());
     next->setClosed();
 #if 0
     // Build a SHAMap, put all the transactions
@@ -104,7 +105,7 @@ Env::close(NetClock::time_point const& closeTime)
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
-        OpenLedger::apply(accum, *closed_,
+        OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), *router,
                 config, journal);
         accum.apply(*next);
@@ -116,8 +117,8 @@ Env::close(NetClock::time_point const& closeTime)
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false);
     OrderedTxs locals({});
-    openLedger.accept(next->rules(), next, locals,
-        false, retries, applyFlags(), *router);
+    openLedger.accept(app(), next->rules(), next,
+        locals, false, retries, applyFlags(), *router);
     closed_ = next;
     cachedSLEs_.expire();
 }
@@ -262,7 +263,7 @@ Env::submit (JTx const& jt)
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, applyFlags(),
+                    app(), view, *stx, applyFlags(),
                         directSigVerify, config,
                             beast::Journal{});
                 return didApply;

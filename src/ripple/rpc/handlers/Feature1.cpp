@@ -33,12 +33,12 @@ Json::Value doFeature (RPC::Context& context)
     if (!context.params.isMember (jss::feature))
     {
         Json::Value jvReply = Json::objectValue;
-        jvReply[jss::features] = getApp().getAmendmentTable ().getJson(0);
+        jvReply[jss::features] = context.app.getAmendmentTable ().getJson(0);
         return jvReply;
     }
 
     uint256 uFeature
-            = getApp().getAmendmentTable ().get(
+            = context.app.getAmendmentTable ().get(
                 context.params[jss::feature].asString());
 
     if (uFeature.isZero ())
@@ -50,7 +50,7 @@ Json::Value doFeature (RPC::Context& context)
     }
 
     if (!context.params.isMember (jss::vote))
-        return getApp().getAmendmentTable ().getJson(uFeature);
+        return context.app.getAmendmentTable ().getJson(uFeature);
 
     // WRITEME
     return rpcError (rpcNOT_SUPPORTED);

@@ -226,7 +226,7 @@ TER Transactor::apply ()
     }
 
     auto const& fees = view().fees();
-    mFeeDue = getApp().getFeeTrack().scaleFeeLoad(
+    mFeeDue = ctx_.app.getFeeTrack().scaleFeeLoad(
         calculateBaseFee(), fees.base, fees.units, view().flags() & tapADMIN);
 
     if (sle)

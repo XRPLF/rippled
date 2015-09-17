@@ -132,7 +132,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
         Json::Value ret (Json::objectValue);
 
-        ret[jss::account] = getApp().accountIDCache().toBase58(*raAccount);
+        ret[jss::account] = context.app.accountIDCache().toBase58(*raAccount);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
         if (bBinary)

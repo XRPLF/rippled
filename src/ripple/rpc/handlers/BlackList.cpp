@@ -27,7 +27,7 @@ namespace ripple {
 
 Json::Value doBlackList (RPC::Context& context)
 {
-    auto& rm = getApp().getResourceManager();
+    auto& rm = context.app.getResourceManager();
     if (context.params.isMember(jss::threshold))
         return rm.getJson(context.params[jss::threshold].asInt());
     else

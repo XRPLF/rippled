@@ -34,7 +34,7 @@ namespace ripple {
 // }
 Json::Value doValidationSeed (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
+    auto lock = beast::make_lock(context.app.getMasterMutex());
     Json::Value obj (Json::objectValue);
 
     if (!context.params.isMember (jss::secret))

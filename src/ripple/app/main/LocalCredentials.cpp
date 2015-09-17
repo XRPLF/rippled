@@ -30,6 +30,11 @@
 
 namespace ripple {
 
+LocalCredentials::LocalCredentials(Application& app)
+    : app_ (app)
+{
+}
+
 void LocalCredentials::start ()
 {
     // We need our node identity before we begin networking.
@@ -47,13 +52,13 @@ void LocalCredentials::start ()
     if (!getConfig ().QUIET)
         std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic () << std::endl;
 
-    getApp().getUNL ().start ();
+    app_.getUNL ().start ();
 }
 
 // Retrieve network identity.
 bool LocalCredentials::nodeIdentityLoad ()
 {
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
     bool        bSuccess    = false;
 
     boost::optional<std::string> pubKO, priKO;
@@ -96,7 +101,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     // Store the node information
     //
-    auto db = getApp().getWalletDB ().checkoutDb ();
+    auto db = app_.getWalletDB ().checkoutDb ();
 
     *db << str (boost::format (
         "INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES ('%s','%s');")

@@ -50,7 +50,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memodata
@@ -65,7 +65,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memoformat
@@ -80,7 +80,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memotype
@@ -95,7 +95,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memondata
@@ -113,7 +113,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memonformat
@@ -131,7 +131,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 class memontype
@@ -149,7 +149,7 @@ public:
     }
 
     void
-    operator()(Env const&, JTx& jt) const;
+    operator()(Env&, JTx& jt) const;
 };
 
 } // jtx

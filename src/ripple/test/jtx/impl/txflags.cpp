@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-txflags::operator()(Env const&, JTx& jt) const
+txflags::operator()(Env&, JTx& jt) const
 {
     jt[jss::Flags] =
         v_ /*| tfUniversal*/;

@@ -74,8 +74,8 @@ Json::Value doSubscribe (RPC::Context& context)
             WriteLog (lsDEBUG, RPCHandler)
                 << "doSubscribe: building: " << strUrl;
 
-            RPCSub::pointer rspSub = RPCSub::New (getApp ().getOPs (),
-                getApp ().getIOService (), getApp ().getJobQueue (),
+            RPCSub::pointer rspSub = RPCSub::New (context.app.getOPs (),
+                context.app.getIOService (), context.app.getJobQueue (),
                     strUrl, strUsername, strPassword);
             ispSub  = context.netOps.addRpcSub (
                 strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
@@ -303,7 +303,7 @@ Json::Value doSubscribe (RPC::Context& context)
             {
                 context.loadType = Resource::feeMediumBurdenRPC;
                 std::shared_ptr<ReadView const> lpLedger
-                        = getApp().getLedgerMaster().getPublishedLedger();
+                        = context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
                     const Json::Value jvMarker = Json::Value (Json::nullValue);

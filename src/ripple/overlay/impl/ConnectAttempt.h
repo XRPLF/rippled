@@ -54,6 +54,7 @@ private:
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
+    Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;
     beast::Journal journal_;
@@ -72,7 +73,7 @@ private:
     PeerFinder::Slot::ptr slot_;
 
 public:
-    ConnectAttempt (boost::asio::io_service& io_service,
+    ConnectAttempt (Application& app, boost::asio::io_service& io_service,
         endpoint_type const& remote_endpoint, Resource::Consumer usage,
             beast::asio::ssl_bundle::shared_context const& context,
                 std::uint32_t id, PeerFinder::Slot::ptr const& slot,

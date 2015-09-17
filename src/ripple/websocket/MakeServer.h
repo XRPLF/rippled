@@ -20,6 +20,7 @@
 #ifndef RIPPLED_RIPPLE_WEBSOCKET_MAKESERVER_H
 #define RIPPLED_RIPPLE_WEBSOCKET_MAKESERVER_H
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/server/Port.h>
@@ -36,6 +37,7 @@ namespace websocket {
 
 struct ServerDescription
 {
+    Application& app;
     HTTP::Port port;
     Resource::Manager& resourceManager;
     InfoSub::Source& source;
@@ -44,7 +46,8 @@ struct ServerDescription
     CollectorManager& collectorManager;
 };
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const&);
+std::unique_ptr<beast::Stoppable>
+makeServer (ServerDescription const&);
 
 } // websocket
 } // ripple

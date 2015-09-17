@@ -35,7 +35,7 @@ struct Context;
 // {
 //   random: <uint256>
 // }
-Json::Value doRandom (RPC::Context&)
+Json::Value doRandom (RPC::Context& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.

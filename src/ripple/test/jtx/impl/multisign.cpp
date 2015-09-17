@@ -74,7 +74,7 @@ msig::msig (std::vector<msig::Reg> signers_)
 }
 
 void
-msig::operator()(Env const& env, JTx& jt) const
+msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     jt.signer = [mySigners, &env](Env&, JTx& jt)

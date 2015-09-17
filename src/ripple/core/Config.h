@@ -22,8 +22,8 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/base_uint.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
+#include <ripple/protocol/RippleAddress.h> // VFALCO Breaks levelization
 #include <ripple/json/json_value.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>

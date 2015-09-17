@@ -34,7 +34,7 @@ namespace ripple {
 // }
 Json::Value doUnlDelete (RPC::Context& context)
 {
-    auto lock = beast::make_lock(getApp().getMasterMutex());
+    auto lock = beast::make_lock(context.app.getMasterMutex());
 
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);
@@ -44,12 +44,12 @@ Json::Value doUnlDelete (RPC::Context& context)
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        getApp().getUNL ().nodeRemovePublic (raNodePublic);
+        context.app.getUNL ().nodeRemovePublic (raNodePublic);
         return RPC::makeObjectValue ("removing node by public key");
     }
     else
     {
-        getApp().getUNL ().nodeRemoveDomain (strNode);
+        context.app.getUNL ().nodeRemoveDomain (strNode);
         return RPC::makeObjectValue ("removing node by domain");
     }
 }

@@ -27,7 +27,7 @@ namespace test {
 namespace jtx {
 
 void
-memo::operator()(Env const&, JTx& jt) const
+memo::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -39,7 +39,7 @@ memo::operator()(Env const&, JTx& jt) const
 }
 
 void
-memodata::operator()(Env const&, JTx& jt) const
+memodata::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -49,7 +49,7 @@ memodata::operator()(Env const&, JTx& jt) const
 }
 
 void
-memoformat::operator()(Env const&, JTx& jt) const
+memoformat::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -59,7 +59,7 @@ memoformat::operator()(Env const&, JTx& jt) const
 }
 
 void
-memotype::operator()(Env const&, JTx& jt) const
+memotype::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -69,7 +69,7 @@ memotype::operator()(Env const&, JTx& jt) const
 }
 
 void
-memondata::operator()(Env const&, JTx& jt) const
+memondata::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -80,7 +80,7 @@ memondata::operator()(Env const&, JTx& jt) const
 }
 
 void
-memonformat::operator()(Env const&, JTx& jt) const
+memonformat::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -91,7 +91,7 @@ memonformat::operator()(Env const&, JTx& jt) const
 }
 
 void
-memontype::operator()(Env const&, JTx& jt) const
+memontype::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];

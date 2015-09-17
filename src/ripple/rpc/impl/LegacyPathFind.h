@@ -23,12 +23,15 @@
 #include <atomic>
 
 namespace ripple {
+
+class Application;
+
 namespace RPC {
 
 class LegacyPathFind
 {
 public:
-    LegacyPathFind (bool isAdmin);
+    LegacyPathFind (bool isAdmin, Application& app);
     ~LegacyPathFind ();
 
     bool isOk () const

@@ -33,11 +33,11 @@ Json::Value doPrint (RPC::Context& context)
         && context.params[jss::params].isArray()
         && context.params[jss::params][0u].isString ())
     {
-        getApp().write (stream, context.params[jss::params][0u].asString());
+        context.app.write (stream, context.params[jss::params][0u].asString());
     }
     else
     {
-        getApp().write (stream);
+        context.app.write (stream);
     }
 
     return stream.top();
