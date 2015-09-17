@@ -479,34 +479,34 @@ public:
 
     //--------------------------------------------------------------------------
 
-    CollectorManager& getCollectorManager ()
+    CollectorManager& getCollectorManager () override
     {
         return *m_collectorManager;
     }
 
     Family&
-    family()
+    family() override
     {
         return family_;
     }
 
     TimeKeeper&
-    timeKeeper()
+    timeKeeper() override
     {
         return *timeKeeper_;
     }
 
-    JobQueue& getJobQueue ()
+    JobQueue& getJobQueue () override
     {
         return *m_jobQueue;
     }
 
-    LocalCredentials& getLocalCredentials ()
+    LocalCredentials& getLocalCredentials () override
     {
         return m_localCredentials ;
     }
 
-    NetworkOPs& getOPs ()
+    NetworkOPs& getOPs () override
     {
         return *m_networkOPs;
     }
@@ -517,34 +517,34 @@ public:
         return config_;
     }
 
-    boost::asio::io_service& getIOService ()
+    boost::asio::io_service& getIOService () override
     {
         return get_io_service();
     }
 
-    std::chrono::milliseconds getIOLatency ()
+    std::chrono::milliseconds getIOLatency () override
     {
         std::unique_lock <std::mutex> m_IOLatencyLock;
 
         return m_io_latency_sampler.get ();
     }
 
-    LedgerMaster& getLedgerMaster ()
+    LedgerMaster& getLedgerMaster () override
     {
         return *m_ledgerMaster;
     }
 
-    InboundLedgers& getInboundLedgers ()
+    InboundLedgers& getInboundLedgers () override
     {
         return *m_inboundLedgers;
     }
 
-    InboundTransactions& getInboundTransactions ()
+    InboundTransactions& getInboundTransactions () override
     {
         return *m_inboundTransactions;
     }
 
-    TaggedCache <uint256, AcceptedLedger>& getAcceptedLedgerCache ()
+    TaggedCache <uint256, AcceptedLedger>& getAcceptedLedgerCache () override
     {
         return m_acceptedLedgerCache;
     }
@@ -554,73 +554,73 @@ public:
         m_networkOPs->mapComplete (setHash, set);
     }
 
-    TransactionMaster& getMasterTransaction ()
+    TransactionMaster& getMasterTransaction () override
     {
         return m_txMaster;
     }
 
-    NodeCache& getTempNodeCache ()
+    NodeCache& getTempNodeCache () override
     {
         return m_tempNodeCache;
     }
 
-    NodeStore::Database& getNodeStore ()
+    NodeStore::Database& getNodeStore () override
     {
         return *m_nodeStore;
     }
 
-    Application::MutexType& getMasterMutex ()
+    Application::MutexType& getMasterMutex () override
     {
         return m_masterMutex;
     }
 
-    LoadManager& getLoadManager ()
+    LoadManager& getLoadManager () override
     {
         return *m_loadManager;
     }
 
-    Resource::Manager& getResourceManager ()
+    Resource::Manager& getResourceManager () override
     {
         return *m_resourceManager;
     }
 
-    OrderBookDB& getOrderBookDB ()
+    OrderBookDB& getOrderBookDB () override
     {
         return m_orderBookDB;
     }
 
-    PathRequests& getPathRequests ()
+    PathRequests& getPathRequests () override
     {
         return *m_pathRequests;
     }
 
     CachedSLEs&
-    cachedSLEs()
+    cachedSLEs() override
     {
         return cachedSLEs_;
     }
 
-    AmendmentTable& getAmendmentTable()
+    AmendmentTable& getAmendmentTable() override
     {
         return *m_amendmentTable;
     }
 
-    LoadFeeTrack& getFeeTrack ()
+    LoadFeeTrack& getFeeTrack () override
     {
         return *mFeeTrack;
     }
 
-    HashRouter& getHashRouter ()
+    HashRouter& getHashRouter () override
     {
         return *mHashRouter;
     }
 
-    Validations& getValidations ()
+    Validations& getValidations () override
     {
         return *mValidations;
     }
 
-    UniqueNodeList& getUNL ()
+    UniqueNodeList& getUNL () override
     {
         return *m_deprecatedUNL;
     }
@@ -647,34 +647,34 @@ public:
         return *openLedger_;
     }
 
-    Overlay& overlay ()
+    Overlay& overlay () override
     {
         return *m_overlay;
     }
 
     // VFALCO TODO Move these to the .cpp
-    bool running ()
+    bool running () override
     {
         return mTxnDB != nullptr;
     }
 
-    DatabaseCon& getTxnDB ()
+    DatabaseCon& getTxnDB () override
     {
         assert (mTxnDB.get() != nullptr);
         return *mTxnDB;
     }
-    DatabaseCon& getLedgerDB ()
+    DatabaseCon& getLedgerDB () override
     {
         assert (mLedgerDB.get() != nullptr);
         return *mLedgerDB;
     }
-    DatabaseCon& getWalletDB ()
+    DatabaseCon& getWalletDB () override
     {
         assert (mWalletDB.get() != nullptr);
         return *mWalletDB;
     }
 
-    bool isShutdown ()
+    bool isShutdown () override
     {
         // from Stoppable mixin
         return isStopped();
@@ -726,7 +726,7 @@ public:
     //             Or better yet refactor these initializations into RAII classes
     //             which are members of the Application object.
     //
-    void setup ()
+    void setup () override
     {
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
         m_jobQueue->setThreadCount (0, config_.RUN_STANDALONE);
@@ -909,7 +909,7 @@ public:
     {
     }
 
-    void onStart ()
+    void onStart () override
     {
         m_journal.info << "Application starting. Build is " << gitCommitID();
 
@@ -922,7 +922,7 @@ public:
     }
 
     // Called to indicate shutdown.
-    void onStop ()
+    void onStop () override
     {
         m_journal.debug << "Application stopping";
 
@@ -959,13 +959,13 @@ public:
     // PropertyStream
     //
 
-    void onWrite (beast::PropertyStream::Map& stream)
+    void onWrite (beast::PropertyStream::Map& stream) override
     {
     }
 
     //------------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         // VFALCO NOTE I put this here in the hopes that when unit tests run (which
         //             tragically require an Application object to exist or else they
@@ -1004,14 +1004,14 @@ public:
         std::exit(code);
     }
 
-    void signalStop ()
+    void signalStop () override
     {
         // Unblock the main thread (which is sitting in run()).
         //
         m_stop.signal();
     }
 
-    void onDeadlineTimer (beast::DeadlineTimer& timer)
+    void onDeadlineTimer (beast::DeadlineTimer& timer) override
     {
         if (timer == m_entropyTimer)
         {

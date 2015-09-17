@@ -137,7 +137,7 @@ public:
     //
 
     LedgerInfo const&
-    info() const
+    info() const override
     {
         return info_;
     }

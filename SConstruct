@@ -441,6 +441,8 @@ def config_env(toolchain, variant, env):
             env.Append(CXXFLAGS=[
                 '-Wno-mismatched-tags',
                 '-Wno-deprecated-register',
+                '-Wno-unused-local-typedefs',
+                '-Wno-unknown-warning-option',
                 ])
 
         elif toolchain == 'gcc':

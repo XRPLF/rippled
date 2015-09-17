@@ -319,7 +319,7 @@ private:
     //
 
     void
-    onWrite (beast::PropertyStream::Map& stream);
+    onWrite (beast::PropertyStream::Map& stream) override;
 
     //--------------------------------------------------------------------------
 

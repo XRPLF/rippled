@@ -350,14 +350,14 @@ public:
     void unsubAccount (
         InfoSub::ref ispListener,
         hash_set<AccountID> const& vnaAccountIDs,
-        bool rt);
+        bool rt) override;
 
     // Just remove the subscription from the tracking
     // not from the InfoSub. Needed for InfoSub destruction
     void unsubAccountInternal (
         std::uint64_t seq,
         hash_set<AccountID> const& vnaAccountIDs,
-        bool rt);
+        bool rt) override;
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult) override;
     bool unsubLedger (std::uint64_t uListener) override;

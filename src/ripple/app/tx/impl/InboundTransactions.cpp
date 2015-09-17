@@ -143,7 +143,7 @@ public:
     */
     void gotData (LedgerHash const& hash,
             std::shared_ptr<Peer> peer,
-            std::shared_ptr<protocol::TMLedgerData> packet_ptr)
+            std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 

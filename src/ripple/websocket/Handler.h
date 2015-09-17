@@ -457,17 +457,17 @@ public:
     }
 
     boost::asio::ssl::context&
-    get_ssl_context ()
+    get_ssl_context () override
     {
         return *port().context;
     }
 
-    bool plain_only()
+    bool plain_only() override
     {
         return port().protocol.count("wss") == 0;
     }
 
-    bool secure_only()
+    bool secure_only() override
     {
         return port().protocol.count("ws") == 0;
     }

@@ -179,18 +179,18 @@ public:
     {
     }
 
-    LedgerIndex getCurrentLedgerIndex ()
+    LedgerIndex getCurrentLedgerIndex () override
     {
         return mCurrentLedger.get ()->info().seq;
     }
 
-    LedgerIndex getValidLedgerIndex ()
+    LedgerIndex getValidLedgerIndex () override
     {
         return mValidLedgerSeq;
     }
 
     bool isCompatible (Ledger::pointer ledger,
-        beast::Journal::Stream s, const char* reason)
+        beast::Journal::Stream s, const char* reason) override
     {
         auto validLedger = getValidatedLedger();
 
@@ -214,7 +214,7 @@ public:
         return true;
     }
 
-    int getPublishedLedgerAge ()
+    int getPublishedLedgerAge () override
     {
         std::uint32_t pubClose = mPubLedgerClose.load();
         if (!pubClose)
@@ -232,7 +232,7 @@ public:
         return static_cast<int> (ret);
     }
 
-    int getValidatedLedgerAge ()
+    int getValidatedLedgerAge () override
     {
         std::uint32_t valClose = mValidLedgerSign.load();
         if (!valClose)
@@ -249,7 +249,7 @@ public:
         return static_cast<int> (ret);
     }
 
-    bool isCaughtUp(std::string& reason)
+    bool isCaughtUp(std::string& reason) override
     {
         if (getPublishedLedgerAge() > 180)
         {
@@ -306,14 +306,14 @@ public:
         mPubLedgerSeq = l->info().seq;
     }
 
-    void addHeldTransaction (Transaction::ref transaction)
+    void addHeldTransaction (Transaction::ref transaction) override
     {
         // returns true if transaction was added
         ScopedLockType ml (m_mutex);
         mHeldTransactions.insert (transaction->getSTransaction ());
     }
 
-    void pushLedger (Ledger::pointer newLedger)
+    void pushLedger (Ledger::pointer newLedger) override
     {
         // Caller should already have properly assembled this ledger into
         // "ready-to-close" form -- all candidate transactions must already be
@@ -344,7 +344,7 @@ public:
             checkAccept(newLedger);
     }
 
-    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
+    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) override
     {
         assert (! newLCL->info().open);
         assert (newOL->info().open);
@@ -366,7 +366,7 @@ public:
         }
     }
 
-    void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current)
+    void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current) override
     {
         assert (lastClosed && current);
 
@@ -384,18 +384,18 @@ public:
         checkAccept (lastClosed);
     }
 
-    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
+    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) override
     {
         return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
     }
 
-    bool storeLedger (Ledger::pointer ledger)
+    bool storeLedger (Ledger::pointer ledger) override
     {
         // Returns true if we already had the ledger
         return mLedgerHistory.addLedger (ledger, false);
     }
 
-    void forceValid (Ledger::pointer ledger)
+    void forceValid (Ledger::pointer ledger) override
     {
         ledger->setValidated();
         setFullLedger(ledger, true, false);
@@ -406,7 +406,7 @@ public:
         The open ledger remains open to handle new transactions
         until a new open ledger is built.
     */
-    void applyHeldTransactions ()
+    void applyHeldTransactions () override
     {
         ScopedLockType sl (m_mutex);
 
@@ -473,31 +473,31 @@ public:
         mCurrentLedger.set (newOL);
     }
 
-    LedgerIndex getBuildingLedger ()
+    LedgerIndex getBuildingLedger () override
     {
         // The ledger we are currently building, 0 of none
         return mBuildingLedgerSeq.load ();
     }
 
-    void setBuildingLedger (LedgerIndex i)
+    void setBuildingLedger (LedgerIndex i) override
     {
         mBuildingLedgerSeq.store (i);
     }
 
-    bool haveLedger (std::uint32_t seq)
+    bool haveLedger (std::uint32_t seq) override
     {
         ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.hasValue (seq);
     }
 
-    void clearLedger (std::uint32_t seq)
+    void clearLedger (std::uint32_t seq) override
     {
         ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.clearValue (seq);
     }
 
     // returns Ledgers we have all the nodes for
-    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         maxVal = mPubLedgerSeq.load();
 
@@ -518,7 +518,7 @@ public:
     }
 
     // Returns Ledgers we have all the nodes for and are indexed
-    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         maxVal = mPubLedgerSeq.load();
 
@@ -571,7 +571,7 @@ public:
     }
 
     // Get the earliest ledger we will let peers fetch
-    std::uint32_t getEarliestFetch ()
+    std::uint32_t getEarliestFetch () override
     {
         // The earliest ledger we will let people fetch is ledger zero,
         // unless that creates a larger range than allowed
@@ -692,7 +692,7 @@ public:
             WriteLog (lsDEBUG, LedgerMaster) << "No peer for fetch pack";
     }
 
-    void fixMismatch (Ledger::ref ledger)
+    void fixMismatch (Ledger::ref ledger) override
     {
         int invalidate = 0;
         boost::optional<uint256> hash;
@@ -739,7 +739,7 @@ public:
     }
 
     void setFullLedger (
-        Ledger::pointer ledger, bool isSynchronous, bool isCurrent)
+        Ledger::pointer ledger, bool isSynchronous, bool isCurrent) override
     {
         // A new ledger has been accepted as part of the trusted chain
         WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->info().seq
@@ -797,7 +797,7 @@ public:
         }
     }
 
-    void failedSave(std::uint32_t seq, uint256 const& hash)
+    void failedSave(std::uint32_t seq, uint256 const& hash) override
     {
         clearLedger(seq);
         app_.getInboundLedgers().acquire(
@@ -806,7 +806,7 @@ public:
 
     // Check if the specified ledger can become the new last fully-validated
     // ledger.
-    void checkAccept (uint256 const& hash, std::uint32_t seq)
+    void checkAccept (uint256 const& hash, std::uint32_t seq) override
     {
 
         int valCount;
@@ -889,7 +889,7 @@ public:
         return minVal;
     }
 
-    void checkAccept (Ledger::ref ledger)
+    void checkAccept (Ledger::ref ledger) override
     {
         if (ledger->info().seq <= mValidLedgerSeq)
             return;
@@ -1192,7 +1192,7 @@ public:
         return ret;
     }
 
-    void tryAdvance()
+    void tryAdvance() override
     {
         ScopedLockType ml (m_mutex);
 
@@ -1210,7 +1210,7 @@ public:
     // Return the hash of the valid ledger with a particular sequence, given a
     // subsequent ledger known valid.
     // VFALCO NOTE This should return boost::optional<uint256>
-    uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
+    uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) override
     {
         assert(desiredSeq < knownGoodLedger->info().seq);
 
@@ -1310,7 +1310,7 @@ public:
         }
     }
 
-    void newPathRequest ()
+    void newPathRequest () override
     {
         ScopedLockType ml (m_mutex);
         mPathFindNewRequest = true;
@@ -1318,7 +1318,7 @@ public:
         newPFWork("pf:newRequest");
     }
 
-    bool isNewPathRequest ()
+    bool isNewPathRequest () override
     {
         ScopedLockType ml (m_mutex);
         if (!mPathFindNewRequest)
@@ -1329,7 +1329,7 @@ public:
 
     // If the order book is radically updated, we need to reprocess all
     // pathfinding requests.
-    void newOrderBookDB ()
+    void newOrderBookDB () override
     {
         ScopedLockType ml (m_mutex);
         mPathLedger.reset();
@@ -1350,13 +1350,13 @@ public:
         }
     }
 
-    LockType& peekMutex ()
+    LockType& peekMutex () override
     {
         return m_mutex;
     }
 
     // The current ledger is the ledger we believe new transactions should go in
-    Ledger::pointer getCurrentLedger ()
+    Ledger::pointer getCurrentLedger () override
     {
         return mCurrentLedger.get ();
     }
@@ -1367,18 +1367,18 @@ public:
     }
 
     // The finalized ledger is the last closed/accepted ledger
-    Ledger::pointer getClosedLedger ()
+    Ledger::pointer getClosedLedger () override
     {
         return mClosedLedger.get ();
     }
 
     // The validated ledger is the last fully validated ledger
-    Ledger::pointer getValidatedLedger ()
+    Ledger::pointer getValidatedLedger () override
     {
         return mValidLedger.get ();
     }
 
-    Rules getValidatedRules ()
+    Rules getValidatedRules () override
     {
         // Once we have a guarantee that there's always a last validated
         // ledger then we can dispense with the if.
@@ -1392,7 +1392,7 @@ public:
 
     // This is the last ledger we published to clients and can lag the validated
     // ledger.
-    Ledger::ref getPublishedLedger ()
+    Ledger::ref getPublishedLedger () override
     {
         return mPubLedger;
     }
@@ -1427,24 +1427,24 @@ public:
         return true;
     }
 
-    int getMinValidations ()
+    int getMinValidations () override
     {
         return mMinValidations;
     }
 
-    void setMinValidations (int v)
+    void setMinValidations (int v) override
     {
         WriteLog (lsINFO, LedgerMaster) << "Validation quorum: " << v;
         mMinValidations = v;
     }
 
-    std::string getCompleteLedgers ()
+    std::string getCompleteLedgers () override
     {
         ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.toString ();
     }
 
-    uint256 getHashBySeq (std::uint32_t index)
+    uint256 getHashBySeq (std::uint32_t index) override
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);
 
@@ -1455,7 +1455,7 @@ public:
     }
 
     // VFALCO NOTE This should return boost::optional<uint256>
-    uint256 walkHashBySeq (std::uint32_t index)
+    uint256 walkHashBySeq (std::uint32_t index) override
     {
         uint256 ledgerHash;
         Ledger::pointer referenceLedger;
@@ -1474,7 +1474,7 @@ public:
         in the node store.
     */
     // VFALCO NOTE This should return boost::optional<uint256>
-    uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
+    uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger) override
     {
         if (!referenceLedger || (referenceLedger->info().seq < index))
         {
@@ -1524,7 +1524,7 @@ public:
         return ledgerHash ? *ledgerHash : zero; // kludge
     }
 
-    Ledger::pointer getLedgerBySeq (std::uint32_t index)
+    Ledger::pointer getLedgerBySeq (std::uint32_t index) override
     {
         if (index <= mValidLedgerSeq)
         {
@@ -1564,7 +1564,7 @@ public:
         return Ledger::pointer();
     }
 
-    Ledger::pointer getLedgerByHash (uint256 const& hash)
+    Ledger::pointer getLedgerByHash (uint256 const& hash) override
     {
         if (hash.isZero ())
             return mCurrentLedger.get ();
@@ -1584,33 +1584,33 @@ public:
         return Ledger::pointer ();
     }
 
-    void doLedgerCleaner(Json::Value const& parameters)
+    void doLedgerCleaner(Json::Value const& parameters) override
     {
         mLedgerCleaner->doClean (parameters);
     }
 
-    void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV)
+    void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV) override
     {
         ScopedLockType sl (mCompleteLock);
         mCompleteLedgers.setRange (minV, maxV);
     }
-    void tune (int size, int age)
+    void tune (int size, int age) override
     {
         mLedgerHistory.tune (size, age);
     }
 
-    void sweep ()
+    void sweep () override
     {
         mLedgerHistory.sweep ();
         fetch_packs_.sweep ();
     }
 
-    float getCacheHitRate ()
+    float getCacheHitRate () override
     {
         return mLedgerHistory.getCacheHitRate ();
     }
 
-    beast::PropertyStream::Source& getPropertySource ()
+    beast::PropertyStream::Source& getPropertySource () override
     {
         return *mLedgerCleaner;
     }
@@ -1649,7 +1649,7 @@ public:
         uint256 haveLedgerHash,
         std::uint32_t uUptime) override;
 
-    std::size_t getFetchPackCacheSize () const;
+    std::size_t getFetchPackCacheSize () const override;
 };
 
 bool LedgerMasterImp::shouldAcquire (
