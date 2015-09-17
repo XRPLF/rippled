@@ -12,7 +12,8 @@ then
   tar xzf /tmp/boost.tar.gz
   cd $BOOST_ROOT && \
     ./bootstrap.sh --prefix=$BOOST_ROOT && \
-      ./b2 -d1 && ./b2 -d0 install
+    ./b2 -d1 define=-D_GLIBCXX_USE_CXX11_ABI=0 && ./b2 -d0 define=-D_GLIBCXX_USE_CXX11_ABI=0 install
+  define=-D_GLIBCXX_USE_CXX11_ABI=0
 else
   echo "Using cached boost at $BOOST_ROOT"
 fi

@@ -1,10 +1,6 @@
 sudo: false
 language: cpp
 
-compiler:
-  - clang
-  - gcc
-
 env:
   global:
     # Maintenance note: to move to a new version
@@ -14,44 +10,64 @@ env:
     # to boost's .tar.gz.
     - BOOST_ROOT=$HOME/boost_1_59_0
     - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.59.0%2Fboost_1_59_0.tar.gz%2Fdownload&ts=1441761349&use_mirror=skylineservers'
-    # We need gcc >= 4.8 for some c++11 features.
-    # To change, also change the packages: entry.
-    # Env vars are not translated there.
-    - GCC_VER=4.8
-  matrix:
-    - TARGET=coverage
-    - TARGET=debug
-    - TARGET=debug.nounity
-    # We can specify any combination of builds here, for example, to
-    # include release builds, too, uncomment the following lines.
-    #- TARGET=release
-    #- TARGET=release.nounity
-matrix:
-  exclude:
-    # Because gcov won't work (easily) with clang
-    - env: TARGET=coverage
-      compiler: clang
-    # Because coverage target is basically debug + --coverage flags
-    - env: TARGET=debug
-      compiler: gcc
+    - RIPPLED_OLD_GCC_ABI=1
 
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - python-software-properties
-    # See also GCC_VER.
-    - g++-4.8
-    - gcc-4.8
-    - protobuf-compiler
-    - libprotobuf-dev
-    - libssl-dev
-    # Not available, but not needed
-    # - exuberant-ctags
-    - binutils-gold
-    # Provides a backtrace if the unittests crash
-    - gdb
+
+packages: &gcc5_pkgs
+  - gcc-5
+  - g++-5
+  - python-software-properties
+  - protobuf-compiler
+  - libprotobuf-dev
+  - libssl-dev
+  - libstdc++6
+  - binutils-gold
+  # Provides a backtrace if the unittests crash
+  - gdb
+
+packages: &gcc48_pkgs
+  - gcc-4.8
+  - g++-4.8
+  - python-software-properties
+  - protobuf-compiler
+  - libprotobuf-dev
+  - libssl-dev
+  - libstdc++6
+  - binutils-gold
+  # Provides a backtrace if the unittests crash
+  - gdb
+
+matrix:
+  include:
+    - compiler: gcc
+      env: GCC_VER=5 TARGET=debug.nounity
+      addons: &ao_gcc5
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: *gcc5_pkgs
+
+    - compiler: gcc
+      env: GCC_VER=5 TARGET=coverage
+      addons: *ao_gcc5
+
+    - compiler: clang
+      env: GCC_VER=4.8 TARGET=debug
+      addons: &ao_gcc48
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: *gcc48_pkgs
+
+    - compiler: clang
+      env: GCC_VER=4.8 TARGET=debug.nounity
+      addons: *ao_gcc48
+
+    - compiler: gcc
+      env: GCC_VER=4.8 TARGET=debug
+      addons: *ao_gcc48
+
+    - compiler: gcc
+      env: GCC_VER=4.8 TARGET=debug.nounity
+      addons: *ao_gcc48
 
 cache:
   directories:
