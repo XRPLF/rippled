@@ -20,13 +20,13 @@
 #ifndef RIPPLED_RIPPLE_WEBSOCKET_WEBSOCKET04_H
 #define RIPPLED_RIPPLE_WEBSOCKET_WEBSOCKET04_H
 
-#include <ripple/websocket/Config04.h>
+#include <ripple/websocket/Config06.h>
 #include <ripple/websocket/WebSocket.h>
 
 namespace ripple {
 namespace websocket {
 
-struct WebSocket04
+struct WebSocket06
 {
     using EndpointBase = websocketpp::server <Config04>;
 

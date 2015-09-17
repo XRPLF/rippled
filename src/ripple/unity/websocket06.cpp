@@ -26,4 +26,4 @@
 #endif
 #define _WEBSOCKETPP_CPP11_STL_
 
-#include <ripple/websocket/WebSocket04.cpp>
+#include <ripple/websocket/WebSocket06.cpp>

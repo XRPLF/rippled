@@ -4548,7 +4548,7 @@
     <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\websocket04.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\websocket06.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
@@ -4584,7 +4584,7 @@
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Config04.h">
+    <ClInclude Include="..\..\src\ripple\websocket\Config06.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Connection.h">
@@ -4617,10 +4617,10 @@
     <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\WebSocket04.cpp">
+    <ClCompile Include="..\..\src\ripple\websocket\WebSocket06.cpp">
       <Filter>ripple\websocket</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket04.h">
+    <ClInclude Include="..\..\src\ripple\websocket\WebSocket06.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">

@@ -684,7 +684,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
     append_sources(result, *list_sources('src/ripple/unl', '.cpp'))
-   
+
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -889,7 +889,7 @@ for tu_style in ['classic', 'unity']:
             )
 
             object_builder.add_source_files(
-                'src/ripple/unity/websocket04.cpp',
+                'src/ripple/unity/websocket06.cpp',
                 CPPPATH='src/websocketpp',
             )
 
