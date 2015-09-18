@@ -570,6 +570,7 @@ def config_env(toolchain, variant, env):
             'uuid.lib',
             'odbc32.lib',
             'odbccp32.lib',
+            'Rpcrt4.lib',
             ])
         env.Append(LINKFLAGS=[
             '/DEBUG',

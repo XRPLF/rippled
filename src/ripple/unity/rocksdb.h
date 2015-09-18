@@ -30,9 +30,8 @@
 #endif
 #endif
 
-#ifndef RIPPLE_ROCKSDB_AVAILABLE
 #if BEAST_WIN32
-# define ROCKSDB_PLATFORM_WINDOWS
+# define OS_WIN
 #else
 # define ROCKSDB_PLATFORM_POSIX
 # if BEAST_MAC || BEAST_IOS
@@ -43,20 +42,9 @@
 #  define OS_LINUX
 # endif
 #endif
-# if BEAST_WIN32
-#  define RIPPLE_ROCKSDB_AVAILABLE 0
-# else
-#  if __cplusplus >= 201103L
-#   define RIPPLE_ROCKSDB_AVAILABLE 1
-#  else
-#   define RIPPLE_ROCKSDB_AVAILABLE 0
-#  endif
-# endif
-#endif
 
-#if RIPPLE_ROCKSDB_AVAILABLE
 #define SNAPPY
-//#include <rocksdb2/port/port_posix.h>
+
 #include <rocksdb2/include/rocksdb/cache.h>
 #include <rocksdb2/include/rocksdb/compaction_filter.h>
 #include <rocksdb2/include/rocksdb/comparator.h>
@@ -79,7 +67,5 @@
 #include <rocksdb2/include/rocksdb/types.h>
 #include <rocksdb2/include/rocksdb/universal_compaction.h>
 #include <rocksdb2/include/rocksdb/write_batch.h>
-
-#endif
 
 #endif
