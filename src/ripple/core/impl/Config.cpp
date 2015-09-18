@@ -34,6 +34,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <csignal>
+
 #ifndef DUMP_CONFIG
 #define DUMP_CONFIG 0
 #endif
