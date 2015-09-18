@@ -365,7 +365,7 @@ private:
     // --> strValidatorsSrc: source details for display
     // --> naNodePublic: remote source public key - not valid for local
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type* pmtVecStrValidators);
+    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type const* pmtVecStrValidators);
 
     // Process a ripple.txt.
     void processFile (std::string const& strDomain, RippleAddress const& naNodePublic, IniFileSections secSite);
@@ -780,38 +780,40 @@ void UniqueNodeListImp::nodeBootstrap()
     bool    bLoaded = iDomains || iNodes;
 
     // Always merge in the file specified in the config.
-    if (!getConfig ().VALIDATORS_FILE.empty ())
+    if (!app_.config().VALIDATORS_FILE.empty ())
     {
         WriteLog (lsINFO, UniqueNodeList) << "Bootstrapping UNL: loading from unl_default.";
 
-        bLoaded = nodeLoad (getConfig ().VALIDATORS_FILE);
+        bLoaded = nodeLoad (app_.config().VALIDATORS_FILE);
     }
 
     // If never loaded anything try the current directory.
-    if (!bLoaded && getConfig ().VALIDATORS_FILE.empty ())
+    if (!bLoaded && app_.config().VALIDATORS_FILE.empty ())
     {
         WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                          % getConfig ().VALIDATORS_BASE);
+                                          % app_.config().VALIDATORS_BASE);
 
-        bLoaded = nodeLoad (getConfig ().VALIDATORS_BASE);
+        bLoaded = nodeLoad (app_.config().VALIDATORS_BASE);
     }
 
     // Always load from rippled.cfg
-    if (!getConfig ().validators.empty ())
+    if (!app_.config().validators.empty ())
     {
         RippleAddress   naInvalid;  // Don't want a referrer on added entries.
 
         WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                          % getConfig ().CONFIG_FILE);
+                                          % app_.config().CONFIG_FILE);
 
-        if (processValidators ("local", getConfig ().CONFIG_FILE.string (), naInvalid, vsConfig, &getConfig ().validators))
+        if (processValidators ("local",
+            app_.config().CONFIG_FILE.string (), naInvalid,
+            vsConfig, &(app_.config().validators)))
             bLoaded = true;
     }
 
     if (!bLoaded)
     {
         WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
-                                          % getConfig ().VALIDATORS_SITE);
+                                          % app_.config().VALIDATORS_SITE);
 
         nodeNetwork ();
     }
@@ -879,14 +881,14 @@ bool UniqueNodeListImp::nodeLoad (boost::filesystem::path pConfig)
 
 void UniqueNodeListImp::nodeNetwork()
 {
-    if (!getConfig ().VALIDATORS_SITE.empty ())
+    if (!app_.config().VALIDATORS_SITE.empty ())
     {
         HTTPClient::get (
             true,
             app_.getIOService (),
-            getConfig ().VALIDATORS_SITE,
+            app_.config().VALIDATORS_SITE,
             443,
-            getConfig ().VALIDATORS_URI,
+            app_.config().VALIDATORS_URI,
             VALIDATORS_FILE_BYTES_MAX,
             boost::posix_time::seconds (VALIDATORS_FETCH_SECONDS),
             std::bind (&UniqueNodeListImp::validatorsResponse, this,
@@ -1017,7 +1019,7 @@ bool UniqueNodeListImp::miscSave()
 void UniqueNodeListImp::trustedLoad()
 {
     boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-    for (auto const& c : getConfig ().CLUSTER_NODES)
+    for (auto const& c : app_.config().CLUSTER_NODES)
     {
         boost::smatch match;
 
@@ -1981,7 +1983,7 @@ void UniqueNodeListImp::processIps (std::string const& strSite, RippleAddress co
 // --> strValidatorsSrc: source details for display
 // --> naNodePublic: remote source public key - not valid for local
 // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-int UniqueNodeListImp::processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type* pmtVecStrValidators)
+int UniqueNodeListImp::processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type const* pmtVecStrValidators)
 {
     std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
     int         iValues         = 0;
@@ -2364,7 +2366,7 @@ bool UniqueNodeListImp::validatorsResponse (const boost::system::error_code& err
 
         if (!err)
         {
-            nodeProcess ("network", strResponse, getConfig ().VALIDATORS_SITE);
+            nodeProcess ("network", strResponse, app_.config().VALIDATORS_SITE);
         }
         else
         {
@@ -2398,7 +2400,7 @@ void UniqueNodeListImp::nodeProcess (std::string const& strSite, std::string con
     else
     {
         WriteLog (lsWARNING, UniqueNodeList) << boost::str (boost::format ("'%s' missing [" SECTION_VALIDATORS "].")
-                                             % getConfig ().VALIDATORS_BASE);
+                                             % app_.config().VALIDATORS_BASE);
     }
 }
 

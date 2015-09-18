@@ -216,7 +216,7 @@ public:
      *
      *  @param sectionName Retrieve the contents of this section's
      *         legacy value.
-     *  @returun Contents of the legacy value.
+     *  @return Contents of the legacy value.
      */
     std::string
     legacy(std::string const& sectionName) const;

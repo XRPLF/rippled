@@ -115,14 +115,11 @@ EndpointPtr04  WebSocket04::makeEndpoint (HandlerPtr&& handler)
 template <>
 void ConnectionImpl <WebSocket04>::setPingTimer ()
 {
-    auto freq = getConfig ().WEBSOCKET_PING_FREQ;
-    // VFALCO Disabled since it might cause hangs
-    freq = 0;
-    if (freq <= 0)
+    if (pingFreq_ <= 0)
         return;
     if (auto con = m_connection.lock ())
     {
-        auto t = boost::posix_time::seconds (freq);
+        auto t = boost::posix_time::seconds (pingFreq_);
         auto ms = t.total_milliseconds();
         con->set_timer (
             ms,

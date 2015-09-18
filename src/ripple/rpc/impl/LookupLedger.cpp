@@ -33,9 +33,9 @@ namespace RPC {
 
 namespace {
 
-bool isValidatedOld (LedgerMaster& ledgerMaster)
+bool isValidatedOld (LedgerMaster& ledgerMaster, bool standalone)
 {
-    if (getConfig ().RUN_STANDALONE)
+    if (standalone)
         return false;
 
     return ledgerMaster.getValidatedLedgerAge () >
@@ -93,7 +93,7 @@ Status ledgerFromRequest (T& ledger, Context& context)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
         if (ledger->info().seq > ledgerMaster.getValidLedgerIndex() &&
-            isValidatedOld(ledgerMaster))
+            isValidatedOld(ledgerMaster, context.app.config().RUN_STANDALONE))
         {
             ledger.reset();
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -101,7 +101,7 @@ Status ledgerFromRequest (T& ledger, Context& context)
     }
     else
     {
-        if (isValidatedOld (ledgerMaster))
+        if (isValidatedOld (ledgerMaster, context.app.config().RUN_STANDALONE))
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
         auto const index = indexValue.asString ();

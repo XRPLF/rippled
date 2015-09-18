@@ -71,10 +71,12 @@ void setupServer (Application& app)
 }
 
 boost::filesystem::path
-getEntropyFile()
+getEntropyFile(Config const& config)
 {
-    return boost::filesystem::path (
-        getConfig().legacy("database_path")) / "random.seed";
+    auto const path = config.legacy("database_path");
+    if (path.empty ())
+        return {};
+    return boost::filesystem::path (path) / "random.seed";
 }
 
 void startServer (Application& app)
@@ -82,13 +84,13 @@ void startServer (Application& app)
     //
     // Execute start up rpc commands.
     //
-    if (getConfig ().RPC_STARTUP.isArray ())
+    if (app.config().RPC_STARTUP.isArray ())
     {
-        for (int i = 0; i != getConfig ().RPC_STARTUP.size (); ++i)
+        for (int i = 0; i != app.config().RPC_STARTUP.size (); ++i)
         {
-            Json::Value const& jvCommand    = getConfig ().RPC_STARTUP[i];
+            Json::Value const& jvCommand    = app.config().RPC_STARTUP[i];
 
-            if (!getConfig ().QUIET)
+            if (!app.config().QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
@@ -99,7 +101,7 @@ void startServer (Application& app)
             Json::Value jvResult;
             RPC::doCommand (context, jvResult);
 
-            if (!getConfig ().QUIET)
+            if (!app.config().QUIET)
                 std::cerr << "Result: " << jvResult << std::endl;
         }
     }
@@ -108,7 +110,9 @@ void startServer (Application& app)
     app.run ();
 
     // Try to write out some entropy to use the next time we start.
-    stir_entropy (getEntropyFile ().string ());
+    auto entropy = getEntropyFile (app.config());
+    if (!entropy.empty ())
+        stir_entropy (entropy.string ());
 }
 
 void printHelp (const po::options_description& desc)
@@ -169,18 +173,20 @@ setupConfigForUnitTests (Config& config)
     config.legacy("database_path", "DummyForUnitTests");
 }
 
-static int runShutdownTests ()
+static int runShutdownTests (std::unique_ptr<Config> config)
 {
     // Shutdown tests can not be part of the normal unit tests in 'runUnitTests'
     // because it needs to create and destroy an application object.
-    int const numShutdownIterations = 20;
+    // FIXME: we only loop once, since the Config object will get destroyed
+    int const numShutdownIterations = 1; //20;
+
     // Give it enough time to sync and run a bit while synced.
     std::chrono::seconds const serverUptimePerIteration (4 * 60);
     for (int i = 0; i < numShutdownIterations; ++i)
     {
         std::cerr << "\n\nStarting server. Iteration: " << i << "\n"
                   << std::endl;
-        std::unique_ptr<Application> app (make_Application (getConfig(), deprecatedLogs()));
+        auto app = make_Application (std::move(config), deprecatedLogs());
         auto shutdownApp = [&app](std::chrono::seconds sleepTime, int iteration)
         {
             std::this_thread::sleep_for (sleepTime);
@@ -196,13 +202,17 @@ static int runShutdownTests ()
     return EXIT_SUCCESS;
 }
 
-static int runUnitTests (std::string const& pattern,
-                         std::string const& argument)
+static int runUnitTests (
+    std::unique_ptr<Config> config,
+    std::string const& pattern,
+    std::string const& argument)
 {
     // Config needs to be set up before creating Application
-    setupConfigForUnitTests (getConfig ());
+    setupConfigForUnitTests (*config);
+
     // VFALCO TODO Remove dependence on constructing Application object
-    std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
+    auto app = make_Application (std::move(config), deprecatedLogs());
+
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -224,7 +234,31 @@ int run (int argc, char** argv)
     using namespace std;
 
     setCallingThreadName ("main");
-    int iResult = 0;
+
+    {
+        // We want to seed the RNG early. We acquire a small amount of
+        // questionable quality entropy from the current time and our
+        // environment block which will get stirred into the RNG pool
+        // along with high-quality entropy from the system.
+        struct entropy_t
+        {
+            std::uint64_t timestamp;
+            std::size_t tid;
+            std::uintptr_t ptr[4];
+        };
+
+        auto entropy = std::make_unique<entropy_t> ();
+
+        entropy->timestamp = beast::Time::currentTimeMillis ();
+        entropy->tid = std::hash <std::thread::id>() (std::this_thread::get_id ());
+        entropy->ptr[0] = reinterpret_cast<std::uintptr_t>(entropy.get ());
+        entropy->ptr[1] = reinterpret_cast<std::uintptr_t>(&argc);
+        entropy->ptr[2] = reinterpret_cast<std::uintptr_t>(argv);
+        entropy->ptr[3] = reinterpret_cast<std::uintptr_t>(argv[0]);
+
+        add_entropy (entropy.get (), sizeof (entropy_t));
+    }
+
     po::variables_map vm;
 
     std::string importText;
@@ -237,8 +271,6 @@ int run (int argc, char** argv)
         importText += "] configuration file section).";
     }
 
-    // VFALCO TODO Replace boost program options with something from Beast.
-    //
     // Set up option parsing.
     //
     po::options_description desc ("General Options");
@@ -271,51 +303,27 @@ int run (int argc, char** argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
+    // Parse options, if no error.
+    try
     {
-        // We want to seed the RNG early. We acquire a small amount of
-        // questionable quality entropy from the current time and our
-        // environment block which will get stirred into the RNG pool
-        // along with high-quality entropy from the system.
-        struct entropy_t
-        {
-            std::uint64_t timestamp;
-            std::size_t tid;
-            std::uintptr_t ptr[4];
-        };
-
-        auto entropy = std::make_unique<entropy_t> ();
-
-        entropy->timestamp = beast::Time::currentTimeMillis ();
-        entropy->tid = std::hash <std::thread::id>() (std::this_thread::get_id ());
-        entropy->ptr[0] = reinterpret_cast<std::uintptr_t>(entropy.get ());
-        entropy->ptr[1] = reinterpret_cast<std::uintptr_t>(&argc);
-        entropy->ptr[2] = reinterpret_cast<std::uintptr_t>(argv);
-        entropy->ptr[3] = reinterpret_cast<std::uintptr_t>(argv[0]);
-
-        add_entropy (entropy.get (), sizeof (entropy_t));
+        po::store (po::command_line_parser (argc, argv)
+            .options (desc)               // Parse options.
+            .positional (p)               // Remainder as --parameters.
+            .run (),
+            vm);
+        po::notify (vm);                  // Invoke option notify functions.
+    }
+    catch (...)
+    {
+        std::cerr << "rippled: Incorrect command line syntax." << std::endl;
+        std::cerr << "Use '--help' for a list of options." << std::endl;
+        return 1;
     }
 
-    if (!iResult)
+    if (vm.count ("help"))
     {
-        // Parse options, if no error.
-        try
-        {
-            po::store (po::command_line_parser (argc, argv)
-                .options (desc)               // Parse options.
-                .positional (p)               // Remainder as --parameters.
-                .run (),
-                vm);
-            po::notify (vm);                  // Invoke option notify functions.
-        }
-        catch (...)
-        {
-            iResult = 1;
-        }
-    }
-
-    if (!iResult && vm.count ("help"))
-    {
-        iResult = 1;
+        printHelp (desc);
+        return 0;
     }
 
     if (vm.count ("version"))
@@ -328,31 +336,24 @@ int run (int argc, char** argv)
     // Use a watchdog process unless we're invoking a stand alone type of mode
     //
     if (HaveSustain ()
-        && !iResult
         && !vm.count ("parameters")
         && !vm.count ("fg")
         && !vm.count ("standalone")
         && !vm.count ("shutdowntest")
         && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (getConfig ().getDebugLogFile ().string());
+        std::string logMe = DoSustain ();
 
         if (!logMe.empty ())
             std::cerr << logMe;
     }
 
     if (vm.count ("quiet"))
-    {
         deprecatedLogs().severity(beast::Journal::kFatal);
-    }
     else if (vm.count ("verbose"))
-    {
         deprecatedLogs().severity(beast::Journal::kTrace);
-    }
     else
-    {
         deprecatedLogs().severity(beast::Journal::kInfo);
-    }
 
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
@@ -364,136 +365,133 @@ int run (int argc, char** argv)
         if (vm.count("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
 
-        return runUnitTests(vm["unittest"].as<std::string>(), argument);
+        return runUnitTests(
+            std::make_unique<Config> (),
+            vm["unittest"].as<std::string>(),
+            argument);
     }
 
-    if (!iResult)
+    auto config = std::make_unique<Config>();
+
+    auto configFile = vm.count ("conf") ?
+            vm["conf"].as<std::string> () : std::string();
+
+    // config file, quiet flag.
+    config->setup (configFile, bool (vm.count ("quiet")));
+
+    if (vm.count ("standalone"))
     {
-        auto configFile = vm.count ("conf") ?
-                vm["conf"].as<std::string> () : std::string();
-
-        // config file, quiet flag.
-        getConfig ().setup (configFile, bool (vm.count ("quiet")));
-
-        if (vm.count ("standalone"))
-        {
-            getConfig ().RUN_STANDALONE = true;
-            getConfig ().LEDGER_HISTORY = 0;
-        }
-
-        // Use any previously available entropy to stir the pool
-        stir_entropy (getEntropyFile ().string ());
+        config->RUN_STANDALONE = true;
+        config->LEDGER_HISTORY = 0;
     }
 
-    if (vm.count ("start")) getConfig ().START_UP = Config::FRESH;
+    // Use any previously available entropy to stir the pool
+    auto entropy = getEntropyFile (*config);
+    if (!entropy.empty ())
+        stir_entropy (entropy.string ());
 
-    // Handle a one-time import option
-    //
+    if (vm.count ("start"))
+        config->START_UP = Config::FRESH;
+
     if (vm.count ("import"))
-    {
-        getConfig ().doImport = true;
-    }
+        config->doImport = true;
 
     if (vm.count ("ledger"))
     {
-        getConfig ().START_LEDGER = vm["ledger"].as<std::string> ();
+        config->START_LEDGER = vm["ledger"].as<std::string> ();
         if (vm.count("replay"))
-            getConfig ().START_UP = Config::REPLAY;
+            config->START_UP = Config::REPLAY;
         else
-            getConfig ().START_UP = Config::LOAD;
+            config->START_UP = Config::LOAD;
     }
     else if (vm.count ("ledgerfile"))
     {
-        getConfig ().START_LEDGER = vm["ledgerfile"].as<std::string> ();
-        getConfig ().START_UP = Config::LOAD_FILE;
+        config->START_LEDGER = vm["ledgerfile"].as<std::string> ();
+        config->START_UP = Config::LOAD_FILE;
     }
     else if (vm.count ("load"))
     {
-        getConfig ().START_UP = Config::LOAD;
+        config->START_UP = Config::LOAD;
     }
     else if (vm.count ("net"))
     {
-        getConfig ().START_UP = Config::NETWORK;
+        config->START_UP = Config::NETWORK;
 
-        if (getConfig ().VALIDATION_QUORUM < 2)
-            getConfig ().VALIDATION_QUORUM = 2;
+        if (config->VALIDATION_QUORUM < 2)
+            config->VALIDATION_QUORUM = 2;
     }
 
-    if (iResult == 0)
+    // Override the RPC destination IP address. This must
+    // happen after the config file is loaded.
+    if (vm.count ("rpc_ip"))
     {
-        // These overrides must happen after the config file is loaded.
-
-        // Override the RPC destination IP address
-        //
-        if (vm.count ("rpc_ip"))
+        try
         {
-            try
-            {
-                getConfig().rpc_ip =
-                    boost::asio::ip::address_v4::from_string(
-                        vm["rpc_ip"].as<std::string>());
-            }
-            catch(...)
-            {
-                std::cerr <<
-                    "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>();
-                return -1;
-            }
+            config->rpc_ip =
+                boost::asio::ip::address_v4::from_string(
+                    vm["rpc_ip"].as<std::string>());
         }
-
-        // Override the RPC destination port number
-        //
-        if (vm.count ("rpc_port"))
+        catch(...)
         {
-            try
-            {
-                getConfig().rpc_port = vm["rpc_port"].as<int>();
-            }
-            catch(...)
-            {
-                std::cerr <<
-                    "Invalid rpc_port = " << vm["rpc_port"].as<std::string>();
-                return -1;
-            }
+            std::cerr << "Invalid rpc_ip = " <<
+                vm["rpc_ip"].as<std::string>() << std::endl;
+            return -1;
         }
+    }
 
-        if (vm.count ("quorum"))
+    // Override the RPC destination port number
+    //
+    if (vm.count ("rpc_port"))
+    {
+        try
         {
-            getConfig ().VALIDATION_QUORUM = vm["quorum"].as <int> ();
+            config->rpc_port = vm["rpc_port"].as<std::uint16_t>();
 
-            if (getConfig ().VALIDATION_QUORUM < 0)
-                iResult = 1;
+            if (*config->rpc_port == 0)
+                throw std::domain_error ("");
+        }
+        catch(...)
+        {
+            std::cerr << "Invalid rpc_port = " <<
+                vm["rpc_port"].as<std::string>() << std::endl;
+            return -1;
+        }
+    }
+
+    if (vm.count ("quorum"))
+    {
+        try
+        {
+            config->VALIDATION_QUORUM = vm["quorum"].as <int> ();
+
+            if (config->VALIDATION_QUORUM < 0)
+                throw std::domain_error ("");
+        }
+        catch(...)
+        {
+            std::cerr << "Invalid quorum = " <<
+                vm["quorum"].as <std::string> () << std::endl;
+            return -1;
         }
     }
 
     if (vm.count ("shutdowntest"))
+        return runShutdownTests (std::move(config));
+
+    if (!vm.count ("parameters"))
     {
-        return runShutdownTests ();
+        // No arguments. Run server.
+        auto app = make_Application (std::move(config), deprecatedLogs());
+        setupServer (*app);
+        startServer (*app);
+        return 0;
     }
 
-    if (iResult == 0)
-    {
-        if (!vm.count ("parameters"))
-        {
-            // No arguments. Run server.
-            std::unique_ptr <Application> app (make_Application (getConfig(), deprecatedLogs()));
-            setupServer (*app);
-            startServer (*app);
-        }
-        else
-        {
-            // Have a RPC command.
-            setCallingThreadName ("rpc");
-            std::vector<std::string> vCmd   = vm["parameters"].as<std::vector<std::string> > ();
-
-            iResult = RPCCall::fromCommandLine (vCmd);
-        }
-    }
-
-    if (1 == iResult && !vm.count ("quiet"))
-        printHelp (desc);
-
-    return iResult;
+    // We have an RPC command to process:
+    setCallingThreadName ("rpc");
+    return RPCCall::fromCommandLine (
+        *config,
+        vm["parameters"].as<std::vector<std::string>>());
 }
 
 extern int run (int argc, char** argv);

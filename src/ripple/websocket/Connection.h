@@ -119,6 +119,8 @@ private:
 
     handler_type& m_handler;
     weak_connection_ptr m_connection;
+
+    int pingFreq_;
 };
 
 template <class WebSocket>
@@ -141,7 +143,10 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
         , m_pingTimer (io_service)
         , m_handler (handler)
         , m_connection (cpConnection)
+        , pingFreq_ (app.config ().WEBSOCKET_PING_FREQ)
 {
+    // VFALCO Disabled since it might cause hangs
+    pingFreq_ = 0;
 }
 
 template <class WebSocket>

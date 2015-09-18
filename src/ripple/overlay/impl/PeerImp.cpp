@@ -1051,7 +1051,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
                 flags |= SF_TRUSTED;
             }
 
-            if (! getConfig().VALIDATION_PRIV.isSet())
+            if (! app_.config().VALIDATION_PRIV.isSet())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
@@ -1208,7 +1208,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     RippleAddress signerPublic = RippleAddress::createNodePublic (
         strCopy (set.nodepubkey ()));
 
-    if (signerPublic == getConfig ().VALIDATION_PUB)
+    if (signerPublic == app_.config().VALIDATION_PUB)
     {
         p_journal_.trace << "Proposal: self";
         return;

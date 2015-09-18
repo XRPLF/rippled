@@ -148,7 +148,7 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        Config const config;
+        Config config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
                 create_genesis, config, env.app().family());
@@ -412,7 +412,7 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        Config const config;
+        Config config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger> (
                 create_genesis, config, env.app().family());
@@ -532,7 +532,7 @@ class View_test
         // erase the item, apply.
         {
             Env env(*this);
-            Config const config;
+            Config config;
             std::shared_ptr<Ledger const> const genesis =
                 std::make_shared<Ledger>(
                     create_genesis, config, env.app().family());

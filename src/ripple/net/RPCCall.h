@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NET_RPCCALL_H_INCLUDED
 #define RIPPLE_NET_RPCCALL_H_INCLUDED
 
+#include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <boost/asio/io_service.hpp>
 #include <functional>
@@ -28,29 +29,27 @@
 
 namespace ripple {
 
-//
-// This a trusted interface, the user is expected to provide valid input to perform valid requests.
-// Error catching and reporting is not a requirement of this command line interface.
+// This a trusted interface, the user is expected to provide valid input to
+// perform valid requests. Error catching and reporting is not a requirement of
+// the command line interface.
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
-//
 
-/** Processes Ripple RPC calls.
-*/
-class RPCCall
-{
-public:
+/** Processes Ripple RPC calls. */
+namespace RPCCall {
 
-    static int fromCommandLine (const std::vector<std::string>& vCmd);
+int fromCommandLine (
+    Config const& config,
+    const std::vector<std::string>& vCmd);
 
-    static void fromNetwork (
-        boost::asio::io_service& io_service,
-        std::string const& strIp, const int iPort,
-        std::string const& strUsername, std::string const& strPassword,
-        std::string const& strPath, std::string const& strMethod,
-        Json::Value const& jvParams, const bool bSSL,
-        std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> ());
-};
+void fromNetwork (
+    boost::asio::io_service& io_service,
+    std::string const& strIp, const int iPort,
+    std::string const& strUsername, std::string const& strPassword,
+    std::string const& strPath, std::string const& strMethod,
+    Json::Value const& jvParams, const bool bSSL, bool quiet,
+    std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> ());
+}
 
 } // ripple
 

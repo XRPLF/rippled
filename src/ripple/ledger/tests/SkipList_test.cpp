@@ -36,7 +36,7 @@ class SkipList_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<Ledger>> history;
         {
             jtx::Env env(*this);
-            Config const config;
+            Config config;
             auto prev =
                 std::make_shared<Ledger>(create_genesis, config, env.app().family());
             history.push_back(prev);

@@ -101,7 +101,7 @@ void HTTPReply (
             "Content-Length: ");
 
     // VFALCO TODO Determine if/when this header should be added
-    //if (getConfig ().RPC_ALLOW_REMOTE)
+    //if (context.app.config().RPC_ALLOW_REMOTE)
     //    output ("Access-Control-Allow-Origin: *\r\n");
 
     output (std::to_string(content.size () + 2));

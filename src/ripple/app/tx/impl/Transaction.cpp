@@ -91,7 +91,8 @@ Transaction::pointer Transaction::sharedTransaction (
 bool Transaction::checkSign (std::string& reason, SigVerify sigVerify) const
 {
     bool const allowMultiSign = mApp.getLedgerMaster().
-        getValidatedRules().enabled (featureMultiSign, getConfig().features);
+        getValidatedRules().enabled (featureMultiSign,
+            mApp.config().features);
 
     if (! mFromPubKey.isValid ())
         reason = "Transaction has bad source public key";

@@ -31,21 +31,18 @@ namespace ripple {
 class RPCSub : public InfoSub
 {
 public:
-    using pointer = std::shared_ptr <RPCSub>;
-    using ref = pointer const&;
-
-    // VFALCO Why is the io_service needed?
-    static pointer New (InfoSub::Source& source,
-        boost::asio::io_service& io_service, JobQueue& jobQueue,
-            std::string const& strUrl, std::string const& strUsername,
-            std::string const& strPassword);
-
     virtual void setUsername (std::string const& strUsername) = 0;
     virtual void setPassword (std::string const& strPassword) = 0;
 
 protected:
     explicit RPCSub (InfoSub::Source& source);
 };
+
+// VFALCO Why is the io_service needed?
+std::shared_ptr<RPCSub> make_RPCSub (
+    InfoSub::Source& source, boost::asio::io_service& io_service,
+    JobQueue& jobQueue, std::string const& strUrl,
+    std::string const& strUsername, std::string const& strPassword);
 
 } // ripple
 

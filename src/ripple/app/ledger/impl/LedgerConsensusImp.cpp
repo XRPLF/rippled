@@ -228,8 +228,8 @@ LedgerConsensusImp::LedgerConsensusImp (
     , mCloseTime (closeTime)
     , mPrevLedgerHash (prevLCLHash)
     , mPreviousLedger (previousLedger)
-    , mValPublic (getConfig ().VALIDATION_PUB)
-    , mValPrivate (getConfig ().VALIDATION_PRIV)
+    , mValPublic (app_.config().VALIDATION_PUB)
+    , mValPrivate (app_.config().VALIDATION_PRIV)
     , mConsensusFail (false)
     , mCurrentMSeconds (0)
     , mClosePercent (0)
@@ -722,7 +722,7 @@ void LedgerConsensusImp::timerEntry ()
 void LedgerConsensusImp::statePreClose ()
 {
     // it is shortly before ledger close time
-    bool anyTransactions = ! getApp().openLedger().empty();
+    bool anyTransactions = ! app_.openLedger().empty();
     int proposersClosed = mPeerPositions.size ();
     int proposersValidated
         = app_.getValidations ().getTrustedValidationCount
@@ -1061,7 +1061,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         tmf << " transaction nodes";
 
     // Accept ledger
-    newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
+    newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect, app_.config());
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger (newLCL))
@@ -1199,7 +1199,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     state_ = State::accepted;
 
     assert (ledgerMaster_.getClosedLedger()->getHash() == newLCL->getHash());
-    assert (getApp().openLedger().current()->info().parentHash == newLCL->getHash());
+    assert (app_.openLedger().current()->info().parentHash == newLCL->getHash());
 
     if (mValidating)
     {
@@ -1424,7 +1424,7 @@ void LedgerConsensusImp::takeInitialPosition (
     std::shared_ptr<ReadView const> const& initialLedger)
 {
     std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, getApp().family(), deprecatedLogs().journal("SHAMap"));
+        SHAMapType::TRANSACTION, app_.family(), deprecatedLogs().journal("SHAMap"));
 
     // Build SHAMap containing all transactions in our open ledger
     for (auto const& tx : initialLedger->txs)
@@ -1435,11 +1435,11 @@ void LedgerConsensusImp::takeInitialPosition (
             SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
     }
 
-    if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
+    if ((app_.config().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
             && ((mPreviousLedger->info().seq % 256) == 0))
     {
         // previous ledger was flag ledger, add pseudo-transactions
-        ValidationSet parentSet = getApp().getValidations().getValidations (
+        ValidationSet parentSet = app_.getValidations().getValidations (
             mPreviousLedger->info().parentHash);
         m_feeVote.doVoting (mPreviousLedger, parentSet, initialSet);
         app_.getAmendmentTable ().doVoting (
@@ -1706,7 +1706,7 @@ void LedgerConsensusImp::closeLedger ()
     consensus_.setLastCloseTime (mCloseTime);
     statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
     ledgerMaster_.applyHeldTransactions ();
-    takeInitialPosition (getApp().openLedger().current());
+    takeInitialPosition (app_.openLedger().current());
 }
 
 void LedgerConsensusImp::checkOurValidation ()
@@ -1829,7 +1829,7 @@ applyTransaction (Application& app, OpenView& view,
     {
         auto const result = apply(app, view, *txn, flags,
             app.getHashRouter().sigVerify(),
-                getConfig(), deprecatedLogs().
+                app.config(), deprecatedLogs().
                     journal("LedgerConsensus"));
         if (result.second)
         {
