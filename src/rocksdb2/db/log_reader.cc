@@ -13,6 +13,7 @@
 #include "rocksdb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "util/file_reader_writer.h"
 
 namespace rocksdb {
 namespace log {
@@ -20,9 +21,9 @@ namespace log {
 Reader::Reporter::~Reporter() {
 }
 
-Reader::Reader(unique_ptr<SequentialFile>&& file, Reporter* reporter,
+Reader::Reader(unique_ptr<SequentialFileReader>&& _file, Reporter* reporter,
                bool checksum, uint64_t initial_offset)
-    : file_(std::move(file)),
+    : file_(std::move(_file)),
       reporter_(reporter),
       checksum_(checksum),
       backing_store_(new char[kBlockSize]),
@@ -32,20 +33,18 @@ Reader::Reader(unique_ptr<SequentialFile>&& file, Reporter* reporter,
       eof_offset_(0),
       last_record_offset_(0),
       end_of_buffer_offset_(0),
-      initial_offset_(initial_offset) {
-}
+      initial_offset_(initial_offset) {}
 
 Reader::~Reader() {
   delete[] backing_store_;
 }
 
 bool Reader::SkipToInitialBlock() {
-  size_t offset_in_block = initial_offset_ % kBlockSize;
-  uint64_t block_start_location = initial_offset_ - offset_in_block;
+  size_t initial_offset_in_block = initial_offset_ % kBlockSize;
+  uint64_t block_start_location = initial_offset_ - initial_offset_in_block;
 
   // Don't search a block if we'd be in the trailer
-  if (offset_in_block > kBlockSize - 6) {
-    offset_in_block = 0;
+  if (initial_offset_in_block > kBlockSize - 6) {
     block_start_location += kBlockSize;
   }
 
@@ -55,7 +54,7 @@ bool Reader::SkipToInitialBlock() {
   if (block_start_location > 0) {
     Status skip_status = file_->Skip(block_start_location);
     if (!skip_status.ok()) {
-      ReportDrop(block_start_location, skip_status);
+      ReportDrop(static_cast<size_t>(block_start_location), skip_status);
       return false;
     }
   }
@@ -63,7 +62,8 @@ bool Reader::SkipToInitialBlock() {
   return true;
 }
 
-bool Reader::ReadRecord(Slice* record, std::string* scratch) {
+bool Reader::ReadRecord(Slice* record, std::string* scratch,
+                        const bool report_eof_inconsistency) {
   if (last_record_offset_ < initial_offset_) {
     if (!SkipToInitialBlock()) {
       return false;
@@ -80,19 +80,16 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   Slice fragment;
   while (true) {
     uint64_t physical_record_offset = end_of_buffer_offset_ - buffer_.size();
-    const unsigned int record_type = ReadPhysicalRecord(&fragment);
+    const unsigned int record_type =
+        ReadPhysicalRecord(&fragment, report_eof_inconsistency);
     switch (record_type) {
       case kFullType:
-        if (in_fragmented_record) {
+        if (in_fragmented_record && !scratch->empty()) {
           // Handle bug in earlier versions of log::Writer where
           // it could emit an empty kFirstType record at the tail end
           // of a block followed by a kFullType or kFirstType record
           // at the beginning of the next block.
-          if (scratch->empty()) {
-            in_fragmented_record = false;
-          } else {
-            ReportCorruption(scratch->size(), "partial record without end(1)");
-          }
+          ReportCorruption(scratch->size(), "partial record without end(1)");
         }
         prospective_record_offset = physical_record_offset;
         scratch->clear();
@@ -101,16 +98,12 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
         return true;
 
       case kFirstType:
-        if (in_fragmented_record) {
+        if (in_fragmented_record && !scratch->empty()) {
           // Handle bug in earlier versions of log::Writer where
           // it could emit an empty kFirstType record at the tail end
           // of a block followed by a kFullType or kFirstType record
           // at the beginning of the next block.
-          if (scratch->empty()) {
-            in_fragmented_record = false;
-          } else {
-            ReportCorruption(scratch->size(), "partial record without end(2)");
-          }
+          ReportCorruption(scratch->size(), "partial record without end(2)");
         }
         prospective_record_offset = physical_record_offset;
         scratch->assign(fragment.data(), fragment.size());
@@ -140,6 +133,9 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
 
       case kEof:
         if (in_fragmented_record) {
+          if (report_eof_inconsistency) {
+            ReportCorruption(scratch->size(), "error reading trailing data");
+          }
           // This can be caused by the writer dying immediately after
           //  writing a physical record but before completing the next; don't
           //  treat it as a corruption, just ignore the entire logical record.
@@ -248,7 +244,8 @@ void Reader::ReportDrop(size_t bytes, const Status& reason) {
   }
 }
 
-unsigned int Reader::ReadPhysicalRecord(Slice* result) {
+unsigned int Reader::ReadPhysicalRecord(Slice* result,
+                                        const bool report_eof_inconsistency) {
   while (true) {
     if (buffer_.size() < (size_t)kHeaderSize) {
       if (!eof_ && !read_error_) {
@@ -269,8 +266,11 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       } else {
         // Note that if buffer_ is non-empty, we have a truncated header at the
         //  end of the file, which can be caused by the writer crashing in the
-        //  middle of writing the header. Instead of considering this an error,
-        //  just report EOF.
+        //  middle of writing the header. Unless explicitly requested we don't
+        //  considering this an error, just report EOF.
+        if (buffer_.size() && report_eof_inconsistency) {
+          ReportCorruption(buffer_.size(), "truncated header");
+        }
         buffer_.clear();
         return kEof;
       }
@@ -291,7 +291,10 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       }
       // If the end of the file has been reached without reading |length| bytes
       // of payload, assume the writer died in the middle of writing the record.
-      // Don't report a corruption.
+      // Don't report a corruption unless requested.
+      if (drop_size && report_eof_inconsistency) {
+        ReportCorruption(drop_size, "truncated header");
+      }
       return kEof;
     }
 

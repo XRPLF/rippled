@@ -6,7 +6,10 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include "db/filename.h"
 #include <inttypes.h>
 
@@ -15,7 +18,9 @@
 #include <vector>
 #include "db/dbformat.h"
 #include "rocksdb/env.h"
+#include "util/file_reader_writer.h"
 #include "util/logging.h"
+#include "util/stop_watch.h"
 
 namespace rocksdb {
 
@@ -76,6 +81,17 @@ std::string MakeTableFileName(const std::string& path, uint64_t number) {
   return MakeFileName(path, number, "sst");
 }
 
+uint64_t TableFileNameToNumber(const std::string& name) {
+  uint64_t number = 0;
+  uint64_t base = 1;
+  int pos = static_cast<int>(name.find_last_of('.'));
+  while (--pos >= 0 && name[pos] >= '0' && name[pos] <= '9') {
+    number += (name[pos] - '0') * base;
+    base *= 10;
+  }
+  return number;
+}
+
 std::string TableFileName(const std::vector<DbPath>& db_paths, uint64_t number,
                           uint32_t path_id) {
   assert(number > 0);
@@ -87,8 +103,6 @@ std::string TableFileName(const std::vector<DbPath>& db_paths, uint64_t number,
   }
   return MakeTableFileName(path, number);
 }
-
-const size_t kFormatFileNumberBufSize = 38;
 
 void FormatFileNumber(uint64_t number, uint32_t path_id, char* out_buf,
                       size_t out_buf_size) {
@@ -313,6 +327,16 @@ Status SetIdentityFile(Env* env, const std::string& dbname) {
     env->DeleteFile(tmp);
   }
   return s;
+}
+
+Status SyncManifest(Env* env, const DBOptions* db_options,
+                    WritableFileWriter* file) {
+  if (db_options->disableDataSync) {
+    return Status::OK();
+  } else {
+    StopWatch sw(env, db_options->statistics.get(), MANIFEST_FILE_SYNC_MICROS);
+    return file->Sync(db_options->use_fsync);
+  }
 }
 
 }  // namespace rocksdb

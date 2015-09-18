@@ -10,6 +10,7 @@
 #include "util/testutil.h"
 
 #include "port/port.h"
+#include "util/file_reader_writer.h"
 #include "util/random.h"
 
 namespace rocksdb {
@@ -21,6 +22,15 @@ Slice RandomString(Random* rnd, int len, std::string* dst) {
     (*dst)[i] = static_cast<char>(' ' + rnd->Uniform(95));   // ' ' .. '~'
   }
   return Slice(*dst);
+}
+
+extern std::string RandomHumanReadableString(Random* rnd, int len) {
+  std::string ret;
+  ret.resize(len);
+  for (int i = 0; i < len; ++i) {
+    ret[i] = static_cast<char>('a' + rnd->Uniform(26));
+  }
+  return ret;
 }
 
 std::string RandomKey(Random* rnd, int len) {
@@ -96,6 +106,36 @@ static void InitModule() {
 const Comparator* Uint64Comparator() {
   port::InitOnce(&once, InitModule);
   return uint64comp;
+}
+
+WritableFileWriter* GetWritableFileWriter(WritableFile* wf) {
+  unique_ptr<WritableFile> file(wf);
+  return new WritableFileWriter(std::move(file), EnvOptions());
+}
+
+RandomAccessFileReader* GetRandomAccessFileReader(RandomAccessFile* raf) {
+  unique_ptr<RandomAccessFile> file(raf);
+  return new RandomAccessFileReader(std::move(file));
+}
+
+SequentialFileReader* GetSequentialFileReader(SequentialFile* se) {
+  unique_ptr<SequentialFile> file(se);
+  return new SequentialFileReader(std::move(file));
+}
+
+void CorruptKeyType(InternalKey* ikey) {
+  std::string keystr = ikey->Encode().ToString();
+  keystr[keystr.size() - 8] = kTypeLogData;
+  ikey->DecodeFrom(Slice(keystr.data(), keystr.size()));
+}
+
+std::string KeyStr(const std::string& user_key, const SequenceNumber& seq,
+                   const ValueType& t, bool corrupt) {
+  InternalKey k(user_key, seq, t);
+  if (corrupt) {
+    CorruptKeyType(&k);
+  }
+  return k.Encode().ToString();
 }
 
 }  // namespace test

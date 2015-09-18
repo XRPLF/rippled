@@ -13,6 +13,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/write_batch.h"
 #include "util/testharness.h"
+#include "port/port.h"
 
 using namespace rocksdb;
 
@@ -30,7 +31,7 @@ std::string Key2(int i) {
   return Key1(i) + "_xxx";
 }
 
-class ManualCompactionTest {
+class ManualCompactionTest : public testing::Test {
  public:
   ManualCompactionTest() {
     // Get rid of any state from an old run.
@@ -45,20 +46,18 @@ class DestroyAllCompactionFilter : public CompactionFilter {
  public:
   DestroyAllCompactionFilter() {}
 
-  virtual bool Filter(int level,
-                      const Slice& key,
-                      const Slice& existing_value,
+  virtual bool Filter(int level, const Slice& key, const Slice& existing_value,
                       std::string* new_value,
-                      bool* value_changed) const {
+                      bool* value_changed) const override {
     return existing_value.ToString() == "destroy";
   }
 
-  virtual const char* Name() const {
+  virtual const char* Name() const override {
     return "DestroyAllCompactionFilter";
   }
 };
 
-TEST(ManualCompactionTest, CompactTouchesAllKeys) {
+TEST_F(ManualCompactionTest, CompactTouchesAllKeys) {
   for (int iter = 0; iter < 2; ++iter) {
     DB* db;
     Options options;
@@ -79,7 +78,7 @@ TEST(ManualCompactionTest, CompactTouchesAllKeys) {
     db->Put(WriteOptions(), Slice("key4"), Slice("destroy"));
 
     Slice key4("key4");
-    db->CompactRange(nullptr, &key4);
+    db->CompactRange(CompactRangeOptions(), nullptr, &key4);
     Iterator* itr = db->NewIterator(ReadOptions());
     itr->SeekToFirst();
     ASSERT_TRUE(itr->Valid());
@@ -94,8 +93,7 @@ TEST(ManualCompactionTest, CompactTouchesAllKeys) {
   }
 }
 
-TEST(ManualCompactionTest, Test) {
-
+TEST_F(ManualCompactionTest, Test) {
   // Open database.  Disable compression since it affects the creation
   // of layers and the code below is trying to test against a very
   // specific scenario.
@@ -133,7 +131,7 @@ TEST(ManualCompactionTest, Test) {
   rocksdb::Slice greatest(end_key.data(), end_key.size());
 
   // commenting out the line below causes the example to work correctly
-  db->CompactRange(&least, &greatest);
+  db->CompactRange(CompactRangeOptions(), &least, &greatest);
 
   // count the keys
   rocksdb::Iterator* iter = db->NewIterator(rocksdb::ReadOptions());
@@ -152,5 +150,6 @@ TEST(ManualCompactionTest, Test) {
 }  // anonymous namespace
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

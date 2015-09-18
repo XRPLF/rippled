@@ -29,6 +29,15 @@ class Comparator {
   //   > 0 iff "a" > "b"
   virtual int Compare(const Slice& a, const Slice& b) const = 0;
 
+  // Compares two slices for equality. The following invariant should always
+  // hold (and is the default implementation):
+  //   Equal(a, b) iff Compare(a, b) == 0
+  // Overwrite only if equality comparisons can be done more efficiently than
+  // three-way comparisons.
+  virtual bool Equal(const Slice& a, const Slice& b) const {
+    return Compare(a, b) == 0;
+  }
+
   // The name of the comparator.  Used to check for comparator
   // mismatches (i.e., a DB created with one comparator is
   // accessed using a different comparator.
@@ -61,6 +70,10 @@ class Comparator {
 // ordering.  The result remains the property of this module and
 // must not be deleted.
 extern const Comparator* BytewiseComparator();
+
+// Return a builtin comparator that uses reverse lexicographic byte-wise
+// ordering.
+extern const Comparator* ReverseBytewiseComparator();
 
 }  // namespace rocksdb
 

@@ -3,9 +3,12 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
+#include "table/table_properties_internal.h"
 #include "rocksdb/table_properties.h"
 #include "rocksdb/iterator.h"
 #include "rocksdb/env.h"
+#include "port/port.h"
+#include "util/string_util.h"
 
 namespace rocksdb {
 
@@ -30,7 +33,7 @@ namespace {
       const std::string& prop_delim,
       const std::string& kv_delim) {
     AppendProperty(
-        props, key, std::to_string(value), prop_delim, kv_delim
+        props, key, ToString(value), prop_delim, kv_delim
     );
   }
 }
@@ -69,6 +72,16 @@ std::string TableProperties::ToString(
       prop_delim, kv_delim);
 
   return result;
+}
+
+void TableProperties::Add(const TableProperties& tp) {
+  data_size += tp.data_size;
+  index_size += tp.index_size;
+  filter_size += tp.filter_size;
+  raw_key_size += tp.raw_key_size;
+  raw_value_size += tp.raw_value_size;
+  num_data_blocks += tp.num_data_blocks;
+  num_entries += tp.num_entries;
 }
 
 const std::string TablePropertiesNames::kDataSize  =

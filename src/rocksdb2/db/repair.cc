@@ -7,31 +7,63 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 //
-// We recover the contents of the descriptor from the other files we find.
-// (1) Any log files are first converted to tables
-// (2) We scan every table to compute
-//     (a) smallest/largest for the table
-//     (b) largest sequence number in the table
-// (3) We generate descriptor contents:
-//      - log number is set to zero
-//      - next-file-number is set to 1 + largest file number we found
-//      - last-sequence-number is set to largest sequence# found across
-//        all tables (see 2c)
-//      - compaction pointers are cleared
-//      - every table file is added at level 0
+// Repairer does best effort recovery to recover as much data as possible after
+// a disaster without compromising consistency. It does not guarantee bringing
+// the database to a time consistent state.
+//
+// Repair process is broken into 4 phases:
+// (a) Find files
+// (b) Convert logs to tables
+// (c) Extract metadata
+// (d) Write Descriptor
+//
+// (a) Find files
+//
+// The repairer goes through all the files in the directory, and classifies them
+// based on their file name. Any file that cannot be identified by name will be
+// ignored.
+//
+// (b) Convert logs to table
+//
+// Every log file that is active is replayed. All sections of the file where the
+// checksum does not match is skipped over. We intentionally give preference to
+// data consistency.
+//
+// (c) Extract metadata
+//
+// We scan every table to compute
+// (1) smallest/largest for the table
+// (2) largest sequence number in the table
+//
+// If we are unable to scan the file, then we ignore the table.
+//
+// (d) Write Descriptor
+//
+// We generate descriptor contents:
+//  - log number is set to zero
+//  - next-file-number is set to 1 + largest file number we found
+//  - last-sequence-number is set to largest sequence# found across
+//    all tables (see 2c)
+//  - compaction pointers are cleared
+//  - every table file is added at level 0
 //
 // Possible optimization 1:
 //   (a) Compute total size and use to pick appropriate max-level M
 //   (b) Sort tables by largest sequence# in the table
 //   (c) For each table: if it overlaps earlier table, place in level-0,
 //       else place in level-M.
+//   (d) We can provide options for time consistent recovery and unsafe recovery
+//       (ignore checksum failure when applicable)
 // Possible optimization 2:
 //   Store per-table metadata (smallest, largest, largest-seq#, ...)
 //   in the table's meta section to speed up ScanTable.
 
 #ifndef ROCKSDB_LITE
 
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include <inttypes.h>
 #include "db/builder.h"
 #include "db/db_impl.h"
@@ -42,10 +74,15 @@
 #include "db/memtable.h"
 #include "db/table_cache.h"
 #include "db/version_edit.h"
+#include "db/writebuffer.h"
 #include "db/write_batch_internal.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
+#include "rocksdb/options.h"
+#include "rocksdb/immutable_options.h"
+#include "util/file_reader_writer.h"
+#include "util/scoped_arena_iterator.h"
 
 namespace rocksdb {
 
@@ -58,14 +95,16 @@ class Repairer {
         env_(options.env),
         icmp_(options.comparator),
         options_(SanitizeOptions(dbname, &icmp_, options)),
+        ioptions_(options_),
         raw_table_cache_(
             // TableCache can be small since we expect each table to be opened
             // once.
-            NewLRUCache(10, options_.table_cache_numshardbits,
-                        options_.table_cache_remove_scan_count_limit)),
+            NewLRUCache(10, options_.table_cache_numshardbits)),
         next_file_number_(1) {
+    GetIntTblPropCollectorFactory(options, &int_tbl_prop_collector_factories_);
+
     table_cache_ =
-        new TableCache(&options_, storage_options_, raw_table_cache_.get());
+        new TableCache(ioptions_, env_options_, raw_table_cache_.get());
     edit_ = new VersionEdit();
   }
 
@@ -87,9 +126,9 @@ class Repairer {
       for (size_t i = 0; i < tables_.size(); i++) {
         bytes += tables_[i].meta.fd.GetFileSize();
       }
-      Log(options_.info_log,
+      Log(InfoLogLevel::WARN_LEVEL, options_.info_log,
           "**** Repaired rocksdb %s; "
-          "recovered %zu files; %" PRIu64
+          "recovered %" ROCKSDB_PRIszt " files; %" PRIu64
           "bytes. "
           "Some data may have been lost. "
           "****",
@@ -107,8 +146,11 @@ class Repairer {
 
   std::string const dbname_;
   Env* const env_;
-  InternalKeyComparator const icmp_;
-  Options const options_;
+  const InternalKeyComparator icmp_;
+  std::vector<std::unique_ptr<IntTblPropCollectorFactory>>
+      int_tbl_prop_collector_factories_;
+  const Options options_;
+  const ImmutableCFOptions ioptions_;
   std::shared_ptr<Cache> raw_table_cache_;
   TableCache* table_cache_;
   VersionEdit* edit_;
@@ -118,7 +160,7 @@ class Repairer {
   std::vector<uint64_t> logs_;
   std::vector<TableInfo> tables_;
   uint64_t next_file_number_;
-  const EnvOptions storage_options_;
+  const EnvOptions env_options_;
 
   Status FindFiles() {
     std::vector<std::string> filenames;
@@ -167,7 +209,7 @@ class Repairer {
       std::string logname = LogFileName(dbname_, logs_[i]);
       Status status = ConvertLogToTable(logs_[i]);
       if (!status.ok()) {
-        Log(options_.info_log,
+        Log(InfoLogLevel::WARN_LEVEL, options_.info_log,
             "Log #%" PRIu64 ": ignoring conversion error: %s", logs_[i],
             status.ToString().c_str());
       }
@@ -180,9 +222,10 @@ class Repairer {
       Env* env;
       std::shared_ptr<Logger> info_log;
       uint64_t lognum;
-      virtual void Corruption(size_t bytes, const Status& s) {
+      virtual void Corruption(size_t bytes, const Status& s) override {
         // We print error messages for corruption, but continue repairing.
-        Log(info_log, "Log #%" PRIu64 ": dropping %d bytes; %s", lognum,
+        Log(InfoLogLevel::ERROR_LEVEL, info_log,
+            "Log #%" PRIu64 ": dropping %d bytes; %s", lognum,
             static_cast<int>(bytes), s.ToString().c_str());
       }
     };
@@ -190,10 +233,12 @@ class Repairer {
     // Open the log file
     std::string logname = LogFileName(dbname_, log);
     unique_ptr<SequentialFile> lfile;
-    Status status = env_->NewSequentialFile(logname, &lfile, storage_options_);
+    Status status = env_->NewSequentialFile(logname, &lfile, env_options_);
     if (!status.ok()) {
       return status;
     }
+    unique_ptr<SequentialFileReader> lfile_reader(
+        new SequentialFileReader(std::move(lfile)));
 
     // Create the log reader.
     LogReporter reporter;
@@ -204,15 +249,18 @@ class Repairer {
     // corruptions cause entire commits to be skipped instead of
     // propagating bad information (like overly large sequence
     // numbers).
-    log::Reader reader(std::move(lfile), &reporter, false/*do not checksum*/,
-                       0/*initial_offset*/);
+    log::Reader reader(std::move(lfile_reader), &reporter,
+                       true /*enable checksum*/, 0 /*initial_offset*/);
 
     // Read all the records and add to a memtable
     std::string scratch;
     Slice record;
     WriteBatch batch;
-    MemTable* mem = new MemTable(icmp_, options_);
-    auto cf_mems_default = new ColumnFamilyMemTablesDefault(mem, &options_);
+    WriteBuffer wb(options_.db_write_buffer_size);
+    MemTable* mem =
+        new MemTable(icmp_, ioptions_, MutableCFOptions(options_, ioptions_),
+                     &wb, kMaxSequenceNumber);
+    auto cf_mems_default = new ColumnFamilyMemTablesDefault(mem);
     mem->Ref();
     int counter = 0;
     while (reader.ReadRecord(&record, &scratch)) {
@@ -226,7 +274,8 @@ class Repairer {
       if (status.ok()) {
         counter += WriteBatchInternal::Count(&batch);
       } else {
-        Log(options_.info_log, "Log #%" PRIu64 ": ignoring %s", log,
+        Log(InfoLogLevel::WARN_LEVEL,
+            options_.info_log, "Log #%" PRIu64 ": ignoring %s", log,
             status.ToString().c_str());
         status = Status::OK();  // Keep going with rest of file
       }
@@ -236,12 +285,16 @@ class Repairer {
     // since ExtractMetaData() will also generate edits.
     FileMetaData meta;
     meta.fd = FileDescriptor(next_file_number_++, 0, 0);
-    ReadOptions ro;
-    ro.total_order_seek = true;
-    Iterator* iter = mem->NewIterator(ro);
-    status = BuildTable(dbname_, env_, options_, storage_options_, table_cache_,
-                        iter, &meta, icmp_, 0, 0, kNoCompression);
-    delete iter;
+    {
+      ReadOptions ro;
+      ro.total_order_seek = true;
+      Arena arena;
+      ScopedArenaIterator iter(mem->NewIterator(ro, &arena));
+      status = BuildTable(dbname_, env_, ioptions_, env_options_, table_cache_,
+                          iter.get(), &meta, icmp_,
+                          &int_tbl_prop_collector_factories_, {},
+                          kNoCompression, CompressionOptions(), false, nullptr);
+    }
     delete mem->Unref();
     delete cf_mems_default;
     mem = nullptr;
@@ -250,9 +303,9 @@ class Repairer {
         table_fds_.push_back(meta.fd);
       }
     }
-    Log(options_.info_log,
-        "Log #%" PRIu64 ": %d ops saved to Table #%" PRIu64 " %s", log, counter,
-        meta.fd.GetNumber(), status.ToString().c_str());
+    Log(InfoLogLevel::INFO_LEVEL, options_.info_log,
+        "Log #%" PRIu64 ": %d ops saved to Table #%" PRIu64 " %s",
+        log, counter, meta.fd.GetNumber(), status.ToString().c_str());
     return status;
   }
 
@@ -267,7 +320,8 @@ class Repairer {
         char file_num_buf[kFormatFileNumberBufSize];
         FormatFileNumber(t.meta.fd.GetNumber(), t.meta.fd.GetPathId(),
                          file_num_buf, sizeof(file_num_buf));
-        Log(options_.info_log, "Table #%s: ignoring %s", file_num_buf,
+        Log(InfoLogLevel::WARN_LEVEL, options_.info_log,
+            "Table #%s: ignoring %s", file_num_buf,
             status.ToString().c_str());
         ArchiveFile(fname);
       } else {
@@ -286,7 +340,7 @@ class Repairer {
                                 file_size);
     if (status.ok()) {
       Iterator* iter = table_cache_->NewIterator(
-          ReadOptions(), storage_options_, icmp_, t->meta.fd);
+          ReadOptions(), env_options_, icmp_, t->meta.fd);
       bool empty = true;
       ParsedInternalKey parsed;
       t->min_sequence = 0;
@@ -294,7 +348,8 @@ class Repairer {
       for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
         Slice key = iter->key();
         if (!ParseInternalKey(key, &parsed)) {
-          Log(options_.info_log, "Table #%" PRIu64 ": unparsable key %s",
+          Log(InfoLogLevel::ERROR_LEVEL,
+              options_.info_log, "Table #%" PRIu64 ": unparsable key %s",
               t->meta.fd.GetNumber(), EscapeString(key).c_str());
           continue;
         }
@@ -317,7 +372,8 @@ class Repairer {
       }
       delete iter;
     }
-    Log(options_.info_log, "Table #%" PRIu64 ": %d entries %s",
+    Log(InfoLogLevel::INFO_LEVEL,
+        options_.info_log, "Table #%" PRIu64 ": %d entries %s",
         t->meta.fd.GetNumber(), counter, status.ToString().c_str());
     return status;
   }
@@ -325,8 +381,8 @@ class Repairer {
   Status WriteDescriptor() {
     std::string tmp = TempFileName(dbname_, 1);
     unique_ptr<WritableFile> file;
-    Status status = env_->NewWritableFile(
-        tmp, &file, env_->OptimizeForManifestWrite(storage_options_));
+    EnvOptions env_options = env_->OptimizeForManifestWrite(env_options_);
+    Status status = env_->NewWritableFile(tmp, &file, env_options);
     if (!status.ok()) {
       return status;
     }
@@ -348,12 +404,15 @@ class Repairer {
       const TableInfo& t = tables_[i];
       edit_->AddFile(0, t.meta.fd.GetNumber(), t.meta.fd.GetPathId(),
                      t.meta.fd.GetFileSize(), t.meta.smallest, t.meta.largest,
-                     t.min_sequence, t.max_sequence);
+                     t.min_sequence, t.max_sequence,
+                     t.meta.marked_for_compaction);
     }
 
     //fprintf(stderr, "NewDescriptor:\n%s\n", edit_.DebugString().c_str());
     {
-      log::Writer log(std::move(file));
+      unique_ptr<WritableFileWriter> file_writer(
+          new WritableFileWriter(std::move(file), env_options));
+      log::Writer log(std::move(file_writer));
       std::string record;
       edit_->EncodeTo(&record);
       status = log.AddRecord(record);
@@ -394,7 +453,8 @@ class Repairer {
     new_file.append("/");
     new_file.append((slash == nullptr) ? fname.c_str() : slash + 1);
     Status s = env_->RenameFile(fname, new_file);
-    Log(options_.info_log, "Archiving %s: %s\n",
+    Log(InfoLogLevel::INFO_LEVEL,
+        options_.info_log, "Archiving %s: %s\n",
         fname.c_str(), s.ToString().c_str());
   }
 };

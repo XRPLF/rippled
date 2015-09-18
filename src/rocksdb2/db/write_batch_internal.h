@@ -26,14 +26,14 @@ class ColumnFamilyMemTables {
   // been processed)
   virtual uint64_t GetLogNumber() const = 0;
   virtual MemTable* GetMemTable() const = 0;
-  virtual const Options* GetOptions() const = 0;
   virtual ColumnFamilyHandle* GetColumnFamilyHandle() = 0;
+  virtual void CheckMemtableFull() = 0;
 };
 
 class ColumnFamilyMemTablesDefault : public ColumnFamilyMemTables {
  public:
-  ColumnFamilyMemTablesDefault(MemTable* mem, const Options* options)
-      : ok_(false), mem_(mem), options_(options) {}
+  explicit ColumnFamilyMemTablesDefault(MemTable* mem)
+      : ok_(false), mem_(mem) {}
 
   bool Seek(uint32_t column_family_id) override {
     ok_ = (column_family_id == 0);
@@ -47,17 +47,13 @@ class ColumnFamilyMemTablesDefault : public ColumnFamilyMemTables {
     return mem_;
   }
 
-  const Options* GetOptions() const override {
-    assert(ok_);
-    return options_;
-  }
-
   ColumnFamilyHandle* GetColumnFamilyHandle() override { return nullptr; }
+
+  void CheckMemtableFull() override {}
 
  private:
   bool ok_;
   MemTable* mem_;
-  const Options* const options_;
 };
 
 // WriteBatchInternal provides static methods for manipulating a
@@ -77,8 +73,17 @@ class WriteBatchInternal {
   static void Delete(WriteBatch* batch, uint32_t column_family_id,
                      const Slice& key);
 
+  static void SingleDelete(WriteBatch* batch, uint32_t column_family_id,
+                           const SliceParts& key);
+
+  static void SingleDelete(WriteBatch* batch, uint32_t column_family_id,
+                           const Slice& key);
+
   static void Merge(WriteBatch* batch, uint32_t column_family_id,
                     const Slice& key, const Slice& value);
+
+  static void Merge(WriteBatch* batch, uint32_t column_family_id,
+                    const SliceParts& key, const SliceParts& value);
 
   // Return the number of entries in the batch.
   static int Count(const WriteBatch* batch);
@@ -92,6 +97,10 @@ class WriteBatchInternal {
   // Store the specified number as the seqeunce number for the start of
   // this batch.
   static void SetSequence(WriteBatch* batch, SequenceNumber seq);
+
+  // Returns the offset of the first entry in the batch.
+  // This offset is only valid if the batch is not empty.
+  static size_t GetFirstOffset(WriteBatch* batch);
 
   static Slice Contents(const WriteBatch* batch) {
     return Slice(batch->rep_);

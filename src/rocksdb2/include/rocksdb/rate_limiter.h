@@ -17,9 +17,13 @@ class RateLimiter {
  public:
   virtual ~RateLimiter() {}
 
+  // This API allows user to dynamically change rate limiter's bytes per second.
+  // REQUIRED: bytes_per_second > 0
+  virtual void SetBytesPerSecond(int64_t bytes_per_second) = 0;
+
   // Request for token to write bytes. If this request can not be satisfied,
   // the call is blocked. Caller is responsible to make sure
-  // bytes < GetSingleBurstBytes()
+  // bytes <= GetSingleBurstBytes()
   virtual void Request(const int64_t bytes, const Env::IOPriority pri) = 0;
 
   // Max bytes can be granted in a single burst

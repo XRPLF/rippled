@@ -190,27 +190,23 @@ class autovector {
 
   bool empty() const { return size() == 0; }
 
-  // will not check boundry
   const_reference operator[](size_type n) const {
+    assert(n < size());
     return n < kSize ? values_[n] : vect_[n - kSize];
   }
 
   reference operator[](size_type n) {
+    assert(n < size());
     return n < kSize ? values_[n] : vect_[n - kSize];
   }
 
-  // will check boundry
   const_reference at(size_type n) const {
-    if (n >= size()) {
-      throw std::out_of_range("autovector: index out of range");
-    }
+    assert(n < size());
     return (*this)[n];
   }
 
   reference at(size_type n) {
-    if (n >= size()) {
-      throw std::out_of_range("autovector: index out of range");
-    }
+    assert(n < size());
     return (*this)[n];
   }
 
@@ -243,7 +239,13 @@ class autovector {
     }
   }
 
-  void push_back(const T& item) { push_back(value_type(item)); }
+  void push_back(const T& item) {
+    if (num_stack_items_ < kSize) {
+      values_[num_stack_items_++] = item;
+    } else {
+      vect_.push_back(item);
+    }
+  }
 
   template <class... Args>
   void emplace_back(Args&&... args) {

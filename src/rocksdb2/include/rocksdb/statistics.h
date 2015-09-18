@@ -53,6 +53,13 @@ enum Tickers : uint32_t {
   // # of memtable misses.
   MEMTABLE_MISS,
 
+  // # of Get() queries served by L0
+  GET_HIT_L0,
+  // # of Get() queries served by L1
+  GET_HIT_L1,
+  // # of Get() queries served by L2 and up
+  GET_HIT_L2_AND_UP,
+
   /**
    * COMPACTION_KEY_DROP_* count the reasons for key drop during compaction
    * There are 3 reasons currently.
@@ -67,18 +74,38 @@ enum Tickers : uint32_t {
   NUMBER_KEYS_READ,
   // Number keys updated, if inplace update is enabled
   NUMBER_KEYS_UPDATED,
-  // Bytes written / read
+  // The number of uncompressed bytes issued by DB::Put(), DB::Delete(),
+  // DB::Merge(), and DB::Write().
   BYTES_WRITTEN,
+  // The number of uncompressed bytes read from DB::Get().  It could be
+  // either from memtables, cache, or table files.
+  // For the number of logical bytes read from DB::MultiGet(),
+  // please use NUMBER_MULTIGET_BYTES_READ.
   BYTES_READ,
+  // The number of calls to seek/next/prev
+  NUMBER_DB_SEEK,
+  NUMBER_DB_NEXT,
+  NUMBER_DB_PREV,
+  // The number of calls to seek/next/prev that returned data
+  NUMBER_DB_SEEK_FOUND,
+  NUMBER_DB_NEXT_FOUND,
+  NUMBER_DB_PREV_FOUND,
+  // The number of uncompressed bytes read from an iterator.
+  // Includes size of key and value.
+  ITER_BYTES_READ,
   NO_FILE_CLOSES,
   NO_FILE_OPENS,
   NO_FILE_ERRORS,
-  // Time system had to wait to do LO-L1 compactions
+  // DEPRECATED Time system had to wait to do LO-L1 compactions
   STALL_L0_SLOWDOWN_MICROS,
-  // Time system had to wait to move memtable to L1.
+  // DEPRECATED Time system had to wait to move memtable to L1.
   STALL_MEMTABLE_COMPACTION_MICROS,
-  // write throttle because of too many files in L0
+  // DEPRECATED write throttle because of too many files in L0
   STALL_L0_NUM_FILES_MICROS,
+  // Writer has to wait for compaction or flush to finish.
+  STALL_MICROS,
+  // The wait time for db mutex.
+  DB_MUTEX_WAIT_MICROS,
   RATE_LIMIT_DELAY_MILLIS,
   NO_ITERATORS,  // number of iterators currently open
 
@@ -115,7 +142,7 @@ enum Tickers : uint32_t {
   // head of the writers queue.
   WRITE_DONE_BY_SELF,
   WRITE_DONE_BY_OTHER,
-  WRITE_TIMEDOUT,        // Number of writes ending up with timed-out.
+  WRITE_TIMEDOUT,       // Number of writes ending up with timed-out.
   WRITE_WITH_WAL,       // Number of Write calls that request WAL
   COMPACT_READ_BYTES,   // Bytes read during compaction
   COMPACT_WRITE_BYTES,  // Bytes written during compaction
@@ -128,6 +155,13 @@ enum Tickers : uint32_t {
   NUMBER_SUPERVERSION_RELEASES,
   NUMBER_SUPERVERSION_CLEANUPS,
   NUMBER_BLOCK_NOT_COMPRESSED,
+  MERGE_OPERATION_TOTAL_TIME,
+  FILTER_OPERATION_TOTAL_TIME,
+
+  // Row cache.
+  ROW_CACHE_HIT,
+  ROW_CACHE_MISS,
+
   TICKER_ENUM_MAX
 };
 
@@ -146,6 +180,9 @@ const std::vector<std::pair<Tickers, std::string>> TickersNameMap = {
     {BLOOM_FILTER_USEFUL, "rocksdb.bloom.filter.useful"},
     {MEMTABLE_HIT, "rocksdb.memtable.hit"},
     {MEMTABLE_MISS, "rocksdb.memtable.miss"},
+    {GET_HIT_L0, "rocksdb.l0.hit"},
+    {GET_HIT_L1, "rocksdb.l1.hit"},
+    {GET_HIT_L2_AND_UP, "rocksdb.l2andup.hit"},
     {COMPACTION_KEY_DROP_NEWER_ENTRY, "rocksdb.compaction.key.drop.new"},
     {COMPACTION_KEY_DROP_OBSOLETE, "rocksdb.compaction.key.drop.obsolete"},
     {COMPACTION_KEY_DROP_USER, "rocksdb.compaction.key.drop.user"},
@@ -154,12 +191,21 @@ const std::vector<std::pair<Tickers, std::string>> TickersNameMap = {
     {NUMBER_KEYS_UPDATED, "rocksdb.number.keys.updated"},
     {BYTES_WRITTEN, "rocksdb.bytes.written"},
     {BYTES_READ, "rocksdb.bytes.read"},
+    {NUMBER_DB_SEEK, "rocksdb.number.db.seek"},
+    {NUMBER_DB_NEXT, "rocksdb.number.db.next"},
+    {NUMBER_DB_PREV, "rocksdb.number.db.prev"},
+    {NUMBER_DB_SEEK_FOUND, "rocksdb.number.db.seek.found"},
+    {NUMBER_DB_NEXT_FOUND, "rocksdb.number.db.next.found"},
+    {NUMBER_DB_PREV_FOUND, "rocksdb.number.db.prev.found"},
+    {ITER_BYTES_READ, "rocksdb.db.iter.bytes.read"},
     {NO_FILE_CLOSES, "rocksdb.no.file.closes"},
     {NO_FILE_OPENS, "rocksdb.no.file.opens"},
     {NO_FILE_ERRORS, "rocksdb.no.file.errors"},
     {STALL_L0_SLOWDOWN_MICROS, "rocksdb.l0.slowdown.micros"},
     {STALL_MEMTABLE_COMPACTION_MICROS, "rocksdb.memtable.compaction.micros"},
     {STALL_L0_NUM_FILES_MICROS, "rocksdb.l0.num.files.stall.micros"},
+    {STALL_MICROS, "rocksdb.stall.micros"},
+    {DB_MUTEX_WAIT_MICROS, "rocksdb.db.mutex.wait.micros"},
     {RATE_LIMIT_DELAY_MILLIS, "rocksdb.rate.limit.delay.millis"},
     {NO_ITERATORS, "rocksdb.num.iterators"},
     {NUMBER_MULTIGET_CALLS, "rocksdb.number.multiget.get"},
@@ -178,7 +224,6 @@ const std::vector<std::pair<Tickers, std::string>> TickersNameMap = {
     {WAL_FILE_BYTES, "rocksdb.wal.bytes"},
     {WRITE_DONE_BY_SELF, "rocksdb.write.self"},
     {WRITE_DONE_BY_OTHER, "rocksdb.write.other"},
-    {WRITE_TIMEDOUT, "rocksdb.write.timedout"},
     {WRITE_WITH_WAL, "rocksdb.write.wal"},
     {FLUSH_WRITE_BYTES, "rocksdb.flush.write.bytes"},
     {COMPACT_READ_BYTES, "rocksdb.compact.read.bytes"},
@@ -189,6 +234,10 @@ const std::vector<std::pair<Tickers, std::string>> TickersNameMap = {
     {NUMBER_SUPERVERSION_RELEASES, "rocksdb.number.superversion_releases"},
     {NUMBER_SUPERVERSION_CLEANUPS, "rocksdb.number.superversion_cleanups"},
     {NUMBER_BLOCK_NOT_COMPRESSED, "rocksdb.number.block.not_compressed"},
+    {MERGE_OPERATION_TOTAL_TIME, "rocksdb.merge.operation.time.nanos"},
+    {FILTER_OPERATION_TOTAL_TIME, "rocksdb.filter.operation.time.nanos"},
+    {ROW_CACHE_HIT, "rocksdb.row.cache.hit"},
+    {ROW_CACHE_MISS, "rocksdb.row.cache.miss"},
 };
 
 /**
@@ -202,6 +251,7 @@ enum Histograms : uint32_t {
   DB_GET = 0,
   DB_WRITE,
   COMPACTION_TIME,
+  SUBCOMPACTION_SETUP_TIME,
   TABLE_SYNC_MICROS,
   COMPACTION_OUTFILE_SYNC_MICROS,
   WAL_FILE_SYNC_MICROS,
@@ -212,7 +262,6 @@ enum Histograms : uint32_t {
   READ_BLOCK_COMPACTION_MICROS,
   READ_BLOCK_GET_MICROS,
   WRITE_RAW_BLOCK_MICROS,
-
   STALL_L0_SLOWDOWN_COUNT,
   STALL_MEMTABLE_COMPACTION_COUNT,
   STALL_L0_NUM_FILES_COUNT,
@@ -220,29 +269,37 @@ enum Histograms : uint32_t {
   SOFT_RATE_LIMIT_DELAY_COUNT,
   NUM_FILES_IN_SINGLE_COMPACTION,
   DB_SEEK,
-  HISTOGRAM_ENUM_MAX,
+  WRITE_STALL,
+  SST_READ_MICROS,
+  // The number of subcompactions actually scheduled during a compaction
+  NUM_SUBCOMPACTIONS_SCHEDULED,
+  HISTOGRAM_ENUM_MAX,  // TODO(ldemailly): enforce HistogramsNameMap match
 };
 
 const std::vector<std::pair<Histograms, std::string>> HistogramsNameMap = {
-  { DB_GET, "rocksdb.db.get.micros" },
-  { DB_WRITE, "rocksdb.db.write.micros" },
-  { COMPACTION_TIME, "rocksdb.compaction.times.micros" },
-  { TABLE_SYNC_MICROS, "rocksdb.table.sync.micros" },
-  { COMPACTION_OUTFILE_SYNC_MICROS, "rocksdb.compaction.outfile.sync.micros" },
-  { WAL_FILE_SYNC_MICROS, "rocksdb.wal.file.sync.micros" },
-  { MANIFEST_FILE_SYNC_MICROS, "rocksdb.manifest.file.sync.micros" },
-  { TABLE_OPEN_IO_MICROS, "rocksdb.table.open.io.micros" },
-  { DB_MULTIGET, "rocksdb.db.multiget.micros" },
-  { READ_BLOCK_COMPACTION_MICROS, "rocksdb.read.block.compaction.micros" },
-  { READ_BLOCK_GET_MICROS, "rocksdb.read.block.get.micros" },
-  { WRITE_RAW_BLOCK_MICROS, "rocksdb.write.raw.block.micros" },
-  { STALL_L0_SLOWDOWN_COUNT, "rocksdb.l0.slowdown.count"},
-  { STALL_MEMTABLE_COMPACTION_COUNT, "rocksdb.memtable.compaction.count"},
-  { STALL_L0_NUM_FILES_COUNT, "rocksdb.num.files.stall.count"},
-  { HARD_RATE_LIMIT_DELAY_COUNT, "rocksdb.hard.rate.limit.delay.count"},
-  { SOFT_RATE_LIMIT_DELAY_COUNT, "rocksdb.soft.rate.limit.delay.count"},
-  { NUM_FILES_IN_SINGLE_COMPACTION, "rocksdb.numfiles.in.singlecompaction" },
-  { DB_SEEK, "rocksdb.db.seek.micros" },
+    {DB_GET, "rocksdb.db.get.micros"},
+    {DB_WRITE, "rocksdb.db.write.micros"},
+    {COMPACTION_TIME, "rocksdb.compaction.times.micros"},
+    {SUBCOMPACTION_SETUP_TIME, "rocksdb.subcompaction.setup.times.micros"},
+    {TABLE_SYNC_MICROS, "rocksdb.table.sync.micros"},
+    {COMPACTION_OUTFILE_SYNC_MICROS, "rocksdb.compaction.outfile.sync.micros"},
+    {WAL_FILE_SYNC_MICROS, "rocksdb.wal.file.sync.micros"},
+    {MANIFEST_FILE_SYNC_MICROS, "rocksdb.manifest.file.sync.micros"},
+    {TABLE_OPEN_IO_MICROS, "rocksdb.table.open.io.micros"},
+    {DB_MULTIGET, "rocksdb.db.multiget.micros"},
+    {READ_BLOCK_COMPACTION_MICROS, "rocksdb.read.block.compaction.micros"},
+    {READ_BLOCK_GET_MICROS, "rocksdb.read.block.get.micros"},
+    {WRITE_RAW_BLOCK_MICROS, "rocksdb.write.raw.block.micros"},
+    {STALL_L0_SLOWDOWN_COUNT, "rocksdb.l0.slowdown.count"},
+    {STALL_MEMTABLE_COMPACTION_COUNT, "rocksdb.memtable.compaction.count"},
+    {STALL_L0_NUM_FILES_COUNT, "rocksdb.num.files.stall.count"},
+    {HARD_RATE_LIMIT_DELAY_COUNT, "rocksdb.hard.rate.limit.delay.count"},
+    {SOFT_RATE_LIMIT_DELAY_COUNT, "rocksdb.soft.rate.limit.delay.count"},
+    {NUM_FILES_IN_SINGLE_COMPACTION, "rocksdb.numfiles.in.singlecompaction"},
+    {DB_SEEK, "rocksdb.db.seek.micros"},
+    {WRITE_STALL, "rocksdb.db.write.stall"},
+    {SST_READ_MICROS, "rocksdb.sst.read.micros"},
+    {NUM_SUBCOMPACTIONS_SCHEDULED, "rocksdb.num.subcompactions.scheduled"},
 };
 
 struct HistogramData {
@@ -261,7 +318,7 @@ class Statistics {
   virtual uint64_t getTickerCount(uint32_t tickerType) const = 0;
   virtual void histogramData(uint32_t type,
                              HistogramData* const data) const = 0;
-
+  virtual std::string getHistogramString(uint32_t type) const { return ""; }
   virtual void recordTick(uint32_t tickerType, uint64_t count = 0) = 0;
   virtual void setTickerCount(uint32_t tickerType, uint64_t count) = 0;
   virtual void measureTime(uint32_t histogramType, uint64_t time) = 0;

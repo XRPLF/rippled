@@ -22,37 +22,37 @@ class MapIterator : public Iterator {
  public:
   explicit MapIterator(const Data& data) : data_(data), pos_(data_.end()) {}
 
-  virtual bool Valid() const { return pos_ != data_.end(); }
+  virtual bool Valid() const override { return pos_ != data_.end(); }
 
-  virtual void SeekToFirst() { pos_ = data_.begin(); }
+  virtual void SeekToFirst() override { pos_ = data_.begin(); }
 
-  virtual void SeekToLast() {
+  virtual void SeekToLast() override {
     pos_ = data_.end();
     --pos_;
   }
 
-  virtual void Seek(const Slice& target) {
+  virtual void Seek(const Slice& target) override {
     pos_ = data_.find(target.ToString());
   }
 
-  virtual void Next() { ++pos_; }
+  virtual void Next() override { ++pos_; }
 
-  virtual void Prev() { --pos_; }
+  virtual void Prev() override { --pos_; }
 
-  virtual Slice key() const { return pos_->first; }
+  virtual Slice key() const override { return pos_->first; }
 
-  virtual Slice value() const { return pos_->second; }
+  virtual Slice value() const override { return pos_->second; }
 
-  virtual Status status() const { return Status::OK(); }
+  virtual Status status() const override { return Status::OK(); }
 
  private:
   const Data& data_;
   Data::const_iterator pos_;
 };
 
-class BlockTest {};
+class BlockTest : public testing::Test {};
 
-TEST(BlockTest, BasicTest) {
+TEST_F(BlockTest, BasicTest) {
   const size_t keys_per_block = 4;
   const size_t prefix_size = 2;
   std::vector<std::string> keys = {/* block 1 */
@@ -82,8 +82,8 @@ TEST(BlockTest, BasicTest) {
 
   auto prefix_extractor = NewFixedPrefixTransform(prefix_size);
   std::unique_ptr<BlockHashIndex> block_hash_index(CreateBlockHashIndexOnTheFly(
-      &index_iter, &data_iter, index_entries.size(), BytewiseComparator(),
-      prefix_extractor));
+      &index_iter, &data_iter, static_cast<uint32_t>(index_entries.size()),
+      BytewiseComparator(), prefix_extractor));
 
   std::map<std::string, BlockHashIndex::RestartIndex> expected = {
       {"01xx", BlockHashIndex::RestartIndex(0, 1)},
@@ -114,4 +114,7 @@ TEST(BlockTest, BasicTest) {
 
 }  // namespace rocksdb
 
-int main(int argc, char** argv) { return rocksdb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
