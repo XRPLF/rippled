@@ -33,8 +33,8 @@ Json::Value doUnlLoad (RPC::Context& context)
 {
     auto lock = beast::make_lock(context.app.getMasterMutex());
 
-    if (getConfig ().VALIDATORS_FILE.empty ()
-        || !context.app.getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
+    if (context.app.config().VALIDATORS_FILE.empty ()
+        || !context.app.getUNL ().nodeLoad (context.app.config().VALIDATORS_FILE))
     {
         return rpcError (rpcLOAD_FAILED);
     }

@@ -181,7 +181,7 @@ public:
 
     LedgerIndex getCurrentLedgerIndex () override
     {
-        return getApp().openLedger().current()->info().seq;
+        return app_.openLedger().current()->info().seq;
     }
 
     LedgerIndex getValidLedgerIndex () override
@@ -388,7 +388,7 @@ public:
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
         mHeldTransactions.reset (
-            getApp().openLedger().current()->info().parentHash);
+            app_.openLedger().current()->info().parentHash);
     }
 
     LedgerIndex getBuildingLedger () override
@@ -1188,7 +1188,7 @@ public:
                 }
                 else if (mPathFindNewRequest)
                 { // We have a new request but no new ledger
-                    lastLedger = getApp().openLedger().current();
+                    lastLedger = app_.openLedger().current();
                 }
                 else
                 { // Nothing to do

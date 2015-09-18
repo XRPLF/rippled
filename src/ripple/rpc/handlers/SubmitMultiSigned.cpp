@@ -35,7 +35,7 @@ Json::Value doSubmitMultiSigned (RPC::Context& context)
 {
     // Bail if multisign is not enabled.
     if (! context.app.getLedgerMaster().getValidatedRules().
-        enabled (featureMultiSign, getConfig().features))
+        enabled (featureMultiSign, context.app.config().features))
     {
         RPC::inject_error (rpcNOT_ENABLED, context.params);
         return context.params;

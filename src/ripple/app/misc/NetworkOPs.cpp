@@ -129,7 +129,7 @@ public:
         , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
-        , mConsensus (make_Consensus ())
+        , mConsensus (make_Consensus (app_.config()))
         , m_ledgerMaster (ledgerMaster)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
@@ -678,7 +678,7 @@ void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
             // Tell the call to checkSign() whether multisign is enabled.
             if (!passesLocalChecks (*trans, reason) ||
                 !trans->checkSign (m_ledgerMaster.getValidatedRules().enabled(
-                    featureMultiSign, getConfig().features)))
+                    featureMultiSign, app_.config().features)))
             {
                 m_journal.warning << "Submitted transaction " <<
                     (reason.empty () ? "has bad signature" : "error: " + reason);
@@ -845,7 +845,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                         auto const result = ripple::apply(app_,
                             view, *e.transaction->getSTransaction(), flags,
                                 app_.getHashRouter().sigVerify(),
-                                    getConfig(), j);
+                                    app_.config(), j);
                         e.result = result.first;
                         e.applied = result.second;
                         return result.second;
@@ -1321,7 +1321,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 
     // Create a consensus object to get consensus on this ledger
     assert (!mLedgerConsensus);
-    prevLedger->setImmutable ();
+    prevLedger->setImmutable (app_.config());
 
     mLedgerConsensus = mConsensus->startRound (
         app_,
@@ -1838,10 +1838,10 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (admin)
     {
-        if (getConfig ().VALIDATION_PUB.isValid ())
+        if (app_.config().VALIDATION_PUB.isValid ())
         {
             info[jss::pubkey_validator] =
-                    getConfig ().VALIDATION_PUB.humanNodePublic ();
+                    app_.config().VALIDATION_PUB.humanNodePublic ();
         }
         else
         {
@@ -1926,8 +1926,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (lpClosed)
     {
-        std::uint64_t baseFee = lpClosed->getBaseFee ();
-        std::uint64_t baseRef = lpClosed->getReferenceFeeUnits ();
+        std::uint64_t baseFee = lpClosed->fees().base;
+        std::uint64_t baseRef = lpClosed->fees().units;
         Json::Value l (Json::objectValue);
         l[jss::seq] = Json::UInt (lpClosed->info().seq);
         l[jss::hash] = to_string (lpClosed->getHash ());
@@ -1935,9 +1935,9 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         if (!human)
         {
             l[jss::base_fee] = Json::Value::UInt (baseFee);
-            l[jss::reserve_base] = Json::Value::UInt (lpClosed->getReserve (0));
+            l[jss::reserve_base] = Json::Value::UInt (lpClosed->fees().accountReserve(0).drops());
             l[jss::reserve_inc] =
-                    Json::Value::UInt (lpClosed->getReserveInc ());
+                    Json::Value::UInt (lpClosed->fees().increment);
             l[jss::close_time] =
                     Json::Value::UInt (lpClosed->info().closeTime);
         }
@@ -1947,11 +1947,11 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                     SYSTEM_CURRENCY_PARTS;
             l[jss::reserve_base_xrp]   =
                 static_cast<double> (Json::UInt (
-                    lpClosed->getReserve (0) * baseFee / baseRef))
+                    lpClosed->fees().accountReserve(0).drops() * baseFee / baseRef))
                     / SYSTEM_CURRENCY_PARTS;
             l[jss::reserve_inc_xrp]    =
                 static_cast<double> (Json::UInt (
-                    lpClosed->getReserveInc () * baseFee / baseRef))
+                    lpClosed->fees().increment * baseFee / baseRef))
                     / SYSTEM_CURRENCY_PARTS;
 
             auto const nowOffset = app_.timeKeeper().nowOffset();
@@ -2060,10 +2060,10 @@ void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
                     = Json::Value::UInt (lpAccepted->info().closeTime);
 
             jvObj[jss::fee_ref]
-                    = Json::UInt (lpAccepted->getReferenceFeeUnits ());
-            jvObj[jss::fee_base] = Json::UInt (lpAccepted->getBaseFee ());
-            jvObj[jss::reserve_base] = Json::UInt (lpAccepted->getReserve (0));
-            jvObj[jss::reserve_inc] = Json::UInt (lpAccepted->getReserveInc ());
+                    = Json::UInt (lpAccepted->fees().units);
+            jvObj[jss::fee_base] = Json::UInt (lpAccepted->fees().base);
+            jvObj[jss::reserve_base] = Json::UInt (lpAccepted->fees().accountReserve(0).drops());
+            jvObj[jss::reserve_inc] = Json::UInt (lpAccepted->fees().increment);
 
             jvObj[jss::txn_count] = Json::UInt (alpAccepted->getTxnCount ());
 
@@ -2417,10 +2417,10 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::ledger_time]
                 = Json::Value::UInt (lpClosed->info().closeTime);
         jvResult[jss::fee_ref]
-                = Json::UInt (lpClosed->getReferenceFeeUnits ());
-        jvResult[jss::fee_base]        = Json::UInt (lpClosed->getBaseFee ());
-        jvResult[jss::reserve_base]    = Json::UInt (lpClosed->getReserve (0));
-        jvResult[jss::reserve_inc]     = Json::UInt (lpClosed->getReserveInc ());
+                = Json::UInt (lpClosed->fees().units);
+        jvResult[jss::fee_base]        = Json::UInt (lpClosed->fees().base);
+        jvResult[jss::reserve_base]    = Json::UInt (lpClosed->fees().accountReserve(0).drops());
+        jvResult[jss::reserve_inc]     = Json::UInt (lpClosed->fees().increment);
     }
 
     if ((mMode >= omSYNCING) && !isNeedNetworkLedger ())

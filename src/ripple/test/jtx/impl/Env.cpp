@@ -105,7 +105,7 @@ Env::close(NetClock::time_point const& closeTime)
     next->setAccepted (
         std::chrono::duration_cast<std::chrono::seconds> (
             closeTime.time_since_epoch ()).count (),
-        ledgerPossibleTimeResolutions[0], false);
+        ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
         locals, false, retries, applyFlags(), *router);

@@ -190,7 +190,7 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
     updateHash();
     setClosed();
-    setImmutable();
+    setImmutable(config);
     setup(config);
 }
 
@@ -243,11 +243,11 @@ Ledger::Ledger (uint256 const& parentHash,
 
     if (! setup(config))
         loaded = false;
-
+    
     if (! loaded)
     {
         updateHash ();
-        getApp().family().missing_node (info_.hash);
+        family.missing_node (info_.hash);
     }
 }
 
@@ -335,7 +335,7 @@ Ledger::~Ledger ()
 {
 }
 
-void Ledger::setImmutable ()
+void Ledger::setImmutable (Config const& config)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
@@ -346,7 +346,7 @@ void Ledger::setImmutable ()
         txMap_->setImmutable ();
     if (stateMap_)
         stateMap_->setImmutable ();
-    setup(getConfig ());
+    setup(config);
 }
 
 void Ledger::updateHash()
@@ -406,7 +406,8 @@ void Ledger::addRaw (Serializer& s) const
 }
 
 void Ledger::setAccepted (
-    std::uint32_t closeTime, int closeResolution, bool correctCloseTime)
+    std::uint32_t closeTime, int closeResolution, bool correctCloseTime,
+        Config const& config)
 {
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
@@ -415,7 +416,7 @@ void Ledger::setAccepted (
     info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
     info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
-    setImmutable ();
+    setImmutable (config);
 }
 
 bool Ledger::addSLE (SLE const& sle)
@@ -1178,46 +1179,6 @@ qualityDirDescriber (
     }
 }
 
-void Ledger::deprecatedUpdateCachedFees() const
-{
-    if (mBaseFee)
-        return;
-    std::uint64_t baseFee = getConfig ().FEE_DEFAULT;
-    std::uint32_t referenceFeeUnits = getConfig ().TRANSACTION_FEE_BASE;
-    std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
-    std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
-
-    // VFALCO NOTE this doesn't go through the CachedSLEs
-    auto const sle = this->read(keylet::fees());
-    if (sle)
-    {
-        if (sle->getFieldIndex (sfBaseFee) != -1)
-            baseFee = sle->getFieldU64 (sfBaseFee);
-
-        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-            referenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
-
-        if (sle->getFieldIndex (sfReserveBase) != -1)
-            reserveBase = sle->getFieldU32 (sfReserveBase);
-
-        if (sle->getFieldIndex (sfReserveIncrement) != -1)
-            reserveIncrement = sle->getFieldU32 (sfReserveIncrement);
-    }
-
-    {
-        // VFALCO Why not do this before calling getASNode?
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        if (mBaseFee == 0)
-        {
-            mBaseFee = baseFee;
-            mReferenceFeeUnits = referenceFeeUnits;
-            mReserveBase = reserveBase;
-            mReserveIncrement = reserveIncrement;
-        }
-    }
-}
-
 std::vector<uint256>
 Ledger::getNeededTransactionHashes (
     int max, SHAMapSyncFilter* filter) const
@@ -1325,7 +1286,7 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
                                       closeResolution.value_or(0),
                                       ledgerSeq,
                                       loaded,
-                                      getConfig(),
+                                      app.config(),
                                       app.family());
 
     if (!loaded)
@@ -1334,13 +1295,13 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
     return std::make_tuple (ledger, ledgerSeq, ledgerHash);
 }
 
-void finishLoadByIndexOrHash(Ledger::pointer& ledger)
+void finishLoadByIndexOrHash(Ledger::pointer& ledger, Config const& config)
 {
     if (!ledger)
         return;
 
     ledger->setClosed ();
-    ledger->setImmutable ();
+    ledger->setImmutable (config);
 
     WriteLog (lsTRACE, Ledger)
         << "Loaded ledger: " << to_string (ledger->getHash ());
@@ -1359,7 +1320,7 @@ loadByIndex (std::uint32_t ledgerIndex, Application& app)
             loadLedgerHelper (s.str (), app);
     }
 
-    finishLoadByIndexOrHash (ledger);
+    finishLoadByIndexOrHash (ledger, app.config());
     return ledger;
 }
 
@@ -1374,7 +1335,7 @@ loadByHash (uint256 const& ledgerHash, Application& app)
             loadLedgerHelper (s.str (), app);
     }
 
-    finishLoadByIndexOrHash (ledger);
+    finishLoadByIndexOrHash (ledger, app.config());
 
     assert (!ledger || ledger->getHash () == ledgerHash);
 

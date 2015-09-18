@@ -127,7 +127,6 @@ public:
     beast::Journal const journal;
 
     /** Configuration used. */
-    // VFALCO NOTE Some code still calls getConfig()
     Config const config;
 
     /** The master account. */

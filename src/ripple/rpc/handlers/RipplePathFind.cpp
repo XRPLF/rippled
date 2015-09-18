@@ -83,7 +83,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     Json::Value jvResult;
 
     if (true || // TODO MPORTILLA temp fix to disable broken websocket coroutines
-        getConfig().RUN_STANDALONE ||
+        context.app.config().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
@@ -205,7 +205,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult[jss::destination_currencies] = jvDestCur;
         jvResult[jss::destination_account] = context.app.accountIDCache().toBase58(raDst);
 
-        int level = getConfig().PATH_SEARCH_OLD;
+        int level = context.app.config().PATH_SEARCH_OLD;
         if ((context.app.config().PATH_SEARCH_MAX > level)
             && !context.app.getFeeTrack().isLoadedLocal())
         {

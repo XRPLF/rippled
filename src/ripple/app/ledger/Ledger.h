@@ -237,9 +237,10 @@ public:
     }
 
     void setAccepted (std::uint32_t closeTime,
-        int closeResolution, bool correctCloseTime);
+        int closeResolution, bool correctCloseTime,
+            Config const& config);
 
-    void setImmutable ();
+    void setImmutable (Config const& config);
 
     bool isImmutable () const
     {
@@ -329,36 +330,6 @@ public:
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
-    std::uint32_t getReferenceFeeUnits() const
-    {
-        // Returns the cost of the reference transaction in fee units
-        deprecatedUpdateCachedFees ();
-        return mReferenceFeeUnits;
-    }
-
-    std::uint64_t getBaseFee() const
-    {
-        // Returns the cost of the reference transaction in drops
-        deprecatedUpdateCachedFees ();
-        return mBaseFee;
-    }
-
-    // DEPRECATED use fees()
-    std::uint64_t getReserve (int increments) const
-    {
-        // Returns the required reserve in drops
-        deprecatedUpdateCachedFees ();
-        return static_cast<std::uint64_t> (increments) * mReserveIncrement
-            + mReserveBase;
-    }
-
-    // DEPRECATED use fees()
-    std::uint64_t getReserveInc () const
-    {
-        deprecatedUpdateCachedFees ();
-        return mReserveIncrement;
-    }
-
     bool walkLedger () const;
 
     bool assertSane ();
@@ -378,13 +349,6 @@ private:
     void
     updateHash();
 
-    // Updates the fees cached in the ledger.
-    // Safe to call concurrently. We shouldn't be storing
-    // fees in the Ledger object, they should be a local side-structure
-    // associated with a particular module (rpc, tx processing, consensus)
-    //
-    void deprecatedUpdateCachedFees() const;
-
     // The basic Ledger structure, can be opened, closed, or synching
 
     bool mValidHash = false;
@@ -399,17 +363,6 @@ private:
     Fees fees_;
     Rules rules_;
     LedgerInfo info_;
-
-    // Ripple cost of the reference transaction
-    std::uint64_t mutable mBaseFee = 0;
-
-    // Fee units for the reference transaction
-    std::uint32_t mutable mReferenceFeeUnits = 0;
-
-    // Reserve base in drops
-    std::uint32_t mutable mReserveBase = 0;
-    // Reserve increment in drops
-    std::uint32_t mutable mReserveIncrement = 0;
 };
 
 /** A ledger wrapped in a CachedView. */

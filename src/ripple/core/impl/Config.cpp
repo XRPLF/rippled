@@ -44,16 +44,6 @@ namespace ripple {
 // TODO: Check permissions on config file before using it.
 //
 
-// Fees are in XRP.
-#define DEFAULT_FEE_DEFAULT             10
-#define DEFAULT_FEE_ACCOUNT_RESERVE     200*SYSTEM_CURRENCY_PARTS
-#define DEFAULT_FEE_OWNER_RESERVE       50*SYSTEM_CURRENCY_PARTS
-#define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
-#define DEFAULT_FEE_OPERATION           1
-
-// Fee in fee units
-#define DEFAULT_TRANSACTION_FEE_BASE    10
-
 #define SECTION_DEFAULT_NAME    ""
 
 IniFileSections
@@ -194,49 +184,6 @@ parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
 //
 //------------------------------------------------------------------------------
 
-Config::Config ()
-{
-    //
-    // Defaults
-    //
-
-    WEBSOCKET_PING_FREQ     = (5 * 60);
-
-    PEER_PRIVATE            = false;
-    PEERS_MAX               = 0;    // indicates "use default"
-
-    TRANSACTION_FEE_BASE    = DEFAULT_TRANSACTION_FEE_BASE;
-
-    NETWORK_QUORUM          = 0;    // Don't need to see other nodes
-    VALIDATION_QUORUM       = 1;    // Only need one node to vouch
-
-    FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
-    FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
-    FEE_OFFER               = DEFAULT_FEE_OFFER;
-    FEE_DEFAULT             = DEFAULT_FEE_DEFAULT;
-    FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
-
-    LEDGER_HISTORY          = 256;
-    FETCH_DEPTH             = 1000000000;
-
-    // An explanation of these magical values would be nice.
-    PATH_SEARCH_OLD         = 7;
-    PATH_SEARCH             = 7;
-    PATH_SEARCH_FAST        = 2;
-    PATH_SEARCH_MAX         = 10;
-
-    ACCOUNT_PROBE_MAX       = 10;
-
-    VALIDATORS_SITE         = "";
-
-    SSL_VERIFY              = true;
-
-    ELB_SUPPORT             = false;
-    RUN_STANDALONE          = false;
-    doImport                = false;
-    START_UP                = NORMAL;
-}
-
 static
 std::string
 getEnvVar (char const* name)
@@ -264,7 +211,6 @@ void Config::setup (std::string const& strConf, bool bQuiet)
     //
 
     QUIET       = bQuiet;
-    NODE_SIZE   = 0;
 
     strDbPath           = Helpers::getDatabaseDirName ();
     strConfFile         = strConf.empty () ? Helpers::getConfigFileName () : strConf;
@@ -324,7 +270,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         }
     }
 
-    HTTPClient::initializeSSLContext();
+    HTTPClient::initializeSSLContext(*this);
 
     // Update default values
     load ();
@@ -505,9 +451,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_FEE_DEFAULT, strTemp))
         FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
 
-    if (getSingleSection (secConfig, SECTION_FEE_OPERATION, strTemp))
-        FEE_CONTRACT_OPERATION  = beast::lexicalCastThrow <int> (strTemp);
-
     if (getSingleSection (secConfig, SECTION_LEDGER_HISTORY, strTemp))
     {
         boost::to_lower (strTemp);
@@ -543,9 +486,6 @@ void Config::loadFromString (std::string const& fileContents)
         PATH_SEARCH_FAST    = beast::lexicalCastThrow <int> (strTemp);
     if (getSingleSection (secConfig, SECTION_PATH_SEARCH_MAX, strTemp))
         PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
-
-    if (getSingleSection (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
-        ACCOUNT_PROBE_MAX   = beast::lexicalCastThrow <int> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp))
     {
@@ -610,7 +550,7 @@ boost::filesystem::path Config::getDebugLogFile () const
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
         log_file = boost::filesystem::absolute (
-            log_file, getConfig ().CONFIG_DIR);
+            log_file, CONFIG_DIR);
     }
 
     if (!log_file.empty ())
@@ -634,12 +574,6 @@ boost::filesystem::path Config::getDebugLogFile () const
     }
 
     return log_file;
-}
-
-Config& getConfig ()
-{
-    static Config config;
-    return config;
 }
 
 beast::File Config::getConfigDir () const

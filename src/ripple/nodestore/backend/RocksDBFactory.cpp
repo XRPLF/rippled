@@ -115,24 +115,11 @@ public:
         options.create_if_missing = true;
         options.env = env;
 
-        if (!keyValues.exists ("cache_mb"))
-        {
-            table_options.block_cache = rocksdb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-        }
-        else
-        {
+        if (keyValues.exists ("cache_mb"))
             table_options.block_cache = rocksdb::NewLRUCache (get<int>(keyValues, "cache_mb") * 1024L * 1024L);
-        }
 
-        if (!keyValues.exists ("filter_bits"))
-        {
-            if (getConfig ().NODE_SIZE >= 2)
-                table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (10));
-        }
-        else if (auto const v = get<int>(keyValues, "filter_bits"))
-        {
+        if (auto const v = get<int>(keyValues, "filter_bits"))
             table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v));
-        }
 
         get_if_exists (keyValues, "open_files", options.max_open_files);
 

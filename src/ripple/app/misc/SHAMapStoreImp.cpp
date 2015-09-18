@@ -671,19 +671,28 @@ setup_SHAMapStore (Config const& c)
 {
     SHAMapStore::Setup setup;
 
-    auto const& sec = c.section (ConfigSection::nodeDatabase ());
-    get_if_exists (sec, "online_delete", setup.deleteInterval);
+    // Get existing settings and add some default values if not specified:
+    setup.nodeDatabase = c.section (ConfigSection::nodeDatabase ());
+
+    // These two parameters apply only to RocksDB. We want to give them sensible
+    // defaults if no values are specified.
+    if (!setup.nodeDatabase.exists ("cache_mb"))
+        setup.nodeDatabase.set ("cache_mb", std::to_string (c.getSize (siHashNodeDBCache)));
+
+    if (!setup.nodeDatabase.exists ("filter_bits") && (c.NODE_SIZE >= 2))
+        setup.nodeDatabase.set ("filter_bits", "10");
+
+    get_if_exists (setup.nodeDatabase, "online_delete", setup.deleteInterval);
 
     if (setup.deleteInterval)
-        get_if_exists (sec, "advisory_delete", setup.advisoryDelete);
+        get_if_exists (setup.nodeDatabase, "advisory_delete", setup.advisoryDelete);
 
     setup.ledgerHistory = c.LEDGER_HISTORY;
-    setup.nodeDatabase = c[ConfigSection::nodeDatabase ()];
     setup.databasePath = c.legacy("database_path");
 
-    get_if_exists (sec, "delete_batch", setup.deleteBatch);
-    get_if_exists (sec, "backOff", setup.backOff);
-    get_if_exists (sec, "age_threshold", setup.ageThreshold);
+    get_if_exists (setup.nodeDatabase, "delete_batch", setup.deleteBatch);
+    get_if_exists (setup.nodeDatabase, "backOff", setup.backOff);
+    get_if_exists (setup.nodeDatabase, "age_threshold", setup.ageThreshold);
 
     return setup;
 }

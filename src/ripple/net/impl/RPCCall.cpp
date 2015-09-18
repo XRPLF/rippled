@@ -1069,9 +1069,15 @@ struct RPCCallImp
 };
 
 //------------------------------------------------------------------------------
+namespace RPCCall {
 
-int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
+int fromCommandLine (
+    Config const& config,
+    const std::vector<std::string>& vCmd)
 {
+    if (vCmd.empty ())
+        return 1;      // 1 = print usage.
+
     Json::Value jvOutput;
     int         nRet = 0;
     Json::Value jvRequest (Json::objectValue);
@@ -1080,8 +1086,6 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
     {
         RPCParser   rpParser;
         Json::Value jvRpcParams (Json::arrayValue);
-
-        if (vCmd.empty ()) return 1;                                            // 1 = print usage.
 
         for (int i = 1; i != vCmd.size (); i++)
             jvRpcParams.append (vCmd[i]);
@@ -1106,7 +1110,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
             try
             {
                 std::stringstream ss;
-                setup = setup_ServerHandler(getConfig(), ss);
+                setup = setup_ServerHandler(config, ss);
             }
             catch(...)
             {
@@ -1114,10 +1118,10 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
                 // line client works without a config file
             }
 
-            if (getConfig().rpc_ip)
-                setup.client.ip = getConfig().rpc_ip->to_string();
-            if (getConfig().rpc_port)
-                setup.client.port = *getConfig().rpc_port;
+            if (config.rpc_ip)
+                setup.client.ip = config.rpc_ip->to_string();
+            if (config.rpc_port)
+                setup.client.port = *config.rpc_port;
 
             Json::Value jvParams (Json::arrayValue);
 
@@ -1142,6 +1146,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
                         ? jvRequest["method"].asString () : vCmd[0],
                     jvParams,                               // Parsed, execute.
                     setup.client.secure != 0,                // Use SSL
+                    config.QUIET,
                     std::bind (RPCCallImp::callRPCHandler, &jvOutput,
                                std::placeholders::_1));
                 isService.run(); // This blocks until there is no more outstanding async calls.
@@ -1204,16 +1209,16 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
 
 //------------------------------------------------------------------------------
 
-void RPCCall::fromNetwork (
+void fromNetwork (
     boost::asio::io_service& io_service,
     std::string const& strIp, const int iPort,
     std::string const& strUsername, std::string const& strPassword,
     std::string const& strPath, std::string const& strMethod,
-    Json::Value const& jvParams, const bool bSSL,
+    Json::Value const& jvParams, const bool bSSL, const bool quiet,
     std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
     // Connect to localhost
-    if (!getConfig ().QUIET)
+    if (!quiet)
     {
         std::cerr << (bSSL ? "Securely connecting to " : "Connecting to ") <<
             strIp << ":" << iPort << std::endl;
@@ -1247,6 +1252,8 @@ void RPCCall::fromNetwork (
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
                    std::placeholders::_3));
+}
+
 }
 
 } // ripple

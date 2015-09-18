@@ -145,7 +145,7 @@ public:
 };
 
 std::unique_ptr <Application>
-make_Application(Config const& config, Logs& logs);
+make_Application(std::unique_ptr<Config const> config, Logs& logs);
 
 // DEPRECATED
 extern Application& getApp ();

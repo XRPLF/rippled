@@ -486,21 +486,21 @@ OverlayImpl::onPrepare()
 {
     PeerFinder::Config config;
 
-    if (getConfig ().PEERS_MAX != 0)
-        config.maxPeers = getConfig ().PEERS_MAX;
+    if (app_.config().PEERS_MAX != 0)
+        config.maxPeers = app_.config().PEERS_MAX;
 
     config.outPeers = config.calcOutPeers();
 
     auto const port = serverHandler_.setup().overlay.port;
 
-    config.peerPrivate = getConfig().PEER_PRIVATE;
+    config.peerPrivate = app_.config().PEER_PRIVATE;
     config.wantIncoming =
         (! config.peerPrivate) && (port != 0);
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
     config.autoConnect =
-        !getConfig().RUN_STANDALONE &&
-        !getConfig().PEER_PRIVATE;
+        !app_.config().RUN_STANDALONE &&
+        !app_.config().PEER_PRIVATE;
     config.listeningPort = port;
     config.features = "";
 
@@ -509,7 +509,7 @@ OverlayImpl::onPrepare()
 
     m_peerFinder->setConfig (config);
 
-    auto bootstrapIps (getConfig ().IPS);
+    auto bootstrapIps (app_.config().IPS);
 
     // If no IPs are specified, use the Ripple Labs round robin
     // pool to get some servers to insert into the boot cache.
@@ -539,9 +539,9 @@ OverlayImpl::onPrepare()
         });
 
     // Add the ips_fixed from the rippled.cfg file
-    if (! getConfig ().RUN_STANDALONE && !getConfig ().IPS_FIXED.empty ())
+    if (! app_.config().RUN_STANDALONE && !app_.config().IPS_FIXED.empty ())
     {
-        m_resolver.resolve (getConfig ().IPS_FIXED,
+        m_resolver.resolve (app_.config().IPS_FIXED,
             [this](
                 std::string const& name,
                 std::vector <beast::IP::Endpoint> const& addresses)

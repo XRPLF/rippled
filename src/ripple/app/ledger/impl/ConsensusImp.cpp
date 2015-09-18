@@ -26,9 +26,9 @@
 
 namespace ripple {
 
-ConsensusImp::ConsensusImp ()
+ConsensusImp::ConsensusImp (FeeVote::Setup const& voteSetup)
     : journal_ (deprecatedLogs().journal("Consensus"))
-    , feeVote_ (make_FeeVote (setup_FeeVote (getConfig().section ("voting")),
+    , feeVote_ (make_FeeVote (voteSetup,
         deprecatedLogs().journal("FeeVote")))
     , proposing_ (false)
     , validating_ (false)
@@ -174,9 +174,10 @@ ConsensusImp::peekStoredProposals ()
 //==============================================================================
 
 std::unique_ptr<Consensus>
-make_Consensus ()
+make_Consensus (Config const& config)
 {
-    return std::make_unique<ConsensusImp> ();
+    return std::make_unique<ConsensusImp> (
+        setup_FeeVote (config.section ("voting")));
 }
 
 }

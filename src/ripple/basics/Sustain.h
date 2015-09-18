@@ -26,13 +26,9 @@ namespace ripple {
 
 // "Sustain" is a system for a buddy process that monitors the main process
 // and relaunches it on a fault.
-//
-// VFALCO TODO Rename this and put it in a class.
-// VFALCO TODO Reimplement cross-platform using beast::Process and its ilk
-//
 bool HaveSustain ();
 std::string StopSustain ();
-std::string DoSustain (std::string const& logFile);
+std::string DoSustain ();
 
 } // ripple
 

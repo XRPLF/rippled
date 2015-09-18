@@ -42,7 +42,6 @@ public:
         expect (l.scaleFeeBase (d.FEE_ACCOUNT_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 200 * SYSTEM_CURRENCY_PARTS);
         expect (l.scaleFeeBase (d.FEE_OWNER_RESERVE, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 50 * SYSTEM_CURRENCY_PARTS);
         expect (l.scaleFeeBase (d.FEE_OFFER, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10);
-        expect (l.scaleFeeBase (d.FEE_CONTRACT_OPERATION, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 1);
     }
 };
 
