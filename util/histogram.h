@@ -15,6 +15,8 @@
 #include <vector>
 #include <map>
 
+#include <string.h>
+
 namespace rocksdb {
 
 class HistogramBucketMapper {
@@ -23,10 +25,10 @@ class HistogramBucketMapper {
   HistogramBucketMapper();
 
   // converts a value to the bucket index.
-  const size_t IndexForValue(const uint64_t value) const;
+  size_t IndexForValue(const uint64_t value) const;
   // number of buckets required.
 
-  const size_t BucketCount() const {
+  size_t BucketCount() const {
     return bucketValues_.size();
   }
 
@@ -38,7 +40,7 @@ class HistogramBucketMapper {
     return minBucketValue_;
   }
 
-  uint64_t BucketLimit(const uint64_t bucketNumber) const {
+  uint64_t BucketLimit(const size_t bucketNumber) const {
     assert(bucketNumber < BucketCount());
     return bucketValues_[bucketNumber];
   }
@@ -52,6 +54,7 @@ class HistogramBucketMapper {
 
 class HistogramImpl {
  public:
+  HistogramImpl() { memset(buckets_, 0, sizeof(buckets_)); }
   virtual void Clear();
   virtual bool Empty();
   virtual void Add(uint64_t value);
@@ -65,6 +68,8 @@ class HistogramImpl {
   virtual double StandardDeviation() const;
   virtual void Data(HistogramData * const data) const;
 
+  virtual ~HistogramImpl() {}
+
  private:
   // To be able to use HistogramImpl as thread local variable, its constructor
   // has to be static. That's why we're using manually values from BucketMapper
@@ -73,7 +78,7 @@ class HistogramImpl {
   double num_ = 0;
   double sum_ = 0;
   double sum_squares_ = 0;
-  uint64_t buckets_[138] = {0};  // this is BucketMapper::BucketCount()
+  uint64_t buckets_[138];  // this is BucketMapper::BucketCount()
 };
 
 }  // namespace rocksdb

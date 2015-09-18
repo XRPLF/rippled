@@ -65,10 +65,10 @@ void GenerateRandomKVs(std::vector<std::string> *keys,
   }
 }
 
-class BlockTest {};
+class BlockTest : public testing::Test {};
 
 // block test
-TEST(BlockTest, SimpleTest) {
+TEST_F(BlockTest, SimpleTest) {
   Random rnd(301);
   Options options = Options();
   std::unique_ptr<InternalKeyComparator> ic;
@@ -92,8 +92,7 @@ TEST(BlockTest, SimpleTest) {
   BlockContents contents;
   contents.data = rawblock;
   contents.cachable = false;
-  contents.heap_allocated = false;
-  Block reader(contents);
+  Block reader(std::move(contents));
 
   // read contents of block sequentially
   int count = 0;
@@ -143,7 +142,6 @@ BlockContents GetBlockContents(std::unique_ptr<BlockBuilder> *builder,
   BlockContents contents;
   contents.data = rawblock;
   contents.cachable = false;
-  contents.heap_allocated = false;
 
   return contents;
 }
@@ -153,8 +151,10 @@ void CheckBlockContents(BlockContents contents, const int max_key,
                         const std::vector<std::string> &values) {
   const size_t prefix_size = 6;
   // create block reader
-  Block reader1(contents);
-  Block reader2(contents);
+  BlockContents contents_ref(contents.data, contents.cachable,
+                             contents.compression_type);
+  Block reader1(std::move(contents));
+  Block reader2(std::move(contents_ref));
 
   std::unique_ptr<const SliceTransform> prefix_extractor(
       NewFixedPrefixTransform(prefix_size));
@@ -163,7 +163,7 @@ void CheckBlockContents(BlockContents contents, const int max_key,
     auto iter1 = reader1.NewIterator(nullptr);
     auto iter2 = reader1.NewIterator(nullptr);
     reader1.SetBlockHashIndex(CreateBlockHashIndexOnTheFly(
-        iter1, iter2, keys.size(), BytewiseComparator(),
+        iter1, iter2, static_cast<uint32_t>(keys.size()), BytewiseComparator(),
         prefix_extractor.get()));
 
     delete iter1;
@@ -201,7 +201,7 @@ void CheckBlockContents(BlockContents contents, const int max_key,
 }
 
 // In this test case, no two key share same prefix.
-TEST(BlockTest, SimpleIndexHash) {
+TEST_F(BlockTest, SimpleIndexHash) {
   const int kMaxKey = 100000;
   std::vector<std::string> keys;
   std::vector<std::string> values;
@@ -212,10 +212,10 @@ TEST(BlockTest, SimpleIndexHash) {
   std::unique_ptr<BlockBuilder> builder;
   auto contents = GetBlockContents(&builder, keys, values);
 
-  CheckBlockContents(contents, kMaxKey, keys, values);
+  CheckBlockContents(std::move(contents), kMaxKey, keys, values);
 }
 
-TEST(BlockTest, IndexHashWithSharedPrefix) {
+TEST_F(BlockTest, IndexHashWithSharedPrefix) {
   const int kMaxKey = 100000;
   // for each prefix, there will be 5 keys starts with it.
   const int kPrefixGroup = 5;
@@ -231,11 +231,12 @@ TEST(BlockTest, IndexHashWithSharedPrefix) {
   std::unique_ptr<BlockBuilder> builder;
   auto contents = GetBlockContents(&builder, keys, values, kPrefixGroup);
 
-  CheckBlockContents(contents, kMaxKey, keys, values);
+  CheckBlockContents(std::move(contents), kMaxKey, keys, values);
 }
 
 }  // namespace rocksdb
 
-int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

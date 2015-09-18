@@ -15,8 +15,12 @@
 #include <vector>
 
 #include "util/autovector.h"
-#include "port/port_posix.h"
-#include "util/thread_local.h"
+#include "port/port.h"
+
+#ifndef ROCKSDB_SUPPORT_THREAD_LOCAL
+#define ROCKSDB_SUPPORT_THREAD_LOCAL \
+  !defined(OS_WIN) && !defined(OS_MACOSX) && !defined(IOS_CROSS_COMPILE)
+#endif
 
 namespace rocksdb {
 
@@ -26,13 +30,14 @@ namespace rocksdb {
 // (2) a ThreadLocalPtr is destroyed
 typedef void (*UnrefHandler)(void* ptr);
 
-// Thread local storage that only stores value of pointer type. The storage
-// distinguish data coming from different thread and different ThreadLocalPtr
-// instances. For example, if a regular thread_local variable A is declared
-// in DBImpl, two DBImpl objects would share the same A. ThreadLocalPtr avoids
-// the confliction. The total storage size equals to # of threads * # of
-// ThreadLocalPtr instances. It is not efficient in terms of space, but it
-// should serve most of our use cases well and keep code simple.
+// ThreadLocalPtr stores only values of pointer type.  Different from
+// the usual thread-local-storage, ThreadLocalPtr has the ability to
+// distinguish data coming from different threads and different
+// ThreadLocalPtr instances.  For example, if a regular thread_local
+// variable A is declared in DBImpl, two DBImpl objects would share
+// the same A.  However, a ThreadLocalPtr that is defined under the
+// scope of DBImpl can avoid such confliction.  As a result, its memory
+// usage would be O(# of threads * # of ThreadLocalPtr instances).
 class ThreadLocalPtr {
  public:
   explicit ThreadLocalPtr(UnrefHandler handler = nullptr);
@@ -149,10 +154,11 @@ class ThreadLocalPtr {
     // protect inst, next_instance_id_, free_instance_ids_, head_,
     // ThreadData.entries
     static port::Mutex mutex_;
-#if !defined(OS_MACOSX)
+#if ROCKSDB_SUPPORT_THREAD_LOCAL
     // Thread local storage
     static __thread ThreadData* tls_;
 #endif
+
     // Used to make thread exit trigger possible if !defined(OS_MACOSX).
     // Otherwise, used to retrieve thread data.
     pthread_key_t pthread_key_;

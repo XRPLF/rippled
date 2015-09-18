@@ -1,20 +1,43 @@
+sudo: false
 language: cpp
-compiler: gcc
-before_install:
-# As of this writing (10 May 2014) the Travis build environment is Ubuntu 12.04,
-# which needs the following ugly dependency incantations to build RocksDB:
- - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
- - sudo apt-get update -qq
- - sudo apt-get install -y -qq gcc-4.8 g++-4.8 zlib1g-dev libbz2-dev libsnappy-dev libjemalloc-dev
- - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
- - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
- - wget https://gflags.googlecode.com/files/libgflags0_2.0-1_amd64.deb
- - sudo dpkg -i libgflags0_2.0-1_amd64.deb
- - wget https://gflags.googlecode.com/files/libgflags-dev_2.0-1_amd64.deb
- - sudo dpkg -i libgflags-dev_2.0-1_amd64.deb
+
+matrix:
+  include:
+    - os: linux
+      compiler: clang
+      env: COMPILER=clang++-3.6
+      addons:
+         apt:
+            sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
+            packages: ['clang-3.6', 'clang-format-3.6', 'zlib1g-dev', 'libbz2-dev', 'libsnappy-dev', 'curl']
+    - os: osx
+      compiler: clang
+
+install:
+  # Build gflags
+  # TODO(noetzli): Remove when gflags available through Travis
+  - pushd /tmp/ && curl -L https://github.com/gflags/gflags/archive/v2.1.2.tar.gz -o gflags.tar.gz && tar xfz gflags.tar.gz && cd gflags-2.1.2 && cmake . && make && popd
+  # Download clang-format-diff.py to check source code formatting
+  - pushd /tmp/ && curl -L http://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py -o clang-format-diff.py && chmod +x clang-format-diff.py && popd
+
+before_script:
+  # Add gflags to include/library paths
+  # TODO(noetzli): Remove when gflags available through Travis
+  - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/tmp/gflags-2.1.2/lib"
+  - export LIBRARY_PATH="$LIBRARY_PATH:/tmp/gflags-2.1.2/lib"
+  - export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/tmp/gflags-2.1.2/include"
+  - if [ -n "${COMPILER}" ]; then CXX=${COMPILER}; fi
+  - if [[ "${TRAVIS_OS_NAME}" == 'osx' ]]; then brew install gflags snappy; fi
+  - ulimit -n 2000 || true
+
 # Lousy hack to disable use and testing of fallocate, which doesn't behave quite
 # as EnvPosixTest::AllocateTest expects within the Travis OpenVZ environment.
- - sed -i "s/fallocate(/HACK_NO_fallocate(/" build_tools/build_detect_platform
-script: make check -j8
+script:
+  - if [[ "${TRAVIS_OS_NAME}" == 'linux' ]]; then OPT=-DTRAVIS CLANG_FORMAT_DIFF=/tmp/clang-format-diff.py make format; fi
+  - OPT=-DTRAVIS V=1 make -j4 check && OPT=-DTRAVIS V=1 make clean jclean rocksdbjava jtest
+
 notifications:
-    email: false
+    email:
+      - leveldb@fb.com
+    webhooks:
+      - https://buildtimetrend.herokuapp.com/travis

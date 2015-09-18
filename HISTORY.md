@@ -1,8 +1,168 @@
 # Rocksdb Change Log
 
-### Unreleased
+## Unreleased
+### New Features
+* Added single delete operation as a more efficient way to delete keys that have not been overwritten.
 
------ Past Releases -----
+### Public API Changes
+* Added SingleDelete() to the DB interface.
+
+## 4.0.0 (9/9/2015)
+### New Features
+* Added support for transactions.  See include/rocksdb/utilities/transaction.h for more info.
+* DB::GetProperty() now accept "rocksdb.aggregated-table-properties" and "rocksdb.aggregated-table-properties-at-levelN", in which case it returns aggregated table properties of the target column family, or the aggregated table properties of the specified level N if the "at-level" version is used.
+* Add compression option kZSTDNotFinalCompression for people to experiment ZSTD although its format is not finalized.
+* We removed the need for LATEST_BACKUP file in BackupEngine. We still keep writing it when we create new backups (because of backward compatibility), but we don't read it anymore.
+
+### Public API Changes
+* Removed class Env::RandomRWFile and Env::NewRandomRWFile().
+* Renamed DBOptions.num_subcompactions to DBOptions.max_subcompactions to make the name better match the actual functionality of the option.
+* Added Equal() method to the Comparator interface that can optionally be overwritten in cases where equality comparisons can be done more efficiently than three-way comparisons.
+* Previous 'experimental' OptimisticTransaction class has been replaced by Transaction class.
+
+## 3.13.0 (8/6/2015)
+### New Features
+* RollbackToSavePoint() in WriteBatch/WriteBatchWithIndex
+* Add NewCompactOnDeletionCollectorFactory() in utilities/table_properties_collectors, which allows rocksdb to mark a SST file as need-compaction when it observes at least D deletion entries in any N consecutive entries in that SST file.  Note that this feature depends on an experimental NeedCompact() API --- the result of this API will not persist after DB restart.
+* Add DBOptions::delete_scheduler. Use NewDeleteScheduler() in include/rocksdb/delete_scheduler.h to create a DeleteScheduler that can be shared among multiple RocksDB instances to control the file deletion rate of SST files that exist in the first db_path.
+
+### Public API Changes
+* Deprecated WriteOptions::timeout_hint_us. We no longer support write timeout. If you really need this option, talk to us and we might consider returning it.
+* Deprecated purge_redundant_kvs_while_flush option.
+* Removed BackupEngine::NewBackupEngine() and NewReadOnlyBackupEngine() that were deprecated in RocksDB 3.8. Please use BackupEngine::Open() instead.
+* Deprecated Compaction Filter V2. We are not aware of any existing use-cases. If you use this filter, your compile will break with RocksDB 3.13. Please let us know if you use it and we'll put it back in RocksDB 3.14.
+* Env::FileExists now returns a Status instead of a boolean
+* Add statistics::getHistogramString() to print detailed distribution of a histogram metric.
+* Add DBOptions::skip_stats_update_on_db_open.  When it is on, DB::Open() will run faster as it skips the random reads required for loading necessary stats from SST files to optimize compaction.
+
+## 3.12.0 (7/2/2015)
+### New Features
+* Added experimental support for optimistic transactions.  See include/rocksdb/utilities/optimistic_transaction.h for more info.
+* Added a new way to report QPS from db_bench (check out --report_file and --report_interval_seconds)
+* Added a cache for individual rows. See DBOptions::row_cache for more info.
+* Several new features on EventListener (see include/rocksdb/listener.h):
+ - OnCompationCompleted() now returns per-compaciton job statistics, defined in include/rocksdb/compaction_job_stats.h.
+ - Added OnTableFileCreated() and OnTableFileDeleted().
+* Add compaction_options_universal.enable_trivial_move to true, to allow trivial move while performing universal compaction. Trivial move will happen only when all the input files are non overlapping.
+
+### Public API changes
+* EventListener::OnFlushCompleted() now passes FlushJobInfo instead of a list of parameters.
+* DB::GetDbIdentity() is now a const function.  If this function is overridden in your application, be sure to also make GetDbIdentity() const to avoid compile error.
+* Move listeners from ColumnFamilyOptions to DBOptions.
+* Add max_write_buffer_number_to_maintain option
+* DB::CompactRange()'s parameter reduce_level is changed to change_level, to allow users to move levels to lower levels if allowed. It can be used to migrate a DB from options.level_compaction_dynamic_level_bytes=false to options.level_compaction_dynamic_level_bytes.true.
+* Change default value for options.compaction_filter_factory and options.compaction_filter_factory_v2 to nullptr instead of DefaultCompactionFilterFactory and DefaultCompactionFilterFactoryV2.
+* If CancelAllBackgroundWork is called without doing a flush after doing loads with WAL disabled, the changes which haven't been flushed before the call to CancelAllBackgroundWork will be lost.
+* WBWIIterator::Entry() now returns WriteEntry instead of `const WriteEntry&`
+* options.hard_rate_limit is deprecated.
+* When options.soft_rate_limit or options.level0_slowdown_writes_trigger is triggered, the way to slow down writes is changed to: write rate to DB is limited to to options.delayed_write_rate.
+* DB::GetApproximateSizes() adds a parameter to allow the estimation to include data in mem table, with default to be not to include. It is now only supported in skip list mem table.
+* DB::CompactRange() now accept CompactRangeOptions instead of multiple paramters. CompactRangeOptions is defined in include/rocksdb/options.h.
+* CompactRange() will now skip bottommost level compaction for level based compaction if there is no compaction filter, bottommost_level_compaction is introduced in CompactRangeOptions to control when it's possbile to skip bottommost level compaction. This mean that if you want the compaction to produce a single file you need to set bottommost_level_compaction to BottommostLevelCompaction::kForce.
+* Add Cache.GetPinnedUsage() to get the size of memory occupied by entries that are in use by the system.
+* DB:Open() will fail if the compression specified in Options is not linked with the binary. If you see this failure, recompile RocksDB with compression libraries present on your system. Also, previously our default compression was snappy. This behavior is now changed. Now, the default compression is snappy only if it's available on the system. If it isn't we change the default to kNoCompression.
+* We changed how we account for memory used in block cache. Previously, we only counted the sum of block sizes currently present in block cache. Now, we count the actual memory usage of the blocks. For example, a block of size 4.5KB will use 8KB memory with jemalloc. This might decrease your memory usage and possibly decrease performance. Increase block cache size if you see this happening after an upgrade.
+* Add BackupEngineImpl.options_.max_background_operations to specify the maximum number of operations that may be performed in parallel. Add support for parallelized backup and restore.
+* Add DB::SyncWAL() that does a WAL sync without blocking writers.
+
+## 3.11.0 (5/19/2015)
+### New Features
+* Added a new API Cache::SetCapacity(size_t capacity) to dynamically change the maximum configured capacity of the cache. If the new capacity is less than the existing cache usage, the implementation will try to lower the usage by evicting the necessary number of elements following a strict LRU policy.
+* Added an experimental API for handling flashcache devices (blacklists background threads from caching their reads) -- NewFlashcacheAwareEnv
+* If universal compaction is used and options.num_levels > 1, compact files are tried to be stored in none-L0 with smaller files based on options.target_file_size_base. The limitation of DB size when using universal compaction is greatly mitigated by using more levels. You can set num_levels = 1 to make universal compaction behave as before. If you set num_levels > 1 and want to roll back to a previous version, you need to compact all files to a big file in level 0 (by setting target_file_size_base to be large and CompactRange(<cf_handle>, nullptr, nullptr, true, 0) and reopen the DB with the same version to rewrite the manifest, and then you can open it using previous releases.
+* More information about rocksdb background threads are available in Env::GetThreadList(), including the number of bytes read / written by a compaction job, mem-table size and current number of bytes written by a flush job and many more.  Check include/rocksdb/thread_status.h for more detail.
+
+### Public API changes
+* TablePropertiesCollector::AddUserKey() is added to replace TablePropertiesCollector::Add(). AddUserKey() exposes key type, sequence number and file size up to now to users.
+* DBOptions::bytes_per_sync used to apply to both WAL and table files. As of 3.11 it applies only to table files. If you want to use this option to sync WAL in the background, please use wal_bytes_per_sync
+
+## 3.10.0 (3/24/2015)
+### New Features
+* GetThreadStatus() is now able to report detailed thread status, including:
+ - Thread Operation including flush and compaction.
+ - The stage of the current thread operation.
+ - The elapsed time in micros since the current thread operation started.
+ More information can be found in include/rocksdb/thread_status.h.  In addition, when running db_bench with --thread_status_per_interval, db_bench will also report thread status periodically.
+* Changed the LRU caching algorithm so that referenced blocks (by iterators) are never evicted. This change made parameter removeScanCountLimit obsolete. Because of that NewLRUCache doesn't take three arguments anymore. table_cache_remove_scan_limit option is also removed
+* By default we now optimize the compilation for the compilation platform (using -march=native). If you want to build portable binary, use 'PORTABLE=1' before the make command.
+* We now allow level-compaction to place files in different paths by
+  specifying them in db_paths along with the target_size.
+  Lower numbered levels will be placed earlier in the db_paths and higher
+  numbered levels will be placed later in the db_paths vector.
+* Potentially big performance improvements if you're using RocksDB with lots of column families (100-1000)
+* Added BlockBasedTableOptions.format_version option, which allows user to specify which version of block based table he wants. As a general guidline, newer versions have more features, but might not be readable by older versions of RocksDB.
+* Added new block based table format (version 2), which you can enable by setting BlockBasedTableOptions.format_version = 2. This format changes how we encode size information in compressed blocks and should help with memory allocations if you're using Zlib or BZip2 compressions.
+* MemEnv (env that stores data in memory) is now available in default library build. You can create it by calling NewMemEnv().
+* Add SliceTransform.SameResultWhenAppended() to help users determine it is safe to apply prefix bloom/hash.
+* Block based table now makes use of prefix bloom filter if it is a full fulter.
+* Block based table remembers whether a whole key or prefix based bloom filter is supported in SST files. Do a sanity check when reading the file with users' configuration.
+* Fixed a bug in ReadOnlyBackupEngine that deleted corrupted backups in some cases, even though the engine was ReadOnly
+* options.level_compaction_dynamic_level_bytes, a feature to allow RocksDB to pick dynamic base of bytes for levels. With this feature turned on, we will automatically adjust max bytes for each level. The goal of this feature is to have lower bound on size amplification. For more details, see comments in options.h.
+* Added an abstract base class WriteBatchBase for write batches
+* Fixed a bug where we start deleting files of a dropped column families even if there are still live references to it
+
+### Public API changes
+* Deprecated skip_log_error_on_recovery and table_cache_remove_scan_count_limit options.
+* Logger method logv with log level parameter is now virtual
+
+### RocksJava
+* Added compression per level API.
+* MemEnv is now available in RocksJava via RocksMemEnv class.
+* lz4 compression is now included in rocksjava static library when running `make rocksdbjavastatic`.
+* Overflowing a size_t when setting rocksdb options now throws an IllegalArgumentException, which removes the necessity for a developer to catch these Exceptions explicitly.
+
+## 3.9.0 (12/8/2014)
+
+### New Features
+* Add rocksdb::GetThreadList(), which in the future will return the current status of all
+  rocksdb-related threads.  We will have more code instruments in the following RocksDB
+  releases.
+* Change convert function in rocksdb/utilities/convenience.h to return Status instead of boolean.
+  Also add support for nested options in convert function
+
+### Public API changes
+* New API to create a checkpoint added. Given a directory name, creates a new
+  database which is an image of the existing database.
+* New API LinkFile added to Env. If you implement your own Env class, an
+  implementation of the API LinkFile will have to be provided.
+* MemTableRep takes MemTableAllocator instead of Arena
+
+### Improvements
+* RocksDBLite library now becomes smaller and will be compiled with -fno-exceptions flag.
+
+## 3.8.0 (11/14/2014)
+
+### Public API changes
+* BackupEngine::NewBackupEngine() was deprecated; please use BackupEngine::Open() from now on.
+* BackupableDB/RestoreBackupableDB have new GarbageCollect() methods, which will clean up files from corrupt and obsolete backups.
+* BackupableDB/RestoreBackupableDB have new GetCorruptedBackups() methods which list corrupt backups.
+
+### Cleanup
+* Bunch of code cleanup, some extra warnings turned on (-Wshadow, -Wshorten-64-to-32, -Wnon-virtual-dtor)
+
+### New features
+* CompactFiles and EventListener, although they are still in experimental state
+* Full ColumnFamily support in RocksJava.
+
+## 3.7.0 (11/6/2014)
+### Public API changes
+* Introduce SetOptions() API to allow adjusting a subset of options dynamically online
+* Introduce 4 new convenient functions for converting Options from string: GetColumnFamilyOptionsFromMap(), GetColumnFamilyOptionsFromString(), GetDBOptionsFromMap(), GetDBOptionsFromString()
+* Remove WriteBatchWithIndex.Delete() overloads using SliceParts
+* When opening a DB, if options.max_background_compactions is larger than the existing low pri pool of options.env, it will enlarge it. Similarly, options.max_background_flushes is larger than the existing high pri pool of options.env, it will enlarge it.
+
+## 3.6.0 (10/7/2014)
+### Disk format changes
+* If you're using RocksDB on ARM platforms and you're using default bloom filter, there is a disk format change you need to be aware of. There are three steps you need to do when you convert to new release: 1. turn off filter policy, 2. compact the whole database, 3. turn on filter policy
+
+### Behavior changes
+* We have refactored our system of stalling writes.  Any stall-related statistics' meanings are changed. Instead of per-write stall counts, we now count stalls per-epoch, where epochs are periods between flushes and compactions. You'll find more information in our Tuning Perf Guide once we release RocksDB 3.6.
+* When disableDataSync=true, we no longer sync the MANIFEST file.
+* Add identity_as_first_hash property to CuckooTable. SST file needs to be rebuilt to be opened by reader properly.
+
+### Public API changes
+* Change target_file_size_base type to uint64_t from int.
+* Remove allow_thread_local. This feature was proved to be stable, so we are turning it always-on.
 
 ## 3.5.0 (9/3/2014)
 ### New Features
@@ -20,6 +180,7 @@
 * Support Multiple DB paths in universal style compactions
 * Add feature of storing plain table index and bloom filter in SST file.
 * CompactRange() will never output compacted files to level 0. This used to be the case when all the compaction input files were at level 0.
+* Added iterate_upper_bound to define the extent upto which the forward iterator will return entries. This will prevent iterating over delete markers and overwritten entries for edge cases where you want to break out the iterator anyways. This may improve perfomance in case there are a large number of delete markers or overwritten entries.
 
 ### Public API changes
 * DBOptions.db_paths now is a vector of a DBPath structure which indicates both of path and target size

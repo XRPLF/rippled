@@ -22,6 +22,7 @@
 #include "table/plain_table_index.h"
 #include "util/arena.h"
 #include "util/dynamic_bloom.h"
+#include "util/file_reader_writer.h"
 
 namespace rocksdb {
 
@@ -36,6 +37,7 @@ class TableCache;
 class TableReader;
 class InternalKeyComparator;
 class PlainTableKeyDecoder;
+class GetContext;
 
 using std::unique_ptr;
 using std::unordered_map;
@@ -52,29 +54,28 @@ extern const uint32_t kPlainTableVariableLength;
 // The implementation of IndexedTableReader requires output file is mmaped
 class PlainTableReader: public TableReader {
  public:
-  static Status Open(const Options& options, const EnvOptions& soptions,
+  static Status Open(const ImmutableCFOptions& ioptions,
+                     const EnvOptions& env_options,
                      const InternalKeyComparator& internal_comparator,
-                     unique_ptr<RandomAccessFile>&& file, uint64_t file_size,
-                     unique_ptr<TableReader>* table,
+                     unique_ptr<RandomAccessFileReader>&& file,
+                     uint64_t file_size, unique_ptr<TableReader>* table,
                      const int bloom_bits_per_key, double hash_table_ratio,
                      size_t index_sparseness, size_t huge_page_tlb_size,
                      bool full_scan_mode);
 
   Iterator* NewIterator(const ReadOptions&, Arena* arena = nullptr) override;
 
-  void Prepare(const Slice& target);
+  void Prepare(const Slice& target) override;
 
-  Status Get(const ReadOptions&, const Slice& key, void* arg,
-             bool (*result_handler)(void* arg, const ParsedInternalKey& k,
-                                    const Slice& v),
-             void (*mark_key_may_exist)(void*) = nullptr);
+  Status Get(const ReadOptions&, const Slice& key,
+             GetContext* get_context) override;
 
-  uint64_t ApproximateOffsetOf(const Slice& key);
+  uint64_t ApproximateOffsetOf(const Slice& key) override;
 
   uint32_t GetIndexSize() const { return index_.GetIndexSize(); }
-  void SetupForCompaction();
+  void SetupForCompaction() override;
 
-  std::shared_ptr<const TableProperties> GetTableProperties() const {
+  std::shared_ptr<const TableProperties> GetTableProperties() const override {
     return table_properties_;
   }
 
@@ -82,8 +83,9 @@ class PlainTableReader: public TableReader {
     return arena_.MemoryAllocatedBytes();
   }
 
-  PlainTableReader(const Options& options, unique_ptr<RandomAccessFile>&& file,
-                   const EnvOptions& storage_options,
+  PlainTableReader(const ImmutableCFOptions& ioptions,
+                   unique_ptr<RandomAccessFileReader>&& file,
+                   const EnvOptions& env_options,
                    const InternalKeyComparator& internal_comparator,
                    EncodingType encoding_type, uint64_t file_size,
                    const TableProperties* table_properties);
@@ -122,7 +124,7 @@ class PlainTableReader: public TableReader {
   // sst file that stores data.
   const uint32_t data_start_offset_ = 0;
   const uint32_t data_end_offset_;
-  const size_t user_key_len_;
+  const uint32_t user_key_len_;
   const SliceTransform* prefix_extractor_;
 
   static const size_t kNumInternalBytes = 8;
@@ -132,9 +134,9 @@ class PlainTableReader: public TableReader {
   DynamicBloom bloom_;
   Arena arena_;
 
-  const Options& options_;
-  unique_ptr<RandomAccessFile> file_;
-  uint32_t file_size_;
+  const ImmutableCFOptions& ioptions_;
+  unique_ptr<RandomAccessFileReader> file_;
+  uint64_t file_size_;
   std::shared_ptr<const TableProperties> table_properties_;
 
   bool IsFixedLength() const {

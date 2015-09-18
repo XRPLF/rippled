@@ -10,13 +10,17 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <thread>
 
 #include "db/db_impl.h"
-#include "rocksdb/env.h"
 #include "rocksdb/db.h"
+#include "rocksdb/env.h"
+#include "rocksdb/iterator.h"
+#include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 #include "util/coding.h"
+#include "util/sync_point.h"
 #include "utilities/merge_operators.h"
 
 namespace rocksdb {
@@ -38,7 +42,7 @@ class EnvCounter : public EnvWrapper {
     return num_new_writable_file_;
   }
   Status NewWritableFile(const std::string& f, unique_ptr<WritableFile>* r,
-                         const EnvOptions& soptions) {
+                         const EnvOptions& soptions) override {
     ++num_new_writable_file_;
     return EnvWrapper::NewWritableFile(f, r, soptions);
   }
@@ -47,7 +51,7 @@ class EnvCounter : public EnvWrapper {
   int num_new_writable_file_;
 };
 
-class ColumnFamilyTest {
+class ColumnFamilyTest : public testing::Test {
  public:
   ColumnFamilyTest() : rnd_(139) {
     env_ = new EnvCounter(Env::Default());
@@ -96,10 +100,12 @@ class ColumnFamilyTest {
                                &db_);
   }
 
+#ifndef ROCKSDB_LITE  // ReadOnlyDB is not supported
   void AssertOpenReadOnly(std::vector<std::string> cf,
                     std::vector<ColumnFamilyOptions> options = {}) {
     ASSERT_OK(OpenReadOnly(cf, options));
   }
+#endif  // !ROCKSDB_LITE
 
 
   void Open(std::vector<std::string> cf,
@@ -115,8 +121,12 @@ class ColumnFamilyTest {
 
   int GetProperty(int cf, std::string property) {
     std::string value;
-    ASSERT_TRUE(dbfull()->GetProperty(handles_[cf], property, &value));
+    EXPECT_TRUE(dbfull()->GetProperty(handles_[cf], property, &value));
+#ifndef CYGWIN
     return std::stoi(value);
+#else
+    return std::strtol(value.c_str(), 0 /* off */, 10 /* base */);
+#endif
   }
 
   void Destroy() {
@@ -133,7 +143,7 @@ class ColumnFamilyTest {
   void CreateColumnFamilies(
       const std::vector<std::string>& cfs,
       const std::vector<ColumnFamilyOptions> options = {}) {
-    int cfi = handles_.size();
+    int cfi = static_cast<int>(handles_.size());
     handles_.resize(cfi + cfs.size());
     names_.resize(cfi + cfs.size());
     for (size_t i = 0; i < cfs.size(); ++i) {
@@ -180,10 +190,28 @@ class ColumnFamilyTest {
   }
 
   void WaitForFlush(int cf) {
+#ifndef ROCKSDB_LITE  // TEST functions are not supported in lite
     ASSERT_OK(dbfull()->TEST_WaitForFlushMemTable(handles_[cf]));
+#endif  // !ROCKSDB_LITE
   }
 
-  void WaitForCompaction() { ASSERT_OK(dbfull()->TEST_WaitForCompact()); }
+  void WaitForCompaction() {
+#ifndef ROCKSDB_LITE  // TEST functions are not supported in lite
+    ASSERT_OK(dbfull()->TEST_WaitForCompact());
+#endif  // !ROCKSDB_LITE
+  }
+
+  uint64_t MaxTotalInMemoryState() {
+#ifndef ROCKSDB_LITE
+    return dbfull()->TEST_MaxTotalInMemoryState();
+#else
+    return 0;
+#endif  // !ROCKSDB_LITE
+  }
+
+  void AssertMaxTotalInMemoryState(uint64_t value) {
+    ASSERT_EQ(value, MaxTotalInMemoryState());
+  }
 
   Status Put(int cf, const std::string& key, const std::string& value) {
     return db_->Put(WriteOptions(), handles_[cf], Slice(key), Slice(value));
@@ -209,18 +237,21 @@ class ColumnFamilyTest {
   }
 
   void CompactAll(int cf) {
-    ASSERT_OK(db_->CompactRange(handles_[cf], nullptr, nullptr));
+    ASSERT_OK(db_->CompactRange(CompactRangeOptions(), handles_[cf], nullptr,
+                                nullptr));
   }
 
   void Compact(int cf, const Slice& start, const Slice& limit) {
-    ASSERT_OK(db_->CompactRange(handles_[cf], &start, &limit));
+    ASSERT_OK(
+        db_->CompactRange(CompactRangeOptions(), handles_[cf], &start, &limit));
   }
 
   int NumTableFilesAtLevel(int level, int cf) {
     return GetProperty(cf,
-                       "rocksdb.num-files-at-level" + std::to_string(level));
+                       "rocksdb.num-files-at-level" + ToString(level));
   }
 
+#ifndef ROCKSDB_LITE
   // Return spread of files per level
   std::string FilesPerLevel(int cf) {
     std::string result;
@@ -231,17 +262,32 @@ class ColumnFamilyTest {
       snprintf(buf, sizeof(buf), "%s%d", (level ? "," : ""), f);
       result += buf;
       if (f > 0) {
-        last_non_zero_offset = result.size();
+        last_non_zero_offset = static_cast<int>(result.size());
       }
     }
     result.resize(last_non_zero_offset);
     return result;
   }
+#endif
 
+  void AssertFilesPerLevel(const std::string& value, int cf) {
+#ifndef ROCKSDB_LITE
+    ASSERT_EQ(value, FilesPerLevel(cf));
+#endif
+  }
+
+#ifndef ROCKSDB_LITE  // GetLiveFilesMetaData is not supported
   int CountLiveFiles() {
     std::vector<LiveFileMetaData> metadata;
     db_->GetLiveFilesMetaData(&metadata);
     return static_cast<int>(metadata.size());
+  }
+#endif  // !ROCKSDB_LITE
+
+  void AssertCountLiveFiles(int expected_value) {
+#ifndef ROCKSDB_LITE
+    ASSERT_EQ(expected_value, CountLiveFiles());
+#endif
   }
 
   // Do n memtable flushes, each of which produces an sstable
@@ -255,6 +301,7 @@ class ColumnFamilyTest {
     }
   }
 
+#ifndef ROCKSDB_LITE  // GetSortedWalFiles is not supported
   int CountLiveLogFiles() {
     int micros_wait_for_log_deletion = 20000;
     env_->SleepForMicroseconds(micros_wait_for_log_deletion);
@@ -262,7 +309,7 @@ class ColumnFamilyTest {
     VectorLogPtr wal_files;
     Status s;
     // GetSortedWalFiles is a flakey function -- it gets all the wal_dir
-    // children files and then later checks for their existance. if some of the
+    // children files and then later checks for their existence. if some of the
     // log files doesn't exist anymore, it reports an error. it does all of this
     // without DB mutex held, so if a background process deletes the log file
     // while the function is being executed, it returns an error. We retry the
@@ -274,22 +321,32 @@ class ColumnFamilyTest {
         break;
       }
     }
-    ASSERT_OK(s);
+    EXPECT_OK(s);
     for (const auto& wal : wal_files) {
       if (wal->Type() == kAliveLogFile) {
         ++ret;
       }
     }
     return ret;
+    return 0;
+  }
+#endif  // !ROCKSDB_LITE
+
+  void AssertCountLiveLogFiles(int value) {
+#ifndef ROCKSDB_LITE  // GetSortedWalFiles is not supported
+    ASSERT_EQ(value, CountLiveLogFiles());
+#endif  // !ROCKSDB_LITE
   }
 
   void AssertNumberOfImmutableMemtables(std::vector<int> num_per_cf) {
     assert(num_per_cf.size() == handles_.size());
 
+#ifndef ROCKSDB_LITE  // GetProperty is not supported in lite
     for (size_t i = 0; i < num_per_cf.size(); ++i) {
-      ASSERT_EQ(num_per_cf[i],
-                GetProperty(i, "rocksdb.num-immutable-mem-table"));
+      ASSERT_EQ(num_per_cf[i], GetProperty(static_cast<int>(i),
+                                           "rocksdb.num-immutable-mem-table"));
     }
+#endif  // !ROCKSDB_LITE
   }
 
   void CopyFile(const std::string& source, const std::string& destination,
@@ -326,7 +383,7 @@ class ColumnFamilyTest {
   Random rnd_;
 };
 
-TEST(ColumnFamilyTest, DontReuseColumnFamilyID) {
+TEST_F(ColumnFamilyTest, DontReuseColumnFamilyID) {
   for (int iter = 0; iter < 3; ++iter) {
     Open();
     CreateColumnFamilies({"one", "two", "three"});
@@ -353,8 +410,7 @@ TEST(ColumnFamilyTest, DontReuseColumnFamilyID) {
   }
 }
 
-
-TEST(ColumnFamilyTest, AddDrop) {
+TEST_F(ColumnFamilyTest, AddDrop) {
   Open();
   CreateColumnFamilies({"one", "two", "three"});
   ASSERT_EQ("NOT_FOUND", Get(1, "fodor"));
@@ -380,14 +436,14 @@ TEST(ColumnFamilyTest, AddDrop) {
               std::vector<std::string>({"default", "four", "three"}));
 }
 
-TEST(ColumnFamilyTest, DropTest) {
+TEST_F(ColumnFamilyTest, DropTest) {
   // first iteration - dont reopen DB before dropping
   // second iteration - reopen DB before dropping
   for (int iter = 0; iter < 2; ++iter) {
     Open({"default"});
     CreateColumnFamiliesAndReopen({"pikachu"});
     for (int i = 0; i < 100; ++i) {
-      ASSERT_OK(Put(1, std::to_string(i), "bar" + std::to_string(i)));
+      ASSERT_OK(Put(1, ToString(i), "bar" + ToString(i)));
     }
     ASSERT_OK(Flush(1));
 
@@ -396,15 +452,15 @@ TEST(ColumnFamilyTest, DropTest) {
     }
     ASSERT_EQ("bar1", Get(1, "1"));
 
-    ASSERT_EQ(CountLiveFiles(), 1);
+    AssertCountLiveFiles(1);
     DropColumnFamilies({1});
     // make sure that all files are deleted when we drop the column family
-    ASSERT_EQ(CountLiveFiles(), 0);
+    AssertCountLiveFiles(0);
     Destroy();
   }
 }
 
-TEST(ColumnFamilyTest, WriteBatchFailure) {
+TEST_F(ColumnFamilyTest, WriteBatchFailure) {
   Open();
   CreateColumnFamiliesAndReopen({"one", "two"});
   WriteBatch batch;
@@ -422,7 +478,7 @@ TEST(ColumnFamilyTest, WriteBatchFailure) {
   Close();
 }
 
-TEST(ColumnFamilyTest, ReadWrite) {
+TEST_F(ColumnFamilyTest, ReadWrite) {
   Open();
   CreateColumnFamiliesAndReopen({"one", "two"});
   ASSERT_OK(Put(0, "foo", "v1"));
@@ -446,7 +502,7 @@ TEST(ColumnFamilyTest, ReadWrite) {
   Close();
 }
 
-TEST(ColumnFamilyTest, IgnoreRecoveredLog) {
+TEST_F(ColumnFamilyTest, IgnoreRecoveredLog) {
   std::string backup_logs = dbname_ + "/backup_logs";
 
   // delete old files in backup_logs directory
@@ -521,7 +577,7 @@ TEST(ColumnFamilyTest, IgnoreRecoveredLog) {
   }
 }
 
-TEST(ColumnFamilyTest, FlushTest) {
+TEST_F(ColumnFamilyTest, FlushTest) {
   Open();
   CreateColumnFamiliesAndReopen({"one", "two"});
   ASSERT_OK(Put(0, "foo", "v1"));
@@ -529,8 +585,27 @@ TEST(ColumnFamilyTest, FlushTest) {
   ASSERT_OK(Put(1, "mirko", "v3"));
   ASSERT_OK(Put(0, "foo", "v2"));
   ASSERT_OK(Put(2, "fodor", "v5"));
-  for (int i = 0; i < 3; ++i) {
-    Flush(i);
+
+  for (int j = 0; j < 2; j++) {
+    ReadOptions ro;
+    std::vector<Iterator*> iterators;
+    // Hold super version.
+    if (j == 0) {
+      ASSERT_OK(db_->NewIterators(ro, handles_, &iterators));
+    }
+
+    for (int i = 0; i < 3; ++i) {
+      uint64_t max_total_in_memory_state =
+          MaxTotalInMemoryState();
+      Flush(i);
+      AssertMaxTotalInMemoryState(max_total_in_memory_state);
+    }
+    ASSERT_OK(Put(1, "foofoo", "bar"));
+    ASSERT_OK(Put(0, "foofoo", "bar"));
+
+    for (auto* it : iterators) {
+      delete it;
+    }
   }
   Reopen();
 
@@ -550,15 +625,16 @@ TEST(ColumnFamilyTest, FlushTest) {
 }
 
 // Makes sure that obsolete log files get deleted
-TEST(ColumnFamilyTest, LogDeletionTest) {
+TEST_F(ColumnFamilyTest, LogDeletionTest) {
   db_options_.max_total_wal_size = std::numeric_limits<uint64_t>::max();
+  column_family_options_.arena_block_size = 4 * 1024;
   column_family_options_.write_buffer_size = 100000;  // 100KB
   Open();
   CreateColumnFamilies({"one", "two", "three", "four"});
   // Each bracket is one log file. if number is in (), it means
   // we don't need it anymore (it's been flushed)
   // []
-  ASSERT_EQ(CountLiveLogFiles(), 0);
+  AssertCountLiveLogFiles(0);
   PutRandomData(0, 1, 100);
   // [0]
   PutRandomData(1, 1, 100);
@@ -566,58 +642,58 @@ TEST(ColumnFamilyTest, LogDeletionTest) {
   PutRandomData(1, 1000, 100);
   WaitForFlush(1);
   // [0, (1)] [1]
-  ASSERT_EQ(CountLiveLogFiles(), 2);
+  AssertCountLiveLogFiles(2);
   PutRandomData(0, 1, 100);
   // [0, (1)] [0, 1]
-  ASSERT_EQ(CountLiveLogFiles(), 2);
+  AssertCountLiveLogFiles(2);
   PutRandomData(2, 1, 100);
   // [0, (1)] [0, 1, 2]
   PutRandomData(2, 1000, 100);
   WaitForFlush(2);
   // [0, (1)] [0, 1, (2)] [2]
-  ASSERT_EQ(CountLiveLogFiles(), 3);
+  AssertCountLiveLogFiles(3);
   PutRandomData(2, 1000, 100);
   WaitForFlush(2);
   // [0, (1)] [0, 1, (2)] [(2)] [2]
-  ASSERT_EQ(CountLiveLogFiles(), 4);
+  AssertCountLiveLogFiles(4);
   PutRandomData(3, 1, 100);
   // [0, (1)] [0, 1, (2)] [(2)] [2, 3]
   PutRandomData(1, 1, 100);
   // [0, (1)] [0, 1, (2)] [(2)] [1, 2, 3]
-  ASSERT_EQ(CountLiveLogFiles(), 4);
+  AssertCountLiveLogFiles(4);
   PutRandomData(1, 1000, 100);
   WaitForFlush(1);
   // [0, (1)] [0, (1), (2)] [(2)] [(1), 2, 3] [1]
-  ASSERT_EQ(CountLiveLogFiles(), 5);
+  AssertCountLiveLogFiles(5);
   PutRandomData(0, 1000, 100);
   WaitForFlush(0);
   // [(0), (1)] [(0), (1), (2)] [(2)] [(1), 2, 3] [1, (0)] [0]
   // delete obsolete logs -->
   // [(1), 2, 3] [1, (0)] [0]
-  ASSERT_EQ(CountLiveLogFiles(), 3);
+  AssertCountLiveLogFiles(3);
   PutRandomData(0, 1000, 100);
   WaitForFlush(0);
   // [(1), 2, 3] [1, (0)], [(0)] [0]
-  ASSERT_EQ(CountLiveLogFiles(), 4);
+  AssertCountLiveLogFiles(4);
   PutRandomData(1, 1000, 100);
   WaitForFlush(1);
   // [(1), 2, 3] [(1), (0)] [(0)] [0, (1)] [1]
-  ASSERT_EQ(CountLiveLogFiles(), 5);
+  AssertCountLiveLogFiles(5);
   PutRandomData(2, 1000, 100);
   WaitForFlush(2);
   // [(1), (2), 3] [(1), (0)] [(0)] [0, (1)] [1, (2)], [2]
-  ASSERT_EQ(CountLiveLogFiles(), 6);
+  AssertCountLiveLogFiles(6);
   PutRandomData(3, 1000, 100);
   WaitForFlush(3);
   // [(1), (2), (3)] [(1), (0)] [(0)] [0, (1)] [1, (2)], [2, (3)] [3]
   // delete obsolete logs -->
   // [0, (1)] [1, (2)], [2, (3)] [3]
-  ASSERT_EQ(CountLiveLogFiles(), 4);
+  AssertCountLiveLogFiles(4);
   Close();
 }
 
 // Makes sure that obsolete log files get deleted
-TEST(ColumnFamilyTest, DifferentWriteBufferSizes) {
+TEST_F(ColumnFamilyTest, DifferentWriteBufferSizes) {
   // disable flushing stale column families
   db_options_.max_total_wal_size = std::numeric_limits<uint64_t>::max();
   Open();
@@ -629,17 +705,25 @@ TEST(ColumnFamilyTest, DifferentWriteBufferSizes) {
   // "two" -> 1MB memtable, start flushing with three immutable memtables
   // "three" -> 90KB memtable, start flushing with four immutable memtables
   default_cf.write_buffer_size = 100000;
+  default_cf.arena_block_size = 4 * 4096;
   default_cf.max_write_buffer_number = 10;
   default_cf.min_write_buffer_number_to_merge = 1;
+  default_cf.max_write_buffer_number_to_maintain = 0;
   one.write_buffer_size = 200000;
+  one.arena_block_size = 4 * 4096;
   one.max_write_buffer_number = 10;
   one.min_write_buffer_number_to_merge = 2;
+  one.max_write_buffer_number_to_maintain = 1;
   two.write_buffer_size = 1000000;
+  two.arena_block_size = 4 * 4096;
   two.max_write_buffer_number = 10;
   two.min_write_buffer_number_to_merge = 3;
-  three.write_buffer_size = 90000;
+  two.max_write_buffer_number_to_maintain = 2;
+  three.write_buffer_size = 4096 * 22 + 2048;
+  three.arena_block_size = 4096;
   three.max_write_buffer_number = 10;
   three.min_write_buffer_number_to_merge = 4;
+  three.max_write_buffer_number_to_maintain = -1;
 
   Reopen({default_cf, one, two, three});
 
@@ -647,71 +731,96 @@ TEST(ColumnFamilyTest, DifferentWriteBufferSizes) {
   PutRandomData(0, 100, 1000);
   WaitForFlush(0);
   AssertNumberOfImmutableMemtables({0, 0, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 1);
+  AssertCountLiveLogFiles(1);
   PutRandomData(1, 200, 1000);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 2);
+  AssertCountLiveLogFiles(2);
   PutRandomData(2, 1000, 1000);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 1, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 3);
+  AssertCountLiveLogFiles(3);
   PutRandomData(2, 1000, 1000);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 2, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 4);
-  PutRandomData(3, 90, 1000);
+  AssertCountLiveLogFiles(4);
+  PutRandomData(3, 91, 990);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 2, 1});
-  ASSERT_EQ(CountLiveLogFiles(), 5);
-  PutRandomData(3, 90, 1000);
+  AssertCountLiveLogFiles(5);
+  PutRandomData(3, 90, 990);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 2, 2});
-  ASSERT_EQ(CountLiveLogFiles(), 6);
-  PutRandomData(3, 90, 1000);
+  AssertCountLiveLogFiles(6);
+  PutRandomData(3, 90, 990);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 2, 3});
-  ASSERT_EQ(CountLiveLogFiles(), 7);
+  AssertCountLiveLogFiles(7);
   PutRandomData(0, 100, 1000);
   WaitForFlush(0);
   AssertNumberOfImmutableMemtables({0, 1, 2, 3});
-  ASSERT_EQ(CountLiveLogFiles(), 8);
+  AssertCountLiveLogFiles(8);
   PutRandomData(2, 100, 10000);
   WaitForFlush(2);
   AssertNumberOfImmutableMemtables({0, 1, 0, 3});
-  ASSERT_EQ(CountLiveLogFiles(), 9);
-  PutRandomData(3, 90, 1000);
+  AssertCountLiveLogFiles(9);
+  PutRandomData(3, 90, 990);
   WaitForFlush(3);
   AssertNumberOfImmutableMemtables({0, 1, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 10);
-  PutRandomData(3, 90, 1000);
+  AssertCountLiveLogFiles(10);
+  PutRandomData(3, 90, 990);
   env_->SleepForMicroseconds(micros_wait_for_flush);
   AssertNumberOfImmutableMemtables({0, 1, 0, 1});
-  ASSERT_EQ(CountLiveLogFiles(), 11);
+  AssertCountLiveLogFiles(11);
   PutRandomData(1, 200, 1000);
   WaitForFlush(1);
   AssertNumberOfImmutableMemtables({0, 0, 0, 1});
-  ASSERT_EQ(CountLiveLogFiles(), 5);
-  PutRandomData(3, 90*6, 1000);
+  AssertCountLiveLogFiles(5);
+  PutRandomData(3, 90 * 3, 990);
+  WaitForFlush(3);
+  PutRandomData(3, 90 * 4, 990);
   WaitForFlush(3);
   AssertNumberOfImmutableMemtables({0, 0, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 12);
+  AssertCountLiveLogFiles(12);
   PutRandomData(0, 100, 1000);
   WaitForFlush(0);
   AssertNumberOfImmutableMemtables({0, 0, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 12);
-  PutRandomData(2, 3*100, 10000);
+  AssertCountLiveLogFiles(12);
+  PutRandomData(2, 3 * 1000, 1000);
   WaitForFlush(2);
   AssertNumberOfImmutableMemtables({0, 0, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 12);
+  AssertCountLiveLogFiles(12);
   PutRandomData(1, 2*200, 1000);
   WaitForFlush(1);
   AssertNumberOfImmutableMemtables({0, 0, 0, 0});
-  ASSERT_EQ(CountLiveLogFiles(), 7);
+  AssertCountLiveLogFiles(7);
   Close();
 }
 
-TEST(ColumnFamilyTest, DifferentMergeOperators) {
+#ifndef ROCKSDB_LITE  // Cuckoo is not supported in lite
+TEST_F(ColumnFamilyTest, MemtableNotSupportSnapshot) {
+  Open();
+  auto* s1 = dbfull()->GetSnapshot();
+  ASSERT_TRUE(s1 != nullptr);
+  dbfull()->ReleaseSnapshot(s1);
+
+  // Add a column family that doesn't support snapshot
+  ColumnFamilyOptions first;
+  first.memtable_factory.reset(NewHashCuckooRepFactory(1024 * 1024));
+  CreateColumnFamilies({"first"}, {first});
+  auto* s2 = dbfull()->GetSnapshot();
+  ASSERT_TRUE(s2 == nullptr);
+
+  // Add a column family that supports snapshot. Snapshot stays not supported.
+  ColumnFamilyOptions second;
+  CreateColumnFamilies({"second"}, {second});
+  auto* s3 = dbfull()->GetSnapshot();
+  ASSERT_TRUE(s3 == nullptr);
+  Close();
+}
+#endif  // !ROCKSDB_LITE
+
+TEST_F(ColumnFamilyTest, DifferentMergeOperators) {
   Open();
   CreateColumnFamilies({"first", "second"});
   ColumnFamilyOptions default_cf, first, second;
@@ -741,7 +850,7 @@ TEST(ColumnFamilyTest, DifferentMergeOperators) {
   Close();
 }
 
-TEST(ColumnFamilyTest, DifferentCompactionStyles) {
+TEST_F(ColumnFamilyTest, DifferentCompactionStyles) {
   Open();
   CreateColumnFamilies({"one", "two"});
   ColumnFamilyOptions default_cf, one, two;
@@ -758,13 +867,14 @@ TEST(ColumnFamilyTest, DifferentCompactionStyles) {
   default_cf.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
   one.compaction_style = kCompactionStyleUniversal;
+
+  one.num_levels = 1;
   // trigger compaction if there are >= 4 files
   one.level0_file_num_compaction_trigger = 4;
-  one.write_buffer_size = 100000;
+  one.write_buffer_size = 120000;
 
   two.compaction_style = kCompactionStyleLevel;
   two.num_levels = 4;
-  two.max_mem_compaction_level = 0;
   two.level0_file_num_compaction_trigger = 3;
   two.write_buffer_size = 100000;
 
@@ -772,38 +882,43 @@ TEST(ColumnFamilyTest, DifferentCompactionStyles) {
 
   // SETUP column family "one" -- universal style
   for (int i = 0; i < one.level0_file_num_compaction_trigger - 1; ++i) {
-    PutRandomData(1, 11, 10000);
+    PutRandomData(1, 10, 12000);
+    PutRandomData(1, 1, 10);
     WaitForFlush(1);
-    ASSERT_EQ(std::to_string(i + 1), FilesPerLevel(1));
+    AssertFilesPerLevel(ToString(i + 1), 1);
   }
 
   // SETUP column family "two" -- level style with 4 levels
   for (int i = 0; i < two.level0_file_num_compaction_trigger - 1; ++i) {
-    PutRandomData(2, 15, 10000);
+    PutRandomData(2, 10, 12000);
+    PutRandomData(2, 1, 10);
     WaitForFlush(2);
-    ASSERT_EQ(std::to_string(i + 1), FilesPerLevel(2));
+    AssertFilesPerLevel(ToString(i + 1), 2);
   }
 
   // TRIGGER compaction "one"
-  PutRandomData(1, 12, 10000);
+  PutRandomData(1, 10, 12000);
+  PutRandomData(1, 1, 10);
 
   // TRIGGER compaction "two"
-  PutRandomData(2, 10, 10000);
+  PutRandomData(2, 10, 12000);
+  PutRandomData(2, 1, 10);
 
   // WAIT for compactions
   WaitForCompaction();
 
   // VERIFY compaction "one"
-  ASSERT_EQ("1", FilesPerLevel(1));
+  AssertFilesPerLevel("1", 1);
 
   // VERIFY compaction "two"
-  ASSERT_EQ("0,1", FilesPerLevel(2));
+  AssertFilesPerLevel("0,1", 2);
   CompactAll(2);
-  ASSERT_EQ("0,1", FilesPerLevel(2));
+  AssertFilesPerLevel("0,1", 2);
 
   Close();
 }
 
+#ifndef ROCKSDB_LITE  // Tailing interator not supported
 namespace {
 std::string IterStatus(Iterator* iter) {
   std::string result;
@@ -816,7 +931,7 @@ std::string IterStatus(Iterator* iter) {
 }
 }  // anonymous namespace
 
-TEST(ColumnFamilyTest, NewIteratorsTest) {
+TEST_F(ColumnFamilyTest, NewIteratorsTest) {
   // iter == 0 -- no tailing
   // iter == 2 -- tailing
   for (int iter = 0; iter < 2; ++iter) {
@@ -860,8 +975,10 @@ TEST(ColumnFamilyTest, NewIteratorsTest) {
     Destroy();
   }
 }
+#endif  // !ROCKSDB_LITE
 
-TEST(ColumnFamilyTest, ReadOnlyDBTest) {
+#ifndef ROCKSDB_LITE  // ReadOnlyDB is not supported
+TEST_F(ColumnFamilyTest, ReadOnlyDBTest) {
   Open();
   CreateColumnFamiliesAndReopen({"one", "two", "three", "four"});
   ASSERT_OK(Put(0, "a", "b"));
@@ -910,22 +1027,23 @@ TEST(ColumnFamilyTest, ReadOnlyDBTest) {
   s = OpenReadOnly({"one", "four"});
   ASSERT_TRUE(!s.ok());
 }
+#endif  // !ROCKSDB_LITE
 
-TEST(ColumnFamilyTest, DontRollEmptyLogs) {
+TEST_F(ColumnFamilyTest, DontRollEmptyLogs) {
   Open();
   CreateColumnFamiliesAndReopen({"one", "two", "three", "four"});
 
   for (size_t i = 0; i < handles_.size(); ++i) {
-    PutRandomData(i, 10, 100);
+    PutRandomData(static_cast<int>(i), 10, 100);
   }
   int num_writable_file_start = env_->GetNumberOfNewWritableFileCalls();
   // this will trigger the flushes
-  for (size_t i = 0; i <= 4; ++i) {
+  for (int i = 0; i <= 4; ++i) {
     ASSERT_OK(Flush(i));
   }
 
   for (int i = 0; i < 4; ++i) {
-    dbfull()->TEST_WaitForFlushMemTable(handles_[i]);
+    WaitForFlush(i);
   }
   int total_new_writable_files =
       env_->GetNumberOfNewWritableFileCalls() - num_writable_file_start;
@@ -933,11 +1051,12 @@ TEST(ColumnFamilyTest, DontRollEmptyLogs) {
   Close();
 }
 
-TEST(ColumnFamilyTest, FlushStaleColumnFamilies) {
+TEST_F(ColumnFamilyTest, FlushStaleColumnFamilies) {
   Open();
   CreateColumnFamilies({"one", "two"});
   ColumnFamilyOptions default_cf, one, two;
   default_cf.write_buffer_size = 100000;  // small write buffer size
+  default_cf.arena_block_size = 4096;
   default_cf.disable_auto_compactions = true;
   one.disable_auto_compactions = true;
   two.disable_auto_compactions = true;
@@ -949,7 +1068,8 @@ TEST(ColumnFamilyTest, FlushStaleColumnFamilies) {
   for (int i = 0; i < 2; ++i) {
     PutRandomData(0, 100, 1000);  // flush
     WaitForFlush(0);
-    ASSERT_EQ(i + 1, CountLiveFiles());
+
+    AssertCountLiveFiles(i + 1);
   }
   // third flush. now, CF [two] should be detected as stale and flushed
   // column family 1 should not be flushed since it's empty
@@ -958,11 +1078,11 @@ TEST(ColumnFamilyTest, FlushStaleColumnFamilies) {
   WaitForFlush(2);
   // 3 files for default column families, 1 file for column family [two], zero
   // files for column family [one], because it's empty
-  ASSERT_EQ(4, CountLiveFiles());
+  AssertCountLiveFiles(4);
   Close();
 }
 
-TEST(ColumnFamilyTest, CreateMissingColumnFamilies) {
+TEST_F(ColumnFamilyTest, CreateMissingColumnFamilies) {
   Status s = TryOpen({"one", "two"});
   ASSERT_TRUE(!s.ok());
   db_options_.create_missing_column_families = true;
@@ -971,8 +1091,177 @@ TEST(ColumnFamilyTest, CreateMissingColumnFamilies) {
   Close();
 }
 
+TEST_F(ColumnFamilyTest, SanitizeOptions) {
+  DBOptions db_options;
+  for (int s = kCompactionStyleLevel; s <= kCompactionStyleUniversal; ++s) {
+    for (int l = 0; l <= 2; l++) {
+      for (int i = 1; i <= 3; i++) {
+        for (int j = 1; j <= 3; j++) {
+          for (int k = 1; k <= 3; k++) {
+            ColumnFamilyOptions original;
+            original.compaction_style = static_cast<CompactionStyle>(s);
+            original.num_levels = l;
+            original.level0_stop_writes_trigger = i;
+            original.level0_slowdown_writes_trigger = j;
+            original.level0_file_num_compaction_trigger = k;
+            original.write_buffer_size =
+                l * 4 * 1024 * 1024 + i * 1024 * 1024 + j * 1024 + k;
+
+            ColumnFamilyOptions result =
+                SanitizeOptions(db_options, nullptr, original);
+            ASSERT_TRUE(result.level0_stop_writes_trigger >=
+                        result.level0_slowdown_writes_trigger);
+            ASSERT_TRUE(result.level0_slowdown_writes_trigger >=
+                        result.level0_file_num_compaction_trigger);
+            ASSERT_TRUE(result.level0_file_num_compaction_trigger ==
+                        original.level0_file_num_compaction_trigger);
+            if (s == kCompactionStyleLevel) {
+              ASSERT_GE(result.num_levels, 2);
+            } else {
+              ASSERT_GE(result.num_levels, 1);
+              if (original.num_levels >= 1) {
+                ASSERT_EQ(result.num_levels, original.num_levels);
+              }
+            }
+
+            // Make sure Sanitize options sets arena_block_size to 1/8 of
+            // the write_buffer_size, rounded up to a multiple of 4k.
+            size_t expected_arena_block_size =
+                l * 4 * 1024 * 1024 / 8 + i * 1024 * 1024 / 8;
+            if (j + k != 0) {
+              // not a multiple of 4k, round up 4k
+              expected_arena_block_size += 4 * 1024;
+            }
+            ASSERT_EQ(expected_arena_block_size, result.arena_block_size);
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST_F(ColumnFamilyTest, ReadDroppedColumnFamily) {
+  // iter 0 -- drop CF, don't reopen
+  // iter 1 -- delete CF, reopen
+  for (int iter = 0; iter < 2; ++iter) {
+    db_options_.create_missing_column_families = true;
+    db_options_.max_open_files = 20;
+    // delete obsolete files always
+    db_options_.delete_obsolete_files_period_micros = 0;
+    Open({"default", "one", "two"});
+    ColumnFamilyOptions options;
+    options.level0_file_num_compaction_trigger = 100;
+    options.level0_slowdown_writes_trigger = 200;
+    options.level0_stop_writes_trigger = 200;
+    options.write_buffer_size = 100000;  // small write buffer size
+    Reopen({options, options, options});
+
+    // 1MB should create ~10 files for each CF
+    int kKeysNum = 10000;
+    PutRandomData(0, kKeysNum, 100);
+    PutRandomData(1, kKeysNum, 100);
+    PutRandomData(2, kKeysNum, 100);
+
+    if (iter == 0) {
+      // Drop CF two
+      ASSERT_OK(db_->DropColumnFamily(handles_[2]));
+    } else {
+      // delete CF two
+      delete handles_[2];
+      handles_[2] = nullptr;
+    }
+
+    // Add bunch more data to other CFs
+    PutRandomData(0, kKeysNum, 100);
+    PutRandomData(1, kKeysNum, 100);
+
+    if (iter == 1) {
+      Reopen();
+    }
+
+    // Since we didn't delete CF handle, RocksDB's contract guarantees that
+    // we're still able to read dropped CF
+    for (int i = 0; i < 3; ++i) {
+      std::unique_ptr<Iterator> iterator(
+          db_->NewIterator(ReadOptions(), handles_[i]));
+      int count = 0;
+      for (iterator->SeekToFirst(); iterator->Valid(); iterator->Next()) {
+        ASSERT_OK(iterator->status());
+        ++count;
+      }
+      ASSERT_OK(iterator->status());
+      ASSERT_EQ(count, kKeysNum * ((i == 2) ? 1 : 2));
+    }
+
+    Close();
+    Destroy();
+  }
+}
+
+TEST_F(ColumnFamilyTest, FlushAndDropRaceCondition) {
+  db_options_.create_missing_column_families = true;
+  Open({"default", "one"});
+  ColumnFamilyOptions options;
+  options.level0_file_num_compaction_trigger = 100;
+  options.level0_slowdown_writes_trigger = 200;
+  options.level0_stop_writes_trigger = 200;
+  options.max_write_buffer_number = 20;
+  options.write_buffer_size = 100000;  // small write buffer size
+  Reopen({options, options});
+
+  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+      {{"VersionSet::LogAndApply::ColumnFamilyDrop:1"
+        "FlushJob::InstallResults"},
+       {"FlushJob::InstallResults",
+        "VersionSet::LogAndApply::ColumnFamilyDrop:2", }});
+
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  test::SleepingBackgroundTask sleeping_task;
+
+  env_->Schedule(&test::SleepingBackgroundTask::DoSleepTask, &sleeping_task,
+                 Env::Priority::HIGH);
+
+  // 1MB should create ~10 files for each CF
+  int kKeysNum = 10000;
+  PutRandomData(1, kKeysNum, 100);
+
+  std::vector<std::thread> threads;
+  threads.emplace_back([&] { ASSERT_OK(db_->DropColumnFamily(handles_[1])); });
+
+  sleeping_task.WakeUp();
+  sleeping_task.WaitUntilDone();
+  sleeping_task.Reset();
+  // now we sleep again. this is just so we're certain that flush job finished
+  env_->Schedule(&test::SleepingBackgroundTask::DoSleepTask, &sleeping_task,
+                 Env::Priority::HIGH);
+  sleeping_task.WakeUp();
+  sleeping_task.WaitUntilDone();
+
+  {
+    // Since we didn't delete CF handle, RocksDB's contract guarantees that
+    // we're still able to read dropped CF
+    std::unique_ptr<Iterator> iterator(
+        db_->NewIterator(ReadOptions(), handles_[1]));
+    int count = 0;
+    for (iterator->SeekToFirst(); iterator->Valid(); iterator->Next()) {
+      ASSERT_OK(iterator->status());
+      ++count;
+    }
+    ASSERT_OK(iterator->status());
+    ASSERT_EQ(count, kKeysNum);
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+
+  Close();
+  Destroy();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+}
+
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

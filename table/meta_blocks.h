@@ -6,16 +6,17 @@
 
 #include <map>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "db/builder.h"
+#include "db/table_properties_collector.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/options.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/table_properties.h"
 #include "table/block_builder.h"
 #include "table/format.h"
+#include "util/stl_wrappers.h"
 
 namespace rocksdb {
 
@@ -26,22 +27,6 @@ class Footer;
 class Logger;
 class RandomAccessFile;
 struct TableProperties;
-
-// An STL style comparator that does the bytewise comparator comparasion
-// internally.
-struct BytewiseLessThan {
-  bool operator()(const std::string& key1, const std::string& key2) const {
-    // smaller entries will be placed in front.
-    return comparator->Compare(key1, key2) <= 0;
-  }
-
-  const Comparator* comparator = BytewiseComparator();
-};
-
-// When writing to a block that requires entries to be sorted by
-// `BytewiseComparator`, we can buffer the content to `BytewiseSortedMap`
-// before writng to store.
-typedef std::map<std::string, std::string, BytewiseLessThan> BytewiseSortedMap;
 
 class MetaIndexBuilder {
  public:
@@ -57,7 +42,7 @@ class MetaIndexBuilder {
 
  private:
   // store the sorted key/handle of the metablocks.
-  BytewiseSortedMap meta_block_handles_;
+  stl_wrappers::KVMap meta_block_handles_;
   std::unique_ptr<BlockBuilder> meta_index_block_;
 };
 
@@ -78,7 +63,7 @@ class PropertyBlockBuilder {
 
  private:
   std::unique_ptr<BlockBuilder> properties_block_;
-  BytewiseSortedMap props_;
+  stl_wrappers::KVMap props_;
 };
 
 // Were we encounter any error occurs during user-defined statistics collection,
@@ -93,36 +78,31 @@ void LogPropertiesCollectionError(
 // NotifyCollectTableCollectorsOnAdd() triggers the `Add` event for all
 // property collectors.
 bool NotifyCollectTableCollectorsOnAdd(
-    const Slice& key, const Slice& value,
-    const std::vector<std::unique_ptr<TablePropertiesCollector>>& collectors,
+    const Slice& key, const Slice& value, uint64_t file_size,
+    const std::vector<std::unique_ptr<IntTblPropCollector>>& collectors,
     Logger* info_log);
 
 // NotifyCollectTableCollectorsOnAdd() triggers the `Finish` event for all
 // property collectors. The collected properties will be added to `builder`.
 bool NotifyCollectTableCollectorsOnFinish(
-    const std::vector<std::unique_ptr<TablePropertiesCollector>>& collectors,
+    const std::vector<std::unique_ptr<IntTblPropCollector>>& collectors,
     Logger* info_log, PropertyBlockBuilder* builder);
 
 // Read the properties from the table.
 // @returns a status to indicate if the operation succeeded. On success,
 //          *table_properties will point to a heap-allocated TableProperties
 //          object, otherwise value of `table_properties` will not be modified.
-Status ReadProperties(const Slice &handle_value, RandomAccessFile *file,
-                      const Footer &footer, Env *env, Logger *logger,
-                      TableProperties **table_properties);
+Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
+                      const Footer& footer, Env* env, Logger* logger,
+                      TableProperties** table_properties);
 
 // Directly read the properties from the properties block of a plain table.
 // @returns a status to indicate if the operation succeeded. On success,
 //          *table_properties will point to a heap-allocated TableProperties
 //          object, otherwise value of `table_properties` will not be modified.
-Status ReadTableProperties(RandomAccessFile* file, uint64_t file_size,
+Status ReadTableProperties(RandomAccessFileReader* file, uint64_t file_size,
                            uint64_t table_magic_number, Env* env,
                            Logger* info_log, TableProperties** properties);
-
-// Seek to the properties block.
-// If it successfully seeks to the properties block, "is_found" will be
-// set to true.
-extern Status SeekToPropertiesBlock(Iterator* meta_iter, bool* is_found);
 
 // Find the meta block from the meta index block.
 Status FindMetaBlock(Iterator* meta_index_iter,
@@ -130,7 +110,7 @@ Status FindMetaBlock(Iterator* meta_index_iter,
                      BlockHandle* block_handle);
 
 // Find the meta block
-Status FindMetaBlock(RandomAccessFile* file, uint64_t file_size,
+Status FindMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                      uint64_t table_magic_number, Env* env,
                      const std::string& meta_block_name,
                      BlockHandle* block_handle);
@@ -138,7 +118,7 @@ Status FindMetaBlock(RandomAccessFile* file, uint64_t file_size,
 // Read the specified meta block with name meta_block_name
 // from `file` and initialize `contents` with contents of this block.
 // Return Status::OK in case of success.
-Status ReadMetaBlock(RandomAccessFile* file, uint64_t file_size,
+Status ReadMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                      uint64_t table_magic_number, Env* env,
                      const std::string& meta_block_name,
                      BlockContents* contents);

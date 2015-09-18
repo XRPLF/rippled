@@ -13,13 +13,13 @@
 #include "rocksdb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "util/file_reader_writer.h"
 
 namespace rocksdb {
 namespace log {
 
-Writer::Writer(unique_ptr<WritableFile>&& dest)
-    : dest_(std::move(dest)),
-      block_offset_(0) {
+Writer::Writer(unique_ptr<WritableFileWriter>&& dest)
+    : dest_(std::move(dest)), block_offset_(0) {
   for (int i = 0; i <= kMaxRecordType; i++) {
     char t = static_cast<char>(i);
     type_crc_[i] = crc32c::Value(&t, 1);
@@ -52,7 +52,7 @@ Status Writer::AddRecord(const Slice& slice) {
     }
 
     // Invariant: we never leave < kHeaderSize bytes in a block.
-    assert(kBlockSize - block_offset_ - kHeaderSize >= 0);
+    assert(static_cast<int>(kBlockSize) - block_offset_ >= kHeaderSize);
 
     const size_t avail = kBlockSize - block_offset_ - kHeaderSize;
     const size_t fragment_length = (left < avail) ? left : avail;

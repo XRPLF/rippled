@@ -6,18 +6,22 @@
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
-  return 1;
+  fprintf(stderr, "Please install gflags to run this test... Skipping...\n");
+  return 0;
 }
 #else
 
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include <inttypes.h>
 #include <algorithm>
 #include <gflags/gflags.h>
 
 #include "dynamic_bloom.h"
 #include "port/port.h"
+#include "util/arena.h"
 #include "util/logging.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
@@ -36,10 +40,9 @@ static Slice Key(uint64_t i, char* buffer) {
   return Slice(buffer, sizeof(i));
 }
 
-class DynamicBloomTest {
-};
+class DynamicBloomTest : public testing::Test {};
 
-TEST(DynamicBloomTest, EmptyFilter) {
+TEST_F(DynamicBloomTest, EmptyFilter) {
   Arena arena;
   DynamicBloom bloom1(&arena, 100, 0, 2);
   ASSERT_TRUE(!bloom1.MayContain("hello"));
@@ -50,7 +53,7 @@ TEST(DynamicBloomTest, EmptyFilter) {
   ASSERT_TRUE(!bloom2.MayContain("world"));
 }
 
-TEST(DynamicBloomTest, Small) {
+TEST_F(DynamicBloomTest, Small) {
   Arena arena;
   DynamicBloom bloom1(&arena, 100, 0, 2);
   bloom1.Add("hello");
@@ -82,7 +85,7 @@ static uint32_t NextNum(uint32_t num) {
   return num;
 }
 
-TEST(DynamicBloomTest, VaryingLengths) {
+TEST_F(DynamicBloomTest, VaryingLengths) {
   char buffer[sizeof(uint64_t)];
 
   // Count number of filters that significantly exceed the false positive rate
@@ -142,7 +145,7 @@ TEST(DynamicBloomTest, VaryingLengths) {
   }
 }
 
-TEST(DynamicBloomTest, perf) {
+TEST_F(DynamicBloomTest, perf) {
   StopWatchNano timer(Env::Default());
   uint32_t num_probes = static_cast<uint32_t>(FLAGS_num_probes);
 
@@ -150,15 +153,15 @@ TEST(DynamicBloomTest, perf) {
     return;
   }
 
-  for (uint64_t m = 1; m <= 8; ++m) {
+  for (uint32_t m = 1; m <= 8; ++m) {
     Arena arena;
-    const uint64_t num_keys = m * 8 * 1024 * 1024;
-    fprintf(stderr, "testing %" PRIu64 "M keys\n", m * 8);
+    const uint32_t num_keys = m * 8 * 1024 * 1024;
+    fprintf(stderr, "testing %" PRIu32 "M keys\n", m * 8);
 
     DynamicBloom std_bloom(&arena, num_keys * 10, 0, num_probes);
 
     timer.Start();
-    for (uint64_t i = 1; i <= num_keys; ++i) {
+    for (uint32_t i = 1; i <= num_keys; ++i) {
       std_bloom.Add(Slice(reinterpret_cast<const char*>(&i), 8));
     }
 
@@ -166,23 +169,23 @@ TEST(DynamicBloomTest, perf) {
     fprintf(stderr, "standard bloom, avg add latency %" PRIu64 "\n",
             elapsed / num_keys);
 
-    uint64_t count = 0;
+    uint32_t count = 0;
     timer.Start();
-    for (uint64_t i = 1; i <= num_keys; ++i) {
+    for (uint32_t i = 1; i <= num_keys; ++i) {
       if (std_bloom.MayContain(Slice(reinterpret_cast<const char*>(&i), 8))) {
         ++count;
       }
     }
+    ASSERT_EQ(count, num_keys);
     elapsed = timer.ElapsedNanos();
     fprintf(stderr, "standard bloom, avg query latency %" PRIu64 "\n",
             elapsed / count);
-    ASSERT_TRUE(count == num_keys);
 
     // Locality enabled version
     DynamicBloom blocked_bloom(&arena, num_keys * 10, 1, num_probes);
 
       timer.Start();
-      for (uint64_t i = 1; i <= num_keys; ++i) {
+      for (uint32_t i = 1; i <= num_keys; ++i) {
         blocked_bloom.Add(Slice(reinterpret_cast<const char*>(&i), 8));
       }
 
@@ -193,9 +196,9 @@ TEST(DynamicBloomTest, perf) {
 
       count = 0;
       timer.Start();
-      for (uint64_t i = 1; i <= num_keys; ++i) {
+      for (uint32_t i = 1; i <= num_keys; ++i) {
         if (blocked_bloom.MayContain(
-              Slice(reinterpret_cast<const char*>(&i), 8))) {
+                Slice(reinterpret_cast<const char*>(&i), 8))) {
           ++count;
         }
       }
@@ -211,9 +214,10 @@ TEST(DynamicBloomTest, perf) {
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
   ParseCommandLineFlags(&argc, &argv, true);
 
-  return rocksdb::test::RunAllTests();
+  return RUN_ALL_TESTS();
 }
 
 #endif  // GFLAGS

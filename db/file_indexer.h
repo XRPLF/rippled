@@ -12,6 +12,7 @@
 #include <functional>
 #include <limits>
 #include <vector>
+#include "port/port.h"
 #include "util/arena.h"
 #include "util/autovector.h"
 
@@ -42,27 +43,28 @@ class FileIndexer {
  public:
   explicit FileIndexer(const Comparator* ucmp);
 
-  uint32_t NumLevelIndex();
+  size_t NumLevelIndex() const;
 
-  uint32_t LevelIndexSize(uint32_t level);
+  size_t LevelIndexSize(size_t level) const;
 
   // Return a file index range in the next level to search for a key based on
   // smallest and largest key comparision for the current file specified by
   // level and file_index. When *left_index < *right_index, both index should
   // be valid and fit in the vector size.
-  void GetNextLevelIndex(
-    const uint32_t level, const uint32_t file_index, const int cmp_smallest,
-    const int cmp_largest, int32_t* left_bound, int32_t* right_bound);
+  void GetNextLevelIndex(const size_t level, const size_t file_index,
+                         const int cmp_smallest, const int cmp_largest,
+                         int32_t* left_bound, int32_t* right_bound) const;
 
-  void UpdateIndex(Arena* arena, const uint32_t num_levels,
+  void UpdateIndex(Arena* arena, const size_t num_levels,
                    std::vector<FileMetaData*>* const files);
 
   enum {
-    kLevelMaxIndex = std::numeric_limits<int32_t>::max()
+    // MSVC version 1800 still does not have constexpr for ::max()
+    kLevelMaxIndex = rocksdb::port::kMaxInt32
   };
 
  private:
-  uint32_t num_levels_;
+  size_t num_levels_;
   const Comparator* ucmp_;
 
   struct IndexUnit {

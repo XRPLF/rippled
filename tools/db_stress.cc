@@ -28,29 +28,36 @@ int main() {
 }
 #else
 
-#include <sys/types.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <chrono>
 #include <exception>
+#include <thread>
+
 #include <gflags/gflags.h>
 #include "db/db_impl.h"
 #include "db/version_set.h"
-#include "rocksdb/statistics.h"
+#include "hdfs/env_hdfs.h"
+#include "port/port.h"
 #include "rocksdb/cache.h"
-#include "rocksdb/utilities/db_ttl.h"
 #include "rocksdb/env.h"
-#include "rocksdb/write_batch.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/slice_transform.h"
-#include "port/port.h"
+#include "rocksdb/statistics.h"
+#include "rocksdb/utilities/db_ttl.h"
+#include "rocksdb/write_batch.h"
 #include "util/coding.h"
+#include "util/compression.h"
 #include "util/crc32c.h"
 #include "util/histogram.h"
+#include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/random.h"
+#include "util/string_util.h"
 #include "util/testutil.h"
-#include "util/logging.h"
-#include "hdfs/env_hdfs.h"
 #include "utilities/merge_operators.h"
 
 using GFLAGS::ParseCommandLineFlags;
@@ -79,8 +86,9 @@ DEFINE_int64(max_key, 1 * KB* KB,
 
 DEFINE_int32(column_families, 10, "Number of column families");
 
+// TODO(noetzli) Add support for single deletes
 DEFINE_bool(test_batches_snapshots, false,
-            "If set, the test uses MultiGet(), Multiut() and MultiDelete()"
+            "If set, the test uses MultiGet(), MultiPut() and MultiDelete()"
             " which read/write/delete multiple keys in a batch. In this mode,"
             " we do not verify db content by comparing the content with the "
             "pre-allocated array. Instead, we do partial verification inside"
@@ -113,7 +121,11 @@ DEFINE_bool(verbose, false, "Verbose");
 DEFINE_bool(progress_reports, true,
             "If true, db_stress will report number of finished operations");
 
-DEFINE_int32(write_buffer_size, rocksdb::Options().write_buffer_size,
+DEFINE_uint64(db_write_buffer_size, rocksdb::Options().db_write_buffer_size,
+              "Number of bytes to buffer in all memtables before compacting");
+
+DEFINE_int32(write_buffer_size,
+             static_cast<int32_t>(rocksdb::Options().write_buffer_size),
              "Number of bytes to buffer in memtable before compacting");
 
 DEFINE_int32(max_write_buffer_number,
@@ -131,6 +143,20 @@ DEFINE_int32(min_write_buffer_number_to_merge,
              "in all of these files. Also, an in-memory merge may result in "
              "writing less data to storage if there are duplicate records in"
              " each of these individual write buffers.");
+
+DEFINE_int32(max_write_buffer_number_to_maintain,
+             rocksdb::Options().max_write_buffer_number_to_maintain,
+             "The total maximum number of write buffers to maintain in memory "
+             "including copies of buffers that have already been flushed. "
+             "Unlike max_write_buffer_number, this parameter does not affect "
+             "flushing. This controls the minimum amount of write history "
+             "that will be available in memory for conflict checking when "
+             "Transactions are used. If this value is too low, some "
+             "transactions may fail at commit time due to not being able to "
+             "determine whether there were any write conflicts. Setting this "
+             "value to 0 will cause write buffers to be freed immediately "
+             "after they are flushed.  If this value is set to -1, "
+             "'max_write_buffer_number' will be used.");
 
 DEFINE_int32(open_files, rocksdb::Options().max_open_files,
              "Maximum number of files to keep open at the same time "
@@ -154,7 +180,8 @@ DEFINE_int32(level0_stop_writes_trigger,
              rocksdb::Options().level0_stop_writes_trigger,
              "Number of files in level-0 that will trigger put stop.");
 
-DEFINE_int32(block_size, rocksdb::BlockBasedTableOptions().block_size,
+DEFINE_int32(block_size,
+             static_cast<int32_t>(rocksdb::BlockBasedTableOptions().block_size),
              "Number of bytes in a block.");
 
 DEFINE_int32(max_background_compactions,
@@ -166,8 +193,8 @@ DEFINE_int32(compaction_thread_pool_adjust_interval, 0,
              "The interval (in milliseconds) to adjust compaction thread pool "
              "size. Don't change it periodically if the value is 0.");
 
-DEFINE_int32(compaction_thread_pool_varations, 2,
-             "Range of bakground thread pool size variations when adjusted "
+DEFINE_int32(compaction_thread_pool_variations, 2,
+             "Range of background thread pool size variations when adjusted "
              "periodically.");
 
 DEFINE_int32(max_background_flushes, rocksdb::Options().max_background_flushes,
@@ -191,8 +218,20 @@ DEFINE_int32(clear_column_family_one_in, 1000000,
              "it again. If N == 0, never drop/create column families. "
              "When test_batches_snapshots is true, this flag has no effect");
 
-DEFINE_int64(cache_size, 2 * KB * KB * KB,
+DEFINE_int32(set_options_one_in, 0,
+             "With a chance of 1/N, change some random options");
+
+DEFINE_int32(set_in_place_one_in, 0,
+             "With a chance of 1/N, toggle in place support option");
+
+DEFINE_int64(cache_size, 2LL * KB * KB * KB,
              "Number of bytes to use as a cache of uncompressed data.");
+
+DEFINE_uint64(subcompactions, 1,
+             "Maximum number of subcompactions to divide L0-L1 compactions "
+             "into.");
+static const bool FLAGS_subcompactions_dummy __attribute__((unused)) =
+    RegisterFlagValidator(&FLAGS_subcompactions, &ValidateUint32Range);
 
 static bool ValidateInt32Positive(const char* flagname, int32_t value) {
   if (value < 0) {
@@ -208,6 +247,9 @@ static const bool FLAGS_reopen_dummy __attribute__((unused)) =
 
 DEFINE_int32(bloom_bits, 10, "Bloom filter bits per key. "
              "Negative means use default settings.");
+
+DEFINE_bool(use_block_based_filter, false, "use block based filter"
+              "instead of full filter for block based table");
 
 DEFINE_string(db, "", "Use the db with the following name.");
 
@@ -241,7 +283,7 @@ DEFINE_int32(target_file_size_base, 64 * KB,
              "Target level-1 file size for compaction");
 
 DEFINE_int32(target_file_size_multiplier, 1,
-             "A multiplier to compute targe level-N file size (N >= 2)");
+             "A multiplier to compute target level-N file size (N >= 2)");
 
 DEFINE_uint64(max_bytes_for_level_base, 256 * KB, "Max bytes for level-1");
 
@@ -268,7 +310,7 @@ static const bool FLAGS_prefixpercent_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_prefixpercent, &ValidateInt32Percent);
 
 DEFINE_int32(writepercent, 45,
-             " Ratio of deletes to total workload (expressed as a percentage)");
+             "Ratio of writes to total workload (expressed as a percentage)");
 static const bool FLAGS_writepercent_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_writepercent, &ValidateInt32Percent);
 
@@ -276,6 +318,12 @@ DEFINE_int32(delpercent, 15,
              "Ratio of deletes to total workload (expressed as a percentage)");
 static const bool FLAGS_delpercent_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_delpercent, &ValidateInt32Percent);
+
+DEFINE_int32(nooverwritepercent, 60,
+             "Ratio of keys without overwrite to total workload (expressed as "
+             " a percentage)");
+static const bool FLAGS_nooverwritepercent_dummy __attribute__((__unused__)) =
+    RegisterFlagValidator(&FLAGS_nooverwritepercent, &ValidateInt32Percent);
 
 DEFINE_int32(iterpercent, 10, "Ratio of iterations to total workload"
              " (expressed as a percentage)");
@@ -302,6 +350,8 @@ enum rocksdb::CompressionType StringToCompressionType(const char* ctype) {
     return rocksdb::kLZ4Compression;
   else if (!strcasecmp(ctype, "lz4hc"))
     return rocksdb::kLZ4HCCompression;
+  else if (!strcasecmp(ctype, "zstd"))
+    return rocksdb::kZSTDNotFinalCompression;
 
   fprintf(stdout, "Cannot parse compression type '%s'\n", ctype);
   return rocksdb::kSnappyCompression; //default value
@@ -325,15 +375,10 @@ DEFINE_uint64(log2_keys_per_lock, 2, "Log2 of number of keys per lock");
 static const bool FLAGS_log2_keys_per_lock_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_log2_keys_per_lock, &ValidateUint32Range);
 
-DEFINE_int32(purge_redundant_percent, 50,
-             "Percentage of times we want to purge redundant keys in memory "
-             "before flushing");
-static const bool FLAGS_purge_redundant_percent_dummy __attribute__((unused)) =
-    RegisterFlagValidator(&FLAGS_purge_redundant_percent,
-                          &ValidateInt32Percent);
-
 DEFINE_bool(filter_deletes, false, "On true, deletes use KeyMayExist to drop"
             " the delete if key not present");
+
+DEFINE_bool(in_place_update, false, "On true, does inplace update in memtable");
 
 enum RepFactory {
   kSkipList,
@@ -369,7 +414,7 @@ static bool ValidatePrefixSize(const char* flagname, int32_t value) {
   return true;
 }
 DEFINE_int32(prefix_size, 7, "Control the prefix size for HashSkipListRep");
-static const bool FLAGS_prefix_size_dummy =
+static const bool FLAGS_prefix_size_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_prefix_size, &ValidatePrefixSize);
 
 DEFINE_bool(use_merge, false, "On true, replaces all writes with a Merge "
@@ -415,6 +460,7 @@ class Stats {
   long prefixes_;
   long writes_;
   long deletes_;
+  size_t single_deletes_;
   long iterator_size_sums_;
   long founds_;
   long iterations_;
@@ -435,6 +481,7 @@ class Stats {
     prefixes_ = 0;
     writes_ = 0;
     deletes_ = 0;
+    single_deletes_ = 0;
     iterator_size_sums_ = 0;
     founds_ = 0;
     iterations_ = 0;
@@ -453,6 +500,7 @@ class Stats {
     prefixes_ += other.prefixes_;
     writes_ += other.writes_;
     deletes_ += other.deletes_;
+    single_deletes_ += other.single_deletes_;
     iterator_size_sums_ += other.iterator_size_sums_;
     founds_ += other.founds_;
     iterations_ += other.iterations_;
@@ -517,6 +565,8 @@ class Stats {
     deletes_ += n;
   }
 
+  void AddSingleDeletes(size_t n) { single_deletes_ += n; }
+
   void AddErrors(int n) {
     errors_ += n;
   }
@@ -540,6 +590,7 @@ class Stats {
             "", bytes_mb, rate, (100*writes_)/done_, done_);
     fprintf(stdout, "%-12s: Wrote %ld times\n", "", writes_);
     fprintf(stdout, "%-12s: Deleted %ld times\n", "", deletes_);
+    fprintf(stdout, "%-12s: Single deleted %ld times\n", "", single_deletes_);
     fprintf(stdout, "%-12s: %ld read and %ld found the key\n", "",
             gets_, founds_);
     fprintf(stdout, "%-12s: Prefix scanned %ld times\n", "", prefixes_);
@@ -562,9 +613,9 @@ class SharedState {
 
   explicit SharedState(StressTest* stress_test)
       : cv_(&mu_),
-        seed_(FLAGS_seed),
+        seed_(static_cast<uint32_t>(FLAGS_seed)),
         max_key_(FLAGS_max_key),
-        log2_keys_per_lock_(FLAGS_log2_keys_per_lock),
+        log2_keys_per_lock_(static_cast<uint32_t>(FLAGS_log2_keys_per_lock)),
         num_threads_(FLAGS_threads),
         num_initialized_(0),
         num_populated_(0),
@@ -575,7 +626,25 @@ class SharedState {
         should_stop_bg_thread_(false),
         bg_thread_finished_(false),
         stress_test_(stress_test),
-        verification_failure_(false) {
+        verification_failure_(false),
+        no_overwrite_ids_(FLAGS_column_families) {
+    // Pick random keys in each column family that will not experience
+    // overwrite
+
+    printf("Choosing random keys with no overwrite\n");
+    Random rnd(seed_);
+    size_t num_no_overwrite_keys = (max_key_ * FLAGS_nooverwritepercent) / 100;
+    for (auto& cf_ids : no_overwrite_ids_) {
+      for (size_t i = 0; i < num_no_overwrite_keys; i++) {
+        size_t rand_key;
+        do {
+          rand_key = rnd.Next() % max_key_;
+        } while (cf_ids.find(rand_key) != cf_ids.end());
+        cf_ids.insert(rand_key);
+      }
+      assert(cf_ids.size() == num_no_overwrite_keys);
+    }
+
     if (FLAGS_test_batches_snapshots) {
       fprintf(stdout, "No lock creation because test_batches_snapshots set\n");
       return;
@@ -592,8 +661,12 @@ class SharedState {
     }
     fprintf(stdout, "Creating %ld locks\n", num_locks * FLAGS_column_families);
     key_locks_.resize(FLAGS_column_families);
+
     for (int i = 0; i < FLAGS_column_families; ++i) {
-      key_locks_[i] = std::vector<port::Mutex>(num_locks);
+      key_locks_[i].resize(num_locks);
+      for (auto& ptr : key_locks_[i]) {
+        ptr.reset(new port::Mutex);
+      }
     }
   }
 
@@ -672,18 +745,18 @@ class SharedState {
   bool HasVerificationFailedYet() { return verification_failure_.load(); }
 
   port::Mutex* GetMutexForKey(int cf, long key) {
-    return &key_locks_[cf][key >> log2_keys_per_lock_];
+    return key_locks_[cf][key >> log2_keys_per_lock_].get();
   }
 
   void LockColumnFamily(int cf) {
     for (auto& mutex : key_locks_[cf]) {
-      mutex.Lock();
+      mutex->Lock();
     }
   }
 
   void UnlockColumnFamily(int cf) {
     for (auto& mutex : key_locks_[cf]) {
-      mutex.Unlock();
+      mutex->Unlock();
     }
   }
 
@@ -698,6 +771,14 @@ class SharedState {
   uint32_t Get(int cf, long key) const { return values_[cf][key]; }
 
   void Delete(int cf, long key) { values_[cf][key] = SENTINEL; }
+
+  void SingleDelete(int cf, size_t key) { values_[cf][key] = SENTINEL; }
+
+  bool AllowsOverwrite(int cf, size_t key) {
+    return no_overwrite_ids_[cf].find(key) == no_overwrite_ids_[cf].end();
+  }
+
+  bool Exists(int cf, size_t key) { return values_[cf][key] != SENTINEL; }
 
   uint32_t GetSeed() const { return seed_; }
 
@@ -727,8 +808,13 @@ class SharedState {
   StressTest* stress_test_;
   std::atomic<bool> verification_failure_;
 
+  // Keys that should not be overwritten
+  std::vector<std::set<size_t> > no_overwrite_ids_;
+
   std::vector<std::vector<uint32_t>> values_;
-  std::vector<std::vector<port::Mutex>> key_locks_;
+  // Has to make it owned by a smart ptr as port::Mutex is not copyable
+  // and storing it in the container may require copying depending on the impl.
+  std::vector<std::vector<std::unique_ptr<port::Mutex> > > key_locks_;
 };
 
 const uint32_t SharedState::SENTINEL = 0xffffffff;
@@ -740,11 +826,117 @@ struct ThreadState {
   SharedState* shared;
   Stats stats;
 
-  ThreadState(uint32_t index, SharedState *shared)
-      : tid(index),
-        rand(1000 + index + shared->GetSeed()),
-        shared(shared) {
+  ThreadState(uint32_t index, SharedState* _shared)
+      : tid(index), rand(1000 + index + _shared->GetSeed()), shared(_shared) {}
+};
+
+class DbStressListener : public EventListener {
+ public:
+  DbStressListener(
+      const std::string& db_name,
+      const std::vector<DbPath>& db_paths) :
+      db_name_(db_name),
+      db_paths_(db_paths),
+      rand_(301) {}
+  virtual ~DbStressListener() {}
+#ifndef ROCKSDB_LITE
+  virtual void OnFlushCompleted(
+      DB* db, const FlushJobInfo& info) override {
+    assert(db);
+    assert(db->GetName() == db_name_);
+    assert(IsValidColumnFamilyName(info.cf_name));
+    VerifyFilePath(info.file_path);
+    // pretending doing some work here
+    std::this_thread::sleep_for(
+        std::chrono::microseconds(rand_.Uniform(5000)));
   }
+
+  virtual void OnCompactionCompleted(
+      DB *db, const CompactionJobInfo& ci) override {
+    assert(db);
+    assert(db->GetName() == db_name_);
+    assert(IsValidColumnFamilyName(ci.cf_name));
+    assert(ci.input_files.size() + ci.output_files.size() > 0U);
+    for (const auto& file_path : ci.input_files) {
+      VerifyFilePath(file_path);
+    }
+    for (const auto& file_path : ci.output_files) {
+      VerifyFilePath(file_path);
+    }
+    // pretending doing some work here
+    std::this_thread::sleep_for(
+        std::chrono::microseconds(rand_.Uniform(5000)));
+  }
+
+  virtual void OnTableFileCreated(
+      const TableFileCreationInfo& info) override {
+    assert(info.db_name == db_name_);
+    assert(IsValidColumnFamilyName(info.cf_name));
+    VerifyFilePath(info.file_path);
+    assert(info.file_size > 0);
+    assert(info.job_id > 0);
+    assert(info.table_properties.data_size > 0);
+    assert(info.table_properties.raw_key_size > 0);
+    assert(info.table_properties.num_entries > 0);
+  }
+
+ protected:
+  bool IsValidColumnFamilyName(const std::string& cf_name) const {
+    if (cf_name == kDefaultColumnFamilyName) {
+      return true;
+    }
+    // The column family names in the stress tests are numbers.
+    for (size_t i = 0; i < cf_name.size(); ++i) {
+      if (cf_name[i] < '0' || cf_name[i] > '9') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void VerifyFileDir(const std::string& file_dir) {
+#ifndef NDEBUG
+    if (db_name_ == file_dir) {
+      return;
+    }
+    for (const auto& db_path : db_paths_) {
+      if (db_path.path == file_dir) {
+        return;
+      }
+    }
+    assert(false);
+#endif  // !NDEBUG
+  }
+
+  void VerifyFileName(const std::string& file_name) {
+#ifndef NDEBUG
+    uint64_t file_number;
+    FileType file_type;
+    bool result = ParseFileName(file_name, &file_number, &file_type);
+    assert(result);
+    assert(file_type == kTableFile);
+#endif  // !NDEBUG
+  }
+
+  void VerifyFilePath(const std::string& file_path) {
+#ifndef NDEBUG
+    size_t pos = file_path.find_last_of("/");
+    if (pos == std::string::npos) {
+      VerifyFileName(file_path);
+    } else {
+      if (pos > 0) {
+        VerifyFileDir(file_path.substr(0, pos));
+      }
+      VerifyFileName(file_path.substr(pos));
+    }
+#endif  // !NDEBUG
+  }
+#endif  // !ROCKSDB_LITE
+
+ private:
+  std::string db_name_;
+  std::vector<DbPath> db_paths_;
+  Random rand_;
 };
 
 }  // namespace
@@ -757,8 +949,10 @@ class StressTest {
                               ? NewLRUCache(FLAGS_compressed_cache_size)
                               : nullptr),
         filter_policy_(FLAGS_bloom_bits >= 0
-                           ? NewBloomFilterPolicy(FLAGS_bloom_bits)
-                           : nullptr),
+                   ? FLAGS_use_block_based_filter
+                     ? NewBloomFilterPolicy(FLAGS_bloom_bits, true)
+                     : NewBloomFilterPolicy(FLAGS_bloom_bits, false)
+                   : nullptr),
         db_(nullptr),
         new_column_family_name_(1),
         num_times_reopened_(0) {
@@ -782,8 +976,107 @@ class StressTest {
     delete db_;
   }
 
+  bool BuildOptionsTable() {
+    if (FLAGS_set_options_one_in <= 0) {
+      return true;
+    }
+
+    std::unordered_map<std::string, std::vector<std::string> > options_tbl = {
+        {"write_buffer_size",
+         {ToString(FLAGS_write_buffer_size),
+          ToString(FLAGS_write_buffer_size * 2),
+          ToString(FLAGS_write_buffer_size * 4)}},
+        {"max_write_buffer_number",
+         {ToString(FLAGS_max_write_buffer_number),
+          ToString(FLAGS_max_write_buffer_number * 2),
+          ToString(FLAGS_max_write_buffer_number * 4)}},
+        {"arena_block_size",
+         {
+             ToString(Options().arena_block_size),
+             ToString(FLAGS_write_buffer_size / 4),
+             ToString(FLAGS_write_buffer_size / 8),
+         }},
+        {"memtable_prefix_bloom_bits", {"0", "8", "10"}},
+        {"memtable_prefix_bloom_probes", {"4", "5", "6"}},
+        {"memtable_prefix_bloom_huge_page_tlb_size",
+         {"0", ToString(2 * 1024 * 1024)}},
+        {"max_successive_merges", {"0", "2", "4"}},
+        {"filter_deletes", {"0", "1"}},
+        {"inplace_update_num_locks", {"100", "200", "300"}},
+        // TODO(ljin): enable test for this option
+        // {"disable_auto_compactions", {"100", "200", "300"}},
+        {"soft_rate_limit", {"0", "0.5", "0.9"}},
+        {"hard_rate_limit", {"0", "1.1", "2.0"}},
+        {"level0_file_num_compaction_trigger",
+         {
+             ToString(FLAGS_level0_file_num_compaction_trigger),
+             ToString(FLAGS_level0_file_num_compaction_trigger + 2),
+             ToString(FLAGS_level0_file_num_compaction_trigger + 4),
+         }},
+        {"level0_slowdown_writes_trigger",
+         {
+             ToString(FLAGS_level0_slowdown_writes_trigger),
+             ToString(FLAGS_level0_slowdown_writes_trigger + 2),
+             ToString(FLAGS_level0_slowdown_writes_trigger + 4),
+         }},
+        {"level0_stop_writes_trigger",
+         {
+             ToString(FLAGS_level0_stop_writes_trigger),
+             ToString(FLAGS_level0_stop_writes_trigger + 2),
+             ToString(FLAGS_level0_stop_writes_trigger + 4),
+         }},
+        {"max_grandparent_overlap_factor",
+         {
+             ToString(Options().max_grandparent_overlap_factor - 5),
+             ToString(Options().max_grandparent_overlap_factor),
+             ToString(Options().max_grandparent_overlap_factor + 5),
+         }},
+        {"expanded_compaction_factor",
+         {
+             ToString(Options().expanded_compaction_factor - 5),
+             ToString(Options().expanded_compaction_factor),
+             ToString(Options().expanded_compaction_factor + 5),
+         }},
+        {"source_compaction_factor",
+         {
+             ToString(Options().source_compaction_factor),
+             ToString(Options().source_compaction_factor * 2),
+             ToString(Options().source_compaction_factor * 4),
+         }},
+        {"target_file_size_base",
+         {
+             ToString(FLAGS_target_file_size_base),
+             ToString(FLAGS_target_file_size_base * 2),
+             ToString(FLAGS_target_file_size_base * 4),
+         }},
+        {"target_file_size_multiplier",
+         {
+             ToString(FLAGS_target_file_size_multiplier), "1", "2",
+         }},
+        {"max_bytes_for_level_base",
+         {
+             ToString(FLAGS_max_bytes_for_level_base / 2),
+             ToString(FLAGS_max_bytes_for_level_base),
+             ToString(FLAGS_max_bytes_for_level_base * 2),
+         }},
+        {"max_bytes_for_level_multiplier",
+         {
+             ToString(FLAGS_max_bytes_for_level_multiplier), "1", "2",
+         }},
+        {"max_sequential_skip_in_iterations", {"4", "8", "12"}},
+    };
+
+    options_table_ = std::move(options_tbl);
+
+    for (const auto& iter : options_table_) {
+      options_index_.push_back(iter.first);
+    }
+    return true;
+  }
+
   bool Run() {
     PrintEnv();
+    BuildOptionsTable();
     Open();
     SharedState shared(this);
     uint32_t n = shared.GetNumThreads();
@@ -924,7 +1217,7 @@ class StressTest {
       }
 
       auto thread_pool_size_base = FLAGS_max_background_compactions;
-      auto thread_pool_size_var = FLAGS_compaction_thread_pool_varations;
+      auto thread_pool_size_var = FLAGS_compaction_thread_pool_variations;
       int new_thread_pool_size =
           thread_pool_size_base - thread_pool_size_var +
           thread->rand.Next() % (thread_pool_size_var * 2 + 1);
@@ -1164,9 +1457,37 @@ class StressTest {
     return s;
   }
 
+  Status SetOptions(ThreadState* thread) {
+    assert(FLAGS_set_options_one_in > 0);
+    std::unordered_map<std::string, std::string> opts;
+    std::string name = options_index_[
+      thread->rand.Next() % options_index_.size()];
+    int value_idx = thread->rand.Next() % options_table_[name].size();
+    if (name == "soft_rate_limit" || name == "hard_rate_limit") {
+      opts["soft_rate_limit"] = options_table_["soft_rate_limit"][value_idx];
+      opts["hard_rate_limit"] = options_table_["hard_rate_limit"][value_idx];
+    } else if (name == "level0_file_num_compaction_trigger" ||
+               name == "level0_slowdown_writes_trigger" ||
+               name == "level0_stop_writes_trigger") {
+      opts["level0_file_num_compaction_trigger"] =
+        options_table_["level0_file_num_compaction_trigger"][value_idx];
+      opts["level0_slowdown_writes_trigger"] =
+        options_table_["level0_slowdown_writes_trigger"][value_idx];
+      opts["level0_stop_writes_trigger"] =
+        options_table_["level0_stop_writes_trigger"][value_idx];
+    } else {
+      opts[name] = options_table_[name][value_idx];
+    }
+
+    int rand_cf_idx = thread->rand.Next() % FLAGS_column_families;
+    auto cfh = column_families_[rand_cf_idx];
+    return db_->SetOptions(cfh, opts);
+  }
+
   void OperateDb(ThreadState* thread) {
     ReadOptions read_opts(FLAGS_verify_checksum, true);
     WriteOptions write_opts;
+    auto shared = thread->shared;
     char value[100];
     long max_key = thread->shared->GetMaxKey();
     std::string from_db;
@@ -1200,13 +1521,24 @@ class StressTest {
         }
       }
 
+      // Change Options
+      if (FLAGS_set_options_one_in > 0 &&
+          thread->rand.OneIn(FLAGS_set_options_one_in)) {
+        SetOptions(thread);
+      }
+
+      if (FLAGS_set_in_place_one_in > 0 &&
+          thread->rand.OneIn(FLAGS_set_in_place_one_in)) {
+        options_.inplace_update_support ^= options_.inplace_update_support;
+      }
+
       if (!FLAGS_test_batches_snapshots &&
           FLAGS_clear_column_family_one_in != 0 && FLAGS_column_families > 1) {
         if (thread->rand.OneIn(FLAGS_clear_column_family_one_in)) {
           // drop column family and then create it again (can't drop default)
           int cf = thread->rand.Next() % (FLAGS_column_families - 1) + 1;
           std::string new_name =
-              std::to_string(new_column_family_name_.fetch_add(1));
+              ToString(new_column_family_name_.fetch_add(1));
           {
             MutexLock l(thread->shared->GetMutex());
             fprintf(
@@ -1240,14 +1572,14 @@ class StressTest {
       int rand_column_family = thread->rand.Next() % FLAGS_column_families;
       std::string keystr = Key(rand_key);
       Slice key = keystr;
-      int prob_op = thread->rand.Uniform(100);
       std::unique_ptr<MutexLock> l;
       if (!FLAGS_test_batches_snapshots) {
         l.reset(new MutexLock(
-            thread->shared->GetMutexForKey(rand_column_family, rand_key)));
+            shared->GetMutexForKey(rand_column_family, rand_key)));
       }
       auto column_family = column_families_[rand_column_family];
 
+      int prob_op = thread->rand.Uniform(100);
       if (prob_op >= 0 && prob_op < (int)FLAGS_readpercent) {
         // OPERATION read
         if (!FLAGS_test_batches_snapshots) {
@@ -1282,7 +1614,7 @@ class StressTest {
           assert(count <=
                  (static_cast<int64_t>(1) << ((8 - FLAGS_prefix_size) * 8)));
           if (iter->status().ok()) {
-            thread->stats.AddPrefixes(1, count);
+            thread->stats.AddPrefixes(1, static_cast<int>(count));
           } else {
             thread->stats.AddErrors(1);
           }
@@ -1296,16 +1628,31 @@ class StressTest {
         size_t sz = GenerateValue(value_base, value, sizeof(value));
         Slice v(value, sz);
         if (!FLAGS_test_batches_snapshots) {
+          // If the chosen key does not allow overwrite and it already
+          // exists, choose another key.
+          while (!shared->AllowsOverwrite(rand_column_family, rand_key) &&
+                 shared->Exists(rand_column_family, rand_key)) {
+            l.reset();
+            rand_key = thread->rand.Next() % max_key;
+            rand_column_family = thread->rand.Next() % FLAGS_column_families;
+            l.reset(new MutexLock(
+                shared->GetMutexForKey(rand_column_family, rand_key)));
+          }
+
+          keystr = Key(rand_key);
+          key = keystr;
+          column_family = column_families_[rand_column_family];
+
           if (FLAGS_verify_before_write) {
             std::string keystr2 = Key(rand_key);
             Slice k = keystr2;
             Status s = db_->Get(read_opts, column_family, k, &from_db);
-            if (VerifyValue(rand_column_family, rand_key, read_opts,
-                            thread->shared, from_db, s, true) == false) {
+            if (!VerifyValue(rand_column_family, rand_key, read_opts,
+                             thread->shared, from_db, s, true)) {
               break;
             }
           }
-          thread->shared->Put(rand_column_family, rand_key, value_base);
+          shared->Put(rand_column_family, rand_key, value_base);
           Status s;
           if (FLAGS_use_merge) {
             s = db_->Merge(write_opts, column_family, key, v);
@@ -1320,16 +1667,45 @@ class StressTest {
         } else {
           MultiPut(thread, write_opts, column_family, key, v, sz);
         }
-        PrintKeyValue(rand_column_family, rand_key, value, sz);
+        PrintKeyValue(rand_column_family, static_cast<uint32_t>(rand_key),
+                      value, sz);
       } else if (writeBound <= prob_op && prob_op < delBound) {
         // OPERATION delete
         if (!FLAGS_test_batches_snapshots) {
-          thread->shared->Delete(rand_column_family, rand_key);
-          Status s = db_->Delete(write_opts, column_family, key);
-          thread->stats.AddDeletes(1);
-          if (!s.ok()) {
-            fprintf(stderr, "delete error: %s\n", s.ToString().c_str());
-            std::terminate();
+          // If the chosen key does not allow overwrite and it does not exist,
+          // choose another key.
+          while (!shared->AllowsOverwrite(rand_column_family, rand_key) &&
+                 !shared->Exists(rand_column_family, rand_key)) {
+            l.reset();
+            rand_key = thread->rand.Next() % max_key;
+            rand_column_family = thread->rand.Next() % FLAGS_column_families;
+            l.reset(new MutexLock(
+                shared->GetMutexForKey(rand_column_family, rand_key)));
+          }
+
+          keystr = Key(rand_key);
+          key = keystr;
+          column_family = column_families_[rand_column_family];
+
+          // Use delete if the key may be overwritten and a single deletion
+          // otherwise.
+          if (shared->AllowsOverwrite(rand_column_family, rand_key)) {
+            shared->Delete(rand_column_family, rand_key);
+            Status s = db_->Delete(write_opts, column_family, key);
+            thread->stats.AddDeletes(1);
+            if (!s.ok()) {
+              fprintf(stderr, "delete error: %s\n", s.ToString().c_str());
+              std::terminate();
+            }
+          } else {
+            shared->SingleDelete(rand_column_family, rand_key);
+            Status s = db_->SingleDelete(write_opts, column_family, key);
+            thread->stats.AddSingleDeletes(1);
+            if (!s.ok()) {
+              fprintf(stderr, "single delete error: %s\n",
+                      s.ToString().c_str());
+              std::terminate();
+            }
           }
         } else {
           MultiDelete(thread, write_opts, column_family, key);
@@ -1384,16 +1760,19 @@ class StressTest {
               from_db = iter->value().ToString();
               iter->Next();
             } else if (iter->key().compare(k) < 0) {
-              VerificationAbort(shared, "An out of range key was found", cf, i);
+              VerificationAbort(shared, "An out of range key was found",
+                                static_cast<int>(cf), i);
             }
           } else {
             // The iterator found no value for the key in question, so do not
             // move to the next item in the iterator
             s = Status::NotFound(Slice());
           }
-          VerifyValue(cf, i, options, shared, from_db, s, true);
+          VerifyValue(static_cast<int>(cf), i, options, shared, from_db, s,
+                      true);
           if (from_db.length()) {
-            PrintKeyValue(cf, i, from_db.data(), from_db.length());
+            PrintKeyValue(static_cast<int>(cf), static_cast<uint32_t>(i),
+                          from_db.data(), from_db.length());
           }
         }
       } else {
@@ -1406,9 +1785,11 @@ class StressTest {
           std::string keystr = Key(i);
           Slice k = keystr;
           Status s = db_->Get(options, column_families_[cf], k, &from_db);
-          VerifyValue(cf, i, options, shared, from_db, s, true);
+          VerifyValue(static_cast<int>(cf), i, options, shared, from_db, s,
+                      true);
           if (from_db.length()) {
-            PrintKeyValue(cf, i, from_db.data(), from_db.length());
+            PrintKeyValue(static_cast<int>(cf), static_cast<uint32_t>(i),
+                          from_db.data(), from_db.length());
           }
         }
       }
@@ -1483,68 +1864,47 @@ class StressTest {
   }
 
   void PrintEnv() const {
-    fprintf(stdout, "RocksDB version     : %d.%d\n", kMajorVersion,
+    fprintf(stdout, "RocksDB version           : %d.%d\n", kMajorVersion,
             kMinorVersion);
-    fprintf(stdout, "Column families     : %d\n", FLAGS_column_families);
+    fprintf(stdout, "Column families           : %d\n", FLAGS_column_families);
     if (!FLAGS_test_batches_snapshots) {
-      fprintf(stdout, "Clear CFs one in    : %d\n",
+      fprintf(stdout, "Clear CFs one in          : %d\n",
               FLAGS_clear_column_family_one_in);
     }
-    fprintf(stdout, "Number of threads   : %d\n", FLAGS_threads);
-    fprintf(stdout,
-            "Ops per thread      : %lu\n",
+    fprintf(stdout, "Number of threads         : %d\n", FLAGS_threads);
+    fprintf(stdout, "Ops per thread            : %lu\n",
             (unsigned long)FLAGS_ops_per_thread);
     std::string ttl_state("unused");
     if (FLAGS_ttl > 0) {
       ttl_state = NumberToString(FLAGS_ttl);
     }
-    fprintf(stdout, "Time to live(sec)   : %s\n", ttl_state.c_str());
-    fprintf(stdout, "Read percentage     : %d%%\n", FLAGS_readpercent);
-    fprintf(stdout, "Prefix percentage   : %d%%\n", FLAGS_prefixpercent);
-    fprintf(stdout, "Write percentage    : %d%%\n", FLAGS_writepercent);
-    fprintf(stdout, "Delete percentage   : %d%%\n", FLAGS_delpercent);
-    fprintf(stdout, "Iterate percentage  : %d%%\n", FLAGS_iterpercent);
-    fprintf(stdout, "Write-buffer-size   : %d\n", FLAGS_write_buffer_size);
-    fprintf(stdout,
-            "Iterations          : %lu\n",
+    fprintf(stdout, "Time to live(sec)         : %s\n", ttl_state.c_str());
+    fprintf(stdout, "Read percentage           : %d%%\n", FLAGS_readpercent);
+    fprintf(stdout, "Prefix percentage         : %d%%\n", FLAGS_prefixpercent);
+    fprintf(stdout, "Write percentage          : %d%%\n", FLAGS_writepercent);
+    fprintf(stdout, "Delete percentage         : %d%%\n", FLAGS_delpercent);
+    fprintf(stdout, "No overwrite percentage   : %d%%\n",
+            FLAGS_nooverwritepercent);
+    fprintf(stdout, "Iterate percentage        : %d%%\n", FLAGS_iterpercent);
+    fprintf(stdout, "DB-write-buffer-size      : %" PRIu64 "\n",
+            FLAGS_db_write_buffer_size);
+    fprintf(stdout, "Write-buffer-size         : %d\n",
+            FLAGS_write_buffer_size);
+    fprintf(stdout, "Iterations                : %lu\n",
             (unsigned long)FLAGS_num_iterations);
-    fprintf(stdout,
-            "Max key             : %lu\n",
+    fprintf(stdout, "Max key                   : %lu\n",
             (unsigned long)FLAGS_max_key);
-    fprintf(stdout, "Ratio #ops/#keys    : %f\n",
-            (1.0 * FLAGS_ops_per_thread * FLAGS_threads)/FLAGS_max_key);
-    fprintf(stdout, "Num times DB reopens: %d\n", FLAGS_reopen);
-    fprintf(stdout, "Batches/snapshots   : %d\n",
+    fprintf(stdout, "Ratio #ops/#keys          : %f\n",
+            (1.0 * FLAGS_ops_per_thread * FLAGS_threads) / FLAGS_max_key);
+    fprintf(stdout, "Num times DB reopens      : %d\n", FLAGS_reopen);
+    fprintf(stdout, "Batches/snapshots         : %d\n",
             FLAGS_test_batches_snapshots);
-    fprintf(stdout, "Purge redundant %%   : %d\n",
-            FLAGS_purge_redundant_percent);
-    fprintf(stdout, "Deletes use filter  : %d\n",
-            FLAGS_filter_deletes);
-    fprintf(stdout, "Num keys per lock   : %d\n",
+    fprintf(stdout, "Deletes use filter        : %d\n", FLAGS_filter_deletes);
+    fprintf(stdout, "Do update in place        : %d\n", FLAGS_in_place_update);
+    fprintf(stdout, "Num keys per lock         : %d\n",
             1 << FLAGS_log2_keys_per_lock);
-
-    const char* compression = "";
-    switch (FLAGS_compression_type_e) {
-      case rocksdb::kNoCompression:
-        compression = "none";
-        break;
-      case rocksdb::kSnappyCompression:
-        compression = "snappy";
-        break;
-      case rocksdb::kZlibCompression:
-        compression = "zlib";
-        break;
-      case rocksdb::kBZip2Compression:
-        compression = "bzip2";
-        break;
-      case rocksdb::kLZ4Compression:
-        compression = "lz4";
-      case rocksdb::kLZ4HCCompression:
-        compression = "lz4hc";
-        break;
-      }
-
-    fprintf(stdout, "Compression         : %s\n", compression);
+    std::string compression = CompressionTypeToString(FLAGS_compression_type_e);
+    fprintf(stdout, "Compression               : %s\n", compression.c_str());
 
     const char* memtablerep = "";
     switch (FLAGS_rep_factory) {
@@ -1559,7 +1919,7 @@ class StressTest {
         break;
     }
 
-    fprintf(stdout, "Memtablerep         : %s\n", memtablerep);
+    fprintf(stdout, "Memtablerep               : %s\n", memtablerep);
 
     fprintf(stdout, "------------------------------------------------\n");
   }
@@ -1570,13 +1930,17 @@ class StressTest {
     block_based_options.block_cache = cache_;
     block_based_options.block_cache_compressed = compressed_cache_;
     block_based_options.block_size = FLAGS_block_size;
+    block_based_options.format_version = 2;
     block_based_options.filter_policy = filter_policy_;
     options_.table_factory.reset(
         NewBlockBasedTableFactory(block_based_options));
+    options_.db_write_buffer_size = FLAGS_db_write_buffer_size;
     options_.write_buffer_size = FLAGS_write_buffer_size;
     options_.max_write_buffer_number = FLAGS_max_write_buffer_number;
     options_.min_write_buffer_number_to_merge =
         FLAGS_min_write_buffer_number_to_merge;
+    options_.max_write_buffer_number_to_maintain =
+        FLAGS_max_write_buffer_number_to_maintain;
     options_.max_background_compactions = FLAGS_max_background_compactions;
     options_.max_background_flushes = FLAGS_max_background_flushes;
     options_.compaction_style =
@@ -1603,26 +1967,30 @@ class StressTest {
     options_.create_if_missing = true;
     options_.max_manifest_file_size = 10 * 1024;
     options_.filter_deletes = FLAGS_filter_deletes;
+    options_.inplace_update_support = FLAGS_in_place_update;
+    options_.max_subcompactions = static_cast<uint32_t>(FLAGS_subcompactions);
     if ((FLAGS_prefix_size == 0) == (FLAGS_rep_factory == kHashSkipList)) {
       fprintf(stderr,
             "prefix_size should be non-zero iff memtablerep == prefix_hash\n");
       exit(1);
     }
     switch (FLAGS_rep_factory) {
-      case kHashSkipList:
-        options_.memtable_factory.reset(NewHashSkipListRepFactory(10000));
-        break;
       case kSkipList:
         // no need to do anything
+        break;
+#ifndef ROCKSDB_LITE
+      case kHashSkipList:
+        options_.memtable_factory.reset(NewHashSkipListRepFactory(10000));
         break;
       case kVectorRep:
         options_.memtable_factory.reset(new VectorRepFactory());
         break;
-    }
-    static Random purge_percent(1000); // no benefit from non-determinism here
-    if (static_cast<int32_t>(purge_percent.Uniform(100)) <
-        FLAGS_purge_redundant_percent - 1) {
-      options_.purge_redundant_kvs_while_flush = false;
+#else
+      default:
+        fprintf(stderr,
+                "RocksdbLite only supports skip list mem table. Skip "
+                "--rep_factory\n");
+#endif  // ROCKSDB_LITE
     }
 
     if (FLAGS_use_merge) {
@@ -1693,20 +2061,28 @@ class StressTest {
         cf_descriptors.emplace_back(name, ColumnFamilyOptions(options_));
       }
       while (cf_descriptors.size() < (size_t)FLAGS_column_families) {
-        std::string name = std::to_string(new_column_family_name_.load());
+        std::string name = ToString(new_column_family_name_.load());
         new_column_family_name_++;
         cf_descriptors.emplace_back(name, ColumnFamilyOptions(options_));
         column_family_names_.push_back(name);
       }
+      options_.listeners.clear();
+      options_.listeners.emplace_back(
+          new DbStressListener(FLAGS_db, options_.db_paths));
       options_.create_missing_column_families = true;
       s = DB::Open(DBOptions(options_), FLAGS_db, cf_descriptors,
                    &column_families_, &db_);
       assert(!s.ok() || column_families_.size() ==
                             static_cast<size_t>(FLAGS_column_families));
     } else {
+#ifndef ROCKSDB_LITE
       DBWithTTL* db_with_ttl;
       s = DBWithTTL::Open(options_, FLAGS_db, &db_with_ttl, FLAGS_ttl);
       db_ = db_with_ttl;
+#else
+      fprintf(stderr, "TTL is not supported in RocksDBLite\n");
+      exit(1);
+#endif
     }
     if (!s.ok()) {
       fprintf(stderr, "open error: %s\n", s.ToString().c_str());
@@ -1746,6 +2122,8 @@ class StressTest {
   std::vector<std::string> column_family_names_;
   std::atomic<int> new_column_family_name_;
   int num_times_reopened_;
+  std::unordered_map<std::string, std::vector<std::string>> options_table_;
+  std::vector<std::string> options_index_;
 };
 
 }  // namespace rocksdb

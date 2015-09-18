@@ -10,7 +10,10 @@
 #pragma once
 #ifndef ROCKSDB_LITE
 
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include <inttypes.h>
 #include <string>
 #include <map>
@@ -84,16 +87,25 @@ struct BackupableDBOptions {
   // *turn it on only if you know what you're doing*
   bool share_files_with_checksum;
 
+  // Up to this many background threads will copy files for CreateNewBackup()
+  // and RestoreDBFromBackup()
+  // Default: 1
+  int max_background_operations;
+
+  // During backup user can get callback every time next
+  // callback_trigger_interval_size bytes being copied.
+  // Default: 4194304
+  uint64_t callback_trigger_interval_size;
+
   void Dump(Logger* logger) const;
 
-  explicit BackupableDBOptions(const std::string& _backup_dir,
-                               Env* _backup_env = nullptr,
-                               bool _share_table_files = true,
-                               Logger* _info_log = nullptr, bool _sync = true,
-                               bool _destroy_old_data = false,
-                               bool _backup_log_files = true,
-                               uint64_t _backup_rate_limit = 0,
-                               uint64_t _restore_rate_limit = 0)
+  explicit BackupableDBOptions(
+      const std::string& _backup_dir, Env* _backup_env = nullptr,
+      bool _share_table_files = true, Logger* _info_log = nullptr,
+      bool _sync = true, bool _destroy_old_data = false,
+      bool _backup_log_files = true, uint64_t _backup_rate_limit = 0,
+      uint64_t _restore_rate_limit = 0, int _max_background_operations = 1,
+      uint64_t _callback_trigger_interval_size = 4 * 1024 * 1024)
       : backup_dir(_backup_dir),
         backup_env(_backup_env),
         share_table_files(_share_table_files),
@@ -103,7 +115,9 @@ struct BackupableDBOptions {
         backup_log_files(_backup_log_files),
         backup_rate_limit(_backup_rate_limit),
         restore_rate_limit(_restore_rate_limit),
-        share_files_with_checksum(false) {
+        share_files_with_checksum(false),
+        max_background_operations(_max_background_operations),
+        callback_trigger_interval_size(_callback_trigger_interval_size) {
     assert(share_table_files || !share_files_with_checksum);
   }
 };
@@ -127,21 +141,55 @@ struct BackupInfo {
   int64_t timestamp;
   uint64_t size;
 
+  uint32_t number_files;
+
   BackupInfo() {}
-  BackupInfo(BackupID _backup_id, int64_t _timestamp, uint64_t _size)
-      : backup_id(_backup_id), timestamp(_timestamp), size(_size) {}
+
+  BackupInfo(BackupID _backup_id, int64_t _timestamp, uint64_t _size,
+             uint32_t _number_files)
+      : backup_id(_backup_id), timestamp(_timestamp), size(_size),
+        number_files(_number_files) {}
+};
+
+class BackupStatistics {
+ public:
+  BackupStatistics() {
+    number_success_backup = 0;
+    number_fail_backup = 0;
+  }
+
+  BackupStatistics(uint32_t _number_success_backup,
+                   uint32_t _number_fail_backup)
+      : number_success_backup(_number_success_backup),
+        number_fail_backup(_number_fail_backup) {}
+
+  ~BackupStatistics() {}
+
+  void IncrementNumberSuccessBackup();
+  void IncrementNumberFailBackup();
+
+  uint32_t GetNumberSuccessBackup() const;
+  uint32_t GetNumberFailBackup() const;
+
+  std::string ToString() const;
+
+ private:
+  uint32_t number_success_backup;
+  uint32_t number_fail_backup;
 };
 
 class BackupEngineReadOnly {
  public:
   virtual ~BackupEngineReadOnly() {}
 
-  static BackupEngineReadOnly* NewReadOnlyBackupEngine(
-      Env* db_env, const BackupableDBOptions& options);
+  static Status Open(Env* db_env, const BackupableDBOptions& options,
+                     BackupEngineReadOnly** backup_engine_ptr);
 
   // You can GetBackupInfo safely, even with other BackupEngine performing
   // backups on the same directory
   virtual void GetBackupInfo(std::vector<BackupInfo>* backup_info) = 0;
+  virtual void GetCorruptedBackups(
+      std::vector<BackupID>* corrupt_backup_ids) = 0;
 
   // Restoring DB from backup is NOT safe when there is another BackupEngine
   // running that might call DeleteBackup() or PurgeOldBackups(). It is caller's
@@ -153,6 +201,11 @@ class BackupEngineReadOnly {
   virtual Status RestoreDBFromLatestBackup(
       const std::string& db_dir, const std::string& wal_dir,
       const RestoreOptions& restore_options = RestoreOptions()) = 0;
+
+  // checks that each file exists and that the size of the file matches our
+  // expectations. it does not check file checksum.
+  // Returns Status::OK() if all checks are good
+  virtual Status VerifyBackup(BackupID backup_id) = 0;
 };
 
 // Please see the documentation in BackupableDB and RestoreBackupableDB
@@ -160,21 +213,33 @@ class BackupEngine {
  public:
   virtual ~BackupEngine() {}
 
-  static BackupEngine* NewBackupEngine(Env* db_env,
-                                       const BackupableDBOptions& options);
+  static Status Open(Env* db_env,
+                     const BackupableDBOptions& options,
+                     BackupEngine** backup_engine_ptr);
 
-  virtual Status CreateNewBackup(DB* db, bool flush_before_backup = false) = 0;
+  virtual Status CreateNewBackup(
+      DB* db, bool flush_before_backup = false,
+      std::function<void()> progress_callback = []() {}) = 0;
   virtual Status PurgeOldBackups(uint32_t num_backups_to_keep) = 0;
   virtual Status DeleteBackup(BackupID backup_id) = 0;
   virtual void StopBackup() = 0;
 
   virtual void GetBackupInfo(std::vector<BackupInfo>* backup_info) = 0;
+  virtual void GetCorruptedBackups(
+      std::vector<BackupID>* corrupt_backup_ids) = 0;
   virtual Status RestoreDBFromBackup(
       BackupID backup_id, const std::string& db_dir, const std::string& wal_dir,
       const RestoreOptions& restore_options = RestoreOptions()) = 0;
   virtual Status RestoreDBFromLatestBackup(
       const std::string& db_dir, const std::string& wal_dir,
       const RestoreOptions& restore_options = RestoreOptions()) = 0;
+
+  // checks that each file exists and that the size of the file matches our
+  // expectations. it does not check file checksum.
+  // Returns Status::OK() if all checks are good
+  virtual Status VerifyBackup(BackupID backup_id) = 0;
+
+  virtual Status GarbageCollect() = 0;
 };
 
 // Stack your DB with BackupableDB to be able to backup the DB
@@ -193,6 +258,8 @@ class BackupableDB : public StackableDB {
   Status CreateNewBackup(bool flush_before_backup = false);
   // Returns info about backups in backup_info
   void GetBackupInfo(std::vector<BackupInfo>* backup_info);
+  // Returns info about corrupt backups in corrupt_backups
+  void GetCorruptedBackups(std::vector<BackupID>* corrupt_backup_ids);
   // deletes old backups, keeping latest num_backups_to_keep alive
   Status PurgeOldBackups(uint32_t num_backups_to_keep);
   // deletes a specific backup
@@ -206,8 +273,14 @@ class BackupableDB : public StackableDB {
   // next time you create BackupableDB or RestoreBackupableDB.
   void StopBackup();
 
+  // Will delete all the files we don't need anymore
+  // It will do the full scan of the files/ directory and delete all the
+  // files that are not referenced.
+  Status GarbageCollect();
+
  private:
   BackupEngine* backup_engine_;
+  Status status_;
 };
 
 // Use this class to access information about backups and restore from them
@@ -218,6 +291,8 @@ class RestoreBackupableDB {
 
   // Returns info about backups in backup_info
   void GetBackupInfo(std::vector<BackupInfo>* backup_info);
+  // Returns info about corrupt backups in corrupt_backups
+  void GetCorruptedBackups(std::vector<BackupID>* corrupt_backup_ids);
 
   // restore from backup with backup_id
   // IMPORTANT -- if options_.share_table_files == true and you restore DB
@@ -244,8 +319,14 @@ class RestoreBackupableDB {
   // deletes a specific backup
   Status DeleteBackup(BackupID backup_id);
 
+  // Will delete all the files we don't need anymore
+  // It will do the full scan of the files/ directory and delete all the
+  // files that are not referenced.
+  Status GarbageCollect();
+
  private:
   BackupEngine* backup_engine_;
+  Status status_;
 };
 
 }  // namespace rocksdb
