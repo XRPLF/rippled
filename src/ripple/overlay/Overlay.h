@@ -67,10 +67,9 @@ public:
 
     struct Setup
     {
-        bool auto_connect = true;
-        Promote promote = Promote::automatic;
         std::shared_ptr<boost::asio::ssl::context> context;
         bool expire = false;
+        beast::IP::Address public_ip;
     };
 
     using PeerSequence = std::vector <Peer::ptr>;

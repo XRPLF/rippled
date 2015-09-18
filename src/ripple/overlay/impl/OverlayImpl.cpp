@@ -244,7 +244,10 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     RippleAddress publicKey;
     std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue, journal, app_);
+        sharedValue,
+        setup_.public_ip,
+        beast::IPAddressConversion::from_asio(
+            remote_endpoint), journal, app_);
     if(! success)
         return handoff;
 
@@ -1018,17 +1021,20 @@ setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
     auto const& section = config.section("overlay");
-    set (setup.auto_connect, "auto_connect", section);
-    std::string promote;
-    set (promote, "become_superpeer", section);
-    if (promote == "never")
-        setup.promote = Overlay::Promote::never;
-    else if (promote == "always")
-        setup.promote = Overlay::Promote::always;
-    else
-        setup.promote = Overlay::Promote::automatic;
     setup.context = make_SSLContext();
     setup.expire = get<bool>(section, "expire", false);
+
+    std::string ip;
+    set (ip, "public_ip", section);
+    if (! ip.empty ())
+    {
+        bool valid;
+        std::tie (setup.public_ip, valid) =
+            beast::IP::Address::from_string (ip);
+        if (! valid || ! setup.public_ip.is_v4() ||
+                is_private (setup.public_ip))
+            throw std::runtime_error ("Configured public IP is invalid");
+    }
     return setup;
 }
 

@@ -106,7 +106,11 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
 }
 
 protocol::TMHello
-buildHello (uint256 const& sharedValue, Application& app)
+buildHello (
+    uint256 const& sharedValue,
+    beast::IP::Address public_ip,
+    beast::IP::Endpoint remote,
+    Application& app)
 {
     protocol::TMHello h;
 
@@ -123,6 +127,18 @@ buildHello (uint256 const& sharedValue, Application& app)
     h.set_nodeproof (&vchSig[0], vchSig.size ());
     // h.set_ipv4port (portNumber); // ignored now
     h.set_testnet (false);
+
+    if (remote.is_v4())
+    {
+        auto addr = remote.to_v4 ();
+        if (is_public (addr))
+        {
+            // Connection is to a public IP
+            h.set_remote_ip (addr.value);
+            if (public_ip != beast::IP::Address())
+                h.set_local_ip (public_ip.to_v4().value);
+        }
+    }
 
     // We always advertise ourselves as private in the HELLO message. This
     // suppresses the old peer advertising code and allows PeerFinder to
@@ -168,6 +184,14 @@ appendHello (beast::http::message& m,
     if (hello.has_ledgerprevious())
         h.append ("Previous-Ledger", beast::base64_encode (
             hello.ledgerprevious()));
+
+    if (hello.has_local_ip())
+        h.append ("Local-IP", beast::IP::to_string (
+            beast::IP::AddressV4(hello.local_ip())));
+
+    if (hello.has_remote_ip())
+        h.append ("Remote-IP", beast::IP::to_string (
+            beast::IP::AddressV4(hello.remote_ip())));
 }
 
 std::vector<ProtocolVersion>
@@ -292,13 +316,47 @@ parseHello (beast::http::message const& m, beast::Journal journal)
             hello.set_ledgerprevious (beast::base64_decode (iter->second));
     }
 
+    {
+        auto const iter = h.find ("Local-IP");
+        if (iter != h.end())
+        {
+            bool valid;
+            beast::IP::Address address;
+            std::tie (address, valid) =
+                beast::IP::Address::from_string (iter->second);
+            if (!valid)
+                return result;
+            if (address.is_v4())
+                hello.set_local_ip(address.to_v4().value);
+        }
+    }
+
+    {
+        auto const iter = h.find ("Remote-IP");
+        if (iter != h.end())
+        {
+            bool valid;
+            beast::IP::Address address;
+            std::tie (address, valid) =
+                beast::IP::Address::from_string (iter->second);
+            if (!valid)
+                return result;
+            if (address.is_v4())
+                hello.set_remote_ip(address.to_v4().value);
+        }
+    }
+
     result.second = true;
     return result;
 }
 
 std::pair<RippleAddress, bool>
-verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
-    beast::Journal journal, Application& app)
+verifyHello (protocol::TMHello const& h,
+    uint256 const& sharedValue,
+    beast::IP::Address public_ip,
+    beast::IP::Endpoint remote,
+    beast::Journal journal,
+    Application& app)
 {
     std::pair<RippleAddress, bool> result = { {}, false };
     auto const ourTime = app.timeKeeper().now().time_since_epoch().count();
@@ -344,12 +402,42 @@ verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
         journal.info <<
             "Hello: Disconnect: Bad node public key.";
     }
+    else if (result.first == app.getLocalCredentials().getNodePublic())
+    {
+        journal.info <<
+            "Hello: Disconnect: Self connection.";
+    }
     else if (! result.first.verifyNodePublic (
         sharedValue, h.nodeproof (), ECDSA::not_strict))
     {
         // Unable to verify they have private key for claimed public key.
         journal.info <<
             "Hello: Disconnect: Failed to verify session.";
+    }
+    else if (h.has_local_ip () &&
+        is_public (remote) &&
+        remote.is_v4 () &&
+        (remote.to_v4().value != h.local_ip ()))
+    {
+        // Remote asked us to confirm connection is from
+        // correct IP
+        journal.info <<
+            "Hello: Disconnect: Peer IP is " <<
+            beast::IP::to_string (remote.to_v4())
+            << " not " <<
+            beast::IP::to_string (beast::IP::AddressV4 (h.local_ip()));
+    }
+    else if (h.has_remote_ip() && is_public (remote) &&
+        (public_ip != beast::IP::Address()) &&
+        (h.remote_ip() != public_ip.to_v4().value))
+    {
+        // We know our public IP and peer reports connection
+        // from some other IP
+        journal.info <<
+            "Hello: Disconnect: Our IP is " <<
+            beast::IP::to_string (public_ip.to_v4())
+            << " not " <<
+            beast::IP::to_string (beast::IP::AddressV4 (h.remote_ip()));
     }
     else
     {
