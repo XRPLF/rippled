@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/basics/chrono.h>
@@ -147,6 +148,12 @@ public:
 
     Env (beast::unit_test::suite& test_);
 
+    Application&
+    app()
+    {
+        return getApp();
+    }
+
     /** Returns the open ledger.
 
         This is a non-modifiable snapshot of the
@@ -226,9 +233,16 @@ public:
 
     /** Turn off testing. */
     void
-    disable_testing ()
+    disable_testing()
     {
         testing_ = false;
+    }
+
+    /** Turn off signature checks. */
+    void
+    disable_sigs()
+    {
+        nosig_ = true;
     }
 
     /** Associate AccountID with account. */
@@ -311,7 +325,7 @@ public:
     */
     template <class... Args>
     void
-    require (Args const&... args) const
+    require (Args const&... args)
     {
         jtx::required(args...)(*this);
     }
@@ -343,6 +357,13 @@ public:
             JsonValue>(jv), fN...);
     }
     /** @} */
+
+    /** Return the TER for the last JTx. */
+    TER
+    ter() const
+    {
+        return ter_;
+    }
 
     /** Return metadata for the last JTx.
 
@@ -456,8 +477,10 @@ public:
 protected:
     int trace_ = 0;
     bool testing_ = true;
+    bool nosig_ = false;
     TestStopwatch stopwatch_;
     uint256 txid_;
+    TER ter_ = tesSUCCESS;
 
     void
     autofill_sig (JTx& jt);

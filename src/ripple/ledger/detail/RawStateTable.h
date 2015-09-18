@@ -83,6 +83,9 @@ public:
     std::unique_ptr<ReadView::sles_type::iter_base>
     slesEnd (ReadView const& base) const;
 
+    std::unique_ptr<ReadView::sles_type::iter_base>
+    slesUpperBound (ReadView const& base, uint256 const& key) const;
+
 private:
     enum class Action
     {

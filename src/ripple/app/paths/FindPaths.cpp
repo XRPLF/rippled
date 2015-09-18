@@ -47,9 +47,10 @@ public:
     findPathsForIssue (
         Issue const& issue,
         STPathSet const& paths,
-        STPath& fullLiquidityPath)
+        STPath& fullLiquidityPath,
+        Application& app)
     {
-        if (auto& pathfinder = getPathFinder (issue.currency))
+        if (auto& pathfinder = getPathFinder (issue.currency, app))
         {
             return pathfinder->getBestPaths (maxPaths_,
                 fullLiquidityPath, paths, issue.account);
@@ -69,14 +70,15 @@ private:
     int const searchLevel_;
     unsigned int const maxPaths_;
 
-    std::unique_ptr<Pathfinder> const& getPathFinder (Currency const& currency)
+    std::unique_ptr<Pathfinder> const&
+    getPathFinder (Currency const& currency, Application& app)
     {
         auto i = currencyMap_.find (currency);
         if (i != currencyMap_.end ())
             return i->second;
         auto pathfinder = std::make_unique<Pathfinder> (
             cache_, srcAccount_, dstAccount_, currency,
-            boost::none, dstAmount_, srcAmount_);
+            boost::none, dstAmount_, srcAmount_, app);
         if (pathfinder->findPaths (searchLevel_))
             pathfinder->computePathRanks (maxPaths_);
         else
@@ -108,9 +110,10 @@ boost::optional<STPathSet>
 FindPaths::findPathsForIssue (
     Issue const& issue,
     STPathSet const& paths,
-    STPath& fullLiquidityPath)
+    STPath& fullLiquidityPath,
+    Application& app)
 {
-    return impl_->findPathsForIssue (issue, paths, fullLiquidityPath);
+    return impl_->findPathsForIssue (issue, paths, fullLiquidityPath, app);
 }
 
 boost::optional<STPathSet>
@@ -123,7 +126,8 @@ findPathsForOneIssuer (
     int searchLevel,
     unsigned int const maxPaths,
     STPathSet const& paths,
-    STPath& fullLiquidityPath)
+    STPath& fullLiquidityPath,
+    Application& app)
 {
     Pathfinder pf (
         cache,
@@ -132,7 +136,8 @@ findPathsForOneIssuer (
         srcIssue.currency,
         srcIssue.account,
         dstAmount,
-        boost::none);
+        boost::none,
+        app);
 
     if (! pf.findPaths(searchLevel))
         return boost::none;

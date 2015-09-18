@@ -29,6 +29,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
 
@@ -37,7 +38,7 @@ Json::Value doBookOffers (RPC::Context& context)
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.
-    if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
+    if (context.app.getJobQueue ().getJobCountGE (jtCLIENT) > 200)
         return rpcError (rpcTOO_BUSY);
 
     std::shared_ptr<ReadView const> lpLedger;
@@ -171,21 +172,9 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcBAD_MARKET);
     }
 
-    unsigned int iLimit;
-    if (context.params.isMember (jss::limit))
-    {
-        auto const& jvLimit (context.params[jss::limit]);
-
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error (jss::limit, "unsigned integer");
-
-        iLimit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
-    }
-    else
-    {
-        iLimit = 0;
-    }
+    unsigned int limit;
+    if (auto err = readLimitField(limit, RPC::Tuning::bookOffers, context))
+        return *err;
 
     bool const bProof (context.params.isMember (jss::proof));
 
@@ -197,7 +186,7 @@ Json::Value doBookOffers (RPC::Context& context)
         context.role == Role::ADMIN,
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
-        takerID ? *takerID : zero, bProof, iLimit, jvMarker, jvResult);
+        takerID ? *takerID : zero, bProof, limit, jvMarker, jvResult);
 
     context.loadType = Resource::feeMediumBurdenRPC;
 

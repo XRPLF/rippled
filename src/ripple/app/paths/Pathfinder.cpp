@@ -148,7 +148,8 @@ Pathfinder::Pathfinder (
     Currency const& uSrcCurrency,
     boost::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
-    boost::optional<STAmount> const& srcAmount)
+    boost::optional<STAmount> const& srcAmount,
+    Application& app)
     :   mSrcAccount (uSrcAccount),
         mDstAccount (uDstAccount),
         mEffectiveDst (isXRP(saDstAmount.getIssuer ()) ?
@@ -162,7 +163,8 @@ Pathfinder::Pathfinder (
         convert_all_ (mDstAmount ==
             STAmount(mDstAmount.issue(), STAmount::cMaxValue, STAmount::cMaxOffset)),
         mLedger (cache->getLedger ()),
-        mRLCache (cache)
+        mRLCache (cache),
+        app_ (app)
 {
     assert (! uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.get()));
 }
@@ -201,7 +203,7 @@ bool Pathfinder::findPaths (int searchLevel)
         return true;
     }
 
-    m_loadEvent = getApp ().getJobQueue ().getLoadEvent (
+    m_loadEvent = app_.getJobQueue ().getLoadEvent (
         jtPATH_FIND, "FindPath");
     auto currencyIsXRP = isXRP (mSrcCurrency);
 
@@ -715,7 +717,7 @@ int Pathfinder::getPathsOut (
 
     if (!bFrozen)
     {
-        count = getApp ().getOrderBookDB ().getBookSize (issue);
+        count = app_.getOrderBookDB ().getBookSize (issue);
 
         for (auto const& item : mRLCache->getRippleLines (account))
         {
@@ -1057,7 +1059,7 @@ void Pathfinder::addLink (
         if (addFlags & afOB_XRP)
         {
             // to XRP only
-            if (!bOnXRP && getApp ().getOrderBookDB ().isBookToXRP (
+            if (!bOnXRP && app_.getOrderBookDB ().isBookToXRP (
                     {uEndCurrency, uEndIssuer}))
             {
                 STPathElement pathElement(
@@ -1071,7 +1073,7 @@ void Pathfinder::addLink (
         else
         {
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
-            auto books = getApp ().getOrderBookDB ().getBooksByTakerPays(
+            auto books = app_.getOrderBookDB ().getBooksByTakerPays(
                 {uEndCurrency, uEndIssuer});
             WriteLog (lsTRACE, Pathfinder)
                 << books.size () << " books found from this currency/issuer";

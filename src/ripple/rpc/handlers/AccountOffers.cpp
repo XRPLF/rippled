@@ -29,6 +29,7 @@
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
 
@@ -75,31 +76,14 @@ Json::Value doAccountOffers (RPC::Context& context)
     }
 
     // Get info on account.
-    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
     unsigned int limit;
-    if (params.isMember (jss::limit))
-    {
-        auto const& jvLimit (params[jss::limit]);
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error (jss::limit, "unsigned integer");
-
-        limit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
-
-        if (context.role != Role::ADMIN)
-        {
-            limit = std::max (RPC::Tuning::minOffersPerRequest,
-                std::min (limit, RPC::Tuning::maxOffersPerRequest));
-        }
-    }
-    else
-    {
-        limit = RPC::Tuning::defaultOffersPerRequest;
-    }
+    if (auto err = readLimitField(limit, RPC::Tuning::accountOffers, context))
+        return *err;
 
     Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
     std::vector <std::shared_ptr<SLE const>> offers;

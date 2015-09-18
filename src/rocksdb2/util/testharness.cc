@@ -9,65 +9,23 @@
 
 #include "util/testharness.h"
 #include <string>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include "port/stack_trace.h"
 
 namespace rocksdb {
 namespace test {
 
-namespace {
-struct Test {
-  const char* base;
-  const char* name;
-  void (*func)();
-};
-std::vector<Test>* tests;
-}
-
-bool RegisterTest(const char* base, const char* name, void (*func)()) {
-  if (tests == nullptr) {
-    tests = new std::vector<Test>;
+::testing::AssertionResult AssertStatus(const char* s_expr, const Status& s) {
+  if (s.ok()) {
+    return ::testing::AssertionSuccess();
+  } else {
+    return ::testing::AssertionFailure() << s_expr << std::endl
+                                         << s.ToString();
   }
-  Test t;
-  t.base = base;
-  t.name = name;
-  t.func = func;
-  tests->push_back(t);
-  return true;
 }
 
-int RunAllTests() {
-  port::InstallStackTraceHandler();
-
-  const char* matcher = getenv("ROCKSDB_TESTS");
-
-  int num = 0;
-  if (tests != nullptr) {
-    for (unsigned int i = 0; i < tests->size(); i++) {
-      const Test& t = (*tests)[i];
-      if (matcher != nullptr) {
-        std::string name = t.base;
-        name.push_back('.');
-        name.append(t.name);
-        if (strstr(name.c_str(), matcher) == nullptr) {
-          continue;
-        }
-      }
-      fprintf(stderr, "==== Test %s.%s\n", t.base, t.name);
-      (*t.func)();
-      ++num;
-    }
-  }
-  fprintf(stderr, "==== PASSED %d tests\n", num);
-  return 0;
-}
-
-std::string TmpDir() {
+std::string TmpDir(Env* env) {
   std::string dir;
-  Status s = Env::Default()->GetTestDirectory(&dir);
-  ASSERT_TRUE(s.ok()) << s.ToString();
+  Status s = env->GetTestDirectory(&dir);
+  EXPECT_TRUE(s.ok()) << s.ToString();
   return dir;
 }
 

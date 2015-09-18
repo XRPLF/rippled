@@ -22,7 +22,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <boost/format.hpp>
 

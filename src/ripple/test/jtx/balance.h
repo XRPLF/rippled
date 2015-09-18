@@ -68,7 +68,7 @@ public:
     }
 
     void
-    operator()(Env const&) const;
+    operator()(Env&) const;
 };
 
 } // jtx

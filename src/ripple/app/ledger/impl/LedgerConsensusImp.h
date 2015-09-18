@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/impl/ConsensusImp.h>
 #include <ripple/app/ledger/impl/DisputedTx.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/basics/CountedObject.h>
@@ -92,16 +93,17 @@ public:
         @param feeVote Our desired fee levels and voting logic.
     */
     LedgerConsensusImp (
-            ConsensusImp& consensus,
-            int previousProposers,
-            int previousConvergeTime,
-            InboundTransactions& inboundTransactions,
-            LocalTxs& localtx,
-            LedgerMaster& ledgerMaster,
-            LedgerHash const & prevLCLHash,
-            Ledger::ref previousLedger,
-            std::uint32_t closeTime,
-            FeeVote& feeVote);
+        Application& app,
+        ConsensusImp& consensus,
+        int previousProposers,
+        int previousConvergeTime,
+        InboundTransactions& inboundTransactions,
+        LocalTxs& localtx,
+        LedgerMaster& ledgerMaster,
+        LedgerHash const & prevLCLHash,
+        Ledger::ref previousLedger,
+        std::uint32_t closeTime,
+        FeeVote& feeVote);
 
     /**
       Get the Json state of the consensus process.
@@ -292,6 +294,7 @@ private:
     void addLoad(STValidation::ref val);
 
 private:
+    Application& app_;
     ConsensusImp& consensus_;
     InboundTransactions& inboundTransactions_;
     LocalTxs& m_localTX;
@@ -342,7 +345,7 @@ private:
 //------------------------------------------------------------------------------
 
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (ConsensusImp& consensus, int previousProposers,
+make_LedgerConsensus (Application& app, ConsensusImp& consensus, int previousProposers,
     int previousConvergeTime, InboundTransactions& inboundTransactions,
     LocalTxs& localtx, LedgerMaster& ledgerMaster,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger,

@@ -4,6 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #include <string>
+#include <vector>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -19,10 +20,19 @@ using namespace std;
 
 namespace rocksdb {
 
-class AutoRollLoggerTest {
+class AutoRollLoggerTest : public testing::Test {
  public:
   static void InitTestDb() {
-    string deleteCmd = "rm -rf " + kTestDir;
+#ifdef OS_WIN
+    // Replace all slashes in the path so windows CompSpec does not
+    // become confused
+    std::string testDir(kTestDir);
+    std::replace_if(testDir.begin(), testDir.end(),
+                    [](char ch) { return ch == '/'; }, '\\');
+    std::string deleteCmd = "if exist " + testDir + " rd /s /q " + testDir;
+#else
+    std::string deleteCmd = "rm -rf " + kTestDir;
+#endif
     ASSERT_TRUE(system(deleteCmd.c_str()) == 0);
     Env::Default()->CreateDir(kTestDir);
   }
@@ -102,7 +112,7 @@ uint64_t AutoRollLoggerTest::RollLogFileByTimeTest(
   uint64_t expected_create_time;
   uint64_t actual_create_time;
   uint64_t total_log_size;
-  ASSERT_OK(env->GetFileSize(kLogFile, &total_log_size));
+  EXPECT_OK(env->GetFileSize(kLogFile, &total_log_size));
   GetFileCreateTime(kLogFile, &expected_create_time);
   logger->SetCallNowMicrosEveryNRecords(0);
 
@@ -110,31 +120,35 @@ uint64_t AutoRollLoggerTest::RollLogFileByTimeTest(
   // to be finished before time.
   for (int i = 0; i < 10; ++i) {
      LogMessage(logger, log_message.c_str());
-     ASSERT_OK(logger->GetStatus());
+     EXPECT_OK(logger->GetStatus());
      // Make sure we always write to the same log file (by
      // checking the create time);
      GetFileCreateTime(kLogFile, &actual_create_time);
 
      // Also make sure the log size is increasing.
-     ASSERT_EQ(expected_create_time, actual_create_time);
-     ASSERT_GT(logger->GetLogFileSize(), total_log_size);
+     EXPECT_EQ(expected_create_time, actual_create_time);
+     EXPECT_GT(logger->GetLogFileSize(), total_log_size);
      total_log_size = logger->GetLogFileSize();
   }
 
   // -- Make the log file expire
-  sleep(time);
+#ifdef OS_WIN
+  Sleep(static_cast<unsigned int>(time) * 1000);
+#else
+  sleep(static_cast<unsigned int>(time));
+#endif
   LogMessage(logger, log_message.c_str());
 
   // At this time, the new log file should be created.
   GetFileCreateTime(kLogFile, &actual_create_time);
-  ASSERT_GT(actual_create_time, expected_create_time);
-  ASSERT_LT(logger->GetLogFileSize(), total_log_size);
+  EXPECT_GT(actual_create_time, expected_create_time);
+  EXPECT_LT(logger->GetLogFileSize(), total_log_size);
   expected_create_time = actual_create_time;
 
   return expected_create_time;
 }
 
-TEST(AutoRollLoggerTest, RollLogFileBySize) {
+TEST_F(AutoRollLoggerTest, RollLogFileBySize) {
     InitTestDb();
     size_t log_max_size = 1024 * 5;
 
@@ -144,21 +158,20 @@ TEST(AutoRollLoggerTest, RollLogFileBySize) {
                           kSampleMessage + ":RollLogFileBySize");
 }
 
-TEST(AutoRollLoggerTest, RollLogFileByTime) {
+TEST_F(AutoRollLoggerTest, RollLogFileByTime) {
     size_t time = 2;
     size_t log_size = 1024 * 5;
 
     InitTestDb();
     // -- Test the existence of file during the server restart.
-    ASSERT_TRUE(!env->FileExists(kLogFile));
+    ASSERT_EQ(Status::NotFound(), env->FileExists(kLogFile));
     AutoRollLogger logger(Env::Default(), kTestDir, "", log_size, time);
-    ASSERT_TRUE(env->FileExists(kLogFile));
+    ASSERT_OK(env->FileExists(kLogFile));
 
     RollLogFileByTimeTest(&logger, time, kSampleMessage + ":RollLogFileByTime");
 }
 
-TEST(AutoRollLoggerTest,
-     OpenLogFilesMultipleTimesWithOptionLog_max_size) {
+TEST_F(AutoRollLoggerTest, OpenLogFilesMultipleTimesWithOptionLog_max_size) {
   // If only 'log_max_size' options is specified, then every time
   // when rocksdb is restarted, a new empty log file will be created.
   InitTestDb();
@@ -183,7 +196,7 @@ TEST(AutoRollLoggerTest,
   delete logger;
 }
 
-TEST(AutoRollLoggerTest, CompositeRollByTimeAndSizeLogger) {
+TEST_F(AutoRollLoggerTest, CompositeRollByTimeAndSizeLogger) {
   size_t time = 2, log_max_size = 1024 * 5;
 
   InitTestDb();
@@ -200,7 +213,10 @@ TEST(AutoRollLoggerTest, CompositeRollByTimeAndSizeLogger) {
       kSampleMessage + ":CompositeRollByTimeAndSizeLogger");
 }
 
-TEST(AutoRollLoggerTest, CreateLoggerFromOptions) {
+#ifndef OS_WIN
+// TODO: does not build for Windows because of PosixLogger use below. Need to
+// port
+TEST_F(AutoRollLoggerTest, CreateLoggerFromOptions) {
   DBOptions options;
   shared_ptr<Logger> logger;
 
@@ -244,8 +260,9 @@ TEST(AutoRollLoggerTest, CreateLoggerFromOptions) {
       auto_roll_logger, options.log_file_time_to_roll,
       kSampleMessage + ":CreateLoggerFromOptions - both");
 }
+#endif
 
-TEST(AutoRollLoggerTest, InfoLogLevel) {
+TEST_F(AutoRollLoggerTest, InfoLogLevel) {
   InitTestDb();
 
   size_t log_size = 8192;
@@ -254,28 +271,29 @@ TEST(AutoRollLoggerTest, InfoLogLevel) {
   // becomes out of scope.
   {
     AutoRollLogger logger(Env::Default(), kTestDir, "", log_size, 0);
-    for (int log_level = InfoLogLevel::FATAL_LEVEL;
+    for (int log_level = InfoLogLevel::HEADER_LEVEL;
          log_level >= InfoLogLevel::DEBUG_LEVEL; log_level--) {
       logger.SetInfoLogLevel((InfoLogLevel)log_level);
       for (int log_type = InfoLogLevel::DEBUG_LEVEL;
-           log_type <= InfoLogLevel::FATAL_LEVEL; log_type++) {
+           log_type <= InfoLogLevel::HEADER_LEVEL; log_type++) {
         // log messages with log level smaller than log_level will not be
         // logged.
         LogMessage((InfoLogLevel)log_type, &logger, kSampleMessage.c_str());
       }
-      log_lines += InfoLogLevel::FATAL_LEVEL - log_level + 1;
+      log_lines += InfoLogLevel::HEADER_LEVEL - log_level + 1;
     }
-    for (int log_level = InfoLogLevel::FATAL_LEVEL;
+    for (int log_level = InfoLogLevel::HEADER_LEVEL;
          log_level >= InfoLogLevel::DEBUG_LEVEL; log_level--) {
       logger.SetInfoLogLevel((InfoLogLevel)log_level);
 
       // again, messages with level smaller than log_level will not be logged.
+      Log(InfoLogLevel::HEADER_LEVEL, &logger, "%s", kSampleMessage.c_str());
       Debug(&logger, "%s", kSampleMessage.c_str());
       Info(&logger, "%s", kSampleMessage.c_str());
       Warn(&logger, "%s", kSampleMessage.c_str());
       Error(&logger, "%s", kSampleMessage.c_str());
       Fatal(&logger, "%s", kSampleMessage.c_str());
-      log_lines += InfoLogLevel::FATAL_LEVEL - log_level + 1;
+      log_lines += InfoLogLevel::HEADER_LEVEL - log_level + 1;
     }
   }
   std::ifstream inFile(AutoRollLoggerTest::kLogFile.c_str());
@@ -285,7 +303,103 @@ TEST(AutoRollLoggerTest, InfoLogLevel) {
   inFile.close();
 }
 
-TEST(AutoRollLoggerTest, LogFileExistence) {
+// Test the logger Header function for roll over logs
+// We expect the new logs creates as roll over to carry the headers specified
+static std::vector<string> GetOldFileNames(const string& path) {
+  std::vector<string> ret;
+
+  const string dirname = path.substr(/*start=*/ 0, path.find_last_of("/"));
+  const string fname = path.substr(path.find_last_of("/") + 1);
+
+  std::vector<string> children;
+  Env::Default()->GetChildren(dirname, &children);
+
+  // We know that the old log files are named [path]<something>
+  // Return all entities that match the pattern
+  for (auto& child : children) {
+    if (fname != child && child.find(fname) == 0) {
+      ret.push_back(dirname + "/" + child);
+    }
+  }
+
+  return ret;
+}
+
+// Return the number of lines where a given pattern was found in the file
+static size_t GetLinesCount(const string& fname, const string& pattern) {
+  stringstream ssbuf;
+  string line;
+  size_t count = 0;
+
+  ifstream inFile(fname.c_str());
+  ssbuf << inFile.rdbuf();
+
+  while (getline(ssbuf, line)) {
+    if (line.find(pattern) != std::string::npos) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
+TEST_F(AutoRollLoggerTest, LogHeaderTest) {
+  static const size_t MAX_HEADERS = 10;
+  static const size_t LOG_MAX_SIZE = 1024 * 5;
+  static const std::string HEADER_STR = "Log header line";
+
+  // test_num == 0 -> standard call to Header()
+  // test_num == 1 -> call to Log() with InfoLogLevel::HEADER_LEVEL
+  for (int test_num = 0; test_num < 2; test_num++) {
+
+    InitTestDb();
+
+    AutoRollLogger logger(Env::Default(), kTestDir, /*db_log_dir=*/ "",
+                          LOG_MAX_SIZE, /*log_file_time_to_roll=*/ 0);
+
+    if (test_num == 0) {
+      // Log some headers explicitly using Header()
+      for (size_t i = 0; i < MAX_HEADERS; i++) {
+        Header(&logger, "%s %d", HEADER_STR.c_str(), i);
+      }
+    } else if (test_num == 1) {
+      // HEADER_LEVEL should make this behave like calling Header()
+      for (size_t i = 0; i < MAX_HEADERS; i++) {
+        Log(InfoLogLevel::HEADER_LEVEL, &logger, "%s %d",
+            HEADER_STR.c_str(), i);
+      }
+    }
+
+    const string newfname = logger.TEST_log_fname();
+
+    // Log enough data to cause a roll over
+    int i = 0;
+    for (size_t iter = 0; iter < 2; iter++) {
+      while (logger.GetLogFileSize() < LOG_MAX_SIZE) {
+        Info(&logger, (kSampleMessage + ":LogHeaderTest line %d").c_str(), i);
+        ++i;
+      }
+
+      Info(&logger, "Rollover");
+    }
+
+    // Flush the log for the latest file
+    LogFlush(&logger);
+
+    const auto oldfiles = GetOldFileNames(newfname);
+
+    ASSERT_EQ(oldfiles.size(), (size_t) 2);
+
+    for (auto& oldfname : oldfiles) {
+      // verify that the files rolled over
+      ASSERT_NE(oldfname, newfname);
+      // verify that the old log contains all the header logs
+      ASSERT_EQ(GetLinesCount(oldfname, HEADER_STR), MAX_HEADERS);
+    }
+  }
+}
+
+TEST_F(AutoRollLoggerTest, LogFileExistence) {
   rocksdb::DB* db;
   rocksdb::Options options;
   string deleteCmd = "rm -rf " + kTestDir;
@@ -293,12 +407,13 @@ TEST(AutoRollLoggerTest, LogFileExistence) {
   options.max_log_file_size = 100 * 1024 * 1024;
   options.create_if_missing = true;
   ASSERT_OK(rocksdb::DB::Open(options, kTestDir, &db));
-  ASSERT_TRUE(env->FileExists(kLogFile));
+  ASSERT_OK(env->FileExists(kLogFile));
   delete db;
 }
 
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

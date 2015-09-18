@@ -219,18 +219,18 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    onPrepare ()
+    onPrepare () override
     {
         m_store.open (m_sociConfig);
         m_logic.load ();
     }
 
     void
-    onStart()
+    onStart() override
     {
     }
 
-    void onStop ()
+    void onStop () override
     {
         close();
         stopped();
@@ -242,7 +242,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (beast::PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map) override
     {
         m_logic.onWrite (map);
     }

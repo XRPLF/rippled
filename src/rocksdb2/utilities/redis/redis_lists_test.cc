@@ -15,6 +15,7 @@
  * @author Deon Nicholas (dnicholas@fb.com)
  */
 
+#ifndef ROCKSDB_LITE
 
 #include <iostream>
 #include <cctype>
@@ -28,7 +29,7 @@ using namespace std;
 
 namespace rocksdb {
 
-class RedisListsTest {
+class RedisListsTest : public testing::Test {
  public:
   static const string kDefaultDbName;
   static Options options;
@@ -38,7 +39,8 @@ class RedisListsTest {
   }
 };
 
-const string RedisListsTest::kDefaultDbName = "/tmp/redisdefaultdb/";
+const string RedisListsTest::kDefaultDbName =
+    test::TmpDir() + "/redis_lists_test";
 Options RedisListsTest::options = Options();
 
 // operator== and operator<< are defined below for vectors (lists)
@@ -55,7 +57,7 @@ void AssertListEq(const std::vector<std::string>& result,
 }  // namespace
 
 // PushRight, Length, Index, Range
-TEST(RedisListsTest, SimpleTest) {
+TEST_F(RedisListsTest, SimpleTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -84,7 +86,7 @@ TEST(RedisListsTest, SimpleTest) {
 }
 
 // PushLeft, Length, Index, Range
-TEST(RedisListsTest, SimpleTest2) {
+TEST_F(RedisListsTest, SimpleTest2) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -113,7 +115,7 @@ TEST(RedisListsTest, SimpleTest2) {
 }
 
 // Exhaustive test of the Index() function
-TEST(RedisListsTest, IndexTest) {
+TEST_F(RedisListsTest, IndexTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -172,7 +174,7 @@ TEST(RedisListsTest, IndexTest) {
 
 
 // Exhaustive test of the Range() function
-TEST(RedisListsTest, RangeTest) {
+TEST_F(RedisListsTest, RangeTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -255,7 +257,7 @@ TEST(RedisListsTest, RangeTest) {
 }
 
 // Exhaustive test for InsertBefore(), and InsertAfter()
-TEST(RedisListsTest, InsertTest) {
+TEST_F(RedisListsTest, InsertTest) {
   RedisLists redis(kDefaultDbName, options, true);
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -339,7 +341,7 @@ TEST(RedisListsTest, InsertTest) {
 }
 
 // Exhaustive test of Set function
-TEST(RedisListsTest, SetTest) {
+TEST_F(RedisListsTest, SetTest) {
   RedisLists redis(kDefaultDbName, options, true);
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -435,7 +437,7 @@ TEST(RedisListsTest, SetTest) {
 }
 
 // Testing Insert, Push, and Set, in a mixed environment
-TEST(RedisListsTest, InsertPushSetTest) {
+TEST_F(RedisListsTest, InsertPushSetTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -527,7 +529,7 @@ TEST(RedisListsTest, InsertPushSetTest) {
 }
 
 // Testing Trim, Pop
-TEST(RedisListsTest, TrimPopTest) {
+TEST_F(RedisListsTest, TrimPopTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -597,7 +599,7 @@ TEST(RedisListsTest, TrimPopTest) {
 }
 
 // Testing Remove, RemoveFirst, RemoveLast
-TEST(RedisListsTest, RemoveTest) {
+TEST_F(RedisListsTest, RemoveTest) {
   RedisLists redis(kDefaultDbName, options, true);   // Destructive
 
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
@@ -688,8 +690,7 @@ TEST(RedisListsTest, RemoveTest) {
 
 
 // Test Multiple keys and Persistence
-TEST(RedisListsTest, PersistenceMultiKeyTest) {
-
+TEST_F(RedisListsTest, PersistenceMultiKeyTest) {
   string tempv; // Used below for all Index(), PopRight(), PopLeft()
 
   // Block one: populate a single key in the database
@@ -745,9 +746,9 @@ TEST(RedisListsTest, PersistenceMultiKeyTest) {
 
 namespace {
 void MakeUpper(std::string* const s) {
-  int len = s->length();
-  for(int i=0; i<len; ++i) {
-    (*s)[i] = toupper((*s)[i]); // C-version defined in <ctype.h>
+  int len = static_cast<int>(s->length());
+  for (int i = 0; i < len; ++i) {
+    (*s)[i] = toupper((*s)[i]);  // C-version defined in <ctype.h>
   }
 }
 
@@ -874,11 +875,21 @@ bool found_arg(int argc, char* argv[], const char* want){
 // However, if -m is specified, it will do user manual/interactive testing
 // -m -d is manual and destructive (will clear the database before use)
 int main(int argc, char* argv[]) {
+  ::testing::InitGoogleTest(&argc, argv);
   if (found_arg(argc, argv, "-m")) {
     bool destructive = found_arg(argc, argv, "-d");
     return rocksdb::manual_redis_test(destructive);
   } else {
-    return rocksdb::test::RunAllTests();
+    return RUN_ALL_TESTS();
   }
 }
 
+#else
+#include <stdio.h>
+
+int main(int argc, char* argv[]) {
+  fprintf(stderr, "SKIPPED as redis is not supported in ROCKSDB_LITE\n");
+  return 0;
+}
+
+#endif  // !ROCKSDB_LITE

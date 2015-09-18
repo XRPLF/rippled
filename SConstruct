@@ -15,11 +15,13 @@
 
     clang           All clang variants
     clang.debug     clang debug variant
+    clang.coverage  clang coverage variant
     clang.release   clang release variant
     clang.profile   clang profile variant
 
     gcc             All gcc variants
     gcc.debug       gcc debug variant
+    gcc.coverage    gcc coverage variant
     gcc.release     gcc release variant
     gcc.profile     gcc profile variant
 
@@ -65,6 +67,19 @@ The following extra options may be used:
                     (see: https://martine.github.io/ninja/). Only gcc and clang targets
                      are supported.
 
+GCC 5 support: There is transitional support for user-installed gcc 5. Setting
+    the environment variable: `RIPPLED_OLD_GCC_ABI` to one enables the transitional
+    support. Due to an ABI change between gcc 4 and gcc 5, it is assumed all
+    libraries are built with the old, gcc 4 ABI. Since no linux distro has upgraded
+    to gcc 5, this allows us to use the package manager to install rippled
+    dependencies and to easily switch between gcc 4 and gcc 5. It also means if the
+    user builds C++ dependencies themselves - such as boost - they must either be
+    built with gcc 4 or with the preprocessor flag `_GLIBCXX_USE_CXX11_ABI` set to
+    zero. When linux distros upgrade to gcc 5, the transitional support will be
+    removed. To enable C++-14 support, define the environment variable `RIPPLED_USE_CPP_14`
+    to one. This is also transitional and will be removed when we permanently enable C++ 14
+    support.
+
 '''
 #
 '''
@@ -108,6 +123,7 @@ BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
 OPENSSL_ERROR = ('Your openSSL was built on %s; '
                  'rippled needs a version built on or after %s.')
 UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
+USE_CPP_14 = os.getenv('RIPPLED_USE_CPP_14')
 
 def check_openssl():
     if Beast.system.platform in CHECK_PLATFORMS:
@@ -250,6 +266,9 @@ def print_coms(target, source, env):
     # TODO Add 'PROTOCCOM' to this list and make it work
     Beast.print_coms(['CXXCOM', 'CCCOM', 'LINKCOM'], env)
 
+def is_debug_variant(variant):
+  return variant in ('debug', 'coverage')
+
 #-------------------------------------------------------------------------------
 
 # Set construction variables for the base environment
@@ -270,11 +289,18 @@ def config_base(env):
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
         ])
 
+    if USE_CPP_14:
+        env.Append(CPPDEFINES=[
+            '-DBEAST_NO_CXX14_COMPATIBILITY',
+            '-DBEAST_NO_CXX14_INTEGER_SEQUENCE',
+            '-DBEAST_NO_CXX14_MAKE_UNIQUE',
+            '-DBEAST_NO_CXX14_EQUAL',
+            '-DBOOST_NO_AUTO_PTR',
+            '-DBEAST_NO_CXX14_MAKE_REVERSE_ITERATOR',
+        ])
+
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
-        env.Append(CPPPATH=[
-            BOOST_ROOT,
-            ])
         env.Append(LIBPATH=[
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
@@ -309,13 +335,30 @@ def config_base(env):
         env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
         env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
 
+def gccStdLibDir():
+    try:
+        for l in subprocess.check_output(['gcc', '-v'], stderr=subprocess.STDOUT).split():
+            if l.startswith('--prefix'):
+                return l.split('=')[1] + '/lib64'
+    except:
+        pass
+    raise SCons.UserError('Could not find gccStdLibDir')
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
-    if variant == 'debug':
+    if is_debug_variant(variant):
         env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 
     elif variant == 'release' or variant == 'profile':
         env.Append(CPPDEFINES=['NDEBUG'])
+
+    if 'BOOST_ROOT' in env:
+        if toolchain == 'gcc':
+            env.Append(CCFLAGS=['-isystem' + env['BOOST_ROOT']])
+        else:
+            env.Append(CPPPATH=[
+                env['BOOST_ROOT'],
+                ])
 
     if toolchain in Split('clang gcc'):
         if Beast.system.linux:
@@ -353,7 +396,7 @@ def config_env(toolchain, variant, env):
 
         env.Append(CXXFLAGS=[
             '-frtti',
-            '-std=c++11',
+            '-std=c++14' if USE_CPP_14 else '-std=c++11',
             '-Wno-invalid-offsetof'])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
@@ -373,8 +416,24 @@ def config_env(toolchain, variant, env):
                 ])
         else:
             if toolchain == 'gcc':
+                if os.getenv('RIPPLED_OLD_GCC_ABI'):
+                    gcc_ver = ''
+                    try:
+                        gcc_ver = subprocess.check_output(['gcc', '-dumpversion'],
+                                                        stderr=subprocess.STDOUT).strip()
+                    except:
+                        pass
+                    if gcc_ver.startswith('5'):
+                        # remove rpath and CXX11_ABI flag when distro uses
+                        # non-user installed gcc 5
+                        env.Append(CPPDEFINES={
+                            '-D_GLIBCXX_USE_CXX11_ABI' : 0
+                        })
+                        env.Append(LINKFLAGS=['-Wl,-rpath,' + gccStdLibDir()])
+
                 env.Append(CCFLAGS=[
-                    '-Wno-unused-but-set-variable'
+                    '-Wno-unused-but-set-variable',
+                    '-Wno-deprecated',
                     ])
 
         boost_libs = [
@@ -416,6 +475,12 @@ def config_env(toolchain, variant, env):
                 '-fno-strict-aliasing'
                 ])
 
+        if variant == 'coverage':
+             env.Append(CXXFLAGS=[
+                 '-fprofile-arcs', '-ftest-coverage'])
+             env.Append(LINKFLAGS=[
+                 '-fprofile-arcs', '-ftest-coverage'])
+
         if toolchain == 'clang':
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
@@ -430,6 +495,8 @@ def config_env(toolchain, variant, env):
             env.Append(CXXFLAGS=[
                 '-Wno-mismatched-tags',
                 '-Wno-deprecated-register',
+                '-Wno-unused-local-typedefs',
+                '-Wno-unknown-warning-option',
                 ])
 
         elif toolchain == 'gcc':
@@ -443,7 +510,7 @@ def config_env(toolchain, variant, env):
             # If we are in debug mode, use GCC-specific functionality to add
             # extra error checking into the code (e.g. std::vector will throw
             # for out-of-bounds conditions)
-            if variant == 'debug':
+            if is_debug_variant(variant):
                 env.Append(CPPDEFINES={
                     '_FORTIFY_SOURCE': 2
                     })
@@ -503,6 +570,7 @@ def config_env(toolchain, variant, env):
             'uuid.lib',
             'odbc32.lib',
             'odbccp32.lib',
+            'Rpcrt4.lib',
             ])
         env.Append(LINKFLAGS=[
             '/DEBUG',
@@ -562,7 +630,7 @@ base.Decider('MD5-timestamp')
 set_implicit_cache()
 
 # Configure the toolchains, variants, default toolchain, and default target
-variants = ['debug', 'release', 'profile']
+variants = ['debug', 'coverage', 'release', 'profile']
 all_toolchains = ['clang', 'gcc', 'msvc']
 if Beast.system.osx:
     toolchains = ['clang']
@@ -684,7 +752,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
     append_sources(result, *list_sources('src/ripple/unl', '.cpp'))
-   
+
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -802,7 +870,7 @@ for tu_style in ['classic', 'unity']:
         for variant in variants:
             if not should_prepare_targets(tu_style, toolchain, variant):
                 continue
-            if variant == 'profile' and toolchain == 'msvc':
+            if variant in ['profile', 'coverage'] and toolchain == 'msvc':
                 continue
             # Configure this variant's construction environment
             env = base.Clone()

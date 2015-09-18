@@ -59,7 +59,7 @@ BlockHashIndex* CreateBlockHashIndexOnTheFly(
   auto hash_index = new BlockHashIndex(
       hash_key_extractor,
       true /* hash_index will copy prefix when Add() is called */);
-  uint64_t current_restart_index = 0;
+  uint32_t current_restart_index = 0;
 
   std::string pending_entry_prefix;
   // pending_block_num == 0 also implies there is no entry inserted at all.
@@ -98,7 +98,7 @@ BlockHashIndex* CreateBlockHashIndexOnTheFly(
         pending_entry_index = current_restart_index;
       } else {
         // entry number increments when keys share the prefix reside in
-        // differnt data blocks.
+        // different data blocks.
         auto last_restart_index = pending_entry_index + pending_block_num - 1;
         assert(last_restart_index <= current_restart_index);
         if (last_restart_index != current_restart_index) {
@@ -132,9 +132,9 @@ bool BlockHashIndex::Add(const Slice& prefix, uint32_t restart_index,
   auto prefix_to_insert = prefix;
   if (kOwnPrefixes) {
     auto prefix_ptr = arena_.Allocate(prefix.size());
-    std::copy(prefix.data() /* begin */,
-              prefix.data() + prefix.size() /* end */,
-              prefix_ptr /* destination */);
+    // MSVC reports C4996 Function call with parameters that may be
+    // unsafe when using std::copy with a output iterator - pointer
+    memcpy(prefix_ptr, prefix.data(), prefix.size());
     prefix_to_insert = Slice(prefix_ptr, prefix.size());
   }
   auto result = restart_indices_.insert(

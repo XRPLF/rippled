@@ -22,24 +22,21 @@
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/rpc/Context.h>
 #include <beast/utility/make_lock.h>
 
 namespace ripple {
 
-namespace RPC {
-struct Context;
-}
-
-Json::Value doPeers (RPC::Context&)
+Json::Value doPeers (RPC::Context& context)
 {
 
     Json::Value jvResult (Json::objectValue);
 
     {
-        auto lock = beast::make_lock(getApp().getMasterMutex());
+        auto lock = beast::make_lock(context.app.getMasterMutex());
 
-        jvResult[jss::peers] = getApp().overlay ().json ();
-        getApp().getUNL().addClusterStatus(jvResult);
+        jvResult[jss::peers] = context.app.overlay ().json ();
+        context.app.getUNL().addClusterStatus(jvResult);
     }
 
     return jvResult;

@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-delivermin::operator()(Env const& env, JTx& jt) const
+delivermin::operator()(Env& env, JTx& jt) const
 {
     jt.jv[jss::DeliverMin] = amount_.getJson(0);
 }

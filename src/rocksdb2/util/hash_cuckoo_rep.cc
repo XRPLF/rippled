@@ -5,20 +5,21 @@
 //
 
 #ifndef ROCKSDB_LITE
+
 #include "util/hash_cuckoo_rep.h"
 
 #include <algorithm>
 #include <atomic>
 #include <limits>
+#include <memory>
 #include <queue>
 #include <string>
-#include <memory>
 #include <vector>
 
-#include "rocksdb/memtablerep.h"
-#include "util/murmurhash.h"
 #include "db/memtable.h"
 #include "db/skiplist.h"
+#include "rocksdb/memtablerep.h"
+#include "util/murmurhash.h"
 #include "util/stl_wrappers.h"
 
 namespace rocksdb {
@@ -39,8 +40,15 @@ struct CuckooStep {
 
   CuckooStep() : bucket_id_(-1), prev_step_id_(kNullStep), depth_(1) {}
 
-  CuckooStep(CuckooStep&&) = default;
-  CuckooStep& operator=(CuckooStep&&) = default;
+  // MSVC does not support = default yet
+  CuckooStep(CuckooStep&& o) ROCKSDB_NOEXCEPT { *this = std::move(o); }
+
+  CuckooStep& operator=(CuckooStep&& rhs) {
+    bucket_id_ = std::move(rhs.bucket_id_);
+    prev_step_id_ = std::move(rhs.prev_step_id_);
+    depth_ = std::move(rhs.depth_);
+    return *this;
+  }
 
   CuckooStep(const CuckooStep&) = delete;
   CuckooStep& operator=(const CuckooStep&) = delete;
@@ -52,25 +60,28 @@ struct CuckooStep {
 class HashCuckooRep : public MemTableRep {
  public:
   explicit HashCuckooRep(const MemTableRep::KeyComparator& compare,
-                         Arena* arena, const size_t bucket_count,
-                         const unsigned int hash_func_count)
-      : MemTableRep(arena),
+                         MemTableAllocator* allocator,
+                         const size_t bucket_count,
+                         const unsigned int hash_func_count,
+                         const size_t approximate_entry_size)
+      : MemTableRep(allocator),
         compare_(compare),
-        arena_(arena),
+        allocator_(allocator),
         bucket_count_(bucket_count),
+        approximate_entry_size_(approximate_entry_size),
         cuckoo_path_max_depth_(kDefaultCuckooPathMaxDepth),
         occupied_count_(0),
         hash_function_count_(hash_func_count),
         backup_table_(nullptr) {
     char* mem = reinterpret_cast<char*>(
-        arena_->Allocate(sizeof(std::atomic<const char*>) * bucket_count_));
-    cuckoo_array_ = new (mem) std::atomic<const char*>[bucket_count_];
+        allocator_->Allocate(sizeof(std::atomic<const char*>) * bucket_count_));
+    cuckoo_array_ = new (mem) std::atomic<char*>[bucket_count_];
     for (unsigned int bid = 0; bid < bucket_count_; ++bid) {
       cuckoo_array_[bid].store(nullptr, std::memory_order_relaxed);
     }
 
     cuckoo_path_ = reinterpret_cast<int*>(
-        arena_->Allocate(sizeof(int*) * (cuckoo_path_max_depth_ + 1)));
+        allocator_->Allocate(sizeof(int) * (cuckoo_path_max_depth_ + 1)));
     is_nearly_full_ = false;
   }
 
@@ -90,15 +101,15 @@ class HashCuckooRep : public MemTableRep {
   // the current mem-table already contains the specified key.
   virtual void Insert(KeyHandle handle) override;
 
-  // This function returns std::numeric_limits<size_t>::max() in the following
-  // three cases to disallow further write operations:
+  // This function returns bucket_count_ * approximate_entry_size_ when any
+  // of the followings happen to disallow further write operations:
   // 1. when the fullness reaches kMaxFullnes.
   // 2. when the backup_table_ is used.
   //
   // otherwise, this function will always return 0.
   virtual size_t ApproximateMemoryUsage() override {
     if (is_nearly_full_) {
-      return std::numeric_limits<size_t>::max();
+      return bucket_count_ * approximate_entry_size_;
     }
     return 0;
   }
@@ -109,7 +120,7 @@ class HashCuckooRep : public MemTableRep {
 
   class Iterator : public MemTableRep::Iterator {
     std::shared_ptr<std::vector<const char*>> bucket_;
-    typename std::vector<const char*>::const_iterator mutable cit_;
+    std::vector<const char*>::const_iterator mutable cit_;
     const KeyComparator& compare_;
     std::string tmp_;  // For passing to EncodeKey
     bool mutable sorted_;
@@ -181,10 +192,12 @@ class HashCuckooRep : public MemTableRep {
 
  private:
   const MemTableRep::KeyComparator& compare_;
-  // the pointer to Arena to allocate memory, immutable after construction.
-  Arena* const arena_;
+  // the pointer to Allocator to allocate memory, immutable after construction.
+  MemTableAllocator* const allocator_;
   // the number of hash bucket in the hash table.
   const size_t bucket_count_;
+  // approximate size of each entry
+  const size_t approximate_entry_size_;
   // the maxinum depth of the cuckoo path.
   const unsigned int cuckoo_path_max_depth_;
   // the current number of entries in cuckoo_array_ which has been occupied.
@@ -195,7 +208,7 @@ class HashCuckooRep : public MemTableRep {
   // a vacant bucket for inserting the key of a put request.
   std::shared_ptr<MemTableRep> backup_table_;
   // the array to store pointers, pointing to the actual data.
-  std::atomic<const char*>* cuckoo_array_;
+  std::atomic<char*>* cuckoo_array_;
   // a buffer to store cuckoo path
   int* cuckoo_path_;
   // a boolean flag indicating whether the fullness of bucket array
@@ -213,9 +226,10 @@ class HashCuckooRep : public MemTableRep {
     static const int kMurmurHashSeeds[HashCuckooRepFactory::kMaxHashCount] = {
         545609244,  1769731426, 763324157,  13099088,   592422103,
         1899789565, 248369300,  1984183468, 1613664382, 1491157517};
-    return MurmurHash(slice.data(), slice.size(),
-                      kMurmurHashSeeds[hash_func_id]) %
-           bucket_count_;
+    return static_cast<unsigned int>(
+        MurmurHash(slice.data(), static_cast<int>(slice.size()),
+                   kMurmurHashSeeds[hash_func_id]) %
+        bucket_count_);
   }
 
   // A cuckoo path is a sequence of bucket ids, where each id points to a
@@ -285,8 +299,8 @@ void HashCuckooRep::Get(const LookupKey& key, void* callback_args,
     const char* bucket =
         cuckoo_array_[GetHash(user_key, hid)].load(std::memory_order_acquire);
     if (bucket != nullptr) {
-      auto bucket_user_key = UserKey(bucket);
-      if (user_key.compare(bucket_user_key) == 0) {
+      Slice bucket_user_key = UserKey(bucket);
+      if (user_key == bucket_user_key) {
         callback_func(callback_args, bucket);
         break;
       }
@@ -320,7 +334,7 @@ void HashCuckooRep::Insert(KeyHandle handle) {
     if (backup_table_.get() == nullptr) {
       VectorRepFactory factory(10);
       backup_table_.reset(
-          factory.CreateMemTableRep(compare_, arena_, nullptr, nullptr));
+          factory.CreateMemTableRep(compare_, allocator_, nullptr, nullptr));
       is_nearly_full_ = true;
     }
     backup_table_->Insert(key);
@@ -398,8 +412,8 @@ bool HashCuckooRep::QuickInsert(const char* internal_key, const Slice& user_key,
   }
 
   if (cuckoo_bucket_id != -1) {
-    cuckoo_array_[cuckoo_bucket_id]
-        .store(internal_key, std::memory_order_release);
+    cuckoo_array_[cuckoo_bucket_id].store(const_cast<char*>(internal_key),
+                                          std::memory_order_release);
     return true;
   }
 
@@ -452,10 +466,10 @@ bool HashCuckooRep::FindCuckooPath(const char* internal_key,
     }
     // again, we can perform no barrier load safely here as the current
     // thread is the only writer.
-    auto bucket_user_key =
+    Slice bucket_user_key =
         UserKey(cuckoo_array_[step.bucket_id_].load(std::memory_order_relaxed));
     if (step.prev_step_id_ != CuckooStep::kNullStep) {
-      if (bucket_user_key.compare(user_key) == 0) {
+      if (bucket_user_key == user_key) {
         // then there is a loop in the current path, stop discovering this path.
         continue;
       }
@@ -600,7 +614,7 @@ void HashCuckooRep::Iterator::SeekToLast() {
 }  // anom namespace
 
 MemTableRep* HashCuckooRepFactory::CreateMemTableRep(
-    const MemTableRep::KeyComparator& compare, Arena* arena,
+    const MemTableRep::KeyComparator& compare, MemTableAllocator* allocator,
     const SliceTransform* transform, Logger* logger) {
   // The estimated average fullness.  The write performance of any close hash
   // degrades as the fullness of the mem-table increases.  Setting kFullness
@@ -619,7 +633,9 @@ MemTableRep* HashCuckooRepFactory::CreateMemTableRep(
   if (hash_function_count > kMaxHashCount) {
     hash_function_count = kMaxHashCount;
   }
-  return new HashCuckooRep(compare, arena, bucket_count, hash_function_count);
+  return new HashCuckooRep(compare, allocator, bucket_count,
+                           hash_function_count,
+                           (average_data_size_ + pointer_size) / kFullness);
 }
 
 MemTableRepFactory* NewHashCuckooRepFactory(size_t write_buffer_size,

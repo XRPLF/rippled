@@ -10,6 +10,9 @@
 #pragma once
 #include <stdint.h>
 #include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "rocksdb/flush_block_policy.h"
 #include "rocksdb/options.h"
@@ -23,15 +26,22 @@ class BlockHandle;
 class WritableFile;
 struct BlockBasedTableOptions;
 
+extern const uint64_t kBlockBasedTableMagicNumber;
+extern const uint64_t kLegacyBlockBasedTableMagicNumber;
+
 class BlockBasedTableBuilder : public TableBuilder {
  public:
   // Create a builder that will store the contents of the table it is
   // building in *file.  Does not close the file.  It is up to the
   // caller to close the file after calling Finish().
-  BlockBasedTableBuilder(const Options& options,
-                         const BlockBasedTableOptions& table_options,
-                         const InternalKeyComparator& internal_comparator,
-                         WritableFile* file, CompressionType compression_type);
+  BlockBasedTableBuilder(
+      const ImmutableCFOptions& ioptions,
+      const BlockBasedTableOptions& table_options,
+      const InternalKeyComparator& internal_comparator,
+      const std::vector<std::unique_ptr<IntTblPropCollectorFactory>>*
+          int_tbl_prop_collector_factories,
+      WritableFileWriter* file, const CompressionType compression_type,
+      const CompressionOptions& compression_opts, const bool skip_filters);
 
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~BlockBasedTableBuilder();
@@ -62,6 +72,11 @@ class BlockBasedTableBuilder : public TableBuilder {
   // Size of the file generated so far.  If invoked after a successful
   // Finish() call, returns the size of the final generated file.
   uint64_t FileSize() const override;
+
+  bool NeedCompact() const override;
+
+  // Get table properties
+  TableProperties GetTableProperties() const override;
 
  private:
   bool ok() const { return status().ok(); }

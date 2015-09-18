@@ -58,12 +58,14 @@ public:
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
     PathRequest (
+        Application& app,
         std::shared_ptr <InfoSub> const& subscriber,
         int id,
         PathRequests&,
         beast::Journal journal);
 
     PathRequest (
+        Application& app,
         std::function <void (void)> const& completion,
         int id,
         PathRequests&,
@@ -100,6 +102,7 @@ private:
 
     int parseJson (Json::Value const&);
 
+    Application& app_;
     beast::Journal m_journal;
 
     using LockType = RippleRecursiveMutex;

@@ -79,7 +79,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
 
     // Parse the specified hotwallet(s), if any
     std::set <AccountID> hotWallets;

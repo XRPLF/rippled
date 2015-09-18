@@ -9,7 +9,11 @@
 
 #include "rocksdb/env.h"
 
-#include <sys/time.h>
+#include <thread>
+#include "port/port.h"
+#include "port/sys_time.h"
+#include "port/port.h"
+
 #include "rocksdb/options.h"
 #include "util/arena.h"
 #include "util/autovector.h"
@@ -17,6 +21,11 @@
 namespace rocksdb {
 
 Env::~Env() {
+}
+
+uint64_t Env::GetThreadID() const {
+  std::hash<std::thread::id> hasher;
+  return hasher(std::this_thread::get_id());
 }
 
 SequentialFile::~SequentialFile() {
@@ -41,7 +50,7 @@ void LogFlush(Logger *info_log) {
 }
 
 void Log(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::INFO_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::INFO_LEVEL, format, ap);
@@ -49,18 +58,56 @@ void Log(Logger* info_log, const char* format, ...) {
   }
 }
 
+void Logger::Logv(const InfoLogLevel log_level, const char* format, va_list ap) {
+  static const char* kInfoLogLevelNames[5] = { "DEBUG", "INFO", "WARN",
+    "ERROR", "FATAL" };
+  if (log_level < log_level_) {
+    return;
+  }
+
+  if (log_level == InfoLogLevel::INFO_LEVEL) {
+    // Doesn't print log level if it is INFO level.
+    // This is to avoid unexpected performance regression after we add
+    // the feature of log level. All the logs before we add the feature
+    // are INFO level. We don't want to add extra costs to those existing
+    // logging.
+    Logv(format, ap);
+  } else {
+    char new_format[500];
+    snprintf(new_format, sizeof(new_format) - 1, "[%s] %s",
+      kInfoLogLevelNames[log_level], format);
+    Logv(new_format, ap);
+  }
+}
+
+
 void Log(const InfoLogLevel log_level, Logger* info_log, const char* format,
          ...) {
+  if (info_log && info_log->GetInfoLogLevel() <= log_level) {
+    va_list ap;
+    va_start(ap, format);
+
+    if (log_level == InfoLogLevel::HEADER_LEVEL) {
+      info_log->LogHeader(format, ap);
+    } else {
+      info_log->Logv(log_level, format, ap);
+    }
+
+    va_end(ap);
+  }
+}
+
+void Header(Logger* info_log, const char* format, ...) {
   if (info_log) {
     va_list ap;
     va_start(ap, format);
-    info_log->Logv(log_level, format, ap);
+    info_log->LogHeader(format, ap);
     va_end(ap);
   }
 }
 
 void Debug(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::DEBUG_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::DEBUG_LEVEL, format, ap);
@@ -69,7 +116,7 @@ void Debug(Logger* info_log, const char* format, ...) {
 }
 
 void Info(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::INFO_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::INFO_LEVEL, format, ap);
@@ -78,7 +125,7 @@ void Info(Logger* info_log, const char* format, ...) {
 }
 
 void Warn(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::WARN_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::WARN_LEVEL, format, ap);
@@ -86,7 +133,7 @@ void Warn(Logger* info_log, const char* format, ...) {
   }
 }
 void Error(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::ERROR_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::ERROR_LEVEL, format, ap);
@@ -94,7 +141,7 @@ void Error(Logger* info_log, const char* format, ...) {
   }
 }
 void Fatal(Logger* info_log, const char* format, ...) {
-  if (info_log) {
+  if (info_log && info_log->GetInfoLogLevel() <= InfoLogLevel::FATAL_LEVEL) {
     va_list ap;
     va_start(ap, format);
     info_log->Logv(InfoLogLevel::FATAL_LEVEL, format, ap);
@@ -114,6 +161,15 @@ void Log(const InfoLogLevel log_level, const shared_ptr<Logger>& info_log,
     va_list ap;
     va_start(ap, format);
     info_log->Logv(log_level, format, ap);
+    va_end(ap);
+  }
+}
+
+void Header(const shared_ptr<Logger>& info_log, const char* format, ...) {
+  if (info_log) {
+    va_list ap;
+    va_start(ap, format);
+    info_log->LogHeader(format, ap);
     va_end(ap);
   }
 }
@@ -231,8 +287,11 @@ void AssignEnvOptions(EnvOptions* env_options, const DBOptions& options) {
 
 }
 
-EnvOptions Env::OptimizeForLogWrite(const EnvOptions& env_options) const {
-  return env_options;
+EnvOptions Env::OptimizeForLogWrite(const EnvOptions& env_options,
+                                    const DBOptions& db_options) const {
+  EnvOptions optimized_env_options(env_options);
+  optimized_env_options.bytes_per_sync = db_options.wal_bytes_per_sync;
+  return optimized_env_options;
 }
 
 EnvOptions Env::OptimizeForManifestWrite(const EnvOptions& env_options) const {

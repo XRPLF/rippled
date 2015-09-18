@@ -25,7 +25,8 @@ using namespace stl_wrappers;
 
 class VectorRep : public MemTableRep {
  public:
-  VectorRep(const KeyComparator& compare, Arena* arena, size_t count);
+  VectorRep(const KeyComparator& compare, MemTableAllocator* allocator,
+            size_t count);
 
   // Insert key into the collection. (The caller will pack key and value into a
   // single buffer and pass that in as the parameter to Insert)
@@ -49,7 +50,7 @@ class VectorRep : public MemTableRep {
   class Iterator : public MemTableRep::Iterator {
     class VectorRep* vrep_;
     std::shared_ptr<std::vector<const char*>> bucket_;
-    typename std::vector<const char*>::const_iterator mutable cit_;
+    std::vector<const char*>::const_iterator mutable cit_;
     const KeyComparator& compare_;
     std::string tmp_;       // For passing to EncodeKey
     bool mutable sorted_;
@@ -131,8 +132,9 @@ size_t VectorRep::ApproximateMemoryUsage() {
     );
 }
 
-VectorRep::VectorRep(const KeyComparator& compare, Arena* arena, size_t count)
-  : MemTableRep(arena),
+VectorRep::VectorRep(const KeyComparator& compare, MemTableAllocator* allocator,
+                     size_t count)
+  : MemTableRep(allocator),
     bucket_(new Bucket()),
     immutable_(false),
     sorted_(false),
@@ -176,14 +178,14 @@ bool VectorRep::Iterator::Valid() const {
 // Returns the key at the current position.
 // REQUIRES: Valid()
 const char* VectorRep::Iterator::key() const {
-  assert(Valid());
+  assert(sorted_);
   return *cit_;
 }
 
 // Advances to the next position.
 // REQUIRES: Valid()
 void VectorRep::Iterator::Next() {
-  assert(Valid());
+  assert(sorted_);
   if (cit_ == bucket_->end()) {
     return;
   }
@@ -193,7 +195,7 @@ void VectorRep::Iterator::Next() {
 // Advances to the previous position.
 // REQUIRES: Valid()
 void VectorRep::Iterator::Prev() {
-  assert(Valid());
+  assert(sorted_);
   if (cit_ == bucket_->begin()) {
     // If you try to go back from the first element, the iterator should be
     // invalidated. So we set it to past-the-end. This means that you can
@@ -282,9 +284,9 @@ MemTableRep::Iterator* VectorRep::GetIterator(Arena* arena) {
 } // anon namespace
 
 MemTableRep* VectorRepFactory::CreateMemTableRep(
-    const MemTableRep::KeyComparator& compare, Arena* arena,
+    const MemTableRep::KeyComparator& compare, MemTableAllocator* allocator,
     const SliceTransform*, Logger* logger) {
-  return new VectorRep(compare, arena, count_);
+  return new VectorRep(compare, allocator, count_);
 }
 } // namespace rocksdb
 #endif  // ROCKSDB_LITE

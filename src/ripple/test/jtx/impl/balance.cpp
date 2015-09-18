@@ -25,7 +25,7 @@ namespace test {
 namespace jtx {
 
 void
-balance::operator()(Env const& env) const
+balance::operator()(Env& env) const
 {
     if (isXRP(value_.issue()))
     {

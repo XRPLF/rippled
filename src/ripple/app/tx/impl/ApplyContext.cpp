@@ -27,11 +27,12 @@
 
 namespace ripple {
 
-ApplyContext::ApplyContext(
+ApplyContext::ApplyContext(Application& app_,
     OpenView& base, STTx const& tx_,
         ApplyFlags flags, Config const& config_,
             beast::Journal journal_)
-    : tx (tx_)
+    : app(app_)
+    , tx (tx_)
     , config (config_)
     , journal(journal_)
     , base_ (base)

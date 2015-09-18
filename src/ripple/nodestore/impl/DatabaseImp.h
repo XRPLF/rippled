@@ -119,7 +119,7 @@ public:
 
     //------------------------------------------------------------------------------
 
-    bool asyncFetch (uint256 const& hash, std::shared_ptr<NodeObject>& object)
+    bool asyncFetch (uint256 const& hash, std::shared_ptr<NodeObject>& object) override
     {
         // See if the object is in cache
         object = m_cache.fetch (hash);
@@ -150,7 +150,7 @@ public:
 
     }
 
-    int getDesiredAsyncReadCount ()
+    int getDesiredAsyncReadCount () override
     {
         // We prefer a client not fill our cache
         // We don't want to push data out of the cache
@@ -306,12 +306,12 @@ public:
 
     //------------------------------------------------------------------------------
 
-    float getCacheHitRate ()
+    float getCacheHitRate () override
     {
         return m_cache.getHitRate ();
     }
 
-    void tune (int size, int age)
+    void tune (int size, int age) override
     {
         m_cache.setTargetSize (size);
         m_cache.setTargetAge (age);
@@ -319,7 +319,7 @@ public:
         m_negCache.setTargetAge (age);
     }
 
-    void sweep ()
+    void sweep () override
     {
         m_cache.sweep ();
         m_negCache.sweep ();
@@ -381,7 +381,7 @@ public:
         m_backend->for_each (f);
     }
 
-    void import (Database& source)
+    void import (Database& source) override
     {
         importInternal (source, *m_backend.get());
     }

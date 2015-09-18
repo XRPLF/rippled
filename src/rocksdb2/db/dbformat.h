@@ -33,13 +33,13 @@ enum ValueType : unsigned char {
   kTypeDeletion = 0x0,
   kTypeValue = 0x1,
   kTypeMerge = 0x2,
-  // Following types are used only in write ahead logs. They are not used in
-  // memtables or sst files:
-  kTypeLogData = 0x3,
-  kTypeColumnFamilyDeletion = 0x4,
-  kTypeColumnFamilyValue = 0x5,
-  kTypeColumnFamilyMerge = 0x6,
-  kMaxValue = 0x7F
+  kTypeLogData = 0x3,               // WAL only.
+  kTypeColumnFamilyDeletion = 0x4,  // WAL only.
+  kTypeColumnFamilyValue = 0x5,     // WAL only.
+  kTypeColumnFamilyMerge = 0x6,     // WAL only.
+  kTypeSingleDeletion = 0x7,
+  kTypeColumnFamilySingleDeletion = 0x8,  // WAL only.
+  kMaxValue = 0x7F                        // Not used for storing records.
 };
 
 // kValueTypeForSeek defines the ValueType that should be passed when
@@ -48,7 +48,13 @@ enum ValueType : unsigned char {
 // and the value type is embedded as the low 8 bits in the sequence
 // number in internal keys, we need to use the highest-numbered
 // ValueType, not the lowest).
-static const ValueType kValueTypeForSeek = kTypeMerge;
+static const ValueType kValueTypeForSeek = kTypeSingleDeletion;
+
+// Checks whether a type is a value type (i.e. a type used in memtables and sst
+// files).
+inline bool IsValueType(ValueType t) {
+  return t <= kTypeMerge || t == kTypeSingleDeletion;
+}
 
 // We leave eight bits empty at the bottom so a type and sequence#
 // can be packed together into 64-bits.
@@ -71,7 +77,12 @@ inline size_t InternalKeyEncodingLength(const ParsedInternalKey& key) {
   return key.user_key.size() + 8;
 }
 
+// Pack a sequence number and a ValueType into a uint64_t
 extern uint64_t PackSequenceAndType(uint64_t seq, ValueType t);
+
+// Given the result of PackSequenceAndType, store the sequence number in *seq
+// and the ValueType in *t.
+extern void UnPackSequenceAndType(uint64_t packed, uint64_t* seq, ValueType* t);
 
 // Append the serialization of "key" to *result.
 extern void AppendInternalKey(std::string* result,
@@ -111,12 +122,11 @@ class InternalKeyComparator : public Comparator {
   }
   virtual ~InternalKeyComparator() {}
 
-  virtual const char* Name() const;
-  virtual int Compare(const Slice& a, const Slice& b) const;
-  virtual void FindShortestSeparator(
-      std::string* start,
-      const Slice& limit) const;
-  virtual void FindShortSuccessor(std::string* key) const;
+  virtual const char* Name() const override;
+  virtual int Compare(const Slice& a, const Slice& b) const override;
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const override;
+  virtual void FindShortSuccessor(std::string* key) const override;
 
   const Comparator* user_comparator() const { return user_comparator_; }
 
@@ -132,8 +142,22 @@ class InternalKey {
   std::string rep_;
  public:
   InternalKey() { }   // Leave rep_ as empty to indicate it is invalid
-  InternalKey(const Slice& user_key, SequenceNumber s, ValueType t) {
-    AppendInternalKey(&rep_, ParsedInternalKey(user_key, s, t));
+  InternalKey(const Slice& _user_key, SequenceNumber s, ValueType t) {
+    AppendInternalKey(&rep_, ParsedInternalKey(_user_key, s, t));
+  }
+
+  // sets the internal key to be bigger or equal to all internal keys with this
+  // user key
+  void SetMaxPossibleForUserKey(const Slice& _user_key) {
+    AppendInternalKey(&rep_, ParsedInternalKey(_user_key, kMaxSequenceNumber,
+                                               kValueTypeForSeek));
+  }
+
+  // sets the internal key to be smaller or equal to all internal keys with this
+  // user key
+  void SetMinPossibleForUserKey(const Slice& _user_key) {
+    AppendInternalKey(
+        &rep_, ParsedInternalKey(_user_key, 0, static_cast<ValueType>(0)));
   }
 
   bool Valid() const {
@@ -148,6 +172,7 @@ class InternalKey {
   }
 
   Slice user_key() const { return ExtractUserKey(rep_); }
+  size_t size() { return rep_.size(); }
 
   void SetFrom(const ParsedInternalKey& p) {
     rep_.clear();
@@ -174,17 +199,19 @@ inline bool ParseInternalKey(const Slice& internal_key,
   result->type = static_cast<ValueType>(c);
   assert(result->type <= ValueType::kMaxValue);
   result->user_key = Slice(internal_key.data(), n - 8);
-  return (c <= static_cast<unsigned char>(kValueTypeForSeek));
+  return IsValueType(result->type);
 }
 
-// Update the sequence number in the internal key
-inline void UpdateInternalKey(char* internal_key,
-                              const size_t internal_key_size,
-                              uint64_t seq, ValueType t) {
-  assert(internal_key_size >= 8);
-  char* seqtype = internal_key + internal_key_size - 8;
+// Update the sequence number in the internal key.
+// Guarantees not to invalidate ikey.data().
+inline void UpdateInternalKey(std::string* ikey, uint64_t seq, ValueType t) {
+  size_t ikey_sz = ikey->size();
+  assert(ikey_sz >= 8);
   uint64_t newval = (seq << 8) | t;
-  EncodeFixed64(seqtype, newval);
+
+  // Note: Since C++11, strings are guaranteed to be stored contiguously and
+  // string::operator[]() is guaranteed not to change ikey.data().
+  EncodeFixed64(&(*ikey)[ikey_sz - 8], newval);
 }
 
 // Get the sequence number from the internal key
@@ -201,18 +228,24 @@ class LookupKey {
  public:
   // Initialize *this for looking up user_key at a snapshot with
   // the specified sequence number.
-  LookupKey(const Slice& user_key, SequenceNumber sequence);
+  LookupKey(const Slice& _user_key, SequenceNumber sequence);
 
   ~LookupKey();
 
   // Return a key suitable for lookup in a MemTable.
-  Slice memtable_key() const { return Slice(start_, end_ - start_); }
+  Slice memtable_key() const {
+    return Slice(start_, static_cast<size_t>(end_ - start_));
+  }
 
   // Return an internal key (suitable for passing to an internal iterator)
-  Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
+  Slice internal_key() const {
+    return Slice(kstart_, static_cast<size_t>(end_ - kstart_));
+  }
 
   // Return the user key
-  Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
+  Slice user_key() const {
+    return Slice(kstart_, static_cast<size_t>(end_ - kstart_ - 8));
+  }
 
  private:
   // We construct a char array of the form:
@@ -244,7 +277,12 @@ class IterKey {
 
   Slice GetKey() const { return Slice(key_, key_size_); }
 
-  const size_t Size() { return key_size_; }
+  Slice GetUserKey() const {
+    assert(key_size_ >= 8);
+    return Slice(key_, key_size_ - 8);
+  }
+
+  size_t Size() { return key_size_; }
 
   void Clear() { key_size_ = 0; }
 
@@ -276,11 +314,30 @@ class IterKey {
     memcpy(key_ + shared_len, non_shared_data, non_shared_len);
   }
 
-  void SetKey(const Slice& key) {
+  Slice SetKey(const Slice& key) {
     size_t size = key.size();
     EnlargeBufferIfNeeded(size);
     memcpy(key_, key.data(), size);
     key_size_ = size;
+    return Slice(key_, key_size_);
+  }
+
+  // Copies the content of key, updates the reference to the user key in ikey
+  // and returns a Slice referencing the new copy.
+  Slice SetKey(const Slice& key, ParsedInternalKey* ikey) {
+    size_t key_n = key.size();
+    assert(key_n >= 8);
+    SetKey(key);
+    ikey->user_key = Slice(key_, key_n - 8);
+    return Slice(key_, key_n);
+  }
+
+  // Update the sequence number in the internal key.  Guarantees not to
+  // invalidate slices to the key (and the user key).
+  void UpdateInternalKey(uint64_t seq, ValueType t) {
+    assert(key_size_ >= 8);
+    uint64_t newval = (seq << 8) | t;
+    EncodeFixed64(&key_[key_size_ - 8], newval);
   }
 
   void SetInternalKey(const Slice& key_prefix, const Slice& user_key,
@@ -319,8 +376,8 @@ class IterKey {
 
   void EncodeLengthPrefixedKey(const Slice& key) {
     auto size = key.size();
-    EnlargeBufferIfNeeded(size + VarintLength(size));
-    char* ptr = EncodeVarint32(key_, size);
+    EnlargeBufferIfNeeded(size + static_cast<size_t>(VarintLength(size)));
+    char* ptr = EncodeVarint32(key_, static_cast<uint32_t>(size));
     memcpy(ptr, key.data(), size);
   }
 
@@ -365,19 +422,19 @@ class InternalKeySliceTransform : public SliceTransform {
   explicit InternalKeySliceTransform(const SliceTransform* transform)
       : transform_(transform) {}
 
-  virtual const char* Name() const { return transform_->Name(); }
+  virtual const char* Name() const override { return transform_->Name(); }
 
-  virtual Slice Transform(const Slice& src) const {
+  virtual Slice Transform(const Slice& src) const override {
     auto user_key = ExtractUserKey(src);
     return transform_->Transform(user_key);
   }
 
-  virtual bool InDomain(const Slice& src) const {
+  virtual bool InDomain(const Slice& src) const override {
     auto user_key = ExtractUserKey(src);
     return transform_->InDomain(user_key);
   }
 
-  virtual bool InRange(const Slice& dst) const {
+  virtual bool InRange(const Slice& dst) const override {
     auto user_key = ExtractUserKey(dst);
     return transform_->InRange(user_key);
   }

@@ -6,8 +6,10 @@
 #ifndef ROCKSDB_LITE
 #include "table/plain_table_builder.h"
 
-#include <string>
 #include <assert.h>
+
+#include <string>
+#include <limits>
 #include <map>
 
 #include "rocksdb/comparator.h"
@@ -20,11 +22,11 @@
 #include "table/block_builder.h"
 #include "table/bloom_block.h"
 #include "table/plain_table_index.h"
-#include "table/filter_block.h"
 #include "table/format.h"
 #include "table/meta_blocks.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "util/file_reader_writer.h"
 #include "util/stop_watch.h"
 
 namespace rocksdb {
@@ -34,11 +36,8 @@ namespace {
 // a utility that helps writing block content to the file
 //   @offset will advance if @block_contents was successfully written.
 //   @block_handle the block handle this particular block.
-Status WriteBlock(
-    const Slice& block_contents,
-    WritableFile* file,
-    uint64_t* offset,
-    BlockHandle* block_handle) {
+Status WriteBlock(const Slice& block_contents, WritableFileWriter* file,
+                  uint64_t* offset, BlockHandle* block_handle) {
   block_handle->set_offset(*offset);
   block_handle->set_size(block_contents.size());
   Status s = file->Append(block_contents);
@@ -58,24 +57,27 @@ extern const uint64_t kPlainTableMagicNumber = 0x8242229663bf9564ull;
 extern const uint64_t kLegacyPlainTableMagicNumber = 0x4f3418eb7a8f13b8ull;
 
 PlainTableBuilder::PlainTableBuilder(
-    const Options& options, WritableFile* file, uint32_t user_key_len,
-    EncodingType encoding_type, size_t index_sparseness,
-    uint32_t bloom_bits_per_key, uint32_t num_probes, size_t huge_page_tlb_size,
-    double hash_table_ratio, bool store_index_in_file)
-    : options_(options),
+    const ImmutableCFOptions& ioptions,
+    const std::vector<std::unique_ptr<IntTblPropCollectorFactory>>*
+        int_tbl_prop_collector_factories,
+    WritableFileWriter* file, uint32_t user_key_len, EncodingType encoding_type,
+    size_t index_sparseness, uint32_t bloom_bits_per_key, uint32_t num_probes,
+    size_t huge_page_tlb_size, double hash_table_ratio,
+    bool store_index_in_file)
+    : ioptions_(ioptions),
       bloom_block_(num_probes),
       file_(file),
       bloom_bits_per_key_(bloom_bits_per_key),
       huge_page_tlb_size_(huge_page_tlb_size),
-      encoder_(encoding_type, user_key_len, options.prefix_extractor.get(),
+      encoder_(encoding_type, user_key_len, ioptions.prefix_extractor,
                index_sparseness),
       store_index_in_file_(store_index_in_file),
-      prefix_extractor_(options.prefix_extractor.get()) {
+      prefix_extractor_(ioptions.prefix_extractor) {
   // Build index block and save it in the file if hash_table_ratio > 0
   if (store_index_in_file_) {
     assert(hash_table_ratio > 0 || IsTotalOrderMode());
     index_builder_.reset(
-        new PlainTableIndexBuilder(&arena_, options, index_sparseness,
+        new PlainTableIndexBuilder(&arena_, ioptions, index_sparseness,
                                    hash_table_ratio, huge_page_tlb_size_));
     assert(bloom_bits_per_key_ > 0);
     properties_.user_collected_properties
@@ -93,10 +95,10 @@ PlainTableBuilder::PlainTableBuilder(
   // plain encoding.
   properties_.format_version = (encoding_type == kPlain) ? 0 : 1;
 
-  if (options_.prefix_extractor) {
+  if (ioptions_.prefix_extractor) {
     properties_.user_collected_properties
         [PlainTablePropertyNames::kPrefixExtractorName] =
-        options_.prefix_extractor->Name();
+        ioptions_.prefix_extractor->Name();
   }
 
   std::string val;
@@ -104,10 +106,9 @@ PlainTableBuilder::PlainTableBuilder(
   properties_.user_collected_properties
       [PlainTablePropertyNames::kEncodingType] = val;
 
-  for (auto& collector_factories :
-       options.table_properties_collector_factories) {
+  for (auto& collector_factories : *int_tbl_prop_collector_factories) {
     table_properties_collectors_.emplace_back(
-        collector_factories->CreateTablePropertiesCollector());
+        collector_factories->CreateIntTblPropCollector());
   }
 }
 
@@ -124,17 +125,18 @@ void PlainTableBuilder::Add(const Slice& key, const Slice& value) {
 
   // Store key hash
   if (store_index_in_file_) {
-    if (options_.prefix_extractor.get() == nullptr) {
+    if (ioptions_.prefix_extractor == nullptr) {
       keys_or_prefixes_hashes_.push_back(GetSliceHash(internal_key.user_key));
     } else {
       Slice prefix =
-          options_.prefix_extractor->Transform(internal_key.user_key);
+          ioptions_.prefix_extractor->Transform(internal_key.user_key);
       keys_or_prefixes_hashes_.push_back(GetSliceHash(prefix));
     }
   }
 
   // Write value
-  auto prev_offset = offset_;
+  assert(offset_ <= std::numeric_limits<uint32_t>::max());
+  auto prev_offset = static_cast<uint32_t>(offset_);
   // Write out the key
   encoder_.AppendKey(key, file_, &offset_, meta_bytes_buf,
                      &meta_bytes_buf_size);
@@ -143,7 +145,7 @@ void PlainTableBuilder::Add(const Slice& key, const Slice& value) {
   }
 
   // Write value length
-  int value_size = value.size();
+  uint32_t value_size = static_cast<uint32_t>(value.size());
   char* end_ptr =
       EncodeVarint32(meta_bytes_buf + meta_bytes_buf_size, value_size);
   assert(end_ptr <= meta_bytes_buf + sizeof(meta_bytes_buf));
@@ -159,8 +161,8 @@ void PlainTableBuilder::Add(const Slice& key, const Slice& value) {
   properties_.raw_value_size += value.size();
 
   // notify property collectors
-  NotifyCollectTableCollectorsOnAdd(key, value, table_properties_collectors_,
-                                    options_.info_log.get());
+  NotifyCollectTableCollectorsOnAdd(
+      key, value, offset_, table_properties_collectors_, ioptions_.info_log);
 }
 
 Status PlainTableBuilder::status() const { return status_; }
@@ -181,9 +183,11 @@ Status PlainTableBuilder::Finish() {
   MetaIndexBuilder meta_index_builer;
 
   if (store_index_in_file_ && (properties_.num_entries > 0)) {
+    assert(properties_.num_entries <= std::numeric_limits<uint32_t>::max());
     bloom_block_.SetTotalBits(
-        &arena_, properties_.num_entries * bloom_bits_per_key_,
-        options_.bloom_locality, huge_page_tlb_size_, options_.info_log.get());
+        &arena_,
+        static_cast<uint32_t>(properties_.num_entries) * bloom_bits_per_key_,
+        ioptions_.bloom_locality, huge_page_tlb_size_, ioptions_.info_log);
 
     PutVarint32(&properties_.user_collected_properties
                      [PlainTablePropertyNames::kNumBloomBlocks],
@@ -224,7 +228,7 @@ Status PlainTableBuilder::Finish() {
 
   // -- Add user collected properties
   NotifyCollectTableCollectorsOnFinish(table_properties_collectors_,
-                                       options_.info_log.get(),
+                                       ioptions_.info_log,
                                        &property_block_builder);
 
   // -- Write property block
@@ -254,7 +258,7 @@ Status PlainTableBuilder::Finish() {
 
   // Write Footer
   // no need to write out new footer if we're using default checksum
-  Footer footer(kLegacyPlainTableMagicNumber);
+  Footer footer(kLegacyPlainTableMagicNumber, 0);
   footer.set_metaindex_handle(metaindex_block_handle);
   footer.set_index_handle(BlockHandle::NullBlockHandle());
   std::string footer_encoding;

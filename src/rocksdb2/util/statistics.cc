@@ -5,7 +5,10 @@
 //
 #include "util/statistics.h"
 
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include <inttypes.h>
 #include "rocksdb/statistics.h"
 #include "port/likely.h"
@@ -41,10 +44,16 @@ void StatisticsImpl::histogramData(uint32_t histogramType,
                                    HistogramData* const data) const {
   assert(
     enable_internal_stats_ ?
-      histogramType < INTERNAL_TICKER_ENUM_MAX :
-      histogramType < TICKER_ENUM_MAX);
+      histogramType < INTERNAL_HISTOGRAM_ENUM_MAX :
+      histogramType < HISTOGRAM_ENUM_MAX);
   // Return its own ticker version
   histograms_[histogramType].Data(data);
+}
+
+std::string StatisticsImpl::getHistogramString(uint32_t histogramType) const {
+  assert(enable_internal_stats_ ? histogramType < INTERNAL_HISTOGRAM_ENUM_MAX
+                                : histogramType < HISTOGRAM_ENUM_MAX);
+  return histograms_[histogramType].ToString();
 }
 
 void StatisticsImpl::setTickerCount(uint32_t tickerType, uint64_t count) {
@@ -53,7 +62,7 @@ void StatisticsImpl::setTickerCount(uint32_t tickerType, uint64_t count) {
       tickerType < INTERNAL_TICKER_ENUM_MAX :
       tickerType < TICKER_ENUM_MAX);
   if (tickerType < TICKER_ENUM_MAX || enable_internal_stats_) {
-    tickers_[tickerType].value = count;
+    tickers_[tickerType].value.store(count, std::memory_order_relaxed);
   }
   if (stats_ && tickerType < TICKER_ENUM_MAX) {
     stats_->setTickerCount(tickerType, count);
@@ -66,7 +75,7 @@ void StatisticsImpl::recordTick(uint32_t tickerType, uint64_t count) {
       tickerType < INTERNAL_TICKER_ENUM_MAX :
       tickerType < TICKER_ENUM_MAX);
   if (tickerType < TICKER_ENUM_MAX || enable_internal_stats_) {
-    tickers_[tickerType].value += count;
+    tickers_[tickerType].value.fetch_add(count, std::memory_order_relaxed);
   }
   if (stats_ && tickerType < TICKER_ENUM_MAX) {
     stats_->recordTick(tickerType, count);

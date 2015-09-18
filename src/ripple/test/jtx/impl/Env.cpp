@@ -57,7 +57,7 @@ Env::Env (beast::unit_test::suite& test_)
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
     , closed_ (std::make_shared<Ledger>(
-        create_genesis, config))
+        create_genesis, config, app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
     , openLedger (closed_, config, cachedSLEs_, journal)
 {
@@ -83,19 +83,10 @@ Env::close(NetClock::time_point const& closeTime)
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
     auto next = std::make_shared<Ledger>(
-        open_ledger, *closed_);
+        open_ledger, *closed_,
+        app().timeKeeper().closeTime());
     next->setClosed();
-#if 0
-    // Build a SHAMap, put all the transactions
-    // in it, and calculate the hash of the SHAMap
-    // to construct the OrderedTxs
-    SHAMap sm;
-    OrderedTxs txs(sm.getRootHash());
-    ...
-#else
-    std::vector<std::shared_ptr<
-        STTx const>> txs;
-#endif
+    std::vector<std::shared_ptr<STTx const>> txs;
     auto cur = openLedger.current();
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
@@ -104,7 +95,7 @@ Env::close(NetClock::time_point const& closeTime)
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
-        OpenLedger::apply(accum, *closed_,
+        OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), *router,
                 config, journal);
         accum.apply(*next);
@@ -116,8 +107,8 @@ Env::close(NetClock::time_point const& closeTime)
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false);
     OrderedTxs locals({});
-    openLedger.accept(next->rules(), next, locals,
-        false, retries, applyFlags(), *router);
+    openLedger.accept(app(), next->rules(), next,
+        locals, false, retries, applyFlags(), *router);
     closed_ = next;
     cachedSLEs_.expire();
 }
@@ -252,7 +243,6 @@ Env::trust (STAmount const& amount,
 void
 Env::submit (JTx const& jt)
 {
-    TER ter;
     bool didApply;
     auto const& stx = jt.stx;
     if (stx)
@@ -261,8 +251,8 @@ Env::submit (JTx const& jt)
         openLedger.modify(
             [&](OpenView& view, beast::Journal j)
             {
-                std::tie(ter, didApply) = ripple::apply(
-                    view, *stx, applyFlags(),
+                std::tie(ter_, didApply) = ripple::apply(
+                    app(), view, *stx, applyFlags(),
                         directSigVerify, config,
                             beast::Journal{});
                 return didApply;
@@ -272,12 +262,12 @@ Env::submit (JTx const& jt)
     {
         // Parsing failed or the JTx is
         // otherwise missing the stx field.
-        ter = temMALFORMED;
+        ter_ = temMALFORMED;
         didApply = false;
     }
-    if (! test.expect(ter == jt.ter,
-        "apply: " + transToken(ter) +
-            " (" + transHuman(ter) + ")"))
+    if (jt.ter && ! test.expect(ter_ == *jt.ter,
+        "apply: " + transToken(ter_) +
+            " (" + transHuman(ter_) + ")"))
     {
         test.log << pretty(jt.jv);
         // Don't check postconditions if
@@ -292,9 +282,6 @@ Env::submit (JTx const& jt)
     }
     for (auto const& f : jt.requires)
         f(*this);
-    //if (isTerRetry(ter))
-    //if (! isTesSuccess(ter))
-    //    held.insert(stx);
 }
 
 std::shared_ptr<STObject const>
@@ -310,18 +297,25 @@ Env::autofill_sig (JTx& jt)
 {
     auto& jv = jt.jv;
     if (jt.signer)
-        jt.signer(*this, jt);
-    else if(jt.fill_sig)
+        return jt.signer(*this, jt);
+    if (! jt.fill_sig)
+        return;
+    auto const account =
+        lookup(jv[jss::Account].asString());
+    if (nosig_)
     {
-        auto const account =
-            lookup(jv[jss::Account].asString());
-        auto const ar = le(account);
-        if (ar && ar->isFieldPresent(sfRegularKey))
-            jtx::sign(jv, lookup(
-                ar->getAccountID(sfRegularKey)));
-        else
-            jtx::sign(jv, account);
+        jv[jss::SigningPubKey] =
+            strHex(account.pk().slice());
+        // dummy sig otherwise STTx is invalid
+        jv[jss::TxnSignature] = "00";
+        return;
     }
+    auto const ar = le(account);
+    if (ar && ar->isFieldPresent(sfRegularKey))
+        jtx::sign(jv, lookup(
+            ar->getAccountID(sfRegularKey)));
+    else
+        jtx::sign(jv, account);
 }
 
 void
@@ -378,9 +372,12 @@ Env::st (JTx const& jt)
 ApplyFlags
 Env::applyFlags() const
 {
+    ApplyFlags flags = tapNONE;
     if (testing_)
-        return tapENABLE_TESTING;
-    return tapNONE;
+        flags = flags | tapENABLE_TESTING;
+    if (nosig_)
+        flags = flags | tapNO_CHECK_SIGN;
+    return flags;
 }
 
 } // jtx

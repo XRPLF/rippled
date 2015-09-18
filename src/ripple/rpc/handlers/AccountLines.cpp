@@ -29,6 +29,7 @@
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/LookupLedger.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/rpc/impl/Utilities.h>
 
 namespace ripple {
 
@@ -115,7 +116,7 @@ Json::Value doAccountLines (RPC::Context& context)
     AccountID raPeerAccount;
     if (hasPeer)
     {
-        result[jss::peer] = getApp().accountIDCache().toBase58 (accountID);
+        result[jss::peer] = context.app.accountIDCache().toBase58 (accountID);
         result = RPC::accountFromString (raPeerAccount, strPeer);
 
         if (result)
@@ -123,25 +124,8 @@ Json::Value doAccountLines (RPC::Context& context)
     }
 
     unsigned int limit;
-    if (params.isMember (jss::limit))
-    {
-        auto const& jvLimit (params[jss::limit]);
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error (jss::limit, "unsigned integer");
-
-        limit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
-
-        if (context.role != Role::ADMIN)
-        {
-            limit = std::max (RPC::Tuning::minLinesPerRequest,
-                std::min (limit, RPC::Tuning::maxLinesPerRequest));
-        }
-    }
-    else
-    {
-        limit = RPC::Tuning::defaultLinesPerRequest;
-    }
+    if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
+        return *err;
 
     Json::Value& jsonLines (result[jss::lines] = Json::arrayValue);
     VisitData visitData = {{}, accountID, hasPeer, raPeerAccount};
@@ -217,7 +201,7 @@ Json::Value doAccountLines (RPC::Context& context)
         visitData.items.pop_back ();
     }
 
-    result[jss::account] = getApp().accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
 
     for (auto const& item : visitData.items)
         addLine (jsonLines, *item.get ());

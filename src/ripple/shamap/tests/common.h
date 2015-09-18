@@ -33,10 +33,9 @@
 #include <beast/chrono/manual_clock.h>
 
 namespace ripple {
-namespace shamap {
 namespace tests {
 
-class TestFamily : public shamap::Family
+class TestFamily : public Family
 {
 private:
     TestStopwatch clock_;
@@ -105,10 +104,15 @@ public:
     {
         throw std::runtime_error("missing node");
     }
+    
+    void
+    missing_node (uint256 const& hash) override
+    {
+        throw std::runtime_error("missing node");
+    }
 };
 
 } // tests
-} // shamap
 } // ripple
 
 #endif

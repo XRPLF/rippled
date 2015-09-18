@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -35,7 +35,7 @@ namespace ripple {
 Json::Value doSignFor (RPC::Context& context)
 {
     // Bail if multisign is not enabled.
-    if (! getApp().getLedgerMaster().getValidatedRules().
+    if (! context.app.getLedgerMaster().getValidatedRules().
         enabled (featureMultiSign, getConfig().features))
     {
         RPC::inject_error (rpcNOT_ENABLED, context.params);
@@ -46,7 +46,12 @@ Json::Value doSignFor (RPC::Context& context)
     auto const failType = NetworkOPs::doFailHard (failHard);
 
     return RPC::transactionSignFor (
-        context.params, failType, context.netOps, context.role);
+        context.params,
+        failType,
+        context.role,
+        context.ledgerMaster.getValidatedLedgerAge(),
+        context.app,
+        context.ledgerMaster.getCurrentLedger());
 }
 
 } // ripple

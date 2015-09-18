@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-sendmax::operator()(Env const& env, JTx& jt) const
+sendmax::operator()(Env& env, JTx& jt) const
 {
     jt.jv[jss::SendMax] = amount_.getJson(0);
 }

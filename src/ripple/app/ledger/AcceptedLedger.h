@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
+#include <ripple/protocol/AccountID.h>
 
 namespace ripple {
 
@@ -51,12 +52,6 @@ public:
     using const_iterator = map_t::const_iterator;
 
 public:
-    static pointer makeAcceptedLedger (std::shared_ptr<ReadView const> const&);
-    static void sweep ()
-    {
-        s_cache.sweep ();
-    }
-
     std::shared_ptr<ReadView const> const& getLedger () const
     {
         return mLedger;
@@ -71,20 +66,14 @@ public:
         return mMap.size ();
     }
 
-    static float getCacheHitRate ()
-    {
-        return s_cache.getHitRate ();
-    }
-
     AcceptedLedgerTx::pointer getTxn (int) const;
 
-private:
-    explicit AcceptedLedger (std::shared_ptr<ReadView const> const& ledger);
+    AcceptedLedger (
+        std::shared_ptr<ReadView const> const& ledger,
+        AccountIDCache const& accountCache);
 
+private:
     void insert (AcceptedLedgerTx::ref);
-
-private:
-    static TaggedCache <uint256, AcceptedLedger> s_cache;
 
     std::shared_ptr<ReadView const> mLedger;
     map_t mMap;

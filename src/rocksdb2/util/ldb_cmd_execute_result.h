@@ -5,6 +5,10 @@
 //
 #pragma once
 
+#ifdef FAILED
+#undef FAILED
+#endif
+
 namespace rocksdb {
 
 class LDBCommandExecuteResult {
@@ -13,15 +17,10 @@ public:
     EXEC_NOT_STARTED = 0, EXEC_SUCCEED = 1, EXEC_FAILED = 2,
   };
 
-  LDBCommandExecuteResult() {
-    state_ = EXEC_NOT_STARTED;
-    message_ = "";
-  }
+  LDBCommandExecuteResult() : state_(EXEC_NOT_STARTED), message_("") {}
 
-  LDBCommandExecuteResult(State state, std::string& msg) {
-    state_ = state;
-    message_ = msg;
-  }
+  LDBCommandExecuteResult(State state, std::string& msg) :
+    state_(state), message_(msg) {}
 
   std::string ToString() {
     std::string ret;
@@ -57,11 +56,11 @@ public:
     return state_ == EXEC_FAILED;
   }
 
-  static LDBCommandExecuteResult SUCCEED(std::string msg) {
+  static LDBCommandExecuteResult Succeed(std::string msg) {
     return LDBCommandExecuteResult(EXEC_SUCCEED, msg);
   }
 
-  static LDBCommandExecuteResult FAILED(std::string msg) {
+  static LDBCommandExecuteResult Failed(std::string msg) {
     return LDBCommandExecuteResult(EXEC_FAILED, msg);
   }
 

@@ -27,7 +27,6 @@
 #include <openssl/rand.h> // DEPRECATED
 
 namespace ripple {
-namespace shamap {
 namespace tests {
 
 #ifdef BEAST_DEBUG
@@ -227,5 +226,4 @@ public:
 BEAST_DEFINE_TESTSUITE(sync,shamap,ripple);
 
 } // tests
-} // shamap
 } // ripple

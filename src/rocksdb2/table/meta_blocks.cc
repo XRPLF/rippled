@@ -7,10 +7,12 @@
 #include <map>
 #include <string>
 
+#include "db/table_properties_collector.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"
 #include "table/block.h"
 #include "table/format.h"
+#include "table/table_properties_internal.h"
 #include "util/coding.h"
 
 namespace rocksdb {
@@ -86,18 +88,18 @@ void LogPropertiesCollectionError(
   assert(method == "Add" || method == "Finish");
 
   std::string msg =
-    "[Warning] encountered error when calling TablePropertiesCollector::" +
+    "Encountered error when calling TablePropertiesCollector::" +
     method + "() with collector name: " + name;
-  Log(info_log, "%s", msg.c_str());
+  Log(InfoLogLevel::ERROR_LEVEL, info_log, "%s", msg.c_str());
 }
 
 bool NotifyCollectTableCollectorsOnAdd(
-    const Slice& key, const Slice& value,
-    const std::vector<std::unique_ptr<TablePropertiesCollector>>& collectors,
+    const Slice& key, const Slice& value, uint64_t file_size,
+    const std::vector<std::unique_ptr<IntTblPropCollector>>& collectors,
     Logger* info_log) {
   bool all_succeeded = true;
   for (auto& collector : collectors) {
-    Status s = collector->Add(key, value);
+    Status s = collector->InternalAdd(key, value, file_size);
     all_succeeded = all_succeeded && s.ok();
     if (!s.ok()) {
       LogPropertiesCollectionError(info_log, "Add" /* method */,
@@ -108,7 +110,7 @@ bool NotifyCollectTableCollectorsOnAdd(
 }
 
 bool NotifyCollectTableCollectorsOnFinish(
-    const std::vector<std::unique_ptr<TablePropertiesCollector>>& collectors,
+    const std::vector<std::unique_ptr<IntTblPropCollector>>& collectors,
     Logger* info_log, PropertyBlockBuilder* builder) {
   bool all_succeeded = true;
   for (auto& collector : collectors) {
@@ -127,9 +129,9 @@ bool NotifyCollectTableCollectorsOnFinish(
   return all_succeeded;
 }
 
-Status ReadProperties(const Slice &handle_value, RandomAccessFile *file,
-                      const Footer &footer, Env *env, Logger *logger,
-                      TableProperties **table_properties) {
+Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
+                      const Footer& footer, Env* env, Logger* logger,
+                      TableProperties** table_properties) {
   assert(table_properties);
 
   Slice v = handle_value;
@@ -141,14 +143,15 @@ Status ReadProperties(const Slice &handle_value, RandomAccessFile *file,
   BlockContents block_contents;
   ReadOptions read_options;
   read_options.verify_checksums = false;
-  Status s = ReadBlockContents(file, footer, read_options, handle,
-                               &block_contents, env, false);
+  Status s;
+  s = ReadBlockContents(file, footer, read_options, handle, &block_contents,
+                        env, false);
 
   if (!s.ok()) {
     return s;
   }
 
-  Block properties_block(block_contents);
+  Block properties_block(std::move(block_contents));
   std::unique_ptr<Iterator> iter(
       properties_block.NewIterator(BytewiseComparator()));
 
@@ -191,9 +194,9 @@ Status ReadProperties(const Slice &handle_value, RandomAccessFile *file,
       if (!GetVarint64(&raw_val, &val)) {
         // skip malformed value
         auto error_msg =
-          "[Warning] detect malformed value in properties meta-block:"
+          "Detect malformed value in properties meta-block:"
           "\tkey: " + key + "\tval: " + raw_val.ToString();
-        Log(logger, "%s", error_msg.c_str());
+        Log(InfoLogLevel::ERROR_LEVEL, logger, "%s", error_msg.c_str());
         continue;
       }
       *(pos->second) = val;
@@ -214,12 +217,12 @@ Status ReadProperties(const Slice &handle_value, RandomAccessFile *file,
   return s;
 }
 
-Status ReadTableProperties(RandomAccessFile* file, uint64_t file_size,
+Status ReadTableProperties(RandomAccessFileReader* file, uint64_t file_size,
                            uint64_t table_magic_number, Env* env,
                            Logger* info_log, TableProperties** properties) {
   // -- Read metaindex block
-  Footer footer(table_magic_number);
-  auto s = ReadFooterFromFile(file, file_size, &footer);
+  Footer footer;
+  auto s = ReadFooterFromFile(file, file_size, &footer, table_magic_number);
   if (!s.ok()) {
     return s;
   }
@@ -233,7 +236,7 @@ Status ReadTableProperties(RandomAccessFile* file, uint64_t file_size,
   if (!s.ok()) {
     return s;
   }
-  Block metaindex_block(metaindex_contents);
+  Block metaindex_block(std::move(metaindex_contents));
   std::unique_ptr<Iterator> meta_iter(
       metaindex_block.NewIterator(BytewiseComparator()));
 
@@ -268,12 +271,12 @@ Status FindMetaBlock(Iterator* meta_index_iter,
   }
 }
 
-Status FindMetaBlock(RandomAccessFile* file, uint64_t file_size,
+Status FindMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                      uint64_t table_magic_number, Env* env,
                      const std::string& meta_block_name,
                      BlockHandle* block_handle) {
-  Footer footer(table_magic_number);
-  auto s = ReadFooterFromFile(file, file_size, &footer);
+  Footer footer;
+  auto s = ReadFooterFromFile(file, file_size, &footer, table_magic_number);
   if (!s.ok()) {
     return s;
   }
@@ -287,7 +290,7 @@ Status FindMetaBlock(RandomAccessFile* file, uint64_t file_size,
   if (!s.ok()) {
     return s;
   }
-  Block metaindex_block(metaindex_contents);
+  Block metaindex_block(std::move(metaindex_contents));
 
   std::unique_ptr<Iterator> meta_iter;
   meta_iter.reset(metaindex_block.NewIterator(BytewiseComparator()));
@@ -295,14 +298,15 @@ Status FindMetaBlock(RandomAccessFile* file, uint64_t file_size,
   return FindMetaBlock(meta_iter.get(), meta_block_name, block_handle);
 }
 
-Status ReadMetaBlock(RandomAccessFile* file, uint64_t file_size,
+Status ReadMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                      uint64_t table_magic_number, Env* env,
                      const std::string& meta_block_name,
                      BlockContents* contents) {
-  Footer footer(table_magic_number);
-  auto s = ReadFooterFromFile(file, file_size, &footer);
-  if (!s.ok()) {
-    return s;
+  Status status;
+  Footer footer;
+  status = ReadFooterFromFile(file, file_size, &footer, table_magic_number);
+  if (!status.ok()) {
+    return status;
   }
 
   // Reading metaindex block
@@ -310,30 +314,28 @@ Status ReadMetaBlock(RandomAccessFile* file, uint64_t file_size,
   BlockContents metaindex_contents;
   ReadOptions read_options;
   read_options.verify_checksums = false;
-  s = ReadBlockContents(file, footer, read_options, metaindex_handle,
-                        &metaindex_contents, env, false);
-  if (!s.ok()) {
-    return s;
+  status = ReadBlockContents(file, footer, read_options, metaindex_handle,
+                             &metaindex_contents, env, false);
+  if (!status.ok()) {
+    return status;
   }
 
   // Finding metablock
-  Block metaindex_block(metaindex_contents);
+  Block metaindex_block(std::move(metaindex_contents));
 
   std::unique_ptr<Iterator> meta_iter;
   meta_iter.reset(metaindex_block.NewIterator(BytewiseComparator()));
 
   BlockHandle block_handle;
-  s = FindMetaBlock(meta_iter.get(), meta_block_name, &block_handle);
+  status = FindMetaBlock(meta_iter.get(), meta_block_name, &block_handle);
 
-  if (!s.ok()) {
-    return s;
+  if (!status.ok()) {
+    return status;
   }
 
   // Reading metablock
-  s = ReadBlockContents(file, footer, read_options, block_handle, contents, env,
-                        false);
-
-  return s;
+  return ReadBlockContents(file, footer, read_options, block_handle, contents,
+                           env, false);
 }
 
 }  // namespace rocksdb

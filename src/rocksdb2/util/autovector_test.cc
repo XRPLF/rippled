@@ -5,9 +5,11 @@
 
 #include <atomic>
 #include <iostream>
+#include <utility>
 
 #include "rocksdb/env.h"
 #include "util/autovector.h"
+#include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 
@@ -15,10 +17,19 @@ namespace rocksdb {
 
 using namespace std;
 
-class AutoVectorTest { };
-
+class AutoVectorTest : public testing::Test {};
 const unsigned long kSize = 8;
-TEST(AutoVectorTest, PushBackAndPopBack) {
+
+namespace {
+template <class T>
+void AssertAutoVectorOnlyInStack(autovector<T, kSize>* vec, bool result) {
+#ifndef ROCKSDB_LITE
+  ASSERT_EQ(vec->only_in_stack(), result);
+#endif  // !ROCKSDB_LITE
+}
+}  // namespace
+
+TEST_F(AutoVectorTest, PushBackAndPopBack) {
   autovector<size_t, kSize> vec;
   ASSERT_TRUE(vec.empty());
   ASSERT_EQ(0ul, vec.size());
@@ -27,9 +38,9 @@ TEST(AutoVectorTest, PushBackAndPopBack) {
     vec.push_back(i);
     ASSERT_TRUE(!vec.empty());
     if (i < kSize) {
-      ASSERT_TRUE(vec.only_in_stack());
+      AssertAutoVectorOnlyInStack(&vec, true);
     } else {
-      ASSERT_TRUE(!vec.only_in_stack());
+      AssertAutoVectorOnlyInStack(&vec, false);
     }
     ASSERT_EQ(i + 1, vec.size());
     ASSERT_EQ(i, vec[i]);
@@ -40,47 +51,47 @@ TEST(AutoVectorTest, PushBackAndPopBack) {
   while (size != 0) {
     vec.pop_back();
     // will always be in heap
-    ASSERT_TRUE(!vec.only_in_stack());
+    AssertAutoVectorOnlyInStack(&vec, false);
     ASSERT_EQ(--size, vec.size());
   }
 
   ASSERT_TRUE(vec.empty());
 }
 
-TEST(AutoVectorTest, EmplaceBack) {
-  typedef std::pair<size_t, std::string> ValueType;
-  autovector<ValueType, kSize> vec;
+TEST_F(AutoVectorTest, EmplaceBack) {
+  typedef std::pair<size_t, std::string> ValType;
+  autovector<ValType, kSize> vec;
 
   for (size_t i = 0; i < 1000 * kSize; ++i) {
-    vec.emplace_back(i, std::to_string(i + 123));
+    vec.emplace_back(i, ToString(i + 123));
     ASSERT_TRUE(!vec.empty());
     if (i < kSize) {
-      ASSERT_TRUE(vec.only_in_stack());
+      AssertAutoVectorOnlyInStack(&vec, true);
     } else {
-      ASSERT_TRUE(!vec.only_in_stack());
+      AssertAutoVectorOnlyInStack(&vec, false);
     }
 
     ASSERT_EQ(i + 1, vec.size());
     ASSERT_EQ(i, vec[i].first);
-    ASSERT_EQ(std::to_string(i + 123), vec[i].second);
+    ASSERT_EQ(ToString(i + 123), vec[i].second);
   }
 
   vec.clear();
   ASSERT_TRUE(vec.empty());
-  ASSERT_TRUE(!vec.only_in_stack());
+  AssertAutoVectorOnlyInStack(&vec, false);
 }
 
-TEST(AutoVectorTest, Resize) {
+TEST_F(AutoVectorTest, Resize) {
   autovector<size_t, kSize> vec;
 
   vec.resize(kSize);
-  ASSERT_TRUE(vec.only_in_stack());
+  AssertAutoVectorOnlyInStack(&vec, true);
   for (size_t i = 0; i < kSize; ++i) {
     vec[i] = i;
   }
 
   vec.resize(kSize * 2);
-  ASSERT_TRUE(!vec.only_in_stack());
+  AssertAutoVectorOnlyInStack(&vec, false);
   for (size_t i = 0; i < kSize; ++i) {
     ASSERT_EQ(vec[i], i);
   }
@@ -97,14 +108,16 @@ void AssertEqual(
     const autovector<size_t, kSize>& a, const autovector<size_t, kSize>& b) {
   ASSERT_EQ(a.size(), b.size());
   ASSERT_EQ(a.empty(), b.empty());
+#ifndef ROCKSDB_LITE
   ASSERT_EQ(a.only_in_stack(), b.only_in_stack());
+#endif  // !ROCKSDB_LITE
   for (size_t i = 0; i < a.size(); ++i) {
     ASSERT_EQ(a[i], b[i]);
   }
 }
 }  // namespace
 
-TEST(AutoVectorTest, CopyAndAssignment) {
+TEST_F(AutoVectorTest, CopyAndAssignment) {
   // Test both heap-allocated and stack-allocated cases.
   for (auto size : { kSize / 2, kSize * 1000 }) {
     autovector<size_t, kSize> vec;
@@ -125,10 +138,10 @@ TEST(AutoVectorTest, CopyAndAssignment) {
   }
 }
 
-TEST(AutoVectorTest, Iterators) {
+TEST_F(AutoVectorTest, Iterators) {
   autovector<std::string, kSize> vec;
   for (size_t i = 0; i < kSize * 1000; ++i) {
-    vec.push_back(std::to_string(i));
+    vec.push_back(ToString(i));
   }
 
   // basic operator test
@@ -190,7 +203,7 @@ vector<string> GetTestKeys(size_t size) {
 
   int index = 0;
   for (auto& key : keys) {
-    key = "item-" + to_string(index++);
+    key = "item-" + rocksdb::ToString(index++);
   }
   return keys;
 }
@@ -245,7 +258,7 @@ size_t BenchmarkSequenceAccess(string name, size_t ops, size_t elem_size) {
 // This test case only reports the performance between std::vector<string>
 // and autovector<string>. We chose string for comparison because in most
 // o our use cases we used std::vector<string>.
-TEST(AutoVectorTest, PerfBench) {
+TEST_F(AutoVectorTest, PerfBench) {
   // We run same operations for kOps times in order to get a more fair result.
   size_t kOps = 100000;
 
@@ -312,5 +325,6 @@ TEST(AutoVectorTest, PerfBench) {
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

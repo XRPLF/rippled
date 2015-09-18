@@ -9,11 +9,14 @@
 
 #include "port/port_posix.h"
 
-#include <stdio.h>
 #include <assert.h>
 #include <errno.h>
-#include <sys/time.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include <cstdlib>
 #include "util/logging.h"
 
@@ -88,8 +91,8 @@ void CondVar::Wait() {
 
 bool CondVar::TimedWait(uint64_t abs_time_us) {
   struct timespec ts;
-  ts.tv_sec = abs_time_us / 1000000;
-  ts.tv_nsec = (abs_time_us % 1000000) * 1000;
+  ts.tv_sec = static_cast<time_t>(abs_time_us / 1000000);
+  ts.tv_nsec = static_cast<suseconds_t>((abs_time_us % 1000000) * 1000);
 
 #ifndef NDEBUG
   mu_->locked_ = false;
@@ -131,6 +134,27 @@ void RWMutex::WriteUnlock() { PthreadCall("write unlock", pthread_rwlock_unlock(
 
 void InitOnce(OnceType* once, void (*initializer)()) {
   PthreadCall("once", pthread_once(once, initializer));
+}
+
+void Crash(const std::string& srcfile, int srcline) {
+  fprintf(stdout, "Crashing at %s:%d\n", srcfile.c_str(), srcline);
+  fflush(stdout);
+  kill(getpid(), SIGTERM);
+}
+
+int GetMaxOpenFiles() {
+#if defined(RLIMIT_NOFILE)
+  struct rlimit no_files_limit;
+  if (getrlimit(RLIMIT_NOFILE, &no_files_limit) != 0) {
+    return -1;
+  }
+  // protect against overflow
+  if (no_files_limit.rlim_cur >= std::numeric_limits<int>::max()) {
+    return std::numeric_limits<int>::max();
+  }
+  return static_cast<int>(no_files_limit.rlim_cur);
+#endif
+  return -1;
 }
 
 }  // namespace port

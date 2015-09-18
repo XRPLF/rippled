@@ -179,6 +179,13 @@ OpenView::slesEnd() const ->
 }
 
 auto
+OpenView::slesUpperBound(uint256 const& key) const ->
+    std::unique_ptr<sles_type::iter_base>
+{
+    return items_.slesUpperBound(*base_, key);
+}
+
+auto
 OpenView::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {

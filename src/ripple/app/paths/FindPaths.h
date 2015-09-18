@@ -55,7 +55,9 @@ public:
 
             On output, if fullLiquidityPath is non-empty, it contains one extra
             path that can move the entire liquidity requested. */
-        STPath& fullLiquidityPath);
+        STPath& fullLiquidityPath,
+
+        Application& app);
 
 private:
     class Impl;
@@ -88,7 +90,9 @@ findPathsForOneIssuer (
 
         On output, if fullLiquidityPath is non-empty, it contains one extra path
         that can move the entire liquidity requested. */
-    STPath& fullLiquidityPath);
+    STPath& fullLiquidityPath,
+
+    Application& app);
 
 void initializePathfinding ();
 

@@ -147,13 +147,15 @@ class View_test
     testLedger()
     {
         using namespace jtx;
+        Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
-                create_genesis, config);
+                create_genesis, config, env.app().family());
         auto const ledger =
             std::make_shared<Ledger>(
-                open_ledger, *genesis);
+                open_ledger, *genesis,
+                env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
         succ(v, 0, boost::none);
@@ -409,13 +411,14 @@ class View_test
     testSles()
     {
         using namespace jtx;
+        Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger> (
-                create_genesis, config);
-        auto const ledger =
-            std::make_shared<Ledger> (
-                open_ledger, *genesis);
+                create_genesis, config, env.app().family());
+        auto const ledger = std::make_shared<Ledger>(
+            open_ledger, *genesis,
+            env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]()
         {
             // erase middle element
@@ -432,6 +435,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (2, 3, 4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -441,6 +450,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (3, 4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b);
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -451,6 +466,12 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (4, 5));
+            auto b = view.sles.begin();
+            expect (view.sles.upper_bound(uint256(1)) == b);
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -459,6 +480,13 @@ class View_test
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
             expect (sles (view) == list (1, 2, 4, 5));
+            auto b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -472,11 +500,25 @@ class View_test
 
             view.rawErase (sle (3));
             expect (sles (view) == list (1, 2));
+            auto b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b);
+            expect (view.sles.upper_bound(uint256(3)) == b);
+            expect (view.sles.upper_bound(uint256(4)) == b);
+            expect (view.sles.upper_bound(uint256(5)) == b);
 
             view.rawInsert (sle (5));
             view.rawInsert (sle (4));
             view.rawInsert (sle (3));
             expect (sles (view) == list (1, 2, 3, 4, 5));
+            b = view.sles.begin();
+            ++b;
+            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
+            expect (view.sles.upper_bound(uint256(5)) == b);
         }
     }
 
@@ -489,13 +531,15 @@ class View_test
         // ApplyView on that, then another ApplyView,
         // erase the item, apply.
         {
+            Env env(*this);
             Config const config;
             std::shared_ptr<Ledger const> const genesis =
                 std::make_shared<Ledger>(
-                    create_genesis, config);
+                    create_genesis, config, env.app().family());
             auto const ledger =
                 std::make_shared<Ledger>(
-                    open_ledger, *genesis);
+                    open_ledger, *genesis,
+                    env.app().timeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
             ReadView& v0 = *ledger;

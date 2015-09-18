@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-sig::operator()(Env const&, JTx& jt) const
+sig::operator()(Env&, JTx& jt) const
 {
     if (! manual_)
         return;

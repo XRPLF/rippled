@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/basics/CountedObject.h>
@@ -51,7 +52,7 @@ public:
     };
 
 public:
-    InboundLedger(
+    InboundLedger(Application& app,
         uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type&);
 
     ~InboundLedger ();

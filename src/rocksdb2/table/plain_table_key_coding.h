@@ -26,7 +26,7 @@ class PlainTableKeyEncoder {
         fixed_user_key_len_(user_key_len),
         prefix_extractor_(prefix_extractor),
         index_sparseness_((index_sparseness > 1) ? index_sparseness : 1),
-        key_count_for_prefix(0) {}
+        key_count_for_prefix_(0) {}
   // key: the key to write out, in the format of internal key.
   // file: the output file to write out
   // offset: offset in the file. Needs to be updated after appending bytes
@@ -34,7 +34,7 @@ class PlainTableKeyEncoder {
   // meta_bytes_buf: buffer for extra meta bytes
   // meta_bytes_buf_size: offset to append extra meta bytes. Will be updated
   //                      if meta_bytes_buf is updated.
-  Status AppendKey(const Slice& key, WritableFile* file, uint64_t* offset,
+  Status AppendKey(const Slice& key, WritableFileWriter* file, uint64_t* offset,
                    char* meta_bytes_buf, size_t* meta_bytes_buf_size);
 
   // Return actual encoding type to be picked
@@ -45,7 +45,7 @@ class PlainTableKeyEncoder {
   uint32_t fixed_user_key_len_;
   const SliceTransform* prefix_extractor_;
   const size_t index_sparseness_;
-  size_t key_count_for_prefix;
+  size_t key_count_for_prefix_;
   IterKey pre_prefix_;
 };
 

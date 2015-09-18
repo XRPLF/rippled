@@ -59,7 +59,7 @@ Json::Value doTxHistory (RPC::Context& context)
                     % startIndex);
 
     {
-        auto db = getApp().getTxnDB ().checkoutDb ();
+        auto db = context.app.getTxnDB ().checkoutDb ();
 
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
@@ -81,7 +81,7 @@ Json::Value doTxHistory (RPC::Context& context)
                 rawTxn.clear ();
 
             if (auto trans = Transaction::transactionFromSQL (
-                    ledgerSeq, status, rawTxn, Validate::NO))
+                    ledgerSeq, status, rawTxn, Validate::NO, context.app))
                 txs.append (trans->getJson (0));
         }
     }

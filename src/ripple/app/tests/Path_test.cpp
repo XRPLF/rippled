@@ -135,12 +135,13 @@ equal(STAmount const& sa1, STAmount const& sa2)
 }
 
 std::tuple <STPathSet, STAmount, STAmount>
-find_paths(std::shared_ptr<ReadView const> const& view,
+find_paths(jtx::Env& env,
     jtx::Account const& src, jtx::Account const& dst,
         STAmount const& saDstAmount,
             boost::optional<STAmount> const& saSendMax = boost::none)
 {
     static int const level = 8;
+    auto const& view = env.open ();
     auto cache = std::make_shared<RippleLineCache>(view);
     auto currencies = accountSourceCurrencies(src, cache, true);
     auto jvSrcCurrencies = Json::Value(Json::arrayValue);
@@ -153,7 +154,7 @@ find_paths(std::shared_ptr<ReadView const> const& view,
 
     auto result = ripplePathFind(cache, src.id(), dst.id(),
         saDstAmount, jvSrcCurrencies, boost::none, level, saSendMax,
-            saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true));
+            saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true), env.app ());
     if (! result.first)
     {
         throw std::runtime_error(
@@ -191,7 +192,7 @@ public:
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
 
-        auto const result = find_paths(env.open(),
+        auto const result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
         expect(std::get<0>(result).empty());
     }
@@ -207,7 +208,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env.open(),
+        std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
         expect(st.empty());
         expect(equal(sa, Account("alice")["USD"](5)));
@@ -248,7 +249,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env.open(),
+        std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
         expect(same(st, stpath("gateway")));
         expect(equal(sa, Account("alice")["USD"](5)));
@@ -273,7 +274,7 @@ public:
             STPathSet st;
             STAmount sa;
             STAmount da;
-            std::tie(st, sa, da) = find_paths(env.open(),
+            std::tie(st, sa, da) = find_paths(env,
                 "alice", "edward", Account("edward")["USD"](-1));
             expect(same(st, stpath("dan"), stpath("bob", "carol")));
             expect(equal(sa, Account("alice")["USD"](110)));
@@ -292,11 +293,11 @@ public:
             STPathSet st;
             STAmount sa;
             STAmount da;
-            std::tie(st, sa, da) = find_paths(env.open(),
+            std::tie(st, sa, da) = find_paths(env,
                 "alice", "bob", Account("bob")["AUD"](-1),
                     boost::optional<STAmount>(XRP(100000000)));
             expect(st.empty());
-            std::tie(st, sa, da) = find_paths(env.open(),
+            std::tie(st, sa, da) = find_paths(env,
                 "alice", "bob", Account("bob")["USD"](-1),
                     boost::optional<STAmount>(XRP(100000000)));
             expect(sa == XRP(100));
@@ -417,7 +418,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env.open(),
+        std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
         expect(same(st, stpath("gateway"), stpath("gateway2"),
             stpath("dan"), stpath("carol")));
@@ -438,14 +439,14 @@ public:
         env.require(balance("bob", Account("carol")["USD"](-75)));
         env.require(balance("carol", Account("bob")["USD"](75)));
 
-        auto result = find_paths(env.open(),
+        auto result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](25));
         expect(std::get<0>(result).empty());
 
         env(pay("alice", "bob", Account("alice")["USD"](25)),
             ter(tecPATH_DRY));
 
-        result = find_paths(env.open(),
+        result = find_paths(env,
             "alice", "bob", Account("alice")["USD"](25));
         expect(std::get<0>(result).empty());
 
@@ -527,7 +528,7 @@ public:
         env.require(balance("bob", AUD(10)));
         env.require(balance("carol", AUD(39)));
 
-        auto const result = find_paths(env.open(),
+        auto const result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](25));
         expect(std::get<0>(result).empty());
     }
@@ -544,7 +545,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env.open(),
+        std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "carol", Account("carol")["USD"](5));
         expect(same(st, stpath("bob")));
         expect(equal(sa, Account("alice")["USD"](5)));

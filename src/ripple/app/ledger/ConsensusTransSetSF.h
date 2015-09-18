@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 #define RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/basics/TaggedCache.h>
 
@@ -35,8 +36,7 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 public:
     using NodeCache = TaggedCache <uint256, Blob>;
 
-    // VFALCO TODO Use a dependency injection to get the temp node cache
-    ConsensusTransSetSF (NodeCache& nodeCache);
+    ConsensusTransSetSF (Application& app, NodeCache& nodeCache);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -50,6 +50,7 @@ public:
                    Blob& nodeData) override;
 
 private:
+    Application& app_;
     NodeCache& m_nodeCache;
 };
 

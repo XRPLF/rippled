@@ -40,7 +40,7 @@ fset (Account const& account,
 }
 
 void
-flags::operator()(Env const& env) const
+flags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
     if (sle->isFieldPresent(sfFlags))
@@ -51,7 +51,7 @@ flags::operator()(Env const& env) const
 }
 
 void
-nflags::operator()(Env const& env) const
+nflags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
     if (sle->isFieldPresent(sfFlags))

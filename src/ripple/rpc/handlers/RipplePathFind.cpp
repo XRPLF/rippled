@@ -69,7 +69,7 @@ buildSrcCurrencies(AccountID const& account,
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
-    RPC::LegacyPathFind lpf (context.role == Role::ADMIN);
+    RPC::LegacyPathFind lpf (context.role == Role::ADMIN, context.app);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
 
@@ -82,7 +82,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (getConfig().RUN_STANDALONE ||
+    if (true || // TODO MPORTILLA temp fix to disable broken websocket coroutines
+        getConfig().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
@@ -94,7 +95,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
-        if (getApp().getLedgerMaster().getValidatedLedgerAge() >
+        if (context.app.getLedgerMaster().getValidatedLedgerAge() >
             RPC::Tuning::maxValidatedLedgerAge)
         {
             return rpcError (rpcNO_NETWORK);
@@ -108,9 +109,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
             [&request, &context, &jvResult, &lpLedger]
             (RPC::Callback const& callback)
         {
-            jvResult = getApp().getPathRequests().makeLegacyPathRequest (
+            jvResult = context.app.getPathRequests().makeLegacyPathRequest (
                 request, callback, lpLedger, context.params);
-            callback();
+            assert(callback);
+            if (! request && callback)
+                callback();
         });
 
         if (request)
@@ -176,7 +179,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             // The closed ledger is recent and any nodes made resident
             // have the best chance to persist
             lpLedger = context.ledgerMaster.getClosedLedger();
-            cache = getApp().getPathRequests().getLineCache(lpLedger, false);
+            cache = context.app.getPathRequests().getLineCache(lpLedger, false);
         }
 
         Json::Value     jvSrcCurrencies;
@@ -200,11 +203,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 jvDestCur.append (to_string (uCurrency));
 
         jvResult[jss::destination_currencies] = jvDestCur;
-        jvResult[jss::destination_account] = getApp().accountIDCache().toBase58(raDst);
+        jvResult[jss::destination_account] = context.app.accountIDCache().toBase58(raDst);
 
         int level = getConfig().PATH_SEARCH_OLD;
-        if ((getConfig().PATH_SEARCH_MAX > level)
-            && !getApp().getFeeTrack().isLoadedLocal())
+        if ((context.app.config().PATH_SEARCH_MAX > level)
+            && !context.app.getFeeTrack().isLoadedLocal())
         {
             ++level;
         }
@@ -244,7 +247,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
         auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount,
-            jvSrcCurrencies, contextPaths, level, saSendMax, convert_all);
+            jvSrcCurrencies, contextPaths, level, saSendMax, convert_all,
+                context.app);
         if (!pathFindResult.first)
             return pathFindResult.second;
 
@@ -264,7 +268,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
     STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
         boost::optional<Json::Value> const& contextPaths,
             int const& level, boost::optional<STAmount> saSendMax,
-                bool convert_all)
+                bool convert_all, Application& app)
 {
     auto const sa = STAmount(saDstAmount.issue(),
         STAmount::cMaxValue, STAmount::cMaxOffset);
@@ -356,7 +360,8 @@ ripplePathFind (RippleLineCache::pointer const& cache,
         auto result = fp.findPathsForIssue(
             issue,
             spsComputed,
-            fullLiquidityPath);
+            fullLiquidityPath,
+            app);
         if (! result)
         {
             WriteLog(lsWARNING, RPCHandler)

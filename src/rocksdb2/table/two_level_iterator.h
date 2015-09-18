@@ -19,8 +19,8 @@ class InternalKeyComparator;
 class Arena;
 
 struct TwoLevelIteratorState {
-  explicit TwoLevelIteratorState(bool check_prefix_may_match)
-    : check_prefix_may_match(check_prefix_may_match) {}
+  explicit TwoLevelIteratorState(bool _check_prefix_may_match)
+      : check_prefix_may_match(_check_prefix_may_match) {}
 
   virtual ~TwoLevelIteratorState() {}
   virtual Iterator* NewSecondaryIterator(const Slice& handle) = 0;
@@ -43,8 +43,11 @@ struct TwoLevelIteratorState {
 // arena: If not null, the arena is used to allocate the Iterator.
 //        When destroying the iterator, the destructor will destroy
 //        all the states but those allocated in arena.
+// need_free_iter_and_state: free `state` and `first_level_iter` if
+//                           true. Otherwise, just call destructor.
 extern Iterator* NewTwoLevelIterator(TwoLevelIteratorState* state,
                                      Iterator* first_level_iter,
-                                     Arena* arena = nullptr);
+                                     Arena* arena = nullptr,
+                                     bool need_free_iter_and_state = true);
 
 }  // namespace rocksdb

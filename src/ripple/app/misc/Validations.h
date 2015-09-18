@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
 #define RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
 
+#include <ripple/app/main/Application.h>
 #include <ripple/protocol/STValidation.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <vector>
@@ -38,8 +39,7 @@ using ValidationVector = std::vector<STValidation::pointer>;
 class Validations
 {
 public:
-
-    virtual ~Validations () { }
+    virtual ~Validations() = default;
 
     virtual bool addValidation (STValidation::ref, std::string const& source) = 0;
 
@@ -79,7 +79,9 @@ public:
     virtual void sweep () = 0;
 };
 
-std::unique_ptr <Validations> make_Validations ();
+extern
+std::unique_ptr<Validations>
+make_Validations(Application& app);
 
 } // ripple
 

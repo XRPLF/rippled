@@ -30,6 +30,8 @@
 
 namespace ripple {
 
+class Application;
+
 /** Gate a transaction based on static information.
 
     The transaction is checked against all possible
@@ -53,9 +55,9 @@ preflight (Rules const& rules, STTx const& tx,
             whether or not the transaction was applied.
 */
 std::pair<TER, bool>
-doapply(OpenView& view, STTx const& tx,
-    ApplyFlags flags, Config const& config,
-        beast::Journal j);
+doapply(Application& app, OpenView& view,
+    STTx const& tx, ApplyFlags flags,
+        Config const& config, beast::Journal j);
 
 /** Apply a transaction to a ReadView.
 
@@ -83,7 +85,7 @@ doapply(OpenView& view, STTx const& tx,
             whether or not the transaction was applied.
 */
 std::pair<TER, bool>
-apply (OpenView& view,
+apply (Application& app, OpenView& view,
     STTx const& tx, ApplyFlags flags,
         SigVerify verify,
             Config const& config,
