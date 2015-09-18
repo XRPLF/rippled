@@ -429,23 +429,27 @@ private:
         return jvRequest;
     }
 
-    // sign_for
+    // sign_for <account> <secret> <json> offline
+    // sign_for <account> <secret> <json>
     Json::Value parseSignFor (Json::Value const& jvParams)
     {
-        Json::Value     txJSON;
-        Json::Reader    reader;
+        bool const bOffline = 4 == jvParams.size () && jvParams[3u].asString () == "offline";
 
-        if ((4 == jvParams.size ())
-            && reader.parse (jvParams[3u].asString (), txJSON))
+        if (3 == jvParams.size () || bOffline)
         {
-            if (txJSON.type () == Json::objectValue)
+            Json::Value txJSON;
+            Json::Reader reader;
+            if (reader.parse (jvParams[2u].asString (), txJSON))
             {
-                // Return SigningFor object for the submitted transaction.
+                // sign_for txJSON.
                 Json::Value jvRequest;
-                jvRequest["signing_for"] = jvParams[0u].asString ();
-                jvRequest["account"] = jvParams[1u].asString ();
-                jvRequest["secret"]  = jvParams[2u].asString ();
-                jvRequest["tx_json"] = txJSON;
+
+                jvRequest[jss::account] = jvParams[0u].asString ();
+                jvRequest[jss::secret]  = jvParams[1u].asString ();
+                jvRequest[jss::tx_json] = txJSON;
+
+                if (bOffline)
+                    jvRequest[jss::offline] = true;
 
                 return jvRequest;
             }
@@ -929,7 +933,7 @@ public:
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
-            {   "sign_for",             &RPCParser::parseSignFor,               4,  4   },
+            {   "sign_for",             &RPCParser::parseSignFor,               3,  4   },
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
             {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },

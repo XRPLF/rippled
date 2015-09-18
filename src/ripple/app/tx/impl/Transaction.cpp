@@ -56,37 +56,6 @@ Transaction::Transaction (std::shared_ptr<STTx const> const& stx,
     mStatus = NEW;
 }
 
-Transaction::pointer Transaction::sharedTransaction (
-    Blob const& vucTransaction, Rules const& rules, Application& app)
-{
-    try
-    {
-        SerialIter sit (makeSlice(vucTransaction));
-        auto txn = std::make_shared<STTx const>(sit);
-        std::string reason;
-        auto result = std::make_shared<Transaction> (
-            txn, reason, app);
-        if (checkValidity(app.getHashRouter(),
-            *txn, rules, app.config()).first
-                != Validity::Valid)
-        {
-            result->setStatus(INVALID);
-        }
-        return result;
-    }
-    catch (std::exception& e)
-    {
-        JLOG (app.journal ("Ledger").warning) << "Exception constructing transaction" <<
-            e.what ();
-    }
-    catch (...)
-    {
-        JLOG (app.journal ("Ledger").warning) << "Exception constructing transaction";
-    }
-
-    return {};
-}
-
 //
 // Misc.
 //

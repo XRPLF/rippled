@@ -557,6 +557,7 @@ R"({
     "secret": "masterpassphrase",
     "offline": 1,
     "tx_json": {
+        "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -569,7 +570,7 @@ R"({
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}},
 
-{ "Valid transaction if 'offline' is true.",
+{ "If 'offline' is true then a 'Fee' field must be supplied.",
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -584,8 +585,51 @@ R"({
     }
 })",
 {
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "Valid transaction if 'offline' is true.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
 "",
 "",
+"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "'offline' and 'build_path' are mutually exclusive.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "build_path": 1,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Field 'build_path' not allowed in this context.",
+"Field 'build_path' not allowed in this context.",
 "Missing field 'tx_json.SigningPubKey'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -664,6 +708,28 @@ R"({
 {
 "Secret does not match account.",
 "Secret does not match account.",
+"",
+"Missing field 'tx_json.Signers'."}},
+
+{ "Minimal offline sign_for.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
 "",
 "Missing field 'tx_json.Signers'."}},
 
@@ -837,6 +903,34 @@ R"({
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers" : [
+             {
+                "Signer" : {
+                    "Account" : "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "SigningPubKey" : "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8",
+                    "TxnSignature" : "3045022100909D01399AFFAD1E30D250CE61F93975B7F61E47B5244D78C3E86D9806535D95022012E389E0ACB016334052B7FE07FA6CEFDC8BE82CB410FA841D5049641C89DC8F"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Missing field 'secret'.",
+"Missing field 'secret'.",
+"Missing field 'account'.",
+""}},
+
+{ "Minimal submit_multisigned with bad signature.",
+R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
         "Signers": [
             {
                 "Signer": {
@@ -854,7 +948,7 @@ R"({
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-""}},
+"Invalid signature."}},
 
 { "Missing tx_json in submit_multisigned.",
 R"({
@@ -1463,7 +1557,8 @@ public:
             Role role,
             int validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> ledger);
+            std::shared_ptr<ReadView const> ledger,
+            ApplyFlags flags);
 
         using submitFunc = Json::Value (*) (
             Json::Value params,
@@ -1472,7 +1567,8 @@ public:
             int validatedLedgerAge,
             Application& app,
             std::shared_ptr<ReadView const> ledger,
-            ProcessTransactionFn const& processTransaction);
+            ProcessTransactionFn const& processTransaction,
+            ApplyFlags flags);
 
         using TestStuff =
             std::tuple <signFunc, submitFunc, char const*, unsigned int>;
@@ -1512,7 +1608,8 @@ public:
                             testRole,
                             1,
                             env.app(),
-                            ledger);
+                            ledger,
+                            tapENABLE_TESTING);
                     }
                     else
                     {
@@ -1525,7 +1622,8 @@ public:
                             1,
                             env.app(),
                             ledger,
-                            processTxn);
+                            processTxn,
+                            tapENABLE_TESTING);
                     }
 
                     std::string errStr;

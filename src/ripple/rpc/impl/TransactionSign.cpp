@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Pathfinder.h>
+#include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_writer.h>
@@ -386,7 +387,7 @@ transactionPreProcessImpl (
         Json::Value err = checkFee (
             params,
             role,
-            signingArgs.editFields(),
+            verify && signingArgs.editFields(),
             app.config(),
             app.getFeeTrack(),
             ledger);
@@ -401,7 +402,7 @@ transactionPreProcessImpl (
             role,
             app,
             ledger,
-            signingArgs.editFields());
+            verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return std::move (err);
@@ -427,6 +428,10 @@ transactionPreProcessImpl (
             tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
+    // If multisigning then we need to return the public key.
+    if (signingArgs.isMultiSigning())
+        signingArgs.setPublicKey (keypair.publicKey);
+
     if (verify)
     {
         if (! sle)
@@ -437,12 +442,9 @@ transactionPreProcessImpl (
             << "verify: " << toBase58(calcAccountID(keypair.publicKey))
             << " : " << toBase58(srcAddressID);
 
-        // If multisigning then we need to return the public key.
-        if (signingArgs.isMultiSigning())
-        {
-            signingArgs.setPublicKey (keypair.publicKey);
-        }
-        else
+        // Don't do this test if multisigning since the account and secret
+        // probably don't belong together in that case.
+        if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
             error_code_i const err =
@@ -507,7 +509,7 @@ transactionPreProcessImpl (
 static
 std::pair <Json::Value, Transaction::pointer>
 transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
-    Rules const& rules, Application& app)
+    Rules const& rules, bool validateSig, Application& app, ApplyFlags flags)
 {
     std::pair <Json::Value, Transaction::pointer> ret;
 
@@ -533,17 +535,33 @@ transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
         {
             Serializer s;
             tpTrans->getSTransaction ()->add (s);
+            Blob transBlob = s.getData ();
+            SerialIter sit {makeSlice(transBlob)};
 
-            Transaction::pointer tpTransNew =
-                Transaction::sharedTransaction(s.getData(), rules, app);
-
-            if (tpTransNew && (
-                !tpTransNew->getSTransaction ()->isEquivalent (
-                    *tpTrans->getSTransaction ())))
+            // Check the signature if that's called for.
+            auto sttxNew = std::make_shared<STTx const> (sit);
+            if (validateSig &&
+                checkValidity(app.getHashRouter(),
+                *sttxNew, rules, app.config(), flags).first != Validity::Valid)
             {
-                tpTransNew.reset ();
+                ret.first = RPC::make_error (rpcINTERNAL,
+                    "Invalid signature.");
+                return ret;
             }
-            tpTrans = std::move (tpTransNew);
+
+            std::string reason;
+            auto tpTransNew =
+                std::make_shared<Transaction> (sttxNew, reason, app);
+
+            if (tpTransNew)
+            {
+                if (!tpTransNew->getSTransaction()->isEquivalent (
+                        *tpTrans->getSTransaction()))
+                {
+                    tpTransNew.reset ();
+                }
+                tpTrans = std::move (tpTransNew);
+            }
         }
     }
     catch (std::exception&)
@@ -656,7 +674,8 @@ Json::Value transactionSign (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags)
 {
     using namespace detail;
 
@@ -674,8 +693,8 @@ Json::Value transactionSign (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), true, app, flags);
 
     if (!txn.second)
         return txn.first;
@@ -691,7 +710,8 @@ Json::Value transactionSubmit (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags)
 {
     using namespace detail;
 
@@ -709,8 +729,8 @@ Json::Value transactionSubmit (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), true, app, flags);
 
     if (!txn.second)
         return txn.first;
@@ -735,7 +755,7 @@ namespace detail
 {
 // There are a some field checks shared by transactionSignFor
 // and transactionSubmitMultiSigned.  Gather them together here.
-Json::Value checkMultiSignFields (Json::Value const& jvRequest)
+static Json::Value checkMultiSignFields (Json::Value const& jvRequest)
 {
    if (! jvRequest.isMember (jss::tx_json))
         return RPC::missing_field_error (jss::tx_json);
@@ -767,7 +787,8 @@ Json::Value transactionSignFor (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSignFor: " << jvRequest;
@@ -828,8 +849,8 @@ Json::Value transactionSignFor (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), false, app, flags);
 
     if (!txn.second)
         return txn.first;
@@ -870,7 +891,8 @@ Json::Value transactionSubmitMultiSigned (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug)
@@ -1056,8 +1078,7 @@ Json::Value transactionSubmitMultiSigned (
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (stpTrans,
-            ledger->rules(), app);
+        transactionConstructImpl (stpTrans, ledger->rules(), true, app, flags);
 
     if (!txn.second)
         return txn.first;

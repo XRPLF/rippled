@@ -51,6 +51,37 @@ verify (STObject const& st,
                 true);
 }
 
+// Questions regarding buildMultiSigningData:
+//
+// Why do we include the Signer.Account in the blob to be signed?
+//
+// Unless you include the Account which is signing in the signing blob,
+// you could swap out any Signer.Account for any other, which may also
+// be on the SignerList and have a RegularKey matching the
+// Signer.SigningPubKey.
+//
+// That RegularKey may be set to allow some 3rd party to sign transactions
+// on the account's behalf, and that RegularKey could be common amongst all
+// users of the 3rd party. That's just one example of sharing the same
+// RegularKey amongst various accounts and just one vulnerability.
+//
+//   "When you have something that's easy to do that makes entire classes of
+//    attacks clearly and obviously impossible, you need a damn good reason
+//    not to do it."  --  David Schwartz
+//
+// Why would we include the signingFor account in the blob to be signed?
+//
+// In the current signing scheme, the account that a signer is `signing
+// for/on behalf of` is the tx_json.Account.
+//
+// Later we might support more levels of signing.  Suppose Bob is a signer
+// for Alice, and Carol is a signer for Bob, so Carol can sign for Bob who
+// signs for Alice.  But suppose Alice has two signers: Bob and Dave.  If
+// Carol is a signer for both Bob and Dave, then the signature needs to
+// distinguish between Carol signing for Bob and Carol signing for Dave.
+//
+// So, if we support multiple levels of signing, then we'll need to
+// incorporate the "signing for" accounts into the signing data as well.
 Serializer
 buildMultiSigningData (STObject const& obj, AccountID const& signingID)
 {

@@ -150,7 +150,7 @@ void printHelp (const po::options_description& desc)
            "     version\n"
            "     server_info\n"
            "     sign <private_key> <json> [offline]\n"
-           "     sign_for\n"
+           "     sign_for <signer_address> <signer_private_key> <json> [offline]\n"
            "     stop\n"
            "     submit <tx_blob>|[<private_key> <json>]\n"
            "     submit_multisigned\n"

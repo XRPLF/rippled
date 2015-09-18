@@ -68,10 +68,6 @@ public:
 
     static
     Transaction::pointer
-    sharedTransaction (Blob const&, Rules const& rules, Application& app);
-
-    static
-    Transaction::pointer
     transactionFromSQL (
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,
