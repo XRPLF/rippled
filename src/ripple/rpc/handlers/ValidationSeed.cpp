@@ -34,39 +34,45 @@ namespace ripple {
 // }
 Json::Value doValidationSeed (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
-    Json::Value obj (Json::objectValue);
+    // TODO: This feature is temporarily disabled since we
+    // cannot modify the config object. We should consider
+    // whether we want the ability to change the validator
+    // keys at runtime.
+    return rpcError (rpcNOT_IMPL);
 
-    if (!context.params.isMember (jss::secret))
-    {
-        std::cerr << "Unset validation seed." << std::endl;
+    // auto lock = beast::make_lock(context.app.getMasterMutex());
+    // Json::Value obj (Json::objectValue);
 
-        getConfig ().VALIDATION_SEED.clear ();
-        getConfig ().VALIDATION_PUB.clear ();
-        getConfig ().VALIDATION_PRIV.clear ();
-    }
-    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (
-        context.params[jss::secret].asString ()))
-    {
-        getConfig ().VALIDATION_PUB.clear ();
-        getConfig ().VALIDATION_PRIV.clear ();
+    // if (!context.params.isMember (jss::secret))
+    // {
+    //     std::cerr << "Unset validation seed." << std::endl;
 
-        return rpcError (rpcBAD_SEED);
-    }
-    else
-    {
-        auto& seed = getConfig ().VALIDATION_SEED;
-        auto& pub = getConfig ().VALIDATION_PUB;
+    //     context.app.config().VALIDATION_SEED.clear ();
+    //     context.app.config().VALIDATION_PUB.clear ();
+    //     context.app.config().VALIDATION_PRIV.clear ();
+    // }
+    // else if (!context.app.config().VALIDATION_SEED.setSeedGeneric (
+    //     context.params[jss::secret].asString ()))
+    // {
+    //     context.app.config().VALIDATION_PUB.clear ();
+    //     context.app.config().VALIDATION_PRIV.clear ();
 
-        pub = RippleAddress::createNodePublic (seed);
-        getConfig ().VALIDATION_PRIV = RippleAddress::createNodePrivate (seed);
+    //     return rpcError (rpcBAD_SEED);
+    // }
+    // else
+    // {
+    //     auto& seed = context.app.config().VALIDATION_SEED;
+    //     auto& pub = context.app.config().VALIDATION_PUB;
 
-        obj[jss::validation_public_key] = pub.humanNodePublic ();
-        obj[jss::validation_seed] = seed.humanSeed ();
-        obj[jss::validation_key] = seed.humanSeed1751 ();
-    }
+    //     pub = RippleAddress::createNodePublic (seed);
+    //     context.app.config().VALIDATION_PRIV = RippleAddress::createNodePrivate (seed);
 
-    return obj;
+    //     obj[jss::validation_public_key] = pub.humanNodePublic ();
+    //     obj[jss::validation_seed] = seed.humanSeed ();
+    //     obj[jss::validation_key] = seed.humanSeed1751 ();
+    // }
+
+    // return obj;
 }
 
 } // ripple

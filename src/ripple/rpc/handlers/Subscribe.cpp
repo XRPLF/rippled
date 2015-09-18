@@ -74,7 +74,7 @@ Json::Value doSubscribe (RPC::Context& context)
             WriteLog (lsDEBUG, RPCHandler)
                 << "doSubscribe: building: " << strUrl;
 
-            RPCSub::pointer rspSub = RPCSub::New (context.app.getOPs (),
+            auto rspSub = make_RPCSub (context.app.getOPs (),
                 context.app.getIOService (), context.app.getJobQueue (),
                     strUrl, strUsername, strPassword);
             ispSub  = context.netOps.addRpcSub (
@@ -85,11 +85,17 @@ Json::Value doSubscribe (RPC::Context& context)
             WriteLog (lsTRACE, RPCHandler)
                 << "doSubscribe: reusing: " << strUrl;
 
-            if (context.params.isMember (jss::username))
-                dynamic_cast<RPCSub*> (&*ispSub)->setUsername (strUsername);
+            if (auto rpcSub = std::dynamic_pointer_cast<RPCSub> (ispSub))
+            {
+                // Why do we need to check isMember against jss::username and
+                // jss::password here instead of just setting the username and
+                // the password? What about url_username and url_password?
+                if (context.params.isMember (jss::username))
+                    rpcSub->setUsername (strUsername);
 
-            if (context.params.isMember (jss::password))
-                dynamic_cast<RPCSub*> (&*ispSub)->setPassword (strPassword);
+                if (context.params.isMember (jss::password))
+                    rpcSub->setPassword (strPassword);
+            }
         }
     }
     else

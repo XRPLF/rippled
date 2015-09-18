@@ -1397,9 +1397,9 @@ public:
     void testAutoFillFees ()
     {
         test::jtx::Env env(*this);
-        Config const config;
         std::shared_ptr<const ReadView> ledger =
-            std::make_shared<Ledger>(create_genesis, config, env.app().family());
+            std::make_shared<Ledger>(create_genesis,
+                env.app().config(), env.app().family());
         LoadFeeTrack const feeTrack;
 
         {
@@ -1407,7 +1407,8 @@ public:
             Json::Reader ().parse (
                 "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
             Json::Value result =
-                checkFee (req, Role::ADMIN, true, feeTrack, ledger);
+                checkFee (req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
 
             expect (! RPC::contains_error (result), "Legal checkFee");
         }
@@ -1417,7 +1418,8 @@ public:
             Json::Reader ().parse (
                 "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
             Json::Value result =
-                checkFee (req, Role::ADMIN, true, feeTrack, ledger);
+                checkFee (req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
 
             expect (RPC::contains_error (result), "Invalid checkFee");
         }

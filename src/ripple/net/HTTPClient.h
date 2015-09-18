@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 
+#include <ripple/core/Config.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -36,7 +37,7 @@ public:
         maxClientHeaderBytes = 32 * 1024
     };
 
-    static void initializeSSLContext ();
+    static void initializeSSLContext (Config const& config);
 
     static void get (
         bool bSSL,

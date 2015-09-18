@@ -301,7 +301,7 @@ private:
     };
 
 public:
-    Config const& config_;
+    std::unique_ptr<Config const> config_;
     Logs& m_logs;
     beast::Journal m_journal;
     Application::MutexType m_masterMutex;
@@ -375,10 +375,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    ApplicationImp (Config const& config, Logs& logs)
+    ApplicationImp (std::unique_ptr<Config const> config, Logs& logs)
         : RootStoppable ("Application")
-        , BasicApp (numberOfThreads(config))
-        , config_ (config)
+        , BasicApp (numberOfThreads(*config))
+        , config_ (std::move(config))
         , m_logs (logs)
 
         , m_journal (m_logs.journal("Application"))
@@ -390,10 +390,10 @@ public:
 
         , m_nodeStoreScheduler (*this)
 
-        , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (
-                config_), *this, m_nodeStoreScheduler,
-                m_logs.journal ("SHAMapStore"), m_logs.journal ("NodeObject"),
-                m_txMaster, config_))
+        , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (*config_),
+            *this, m_nodeStoreScheduler,
+            m_logs.journal ("SHAMapStore"), m_logs.journal ("NodeObject"),
+            m_txMaster, *config_))
 
         , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
 
@@ -403,7 +403,7 @@ public:
             m_logs.journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
-            config_.section (SECTION_INSIGHT), m_logs.journal("Collector")))
+            config_->section (SECTION_INSIGHT), m_logs.journal("Collector")))
 
         , family_ (*this, *m_nodeStore, *m_collectorManager)
 
@@ -453,7 +453,7 @@ public:
             m_logs.journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
-            config_.RUN_STANDALONE, config_.NETWORK_QUORUM,
+            config_->RUN_STANDALONE, config_->NETWORK_QUORUM,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             m_logs.journal("NetworkOPs")))
 
@@ -548,7 +548,7 @@ public:
     Config const&
     config() const override
     {
-        return config_;
+        return *config_;
     }
 
     boost::asio::io_service& getIOService () override
@@ -723,7 +723,7 @@ public:
         assert (mLedgerDB.get () == nullptr);
         assert (mWalletDB.get () == nullptr);
 
-        DatabaseCon::Setup setup = setup_DatabaseCon (config_);
+        DatabaseCon::Setup setup = setup_DatabaseCon (*config_);
         mTxnDB = std::make_unique <DatabaseCon> (setup, "transaction.db",
                 TxnDBInit, TxnDBCount);
         mLedgerDB = std::make_unique <DatabaseCon> (setup, "ledger.db",
@@ -763,7 +763,7 @@ public:
     void setup () override
     {
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-        m_jobQueue->setThreadCount (0, config_.RUN_STANDALONE);
+        m_jobQueue->setThreadCount (0, config_->RUN_STANDALONE);
 
         // We want to intercept and wait for CTRL-C to terminate the process
         m_signals.add (SIGINT);
@@ -773,7 +773,7 @@ public:
 
         assert (mTxnDB == nullptr);
 
-        auto debug_log = config_.getDebugLogFile ();
+        auto debug_log = config_->getDebugLogFile ();
 
         if (!debug_log.empty ())
         {
@@ -787,8 +787,8 @@ public:
                 m_logs.severity (beast::Journal::kDebug);
         }
 
-        if (!config_.RUN_STANDALONE)
-            timeKeeper_->run(config_.SNTP_SERVERS);
+        if (!config_->RUN_STANDALONE)
+            timeKeeper_->run(config_->SNTP_SERVERS);
 
         if (!initSqliteDbs ())
         {
@@ -798,25 +798,25 @@ public:
 
         getLedgerDB ().getSession ()
             << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                           (config_.getSize (siLgrDBCache) * 1024));
+                           (config_->getSize (siLgrDBCache) * 1024));
 
         getTxnDB ().getSession ()
                 << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                               (config_.getSize (siTxnDBCache) * 1024));
+                               (config_->getSize (siTxnDBCache) * 1024));
 
         mTxnDB->setupCheckpointing (m_jobQueue.get());
         mLedgerDB->setupCheckpointing (m_jobQueue.get());
 
-        if (!config_.RUN_STANDALONE)
+        if (!config_->RUN_STANDALONE)
             updateTables ();
 
         m_amendmentTable->addInitial (
-            config_.section (SECTION_AMENDMENTS));
+            config_->section (SECTION_AMENDMENTS));
         initializePathfinding ();
 
-        m_ledgerMaster->setMinValidations (config_.VALIDATION_QUORUM);
+        m_ledgerMaster->setMinValidations (config_->VALIDATION_QUORUM);
 
-        auto const startUp = config_.START_UP;
+        auto const startUp = config_->START_UP;
         if (startUp == Config::FRESH)
         {
             m_journal.info << "Starting new Ledger";
@@ -829,7 +829,7 @@ public:
         {
             m_journal.info << "Loading specified Ledger";
 
-            if (!loadOldLedger (config_.START_LEDGER,
+            if (!loadOldLedger (config_->START_LEDGER,
                                 startUp == Config::REPLAY,
                                 startUp == Config::LOAD_FILE))
             {
@@ -839,7 +839,7 @@ public:
         else if (startUp == Config::NETWORK)
         {
             // This should probably become the default once we have a stable network.
-            if (!config_.RUN_STANDALONE)
+            if (!config_->RUN_STANDALONE)
                 m_networkOPs->needNetworkLedger ();
 
             startGenesisLedger ();
@@ -862,14 +862,14 @@ public:
         //
         // Set up UNL.
         //
-        if (!config_.RUN_STANDALONE)
+        if (!config_->RUN_STANDALONE)
             getUNL ().nodeBootstrap ();
 
-        mValidations->tune (config_.getSize (siValidationsSize), config_.getSize (siValidationsAge));
-        m_nodeStore->tune (config_.getSize (siNodeCacheSize), config_.getSize (siNodeCacheAge));
-        m_ledgerMaster->tune (config_.getSize (siLedgerSize), config_.getSize (siLedgerAge));
-        family().treecache().setTargetSize (config_.getSize (siTreeCacheSize));
-        family().treecache().setTargetAge (config_.getSize (siTreeCacheAge));
+        mValidations->tune (config_->getSize (siValidationsSize), config_->getSize (siValidationsAge));
+        m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
+        m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
+        family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
+        family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
 
         //----------------------------------------------------------------------
         //
@@ -882,15 +882,15 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!config_.RUN_STANDALONE)
-        m_overlay = make_Overlay (*this, setup_Overlay(config_), *m_jobQueue,
+        m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
             *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
-            config_);
+            *config_);
         add (*m_overlay); // add to PropertyStream
 
-        m_overlay->setupValidatorKeyManifests (config_, getWalletDB ());
+        m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
         {
-            auto setup = setup_ServerHandler(config_, std::cerr);
+            auto setup = setup_ServerHandler(*config_, std::cerr);
             setup.makeContexts();
             serverHandler_->setup (setup, m_journal);
         }
@@ -901,7 +901,7 @@ public:
             if (! port.websockets())
                 continue;
             auto server = websocket::makeServer (
-                {*this, port, *m_resourceManager, getOPs(), m_journal, config_,
+                {*this, port, *m_resourceManager, getOPs(), m_journal, *config_,
                  *m_collectorManager});
             if (!server)
             {
@@ -915,11 +915,11 @@ public:
         //----------------------------------------------------------------------
 
         // Begin connecting to network.
-        if (!config_.RUN_STANDALONE)
+        if (!config_->RUN_STANDALONE)
         {
             // Should this message be here, conceptually? In theory this sort
             // of message, if displayed, should be displayed from PeerFinder.
-            if (config_.PEER_PRIVATE && config_.IPS.empty ())
+            if (config_->PEER_PRIVATE && config_->IPS.empty ())
                 m_journal.warning << "No outbound peer connections will be made";
 
             // VFALCO NOTE the state timer resets the deadlock detector.
@@ -1011,7 +1011,7 @@ public:
 
 
         {
-            if (!config_.RUN_STANDALONE)
+            if (!config_->RUN_STANDALONE)
             {
                 // VFALCO NOTE This seems unnecessary. If we properly refactor the load
                 //             manager then the deadlock detector can just always be "armed"
@@ -1058,7 +1058,7 @@ public:
             // VFALCO TODO Move all this into doSweep
 
             boost::filesystem::space_info space =
-                    boost::filesystem::space (config_.legacy ("database_path"));
+                    boost::filesystem::space (config_->legacy ("database_path"));
 
             // VFALCO TODO Give this magic constant a name and move it into a well documented header
             //
@@ -1090,7 +1090,7 @@ public:
         cachedSLEs_.expire();
 
         // VFALCO NOTE does the call to sweep() happen on another thread?
-        m_sweepTimer.setExpiration (config_.getSize (siSweepInterval));
+        m_sweepTimer.setExpiration (config_->getSize (siSweepInterval));
     }
 
 
@@ -1111,18 +1111,16 @@ void ApplicationImp::startGenesisLedger ()
 {
     std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(
-            create_genesis, config_, family());
+            create_genesis, *config_, family());
     m_ledgerMaster->storeLedger (genesis);
 
     auto const next = std::make_shared<Ledger>(
         open_ledger, *genesis, timeKeeper().closeTime());
     next->updateSkipList ();
     next->setClosed ();
-    next->setImmutable ();
-    m_ledgerMaster->storeLedger (next);
-
+    next->setImmutable (*config_);
     m_networkOPs->setLastCloseTime (next->info().closeTime);
-    openLedger_.emplace(next, config_,
+    openLedger_.emplace(next, *config_,
         cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
     m_ledgerMaster->switchLCL (next);
 }
@@ -1142,7 +1140,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         ledger->setClosed ();
-        ledger->setImmutable();
+        ledger->setImmutable(*config_);
 
         if (getLedgerMaster ().haveLedger (ledgerSeq))
             ledger->setValidated ();
@@ -1243,7 +1241,7 @@ bool ApplicationImp::loadOldLedger (
                      }
                      else
                      {
-                         loadLedger = std::make_shared<Ledger> (seq, closeTime, config_, family());
+                         loadLedger = std::make_shared<Ledger> (seq, closeTime, *config_, family());
                          loadLedger->setTotalDrops(totalDrops);
 
                          for (Json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1276,7 +1274,8 @@ bool ApplicationImp::loadOldLedger (
                          loadLedger->stateMap().flushDirty
                              (hotACCOUNT_NODE, loadLedger->info().seq);
                          loadLedger->setAccepted (closeTime,
-                             closeTimeResolution, ! closeTimeEstimated);
+                             closeTimeResolution, ! closeTimeEstimated,
+                                *config_);
                      }
                  }
             }
@@ -1375,7 +1374,7 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->switchLCL (loadLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
-        openLedger_.emplace(loadLedger, config_,
+        openLedger_.emplace(loadLedger, *config_,
             cachedSLEs_, deprecatedLogs().journal("OpenLedger"));
 
         if (replay)
@@ -1589,7 +1588,7 @@ void ApplicationImp::addTxnSeqField ()
 
 void ApplicationImp::updateTables ()
 {
-    if (config_.section (ConfigSection::nodeDatabase ()).empty ())
+    if (config_->section (ConfigSection::nodeDatabase ()).empty ())
     {
         WriteLog (lsFATAL, Application) << "The [node_db] configuration setting has been updated and must be set";
         exitWithCode(1);
@@ -1606,13 +1605,13 @@ void ApplicationImp::updateTables ()
         exitWithCode(1);
     }
 
-    if (config_.doImport)
+    if (config_->doImport)
     {
         NodeStore::DummyScheduler scheduler;
         std::unique_ptr <NodeStore::Database> source =
             NodeStore::Manager::instance().make_Database ("NodeStore.import", scheduler,
                 deprecatedLogs().journal("NodeObject"), 0,
-                config_[ConfigSection::importNodeDatabase ()]);
+                config_->section(ConfigSection::importNodeDatabase ()));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"
@@ -1635,10 +1634,10 @@ Application::Application ()
 }
 
 std::unique_ptr<Application>
-make_Application (Config const& config, Logs& logs)
+make_Application (std::unique_ptr<Config const> config, Logs& logs)
 {
-    return std::make_unique<ApplicationImp>(
-        config, logs);
+    return std::make_unique<ApplicationImp> (
+        std::move(config), logs);
 }
 
 Application& getApp ()

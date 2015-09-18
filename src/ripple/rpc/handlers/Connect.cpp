@@ -38,7 +38,7 @@ namespace ripple {
 Json::Value doConnect (RPC::Context& context)
 {
     auto lock = beast::make_lock(context.app.getMasterMutex());
-    if (getConfig ().RUN_STANDALONE)
+    if (context.app.config().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
     if (!context.params.isMember (jss::ip))

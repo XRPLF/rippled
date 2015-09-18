@@ -200,7 +200,7 @@ static Json::Value checkPayment(
                 *dstAccountID,
                 sendMax.issue(),
                 amount,
-                getConfig().PATH_SEARCH_OLD,
+                app.config().PATH_SEARCH_OLD,
                 4,  // iMaxPaths
                 {},
                 fullLiquidityPath,
@@ -239,6 +239,7 @@ checkTxJsonFields (
     Role const role,
     bool const verify,
     int validatedLedgerAge,
+    Config const& config,
     LoadFeeTrack const& feeTrack)
 {
     std::pair<Json::Value, AccountID> ret;
@@ -273,7 +274,7 @@ checkTxJsonFields (
     }
 
     // Check for current ledger.
-    if (verify && !getConfig ().RUN_STANDALONE &&
+    if (verify && !config.RUN_STANDALONE &&
         (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
         ret.first = rpcError (rpcNO_CURRENT);
@@ -352,7 +353,8 @@ transactionPreProcessImpl (
 
     // Check tx_json fields, but don't add any.
     auto txJsonResult = checkTxJsonFields (
-        tx_json, role, verify, validatedLedgerAge, app.getFeeTrack());
+        tx_json, role, verify, validatedLedgerAge,
+        app.config(), app.getFeeTrack());
 
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
@@ -384,6 +386,7 @@ transactionPreProcessImpl (
             params,
             role,
             signingArgs.editFields(),
+            app.config(),
             app.getFeeTrack(),
             ledger);
 
@@ -594,6 +597,7 @@ Json::Value checkFee (
     Json::Value& request,
     Role const role,
     bool doAutoFill,
+    Config const& config,
     LoadFeeTrack const& feeTrack,
     std::shared_ptr<ReadView const>& ledger)
 {
@@ -619,7 +623,7 @@ Json::Value checkFee (
     }
 
     // Default fee in fee units.
-    std::uint64_t const feeDefault = getConfig().TRANSACTION_FEE_BASE;
+    std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
 
     // Administrative endpoints are exempt from local fees.
     std::uint64_t const fee =
@@ -874,7 +878,8 @@ Json::Value transactionSubmitMultiSigned (
     Json::Value& tx_json (jvRequest ["tx_json"]);
 
     auto const txJsonResult = checkTxJsonFields (
-        tx_json, role, true, validatedLedgerAge, app.getFeeTrack());
+        tx_json, role, true, validatedLedgerAge,
+        app.config(), app.getFeeTrack());
 
     if (RPC::contains_error (txJsonResult.first))
         return std::move (txJsonResult.first);
@@ -897,7 +902,7 @@ Json::Value transactionSubmitMultiSigned (
 
     {
         Json::Value err = checkFee (
-            jvRequest, role, false, app.getFeeTrack(), ledger);
+            jvRequest, role, false, app.config(), app.getFeeTrack(), ledger);
 
         if (RPC::contains_error(err))
             return std::move (err);

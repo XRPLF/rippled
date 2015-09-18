@@ -235,6 +235,9 @@ Config::Config ()
     RUN_STANDALONE          = false;
     doImport                = false;
     START_UP                = NORMAL;
+
+    // We default to "tiny"
+    NODE_SIZE = 0;
 }
 
 static
@@ -264,7 +267,6 @@ void Config::setup (std::string const& strConf, bool bQuiet)
     //
 
     QUIET       = bQuiet;
-    NODE_SIZE   = 0;
 
     strDbPath           = Helpers::getDatabaseDirName ();
     strConfFile         = strConf.empty () ? Helpers::getConfigFileName () : strConf;
@@ -324,7 +326,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         }
     }
 
-    HTTPClient::initializeSSLContext();
+    HTTPClient::initializeSSLContext(*this);
 
     // Update default values
     load ();
@@ -610,7 +612,7 @@ boost::filesystem::path Config::getDebugLogFile () const
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
         log_file = boost::filesystem::absolute (
-            log_file, getConfig ().CONFIG_DIR);
+            log_file, CONFIG_DIR);
     }
 
     if (!log_file.empty ())
@@ -634,12 +636,6 @@ boost::filesystem::path Config::getDebugLogFile () const
     }
 
     return log_file;
-}
-
-Config& getConfig ()
-{
-    static Config config;
-    return config;
 }
 
 beast::File Config::getConfigDir () const

@@ -25,6 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/LocalTxs.h>
+#include <ripple/core/Config.h>
 
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -84,7 +85,7 @@ public:
 };
 
 std::unique_ptr<Consensus>
-make_Consensus ();
+make_Consensus (Config const& config);
 
 }
 

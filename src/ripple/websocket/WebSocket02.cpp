@@ -73,16 +73,13 @@ boost::asio::io_service::strand& WebSocket02::getStrand (Connection& con)
 template <>
 void ConnectionImpl <WebSocket02>::setPingTimer ()
 {
-    auto freq = getConfig ().WEBSOCKET_PING_FREQ;
-    // VFALCO Disabled since it might cause hangs
-    freq = 0;
-    if (freq <= 0)
+    if (pingFreq_ <= 0)
         return;
     connection_ptr ptr = m_connection.lock ();
-
     if (ptr)
     {
-        this->m_pingTimer.expires_from_now (boost::posix_time::seconds (freq));
+        this->m_pingTimer.expires_from_now (
+            boost::posix_time::seconds (pingFreq_));
 
         this->m_pingTimer.async_wait (
             ptr->get_strand ().wrap (

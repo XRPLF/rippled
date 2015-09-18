@@ -277,9 +277,6 @@ public:
     void loadFromString (std::string const& fileContents);
 };
 
-// DEPRECATED
-extern Config& getConfig();
-
 } // ripple
 
 #endif

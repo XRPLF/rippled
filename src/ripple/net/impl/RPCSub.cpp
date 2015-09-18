@@ -164,7 +164,8 @@ private:
                         mUsername, mPassword,
                         mPath, "event",
                         jvEvent,
-                        mSSL);
+                        mSSL,
+                        true);
                 }
                 catch (const std::exception& e)
                 {
@@ -176,7 +177,6 @@ private:
     }
 
 private:
-// VFALCO TODO replace this macro with a language constant
     enum
     {
         eventQueueMax = 32
@@ -207,12 +207,12 @@ RPCSub::RPCSub (InfoSub::Source& source)
 {
 }
 
-RPCSub::pointer RPCSub::New (InfoSub::Source& source,
-    boost::asio::io_service& io_service, JobQueue& jobQueue,
-        std::string const& strUrl, std::string const& strUsername,
-        std::string const& strPassword)
+std::shared_ptr<RPCSub> make_RPCSub (
+    InfoSub::Source& source, boost::asio::io_service& io_service,
+    JobQueue& jobQueue, std::string const& strUrl,
+    std::string const& strUsername, std::string const& strPassword)
 {
-    return std::make_shared <RPCSubImp> (std::ref (source),
+    return std::make_shared<RPCSubImp> (std::ref (source),
         std::ref (io_service), std::ref (jobQueue),
             strUrl, strUsername, strPassword);
 }

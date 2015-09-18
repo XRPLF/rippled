@@ -228,8 +228,8 @@ LedgerConsensusImp::LedgerConsensusImp (
     , mCloseTime (closeTime)
     , mPrevLedgerHash (prevLCLHash)
     , mPreviousLedger (previousLedger)
-    , mValPublic (getConfig ().VALIDATION_PUB)
-    , mValPrivate (getConfig ().VALIDATION_PRIV)
+    , mValPublic (app_.config().VALIDATION_PUB)
+    , mValPrivate (app_.config().VALIDATION_PRIV)
     , mConsensusFail (false)
     , mCurrentMSeconds (0)
     , mClosePercent (0)
@@ -1061,7 +1061,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         tmf << " transaction nodes";
 
     // Accept ledger
-    newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
+    newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect, app_.config());
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger (newLCL))
@@ -1435,7 +1435,7 @@ void LedgerConsensusImp::takeInitialPosition (
             SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
     }
 
-    if ((getConfig ().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
+    if ((app_.config().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
             && ((mPreviousLedger->info().seq % 256) == 0))
     {
         // previous ledger was flag ledger, add pseudo-transactions
@@ -1829,7 +1829,7 @@ applyTransaction (Application& app, OpenView& view,
     {
         auto const result = apply(app, view, *txn, flags,
             app.getHashRouter().sigVerify(),
-                getConfig(), deprecatedLogs().
+                app.config(), deprecatedLogs().
                     journal("LedgerConsensus"));
         if (result.second)
         {

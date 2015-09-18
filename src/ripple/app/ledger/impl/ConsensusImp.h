@@ -35,7 +35,7 @@ class ConsensusImp
     : public Consensus
 {
 public:
-    ConsensusImp ();
+    ConsensusImp (FeeVote::Setup const& voteSetup);
 
     ~ConsensusImp () = default;
 

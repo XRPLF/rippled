@@ -56,6 +56,7 @@ Json::Value checkFee (
     Json::Value& request,
     Role const role,
     bool doAutoFill,
+    Config const& config,
     LoadFeeTrack const& feeTrack,
     std::shared_ptr<ReadView const>& ledger);
 

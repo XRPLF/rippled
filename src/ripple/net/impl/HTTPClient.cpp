@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/core/Config.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/websocket/AutoSocket.h>
 #include <beast/asio/placeholders.h>
@@ -40,27 +39,28 @@ namespace ripple {
 class HTTPClientSSLContext
 {
 public:
-    HTTPClientSSLContext ()
+    HTTPClientSSLContext (Config const& config)
         : m_context (boost::asio::ssl::context::sslv23)
+        , verify_ (config.SSL_VERIFY)
     {
         boost::system::error_code ec;
 
-        if (getConfig().SSL_VERIFY_FILE.empty ())
+        if (config.SSL_VERIFY_FILE.empty ())
         {
             m_context.set_default_verify_paths (ec);
 
-            if (ec && getConfig().SSL_VERIFY_DIR.empty ())
+            if (ec && config.SSL_VERIFY_DIR.empty ())
                 throw std::runtime_error (boost::str (
                     boost::format ("Failed to set_default_verify_paths: %s") % ec.message ()));
         }
         else
         {
-            m_context.load_verify_file (getConfig().SSL_VERIFY_FILE);
+            m_context.load_verify_file (config.SSL_VERIFY_FILE);
         }
 
-        if (! getConfig().SSL_VERIFY_DIR.empty ())
+        if (! config.SSL_VERIFY_DIR.empty ())
         {
-            m_context.add_verify_path (getConfig().SSL_VERIFY_DIR, ec);
+            m_context.add_verify_path (config.SSL_VERIFY_DIR, ec);
 
             if (ec)
                 throw std::runtime_error (boost::str (
@@ -73,15 +73,21 @@ public:
         return m_context;
     }
 
+    bool sslVerify() const
+    {
+        return verify_;
+    }
+
 private:
     boost::asio::ssl::context m_context;
+    bool verify_;
 };
 
 boost::optional<HTTPClientSSLContext> httpClientSSLContext;
 
-void HTTPClient::initializeSSLContext ()
+void HTTPClient::initializeSSLContext (Config const& config)
 {
-    httpClientSSLContext.emplace ();
+    httpClientSSLContext.emplace (config);
 }
 
 //------------------------------------------------------------------------------
@@ -101,7 +107,7 @@ public:
         , mResponseMax (responseMax)
         , mDeadline (io_service)
     {
-        if (!getConfig ().SSL_VERIFY)
+        if (!httpClientSSLContext->sslVerify())
             mSocket.SSLSocket ().set_verify_mode (boost::asio::ssl::verify_none);
     }
 
@@ -290,7 +296,7 @@ public:
         {
             WriteLog (lsTRACE, HTTPClient) << "Connected.";
 
-            if (getConfig ().SSL_VERIFY)
+            if (httpClientSSLContext->sslVerify ())
             {
                 mShutdown   = mSocket.verify (mDeqSites[0]);
 

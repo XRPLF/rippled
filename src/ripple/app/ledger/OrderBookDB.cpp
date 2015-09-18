@@ -65,7 +65,7 @@ void OrderBookDB::setup(
         mSeq = seq;
     }
 
-    if (getConfig().RUN_STANDALONE)
+    if (app_.config().RUN_STANDALONE)
         update(ledger);
     else
         app_.getJobQueue().addJob(

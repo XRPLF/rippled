@@ -261,7 +261,7 @@ Payment::doApply ()
         }
         else if (saDstAmount < STAmount (view().fees().accountReserve(0)))
         {
-            // getReserve() is the minimum amount that an account can have.
+            // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
             j_.trace <<
                 "Delay transaction: Destination account does not exist. " <<

@@ -150,7 +150,7 @@ error_code_i fillHandler (Context& context,
         return rpcNO_NETWORK;
     }
 
-    if (! getConfig ().RUN_STANDALONE &&
+    if (!context.app.config().RUN_STANDALONE &&
         handler->condition_ & NEEDS_CURRENT_LEDGER)
     {
         if (context.ledgerMaster.getValidatedLedgerAge () >
