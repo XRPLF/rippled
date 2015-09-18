@@ -242,7 +242,8 @@ Json::Value PathRequest::doCreate (
     if (parseJson (value) != PFR_PJ_INVALID)
     {
         valid = isValid (cache);
-        status = valid ? doUpdate(cache, true) : jvStatus;
+        if (! hasCompletion())
+            status = valid ? doUpdate(cache, true) : jvStatus;
     }
     else
     {
