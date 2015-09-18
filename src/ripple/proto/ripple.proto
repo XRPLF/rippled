@@ -95,6 +95,8 @@ message TMHello
     optional bool           nodePrivate     = 11; // Request to not forward IP.
     optional TMProofWork    proofOfWork     = 12; // request/provide proof of work
     optional bool           testNet         = 13; // Running as testnet.
+    optional uint32         local_ip        = 14; // our public IP
+    optional uint32         remote_ip       = 15; // IP we see connection from
 }
 
 // The status of a node in our cluster

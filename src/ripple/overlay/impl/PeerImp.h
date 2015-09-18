@@ -361,6 +361,7 @@ private:
 
     beast::http::message
     makeResponse (bool crawl, beast::http::message const& req,
+        beast::IP::Endpoint remoteAddress,
         uint256 const& sharedValue);
 
     void
@@ -439,15 +440,6 @@ private:
 
     void
     sendGetPeers();
-
-    /** Perform a secure handshake with the peer at the other end.
-        If this function returns false then we cannot guarantee that there
-        is no active man-in-the-middle attack taking place and the link
-        MUST be disconnected.
-        @return true if successful, false otherwise.
-    */
-    bool
-    sendHello();
 
     void
     addLedger (uint256 const& hash);
