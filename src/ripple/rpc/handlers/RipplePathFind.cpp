@@ -82,8 +82,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (true || // TODO MPORTILLA temp fix to disable broken websocket coroutines
-        context.app.config().RUN_STANDALONE ||
+    if (context.app.config().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
