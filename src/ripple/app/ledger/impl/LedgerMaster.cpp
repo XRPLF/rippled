@@ -151,7 +151,7 @@ public:
         , mLedgerHistory (collector, app)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (make_LedgerCleaner (
-            app, *this, deprecatedLogs().journal("LedgerCleaner")))
+            app, *this, app_.logs().journal("LedgerCleaner")))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
@@ -170,7 +170,7 @@ public:
         , ledger_history_ (app_.config().LEDGER_HISTORY)
         , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
         , fetch_packs_ ("FetchPack", 65536, 45, stopwatch,
-            deprecatedLogs().journal("TaggedCache"))
+            app_.logs().journal("TaggedCache"))
         , fetch_seq_ (0)
     {
     }

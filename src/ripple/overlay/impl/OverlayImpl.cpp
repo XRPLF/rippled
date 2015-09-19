@@ -139,11 +139,11 @@ OverlayImpl::OverlayImpl (
     , work_ (boost::in_place(std::ref(io_service_)))
     , strand_ (io_service_)
     , setup_(setup)
-    , journal_ (deprecatedLogs().journal("Overlay"))
+    , journal_ (app_.logs().journal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        stopwatch(), deprecatedLogs().journal("PeerFinder"), config))
+        stopwatch(), app_.logs().journal("PeerFinder"), config))
     , m_resolver (resolver)
     , next_id_(1)
     , timer_count_(0)
@@ -170,7 +170,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
-    beast::WrappedSink sink (deprecatedLogs()["Peer"], makePrefix(id));
+    beast::WrappedSink sink (app_.logs()["Peer"], makePrefix(id));
     beast::Journal journal (sink);
 
     Handoff handoff;
@@ -356,7 +356,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     auto const p = std::make_shared<ConnectAttempt>(app_,
         io_service_, beast::IPAddressConversion::to_asio_endpoint(remote_endpoint),
             usage, setup_.context, next_id_++, slot,
-                deprecatedLogs().journal("Peer"), *this);
+                app_.logs().journal("Peer"), *this);
 
     std::lock_guard<decltype(mutex_)> lock(mutex_);
     list_.emplace(p.get(), p);
