@@ -76,11 +76,12 @@ CancelTicket::doApply ()
 
     std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
 
+    auto viewJ = ctx_.app.journal ("View");
     TER const result = dirDelete (ctx_.view (), false, hint,
-        getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
+        getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0), viewJ);
 
     adjustOwnerCount(view(), view().peek(
-        keylet::account(ticket_owner)), -1);
+        keylet::account(ticket_owner)), -1, viewJ);
     ctx_.view ().erase (sleTicket);
 
     return result;

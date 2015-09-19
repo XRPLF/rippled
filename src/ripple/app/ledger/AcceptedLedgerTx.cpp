@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/types.h>
@@ -30,13 +31,15 @@ AcceptedLedgerTx::AcceptedLedgerTx (
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& txn,
     std::shared_ptr<STObject const> const& met,
-    AccountIDCache const& accountCache)
+    AccountIDCache const& accountCache,
+    Logs& logs)
     : mLedger (ledger)
     , mTxn (txn)
     , mMeta (std::make_shared<TxMeta> (
-        txn->getTransactionID(), ledger->seq(), *met))
+        txn->getTransactionID(), ledger->seq(), *met, logs.journal ("View")))
     , mAffected (mMeta->getAffectedAccounts ())
     , accountCache_ (accountCache)
+    , logs_ (logs)
 {
     assert (! ledger->info().open);
 
@@ -53,12 +56,14 @@ AcceptedLedgerTx::AcceptedLedgerTx (
     std::shared_ptr<ReadView const> const& ledger,
     STTx::ref txn,
     TER result,
-    AccountIDCache const& accountCache)
+    AccountIDCache const& accountCache,
+    Logs& logs)
     : mLedger (ledger)
     , mTxn (txn)
     , mResult (result)
     , mAffected (txn->getMentionedAccounts ())
     , accountCache_ (accountCache)
+    , logs_ (logs)
 {
     assert (ledger->info().open);
     buildJson ();
@@ -99,7 +104,7 @@ void AcceptedLedgerTx::buildJson ()
         if (account != amount.issue ().account)
         {
             auto const ownerFunds = accountFunds(*mLedger,
-                account, amount, fhIGNORE_FREEZE);
+                account, amount, fhIGNORE_FREEZE, logs_.journal ("View"));
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }

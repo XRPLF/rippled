@@ -51,6 +51,7 @@ private:
     ValidationVector mStaleValidations;
 
     bool mWriting;
+    beast::Journal j_;
 
 private:
     std::shared_ptr<ValidationSet> findCreateSet (uint256 const& ledgerHash)
@@ -75,8 +76,9 @@ public:
     ValidationsImp (Application& app)
         : app_ (app)
         , mValidations ("Validations", 128, 600, stopwatch(),
-            app.logs().journal("TaggedCache"))
+            app.journal("TaggedCache"))
         , mWriting (false)
+        , j_ (app.journal ("Validations"))
     {
         mStaleValidations.reserve (512);
     }
@@ -96,11 +98,11 @@ private:
         if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
             isCurrent = true;
         else
-            WriteLog (lsWARNING, Validations) << "Received stale validation now=" << now << ", close=" << valClose;
+            JLOG (j_.warning) << "Received stale validation now=" << now << ", close=" << valClose;
 
         if (!val->isTrusted ())
         {
-            WriteLog (lsDEBUG, Validations) << "Node " << signer.humanNodePublic () << " not in UNL st=" << val->getSignTime () <<
+            JLOG (j_.debug) << "Node " << signer.humanNodePublic () << " not in UNL st=" << val->getSignTime () <<
                                             ", hash=" << val->getLedgerHash () << ", shash=" << val->getSigningHash () << " src=" << source;
         }
 
@@ -141,7 +143,7 @@ private:
             }
         }
 
-        WriteLog (lsDEBUG, Validations) << "Val for " << hash << " from " << signer.humanNodePublic ()
+        JLOG (j_.debug) << "Val for " << hash << " from " << signer.humanNodePublic ()
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
@@ -195,7 +197,7 @@ private:
                         isTrusted = false;
                     else
                     {
-                        WriteLog (lsTRACE, Validations) << "VC: Untrusted due to time " << ledger;
+                        JLOG (j_.trace) << "VC: Untrusted due to time " << ledger;
                     }
                 }
 
@@ -206,7 +208,7 @@ private:
             }
         }
 
-        WriteLog (lsTRACE, Validations) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
+        JLOG (j_.trace) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
     }
 
     void getValidationTypes (uint256 const& ledger, int& full, int& partial) override
@@ -229,7 +231,7 @@ private:
             }
         }
 
-        WriteLog (lsTRACE, Validations) << "VC: " << ledger << "f:" << full << " p:" << partial;
+        JLOG (j_.trace) << "VC: " << ledger << "f:" << full << " p:" << partial;
     }
 
 
@@ -377,7 +379,7 @@ private:
                          (valPriorLedger && (it->second->getLedgerHash () == priorLedger))))
                 {
                     countPreferred = true;
-                    WriteLog (lsTRACE, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
+                    JLOG (j_.trace) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
                 }
 
                 ValidationCounter& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
@@ -410,7 +412,7 @@ private:
     {
         bool anyNew = false;
 
-        WriteLog (lsINFO, Validations) << "Flushing validations";
+        JLOG (j_.info) << "Flushing validations";
         ScopedLockType sl (mLock);
         for (auto& it: mCurrentValidations)
         {
@@ -430,7 +432,7 @@ private:
             std::this_thread::sleep_for (std::chrono::milliseconds (100));
         }
 
-        WriteLog (lsDEBUG, Validations) << "Validations flushed";
+        JLOG (j_.debug) << "Validations flushed";
     }
 
     void condWrite ()

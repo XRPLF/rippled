@@ -40,7 +40,7 @@ Json::Value doValidationCreate (RPC::Context& context)
 
     if (!context.params.isMember (jss::secret))
     {
-        WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
+        JLOG (context.j.debug) << "Creating random validation seed.";
 
         raSeed.setSeedRandom ();                // Get a random seed.
     }

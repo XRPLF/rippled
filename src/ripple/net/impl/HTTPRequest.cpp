@@ -63,8 +63,6 @@ HTTPRequest::Action HTTPRequest::consume (boost::asio::streambuf& buf)
     std::getline (is, line);
     boost::trim (line);
 
-    //  WriteLog (lsTRACE, HTTPRequest) << "HTTPRequest line: " << line;
-
     if (eState == await_request)
     {
         // VERB URL PROTO

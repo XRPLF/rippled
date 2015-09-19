@@ -150,7 +150,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             && (!saDstAmount.getIssuer () ||
                 noAccount() == saDstAmount.getIssuer ())))
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
+        JLOG (context.j.info) << "Bad destination_amount.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
     }
     else if (
@@ -161,7 +161,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Don't allow empty currencies.
     )
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad source_currencies.";
+        JLOG (context.j.info) << "Bad source_currencies.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
     }
     else
@@ -256,7 +256,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult[jss::alternatives] = pathFindResult.second;
     }
 
-    WriteLog (lsDEBUG, RPCHandler)
+    JLOG (context.j.debug)
             << "ripple_path_find< " << jvResult;
 
     return jvResult;
@@ -283,6 +283,8 @@ ripplePathFind (RippleLineCache::pointer const& cache,
 
     Json::Value jvArray(Json::arrayValue);
 
+    auto j = app.journal ("RPCHandler");
+
     for (unsigned int i = 0; i != jvSrcCurrencies.size(); ++i)
     {
         Json::Value jvSource = jvSrcCurrencies[i];
@@ -298,7 +300,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             || !to_currency(
             uSrcCurrencyID, jvSource[jss::currency].asString()))
         {
-            WriteLog(lsINFO, RPCHandler) << "Bad currency.";
+            JLOG (j.info) << "Bad currency.";
             return std::make_pair(false, rpcError(rpcSRC_CUR_MALFORMED));
         }
 
@@ -312,7 +314,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             (uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
             (noAccount() == uSrcIssuerID)))
         {
-            WriteLog(lsINFO, RPCHandler) << "Bad issuer.";
+            JLOG (j.info) << "Bad issuer.";
             return std::make_pair(false, rpcError(rpcSRC_ISR_MALFORMED));
         }
 
@@ -351,7 +353,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             else
             {
                 spsComputed = paths.object->getFieldPathSet(sfPaths);
-                WriteLog(lsTRACE, RPCHandler) << "ripple_path_find: Paths: " <<
+                JLOG (j.trace) << "ripple_path_find: Paths: " <<
                     spsComputed.getJson(0);
             }
         }
@@ -364,7 +366,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             app);
         if (! result)
         {
-            WriteLog(lsWARNING, RPCHandler)
+            JLOG (j.warning)
                 << "ripple_path_find: No paths found.";
         }
         else
@@ -394,9 +396,10 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                 raDst,                          // --> Account to deliver to.
                 raSrc,                          // --> Account sending from.
                 *result,                        // --> Path set.
+                app.logs (),
                 &rcInput);
 
-            WriteLog(lsWARNING, RPCHandler)
+            JLOG (j.warning)
                 << "ripple_path_find:"
                 << " saMaxAmount=" << saMaxAmount
                 << " saDstAmount=" << saDstAmount
@@ -407,7 +410,8 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                 ! fullLiquidityPath.empty() &&
                 (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
             {
-                WriteLog(lsDEBUG, PathRequest)
+                auto jpr = app.journal ("PathRequest");
+                JLOG (jpr.debug)
                     << "Trying with an extra path element";
                 result->push_back(fullLiquidityPath);
                 sandbox.emplace(&*cache->getLedger(), tapNONE);
@@ -419,8 +423,9 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                     saDstAmount,            // --> Amount to deliver.
                     raDst,                  // --> Account to deliver to.
                     raSrc,                  // --> Account sending from.
-                    *result);               // --> Path set.
-                WriteLog(lsDEBUG, PathRequest)
+                    *result,               // --> Path set.
+                    app.logs ());
+                JLOG (jpr.debug)
                     << "Extra path element gives "
                     << transHuman(rc.result());
             }
@@ -451,7 +456,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
 
                 transResultInfo(rc.result(), strToken, strHuman);
 
-                WriteLog(lsDEBUG, RPCHandler)
+                JLOG (j.debug)
                     << "ripple_path_find: "
                     << strToken << " "
                     << strHuman << " "

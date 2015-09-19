@@ -26,6 +26,8 @@
 #include <ripple/server/Role.h>
 #include <ripple/nodestore/ScopedMetrics.h>
 
+#include <beast/utility/Journal.h>
+
 namespace ripple {
 
 class Application;
@@ -37,6 +39,7 @@ namespace RPC {
 /** The context of information needed to call an RPC. */
 struct Context
 {
+    beast::Journal j;
     Json::Value params;
     Application& app;
     Resource::Charge& loadType;

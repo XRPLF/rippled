@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 
 #include <ripple/core/LoadEvent.h>
+#include <beast/utility/Journal.h>
 #include <chrono>
 #include <mutex>
 
@@ -33,7 +34,8 @@ namespace ripple {
 class LoadMonitor
 {
 public:
-    LoadMonitor ();
+    explicit
+    LoadMonitor (beast::Journal j);
 
     void addCount ();
 
@@ -78,6 +80,7 @@ private:
     std::uint64_t mTargetLatencyAvg;
     std::uint64_t mTargetLatencyPk;
     int           mLastUpdate;
+    beast::Journal j_;
 };
 
 } // ripple

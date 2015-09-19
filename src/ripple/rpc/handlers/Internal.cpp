@@ -45,10 +45,10 @@ Json::Value doInternal (RPC::Context& context)
     {
         if (name == h->name_)
         {
-            WriteLog (lsWARNING, RPCHandler)
+            JLOG (context.j.warning)
                 << "Internal command " << name << ": " << params;
             Json::Value ret = h->handler_ (params);
-            WriteLog (lsWARNING, RPCHandler)
+            JLOG (context.j.warning)
                 << "Internal command returns: " << ret;
             return ret;
         }

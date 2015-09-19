@@ -95,7 +95,7 @@ void startServer (Application& app)
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
             RPC::Context context {
-                jvCommand, app, loadType, app.getOPs (),
+                app.journal ("RPCHandler"), jvCommand, app, loadType, app.getOPs (),
                 app.getLedgerMaster(), Role::ADMIN, app};
 
             Json::Value jvResult;
@@ -498,7 +498,7 @@ int run (int argc, char** argv)
     setCallingThreadName ("rpc");
     return RPCCall::fromCommandLine (
         *config,
-        vm["parameters"].as<std::vector<std::string>>());
+        vm["parameters"].as<std::vector<std::string>>(), deprecatedLogs());
 }
 
 extern int run (int argc, char** argv);

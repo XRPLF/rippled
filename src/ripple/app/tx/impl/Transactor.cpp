@@ -454,7 +454,8 @@ TER Transactor::checkMultiSign ()
 
 //------------------------------------------------------------------------------
 
-void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers)
+static
+void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
 {
     int removed = 0;
 
@@ -464,7 +465,7 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers)
         if (sleOffer)
         {
             // offer is unfunded
-            offerDelete (view, sleOffer);
+            offerDelete (view, sleOffer, viewJ);
             if (++removed == 1000)
                 return;
         }
@@ -620,7 +621,7 @@ Transactor::operator()()
                     txnAcct->setFieldU32 (sfSequence, t_seq + 1);
 
                     if (terResult == tecOVERSIZE)
-                       removeUnfundedOffers (view(), removedOffers);
+                       removeUnfundedOffers (view(), removedOffers, ctx_.app.journal ("View"));
 
                     view().update (txnAcct);
                     didApply = true;

@@ -72,7 +72,8 @@ bool PeerSet::insert (Peer::ptr const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now (boost::posix_time::milliseconds (mTimerInterval));
-    mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (), beast::asio::placeholders::error));
+    mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (),
+                                  beast::asio::placeholders::error, m_journal));
 }
 
 void PeerSet::invokeOnTimer ()
@@ -85,7 +86,7 @@ void PeerSet::invokeOnTimer ()
     if (!isProgress())
     {
         ++mTimeouts;
-        WriteLog (lsDEBUG, InboundLedger) << "Timeout(" << mTimeouts
+        JLOG (m_journal.debug) << "Timeout(" << mTimeouts
             << ") pc=" << mPeers.size () << " acquiring " << mHash;
         onTimer (false, sl);
     }
@@ -99,7 +100,9 @@ void PeerSet::invokeOnTimer ()
         setTimer ();
 }
 
-void PeerSet::timerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
+void PeerSet::timerEntry (
+    std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result,
+    beast::Journal j)
 {
     if (result == boost::asio::error::operation_aborted)
         return;
@@ -125,7 +128,7 @@ void PeerSet::timerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
 
             if (jc > 4)
             {
-                WriteLog (lsDEBUG, InboundLedger) << "Deferring PeerSet timer due to load";
+                JLOG (j.debug) << "Deferring PeerSet timer due to load";
                 ptr->setTimer ();
             }
             else

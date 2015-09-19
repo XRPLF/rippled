@@ -99,7 +99,8 @@ int applyTransaction (
     OpenView& view,
     std::shared_ptr<STTx const> const& txn,
     bool retryAssured,
-    ApplyFlags flags);
+    ApplyFlags flags,
+    beast::Journal j);
 
 } // ripple
 

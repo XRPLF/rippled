@@ -205,7 +205,8 @@ Ledger::Ledger (uint256 const& parentHash,
                 std::uint32_t ledgerSeq,
                 bool& loaded,
                 Config const& config,
-                Family& family)
+                Family& family,
+                beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, transHash, family))
@@ -227,14 +228,14 @@ Ledger::Ledger (uint256 const& parentHash,
         !txMap_->fetchRoot (info_.txHash, nullptr))
     {
         loaded = false;
-        WriteLog (lsWARNING, Ledger) << "Don't have TX root for ledger";
+        JLOG (j.warning) << "Don't have TX root for ledger";
     }
 
     if (info_.accountHash.isNonZero () &&
         !stateMap_->fetchRoot (info_.accountHash, nullptr))
     {
         loaded = false;
-        WriteLog (lsWARNING, Ledger) << "Don't have AS root for ledger";
+        JLOG (j.warning) << "Don't have AS root for ledger";
     }
 
     txMap_->setImmutable ();
@@ -789,7 +790,7 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
     }
 }
 
-bool Ledger::walkLedger () const
+bool Ledger::walkLedger (beast::Journal j) const
 {
     std::vector <SHAMapMissingNode> missingNodes1;
     std::vector <SHAMapMissingNode> missingNodes2;
@@ -807,9 +808,9 @@ bool Ledger::walkLedger () const
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty ())
     {
-        WriteLog (lsINFO, Ledger)
+        JLOG (j.info)
             << missingNodes1.size () << " missing account node(s)";
-        WriteLog (lsINFO, Ledger)
+        JLOG (j.info)
             << "First: " << missingNodes1[0];
     }
 
@@ -826,16 +827,16 @@ bool Ledger::walkLedger () const
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty ())
     {
-        WriteLog (lsINFO, Ledger)
+        JLOG (j.info)
             << missingNodes2.size () << " missing transaction node(s)";
-        WriteLog (lsINFO, Ledger)
+        JLOG (j.info)
             << "First: " << missingNodes2[0];
     }
 
     return missingNodes1.empty () && missingNodes2.empty ();
 }
 
-bool Ledger::assertSane ()
+bool Ledger::assertSane (beast::Journal ledgerJ)
 {
     if (info_.hash.isNonZero () &&
             info_.accountHash.isNonZero () &&
@@ -852,7 +853,7 @@ bool Ledger::assertSane ()
     j [jss::accountTreeHash] = to_string (info_.accountHash);
     j [jss::transTreeHash] = to_string (info_.txHash);
 
-    WriteLog (lsFATAL, Ledger) << "ledger is not sane" << j;
+    JLOG (ledgerJ.fatal) << "ledger is not sane" << j;
 
     assert (false);
 
@@ -930,7 +931,8 @@ static bool saveValidatedLedger (
     Application& app, std::shared_ptr<Ledger> const& ledger, bool current)
 {
     // TODO(tom): Fix this hard-coded SQL!
-    WriteLog (lsTRACE, Ledger)
+    auto j = app.journal ("Ledger");
+    JLOG (j.trace)
         << "saveValidatedLedger "
         << (current ? "" : "fromAcquire ") << ledger->info().seq;
     static boost::format deleteLedger (
@@ -956,16 +958,16 @@ static bool saveValidatedLedger (
 
     if (! ledger->info().accountHash.isNonZero ())
     {
-        WriteLog (lsFATAL, Ledger) << "AH is zero: "
+        JLOG (j.fatal) << "AH is zero: "
                                    << getJson (*ledger);
         assert (false);
     }
 
     if (ledger->info().accountHash != ledger->stateMap().getHash ())
     {
-        WriteLog (lsFATAL, Ledger) << "sAL: " << ledger->info().accountHash
+        JLOG (j.fatal) << "sAL: " << ledger->info().accountHash
                                    << " != " << ledger->stateMap().getHash ();
-        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq="
+        JLOG (j.fatal) << "saveAcceptedLedger: seq="
                                    << seq << ", current=" << current;
         assert (false);
     }
@@ -988,13 +990,13 @@ static bool saveValidatedLedger (
         aLedger = app.getAcceptedLedgerCache().fetch (ledger->info().hash);
         if (! aLedger)
         {
-            aLedger = std::make_shared<AcceptedLedger>(ledger, app.accountIDCache());
+            aLedger = std::make_shared<AcceptedLedger>(ledger, app.accountIDCache(), app.logs());
             app.getAcceptedLedgerCache().canonicalize(ledger->info().hash, aLedger);
         }
     }
     catch (...)
     {
-        WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
+        JLOG (j.warning) << "An accepted ledger was missing nodes";
         app.getLedgerMaster().failedSave(seq, ledger->info().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
@@ -1065,12 +1067,12 @@ static bool saveValidatedLedger (
                 sql += ";";
                 if (ShouldLog (lsTRACE, Ledger))
                 {
-                    WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                    JLOG (j.trace) << "ActTx: " << sql;
                 }
                 *db << sql;
             }
             else
-                WriteLog (lsWARNING, Ledger)
+                JLOG (j.warning)
                     << "Transaction in ledger " << seq
                     << " affects no accounts";
 
@@ -1110,7 +1112,7 @@ bool pendSaveValidated (Application& app,
 {
     if (! app.getHashRouter ().setFlags (ledger->info().hash, SF_SAVED))
     {
-        WriteLog (lsDEBUG, Ledger) << "Double pend save for "
+        JLOG (app.journal ("Ledger").debug) << "Double pend save for "
             << ledger->info().seq;
         return true;
     }
@@ -1119,7 +1121,7 @@ bool pendSaveValidated (Application& app,
 
     if (! app.pendingSaves().insert (ledger->info().seq))
     {
-        WriteLog (lsDEBUG, Ledger)
+        JLOG (app.journal ("Ledger").debug)
             << "Pend save with seq in pending saves "
             << ledger->info().seq;
         return true;
@@ -1253,7 +1255,7 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
 
     if (!db->got_data ())
     {
-        WriteLog (lsDEBUG, Ledger) << "Ledger not found: " << sqlSuffix;
+        JLOG (app.journal("Ledger").debug) << "Ledger not found: " << sqlSuffix;
         return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
     }
 
@@ -1282,7 +1284,8 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
                                       ledgerSeq,
                                       loaded,
                                       app.config(),
-                                      app.family());
+                                      app.family(),
+                                      app.journal("Ledger"));
 
     if (!loaded)
         return std::make_tuple (Ledger::pointer (), ledgerSeq, ledgerHash);
@@ -1290,7 +1293,8 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
     return std::make_tuple (ledger, ledgerSeq, ledgerHash);
 }
 
-void finishLoadByIndexOrHash(Ledger::pointer& ledger, Config const& config)
+static
+void finishLoadByIndexOrHash(Ledger::pointer& ledger, Config const& config, beast::Journal j)
 {
     if (!ledger)
         return;
@@ -1298,7 +1302,7 @@ void finishLoadByIndexOrHash(Ledger::pointer& ledger, Config const& config)
     ledger->setClosed ();
     ledger->setImmutable (config);
 
-    WriteLog (lsTRACE, Ledger)
+    JLOG (j.trace)
         << "Loaded ledger: " << to_string (ledger->getHash ());
 
     ledger->setFull ();
@@ -1315,7 +1319,7 @@ loadByIndex (std::uint32_t ledgerIndex, Application& app)
             loadLedgerHelper (s.str (), app);
     }
 
-    finishLoadByIndexOrHash (ledger, app.config());
+    finishLoadByIndexOrHash (ledger, app.config(), app.journal ("Ledger"));
     return ledger;
 }
 
@@ -1330,7 +1334,7 @@ loadByHash (uint256 const& ledgerHash, Application& app)
             loadLedgerHelper (s.str (), app);
     }
 
-    finishLoadByIndexOrHash (ledger, app.config());
+    finishLoadByIndexOrHash (ledger, app.config(), app.journal ("Ledger"));
 
     assert (!ledger || ledger->getHash () == ledgerHash);
 
@@ -1384,7 +1388,8 @@ getHashesByIndex(std::uint32_t ledgerIndex,
 
     if (!lhO || !phO)
     {
-        WriteLog (lsTRACE, Ledger) << "Don't have ledger " << ledgerIndex;
+        JLOG (app.journal ("Ledger").trace)
+            << "Don't have ledger " << ledgerIndex;
         return false;
     }
 
@@ -1430,7 +1435,7 @@ getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq,
             hashes.second.zero ();
         if (!ph)
         {
-            WriteLog (lsWARNING, Ledger)
+            JLOG (app.journal ("Ledger").warning)
                 << "Null prev hash for ledger seq: " << ls;
         }
     }

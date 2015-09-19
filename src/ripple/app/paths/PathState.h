@@ -37,11 +37,13 @@ class PathState : public CountedObject <PathState>
 
     PathState (PaymentSandbox const& parent,
             STAmount const& saSend,
-                STAmount const& saSendMax)
+               STAmount const& saSendMax,
+                   beast::Journal j)
         : mIndex (0)
         , uQuality (0)
         , saInReq (saSendMax)
         , saOutReq (saSend)
+        , j_ (j)
     {
         view_.emplace(&parent);
     }
@@ -166,6 +168,8 @@ private:
     // First time working in reverse a funding source was used.
     // Source may only be used there if not mentioned by an account.
     AccountIssueToNodeIndex umReverse;
+
+    beast::Journal j_;
 };
 
 } // ripple

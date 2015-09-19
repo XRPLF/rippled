@@ -33,6 +33,7 @@ namespace ripple {
 ConsensusTransSetSF::ConsensusTransSetSF (Application& app, NodeCache& nodeCache)
     : app_ (app)
     , m_nodeCache (nodeCache)
+    , j_ (app.journal ("TransactionAcquire"))
 {
 }
 
@@ -48,7 +49,7 @@ void ConsensusTransSetSF::gotNode (
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
         // this is a transaction, and we didn't have it
-        WriteLog (lsDEBUG, TransactionAcquire)
+        JLOG (j_.debug)
                 << "Node on our acquiring TX set is TXN we may not have";
 
         try
@@ -67,7 +68,7 @@ void ConsensusTransSetSF::gotNode (
         }
         catch (...)
         {
-            WriteLog (lsWARNING, TransactionAcquire)
+            JLOG (j_.warning)
                     << "Fetched invalid transaction in proposed set";
         }
     }
@@ -84,7 +85,7 @@ bool ConsensusTransSetSF::haveNode (
     if (txn)
     {
         // this is a transaction, and we have it
-        WriteLog (lsTRACE, TransactionAcquire)
+        JLOG (j_.trace)
                 << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32 (HashPrefix::transactionID);

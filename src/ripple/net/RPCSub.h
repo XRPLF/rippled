@@ -42,7 +42,8 @@ protected:
 std::shared_ptr<RPCSub> make_RPCSub (
     InfoSub::Source& source, boost::asio::io_service& io_service,
     JobQueue& jobQueue, std::string const& strUrl,
-    std::string const& strUsername, std::string const& strPassword);
+    std::string const& strUsername, std::string const& strPassword,
+    Logs& logs);
 
 } // ripple
 

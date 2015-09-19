@@ -81,7 +81,7 @@ public:
 
     static std::shared_ptr<SHAMapAbstractNode>
         make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
-             uint256 const& hash, bool hashValid);
+             uint256 const& hash, bool hashValid, beast::Journal j);
 
     // debugging
 #ifdef BEAST_DEBUG
@@ -125,7 +125,8 @@ public:
 
     friend std::shared_ptr<SHAMapAbstractNode>
         SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq,
-             SHANodeFormat format, uint256 const& hash, bool hashValid);
+             SHANodeFormat format, uint256 const& hash, bool hashValid,
+                 beast::Journal j);
 };
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect that.

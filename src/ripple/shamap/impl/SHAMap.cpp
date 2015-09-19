@@ -176,7 +176,7 @@ SHAMap::fetchNodeFromDB (uint256 const& hash) const
             try
             {
                 node = SHAMapAbstractNode::make(obj->getData(),
-                    0, snfPREFIX, hash, true);
+                    0, snfPREFIX, hash, true, f_.journal());
                 if (node)
                     canonicalize (hash, node);
             }
@@ -206,7 +206,8 @@ SHAMap::checkFilter(uint256 const& hash, SHAMapNodeID const& id,
     Blob nodeData;
     if (filter->haveNode (id, hash, nodeData))
     {
-        node = SHAMapAbstractNode::make(nodeData, 0, snfPREFIX, hash, true);
+        node = SHAMapAbstractNode::make(
+            nodeData, 0, snfPREFIX, hash, true, f_.journal ());
         if (node)
         {
             filter->gotNode (true, id, hash, nodeData, node->getType ());
@@ -381,7 +382,8 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
             if (!obj)
                 return nullptr;
 
-            ptr = SHAMapAbstractNode::make(obj->getData(), 0, snfPREFIX, hash, true);
+            ptr = SHAMapAbstractNode::make(
+                obj->getData(), 0, snfPREFIX, hash, true, f_.journal ());
 
             if (ptr && backed_)
                 canonicalize (hash, ptr);

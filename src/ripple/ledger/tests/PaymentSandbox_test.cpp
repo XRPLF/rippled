@@ -104,6 +104,8 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         env.fund (XRP (10000), alice, gw1, gw2);
 
+        auto j = env.app().journal ("View");
+
         auto const USD_gw1 = gw1["USD"];
         auto const USD_gw2 = gw2["USD"];
 
@@ -121,16 +123,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            accountSend (av, gw1, alice, toCredit);
+            accountSend (av, gw1, alice, toCredit, j);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit);
 
-            accountSend (av, alice, gw1, toDebit);
+            accountSend (av, alice, gw1, toDebit, j);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit - toDebit);
         }
 
@@ -140,16 +142,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            rippleCredit (av, gw1, alice, toCredit, true);
+            rippleCredit (av, gw1, alice, toCredit, true, j);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit);
 
-            rippleCredit (av, alice, gw1, toDebit, true);
+            rippleCredit (av, alice, gw1, toDebit, true, j);
             expect (accountHolds (av, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit - toDebit);
         }
 
@@ -160,16 +162,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            accountSend (pv, gw1, alice, toCredit);
+            accountSend (pv, gw1, alice, toCredit, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount);
 
-            accountSend (pv, alice, gw1, toDebit);
+            accountSend (pv, alice, gw1, toDebit, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
 
@@ -180,11 +182,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            rippleCredit (pv, gw1, alice, toCredit, true);
+            rippleCredit (pv, gw1, alice, toCredit, true, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount);
         }
 
@@ -195,11 +197,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            redeemIOU (pv, alice, toDebit, iss);
+            redeemIOU (pv, alice, toDebit, iss, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
 
@@ -210,11 +212,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            issueIOU (pv, alice, toCredit, iss);
+            issueIOU (pv, alice, toCredit, iss, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount);
         }
 
@@ -225,27 +227,27 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
-                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE);
+                pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            accountSend (pv, gw1, alice, toCredit);
+            accountSend (pv, gw1, alice, toCredit, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount);
 
             {
                 PaymentSandbox pv2(&pv);
                 expect (accountHolds (pv2, alice, iss.currency, iss.account,
-                            fhIGNORE_FREEZE) ==
+                            fhIGNORE_FREEZE, j) ==
                         startingAmount);
-                accountSend (pv2, gw1, alice, toCredit);
+                accountSend (pv2, gw1, alice, toCredit, j);
                 expect (accountHolds (pv2, alice, iss.currency, iss.account,
-                            fhIGNORE_FREEZE) ==
+                            fhIGNORE_FREEZE, j) ==
                         startingAmount);
             }
 
-            accountSend (pv, alice, gw1, toDebit);
+            accountSend (pv, alice, gw1, toDebit, j);
             expect (accountHolds (pv, alice, iss.currency, iss.account,
-                        fhIGNORE_FREEZE) ==
+                        fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
     }

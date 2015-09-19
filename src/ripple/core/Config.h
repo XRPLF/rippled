@@ -29,6 +29,7 @@
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/core/files/File.h>
 #include <beast/utility/ci_char_traits.h>
+#include <beast/utility/Journal.h>
 #include <boost/asio/ip/tcp.hpp> // VFALCO FIX: This include should not be here
 #include <boost/filesystem.hpp> // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
@@ -47,7 +48,7 @@ parseIniFile (std::string const& strInput, const bool bTrim);
 
 bool
 getSingleSection (IniFileSections& secSource,
-    std::string const& strSection, std::string& strValue);
+    std::string const& strSection, std::string& strValue, beast::Journal j);
 
 int
 countSectionEntries (IniFileSections& secSource, std::string const& strSection);
@@ -131,6 +132,7 @@ private:
     boost::filesystem::path DEBUG_LOGFILE;
 
     void load ();
+    beast::Journal j_;
 public:
 
     //--------------------------------------------------------------------------

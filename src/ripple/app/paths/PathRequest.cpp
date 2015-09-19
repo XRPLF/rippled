@@ -485,7 +485,8 @@ PathRequest::findPaths (
         *sandbox, saMaxAmount,
         convert_all_ ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
             STAmount::cMaxOffset) : saDstAmount,
-        *raDstAccount, *raSrcAccount, *result, &rcInput);
+        *raDstAccount, *raSrcAccount, *result,
+        app_.logs (), &rcInput);
 
     if (! convert_all_ &&
         ! fullLiquidityPath.empty() &&
@@ -498,7 +499,7 @@ PathRequest::findPaths (
 
         rc = path::RippleCalc::rippleCalculate(
             *sandbox, saMaxAmount, saDstAmount,
-                *raDstAccount, *raSrcAccount, *result);
+                *raDstAccount, *raSrcAccount, *result, app_.logs ());
         if (rc.result() != tesSUCCESS)
         {
             m_journal.warning << iIdentifier

@@ -151,7 +151,7 @@ public:
         , mLedgerHistory (collector, app)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (make_LedgerCleaner (
-            app, *this, app_.logs().journal("LedgerCleaner")))
+            app, *this, app_.journal("LedgerCleaner")))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
@@ -170,7 +170,7 @@ public:
         , ledger_history_ (app_.config().LEDGER_HISTORY)
         , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
         , fetch_packs_ ("FetchPack", 65536, 45, stopwatch,
-            app_.logs().journal("TaggedCache"))
+            app_.journal("TaggedCache"))
         , fetch_seq_ (0)
     {
     }
@@ -219,7 +219,7 @@ public:
         std::uint32_t pubClose = mPubLedgerClose.load();
         if (!pubClose)
         {
-            WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
+            JLOG (m_journal.debug) << "No published ledger";
             return 999999;
         }
 
@@ -228,7 +228,7 @@ public:
         ret -= static_cast<std::int64_t> (pubClose);
         ret = (ret > 0) ? ret : 0;
 
-        WriteLog (lsTRACE, LedgerMaster) << "Published ledger age is " << ret;
+        JLOG (m_journal.trace) << "Published ledger age is " << ret;
         return static_cast<int> (ret);
     }
 
@@ -237,7 +237,7 @@ public:
         std::uint32_t valClose = mValidLedgerSign.load();
         if (!valClose)
         {
-            WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
+            JLOG (m_journal.debug) << "No validated ledger";
             return 999999;
         }
 
@@ -245,7 +245,7 @@ public:
         ret -= static_cast<std::int64_t> (valClose);
         ret = (ret > 0) ? ret : 0;
 
-        WriteLog (lsTRACE, LedgerMaster) << "Validated ledger age is " << ret;
+        JLOG (m_journal.trace) << "Validated ledger age is " << ret;
         return static_cast<int> (ret);
     }
 
@@ -569,7 +569,7 @@ public:
 
         if (haveHash.isZero())
         {
-            WriteLog (lsERROR, LedgerMaster) << "No hash for fetch pack";
+            JLOG (m_journal.error) << "No hash for fetch pack";
             return;
         }
 
@@ -603,11 +603,11 @@ public:
                 tmBH, protocol::mtGET_OBJECTS);
 
             target->send (packet);
-            WriteLog (lsTRACE, LedgerMaster) << "Requested fetch pack for "
+            JLOG (m_journal.trace) << "Requested fetch pack for "
                                              << missingIndex;
         }
         else
-            WriteLog (lsDEBUG, LedgerMaster) << "No peer for fetch pack";
+            JLOG (m_journal.debug) << "No peer for fetch pack";
     }
 
     void fixMismatch (Ledger::ref ledger) override
@@ -625,7 +625,7 @@ public:
                 }
                 catch (...)
                 {
-                    WriteLog (lsWARNING, LedgerMaster) <<
+                    JLOG (m_journal.warning) <<
                         "fixMismatch encounters partial ledger";
                     clearLedger(lSeq);
                     return;
@@ -660,8 +660,8 @@ public:
         Ledger::pointer ledger, bool isSynchronous, bool isCurrent) override
     {
         // A new ledger has been accepted as part of the trusted chain
-        WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->info().seq
-                                         << " accepted :" << ledger->getHash ();
+        JLOG (m_journal.debug) << "Ledger " << ledger->info().seq
+                                         << "accepted :" << ledger->getHash ();
         assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
@@ -706,7 +706,7 @@ public:
                 if (!prevLedger ||
                     (prevLedger->getHash () != ledger->info().parentHash))
                 {
-                    WriteLog (lsWARNING, LedgerMaster)
+                    JLOG (m_journal.warning)
                             << "Acquired ledger invalidates previous ledger: "
                             << (prevLedger ? "hashMismatch" : "missingLedger");
                     fixMismatch (ledger);
@@ -747,7 +747,7 @@ public:
                 if (mMinValidations < (valCount/2 + 1))
                 {
                     mMinValidations = (valCount/2 + 1);
-                    WriteLog (lsINFO, LedgerMaster)
+                    JLOG (m_journal.info)
                         << "Raising minimum validations to " << mMinValidations;
                 }
             }
@@ -824,12 +824,12 @@ public:
             ledger->getHash());
         if (tvc < minVal) // nothing we can do
         {
-            WriteLog (lsTRACE, LedgerMaster)
+            JLOG (m_journal.trace)
                 << "Only " << tvc << " validations for " << ledger->getHash();
             return;
         }
 
-        WriteLog (lsINFO, LedgerMaster)
+        JLOG (m_journal.info)
             << "Advancing accepted ledger to " << ledger->info().seq
             << " with >= " << minVal << " validations";
 
@@ -883,7 +883,7 @@ public:
 
         if (ledger->info().seq <= mValidLedgerSeq)
         {
-            WriteLog (lsINFO,  LedgerConsensus)
+            JLOG (app_.journal ("LedgerConsensus").info)
                << "Consensus built old ledger: "
                << ledger->info().seq << " <= " << mValidLedgerSeq;
             return;
@@ -894,7 +894,7 @@ public:
 
         if (ledger->info().seq <= mValidLedgerSeq)
         {
-            WriteLog (lsDEBUG, LedgerConsensus)
+            JLOG (app_.journal ("LedgerConsensus").debug)
                 << "Consensus ledger fully validated";
             return;
         }
@@ -959,7 +959,7 @@ public:
 
         if (maxSeq > mValidLedgerSeq)
         {
-            WriteLog (lsDEBUG, LedgerConsensus)
+            JLOG (app_.journal ("LedgerConsensus").debug)
                 << "Consensus triggered check of ledger";
             checkAccept (maxLedger, maxSeq);
         }
@@ -970,7 +970,7 @@ public:
         ScopedLockType sl (m_mutex);
         assert (!mValidLedger.empty () && mAdvanceThread);
 
-        WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
+        JLOG (m_journal.trace) << "advanceThread<";
 
         try
         {
@@ -978,11 +978,11 @@ public:
         }
         catch (...)
         {
-            WriteLog (lsFATAL, LedgerMaster) << "doAdvance throws an exception";
+            JLOG (m_journal.fatal) << "doAdvance throws an exception";
         }
 
         mAdvanceThread = false;
-        WriteLog (lsTRACE, LedgerMaster) << "advanceThread>";
+        JLOG (m_journal.trace) << "advanceThread>";
     }
 
     // VFALCO NOTE This should return boost::optional<uint256>
@@ -1022,20 +1022,20 @@ public:
     {
         std::vector<Ledger::pointer> ret;
 
-        WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
+        JLOG (m_journal.trace) << "findNewLedgersToPublish<";
         if (mValidLedger.empty ())
         {
             // No valid ledger, nothing to do
         }
         else if (! mPubLedger)
         {
-            WriteLog (lsINFO, LedgerMaster) << "First published ledger will be "
+            JLOG (m_journal.info) << "First published ledger will be "
                                             << mValidLedgerSeq;
             ret.push_back (mValidLedger.get ());
         }
         else if (mValidLedgerSeq > (mPubLedgerSeq + MAX_LEDGER_GAP))
         {
-            WriteLog (lsWARNING, LedgerMaster)
+            JLOG (m_journal.warning)
                 << "Gap in validated ledger stream " << mPubLedgerSeq
                 << " - " << mValidLedgerSeq - 1;
             Ledger::pointer valLedger = mValidLedger.get ();
@@ -1056,7 +1056,7 @@ public:
             {
                 for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
                 {
-                    WriteLog (lsTRACE, LedgerMaster)
+                    JLOG (m_journal.trace)
                         << "Trying to fetch/publish valid ledger " << seq;
 
                     Ledger::pointer ledger;
@@ -1073,7 +1073,7 @@ public:
                     }
                     else if (hash->isZero())
                     {
-                        WriteLog (lsFATAL, LedgerMaster)
+                        JLOG (m_journal.fatal)
                             << "Ledger: " << valSeq
                             << " does not have hash for " << seq;
                         assert (false);
@@ -1100,12 +1100,12 @@ public:
             }
             catch (...)
             {
-                WriteLog (lsERROR, LedgerMaster)
+                JLOG (m_journal.error)
                     << "findNewLedgersToPublish catches an exception";
             }
         }
 
-        WriteLog (lsTRACE, LedgerMaster)
+        JLOG (m_journal.trace)
             << "findNewLedgersToPublish> " << ret.size();
         return ret;
     }
@@ -1204,7 +1204,7 @@ public:
                 age -= static_cast<std::int64_t> (lastLedger->info().closeTime);
                 if (age > 60)
                 {
-                    WriteLog (lsDEBUG, LedgerMaster)
+                    JLOG (m_journal.debug)
                             << "Published ledger too old for updating paths";
                     --mPathFindThread;
                     return;
@@ -1218,7 +1218,7 @@ public:
             }
             catch (SHAMapMissingNode&)
             {
-                WriteLog (lsINFO, LedgerMaster)
+                JLOG (m_journal.info)
                         << "Missing node detected during pathfinding";
                 if (lastLedger->info().open)
                 {
@@ -1340,7 +1340,7 @@ public:
         }
         catch (SHAMapMissingNode const&)
         {
-            WriteLog (lsWARNING, RPCHandler)
+            JLOG (app_.journal ("RPCHandler").warning)
                     << "Missing SHANode " << std::to_string (seq);
             return false;
         }
@@ -1357,7 +1357,7 @@ public:
 
     void setMinValidations (int v) override
     {
-        WriteLog (lsINFO, LedgerMaster) << "Validation quorum: " << v;
+        JLOG (m_journal.info) << "Validation quorum: " << v;
         mMinValidations = v;
     }
 
@@ -1584,7 +1584,7 @@ bool LedgerMasterImp::shouldAcquire (
         candidateLedger > ledgerHistoryIndex ||
         (currentLedger - candidateLedger) <= ledgerHistory);
 
-    WriteLog (lsTRACE, LedgerMaster)
+    JLOG (m_journal.trace)
         << "Missing ledger "
         << candidateLedger
         << (ret ? " should" : " should NOT")
@@ -1616,14 +1616,14 @@ void LedgerMasterImp::doAdvance ()
                     missing = mCompleteLedgers.prevMissing(
                         mPubLedger->info().seq);
                 }
-                WriteLog (lsTRACE, LedgerMaster)
+                JLOG (m_journal.trace)
                     << "tryAdvance discovered missing " << missing;
                 if ((missing != RangeSet::absent) && (missing > 0) &&
                     shouldAcquire (mValidLedgerSeq, ledger_history_,
                         app_.getSHAMapStore ().getCanDelete (), missing) &&
                     ((mFillInProgress == 0) || (missing > mFillInProgress)))
                 {
-                    WriteLog (lsTRACE, LedgerMaster)
+                    JLOG (m_journal.trace)
                         << "advanceThread should acquire";
                     {
                         ScopedUnlockType sl(m_mutex);
@@ -1643,26 +1643,26 @@ void LedgerMasterImp::doAdvance ()
                                     if (! ledger && (missing > 32600) &&
                                         shouldFetchPack (missing))
                                     {
-                                        WriteLog (lsTRACE, LedgerMaster) <<
+                                        JLOG (m_journal.trace) <<
                                         "tryAdvance want fetch pack " <<
                                         missing;
                                         fetch_seq_ = missing;
                                         getFetchPack(hash, missing);
                                     }
                                     else
-                                        WriteLog (lsTRACE, LedgerMaster) <<
+                                        JLOG (m_journal.trace) <<
                                         "tryAdvance no fetch pack for " <<
                                         missing;
                                 }
                                 else
-                                    WriteLog (lsDEBUG, LedgerMaster) <<
+                                    JLOG (m_journal.debug) <<
                                     "tryAdvance found failed acquire";
                             }
                             if (ledger)
                             {
                                 auto seq = ledger->info().seq;
                                 assert(seq == missing);
-                                WriteLog (lsTRACE, LedgerMaster)
+                                JLOG (m_journal.trace)
                                         << "tryAdvance acquired "
                                         << ledger->info().seq;
                                 setFullLedger(ledger, false, false);
@@ -1699,19 +1699,19 @@ void LedgerMasterImp::doAdvance ()
                                 }
                                 catch (...)
                                 {
-                                    WriteLog (lsWARNING, LedgerMaster) <<
+                                    JLOG (m_journal.warning) <<
                                     "Threw while prefetching";
                                 }
                             }
                         }
                         else
                         {
-                            WriteLog (lsFATAL, LedgerMaster) <<
+                            JLOG (m_journal.fatal) <<
                                 "Can't find ledger following prevMissing " <<
                                 missing;
-                            WriteLog (lsFATAL, LedgerMaster) << "Pub:" <<
+                            JLOG (m_journal.fatal) << "Pub:" <<
                                 mPubLedgerSeq << " Val:" << mValidLedgerSeq;
-                            WriteLog (lsFATAL, LedgerMaster) << "Ledgers: " <<
+                            JLOG (m_journal.fatal) << "Ledgers: " <<
                                 app_.getLedgerMaster().getCompleteLedgers();
                             clearLedger (missing + 1);
                             progress = true;
@@ -1719,7 +1719,7 @@ void LedgerMasterImp::doAdvance ()
                     }
                     if (mValidLedgerSeq != mPubLedgerSeq)
                     {
-                        WriteLog (lsDEBUG, LedgerMaster) <<
+                        JLOG (m_journal.debug) <<
                             "tryAdvance found last valid changed";
                         progress = true;
                     }
@@ -1728,20 +1728,20 @@ void LedgerMasterImp::doAdvance ()
             else
             {
                 mHistLedger.reset();
-                WriteLog (lsTRACE, LedgerMaster) <<
+                JLOG (m_journal.trace) <<
                     "tryAdvance not fetching history";
             }
         }
         else
         {
-            WriteLog (lsTRACE, LedgerMaster) <<
+            JLOG (m_journal.trace) <<
                 "tryAdvance found " << pubLedgers.size() <<
                 " ledgers to publish";
             for(auto ledger : pubLedgers)
             {
                 {
                     ScopedUnlockType sul (m_mutex);
-                    WriteLog(lsDEBUG, LedgerMaster) <<
+                    JLOG (m_journal.debug) <<
                         "tryAdvance publishing seq " << ledger->info().seq;
 
                     setFullLedger(ledger, true, true);

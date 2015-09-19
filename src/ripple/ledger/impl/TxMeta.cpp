@@ -30,10 +30,11 @@ namespace ripple {
 
 template<class T>
 TxMeta::TxMeta (uint256 const& txid,
-    std::uint32_t ledger, T const& data, CtorHelper)
+    std::uint32_t ledger, T const& data, beast::Journal j, CtorHelper)
     : mTransactionID (txid)
     , mLedger (ledger)
     , mNodes (sfAffectedNodes, 32)
+    , j_ (j)
 {
     SerialIter sit (makeSlice(data));
 
@@ -46,10 +47,12 @@ TxMeta::TxMeta (uint256 const& txid,
         setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
 }
 
-TxMeta::TxMeta (uint256 const& txid, std::uint32_t ledger, STObject const& obj)
+TxMeta::TxMeta (uint256 const& txid, std::uint32_t ledger, STObject const& obj,
+    beast::Journal j)
     : mTransactionID (txid)
     , mLedger (ledger)
     , mNodes (obj.getFieldArray (sfAffectedNodes))
+    , j_ (j)
 {
     mResult = obj.getFieldU8 (sfTransactionResult);
     mIndex = obj.getFieldU32 (sfTransactionIndex);
@@ -65,16 +68,18 @@ TxMeta::TxMeta (uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 }
 
 TxMeta::TxMeta (uint256 const& txid,
-                                        std::uint32_t ledger,
-                                        Blob const& vec)
-    : TxMeta (txid, ledger, vec, CtorHelper ())
+    std::uint32_t ledger,
+    Blob const& vec,
+    beast::Journal j)
+    : TxMeta (txid, ledger, vec, j, CtorHelper ())
 {
 }
 
 TxMeta::TxMeta (uint256 const& txid,
-                                        std::uint32_t ledger,
-                                        std::string const& data)
-    : TxMeta (txid, ledger, data, CtorHelper ())
+    std::uint32_t ledger,
+    std::string const& data,
+    beast::Journal j)
+    : TxMeta (txid, ledger, data, j, CtorHelper ())
 {
 }
 
@@ -155,7 +160,7 @@ TxMeta::getAffectedAccounts() const
                         }
                         else
                         {
-                            WriteLog (lsFATAL, TxMeta) << "limit is not amount " << field.getJson (0);
+                            JLOG (j_.fatal) << "limit is not amount " << field.getJson (0);
                         }
                     }
                 }

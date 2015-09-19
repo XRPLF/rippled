@@ -99,7 +99,7 @@ public:
         return LockedSociSession (&session_, lock_);
     }
 
-    void setupCheckpointing (JobQueue*);
+    void setupCheckpointing (JobQueue*, Logs&);
 
 private:
     LockedSociSession::mutex lock_;

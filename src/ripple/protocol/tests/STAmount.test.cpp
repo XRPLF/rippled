@@ -369,7 +369,7 @@ public:
 
         if (divide (STAmount (noIssue(), 60), STAmount (3), noIssue()).getText () != "20")
         {
-            WriteLog (lsFATAL, STAmount) << "60/3 = " <<
+            log << "60/3 = " <<
                 divide (STAmount (noIssue(), 60),
                     STAmount (3), noIssue()).getText ();
             fail ("STAmount divide fail");
@@ -414,7 +414,7 @@ public:
 
             if (b.getuint64 () != r)
             {
-                WriteLog (lsFATAL, STAmount) << r << " != " << b.getuint64 () << " " << b.ToString (16);
+                log << r << " != " << b.getuint64 () << " " << b.ToString (16);
                 fail ("setull64/getull64 failure");
             }
             else
@@ -535,35 +535,35 @@ public:
         STAmount oneThird1 = divRound (one, three, noIssue(), false);
         STAmount oneThird2 = divide (one, three, noIssue());
         STAmount oneThird3 = divRound (one, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << oneThird1;
-        WriteLog (lsINFO, STAmount) << oneThird2;
-        WriteLog (lsINFO, STAmount) << oneThird3;
+        log << oneThird1;
+        log << oneThird2;
+        log << oneThird3;
 
         STAmount twoThird1 = divRound (two, three, noIssue(), false);
         STAmount twoThird2 = divide (two, three, noIssue());
         STAmount twoThird3 = divRound (two, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << twoThird1;
-        WriteLog (lsINFO, STAmount) << twoThird2;
-        WriteLog (lsINFO, STAmount) << twoThird3;
+        log << twoThird1;
+        log << twoThird2;
+        log << twoThird3;
 
         STAmount oneA = mulRound (oneThird1, three, noIssue(), false);
         STAmount oneB = multiply (oneThird2, three, noIssue());
         STAmount oneC = mulRound (oneThird3, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << oneA;
-        WriteLog (lsINFO, STAmount) << oneB;
-        WriteLog (lsINFO, STAmount) << oneC;
+        log << oneA;
+        log << oneB;
+        log << oneC;
 
         STAmount fourThirdsB = twoThird2 + twoThird2;
-        WriteLog (lsINFO, STAmount) << fourThirdsA;
-        WriteLog (lsINFO, STAmount) << fourThirdsB;
-        WriteLog (lsINFO, STAmount) << fourThirdsC;
+        log << fourThirdsA;
+        log << fourThirdsB;
+        log << fourThirdsC;
 
         STAmount dripTest1 = mulRound (twoThird2, two, xrpIssue (), false);
         STAmount dripTest2 = multiply (twoThird2, two, xrpIssue ());
         STAmount dripTest3 = mulRound (twoThird2, two, xrpIssue (), true);
-        WriteLog (lsINFO, STAmount) << dripTest1;
-        WriteLog (lsINFO, STAmount) << dripTest2;
-        WriteLog (lsINFO, STAmount) << dripTest3;
+        log << dripTest1;
+        log << dripTest2;
+        log << dripTest3;
 #endif
     }
 

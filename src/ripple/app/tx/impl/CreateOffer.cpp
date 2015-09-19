@@ -190,7 +190,7 @@ CreateOffer::dry_offer (ApplyView& view, Offer const& offer)
     if (offer.fully_consumed ())
         return true;
     auto const amount = accountFunds(view, offer.owner(),
-        offer.amount().out, fhZERO_IF_FROZEN);
+        offer.amount().out, fhZERO_IF_FROZEN, ctx_.app.journal ("View"));
     return (amount <= zero);
 }
 
@@ -267,9 +267,12 @@ CreateOffer::bridged_cross (
     // Note the subtle distinction here: self-offers encountered in the
     // bridge are taken, but self-offers encountered in the direct book
     // are not.
-    bool have_bridge = offers_leg1.step () && offers_leg2.step ();
-    bool have_direct = step_account (offers_direct, taker);
+    auto& logs = ctx_.app.logs();
+    bool have_bridge = offers_leg1.step (logs) && offers_leg2.step (logs);
+    bool have_direct = step_account (offers_direct, taker, logs);
     int count = 0;
+
+    auto viewJ = ctx_.app.journal ("View");
 
     // Modifying the order or logic of the operations in the loop will cause
     // a protocol breaking change.
@@ -305,7 +308,7 @@ CreateOffer::bridged_cross (
                 j_.debug << "  funds: " << accountFunds(view,
                     offers_direct.tip ().owner (),
                     offers_direct.tip ().amount ().out,
-                    fhIGNORE_FREEZE);
+                    fhIGNORE_FREEZE, viewJ);
             }
 
             cross_result = taker.cross(offers_direct.tip ());
@@ -315,7 +318,7 @@ CreateOffer::bridged_cross (
             if (dry_offer (view, offers_direct.tip ()))
             {
                 direct_consumed = true;
-                have_direct = step_account (offers_direct, taker);
+                have_direct = step_account (offers_direct, taker, ctx_.app.logs());
             }
         }
         else
@@ -325,12 +328,12 @@ CreateOffer::bridged_cross (
                 auto const owner1_funds_before = accountFunds(view,
                     offers_leg1.tip ().owner (),
                     offers_leg1.tip ().amount ().out,
-                    fhIGNORE_FREEZE);
+                    fhIGNORE_FREEZE, viewJ);
 
                 auto const owner2_funds_before = accountFunds(view,
                     offers_leg2.tip ().owner (),
                     offers_leg2.tip ().amount ().out,
-                    fhIGNORE_FREEZE);
+                    fhIGNORE_FREEZE, viewJ);
 
                 j_.debug << count << " Bridge:";
                 j_.debug << " offer1: " << offers_leg1.tip ();
@@ -352,12 +355,12 @@ CreateOffer::bridged_cross (
             if (dry_offer (view, offers_leg1.tip ()))
             {
                 leg1_consumed = true;
-                have_bridge = (have_bridge && offers_leg1.step ());
+                have_bridge = (have_bridge && offers_leg1.step (logs));
             }
             if (dry_offer (view, offers_leg2.tip ()))
             {
                 leg2_consumed = true;
-                have_bridge = (have_bridge && offers_leg2.step ());
+                have_bridge = (have_bridge && offers_leg2.step (logs));
             }
         }
 
@@ -405,7 +408,7 @@ CreateOffer::direct_cross (
     TER cross_result (tesSUCCESS);
     int count = 0;
 
-    bool have_offer = step_account (offers, taker);
+    bool have_offer = step_account (offers, taker, ctx_.app.logs());
 
     // Modifying the order or logic of the operations in the loop will cause
     // a protocol breaking change.
@@ -428,7 +431,8 @@ CreateOffer::direct_cross (
             j_.debug << "    out: " << offer.amount ().out;
             j_.debug << "  owner: " << offer.owner ();
             j_.debug << "  funds: " << accountFunds(view,
-                offer.owner (), offer.amount ().out, fhIGNORE_FREEZE);
+                offer.owner (), offer.amount ().out, fhIGNORE_FREEZE,
+                ctx_.app.journal ("View"));
         }
 
         cross_result = taker.cross (offer);
@@ -438,7 +442,7 @@ CreateOffer::direct_cross (
         if (dry_offer (view, offer))
         {
             direct_consumed = true;
-            have_offer = step_account (offers, taker);
+            have_offer = step_account (offers, taker, ctx_.app.logs());
         }
 
         if (cross_result != tesSUCCESS)
@@ -474,9 +478,9 @@ CreateOffer::direct_cross (
 // that are from the taker or which cross the taker's threshold.
 // Return false if the is no offer in the book, true otherwise.
 bool
-CreateOffer::step_account (OfferStream& stream, Taker const& taker)
+CreateOffer::step_account (OfferStream& stream, Taker const& taker, Logs& logs)
 {
-    while (stream.step ())
+    while (stream.step (logs))
     {
         auto const& offer = stream.tip ();
 
@@ -598,6 +602,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // end up on the books.
     std::uint64_t const uRate = getRate (saTakerGets, saTakerPays);
 
+    auto viewJ = ctx_.app.journal ("View");
+
     TER result = tesSUCCESS;
 
     // This is the ledger view that we work against. Transactions are applied
@@ -611,7 +617,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         result = tecFROZEN;
     }
     else if (accountFunds(view, account_, saTakerGets,
-        fhZERO_IF_FROZEN) <= zero)
+        fhZERO_IF_FROZEN, viewJ) <= zero)
     {
         if (j_.debug) j_.debug <<
             "delay: Offers must be at least partially funded.";
@@ -647,7 +653,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         if (sleCancel)
         {
             j_.debug << "Create cancels order " << uCancelSequence;
-            result = offerDelete (view, sleCancel);
+            result = offerDelete (view, sleCancel, viewJ);
         }
     }
 
@@ -812,12 +818,12 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         getOwnerDirIndex (account_), offer_index,
         std::bind (
             &ownerDirDescriber, std::placeholders::_1,
-            std::placeholders::_2, account_));
+            std::placeholders::_2, account_), viewJ);
 
     if (result == tesSUCCESS)
     {
         // Update owner count.
-        adjustOwnerCount(view, sleCreator, 1);
+        adjustOwnerCount(view, sleCreator, 1, viewJ);
 
         if (j_.trace) j_.trace <<
             "adding to book: " << to_string (saTakerPays.issue ()) <<
@@ -835,7 +841,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 &qualityDirDescriber, std::placeholders::_1,
                 std::placeholders::_2, saTakerPays.getCurrency (),
                 uPaysIssuerID, saTakerGets.getCurrency (),
-                uGetsIssuerID, uRate, std::ref(ctx_.app)));
+                uGetsIssuerID, uRate, std::ref(ctx_.app)),
+            viewJ);
     }
 
     if (result == tesSUCCESS)

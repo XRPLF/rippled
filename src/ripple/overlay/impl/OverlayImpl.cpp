@@ -139,11 +139,11 @@ OverlayImpl::OverlayImpl (
     , work_ (boost::in_place(std::ref(io_service_)))
     , strand_ (io_service_)
     , setup_(setup)
-    , journal_ (app_.logs().journal("Overlay"))
+    , journal_ (app_.journal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        stopwatch(), app_.logs().journal("PeerFinder"), config))
+        stopwatch(), app_.journal("PeerFinder"), config))
     , m_resolver (resolver)
     , next_id_(1)
     , timer_count_(0)
@@ -356,7 +356,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     auto const p = std::make_shared<ConnectAttempt>(app_,
         io_service_, beast::IPAddressConversion::to_asio_endpoint(remote_endpoint),
             usage, setup_.context, next_id_++, slot,
-                app_.logs().journal("Peer"), *this);
+                app_.journal("Peer"), *this);
 
     std::lock_guard<decltype(mutex_)> lock(mutex_);
     list_.emplace(p.get(), p);

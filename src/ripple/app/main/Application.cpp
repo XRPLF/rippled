@@ -131,12 +131,12 @@ public:
             CollectorManager& collectorManager)
         : app_ (app)
         , treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
-            app.logs().journal("TaggedCache"))
+            app.journal("TaggedCache"))
         , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
                 fullBelowTargetSize, fullBelowExpirationSeconds)
         , db_ (db)
-        , j_ (app.logs().journal("SHAMap"))
+        , j_ (app.journal("SHAMap"))
     {
     }
 
@@ -428,7 +428,7 @@ public:
         // almost everything is a Stoppable child of the JobQueue.
         //
         , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
-            m_nodeStoreScheduler, logs_->journal("JobQueue")))
+            m_nodeStoreScheduler, logs_->journal("JobQueue"), *logs_))
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue
@@ -732,6 +732,8 @@ public:
 
     bool serverOkay (std::string& reason) override;
 
+    beast::Journal journal (std::string const& name) override;
+
     //--------------------------------------------------------------------------
     bool initSqliteDbs ()
     {
@@ -820,8 +822,8 @@ public:
                 << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                                (config_->getSize (siTxnDBCache) * 1024));
 
-        mTxnDB->setupCheckpointing (m_jobQueue.get());
-        mLedgerDB->setupCheckpointing (m_jobQueue.get());
+        mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
+        mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
 
         if (!config_->RUN_STANDALONE)
             updateTables ();
@@ -1161,24 +1163,25 @@ ApplicationImp::getLastFullLedger()
 
         if (ledger->getHash () != ledgerHash)
         {
-            if (ShouldLog (lsERROR, Ledger))
+            auto j = journal ("Ledger");
+            if (j.error)
             {
-                WriteLog (lsERROR, Ledger) << "Failed on ledger";
+                j.error  << "Failed on ledger";
                 Json::Value p;
                 addJson (p, {*ledger, LedgerFill::full});
-                WriteLog (lsERROR, Ledger) << p;
+                j.error << p;
             }
 
             assert (false);
             return Ledger::pointer ();
         }
 
-        WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ledgerHash;
+        JLOG (journal ("Ledger").trace) << "Loaded ledger: " << ledgerHash;
         return ledger;
     }
     catch (SHAMapMissingNode& sn)
     {
-        WriteLog (lsWARNING, Ledger)
+        JLOG (journal ("Ledger").warning)
                 << "Database contains ledger with missing nodes: " << sn;
         return Ledger::pointer ();
     }
@@ -1367,14 +1370,14 @@ bool ApplicationImp::loadOldLedger (
             return false;
         }
 
-        if (!loadLedger->walkLedger ())
+        if (!loadLedger->walkLedger (journal ("Ledger")))
         {
             m_journal.fatal << "Ledger is missing nodes.";
             assert(false);
             return false;
         }
 
-        if (!loadLedger->assertSane ())
+        if (!loadLedger->assertSane (journal ("Ledger")))
         {
             m_journal.fatal << "Ledger is not sane.";
             assert(false);
@@ -1481,6 +1484,11 @@ bool ApplicationImp::serverOkay (std::string& reason)
     return true;
 }
 
+beast::Journal ApplicationImp::journal (std::string const& name)
+{
+    return logs_->journal (name);
+}
+
 //VFALCO TODO clean this up since it is just a file holding a single member function definition
 
 static std::vector<std::string> getSchema (DatabaseCon& dbc, std::string const& dbName)
@@ -1504,13 +1512,15 @@ static std::vector<std::string> getSchema (DatabaseCon& dbc, std::string const& 
     return schema;
 }
 
-static bool schemaHas (DatabaseCon& dbc, std::string const& dbName, int line, std::string const& content)
+static bool schemaHas (
+    DatabaseCon& dbc, std::string const& dbName, int line,
+    std::string const& content, beast::Journal j)
 {
     std::vector<std::string> schema = getSchema (dbc, dbName);
 
     if (static_cast<int> (schema.size ()) <= line)
     {
-        WriteLog (lsFATAL, Application) << "Schema for " << dbName << " has too few lines";
+        JLOG (j.fatal) << "Schema for " << dbName << " has too few lines";
         throw std::runtime_error ("bad schema");
     }
 
@@ -1519,17 +1529,17 @@ static bool schemaHas (DatabaseCon& dbc, std::string const& dbName, int line, st
 
 void ApplicationImp::addTxnSeqField ()
 {
-    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
+    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "TxnSeq", m_journal))
         return;
 
-    WriteLog (lsWARNING, Application) << "Transaction sequence field is missing";
+    JLOG (m_journal.warning) << "Transaction sequence field is missing";
 
     auto& session = getTxnDB ().getSession ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
 
-    WriteLog (lsINFO, Application) << "Parsing transactions";
+    JLOG (m_journal.info) << "Parsing transactions";
     int i = 0;
     uint256 transID;
 
@@ -1558,28 +1568,28 @@ void ApplicationImp::addTxnSeqField ()
         if (txnMeta.size () == 0)
         {
             txIDs.push_back (std::make_pair (transID, -1));
-            WriteLog (lsINFO, Application) << "No metadata for " << transID;
+            JLOG (m_journal.info) << "No metadata for " << transID;
         }
         else
         {
-            TxMeta m (transID, 0, txnMeta);
+            TxMeta m (transID, 0, txnMeta, journal ("TxMeta"));
             txIDs.push_back (std::make_pair (transID, m.getIndex ()));
         }
 
         if ((++i % 1000) == 0)
         {
-            WriteLog (lsINFO, Application) << i << " transactions read";
+            JLOG (m_journal.info) << i << " transactions read";
         }
     }
 
-    WriteLog (lsINFO, Application) << "All " << i << " transactions read";
+    JLOG (m_journal.info) << "All " << i << " transactions read";
 
     soci::transaction tr(session);
 
-    WriteLog (lsINFO, Application) << "Dropping old index";
+    JLOG (m_journal.info) << "Dropping old index";
     session << "DROP INDEX AcctTxIndex;";
 
-    WriteLog (lsINFO, Application) << "Altering table";
+    JLOG (m_journal.info) << "Altering table";
     session << "ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;";
 
     boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
@@ -1590,11 +1600,11 @@ void ApplicationImp::addTxnSeqField ()
 
         if ((++i % 1000) == 0)
         {
-            WriteLog (lsINFO, Application) << i << " transactions updated";
+            JLOG (m_journal.info) << i << " transactions updated";
         }
     }
 
-    WriteLog (lsINFO, Application) << "Building new index";
+    JLOG (m_journal.info) << "Building new index";
     session << "CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);";
 
     tr.commit ();
@@ -1604,18 +1614,18 @@ void ApplicationImp::updateTables ()
 {
     if (config_->section (ConfigSection::nodeDatabase ()).empty ())
     {
-        WriteLog (lsFATAL, Application) << "The [node_db] configuration setting has been updated and must be set";
+        JLOG (m_journal.fatal) << "The [node_db] configuration setting has been updated and must be set";
         exitWithCode(1);
     }
 
     // perform any needed table updates
-    assert (schemaHas (getTxnDB (), "AccountTransactions", 0, "TransID"));
-    assert (!schemaHas (getTxnDB (), "AccountTransactions", 0, "foobar"));
+    assert (schemaHas (getTxnDB (), "AccountTransactions", 0, "TransID", m_journal));
+    assert (!schemaHas (getTxnDB (), "AccountTransactions", 0, "foobar", m_journal));
     addTxnSeqField ();
 
-    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
+    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY", m_journal))
     {
-        WriteLog (lsFATAL, Application) << "AccountTransactions database should not have a primary key";
+        JLOG (m_journal.fatal) << "AccountTransactions database should not have a primary key";
         exitWithCode(1);
     }
 
@@ -1627,9 +1637,9 @@ void ApplicationImp::updateTables ()
                 logs_->journal("NodeObject"), 0,
                 config_->section(ConfigSection::importNodeDatabase ()));
 
-        WriteLog (lsWARNING, NodeObject) <<
-            "Node import from '" << source->getName () << "' to '"
-                                 << getNodeStore().getName () << "'.";
+        JLOG (journal ("NodeObject").warning)
+            << "Node import from '" << source->getName () << "' to '"
+            << getNodeStore ().getName () << "'.";
 
         getNodeStore().import (*source);
     }

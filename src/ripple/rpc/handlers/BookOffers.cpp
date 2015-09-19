@@ -79,7 +79,7 @@ Json::Value doBookOffers (RPC::Context& context)
 
     if (!to_currency (pay_currency, taker_pays [jss::currency].asString ()))
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
+        JLOG (context.j.info) << "Bad taker_pays currency.";
         return RPC::make_error (rpcSRC_CUR_MALFORMED,
             "Invalid field 'taker_pays.currency', bad currency.");
     }
@@ -88,7 +88,7 @@ Json::Value doBookOffers (RPC::Context& context)
 
     if (!to_currency (get_currency, taker_gets [jss::currency].asString ()))
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad taker_gets currency.";
+        JLOG (context.j.info) << "Bad taker_gets currency.";
         return RPC::make_error (rpcDST_AMT_MALFORMED,
             "Invalid field 'taker_gets.currency', bad currency.");
     }
@@ -168,7 +168,7 @@ Json::Value doBookOffers (RPC::Context& context)
 
     if (pay_currency == get_currency && pay_issuer == get_issuer)
     {
-        WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
+        JLOG (context.j.info) << "taker_gets same as taker_pays.";
         return RPC::make_error (rpcBAD_MARKET);
     }
 

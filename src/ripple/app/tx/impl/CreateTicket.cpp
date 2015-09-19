@@ -107,11 +107,13 @@ CreateTicket::doApply ()
         ownerDirDescriber(p, b, account_);
     };
 
+    auto viewJ = ctx_.app.journal ("View");
     TER result = dirAdd(view(),
         hint,
         getOwnerDirIndex (account_),
         sleTicket->getIndex (),
-        describer);
+        describer,
+        viewJ);
 
     if (j_.trace) j_.trace <<
         "Creating ticket " << to_string (sleTicket->getIndex ()) <<
@@ -123,7 +125,7 @@ CreateTicket::doApply ()
     sleTicket->setFieldU64(sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts agains the creator's reserve.
-    adjustOwnerCount(view(), sle, 1);
+    adjustOwnerCount(view(), sle, 1, viewJ);
 
     return result;
 }

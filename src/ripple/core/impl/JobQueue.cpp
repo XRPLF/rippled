@@ -72,11 +72,11 @@ public:
 
     //--------------------------------------------------------------------------
     JobQueueImp (beast::insight::Collector::ptr const& collector,
-        Stoppable& parent, beast::Journal journal)
+        Stoppable& parent, beast::Journal journal, Logs& logs)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
         , m_lastJob (0)
-        , m_invalidJobData (getJobTypes ().getInvalid (), collector)
+        , m_invalidJobData (getJobTypes ().getInvalid (), collector, logs)
         , m_processCount (0)
         , m_workers (*this, "JobQueue", 0)
         , m_cancelCallback (std::bind (&Stoppable::isStopping, this))
@@ -96,7 +96,7 @@ public:
                 // And create dynamic information for all jobs
                 auto const result (m_jobData.emplace (std::piecewise_construct,
                     std::forward_as_tuple (jt.type ()),
-                    std::forward_as_tuple (jt, m_collector)));
+                    std::forward_as_tuple (jt, m_collector, logs)));
                 assert (result.second == true);
                 (void) result.second;
             }
@@ -695,9 +695,9 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 
 std::unique_ptr <JobQueue> make_JobQueue (
     beast::insight::Collector::ptr const& collector,
-        beast::Stoppable& parent, beast::Journal journal)
+        beast::Stoppable& parent, beast::Journal journal, Logs& logs)
 {
-    return std::make_unique <JobQueueImp> (collector, parent, journal);
+    return std::make_unique <JobQueueImp> (collector, parent, journal, logs);
 }
 
 }

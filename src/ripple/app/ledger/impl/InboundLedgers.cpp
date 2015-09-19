@@ -41,6 +41,7 @@ private:
     std::mutex fetchRateMutex_;
     // measures ledgers per second, constants are important
     DecayWindow<30, clock_type> fetchRate_;
+    beast::Journal j_;
 
 public:
     using u256_acq_pair = std::pair<uint256, InboundLedger::pointer>;
@@ -52,6 +53,7 @@ public:
         : Stoppable ("InboundLedgers", parent)
         , app_ (app)
         , fetchRate_(clock.now())
+        , j_ (app.journal ("InboundLedger"))
         , m_clock (clock)
         , mRecentFailures (clock)
         , mCounter(collector->make_counter("ledger_fetches"))
@@ -151,7 +153,7 @@ public:
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        WriteLog (lsTRACE, InboundLedger)
+        JLOG (j_.trace)
             << "Got data (" << packet.nodes ().size ()
             << ") for acquiring ledger: " << hash;
 
@@ -159,7 +161,7 @@ public:
 
         if (!ledger)
         {
-            WriteLog (lsTRACE, InboundLedger)
+            JLOG (j_.trace)
                 << "Got data for ledger we're no longer acquiring";
 
             // If it's state node data, stash it because it still might be
@@ -255,7 +257,7 @@ public:
 
                 auto newNode = SHAMapAbstractNode::make(
                     Blob (node.nodedata().begin(), node.nodedata().end()),
-                    0, snfWIRE, uZero, false);
+                    0, snfWIRE, uZero, false, app_.journal ("SHAMapNodeID"));
 
                 if (!newNode)
                     return;
@@ -395,7 +397,7 @@ public:
 
         }
 
-        WriteLog (lsDEBUG, InboundLedger) <<
+        JLOG (j_.debug) <<
             "Swept " << stuffToSweep.size () <<
             " out of " << total << " inbound ledgers.";
     }

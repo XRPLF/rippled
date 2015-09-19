@@ -61,10 +61,10 @@ ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     : ServerHandler (parent)
     , app_ (app)
     , m_resourceManager (resourceManager)
-    , m_journal (app_.logs().journal("Server"))
+    , m_journal (app_.journal("Server"))
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
-        *this, io_service, app_.logs().journal("Server")))
+        *this, io_service, app_.journal("Server")))
     , m_jobQueue (jobQueue)
 {
     auto const& group (cm.group ("rpc"));
@@ -165,7 +165,7 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     if (session.port().protocol.count("http") == 0 &&
         session.port().protocol.count("https") == 0)
     {
-        HTTPReply (403, "Forbidden", makeOutput (session));
+        HTTPReply (403, "Forbidden", makeOutput (session), app_.journal ("RPC"));
         session.close (true);
         return;
     }
@@ -174,7 +174,7 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     if (! authorized (
             session.port(), build_map(session.request().headers)))
     {
-        HTTPReply (403, "Forbidden", makeOutput (session));
+        HTTPReply (403, "Forbidden", makeOutput (session), app_.journal ("RPC"));
         session.close (true);
         return;
     }
@@ -232,6 +232,7 @@ ServerHandlerImp::processRequest (
     Output&& output,
     Suspend const& suspend)
 {
+    auto rpcJ = app_.journal ("RPC");
     // Move off the webserver thread onto the JobQueue.
     assert (app_.getJobQueue().getJobForThread());
 
@@ -243,7 +244,7 @@ ServerHandlerImp::processRequest (
             ! jsonRPC ||
             ! jsonRPC.isObject ())
         {
-            HTTPReply (400, "Unable to parse request", output);
+            HTTPReply (400, "Unable to parse request", output, rpcJ);
             return;
         }
     }
@@ -256,12 +257,12 @@ ServerHandlerImp::processRequest (
     Json::Value const& method = jsonRPC ["method"];
 
     if (! method) {
-        HTTPReply (400, "Null method", output);
+        HTTPReply (400, "Null method", output, rpcJ);
         return;
     }
 
     if (!method.isString ()) {
-        HTTPReply (400, "method is not string", output);
+        HTTPReply (400, "method is not string", output, rpcJ);
         return;
     }
 
@@ -292,14 +293,14 @@ ServerHandlerImp::processRequest (
 
     if (usage.disconnect ())
     {
-        HTTPReply (503, "Server is overloaded", output);
+        HTTPReply (503, "Server is overloaded", output, rpcJ);
         return;
     }
 
     std::string strMethod = method.asString ();
     if (strMethod.empty())
     {
-        HTTPReply (400, "method is empty", output);
+        HTTPReply (400, "method is empty", output, rpcJ);
         return;
     }
 
@@ -316,7 +317,7 @@ ServerHandlerImp::processRequest (
 
     else if (!params.isArray () || params.size() != 1)
     {
-        HTTPReply (400, "params unparseable", output);
+        HTTPReply (400, "params unparseable", output, rpcJ);
         return;
     }
     else
@@ -324,7 +325,7 @@ ServerHandlerImp::processRequest (
         params = std::move (params[0u]);
         if (!params.isObject())
         {
-            HTTPReply (400, "params unparseable", output);
+            HTTPReply (400, "params unparseable", output, rpcJ);
             return;
         }
     }
@@ -336,7 +337,7 @@ ServerHandlerImp::processRequest (
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing
         // XXX This needs rate limiting to prevent brute forcing password.
-        HTTPReply (403, "Forbidden", output);
+        HTTPReply (403, "Forbidden", output, rpcJ);
         return;
     }
 
@@ -346,13 +347,13 @@ ServerHandlerImp::processRequest (
 
     // Provide the JSON-RPC method as the field "command" in the request.
     params[jss::command] = strMethod;
-    WriteLog (lsTRACE, RPCHandler)
+    JLOG (m_journal.trace) 
         << "doRpcCommand:" << strMethod << ":" << params;
 
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {
-        params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
+        m_journal, params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
         {app_, suspend, "RPC-Coroutine"}};
 
     std::string response;
@@ -371,7 +372,7 @@ ServerHandlerImp::processRequest (
         {
             result[jss::status] = jss::error;
             result[jss::request] = params;
-            WriteLog (lsDEBUG, RPCErr) <<
+            JLOG (m_journal.debug)  <<
                 "rpcError: " << result [jss::error] <<
                 ": " << result [jss::error_message];
         }
@@ -406,7 +407,7 @@ ServerHandlerImp::processRequest (
             m_journal.debug << "Reply: " << response.substr (0, maxSize);
     }
 
-    HTTPReply (200, response, output);
+    HTTPReply (200, response, output, rpcJ);
 }
 
 //------------------------------------------------------------------------------

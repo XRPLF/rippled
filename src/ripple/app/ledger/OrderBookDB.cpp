@@ -32,6 +32,7 @@ OrderBookDB::OrderBookDB (Application& app, Stoppable& parent)
     : Stoppable ("OrderBookDB", parent)
     , app_ (app)
     , mSeq (0)
+    , j_ (app.journal ("OrderBookDB"))
 {
 }
 
@@ -59,7 +60,7 @@ void OrderBookDB::setup(
                 return;
         }
 
-        WriteLog (lsDEBUG, OrderBookDB)
+        JLOG (j_.debug)
             << "Advancing from " << mSeq << " to " << seq;
 
         mSeq = seq;
@@ -81,7 +82,7 @@ void OrderBookDB::update(
     OrderBookDB::IssueToOrderBook sourceMap;
     hash_set< Issue > XRPBooks;
 
-    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
+    JLOG (j_.debug) << "OrderBookDB::update>";
 
     // walk through the entire ledger looking for orderbook entries
     int books = 0;
@@ -119,14 +120,14 @@ void OrderBookDB::update(
     }
     catch (const SHAMapMissingNode&)
     {
-        WriteLog (lsINFO, OrderBookDB)
+        JLOG (j_.info) 
             << "OrderBookDB::update encountered a missing node";
         ScopedLockType sl (mLock);
         mSeq = 0;
         return;
     }
 
-    WriteLog (lsDEBUG, OrderBookDB)
+    JLOG (j_.debug)
         << "OrderBookDB::update< " << books << " books found";
     {
         ScopedLockType sl (mLock);
@@ -271,7 +272,7 @@ void OrderBookDB::processTxn (
             }
             catch (...)
             {
-                WriteLog (lsINFO, OrderBookDB)
+                JLOG (j_.info)
                     << "Fields not found in OrderBookDB::processTxn";
             }
         }

@@ -81,6 +81,8 @@ std::string createHTTPPost (
 class RPCParser
 {
 private:
+    beast::Journal j_;
+
     // TODO New routine for parsing ledger parameters, other routines should standardize on this.
     static bool jvParseLedger (Json::Value& jvRequest, std::string const& strLedger)
     {
@@ -457,8 +459,8 @@ private:
         Json::Reader    reader;
         Json::Value     jvRequest;
 
-        WriteLog (lsTRACE, RPCParser) << "RPC method: " << jvParams[0u];
-        WriteLog (lsTRACE, RPCParser) << "RPC json: " << jvParams[1u];
+        JLOG (j_.trace) << "RPC method: " << jvParams[0u];
+        JLOG (j_.trace) << "RPC json: " << jvParams[1u];
 
         if (reader.parse (jvParams[1u].asString (), jvRequest))
         {
@@ -610,7 +612,7 @@ private:
         Json::Value     jvRequest;
         bool            bLedger     = 2 == jvParams.size ();
 
-        WriteLog (lsTRACE, RPCParser) << "RPC json: " << jvParams[0u];
+        JLOG (j_.trace) << "RPC json: " << jvParams[0u];
 
         if (reader.parse (jvParams[0u].asString (), jvRequest))
         {
@@ -838,6 +840,10 @@ private:
 public:
     //--------------------------------------------------------------------------
 
+    explicit
+    RPCParser (beast::Journal j)
+            :j_ (j){}
+
     static std::string EncodeBase64 (std::string const& s)
     {
         // FIXME: This performs terribly
@@ -870,8 +876,8 @@ public:
     {
         if (ShouldLog (lsTRACE, RPCParser))
         {
-            WriteLog (lsTRACE, RPCParser) << "RPC method:" << strMethod;
-            WriteLog (lsTRACE, RPCParser) << "RPC params:" << jvParams;
+            JLOG (j_.trace) << "RPC method:" << strMethod;
+            JLOG (j_.trace) << "RPC params:" << jvParams;
         }
 
         struct Command
@@ -962,7 +968,7 @@ public:
                 if ((command.minParams >= 0 && count < command.minParams) ||
                     (command.maxParams >= 0 && count > command.maxParams))
                 {
-                    WriteLog (lsDEBUG, RPCParser) <<
+                    JLOG (j_.debug) <<
                         "Wrong number of parameters for " << command.name <<
                         " minimum=" << command.minParams <<
                         " maximum=" << command.maxParams <<
@@ -1015,7 +1021,7 @@ struct RPCCallImp
     static bool onResponse (
         std::function<void (Json::Value const& jvInput)> callbackFuncP,
             const boost::system::error_code& ecResult, int iStatus,
-                std::string const& strData)
+                std::string const& strData, beast::Journal j)
     {
         if (callbackFuncP)
         {
@@ -1030,7 +1036,7 @@ struct RPCCallImp
                 throw std::runtime_error ("no response from server");
 
             // Parse reply
-            WriteLog (lsDEBUG, RPCParser) << "RPC reply: " << strData << std::endl;
+            JLOG (j.debug) << "RPC reply: " << strData << std::endl;
 
             Json::Reader    reader;
             Json::Value     jvReply;
@@ -1054,9 +1060,9 @@ struct RPCCallImp
     // Build the request.
     static void onRequest (std::string const& strMethod, Json::Value const& jvParams,
         const std::map<std::string, std::string>& mHeaders, std::string const& strPath,
-            boost::asio::streambuf& sb, std::string const& strHost)
+            boost::asio::streambuf& sb, std::string const& strHost, beast::Journal j)
     {
-        WriteLog (lsDEBUG, RPCParser) << "requestRPC: strPath='" << strPath << "'";
+        JLOG (j.debug) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream    osRequest (&sb);
         osRequest <<
@@ -1073,7 +1079,8 @@ namespace RPCCall {
 
 int fromCommandLine (
     Config const& config,
-    const std::vector<std::string>& vCmd)
+    const std::vector<std::string>& vCmd,
+    Logs& logs)
 {
     if (vCmd.empty ())
         return 1;      // 1 = print usage.
@@ -1082,9 +1089,10 @@ int fromCommandLine (
     int         nRet = 0;
     Json::Value jvRequest (Json::objectValue);
 
+    auto rpcJ = logs.journal ("RPCParser");
     try
     {
-        RPCParser   rpParser;
+        RPCParser   rpParser (rpcJ);
         Json::Value jvRpcParams (Json::arrayValue);
 
         for (int i = 1; i != vCmd.size (); i++)
@@ -1097,7 +1105,7 @@ int fromCommandLine (
 
         jvRequest   = rpParser.parseCommand (vCmd[0], jvRpcParams, true);
 
-        WriteLog (lsTRACE, RPCParser) << "RPC Request: " << jvRequest << std::endl;
+        JLOG (rpcJ.trace) << "RPC Request: " << jvRequest << std::endl;
 
         if (jvRequest.isMember (jss::error))
         {
@@ -1147,6 +1155,7 @@ int fromCommandLine (
                     jvParams,                               // Parsed, execute.
                     setup.client.secure != 0,                // Use SSL
                     config.QUIET,
+                    logs,
                     std::bind (RPCCallImp::callRPCHandler, &jvOutput,
                                std::placeholders::_1));
                 isService.run(); // This blocks until there is no more outstanding async calls.
@@ -1215,6 +1224,7 @@ void fromNetwork (
     std::string const& strUsername, std::string const& strPassword,
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, const bool quiet,
+    Logs& logs,
     std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
     // Connect to localhost
@@ -1236,6 +1246,8 @@ void fromNetwork (
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     const int RPC_NOTIFY_SECONDS (600);
 
+    auto j = logs.journal ("HTTPClient");
+
     HTTPClient::request (
         bSSL,
         io_service,
@@ -1246,12 +1258,13 @@ void fromNetwork (
             strMethod,
             jvParams,
             mapRequestHeaders,
-            strPath, std::placeholders::_1, std::placeholders::_2),
+            strPath, std::placeholders::_1, std::placeholders::_2, j),
         RPC_REPLY_MAX_BYTES,
         boost::posix_time::seconds (RPC_NOTIFY_SECONDS),
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
-                   std::placeholders::_3));
+                   std::placeholders::_3, j),
+        logs);
 }
 
 }

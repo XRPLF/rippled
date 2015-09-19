@@ -128,7 +128,7 @@ class Checkpointer
     The Checkpointer contains references to the session and job queue
     and so must outlive them both.
  */
-std::unique_ptr <Checkpointer> makeCheckpointer (soci::session&, JobQueue&);
+std::unique_ptr <Checkpointer> makeCheckpointer (soci::session&, JobQueue&, Logs&);
 
 } // ripple
 

@@ -141,7 +141,7 @@ void Server <WebSocket04>::listen()
     m_endpoint->listen (desc_.port.ip, desc_.port.port);
     m_endpoint->start_accept();
     auto c = m_endpoint->get_io_service ().run ();
-    WriteLog (lsWARNING, WebSocket)
+    JLOG (j_.warning)
             << "Server run with: '" << c;
 
 }

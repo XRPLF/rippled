@@ -111,12 +111,12 @@ void Server <WebSocket02>::listen()
             }
             catch (std::exception const& e)
             {
-                WriteLog (lsWARNING, Server) << "websocketpp exception: "
+                JLOG (j_.warning) << "websocketpp exception: "
                                              << e.what ();
                 static const int maxRetries = 10;
                 if (maxRetries && i >= maxRetries)
                 {
-                    WriteLog (lsWARNING, Server)
+                    JLOG (j_.warning)
                             << "websocketpp exceeded max retries: " << i;
                     break;
                 }

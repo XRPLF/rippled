@@ -77,7 +77,7 @@ CancelOffer::doApply ()
     if (sleOffer)
     {
         j_.debug << "Trying to cancel offer #" << uOfferSequence;
-        return offerDelete (view(), sleOffer);
+        return offerDelete (view(), sleOffer, ctx_.app.journal ("View"));
     }
 
     j_.debug << "Offer #" << uOfferSequence << " can't be found.";
